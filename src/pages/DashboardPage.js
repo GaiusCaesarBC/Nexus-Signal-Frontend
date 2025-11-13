@@ -13,7 +13,12 @@ import NewsFeedCard from '../components/dashboard/NewsFeedCard';
 import DashboardCard from '../components/dashboard/DashboardCard'; // Make sure this component exists if used
 
 // Icon Imports (using lucide-react)
-import { BriefcaseBusiness, Bitcoin, LineChart, TrendingUp, Wallet } from 'lucide-react';
+// Only import icons directly used within DashboardPage.js itself
+// BriefcaseBusiness is used in the Market Overview section
+// Bitcoin is used in the Market Overview section
+// LineChart is used in the Market Overview section title
+import { BriefcaseBusiness, Bitcoin, LineChart } from 'lucide-react'; 
+// REMOVED: TrendingUp, Wallet as they are used in StatCardsGrid, not here directly
 
 // --- Keyframes and other global styles ---
 const fadeIn = keyframes`
@@ -197,7 +202,7 @@ const DashboardPage = () => {
                         value: res.data.todayChange, 
                         change: parseFloat(res.data.todayChange.replace(/[^0-9.+-]/g, '')), // Convert to number
                         changeType: res.data.todayChange.includes('+') ? 'increase' : 'decrease', 
-                        icon: 'trending_up', 
+                        icon: 'trending_up', // Make sure this icon is handled in StatCardsGrid
                         timeframe: 'Today' 
                     },
                     { 
@@ -206,7 +211,7 @@ const DashboardPage = () => {
                         value: res.data.totalReturn, 
                         change: parseFloat(res.data.totalReturn.replace(/[^0-9.+-]/g, '')), // Convert to number
                         changeType: res.data.totalReturn.includes('+') ? 'increase' : 'decrease', 
-                        icon: 'portfolio_growth' 
+                        icon: 'portfolio_growth' // Make sure this icon is handled in StatCardsGrid
                     },
                 ];
                 setDashboardSummary(transformedMetrics);
