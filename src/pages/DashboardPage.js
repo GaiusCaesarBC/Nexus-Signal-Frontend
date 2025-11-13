@@ -1,10 +1,8 @@
-// client/src/pages/DashboardPage.js - FINAL CORRECTED VERSION
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import Loader from '../components/Loader';
-// axios import removed as it's no longer used directly, 'api' from AuthContext is used instead
 
 // Import your new dashboard sub-components
 import DashboardHeader from '../components/dashboard/DashboardHeader';
@@ -12,11 +10,10 @@ import StatCardsGrid from '../components/dashboard/StatCardsGrid';
 import MarketDataSearch from '../components/dashboard/MarketDataSearch';
 import AIDataGraph from '../components/dashboard/AIDataGraph';
 import NewsFeedCard from '../components/dashboard/NewsFeedCard';
-import DashboardCard from '../components/dashboard/DashboardCard';
+import DashboardCard from '../components/dashboard/DashboardCard'; // Make sure this component exists if used
 
-// Icon Imports (using lucide-react as an example)
-// Removed unused icons, keeping only those explicitly used or planned
-import { BriefcaseBusiness, Bitcoin, LineChart } from 'lucide-react';
+// Icon Imports (using lucide-react)
+import { BriefcaseBusiness, Bitcoin, LineChart, TrendingUp, Wallet } from 'lucide-react';
 
 // --- Keyframes and other global styles ---
 const fadeIn = keyframes`
@@ -174,9 +171,10 @@ const DashboardPage = () => {
         }
     }, [isAuthenticated, authLoading, navigate]);
 
-   // Inside useEffect for fetchDashboardSummary
-useEffect(() => {
-    const fetchDashboardSummary = async () => {
+    // --- Data Fetching Callbacks (using useCallback for optimization and dependency stability) ---
+
+    // Fetch Dashboard Summary
+    const fetchDashboardSummary = useCallback(async () => {
         if (!api || !isAuthenticated) {
             setDashboardLoading(false);
             return;
@@ -190,17 +188,31 @@ useEffect(() => {
             // StatCardsGrid expects: [{ id, label, value, change, changeType, icon }]
             
             if (res.data) {
-                // Transform the flat object into an array of metric objects
                 const transformedMetrics = [
                     { id: 'pv', label: 'Portfolio Value', value: res.data.portfolioValue, icon: 'portfolio_value' },
-                    { id: 'tc', label: 'Today\'s Change', value: res.data.todayChange, change: res.data.todayChange.replace(/[^0-9.+-]/g, ''), changeType: res.data.todayChange.startsWith('+') ? 'increase' : 'decrease', icon: 'trending_up', timeframe: 'Today' },
-                    { id: 'tr', label: 'Total Return', value: res.data.totalReturn, change: res.data.totalReturn.replace(/[^0-9.+-]/g, ''), changeType: res.data.totalReturn.startsWith('+') ? 'increase' : 'decrease', icon: 'portfolio_growth' },
-                    // Add more as needed based on what your backend 'summary' endpoint provides
+                    // Extract numeric part for change and determine type
+                    { 
+                        id: 'tc', 
+                        label: 'Today\'s Change', 
+                        value: res.data.todayChange, 
+                        change: parseFloat(res.data.todayChange.replace(/[^0-9.+-]/g, '')), // Convert to number
+                        changeType: res.data.todayChange.includes('+') ? 'increase' : 'decrease', 
+                        icon: 'trending_up', 
+                        timeframe: 'Today' 
+                    },
+                    { 
+                        id: 'tr', 
+                        label: 'Total Return', 
+                        value: res.data.totalReturn, 
+                        change: parseFloat(res.data.totalReturn.replace(/[^0-9.+-]/g, '')), // Convert to number
+                        changeType: res.data.totalReturn.includes('+') ? 'increase' : 'decrease', 
+                        icon: 'portfolio_growth' 
+                    },
                 ];
                 setDashboardSummary(transformedMetrics);
             } else {
                 setDashboardError('Invalid summary data format: Expected an object with summary metrics.');
-                setDashboardSummary([]); // Ensure it's an empty array if data is bad
+                setDashboardSummary([]);
             }
         } catch (err) {
             console.error('Error fetching dashboard summary:', err.response?.data?.msg || err.message);
@@ -208,48 +220,30 @@ useEffect(() => {
         } finally {
             setDashboardLoading(false);
         }
-    };
+    }, [api, isAuthenticated]); // Dependencies for useCallback
 
-    if (isAuthenticated && !authLoading && api) {
-        fetchDashboardSummary();
-    }
-}, [api, isAuthenticated, authLoading]);
-
-        if (isAuthenticated && !authLoading && api) {
-            fetchDashboardSummary();
+    // Fetch Market Overview Data
+    const fetchMarketOverview = useCallback(async () => {
+        if (!api || !isAuthenticated) {
+            setLoadingMarketData(false);
+            return;
         }
-    }, [api, isAuthenticated, authLoading]);
 
-    // Effect for fetching market overview data
-    useEffect(() => {
-        const fetchMarketOverview = async () => {
-            if (!api || !isAuthenticated) {
-                setLoadingMarketData(false);
-                return;
-            }
-
-            setLoadingMarketData(true);
-            setErrorMarketData(null);
-            try {
-                // CORRECTED: Path is now relative to the baseURL set in AuthContext (which already includes /api)
-                const res = await api.get('/dashboard/market-overview');
-                setMarketData(res.data);
-            } catch (err) {
-                console.error("Error fetching market overview data:", err.response?.data?.msg || err.message);
-                setErrorMarketData("Failed to load market data.");
-            } finally {
-                setLoadingMarketData(false);
-            }
-        };
-
-        if (isAuthenticated && !authLoading && api) {
-            fetchMarketOverview();
+        setLoadingMarketData(true);
+        setErrorMarketData(null);
+        try {
+            const res = await api.get('/dashboard/market-overview');
+            setMarketData(res.data);
+        } catch (err) {
+            console.error("Error fetching market overview data:", err.response?.data?.msg || err.message);
+            setErrorMarketData("Failed to load market data.");
+        } finally {
+            setLoadingMarketData(false);
         }
-    }, [api, isAuthenticated, authLoading]);
+    }, [api, isAuthenticated]); // Dependencies for useCallback
 
-  // Inside useEffect for fetchAiGraphData
-useEffect(() => {
-    const fetchAiGraphData = async () => {
+    // Fetch AI Graph Data
+    const fetchAiGraphData = useCallback(async () => {
         if (!api || !isAuthenticated) {
             setAiGraphLoading(false);
             return;
@@ -263,10 +257,9 @@ useEffect(() => {
             // AIDataGraph (Recharts) expects: [{ date: 'Jan', value: 65 }, ...]
 
             if (res.data && Array.isArray(res.data.labels) && Array.isArray(res.data.data) && res.data.labels.length === res.data.data.length) {
-                // Transform the object into an array of { date, value } objects
                 const transformedGraphData = res.data.labels.map((label, index) => ({
-                    date: label,
-                    value: res.data.data[index]
+                    date: label, // Ensure this matches dataKey for XAxis
+                    value: res.data.data[index] // Ensure this matches dataKey for Area
                 }));
                 setAiGraphData(transformedGraphData);
             } else {
@@ -279,46 +272,46 @@ useEffect(() => {
         } finally {
             setAiGraphLoading(false);
         }
-    };
+    }, [api, isAuthenticated]); // Dependencies for useCallback
 
-    if (isAuthenticated && !authLoading && api) {
-        fetchAiGraphData();
-    }
-}, [api, isAuthenticated, authLoading]);
+    // Fetch News Data
+    const fetchNews = useCallback(async () => {
+        if (!api || !isAuthenticated) {
+            setNewsLoading(false);
+            return;
+        }
 
-    // Effect for fetching News Data
+        setNewsLoading(true);
+        setNewsError(null);
+        try {
+            const res = await api.get('/dashboard/news');
+            if (res.data && Array.isArray(res.data)) {
+                setNews(res.data);
+            } else {
+                setNewsError('Invalid news data format.');
+                setNews([]);
+            }
+        } catch (err) {
+            console.error('Error fetching news:', err.response?.data?.msg || err.message);
+            setNewsError('Failed to fetch news.');
+        } finally {
+            setNewsLoading(false);
+        }
+    }, [api, isAuthenticated]); // Dependencies for useCallback
+
+    // --- useEffect hooks to trigger fetching when dependencies change ---
     useEffect(() => {
-        const fetchNews = async () => {
-            if (!api || !isAuthenticated) {
-                setNewsLoading(false);
-                return;
-            }
-
-            setNewsLoading(true);
-            setNewsError(null);
-            try {
-                // CORRECTED: Path is now relative to the baseURL set in AuthContext (which already includes /api)
-                const res = await api.get('/dashboard/news');
-                if (res.data && Array.isArray(res.data)) {
-                    setNews(res.data);
-                } else {
-                    setNewsError('Invalid news data format.');
-                    setNews([]);
-                }
-            } catch (err) {
-                console.error('Error fetching news:', err.response?.data?.msg || err.message);
-                setNewsError('Failed to fetch news.');
-            } finally {
-                setNewsLoading(false);
-            }
-        };
-
         if (isAuthenticated && !authLoading && api) {
+            fetchDashboardSummary();
+            fetchMarketOverview();
+            fetchAiGraphData();
             fetchNews();
         }
-    }, [api, isAuthenticated, authLoading]);
+        // No need to return a cleanup function unless there are subscriptions/intervals
+    }, [isAuthenticated, authLoading, api, fetchDashboardSummary, fetchMarketOverview, fetchAiGraphData, fetchNews]);
 
-    if (authLoading || dashboardLoading) {
+
+    if (authLoading || dashboardLoading || aiGraphLoading || loadingMarketData || newsLoading) {
         return <Loader />;
     }
 
@@ -341,11 +334,12 @@ useEffect(() => {
                 {/* 1. Dashboard Header */}
                 <DashboardHeader username={user ? user.username : 'Trader'} />
 
+                {/* Dashboard Summary Errors - Display if any */}
                 {dashboardError && <ErrorMessage>{dashboardError}</ErrorMessage>}
 
                 {/* 2. Stat Cards Grid */}
                 {/* Ensure your StatCardsGrid component correctly handles an array for summary */}
-                <StatCardsGrid summary={dashboardSummary} />
+                <StatCardsGrid summary={dashboardSummary} error={dashboardError} />
 
                 <SectionTitle>Real-Time Market Data & Analytics</SectionTitle>
 
