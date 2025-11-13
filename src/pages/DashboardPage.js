@@ -187,12 +187,15 @@ const DashboardPage = () => {
             try {
                 // CORRECTED: Path is now relative to the baseURL set in AuthContext (which already includes /api)
                 const res = await api.get('/dashboard/summary');
-                if (res.data && Array.isArray(res.data.mainMetrics)) {
-                    setDashboardSummary(res.data.mainMetrics);
-                } else {
-                    setDashboardError('Invalid summary data format.');
-                    setDashboardSummary([]);
-                }
+               // The backend is sending { labels: [...], data: [...] } directly
+// Let's assume dashboardSummary expects an object with labels and data for the chart
+if (res.data && res.data.labels && res.data.data) {
+    // You might need to adjust your StatCardsGrid to accept {labels, data} or process it further
+    setDashboardSummary(res.data); // Store the object as is
+} else {
+    setDashboardError('Invalid summary data format. Expected object with labels and data.');
+    setDashboardSummary(null); // Set to null or an empty object if StatCardsGrid expects an object
+}
             } catch (err) {
                 console.error('Error fetching dashboard summary:', err.response?.data?.msg || err.message);
                 setDashboardError('Failed to fetch dashboard summary.');
@@ -246,12 +249,14 @@ const DashboardPage = () => {
             try {
                 // CORRECTED: Path is now relative to the baseURL set in AuthContext (which already includes /api)
                 const res = await api.get('/dashboard/ai-graph-data');
-                if (res.data && Array.isArray(res.data)) {
-                    setAiGraphData(res.data);
-                } else {
-                    setAiGraphError('Invalid AI graph data format.');
-                    setAiGraphData([]);
-                }
+              // The backend is sending { labels: [...], data: [...] } (similar to summary)
+// AIDataGraph component usually expects data in this format for charting libraries
+if (res.data && res.data.labels && res.data.data) {
+    setAiGraphData(res.data); // Store the object as is
+} else {
+    setAiGraphError('Invalid AI graph data format. Expected object with labels and data.');
+    setAiGraphData(null); // Or an empty object {} if your graph component expects that
+}
             } catch (err) {
                 console.error('Error fetching AI graph data:', err.response?.data?.msg || err.message);
                 setAiGraphError('Failed to fetch AI graph data.');
