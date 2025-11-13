@@ -174,35 +174,46 @@ const DashboardPage = () => {
         }
     }, [isAuthenticated, authLoading, navigate]);
 
-    // Effect for fetching dashboard summary data
-    useEffect(() => {
-        const fetchDashboardSummary = async () => {
-            if (!api || !isAuthenticated) {
-                setDashboardLoading(false);
-                return;
-            }
+   // Inside useEffect for fetchDashboardSummary
+useEffect(() => {
+    const fetchDashboardSummary = async () => {
+        if (!api || !isAuthenticated) {
+            setDashboardLoading(false);
+            return;
+        }
 
-            setDashboardLoading(true);
-            setDashboardError(null);
-            try {
-                // CORRECTED: Path is now relative to the baseURL set in AuthContext (which already includes /api)
-                const res = await api.get('/dashboard/summary');
-               // The backend is sending { labels: [...], data: [...] } directly
-// Let's assume dashboardSummary expects an object with labels and data for the chart
-if (res.data && res.data.labels && res.data.data) {
-    // You might need to adjust your StatCardsGrid to accept {labels, data} or process it further
-    setDashboardSummary(res.data); // Store the object as is
-} else {
-    setDashboardError('Invalid summary data format. Expected object with labels and data.');
-    setDashboardSummary(null); // Set to null or an empty object if StatCardsGrid expects an object
-}
-            } catch (err) {
-                console.error('Error fetching dashboard summary:', err.response?.data?.msg || err.message);
-                setDashboardError('Failed to fetch dashboard summary.');
-            } finally {
-                setDashboardLoading(false);
+        setDashboardLoading(true);
+        setDashboardError(null);
+        try {
+            const res = await api.get('/dashboard/summary');
+            // Backend sends: {"portfolioValue":"$15,230","todayChange":"+1.5%","totalReturn":"+12.3%"}
+            // StatCardsGrid expects: [{ id, label, value, change, changeType, icon }]
+            
+            if (res.data) {
+                // Transform the flat object into an array of metric objects
+                const transformedMetrics = [
+                    { id: 'pv', label: 'Portfolio Value', value: res.data.portfolioValue, icon: 'portfolio_value' },
+                    { id: 'tc', label: 'Today\'s Change', value: res.data.todayChange, change: res.data.todayChange.replace(/[^0-9.+-]/g, ''), changeType: res.data.todayChange.startsWith('+') ? 'increase' : 'decrease', icon: 'trending_up', timeframe: 'Today' },
+                    { id: 'tr', label: 'Total Return', value: res.data.totalReturn, change: res.data.totalReturn.replace(/[^0-9.+-]/g, ''), changeType: res.data.totalReturn.startsWith('+') ? 'increase' : 'decrease', icon: 'portfolio_growth' },
+                    // Add more as needed based on what your backend 'summary' endpoint provides
+                ];
+                setDashboardSummary(transformedMetrics);
+            } else {
+                setDashboardError('Invalid summary data format: Expected an object with summary metrics.');
+                setDashboardSummary([]); // Ensure it's an empty array if data is bad
             }
-        };
+        } catch (err) {
+            console.error('Error fetching dashboard summary:', err.response?.data?.msg || err.message);
+            setDashboardError('Failed to fetch dashboard summary.');
+        } finally {
+            setDashboardLoading(false);
+        }
+    };
+
+    if (isAuthenticated && !authLoading && api) {
+        fetchDashboardSummary();
+    }
+}, [api, isAuthenticated, authLoading]);
 
         if (isAuthenticated && !authLoading && api) {
             fetchDashboardSummary();
@@ -236,39 +247,44 @@ if (res.data && res.data.labels && res.data.data) {
         }
     }, [api, isAuthenticated, authLoading]);
 
-    // Effect for fetching AI Graph Data
-    useEffect(() => {
-        const fetchAiGraphData = async () => {
-            if (!api || !isAuthenticated) {
-                setAiGraphLoading(false);
-                return;
-            }
-
-            setAiGraphLoading(true);
-            setAiGraphError(null);
-            try {
-                // CORRECTED: Path is now relative to the baseURL set in AuthContext (which already includes /api)
-                const res = await api.get('/dashboard/ai-graph-data');
-              // The backend is sending { labels: [...], data: [...] } (similar to summary)
-// AIDataGraph component usually expects data in this format for charting libraries
-if (res.data && res.data.labels && res.data.data) {
-    setAiGraphData(res.data); // Store the object as is
-} else {
-    setAiGraphError('Invalid AI graph data format. Expected object with labels and data.');
-    setAiGraphData(null); // Or an empty object {} if your graph component expects that
-}
-            } catch (err) {
-                console.error('Error fetching AI graph data:', err.response?.data?.msg || err.message);
-                setAiGraphError('Failed to fetch AI graph data.');
-            } finally {
-                setAiGraphLoading(false);
-            }
-        };
-
-        if (isAuthenticated && !authLoading && api) {
-            fetchAiGraphData();
+  // Inside useEffect for fetchAiGraphData
+useEffect(() => {
+    const fetchAiGraphData = async () => {
+        if (!api || !isAuthenticated) {
+            setAiGraphLoading(false);
+            return;
         }
-    }, [api, isAuthenticated, authLoading]);
+
+        setAiGraphLoading(true);
+        setAiGraphError(null);
+        try {
+            const res = await api.get('/dashboard/ai-graph-data');
+            // Backend sends: {"labels":["Jan","Feb",...],"data":[65,59,...]}
+            // AIDataGraph (Recharts) expects: [{ date: 'Jan', value: 65 }, ...]
+
+            if (res.data && Array.isArray(res.data.labels) && Array.isArray(res.data.data) && res.data.labels.length === res.data.data.length) {
+                // Transform the object into an array of { date, value } objects
+                const transformedGraphData = res.data.labels.map((label, index) => ({
+                    date: label,
+                    value: res.data.data[index]
+                }));
+                setAiGraphData(transformedGraphData);
+            } else {
+                setAiGraphError('Invalid AI graph data format. Expected object with matching labels and data arrays.');
+                setAiGraphData([]);
+            }
+        } catch (err) {
+            console.error('Error fetching AI graph data:', err.response?.data?.msg || err.message);
+            setAiGraphError('Failed to fetch AI graph data.');
+        } finally {
+            setAiGraphLoading(false);
+        }
+    };
+
+    if (isAuthenticated && !authLoading && api) {
+        fetchAiGraphData();
+    }
+}, [api, isAuthenticated, authLoading]);
 
     // Effect for fetching News Data
     useEffect(() => {
