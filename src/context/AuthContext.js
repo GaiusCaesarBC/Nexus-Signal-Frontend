@@ -3,7 +3,7 @@
 import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 // import axios from 'axios'; // This is no longer needed as we use the 'API' instance directly
-import API from '../api/axios'; // IMPORTANT: Use your configured API instance for general calls
+import API from '../api/axios';
 
 const AuthContext = createContext(null);
 

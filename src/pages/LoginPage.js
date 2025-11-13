@@ -183,27 +183,23 @@ const LoginPage = () => {
     }, []);
 
     const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLocalLoading(true);
-        setLocalError('');
+    e.preventDefault();
+    setLocalLoading(true); // Indicate local loading
+    setLocalError(''); // Clear previous errors
 
-        console.log('LoginPage handleSubmit: Submitting login form...');
+    console.log('LoginPage handleSubmit: Submitting login form...');
 
-        const success = await login(email, password); // Corrected this line
+    const loginResult = await login(email, password); // AuthContext's login now returns { success, error }
 
-       if (!success) { // ONLY handle failure here, AuthContext handles success navigation
-       setLocalError('Login failed. Please check your credentials.');
-     console.error('LoginPage handleSubmit: Login failed via AuthContext: Check network tab for server response details.');
-      }
-
-        setLocalLoading(false);
-    };
-
-    // This ensures an immediate redirect if isAuthenticated is true and not still loading auth state
-    if (isAuthenticated && !authLoading) {
-        console.log('LoginPage (Render): User is authenticated and not loading. Redirecting to /dashboard.');
-        return <Navigate to="/dashboard" replace />;
+    // ONLY handle the failure case here. AuthContext handles success navigation.
+    if (!loginResult.success) {
+        setLocalError(loginResult.error || 'Login failed. Please check credentials.');
+        console.error('LoginPage handleSubmit: Login failed via AuthContext:', loginResult.error || 'Unknown error');
     }
+
+    setLocalLoading(false); // Stop local loading
+};
+
 
     return (
         <LoginPageContainer>
