@@ -15,7 +15,7 @@ import ProtectedRoute from '../components/ProtectedRoute';
 // These should use './' and NOT have 'pages/' in the path
 import LandingPage from './LandingPage';
 import LoginPage from './LoginPage';
-// Assuming you remove the self-import of RegisterPage from within RegisterPage.js
+import RegisterPage from './RegisterPage';
 import DashboardPage from './DashboardPage';
 import PredictPage from './PredictPage';
 import PricingPage from './PricingPage';
