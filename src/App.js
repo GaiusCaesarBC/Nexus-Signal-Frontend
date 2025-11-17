@@ -1,32 +1,30 @@
+// src/App.js - FIXED import paths
 
-// Corrected import for AuthContext
-import { AuthContext, useAuth } from '../context/AuthContext';
+import React from 'react';
 import { Routes, Route } from 'react-router-dom';
+import { useAuth } from './context/AuthContext';
 
-// Corrected imports for components
-import Navbar from '../components/Navbar'; // From 'pages' go up to 'src', then into 'components'
-import Footer from '../components/Footer'
-import Copilot from '../components/Copilot';
-import SettingsPage from '../components/SettingsPage';
-import ProtectedRoute from '../components/ProtectedRoute';
+// Component imports (from src/components/)
+import Navbar from './components/Navbar';
+import Footer from './components/Footer';
+import Copilot from './components/Copilot';
+import SettingsPage from './components/SettingsPage';
+import ProtectedRoute from './components/ProtectedRoute';
 
-
-// Corrected imports for other pages (they are in the *same* 'src/pages' directory)
-// These should use './' and NOT have 'pages/' in the path
-import LandingPage from './LandingPage';
-import LoginPage from './LoginPage';
-import RegisterPage from './RegisterPage';
-import DashboardPage from './DashboardPage';
-import PredictPage from './PredictPage';
-import PricingPage from './PricingPage';
-import WatchlistPage from './WatchlistPage';
-import PortfolioPage from './PortfolioPage';
-import TermsOfServicePage from './TermsOfServicePage';
-import PrivacyPolicyPage from './PrivacyPolicyPage';
-import DisclaimerPage from './DisclaimerPage';
-import NotFoundPage from './NotFoundPage';
-import StockPage from './StockPage';
-
+// Page imports (from src/pages/)
+import LandingPage from './pages/LandingPage';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import DashboardPage from './pages/DashboardPage';
+import PredictPage from './pages/PredictPage';
+import PricingPage from './pages/PricingPage';
+import WatchlistPage from './pages/WatchlistPage';
+import PortfolioPage from './pages/PortfolioPage';
+import TermsOfServicePage from './pages/TermsOfServicePage';
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
+import DisclaimerPage from './pages/DisclaimerPage';
+import NotFoundPage from './pages/NotFoundPage';
+import StockPage from './pages/StockPage';
 
 function App() {
     const { loading } = useAuth();
@@ -68,9 +66,8 @@ function App() {
                     <Route path="/predict" element={<ProtectedRoute><PredictPage /></ProtectedRoute>} />
                     <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
 
-                    {/* NEW: Stock Details Page Route */}
-                    {/* This route will capture the stock symbol from the URL (e.g., /stocks/AAPL) */}
-                    <Route path="/stocks/:symbol" element={<ProtectedRoute><StockPage /></ProtectedRoute>} /> {/* <-- ADD THIS LINE */}
+                    {/* Stock Details Page Route */}
+                    <Route path="/stocks/:symbol" element={<ProtectedRoute><StockPage /></ProtectedRoute>} />
 
                     {/* Catch-all for 404 Not Found pages */}
                     <Route path="*" element={<NotFoundPage />} />

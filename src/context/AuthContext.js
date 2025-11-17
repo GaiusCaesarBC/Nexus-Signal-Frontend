@@ -1,4 +1,4 @@
-// client/src/context/AuthContext.js - FIXED (No localStorage conflict)
+// client/src/context/AuthContext.js - FIXED (No circular import)
 
 import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';

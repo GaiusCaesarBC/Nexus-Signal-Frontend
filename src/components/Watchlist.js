@@ -1,11 +1,9 @@
-// client/src/components/Watchlist.js
+// client/src/components/Watchlist.js - FIXED
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styled, { keyframes } from 'styled-components';
-import { useAuth } from '../context/AuthContext'; // Correct import for useAuth
-import { X, Loader2 } from 'lucide-react'; // Example icons for remove and loading
-
-// --- Styled Components (Adjust these to match your existing design system) ---
+import { useAuth } from '../context/AuthContext';
+import { X, Loader2, TrendingUp, TrendingDown } from 'lucide-react';
 
 const fadeIn = keyframes`
     from { opacity: 0; transform: translateY(10px); }
@@ -37,14 +35,12 @@ const WatchlistList = styled.ul`
     list-style: none;
     padding: 0;
     margin: 0;
-    max-height: 400px; /* Limit height for scrollability */
+    max-height: 600px;
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: #00adef #1a273b;
 
-    &::-webkit-scrollbar {
-        width: 8px;
-    }
+    &::-webkit-scrollbar { width: 8px; }
     &::-webkit-scrollbar-track {
         background: #1a273b;
         border-radius: 10px;
@@ -57,40 +53,77 @@ const WatchlistList = styled.ul`
 `;
 
 const WatchlistItem = styled.li`
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: 1fr auto auto;
     align-items: center;
-    padding: 0.8rem 0;
-    border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
-    font-size: 1.1rem;
+    gap: 1rem;
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    background: rgba(0, 173, 237, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(0, 173, 237, 0.1);
+    transition: all 0.2s ease;
 
-    &:last-child {
-        border-bottom: none;
+    &:hover {
+        background: rgba(0, 173, 237, 0.1);
+        border-color: rgba(0, 173, 237, 0.3);
+        transform: translateX(5px);
     }
+`;
+
+const SymbolInfo = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
 `;
 
 const SymbolName = styled.span`
     font-weight: bold;
     color: #f8fafc;
+    font-size: 1.2rem;
 `;
 
-const RemoveButton = styled.button`
-    background: none;
-    border: none;
-    color: #ff6b6b; /* Red color for delete action */
-    cursor: pointer;
-    font-size: 1rem;
+const PriceInfo = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+`;
+
+const Price = styled.span`
+    color: #94a3b8;
+    font-weight: 500;
+`;
+
+const PriceChange = styled.span`
     display: flex;
     align-items: center;
     gap: 0.2rem;
-    transition: color 0.2s ease, transform 0.2s ease;
+    color: ${props => props.positive ? '#10b981' : '#ef4444'};
+    font-weight: 600;
+`;
 
-    &:hover {
-        color: #e04a4a;
-        transform: scale(1.1);
+const RemoveButton = styled.button`
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #ff6b6b;
+    cursor: pointer;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    transition: all 0.2s ease;
+
+    &:hover:not(:disabled) {
+        background: rgba(239, 68, 68, 0.2);
+        border-color: rgba(239, 68, 68, 0.5);
+        transform: scale(1.05);
     }
+    
     &:disabled {
-        color: #777;
+        opacity: 0.5;
         cursor: not-allowed;
     }
 `;
@@ -99,7 +132,7 @@ const Message = styled.p`
     text-align: center;
     font-size: 1.1rem;
     color: #b0c4de;
-    padding: 1rem;
+    padding: 2rem;
 `;
 
 const ErrorMessage = styled(Message)`
@@ -113,6 +146,7 @@ const LoaderWrapper = styled.div`
     align-items: center;
     padding: 2rem;
     color: #00adef;
+    gap: 0.5rem;
 `;
 
 const RotatingLoader = styled(Loader2)`
@@ -123,97 +157,196 @@ const RotatingLoader = styled(Loader2)`
     }
 `;
 
-// --- Watchlist Component ---
-const Watchlist = () => {
-    // Destructure what's needed from useAuth
-    const { api, isAuthenticated, loading: authLoading } = useAuth();
+const RefreshButton = styled.button`
+    background: rgba(0, 173, 237, 0.1);
+    border: 1px solid rgba(0, 173, 237, 0.3);
+    color: #00adef;
+    cursor: pointer;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    margin: 0 auto 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
 
-    // State for the watchlist data, loading status, and errors
+    &:hover:not(:disabled) {
+        background: rgba(0, 173, 237, 0.2);
+        border-color: rgba(0, 173, 237, 0.5);
+    }
+    
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+`;
+
+const Watchlist = () => {
+    const { api, isAuthenticated, loading: authLoading } = useAuth();
     const [watchlist, setWatchlist] = useState([]);
     const [watchlistLoading, setWatchlistLoading] = useState(true);
     const [watchlistError, setWatchlistError] = useState(null);
+    const [pricesLoading, setPricesLoading] = useState(false);
+    const hasFetchedRef = useRef(false);
 
-    // Callback to fetch the user's watchlist from the backend
-    const fetchWatchlist = useCallback(async () => {
-        // Only fetch if authenticated and API client is ready
-        if (!isAuthenticated || !api) {
-            setWatchlist([]);
-            setWatchlistLoading(false);
-            // Optionally set an error if not authenticated/api not ready but component loaded
-            if (!isAuthenticated && !authLoading) {
-                setWatchlistError("Please log in to view your watchlist.");
-            }
+    // Fetch watchlist symbols
+    const fetchWatchlist = async () => {
+        if (!isAuthenticated || !api || authLoading || hasFetchedRef.current) {
             return;
         }
 
+        hasFetchedRef.current = true;
         setWatchlistLoading(true);
-        setWatchlistError(null); // Clear previous errors
+        setWatchlistError(null);
+
         try {
-            // Assuming your backend has a GET /api/watchlist route
-            const res = await api.get('/api/watchlist');
+            const res = await api.get('/watchlist');
+            console.log('Watchlist data:', res.data);
+            
+            // Backend returns array of symbols (strings)
             if (Array.isArray(res.data)) {
-                setWatchlist(res.data);
+                // Convert strings to objects with symbol and price info
+                const watchlistItems = res.data.map(symbol => ({
+                    symbol: symbol,
+                    price: null,
+                    change: null,
+                    changePercent: null
+                }));
+                setWatchlist(watchlistItems);
+                
+                // Fetch prices after getting symbols
+                if (watchlistItems.length > 0) {
+                    fetchPrices(watchlistItems.map(item => item.symbol));
+                }
             } else {
-                // Handle cases where backend might return non-array or empty object
                 setWatchlist([]);
-                console.warn("Watchlist API returned non-array data:", res.data);
             }
         } catch (error) {
-            console.error('Error fetching watchlist:', error.response?.data?.msg || error.message);
+            console.error('Error fetching watchlist:', error);
             setWatchlistError('Failed to load watchlist. Please try again.');
-            setWatchlist([]); // Clear watchlist on error
+            setWatchlist([]);
+            hasFetchedRef.current = false;
         } finally {
             setWatchlistLoading(false);
         }
-    }, [isAuthenticated, api, authLoading]); // Dependencies for useCallback
+    };
 
-    // Effect to trigger fetching the watchlist when authentication status or API client changes
-    useEffect(() => {
-        if (!authLoading) { // Ensure authentication status has been determined
-            fetchWatchlist();
+    // Fetch current prices for all symbols
+    const fetchPrices = async (symbols) => {
+        if (!symbols || symbols.length === 0) return;
+
+        setPricesLoading(true);
+        try {
+            const symbolsString = symbols.join(',');
+            const res = await api.get(`/market-data/quotes?symbols=${symbolsString}`);
+            const { prices } = res.data;
+
+            // Update watchlist with prices
+            setWatchlist(prevWatchlist =>
+                prevWatchlist.map(item => ({
+                    ...item,
+                    price: prices[item.symbol.toUpperCase()] || null
+                }))
+            );
+        } catch (error) {
+            console.error('Error fetching prices:', error);
+        } finally {
+            setPricesLoading(false);
         }
-    }, [authLoading, fetchWatchlist]); // Re-run when authLoading or fetchWatchlist changes
+    };
 
-    // Callback to remove a stock from the watchlist
-    const removeFromWatchlist = useCallback(async (symbol) => {
+    // Remove from watchlist
+    const removeFromWatchlist = async (symbol) => {
         if (!isAuthenticated || !api) {
-            console.error("Not authenticated or API client not ready to remove from watchlist.");
+            console.error('Not authenticated');
             return;
         }
-        try {
-            // Assuming your backend has a DELETE /api/watchlist/:symbol route
-            await api.delete(`/api/watchlist/${symbol}`);
-            // Update local state by filtering out the removed symbol
-            setWatchlist(prevWatchlist => prevWatchlist.filter(item => item.symbol !== symbol));
-            console.log(`${symbol} removed from watchlist.`);
-        } catch (error) {
-            console.error('Error removing from watchlist:', error.response?.data?.msg || error.message);
-            // Optionally set an error state or show a toast notification here
-        }
-    }, [isAuthenticated, api]); // Dependencies for useCallback
 
-    // --- Render Logic ---
+        try {
+            await api.delete(`/watchlist/remove/${symbol}`);
+            setWatchlist(prev => prev.filter(item => item.symbol !== symbol));
+            console.log(`${symbol} removed from watchlist`);
+        } catch (error) {
+            console.error('Error removing from watchlist:', error);
+            setWatchlistError('Failed to remove item. Please try again.');
+        }
+    };
+
+    // Initial fetch
+    useEffect(() => {
+        if (!authLoading && isAuthenticated) {
+            fetchWatchlist();
+        } else if (!authLoading && !isAuthenticated) {
+            setWatchlistError('Please log in to view your watchlist.');
+            setWatchlistLoading(false);
+        }
+    }, [isAuthenticated, authLoading]);
+
+    // Manual refresh
+    const handleRefresh = () => {
+        if (watchlist.length > 0) {
+            fetchPrices(watchlist.map(item => item.symbol));
+        }
+    };
+
+    if (watchlistLoading) {
+        return (
+            <WatchlistContainer>
+                <WatchlistHeader>My Watchlist</WatchlistHeader>
+                <LoaderWrapper>
+                    <RotatingLoader size={24} />
+                    <span>Loading watchlist...</span>
+                </LoaderWrapper>
+            </WatchlistContainer>
+        );
+    }
+
+    if (watchlistError) {
+        return (
+            <WatchlistContainer>
+                <WatchlistHeader>My Watchlist</WatchlistHeader>
+                <ErrorMessage>{watchlistError}</ErrorMessage>
+            </WatchlistContainer>
+        );
+    }
+
     return (
         <WatchlistContainer>
             <WatchlistHeader>My Watchlist</WatchlistHeader>
 
-            {watchlistLoading ? (
-                <LoaderWrapper>
-                    <RotatingLoader size={24} /> <Message>Loading Watchlist...</Message>
-                </LoaderWrapper>
-            ) : watchlistError ? (
-                <ErrorMessage>{watchlistError}</ErrorMessage>
-            ) : watchlist.length === 0 ? (
-                <Message>Your watchlist is empty. Add some stocks!</Message>
+            {watchlist.length > 0 && (
+                <RefreshButton onClick={handleRefresh} disabled={pricesLoading}>
+                    {pricesLoading ? <RotatingLoader size={16} /> : '🔄'}
+                    {pricesLoading ? 'Updating...' : 'Refresh Prices'}
+                </RefreshButton>
+            )}
+
+            {watchlist.length === 0 ? (
+                <Message>Your watchlist is empty. Add some stocks or crypto!</Message>
             ) : (
                 <WatchlistList>
                     {watchlist.map((item, index) => (
-                        <WatchlistItem key={item._id || index}> {/* Use _id if available from MongoDB, otherwise index */}
-                            <SymbolName>{item.symbol.toUpperCase()}</SymbolName>
-                            <RemoveButton
-                                onClick={() => removeFromWatchlist(item.symbol)}
-                                disabled={!isAuthenticated} // Disable if not authenticated
-                            >
+                        <WatchlistItem key={`${item.symbol}-${index}`}>
+                            <SymbolInfo>
+                                <SymbolName>{item.symbol.toUpperCase()}</SymbolName>
+                                <PriceInfo>
+                                    {item.price !== null ? (
+                                        <>
+                                            <Price>${item.price.toFixed(2)}</Price>
+                                            {item.change !== null && (
+                                                <PriceChange positive={item.change >= 0}>
+                                                    {item.change >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                                                    {item.changePercent ? `${item.changePercent.toFixed(2)}%` : '—'}
+                                                </PriceChange>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <Price>Loading price...</Price>
+                                    )}
+                                </PriceInfo>
+                            </SymbolInfo>
+                            <RemoveButton onClick={() => removeFromWatchlist(item.symbol)} disabled={!isAuthenticated}>
                                 <X size={16} /> Remove
                             </RemoveButton>
                         </WatchlistItem>
