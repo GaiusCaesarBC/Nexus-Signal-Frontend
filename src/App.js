@@ -16,7 +16,7 @@ import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
-import PredictPage from './pages/PredictPage';
+import PredictPage from './pages/PredictionsPage';
 import PricingPage from './pages/PricingPage';
 import WatchlistPage from './pages/WatchlistPage';
 import PortfolioPage from './pages/PortfolioPage';

@@ -1,530 +1,865 @@
-// client/src/pages/PortfolioPage.js - FIXED VERSION
+// client/src/pages/PortfolioPage.js - COMPLETE with Add/Edit/Delete
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
-import { DollarSign, TrendingUp, TrendingDown, Wallet, Briefcase, RefreshCcw, PlusCircle } from 'lucide-react';
+import { TrendingUp, TrendingDown, Plus, Trash2, Edit2, Brain, Target, Zap, AlertCircle, X } from 'lucide-react';
 
-// --- All your styled components (keep as-is) ---
 const fadeIn = keyframes`
-    from { opacity: 0; transform: translateY(10px); }
+    from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
 `;
 
-const PortfolioPageContainer = styled.div`
-    flex-grow: 1;
-    padding: 2.5rem;
-    background: linear-gradient(180deg, #0d1a2f 0%, #1a273b 100%);
-    color: #e0e6ed;
-    font-family: 'Inter', sans-serif;
-    animation: ${fadeIn} 0.8s ease-out forwards;
-    min-height: calc(100vh - var(--navbar-height));
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    @media (max-width: 768px) { padding: 1.5rem; }
+const pulse = keyframes`
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
 `;
 
-const PortfolioHeader = styled.h1`
-    font-size: 3rem;
-    color: #00adef;
-    margin-bottom: 2.5rem;
-    text-shadow: 0 0 15px rgba(0, 173, 237, 0.6);
+const PageContainer = styled.div`
+    padding: 3rem 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+    color: #e0e6ed;
+    background: linear-gradient(145deg, #0d1a2f 0%, #1a273b 100%);
+    min-height: calc(100vh - var(--navbar-height));
+    animation: ${fadeIn} 0.8s ease-out;
+`;
+
+const Header = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    
     @media (max-width: 768px) {
-        font-size: 2.5rem;
-        margin-bottom: 2rem;
+        flex-direction: column;
+        gap: 1rem;
     }
 `;
 
-const SummarySection = styled.div`
+const Title = styled.h1`
+    font-size: 3rem;
+    color: #00adef;
+    text-shadow: 0 0 15px rgba(0, 173, 237, 0.6);
+    
+    @media (max-width: 768px) {
+        font-size: 2.5rem;
+    }
+`;
+
+const HeaderActions = styled.div`
+    display: flex;
+    gap: 1rem;
+`;
+
+const Button = styled.button`
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    border: none;
+    background: ${props => props.variant === 'primary' 
+        ? 'linear-gradient(135deg, #00adef 0%, #0088cc 100%)'
+        : props.variant === 'danger'
+        ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
+        : 'rgba(255, 255, 255, 0.1)'};
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    &:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 173, 237, 0.4);
+    }
+
+    &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+`;
+
+const SummaryCards = styled.div`
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 1.5rem;
-    width: 100%;
-    max-width: 1200px;
-    margin-bottom: 3rem;
-    @media (max-width: 768px) { grid-template-columns: 1fr; }
+    margin-bottom: 2rem;
 `;
 
 const SummaryCard = styled.div`
     background: linear-gradient(135deg, #1e293b 0%, #2c3e50 100%);
     border-radius: 12px;
     padding: 1.5rem;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
     border: 1px solid rgba(0, 173, 237, 0.2);
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.8rem;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    &:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
-    }
 `;
 
-const CardTitle = styled.h4`
-    font-size: 1.2rem;
+const CardLabel = styled.div`
+    font-size: 0.9rem;
     color: #94a3b8;
-    margin: 0;
+    margin-bottom: 0.5rem;
+`;
+
+const CardValue = styled.div`
+    font-size: 2rem;
+    font-weight: bold;
+    color: ${props => {
+        if (props.positive) return '#10b981';
+        if (props.negative) return '#ef4444';
+        return '#f8fafc';
+    }};
+`;
+
+const HoldingsSection = styled.div`
+    margin-top: 2rem;
+`;
+
+const SectionHeader = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+`;
+
+const SectionTitle = styled.h2`
+    font-size: 1.5rem;
+    color: #00adef;
     display: flex;
     align-items: center;
     gap: 0.5rem;
 `;
 
-const CardValue = styled.p`
-    font-size: 2.5rem;
-    font-weight: bold;
+const HoldingCard = styled.div`
+    background: linear-gradient(135deg, #1e293b 0%, #2c3e50 100%);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(0, 173, 237, 0.2);
+    animation: ${fadeIn} 0.5s ease-out;
+`;
+
+const HoldingHeader = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(0, 173, 237, 0.2);
+`;
+
+const SymbolInfo = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+`;
+
+const Symbol = styled.h3`
+    font-size: 1.5rem;
     color: #f8fafc;
     margin: 0;
-    text-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
-    &.positive { color: #10b981; }
-    &.negative { color: #ef4444; }
 `;
 
-const HoldingsSection = styled.div`
-    width: 100%;
-    max-width: 1200px;
-    background: linear-gradient(135deg, #1e293b 0%, #2c3e50 100%);
-    border-radius: 12px;
-    padding: 2rem;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(0, 173, 237, 0.2);
-    margin-bottom: 3rem;
-    @media (max-width: 768px) { padding: 1.5rem; }
+const PriceInfo = styled.div`
+    text-align: right;
 `;
 
-const HoldingsTable = styled.table`
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-    margin-top: 1.5rem;
-    th, td {
-        padding: 0.8rem 1rem;
-        text-align: left;
-        border-bottom: 1px solid #334155;
-        white-space: nowrap;
-        &:first-child { border-left: none; }
-        &:last-child { border-right: none; }
-    }
-    th {
-        color: #00adef;
-        font-size: 1rem;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        padding-bottom: 1rem;
-        position: sticky;
-        top: 0;
-        background: #1e293b;
-        z-index: 10;
-    }
-    td {
-        color: #f8fafc;
-        font-size: 1.1rem;
-        &.positive { color: #10b981; }
-        &.negative { color: #ef4444; }
-    }
-    tr:last-child td { border-bottom: none; }
-`;
-
-const TableWrapper = styled.div`
-    max-height: 500px;
-    overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: #00adef #1a273b;
-    &::-webkit-scrollbar { width: 8px; }
-    &::-webkit-scrollbar-track {
-        background: #1a273b;
-        border-radius: 10px;
-    }
-    &::-webkit-scrollbar-thumb {
-        background-color: #00adef;
-        border-radius: 10px;
-        border: 2px solid #1a273b;
-    }
-`;
-
-const Message = styled.p`
-    text-align: center;
+const CurrentPrice = styled.div`
     font-size: 1.2rem;
-    color: #94a3b8;
-    padding: 2rem;
-`;
-
-const ErrorMessage = styled(Message)`
-    color: #ef4444;
     font-weight: bold;
-`;
-
-const LoaderWrapper = styled.div`
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 2rem;
     color: #00adef;
-    font-size: 1.5rem;
 `;
 
-const RotatingLoader = styled(Briefcase)`
-    animation: spin 1s linear infinite;
-    @keyframes spin {
-        from { transform: rotate(0deg); }
-        to { transform: rotate(360deg); }
+const PriceChange = styled.div`
+    font-size: 0.9rem;
+    color: ${props => props.positive ? '#10b981' : '#ef4444'};
+`;
+
+const HoldingGrid = styled.div`
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+`;
+
+const InfoBox = styled.div`
+    background: rgba(0, 0, 0, 0.2);
+    padding: 0.75rem;
+    border-radius: 8px;
+`;
+
+const InfoLabel = styled.div`
+    font-size: 0.85rem;
+    color: #94a3b8;
+    margin-bottom: 0.3rem;
+`;
+
+const InfoValue = styled.div`
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #f8fafc;
+`;
+
+const PredictionSection = styled.div`
+    background: rgba(139, 92, 246, 0.1);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 1rem;
+    border: 1px solid rgba(139, 92, 246, 0.3);
+`;
+
+const PredictionHeader = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    color: #a78bfa;
+    font-weight: 600;
+`;
+
+const PredictionGrid = styled.div`
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 0.75rem;
+`;
+
+const PredictionItem = styled.div`
+    text-align: center;
+    padding: 0.5rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 6px;
+`;
+
+const PredLabel = styled.div`
+    font-size: 0.75rem;
+    color: #94a3b8;
+    margin-bottom: 0.25rem;
+`;
+
+const PredValue = styled.div`
+    font-size: 0.95rem;
+    font-weight: bold;
+    color: ${props => {
+        if (props.direction === 'UP') return '#10b981';
+        if (props.direction === 'DOWN') return '#ef4444';
+        return '#f8fafc';
+    }};
+`;
+
+const Actions = styled.div`
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+`;
+
+const IconButton = styled.button`
+    padding: 0.5rem;
+    border-radius: 6px;
+    border: none;
+    background: ${props => props.danger ? 'rgba(239, 68, 68, 0.2)' : 'rgba(255, 255, 255, 0.1)'};
+    color: ${props => props.danger ? '#ef4444' : 'white'};
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:hover {
+        background: ${props => props.danger ? 'rgba(239, 68, 68, 0.3)' : 'rgba(0, 173, 237, 0.3)'};
+        transform: scale(1.05);
     }
 `;
 
-const RotatingRefresh = styled(RefreshCcw)`
-    animation: spin 1s linear infinite;
-    @keyframes spin {
-        from { transform: rotate(0deg); }
-        to { transform: rotate(360deg); }
-    }
+// Modal Styles
+const ModalOverlay = styled.div`
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: ${fadeIn} 0.3s ease-out;
 `;
 
-const AddHoldingSection = styled.div`
-    width: 100%;
-    max-width: 1200px;
+const Modal = styled.div`
     background: linear-gradient(135deg, #1e293b 0%, #2c3e50 100%);
     border-radius: 12px;
     padding: 2rem;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(0, 173, 237, 0.2);
-    margin-bottom: 3rem;
-    @media (max-width: 768px) { padding: 1.5rem; }
-    h3 {
-        color: #00adef;
-        margin-bottom: 1.5rem;
-        text-align: center;
-        text-shadow: 0 0 8px rgba(0, 173, 237, 0.4);
+    max-width: 500px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+    border: 1px solid rgba(0, 173, 237, 0.3);
+    position: relative;
+`;
+
+const ModalHeader = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+`;
+
+const ModalTitle = styled.h2`
+    font-size: 1.5rem;
+    color: #00adef;
+    margin: 0;
+`;
+
+const CloseButton = styled.button`
+    background: none;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+
+    &:hover {
+        color: #f8fafc;
+        transform: scale(1.1);
     }
 `;
 
-const AddHoldingForm = styled.form`
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1.5rem;
-    align-items: end;
-    @media (max-width: 600px) { grid-template-columns: 1fr; }
+const Form = styled.form`
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
 `;
 
 const FormGroup = styled.div`
     display: flex;
     flex-direction: column;
-    label {
-        font-size: 0.95rem;
-        color: #94a3b8;
-        margin-bottom: 0.5rem;
-    }
-    input {
-        padding: 0.8rem 1rem;
-        border: 1px solid #334155;
-        border-radius: 8px;
-        background-color: #0d1a2f;
-        color: #e0e6ed;
-        font-size: 1rem;
-        outline: none;
-        transition: border-color 0.2s ease, box-shadow 0.2s ease;
-        &:focus {
-            border-color: #00adef;
-            box-shadow: 0 0 0 3px rgba(0, 173, 237, 0.3);
-        }
-        &::placeholder { color: #64748b; }
-        &:disabled {
-            background-color: #2c3e50;
-            color: #94a3b8;
-            cursor: not-allowed;
-        }
-    }
-`;
-
-const SubmitButton = styled.button`
-    padding: 0.8rem 1.5rem;
-    background-color: #00adef;
-    color: #0d1a2f;
-    border: none;
-    border-radius: 8px;
-    font-size: 1rem;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background-color 0.2s ease, transform 0.1s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     gap: 0.5rem;
-    &:hover:not(:disabled) {
-        background-color: #008cc0;
-        transform: translateY(-2px);
-    }
-    &:disabled {
-        background-color: #64748b;
-        cursor: not-allowed;
-    }
 `;
 
-const FormError = styled.p`
-    color: #ef4444;
+const Label = styled.label`
+    color: #94a3b8;
     font-size: 0.9rem;
-    text-align: center;
-    margin-top: 1rem;
-    grid-column: 1 / -1;
+    font-weight: 600;
 `;
 
-const formatLastUpdateTime = (timestamp) => {
-    if (!timestamp) return 'Never updated';
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-};
+const Input = styled.input`
+    padding: 0.75rem;
+    border-radius: 8px;
+    border: 1px solid rgba(0, 173, 237, 0.3);
+    background: rgba(0, 0, 0, 0.2);
+    color: #f8fafc;
+    font-size: 1rem;
 
-// --- PortfolioPage Component ---
+    &:focus {
+        outline: none;
+        border-color: #00adef;
+        box-shadow: 0 0 0 3px rgba(0, 173, 237, 0.2);
+    }
+`;
+
+const FormActions = styled.div`
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+`;
+
+const LoadingMessage = styled.div`
+    text-align: center;
+    padding: 3rem;
+    color: #00adef;
+    font-size: 1.2rem;
+`;
+
+const ErrorMessage = styled.div`
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+    padding: 1rem;
+    border-radius: 8px;
+    text-align: center;
+    margin: 2rem 0;
+`;
+
+const EmptyState = styled.div`
+    text-align: center;
+    padding: 4rem 2rem;
+    color: #94a3b8;
+`;
+
 const PortfolioPage = () => {
-    const { api, isAuthenticated, loading: authLoading } = useAuth();
-    const [portfolio, setPortfolio] = useState(null);
+    const { api } = useAuth();
+    const [holdings, setHoldings] = useState([]);
+    const [predictions, setPredictions] = useState({});
     const [loading, setLoading] = useState(true);
+    const [loadingPredictions, setLoadingPredictions] = useState(false);
     const [error, setError] = useState(null);
-    const [lastPriceUpdateTimestamp, setLastPriceUpdateTimestamp] = useState(null);
+    
+    // Modal states
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [selectedHolding, setSelectedHolding] = useState(null);
+    
+    // Form states
+    const [formData, setFormData] = useState({
+        symbol: '',
+        quantity: '',
+        purchasePrice: ''
+    });
 
-    const [newHoldingSymbol, setNewHoldingSymbol] = useState('');
-    const [newHoldingQuantity, setNewHoldingQuantity] = useState('');
-    const [newHoldingPurchasePrice, setNewHoldingPurchasePrice] = useState('');
-    const [addHoldingLoading, setAddHoldingLoading] = useState(false);
-    const [addHoldingError, setAddHoldingError] = useState(null);
-
-    const hasFetchedRef = useRef(false);
-
-    // ✅ FIX: Fetch portfolio ONCE on mount
     useEffect(() => {
-        const fetchPortfolio = async () => {
-            if (!isAuthenticated || !api || authLoading || hasFetchedRef.current) {
-                return;
-            }
+        fetchPortfolio();
+    }, []);
 
-            hasFetchedRef.current = true;
+    const fetchPortfolio = async () => {
+        try {
             setLoading(true);
-            setError(null);
-
-            try {
-                console.log('Fetching portfolio...');
-                const res = await api.get('/portfolio');
-                console.log('Portfolio received:', res.data);
-                setPortfolio(res.data);
-                setLastPriceUpdateTimestamp(res.data.lastUpdatedAt || new Date().toISOString());
-            } catch (err) {
-                console.error('Error fetching portfolio:', err);
-                setError('Failed to load portfolio data. Please try again.');
-                setPortfolio(null);
-                hasFetchedRef.current = false; // Allow retry
-            } finally {
-                setLoading(false);
+            const response = await api.get('/portfolio');
+            
+            let holdingsData = [];
+            if (Array.isArray(response.data)) {
+                holdingsData = response.data;
+            } else if (response.data.holdings && Array.isArray(response.data.holdings)) {
+                holdingsData = response.data.holdings;
+            } else if (response.data.portfolio && Array.isArray(response.data.portfolio)) {
+                holdingsData = response.data.portfolio;
             }
-        };
-
-        if (!authLoading && isAuthenticated) {
-            fetchPortfolio();
-        } else if (!authLoading && !isAuthenticated) {
-            setError("Please log in to view your portfolio.");
+            
+            setHoldings(holdingsData);
+            
+            if (holdingsData.length > 0) {
+                fetchPredictions(holdingsData);
+            }
+        } catch (err) {
+            console.error('Portfolio fetch error:', err);
+            setError('Failed to load portfolio');
+        } finally {
             setLoading(false);
         }
-    }, [isAuthenticated, authLoading, api]);
+    };
 
-    // Add Holding Handler
-    const handleAddHoldingSubmit = async (e) => {
-        e.preventDefault();
-        setAddHoldingLoading(true);
-        setAddHoldingError(null);
-
-        if (!newHoldingSymbol || !newHoldingQuantity || !newHoldingPurchasePrice) {
-            setAddHoldingError('All fields are required.');
-            setAddHoldingLoading(false);
-            return;
-        }
-
-        const quantity = parseFloat(newHoldingQuantity);
-        const purchasePrice = parseFloat(newHoldingPurchasePrice);
-
-        if (isNaN(quantity) || quantity <= 0) {
-            setAddHoldingError('Quantity must be a positive number.');
-            setAddHoldingLoading(false);
-            return;
-        }
-
-        if (isNaN(purchasePrice) || purchasePrice <= 0) {
-            setAddHoldingError('Purchase price must be a positive number.');
-            setAddHoldingLoading(false);
-            return;
-        }
-
+    const fetchPredictions = async (holdingsData) => {
         try {
-            const body = {
-                symbol: newHoldingSymbol,
-                quantity: quantity,
-                purchasePrice: purchasePrice,
-                purchaseDate: new Date().toISOString(),
-            };
-            const res = await api.post('/portfolio/add', body);
-            setPortfolio(res.data);
-            setNewHoldingSymbol('');
-            setNewHoldingQuantity('');
-            setNewHoldingPurchasePrice('');
-            setAddHoldingError(null);
-            setLastPriceUpdateTimestamp(new Date().toISOString());
+            setLoadingPredictions(true);
+            const symbols = holdingsData.map(h => h.symbol);
+            
+            const response = await api.post('/predictions/batch', {
+                symbols,
+                days: 7
+            });
+            
+            const predMap = {};
+            response.data.predictions.forEach(pred => {
+                predMap[pred.symbol] = pred;
+            });
+            
+            setPredictions(predMap);
         } catch (err) {
-            console.error('Error adding holding:', err);
-            setAddHoldingError(
-                err.response?.data?.errors?.[0]?.msg || 
-                err.response?.data?.msg || 
-                'Failed to add holding. Please check inputs and try again.'
-            );
+            console.error('Predictions fetch error:', err);
         } finally {
-            setAddHoldingLoading(false);
+            setLoadingPredictions(false);
         }
+    };
+
+    const handleAddHolding = async (e) => {
+        e.preventDefault();
+        try {
+            await api.post('/portfolio', {
+                symbol: formData.symbol.toUpperCase(),
+                quantity: parseFloat(formData.quantity),
+                purchasePrice: parseFloat(formData.purchasePrice)
+            });
+            
+            setShowAddModal(false);
+            setFormData({ symbol: '', quantity: '', purchasePrice: '' });
+            fetchPortfolio();
+        } catch (err) {
+            console.error('Add holding error:', err);
+            alert('Failed to add holding');
+        }
+    };
+
+    const handleEditHolding = async (e) => {
+        e.preventDefault();
+        try {
+            await api.put(`/portfolio/${selectedHolding._id}`, {
+                quantity: parseFloat(formData.quantity),
+                purchasePrice: parseFloat(formData.purchasePrice)
+            });
+            
+            setShowEditModal(false);
+            setSelectedHolding(null);
+            setFormData({ symbol: '', quantity: '', purchasePrice: '' });
+            fetchPortfolio();
+        } catch (err) {
+            console.error('Edit holding error:', err);
+            alert('Failed to update holding');
+        }
+    };
+
+    const handleDeleteHolding = async () => {
+        try {
+            await api.delete(`/portfolio/${selectedHolding._id}`);
+            
+            setShowDeleteModal(false);
+            setSelectedHolding(null);
+            fetchPortfolio();
+        } catch (err) {
+            console.error('Delete holding error:', err);
+            alert('Failed to delete holding');
+        }
+    };
+
+    const openEditModal = (holding) => {
+        setSelectedHolding(holding);
+        setFormData({
+            symbol: holding.symbol,
+            quantity: holding.quantity.toString(),
+            purchasePrice: holding.purchasePrice.toString()
+        });
+        setShowEditModal(true);
+    };
+
+    const openDeleteModal = (holding) => {
+        setSelectedHolding(holding);
+        setShowDeleteModal(true);
+    };
+
+    const calculateTotals = () => {
+        if (!Array.isArray(holdings) || holdings.length === 0) {
+            return { totalValue: 0, totalCost: 0, totalGain: 0, totalGainPercent: 0 };
+        }
+        
+        const totalValue = holdings.reduce((sum, h) => 
+            sum + (h.currentPrice * h.quantity), 0
+        );
+        const totalCost = holdings.reduce((sum, h) => 
+            sum + (h.purchasePrice * h.quantity), 0
+        );
+        const totalGain = totalValue - totalCost;
+        const totalGainPercent = totalCost > 0 ? (totalGain / totalCost) * 100 : 0;
+        
+        return { totalValue, totalCost, totalGain, totalGainPercent };
+    };
+
+    const getPredictionForSymbol = (symbol) => {
+        return predictions[symbol];
     };
 
     if (loading) {
         return (
-            <PortfolioPageContainer>
-                <LoaderWrapper>
-                    <RotatingLoader size={36} /> <Message>Loading portfolio...</Message>
-                </LoaderWrapper>
-            </PortfolioPageContainer>
+            <PageContainer>
+                <LoadingMessage>Loading portfolio...</LoadingMessage>
+            </PageContainer>
         );
     }
 
     if (error) {
         return (
-            <PortfolioPageContainer>
-                <ErrorMessage>{error}</ErrorMessage>
-            </PortfolioPageContainer>
+            <PageContainer>
+                <ErrorMessage>
+                    <AlertCircle size={20} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
+                    {error}
+                </ErrorMessage>
+            </PageContainer>
         );
     }
 
-    const { totalValue = 0, totalChange = 0, totalChangePercent = 0, cashBalance = 0, holdings = [] } = portfolio || {};
-    const isPositiveChange = totalChange >= 0;
+    const { totalValue, totalCost, totalGain, totalGainPercent } = calculateTotals();
 
     return (
-        <PortfolioPageContainer>
-            <PortfolioHeader>My Portfolio</PortfolioHeader>
+        <PageContainer>
+            <Header>
+                <Title>My Portfolio</Title>
+                <HeaderActions>
+                    <Button variant="primary" onClick={() => setShowAddModal(true)}>
+                        <Plus size={20} />
+                        Add Holding
+                    </Button>
+                    <Button onClick={() => fetchPredictions(holdings)}>
+                        <Brain size={20} />
+                        Refresh Predictions
+                    </Button>
+                </HeaderActions>
+            </Header>
 
-            {lastPriceUpdateTimestamp && (
-                <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '1.5rem' }}>
-                    Last updated: {formatLastUpdateTime(lastPriceUpdateTimestamp)}
-                </p>
-            )}
-
-            <SummarySection>
+            <SummaryCards>
                 <SummaryCard>
-                    <CardTitle><Wallet size={20} /> Cash Balance</CardTitle>
-                    <CardValue>${cashBalance.toFixed(2)}</CardValue>
-                </SummaryCard>
-                <SummaryCard>
-                    <CardTitle><DollarSign size={20} /> Total Portfolio Value</CardTitle>
+                    <CardLabel>Total Value</CardLabel>
                     <CardValue>${totalValue.toFixed(2)}</CardValue>
                 </SummaryCard>
+                
                 <SummaryCard>
-                    <CardTitle>{isPositiveChange ? <TrendingUp size={20} /> : <TrendingDown size={20} />} Daily Change</CardTitle>
-                    <CardValue className={isPositiveChange ? 'positive' : 'negative'}>
-                        ${totalChange.toFixed(2)} ({totalChangePercent.toFixed(2)}%)
-                    </CardValue>
+                    <CardLabel>Total Cost</CardLabel>
+                    <CardValue>${totalCost.toFixed(2)}</CardValue>
                 </SummaryCard>
-            </SummarySection>
-
-            <AddHoldingSection>
-                <h3><PlusCircle size={24} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} /> Add New Holding</h3>
-                <AddHoldingForm onSubmit={handleAddHoldingSubmit}>
-                    <FormGroup>
-                        <label htmlFor="newHoldingSymbol">Symbol:</label>
-                        <input
-                            type="text"
-                            id="newHoldingSymbol"
-                            value={newHoldingSymbol}
-                            onChange={(e) => setNewHoldingSymbol(e.target.value)}
-                            placeholder="e.g., AAPL, BTC"
-                            required
-                            disabled={addHoldingLoading}
-                        />
-                    </FormGroup>
-                    <FormGroup>
-                        <label htmlFor="newHoldingQuantity">Quantity:</label>
-                        <input
-                            type="number"
-                            id="newHoldingQuantity"
-                            value={newHoldingQuantity}
-                            onChange={(e) => setNewHoldingQuantity(e.target.value)}
-                            step="0.01"
-                            min="0.01"
-                            required
-                            disabled={addHoldingLoading}
-                        />
-                    </FormGroup>
-                    <FormGroup>
-                        <label htmlFor="newHoldingPurchasePrice">Purchase Price:</label>
-                        <input
-                            type="number"
-                            id="newHoldingPurchasePrice"
-                            value={newHoldingPurchasePrice}
-                            onChange={(e) => setNewHoldingPurchasePrice(e.target.value)}
-                            step="0.01"
-                            min="0.01"
-                            required
-                            disabled={addHoldingLoading}
-                        />
-                    </FormGroup>
-                    <SubmitButton type="submit" disabled={addHoldingLoading}>
-                        {addHoldingLoading ? 'Adding...' : 'Add Holding'}
-                    </SubmitButton>
-                    {addHoldingError && <FormError>{addHoldingError}</FormError>}
-                </AddHoldingForm>
-            </AddHoldingSection>
+                
+                <SummaryCard>
+                    <CardLabel>Total Gain/Loss</CardLabel>
+                    <CardValue positive={totalGain >= 0} negative={totalGain < 0}>
+                        {totalGain >= 0 ? '+' : ''}${totalGain.toFixed(2)}
+                    </CardValue>
+                    <PriceChange positive={totalGainPercent >= 0}>
+                        {totalGainPercent >= 0 ? '+' : ''}{totalGainPercent.toFixed(2)}%
+                    </PriceChange>
+                </SummaryCard>
+                
+                <SummaryCard>
+                    <CardLabel>Holdings</CardLabel>
+                    <CardValue>{holdings.length}</CardValue>
+                </SummaryCard>
+            </SummaryCards>
 
             <HoldingsSection>
-                <h3>Your Holdings</h3>
-                {holdings.length > 0 ? (
-                    <TableWrapper>
-                        <HoldingsTable>
-                            <thead>
-                                <tr>
-                                    <th>Symbol</th>
-                                    <th>Quantity</th>
-                                    <th>Avg Cost</th>
-                                    <th>Current Price</th>
-                                    <th>Market Value</th>
-                                    <th>Gain/Loss</th>
-                                    <th>% Gain/Loss</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {holdings.map((holding) => {
-                                    const marketValue = holding.currentPrice * holding.quantity;
-                                    const costBasis = holding.purchasePrice * holding.quantity;
-                                    const gainLoss = marketValue - costBasis;
-                                    const percentGainLoss = costBasis === 0 ? 0 : (gainLoss / costBasis) * 100;
-                                    const isHoldingPositive = gainLoss >= 0;
+                <SectionHeader>
+                    <SectionTitle>
+                        <Zap size={24} />
+                        Holdings with AI Predictions
+                    </SectionTitle>
+                    {loadingPredictions && (
+                        <span style={{ color: '#a78bfa', fontSize: '0.9rem' }}>
+                            Loading predictions...
+                        </span>
+                    )}
+                </SectionHeader>
 
-                                    return (
-                                        <tr key={holding._id || holding.symbol}>
-                                            <td>{holding.symbol.toUpperCase()}</td>
-                                            <td>{holding.quantity.toFixed(2)}</td>
-                                            <td>${holding.purchasePrice.toFixed(2)}</td>
-                                            <td>${holding.currentPrice.toFixed(2)}</td>
-                                            <td>${marketValue.toFixed(2)}</td>
-                                            <td className={isHoldingPositive ? 'positive' : 'negative'}>
-                                                ${gainLoss.toFixed(2)}
-                                            </td>
-                                            <td className={isHoldingPositive ? 'positive' : 'negative'}>
-                                                {percentGainLoss.toFixed(2)}%
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </HoldingsTable>
-                    </TableWrapper>
+                {holdings.length === 0 ? (
+                    <EmptyState>
+                        <h3>No holdings yet</h3>
+                        <p>Click "Add Holding" to get started</p>
+                        <Button variant="primary" onClick={() => setShowAddModal(true)} style={{ marginTop: '1rem' }}>
+                            <Plus size={20} />
+                            Add Your First Holding
+                        </Button>
+                    </EmptyState>
                 ) : (
-                    <Message>You don't have any holdings yet. Use the form above to add your first investment!</Message>
+                    holdings.map(holding => {
+                        const gain = (holding.currentPrice - holding.purchasePrice) * holding.quantity;
+                        const gainPercent = ((holding.currentPrice - holding.purchasePrice) / holding.purchasePrice) * 100;
+                        const prediction = getPredictionForSymbol(holding.symbol);
+
+                        return (
+                            <HoldingCard key={holding._id}>
+                                <HoldingHeader>
+                                    <SymbolInfo>
+                                        <Symbol>{holding.symbol}</Symbol>
+                                    </SymbolInfo>
+                                    <PriceInfo>
+                                        <CurrentPrice>${holding.currentPrice.toFixed(2)}</CurrentPrice>
+                                        <PriceChange positive={gainPercent >= 0}>
+                                            {gainPercent >= 0 ? '+' : ''}{gainPercent.toFixed(2)}%
+                                        </PriceChange>
+                                    </PriceInfo>
+                                </HoldingHeader>
+
+                                <HoldingGrid>
+                                    <InfoBox>
+                                        <InfoLabel>Quantity</InfoLabel>
+                                        <InfoValue>{holding.quantity}</InfoValue>
+                                    </InfoBox>
+                                    
+                                    <InfoBox>
+                                        <InfoLabel>Purchase Price</InfoLabel>
+                                        <InfoValue>${holding.purchasePrice.toFixed(2)}</InfoValue>
+                                    </InfoBox>
+                                    
+                                    <InfoBox>
+                                        <InfoLabel>Total Value</InfoLabel>
+                                        <InfoValue>${(holding.currentPrice * holding.quantity).toFixed(2)}</InfoValue>
+                                    </InfoBox>
+                                    
+                                    <InfoBox>
+                                        <InfoLabel>Gain/Loss</InfoLabel>
+                                        <InfoValue style={{ color: gain >= 0 ? '#10b981' : '#ef4444' }}>
+                                            {gain >= 0 ? '+' : ''}${gain.toFixed(2)}
+                                        </InfoValue>
+                                    </InfoBox>
+                                </HoldingGrid>
+
+                                {prediction && prediction.prediction && (
+                                    <PredictionSection>
+                                        <PredictionHeader>
+                                            <Brain size={16} />
+                                            7-Day AI Prediction
+                                        </PredictionHeader>
+                                        <PredictionGrid>
+                                            <PredictionItem>
+                                                <PredLabel>Direction</PredLabel>
+                                                <PredValue direction={prediction.prediction.direction}>
+                                                    {prediction.prediction.direction === 'UP' && <TrendingUp size={16} style={{ verticalAlign: 'middle' }} />}
+                                                    {prediction.prediction.direction === 'DOWN' && <TrendingDown size={16} style={{ verticalAlign: 'middle' }} />}
+                                                    {' '}{prediction.prediction.direction}
+                                                </PredValue>
+                                            </PredictionItem>
+                                            
+                                            <PredictionItem>
+                                                <PredLabel>Confidence</PredLabel>
+                                                <PredValue>{prediction.prediction.confidence.toFixed(1)}%</PredValue>
+                                            </PredictionItem>
+                                            
+                                            <PredictionItem>
+                                                <PredLabel>Target Price</PredLabel>
+                                                <PredValue>${prediction.prediction.target_price.toFixed(2)}</PredValue>
+                                            </PredictionItem>
+                                            
+                                            <PredictionItem>
+                                                <PredLabel>Expected Change</PredLabel>
+                                                <PredValue direction={prediction.prediction.price_change_percent >= 0 ? 'UP' : 'DOWN'}>
+                                                    {prediction.prediction.price_change_percent >= 0 ? '+' : ''}
+                                                    {prediction.prediction.price_change_percent.toFixed(2)}%
+                                                </PredValue>
+                                            </PredictionItem>
+                                        </PredictionGrid>
+                                    </PredictionSection>
+                                )}
+
+                                <Actions>
+                                    <IconButton onClick={() => openEditModal(holding)} title="Edit holding">
+                                        <Edit2 size={16} />
+                                    </IconButton>
+                                    <IconButton danger onClick={() => openDeleteModal(holding)} title="Remove holding">
+                                        <Trash2 size={16} />
+                                    </IconButton>
+                                </Actions>
+                            </HoldingCard>
+                        );
+                    })
                 )}
             </HoldingsSection>
-        </PortfolioPageContainer>
+
+            {/* Add Modal */}
+            {showAddModal && (
+                <ModalOverlay onClick={() => setShowAddModal(false)}>
+                    <Modal onClick={(e) => e.stopPropagation()}>
+                        <ModalHeader>
+                            <ModalTitle>Add New Holding</ModalTitle>
+                            <CloseButton onClick={() => setShowAddModal(false)}>
+                                <X size={24} />
+                            </CloseButton>
+                        </ModalHeader>
+                        <Form onSubmit={handleAddHolding}>
+                            <FormGroup>
+                                <Label>Symbol</Label>
+                                <Input
+                                    type="text"
+                                    placeholder="AAPL, BTC, etc."
+                                    value={formData.symbol}
+                                    onChange={(e) => setFormData({ ...formData, symbol: e.target.value.toUpperCase() })}
+                                    required
+                                />
+                            </FormGroup>
+                            <FormGroup>
+                                <Label>Quantity</Label>
+                                <Input
+                                    type="number"
+                                    step="any"
+                                    placeholder="10"
+                                    value={formData.quantity}
+                                    onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+                                    required
+                                />
+                            </FormGroup>
+                            <FormGroup>
+                                <Label>Purchase Price</Label>
+                                <Input
+                                    type="number"
+                                    step="any"
+                                    placeholder="150.00"
+                                    value={formData.purchasePrice}
+                                    onChange={(e) => setFormData({ ...formData, purchasePrice: e.target.value })}
+                                    required
+                                />
+                            </FormGroup>
+                            <FormActions>
+                                <Button type="submit" variant="primary">
+                                    <Plus size={20} />
+                                    Add Holding
+                                </Button>
+                                <Button type="button" onClick={() => setShowAddModal(false)}>
+                                    Cancel
+                                </Button>
+                            </FormActions>
+                        </Form>
+                    </Modal>
+                </ModalOverlay>
+            )}
+
+            {/* Edit Modal */}
+            {showEditModal && selectedHolding && (
+                <ModalOverlay onClick={() => setShowEditModal(false)}>
+                    <Modal onClick={(e) => e.stopPropagation()}>
+                        <ModalHeader>
+                            <ModalTitle>Edit {selectedHolding.symbol}</ModalTitle>
+                            <CloseButton onClick={() => setShowEditModal(false)}>
+                                <X size={24} />
+                            </CloseButton>
+                        </ModalHeader>
+                        <Form onSubmit={handleEditHolding}>
+                            <FormGroup>
+                                <Label>Quantity</Label>
+                                <Input
+                                    type="number"
+                                    step="any"
+                                    value={formData.quantity}
+                                    onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+                                    required
+                                />
+                            </FormGroup>
+                            <FormGroup>
+                                <Label>Purchase Price</Label>
+                                <Input
+                                    type="number"
+                                    step="any"
+                                    value={formData.purchasePrice}
+                                    onChange={(e) => setFormData({ ...formData, purchasePrice: e.target.value })}
+                                    required
+                                />
+                            </FormGroup>
+                            <FormActions>
+                                <Button type="submit" variant="primary">
+                                    <Edit2 size={20} />
+                                    Update Holding
+                                </Button>
+                                <Button type="button" onClick={() => setShowEditModal(false)}>
+                                    Cancel
+                                </Button>
+                            </FormActions>
+                        </Form>
+                    </Modal>
+                </ModalOverlay>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {showDeleteModal && selectedHolding && (
+                <ModalOverlay onClick={() => setShowDeleteModal(false)}>
+                    <Modal onClick={(e) => e.stopPropagation()}>
+                        <ModalHeader>
+                            <ModalTitle>Delete Holding</ModalTitle>
+                            <CloseButton onClick={() => setShowDeleteModal(false)}>
+                                <X size={24} />
+                            </CloseButton>
+                        </ModalHeader>
+                        <p style={{ marginBottom: '1.5rem', color: '#94a3b8' }}>
+                            Are you sure you want to delete <strong style={{ color: '#f8fafc' }}>{selectedHolding.symbol}</strong>?
+                            This action cannot be undone.
+                        </p>
+                        <FormActions>
+                            <Button variant="danger" onClick={handleDeleteHolding}>
+                                <Trash2 size={20} />
+                                Delete
+                            </Button>
+                            <Button onClick={() => setShowDeleteModal(false)}>
+                                Cancel
+                            </Button>
+                        </FormActions>
+                    </Modal>
+                </ModalOverlay>
+            )}
+        </PageContainer>
     );
 };
 
