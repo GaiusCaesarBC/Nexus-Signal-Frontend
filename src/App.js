@@ -1,31 +1,32 @@
-// client/src/App.js - **FULL CORRECTED VERSION (assuming TermsOfServicePage and PrivacyPolicyPage)**
 
-import React from 'react';
+// Corrected import for AuthContext
+import { AuthContext, useAuth } from '../context/AuthContext';
 import { Routes, Route } from 'react-router-dom';
-import { useAuth } from './context/AuthContext';
 
-// Import Layout/Structure Components
-import Navbar from './components/Navbar';
-import Footer from './components/Footer';
-import Copilot from './components/Copilot';
+// Corrected imports for components
+import Navbar from '../components/Navbar'; // From 'pages' go up to 'src', then into 'components'
+import Footer from '../components/Footer'
+import Copilot from '../components/Copilot';
+import SettingsPage from '../components/SettingsPage';
+import ProtectedRoute from '../components/ProtectedRoute';
 
-// Import Page Components
-import LandingPage from './pages/LandingPage'; // This typically acts as the home page for unauthenticated users
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import DashboardPage from './pages/DashboardPage';
-import PredictPage from './pages/PredictPage';
-import PricingPage from './pages/PricingPage';
-import SettingsPage from './components/SettingsPage';
-import WatchlistPage from './pages/WatchlistPage';
-import PortfolioPage from './pages/PortfolioPage';
-import TermsOfServicePage from './pages/TermsOfServicePage';
-import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
-import DisclaimerPage from './pages/DisclaimerPage';
-import NotFoundPage from './pages/NotFoundPage';
-import StockPage from './pages/StockPage'; // <--- ADD THIS LINE to import your new StockPage
 
-import ProtectedRoute from './components/ProtectedRoute';
+// Corrected imports for other pages (they are in the *same* 'src/pages' directory)
+// These should use './' and NOT have 'pages/' in the path
+import LandingPage from './LandingPage';
+import LoginPage from './LoginPage';
+// Assuming you remove the self-import of RegisterPage from within RegisterPage.js
+import DashboardPage from './DashboardPage';
+import PredictPage from './PredictPage';
+import PricingPage from './PricingPage';
+import WatchlistPage from './WatchlistPage';
+import PortfolioPage from './PortfolioPage';
+import TermsOfServicePage from './TermsOfServicePage';
+import PrivacyPolicyPage from './PrivacyPolicyPage';
+import DisclaimerPage from './DisclaimerPage';
+import NotFoundPage from './NotFoundPage';
+import StockPage from './StockPage';
+
 
 function App() {
     const { loading } = useAuth();
