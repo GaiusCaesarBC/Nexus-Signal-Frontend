@@ -16,7 +16,7 @@ const getBaseURL = () => {
         return 'http://localhost:5000/api';
     } else {
         // Production - use production API
-        return 'https://api.nexussignal.ai/api';
+        return 'https://nexus-signal.onrender.com/api';  // ✅ CHANGED THIS!
     }
 };
 
