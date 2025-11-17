@@ -4,23 +4,18 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import Loader from '../components/Loader';
 
-// Import your new dashboard sub-components
+// Import dashboard sub-components
 import DashboardHeader from '../components/dashboard/DashboardHeader';
 import StatCardsGrid from '../components/dashboard/StatCardsGrid';
 import MarketDataSearch from '../components/dashboard/MarketDataSearch';
 import AIDataGraph from '../components/dashboard/AIDataGraph';
 import NewsFeedCard from '../components/dashboard/NewsFeedCard';
-import DashboardCard from '../components/dashboard/DashboardCard'; // Make sure this component exists if used
+import DashboardCard from '../components/dashboard/DashboardCard';
 
-// Icon Imports (using lucide-react)
-// Only import icons directly used within DashboardPage.js itself
-// BriefcaseBusiness is used in the Market Overview section
-// Bitcoin is used in the Market Overview section
-// LineChart is used in the Market Overview section title
-import { BriefcaseBusiness, Bitcoin, LineChart } from 'lucide-react'; 
-// REMOVED: TrendingUp, Wallet as they are used in StatCardsGrid, not here directly
+// Icon Imports
+import { BriefcaseBusiness, Bitcoin, LineChart } from 'lucide-react';
 
-// --- Keyframes and other global styles ---
+// Keyframes
 const fadeIn = keyframes`
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
@@ -38,11 +33,11 @@ const DashboardContainer = styled.div`
     align-items: center;
     padding: 3rem 1.5rem;
     min-height: calc(100vh - var(--navbar-height));
-    background: linear-gradient(145deg, #0d1a2f 0%, #1a273b 100%); /* Darker, gradient background */
+    background: linear-gradient(145deg, #0d1a2f 0%, #1a273b 100%);
     color: #e0e0e0;
     font-family: 'Inter', sans-serif;
     position: relative;
-    overflow: hidden; /* For background effects */
+    overflow: hidden;
 
     &::before, &::after {
         content: '';
@@ -56,13 +51,13 @@ const DashboardContainer = styled.div`
     }
 
     &::before {
-        background: radial-gradient(circle, #00adef, transparent 50%); /* Blue glow */
+        background: radial-gradient(circle, #00adef, transparent 50%);
         top: -50vw;
         left: -50vw;
     }
 
     &::after {
-        background: radial-gradient(circle, #f97316, transparent 50%); /* Orange glow */
+        background: radial-gradient(circle, #f97316, transparent 50%);
         bottom: -50vw;
         right: -50vw;
     }
@@ -70,7 +65,7 @@ const DashboardContainer = styled.div`
 
 const ContentWrapper = styled.div`
     width: 100%;
-    max-width: 1400px; /* Wider content area */
+    max-width: 1400px;
     z-index: 1;
     display: flex;
     flex-direction: column;
@@ -101,11 +96,11 @@ const SectionTitle = styled.h2`
 
 const TwoColumnLayout = styled.div`
     display: grid;
-    grid-template-columns: 2fr 1fr; /* Main content wider than sidebar */
+    grid-template-columns: 2fr 1fr;
     gap: 2.5rem;
 
     @media (max-width: 1024px) {
-        grid-template-columns: 1fr; /* Stack on smaller screens */
+        grid-template-columns: 1fr;
     }
 `;
 
@@ -145,18 +140,14 @@ const MarketOverviewGrid = styled.div`
     margin-top: 1.5rem;
 `;
 
-
-// DashboardPage component
 const DashboardPage = () => {
     const { user, api, isAuthenticated, loading: authLoading } = useAuth();
     const navigate = useNavigate();
 
-    // State for dashboard summary data (fetched here and passed down)
     const [dashboardSummary, setDashboardSummary] = useState([]);
     const [dashboardLoading, setDashboardLoading] = useState(true);
     const [dashboardError, setDashboardError] = useState(null);
 
-    // State for market overview data
     const [marketData, setMarketData] = useState(null);
     const [loadingMarketData, setLoadingMarketData] = useState(true);
     const [errorMarketData, setErrorMarketData] = useState(null);
@@ -169,16 +160,13 @@ const DashboardPage = () => {
     const [newsLoading, setNewsLoading] = useState(true);
     const [newsError, setNewsError] = useState(null);
 
-    // Effect for authentication redirection
     useEffect(() => {
         if (!authLoading && !isAuthenticated) {
             navigate('/login');
         }
     }, [isAuthenticated, authLoading, navigate]);
 
-    // --- Data Fetching Callbacks (using useCallback for optimization and dependency stability) ---
-
-    // Fetch Dashboard Summary
+    // ✅ FIXED: Fetch Dashboard Summary
     const fetchDashboardSummary = useCallback(async () => {
         if (!api || !isAuthenticated) {
             setDashboardLoading(false);
@@ -189,43 +177,20 @@ const DashboardPage = () => {
         setDashboardError(null);
         try {
             const res = await api.get('/dashboard/summary');
-            // Backend sends: {"portfolioValue":"$15,230","todayChange":"+1.5%","totalReturn":"+12.3%"}
-            // StatCardsGrid expects: [{ id, label, value, change, changeType, icon }]
             
-            if (res.data) {
-                const transformedMetrics = [
-                    { id: 'pv', label: 'Portfolio Value', value: res.data.portfolioValue, icon: 'portfolio_value' },
-                    // Extract numeric part for change and determine type
-                    { 
-                        id: 'tc', 
-                        label: 'Today\'s Change', 
-                        value: res.data.todayChange, 
-                        change: parseFloat(res.data.todayChange.replace(/[^0-9.+-]/g, '')), // Convert to number
-                        changeType: res.data.todayChange.includes('+') ? 'increase' : 'decrease', 
-                        icon: 'trending_up', // Make sure this icon is handled in StatCardsGrid
-                        timeframe: 'Today' 
-                    },
-                    { 
-                        id: 'tr', 
-                        label: 'Total Return', 
-                        value: res.data.totalReturn, 
-                        change: parseFloat(res.data.totalReturn.replace(/[^0-9.+-]/g, '')), // Convert to number
-                        changeType: res.data.totalReturn.includes('+') ? 'increase' : 'decrease', 
-                        icon: 'portfolio_growth' // Make sure this icon is handled in StatCardsGrid
-                    },
-                ];
-                setDashboardSummary(transformedMetrics);
+            if (res.data && res.data.mainMetrics && Array.isArray(res.data.mainMetrics)) {
+                setDashboardSummary(res.data.mainMetrics);
             } else {
-                setDashboardError('Invalid summary data format: Expected an object with summary metrics.');
+                setDashboardError('Invalid summary data format.');
                 setDashboardSummary([]);
             }
         } catch (err) {
-            console.error('Error fetching dashboard summary:', err.response?.data?.msg || err.message);
+            console.error('Error fetching dashboard summary:', err);
             setDashboardError('Failed to fetch dashboard summary.');
         } finally {
             setDashboardLoading(false);
         }
-    }, [api, isAuthenticated]); // Dependencies for useCallback
+    }, [api, isAuthenticated]);
 
     // Fetch Market Overview Data
     const fetchMarketOverview = useCallback(async () => {
@@ -240,14 +205,14 @@ const DashboardPage = () => {
             const res = await api.get('/dashboard/market-overview');
             setMarketData(res.data);
         } catch (err) {
-            console.error("Error fetching market overview data:", err.response?.data?.msg || err.message);
+            console.error("Error fetching market overview:", err);
             setErrorMarketData("Failed to load market data.");
         } finally {
             setLoadingMarketData(false);
         }
-    }, [api, isAuthenticated]); // Dependencies for useCallback
+    }, [api, isAuthenticated]);
 
-    // Fetch AI Graph Data
+    // ✅ FIXED: Fetch AI Graph Data
     const fetchAiGraphData = useCallback(async () => {
         if (!api || !isAuthenticated) {
             setAiGraphLoading(false);
@@ -258,26 +223,20 @@ const DashboardPage = () => {
         setAiGraphError(null);
         try {
             const res = await api.get('/dashboard/ai-graph-data');
-            // Backend sends: {"labels":["Jan","Feb",...],"data":[65,59,...]}
-            // AIDataGraph (Recharts) expects: [{ date: 'Jan', value: 65 }, ...]
-
-            if (res.data && Array.isArray(res.data.labels) && Array.isArray(res.data.data) && res.data.labels.length === res.data.data.length) {
-                const transformedGraphData = res.data.labels.map((label, index) => ({
-                    date: label, // Ensure this matches dataKey for XAxis
-                    value: res.data.data[index] // Ensure this matches dataKey for Area
-                }));
-                setAiGraphData(transformedGraphData);
+            
+            if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+                setAiGraphData(res.data);
             } else {
-                setAiGraphError('Invalid AI graph data format. Expected object with matching labels and data arrays.');
+                setAiGraphError('Invalid AI graph data format.');
                 setAiGraphData([]);
             }
         } catch (err) {
-            console.error('Error fetching AI graph data:', err.response?.data?.msg || err.message);
+            console.error('Error fetching AI graph data:', err);
             setAiGraphError('Failed to fetch AI graph data.');
         } finally {
             setAiGraphLoading(false);
         }
-    }, [api, isAuthenticated]); // Dependencies for useCallback
+    }, [api, isAuthenticated]);
 
     // Fetch News Data
     const fetchNews = useCallback(async () => {
@@ -297,14 +256,13 @@ const DashboardPage = () => {
                 setNews([]);
             }
         } catch (err) {
-            console.error('Error fetching news:', err.response?.data?.msg || err.message);
+            console.error('Error fetching news:', err);
             setNewsError('Failed to fetch news.');
         } finally {
             setNewsLoading(false);
         }
-    }, [api, isAuthenticated]); // Dependencies for useCallback
+    }, [api, isAuthenticated]);
 
-    // --- useEffect hooks to trigger fetching when dependencies change ---
     useEffect(() => {
         if (isAuthenticated && !authLoading && api) {
             fetchDashboardSummary();
@@ -312,9 +270,7 @@ const DashboardPage = () => {
             fetchAiGraphData();
             fetchNews();
         }
-        // No need to return a cleanup function unless there are subscriptions/intervals
     }, [isAuthenticated, authLoading, api, fetchDashboardSummary, fetchMarketOverview, fetchAiGraphData, fetchNews]);
-
 
     if (authLoading || dashboardLoading || aiGraphLoading || loadingMarketData || newsLoading) {
         return <Loader />;
@@ -326,7 +282,7 @@ const DashboardPage = () => {
                 <ContentWrapper>
                     <Card>
                         <ErrorMessage>You need to be logged in to view this page.</ErrorMessage>
-                        <button onClick={() => navigate('/login')} style={{ /* add some basic button styles or import your Button */ }}>Login Now</button>
+                        <button onClick={() => navigate('/login')}>Login Now</button>
                     </Card>
                 </ContentWrapper>
             </DashboardContainer>
@@ -336,28 +292,22 @@ const DashboardPage = () => {
     return (
         <DashboardContainer>
             <ContentWrapper>
-                {/* 1. Dashboard Header */}
                 <DashboardHeader username={user ? user.username : 'Trader'} />
 
-                {/* Dashboard Summary Errors - Display if any */}
                 {dashboardError && <ErrorMessage>{dashboardError}</ErrorMessage>}
 
-                {/* 2. Stat Cards Grid */}
-                {/* Ensure your StatCardsGrid component correctly handles an array for summary */}
                 <StatCardsGrid summary={dashboardSummary} error={dashboardError} />
 
                 <SectionTitle>Real-Time Market Data & Analytics</SectionTitle>
 
                 <TwoColumnLayout>
                     <MainContentArea>
-                        {/* 3. AI Data Graph */}
                         <AIDataGraph
                             data={aiGraphData}
                             loading={aiGraphLoading}
                             error={aiGraphError}
                         />
 
-                        {/* NEW: Market Overview Data Card */}
                         <Card>
                             <SectionTitle style={{ marginBottom: '1rem', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
                                 <LineChart size={24} color="#00adef" /> Global Market Snapshot
@@ -368,7 +318,6 @@ const DashboardPage = () => {
                                 <ErrorMessage>{errorMarketData}</ErrorMessage>
                             ) : (
                                 <MarketOverviewGrid>
-                                    {/* Stock Indices */}
                                     {marketData?.stockOverview?.map((item, index) => (
                                         <DashboardCard
                                             key={`stock-${index}`}
@@ -379,7 +328,6 @@ const DashboardPage = () => {
                                             icon={<BriefcaseBusiness size={24} color="#00adef" />}
                                         />
                                     ))}
-                                    {/* Crypto Overview */}
                                     {marketData?.cryptoOverview?.map((item, index) => (
                                         <DashboardCard
                                             key={`crypto-${index}`}
@@ -387,40 +335,31 @@ const DashboardPage = () => {
                                             value={item.price}
                                             change={item.change24h}
                                             changePercent={item.changePercent24h}
-                                            icon={<Bitcoin size={24} color="#f79316" />} // Using orange for crypto
+                                            icon={<Bitcoin size={24} color="#f79316" />}
                                         />
                                     ))}
                                 </MarketOverviewGrid>
                             )}
                         </Card>
-                        {/* END NEW MARKET OVERVIEW CARD */}
 
-                        {/* 4. Market Data Search */}
                         <MarketDataSearch api={api} />
-
                     </MainContentArea>
 
                     <SideContentArea>
-                        {/* 5. News Feed Card */}
                         <NewsFeedCard
                             news={news}
                             loading={newsLoading}
                             error={newsError}
                         />
-                        {/* Quick Links Card */}
                         <Card>
                             <h3>Quick Links</h3>
-                            <p>This section can host quick links to other parts of your app or external resources.</p>
                             <ul>
-                                {/* Changed to use Link for proper navigation */}
                                 <li><Link to="/predict" style={{ color: '#00adef', textDecoration: 'none', fontWeight: 'bold' }}>Go to Predictions</Link></li>
                                 <li><Link to="/settings" style={{ color: '#00adef', textDecoration: 'none', fontWeight: 'bold' }}>Account Settings</Link></li>
-                                {/* Add more links */}
                             </ul>
                         </Card>
                     </SideContentArea>
                 </TwoColumnLayout>
-
             </ContentWrapper>
         </DashboardContainer>
     );
