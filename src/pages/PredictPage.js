@@ -1,4 +1,4 @@
-// client/src/pages/PredictPage.js - FINAL FULLY CORRECTED VERSION
+// client/src/pages/PredictPage.js - Complete Fixed Version with Crypto Candlesticks
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import styled, { keyframes } from 'styled-components';
@@ -22,7 +22,6 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import Loader from '../components/Loader';
 
-// Register ALL Chart.js components and controllers
 ChartJS.register(
     CategoryScale,
     LinearScale,
@@ -38,7 +37,7 @@ ChartJS.register(
     CandlestickElement
 );
 
-// --- Styled Components ---
+// Styled Components
 const fadeIn = keyframes`
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
@@ -49,9 +48,9 @@ const PredictPageContainer = styled.div`
     flex-direction: column;
     align-items: center;
     padding: 3rem 1.5rem;
-    min-height: calc(100vh - 60px); /* Assuming 60px navbar height */
-    background-color: #0d1a2f; /* Deep navy background */
-    color: #e0e6ed; /* Light text */
+    min-height: calc(100vh - 60px);
+    background-color: #0d1a2f;
+    color: #e0e6ed;
     font-family: 'Inter', sans-serif;
     animation: ${fadeIn} 0.8s ease-out;
 `;
@@ -59,7 +58,7 @@ const PredictPageContainer = styled.div`
 const TitleStyled = styled.h1`
     font-size: 2.8rem;
     font-weight: 700;
-    color: #00adef; /* Electric blue accent */
+    color: #00adef;
     text-align: center;
     margin-bottom: 2.5rem;
     text-shadow: 0 0 10px rgba(0, 173, 239, 0.3);
@@ -80,7 +79,6 @@ const PredictBox = styled(Card)`
     display: flex;
     flex-direction: column;
     align-items: center;
-    text-align: center;
 `;
 
 const TypeToggleGroup = styled.div`
@@ -88,9 +86,8 @@ const TypeToggleGroup = styled.div`
     margin-bottom: 2rem;
     border-radius: 8px;
     overflow: hidden;
-    background-color: #0f172a; /* Darker inner background */
+    background-color: #0f172a;
     border: 1px solid #334155;
-    width: fit-content;
 `;
 
 const TypeToggleButton = styled.button`
@@ -102,23 +99,26 @@ const TypeToggleButton = styled.button`
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
-    min-width: 120px;
+    flex: 1;
 
     &:hover:not(:disabled) {
         background-color: ${props => (props.$active ? '#008bb3' : '#1e293b')};
         color: white;
     }
+    &:first-child {
+        border-right: 1px solid #334155;
+    }
 `;
 
 const InputGroup = styled.form`
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr; /* 3 columns for symbol, range, interval */
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 1.5rem;
     margin-bottom: 1.5rem;
     width: 100%;
-    
+
     @media (max-width: 768px) {
-        grid-template-columns: 1fr; /* Stack on mobile */
+        grid-template-columns: 1fr;
     }
 `;
 
@@ -133,7 +133,6 @@ const ControlLabel = styled.label`
     font-size: 0.95rem;
     color: #94a3b8;
     margin-bottom: 0.5rem;
-    text-align: left;
 `;
 
 const Input = styled.input`
@@ -144,10 +143,6 @@ const Input = styled.input`
     width: 100%;
     background-color: #0f172a;
     color: #e0e6ed;
-
-    &::placeholder {
-        color: #64748b;
-    }
 
     &:focus {
         outline: none;
@@ -219,9 +214,9 @@ const ResultDetail = styled.p`
     font-size: 1.1rem;
     color: #cbd5e1;
     margin: 0.5rem 0;
-    
+
     strong {
-        color: #94a3b8;
+        color: #00adef;
         font-weight: 600;
         margin-right: 0.5rem;
     }
@@ -230,11 +225,10 @@ const ResultDetail = styled.p`
 const PredictionValue = styled.p`
     font-size: 2.5rem;
     font-weight: 700;
-    color: ${props => props.direction === 'Up' ? '#28a745' : props.direction === 'Down' ? '#dc3545' : '#e0e6ed'};
     margin: 0;
     display: flex;
     align-items: center;
-    justify-content: flex-start;
+    color: ${props => props.direction === 'Up' ? '#28a745' : props.direction === 'Down' ? '#dc3545' : '#e0e6ed'};
 `;
 
 const DirectionArrow = styled.span`
@@ -261,45 +255,50 @@ const InitialMessage = styled.p`
     margin-top: 1rem;
 `;
 
-// --- Main Component ---
+// Main Component
 const PredictPage = () => {
     const { api, isAuthenticated, loading: authLoading } = useAuth();
     const navigate = useNavigate();
+
     const [predictionType, setPredictionType] = useState('stock');
     const [symbol, setSymbol] = useState('');
     const [selectedRange, setSelectedRange] = useState('1Y');
     const [selectedInterval, setSelectedInterval] = useState('1d');
     const [prediction, setPrediction] = useState(null);
+    const [currentPrice, setCurrentPrice] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [chartData, setChartData] = useState(null);
-    const [currentPrice, setCurrentPrice] = useState(null);
 
-    // --- RESTORED & EXPANDED INTERVAL OPTIONS ---
     const intervalOptions = useMemo(() => ({
-        '1D': ['1min', '5min', '15min', '30min', '1h', '6h', '12h'],
-        '5D': ['5min', '15min', '30min', '60min', '1h', '1d'],
-        '1M': ['30min', '60min', '1h', '6h', '12h', '1d', '1wk'],
-        '3M': ['1h', '6h', '12h', '1d', '1wk', '1mo'],
-        '6M': ['1h', '6h', '12h', '1d', '1wk', '1mo'],
+        '1D': ['1m', '2m', '5m', '15m', '30m', '60m', '90m'],
+        '5D': ['5m', '15m', '30m', '60m', '90m', '1h', '1d'],
+        '1M': ['30m', '60m', '90m', '1h', '1d', '1wk'],
+        '3M': ['1h', '1d', '1wk', '1mo'],
+        '6M': ['1h', '1d', '1wk', '1mo'],
         '1Y': ['1d', '1wk', '1mo'],
         '5Y': ['1d', '1wk', '1mo'],
         'MAX': ['1d', '1wk', '1mo'],
     }), []);
 
     const rangeOptions = {
-        '1D': '1 Day', '5D': '5 Days', '1M': '1 Month', '3M': '3 Months',
-        '6M': '6 Months', '1Y': '1 Year', '5Y': '5 Years', 'MAX': 'Max'
+        '1D': '1 Day',
+        '5D': '5 Days',
+        '1M': '1 Month',
+        '3M': '3 Months',
+        '6M': '6 Months',
+        '1Y': '1 Year',
+        '5Y': '5 Years',
+        'MAX': 'Max',
     };
 
     const getIntervalDisplayName = (interval) => {
-        switch (interval) {
-            case '1min': return '1 Minute'; case '5min': return '5 Minutes';
-            case '15min': return '15 Minutes'; case '30min': return '30 Minutes';
-            case '60min': return '60 Minutes'; case '1h': return '1 Hour'; case '6h': return '6 Hours'; case '12h': return '12 Hours';
-            case '1d': return '1 Day'; case '1wk': return '1 Week'; case '1mo': return '1 Month';
-            default: return interval;
-        }
+        const map = {
+            '1m': '1 Minute', '5m': '5 Minutes', '15m': '15 Minutes',
+            '30m': '30 Minutes', '60m': '1 Hour', '1h': '1 Hour',
+            '1d': '1 Day', '1wk': '1 Week', '1mo': '1 Month'
+        };
+        return map[interval] || interval;
     };
 
     useEffect(() => {
@@ -308,89 +307,235 @@ const PredictPage = () => {
         }
     }, [isAuthenticated, authLoading, navigate]);
 
-    // Reset state when prediction type changes
     useEffect(() => {
-        setSymbol(''); setPrediction(null); setChartData(null); setError(null);
+        setSymbol('');
+        setPrediction(null);
+        setChartData(null);
+        setError(null);
         setCurrentPrice(null);
-        setSelectedRange('6M'); setSelectedInterval('1d');
+        setSelectedRange('6M');
+        setSelectedInterval('1d');
     }, [predictionType]);
 
     const handleRangeChange = (newRange) => {
         setSelectedRange(newRange);
         const validIntervals = intervalOptions[newRange];
         if (validIntervals && !validIntervals.includes(selectedInterval)) {
-            setSelectedInterval(validIntervals[0]); // Default to first valid option
+            setSelectedInterval(validIntervals[0]);
         }
     };
 
     const handleSubmit = useCallback(async (e) => {
         e.preventDefault();
-        setError(null); setPrediction(null); setChartData(null); setCurrentPrice(null);
+        setError(null);
+        setPrediction(null);
+        setChartData(null);
+        setCurrentPrice(null);
 
-        if (!symbol) { setError(`Please enter a ${predictionType} symbol.`); return; }
-        if (!api) { setError('API client not initialized. Please re-login.'); return; }
+        if (!symbol) {
+            setError(`Please enter a ${predictionType} symbol.`);
+            return;
+        }
+        if (!api) {
+            setError('API client not initialized. Please re-login.');
+            return;
+        }
+        if (!isAuthenticated) {
+            setError('You must be logged in to get predictions.');
+            return;
+        }
+
+        const validIntervalsForCurrentRange = intervalOptions[selectedRange];
+        if (!validIntervalsForCurrentRange || !validIntervalsForCurrentRange.includes(selectedInterval)) {
+            setError(`Invalid interval '${selectedInterval}' for range '${selectedRange}'.`);
+            return;
+        }
 
         setLoading(true);
         try {
-            const endpoint = predictionType === 'stock' ? `/stocks/historical/${symbol}` : `/crypto/historical/${symbol}`;
-            const res = await api.get(endpoint, { params: { range: selectedRange, interval: selectedInterval } });
+            const endpoint = predictionType === 'stock'
+                ? `/stocks/prediction/${symbol}`
+                : `/crypto/prediction/${symbol}`;
 
-            const { historicalData, predictedPrice, predictedDirection, confidence, predictionMessage, percentageChange } = res.data;
-            if (!historicalData || historicalData.length === 0) throw new Error('No data found for this symbol and range.');
+            const res = await api.get(endpoint, {
+                params: {
+                    range: selectedRange,
+                    interval: selectedInterval
+                }
+            });
 
-            const lastClose = historicalData[historicalData.length - 1].close;
-            setCurrentPrice(lastClose);
-            setPrediction({ symbol, predictedPrice, predictedDirection, confidence, message: predictionMessage, percentageChange });
+            const {
+                currentPrice: fetchedCurrentPrice,
+                predictedPrice,
+                predictedDirection,
+                confidence,
+                message,
+                percentageChange,
+                indicators,
+                historicalData
+            } = res.data;
 
-            // Chart Data Prep - Zoom to last 30 points by default for clarity
-            let chartDataView = historicalData;
-            if (historicalData.length > 50) {
-                 chartDataView = historicalData.slice(-50);
+            if (!historicalData || historicalData.length === 0) {
+                throw new Error('No data found for this symbol and range.');
             }
 
-            const chartPoints = chartDataView.map(d => ({
-                x: new Date(d.time * 1000 || d.date).getTime(), // Ensure milliseconds
-                o: d.open, h: d.high, l: d.low, c: d.close, y: d.close
-            }));
+            setCurrentPrice(fetchedCurrentPrice);
+
+            setPrediction({
+                symbol: symbol.toUpperCase(),
+                predictedPrice,
+                predictedDirection,
+                confidence,
+                message: message || 'Analysis complete',
+                percentageChange,
+                indicators
+            });
+
+            let chartDataView = historicalData;
+            if (historicalData.length > 50) {
+                chartDataView = historicalData.slice(-50);
+            }
+
+            const chartPoints = chartDataView.map(d => {
+                const timeInMs = typeof d.time === 'number' ? d.time : new Date(d.time).getTime();
+
+                return {
+                    x: timeInMs,
+                    y: parseFloat(d.close),
+                    o: parseFloat(d.open),
+                    h: parseFloat(d.high),
+                    l: parseFloat(d.low),
+                    c: parseFloat(d.close)
+                };
+            }).filter(p => !isNaN(p.x) && !isNaN(p.y));
+
+            if (chartPoints.length === 0) {
+                throw new Error('Historical data could not be parsed for charting.');
+            }
+
             const lastPoint = chartPoints[chartPoints.length - 1];
-            const nextTime = lastPoint.x + (24 * 60 * 60 * 1000); 
+            let timeGap = 24 * 60 * 60 * 1000;
+            if (chartPoints.length > 1) {
+                timeGap = chartPoints[chartPoints.length - 1].x - chartPoints[chartPoints.length - 2].x;
+            }
+            const nextTime = lastPoint.x + timeGap;
+
+            const predictionPointData = [{ x: nextTime, y: predictedPrice }];
 
             setChartData({
                 datasets: [
-                    ...(predictionType === 'stock' && chartPoints[0].o ? [{
-                        label: `${symbol} OHLC`, data: chartPoints, type: 'candlestick',
-                        borderColor: '#e0e6ed', color: { up: '#00adef', down: '#e94560', unchanged: '#999' }, yAxisID: 'y'
+                    // ✅ FIXED: Show candlesticks for both stock and crypto
+                    ...(chartPoints[0]?.o > 0 ? [{
+                        label: `${symbol} OHLC`,
+                        data: chartPoints,
+                        type: 'candlestick',
+                        borderColor: '#e0e6ed',
+                        color: { up: '#00adef', down: '#e94560', unchanged: '#999' },
+                        yAxisID: 'y',
+                        order: 1
                     }] : []),
                     {
-                        label: `${symbol} Price`, data: chartPoints, type: 'line',
-                        borderColor: '#00adef', backgroundColor: 'rgba(0, 173, 239, 0.1)',
-                        borderWidth: 2, pointRadius: 0, tension: 0.1, yAxisID: 'y', fill: predictionType === 'crypto'
+                        label: `${symbol} Price`,
+                        data: chartPoints,
+                        type: 'line',
+                        borderColor: '#00adef',
+                        backgroundColor: 'rgba(0, 173, 239, 0.1)',
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        tension: 0.1,
+                        yAxisID: 'y',
+                        fill: predictionType === 'crypto',
+                        order: 2
                     },
                     {
-                        label: 'Predicted', data: [{ x: lastPoint.x, y: lastPoint.y }, { x: nextTime, y: predictedPrice }],
-                        type: 'line', borderColor: '#e94560', borderWidth: 2, borderDash: [5, 5],
-                        pointRadius: [0, 6], pointBackgroundColor: '#e94560', yAxisID: 'y'
+                        label: 'Predicted',
+                        data: [{ x: lastPoint.x, y: lastPoint.y }, ...predictionPointData],
+                        type: 'line',
+                        borderColor: '#e94560',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        pointRadius: [0, 6],
+                        pointBackgroundColor: '#e94560',
+                        yAxisID: 'y',
+                        order: 0
                     }
                 ]
             });
         } catch (err) {
             console.error(err);
             setError(err.response?.data?.msg || err.message || 'Failed to fetch prediction.');
-        } finally { setLoading(false); }
-    }, [api, predictionType, symbol, selectedRange, selectedInterval]);
-
-    const getChartOptions = useCallback((type, sym) => ({
-        responsive: true, maintainAspectRatio: false,
-        interaction: { mode: 'index', intersect: false },
-        plugins: {
-            legend: { labels: { color: '#e0e6ed' } },
-            title: { display: true, text: `${sym} ${type === 'stock' ? 'Stock' : 'Crypto'} Analysis`, color: '#e0e0e0', font: { size: 18 } }
-        },
-        scales: {
-            x: { type: 'time', time: { tooltipFormat: 'MMM dd HH:mm' }, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#a0a0a0' } },
-            y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#a0a0a0' } }
+        } finally {
+            setLoading(false);
         }
-    }), []);
+    }, [api, isAuthenticated, predictionType, symbol, selectedRange, selectedInterval, intervalOptions]);
+
+    const getChartOptions = useCallback((type, sym, chartPointsData) => {
+        let minTime, maxTime, minPrice, maxPrice;
+        
+        if (chartPointsData && chartPointsData.length > 0) {
+            minTime = chartPointsData[0].x;
+            const timeGap = chartPointsData.length > 1
+                ? chartPointsData[chartPointsData.length - 1].x - chartPointsData[chartPointsData.length - 2].x
+                : 86400000;
+            maxTime = chartPointsData[chartPointsData.length - 1].x + (timeGap * 2);
+            
+            const prices = chartPointsData.map(p => p.y).filter(p => !isNaN(p));
+            minPrice = Math.min(...prices);
+            maxPrice = Math.max(...prices);
+            const priceRange = maxPrice - minPrice;
+            const padding = priceRange * 0.1;
+            minPrice = minPrice - padding;
+            maxPrice = maxPrice + padding;
+        }
+
+        return {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { labels: { color: '#e0e6ed' } },
+                title: {
+                    display: true,
+                    text: `${sym} ${type === 'stock' ? 'Stock' : 'Crypto'} Analysis`,
+                    color: '#e0e0e0',
+                    font: { size: 18 }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: (context) => {
+                            let label = context.dataset.label || '';
+                            if (label) label += ': ';
+                            if (context.parsed.y !== null) {
+                                label += '$' + context.parsed.y.toFixed(2);
+                            }
+                            return label;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    type: 'time',
+                    time: { tooltipFormat: 'MMM dd, yyyy' },
+                    grid: { color: 'rgba(255,255,255,0.05)' },
+                    ticks: { color: '#a0a0a0' },
+                    min: minTime,
+                    max: maxTime
+                },
+                y: {
+                    grid: { color: 'rgba(255,255,255,0.05)' },
+                    ticks: { 
+                        color: '#a0a0a0',
+                        callback: function(value) {
+                            return '$' + value.toFixed(2);
+                        }
+                    },
+                    min: minPrice,
+                    max: maxPrice
+                }
+            }
+        };
+    }, []);
 
     return (
         <PredictPageContainer>
@@ -417,29 +562,48 @@ const PredictPage = () => {
                 <InputGroup onSubmit={handleSubmit}>
                     <InputControl>
                         <ControlLabel>Symbol</ControlLabel>
-                        <Input type="text" value={symbol} onChange={(e) => setSymbol(e.target.value.toUpperCase())} placeholder={predictionType === 'stock' ? 'AAPL' : 'BTC'} required disabled={loading} />
+                        <Input
+                            type="text"
+                            value={symbol}
+                            onChange={(e) => setSymbol(e.target.value.toUpperCase())}
+                            placeholder={predictionType === 'stock' ? 'AAPL' : 'BTC'}
+                            required
+                            disabled={loading}
+                        />
                     </InputControl>
+
                     <InputControl>
                         <ControlLabel>Range</ControlLabel>
-                        <Select value={selectedRange} onChange={(e) => handleRangeChange(e.target.value)} disabled={loading}>
-                            {Object.entries(rangeOptions).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                        <Select
+                            value={selectedRange}
+                            onChange={(e) => handleRangeChange(e.target.value)}
+                            disabled={loading}
+                        >
+                            {Object.entries(rangeOptions).map(([k, v]) => (
+                                <option key={k} value={k}>{v}</option>
+                            ))}
                         </Select>
                     </InputControl>
+
                     <InputControl>
                         <ControlLabel>Interval</ControlLabel>
-                        <Select value={selectedInterval} onChange={(e) => setSelectedInterval(e.target.value)} disabled={loading}>
-                            {intervalOptions[selectedRange]?.map(i => <option key={i} value={i}>{getIntervalDisplayName(i)}</option>)}
+                        <Select
+                            value={selectedInterval}
+                            onChange={(e) => setSelectedInterval(e.target.value)}
+                            disabled={loading}
+                        >
+                            {intervalOptions[selectedRange]?.map(i => (
+                                <option key={i} value={i}>{getIntervalDisplayName(i)}</option>
+                            ))}
                         </Select>
                     </InputControl>
+
                     <Button type="submit" disabled={loading || !symbol}>
                         {loading ? 'Analyzing...' : 'Get Prediction'}
                     </Button>
                 </InputGroup>
 
                 {error && <ErrorMessage>{error}</ErrorMessage>}
-                {!isAuthenticated && !authLoading && (
-                    <InitialMessage>Please log in to use the prediction feature.</InitialMessage>
-                )}
             </PredictBox>
 
             {loading && <Loader />}
@@ -455,21 +619,51 @@ const PredictPage = () => {
                             <DirectionArrow>{prediction.predictedDirection === 'Up' ? '▲' : '▼'}</DirectionArrow>
                         </PredictionValue>
                     </div>
+
                     <div>
                         <ResultDetail><strong>Confidence:</strong> {prediction.confidence}%</ResultDetail>
                         <ResultDetail><strong>Analysis:</strong> {prediction.message}</ResultDetail>
+
+                        {prediction.indicators && (
+                            <>
+                                <ResultDetail style={{ marginTop: '1rem', color: '#00adef' }}>
+                                    <strong>Key Indicators:</strong>
+                                </ResultDetail>
+
+                                {prediction.indicators.rsi !== undefined && prediction.indicators.rsi !== null &&
+                                    <ResultDetail>&nbsp;&nbsp;RSI: {Number(prediction.indicators.rsi).toFixed(2)}</ResultDetail>}
+
+                                {prediction.indicators.macd &&
+                                    <ResultDetail>&nbsp;&nbsp;MACD: {Number(prediction.indicators.macd.macd).toFixed(2)} (Sig: {Number(prediction.indicators.macd.signal).toFixed(2)})</ResultDetail>}
+
+                                {prediction.indicators.bollingerBands && prediction.indicators.bollingerBands.upper &&
+                                    <ResultDetail>&nbsp;&nbsp;BBands: Upper {Number(prediction.indicators.bollingerBands.upper).toFixed(2)} / Lower {Number(prediction.indicators.bollingerBands.lower).toFixed(2)}</ResultDetail>}
+
+                                {prediction.indicators.sma50 !== null && prediction.indicators.sma50 !== undefined &&
+                                    <ResultDetail>&nbsp;&nbsp;SMA 50: {Number(prediction.indicators.sma50).toFixed(2)}</ResultDetail>}
+
+                                {prediction.indicators.sma200 !== null && prediction.indicators.sma200 !== undefined &&
+                                    <ResultDetail>&nbsp;&nbsp;SMA 200: {Number(prediction.indicators.sma200).toFixed(2)}</ResultDetail>}
+                            </>
+                        )}
                     </div>
                 </PredictionResult>
             )}
 
             {!loading && chartData && (
                 <ChartContainer>
-                    <Chart type='line' data={chartData} options={getChartOptions(predictionType, symbol)} />
+                    <Chart
+                        type='line'
+                        data={chartData}
+                        options={getChartOptions(predictionType, symbol, chartData.datasets[0]?.data)}
+                    />
                 </ChartContainer>
             )}
 
-             {!loading && !prediction && !error && (
-                <InitialMessage>Enter a symbol, select your desired range and interval, and get an AI-powered market prediction.</InitialMessage>
+            {!loading && !prediction && !error && (
+                <InitialMessage>
+                    Enter a symbol and hit "Get Prediction" to see the AI's market analysis.
+                </InitialMessage>
             )}
         </PredictPageContainer>
     );
