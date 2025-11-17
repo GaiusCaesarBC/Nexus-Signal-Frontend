@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import RealTimeChart from './RealTimeChart';
-import axios from 'axios'; // Keep axios import for isCancel check, but use 'api' from context for requests
-import { useAuth } from '../context/AuthContext';
+import axios from 'axios';
 
 const StockDataContainer = styled.div`
     background-color: #1a273b;
@@ -27,7 +26,7 @@ const RangeButtonContainer = styled.div`
     justify-content: center;
     gap: 0.75rem;
     margin-bottom: 1.5rem;
-    flex-wrap: wrap; // Allow buttons to wrap on smaller screens
+    flex-wrap: wrap;
 `;
 
 const RangeButton = styled.button`
@@ -47,49 +46,42 @@ const RangeButton = styled.button`
     &:active {
         transform: translateY(0);
     }
+    &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
 `;
 
 const LoadingContainer = styled.div`
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 300px; /* Or a suitable height */
+    height: 300px;
     font-size: 1.2rem;
     color: #b0c4de;
 `;
 
 const ErrorContainer = styled.div`
-    background-color: #331f24; // Dark red background
-    border: 1px solid #ef4444; // Red border
+    background-color: #331f24;
+    border: 1px solid #ef4444;
     border-radius: 8px;
     padding: 1rem;
     margin-top: 1.5rem;
     text-align: center;
-    color: #ef4444; // Red text
+    color: #ef4444;
     font-weight: bold;
 `;
 
 const StockDataDisplay = ({ symbol }) => {
-    // FIX HERE: Destructure `api` (the configured axios instance)
-    const { token, isAuthenticated, api } = useAuth(); // <--- MODIFIED LINE: Added `api`
-
     const [chartData, setChartData] = useState([]);
-    const [selectedRange, setSelectedRange] = useState('1M'); // Default range
+    const [selectedRange, setSelectedRange] = useState('1M');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-
     const fetchController = useRef(null);
 
     useEffect(() => {
-        console.log("StockDataDisplay - Received Symbol prop:", symbol);
-        console.log("StockDataDisplay - IsAuthenticated from useAuth:", isAuthenticated);
-        console.log("StockDataDisplay - Raw token from useAuth:", token ? 'present' : 'absent');
-        console.log("StockDataDisplay - API client from useAuth:", api ? 'present' : 'absent'); // <--- Added log for api
-
-        if (!isAuthenticated || !token || !symbol || !api) { // <--- MODIFIED CONDITION: Check for `api`
-            setError('Authentication required, API client not initialized, or no symbol provided.');
-            setChartData([]);
-            setLoading(false);
+        if (!symbol) {
+            setError('No symbol provided.');
             return;
         }
 
@@ -105,56 +97,43 @@ const StockDataDisplay = ({ symbol }) => {
             setChartData([]);
 
             try {
-                let intervalParam = '';
-                if (selectedRange === '1D') {
-                    intervalParam = '5min';
-                } else if (selectedRange === '5D') {
-                    intervalParam = '60min';
-                }
+                // Determine interval based on range
+                let intervalParam = '1d'; // Default
+                if (selectedRange === '1D') intervalParam = '5m';
+                else if (selectedRange === '5D') intervalParam = '1h';
 
-                // Construct params object, only include interval if it has a value
-                const requestParams = {
-                    range: selectedRange,
-                };
-                if (intervalParam) {
-                    requestParams.interval = intervalParam;
-                }
-
-                // FIX HERE: Use the `api` instance from context and adjust URL path
-                const response = await api.get( // <--- MODIFIED LINE: Used `api.get`
-                    `/stocks/historical/${symbol}`, // <--- MODIFIED LINE: Removed leading `/api/` and `process.env.REACT_APP_API_URL`
+                const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+                
+                const response = await axios.get(
+                    `${API_URL}/api/stocks/historical/${symbol}`,
                     {
-                        params: requestParams, // <--- MODIFIED LINE: Use the constructed params object
-                        // Headers are already set by the `api` instance from AuthContext if configured to include x-auth-token
-                        // However, explicitly setting it here doesn't hurt and ensures it's always there.
-                        headers: {
-                            'x-auth-token': token,
+                        params: {
+                            range: selectedRange,
+                            interval: intervalParam,
                         },
                         signal: signal,
                     }
                 );
 
-                // Assuming your backend response for /api/stocks/historical/:symbol
-                // returns data directly, or within a 'historicalData' key.
-                // The PredictPage.js expects it in 'historicalData'. Let's make this consistent.
-                const fetchedData = response.data.historicalData || response.data; // <--- Handle both direct array or nested historicalData
-
+                const fetchedData = response.data.historicalData || response.data;
                 setChartData(fetchedData);
+                
                 if (fetchedData.length === 0) {
-                    setError(`No historical data found for ${symbol} for the ${selectedRange} range.`);
+                    setError(`No data found for ${symbol} (${selectedRange})`);
                 }
             } catch (err) {
                 if (axios.isCancel(err)) {
-                    console.log('Fetch aborted:', err.message);
+                    console.log('Fetch aborted');
                     return;
                 }
                 console.error('Error fetching stock data:', err);
-                if (err.response && err.response.data && err.response.data.msg) {
-                    setError(`Error: ${err.response.data.msg}`);
+                
+                if (err.response?.data?.msg) {
+                    setError(err.response.data.msg);
                 } else if (err.message) {
-                    setError(`Network error or API issue: ${err.message}. Please try again.`);
+                    setError(`Error: ${err.message}`);
                 } else {
-                    setError('An unknown error occurred while fetching stock data.');
+                    setError('Failed to fetch stock data');
                 }
             } finally {
                 setLoading(false);
@@ -169,13 +148,13 @@ const StockDataDisplay = ({ symbol }) => {
                 fetchController.current.abort();
             }
         };
-    }, [symbol, selectedRange, isAuthenticated, token, api]); // <--- MODIFIED DEPENDENCIES: Added `api`
+    }, [symbol, selectedRange]);
 
     return (
         <StockDataContainer>
             <Header>{symbol.toUpperCase()} Stock Chart</Header>
             <RangeButtonContainer>
-                {['1D', '5D', '1M', '3M', '6M', '1Y', '5Y', 'MAX'].map((range) => ( // Added 3M and 5Y
+                {['1D', '5D', '1M', '3M', '6M', '1Y', '5Y', 'MAX'].map((range) => (
                     <RangeButton
                         key={range}
                         active={selectedRange === range}
@@ -189,15 +168,11 @@ const StockDataDisplay = ({ symbol }) => {
 
             {loading && (
                 <LoadingContainer>
-                    Loading {symbol.toUpperCase()} data for {selectedRange} range...
+                    Loading {symbol.toUpperCase()} data for {selectedRange}...
                 </LoadingContainer>
             )}
 
-            {error && !loading && (
-                <ErrorContainer>
-                    {error}
-                </ErrorContainer>
-            )}
+            {error && !loading && <ErrorContainer>{error}</ErrorContainer>}
 
             {!loading && !error && chartData.length > 0 && (
                 <RealTimeChart data={chartData} />
@@ -205,11 +180,11 @@ const StockDataDisplay = ({ symbol }) => {
 
             {!loading && !error && chartData.length === 0 && (
                 <LoadingContainer>
-                    No chart data available for {symbol.toUpperCase()} for the {selectedRange} range.
-                    This might happen for very new symbols or specific ranges.
+                    No chart data available for {symbol.toUpperCase()}.
                 </LoadingContainer>
             )}
         </StockDataContainer>
     );
 };
+
 export default StockDataDisplay;

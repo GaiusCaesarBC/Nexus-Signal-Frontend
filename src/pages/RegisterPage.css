@@ -1,0 +1,119 @@
+/* C:\Users\2cody\source\repos\Nexus-Signal-Client\src\pages\RegisterPage.css */
+
+.register-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 120px); /* Adjust based on Navbar/Footer height */
+    background-color: #0d1a2f; /* Dark background */
+    color: #e0e0e0; /* Light text */
+    padding: 20px;
+}
+
+.register-container {
+    background-color: #1a2a43; /* Slightly lighter dark background for the form */
+    padding: 40px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+}
+
+.register-container h2 {
+    color: #61dafb; /* React blue for headings */
+    margin-bottom: 15px;
+    font-size: 2em;
+}
+
+.register-container p {
+    margin-bottom: 25px;
+    font-size: 0.9em;
+    color: #a0a0a0;
+}
+
+.register-form .form-group {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.register-form label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #e0e0e0;
+}
+
+.register-form input[type="text"],
+.register-form input[type="email"],
+.register-form input[type="password"] {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #3a4a61;
+    border-radius: 5px;
+    background-color: #0d1a2f;
+    color: #e0e0e0;
+    font-size: 1em;
+    box-sizing: border-box; /* Include padding in width */
+}
+
+.register-form input[type="text"]:focus,
+.register-form input[type="email"]:focus,
+.register-form input[type="password"]:focus {
+    border-color: #61dafb;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(97, 218, 251, 0.5);
+}
+
+.register-button {
+    width: 100%;
+    padding: 12px;
+    background-color: #61dafb;
+    color: #0d1a2f;
+    border: none;
+    border-radius: 5px;
+    font-size: 1.1em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    margin-top: 15px;
+}
+
+.register-button:hover:not(:disabled) {
+    background-color: #4fa3d1;
+    transform: translateY(-2px);
+}
+
+.register-button:disabled {
+    background-color: #3a4a61;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.error-message {
+    color: #ff6b6b; /* Red for errors */
+    margin-bottom: 15px;
+    font-size: 0.9em;
+}
+
+.success-message {
+    color: #4CAF50; /* Green for success */
+    margin-bottom: 15px;
+    font-size: 0.9em;
+}
+
+.login-link {
+    margin-top: 25px;
+    font-size: 0.9em;
+    color: #a0a0a0;
+}
+
+.login-link a {
+    color: #61dafb;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.login-link a:hover {
+    text-decoration: underline;
+}
