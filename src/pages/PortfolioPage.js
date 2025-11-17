@@ -1,12 +1,11 @@
-// client/src/pages/PortfolioPage.js
+// client/src/pages/PortfolioPage.js - FIXED VERSION
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
-import { DollarSign, TrendingUp, TrendingDown, Wallet, Briefcase, RefreshCcw, PlusCircle } from 'lucide-react'; // Added PlusCircle
+import { DollarSign, TrendingUp, TrendingDown, Wallet, Briefcase, RefreshCcw, PlusCircle } from 'lucide-react';
 
-// --- Styled Components (Re-use or adapt your existing ones) ---
-
+// --- All your styled components (keep as-is) ---
 const fadeIn = keyframes`
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
@@ -23,10 +22,7 @@ const PortfolioPageContainer = styled.div`
     display: flex;
     flex-direction: column;
     align-items: center;
-
-    @media (max-width: 768px) {
-        padding: 1.5rem;
-    }
+    @media (max-width: 768px) { padding: 1.5rem; }
 `;
 
 const PortfolioHeader = styled.h1`
@@ -34,7 +30,6 @@ const PortfolioHeader = styled.h1`
     color: #00adef;
     margin-bottom: 2.5rem;
     text-shadow: 0 0 15px rgba(0, 173, 237, 0.6);
-
     @media (max-width: 768px) {
         font-size: 2.5rem;
         margin-bottom: 2rem;
@@ -48,10 +43,7 @@ const SummarySection = styled.div`
     width: 100%;
     max-width: 1200px;
     margin-bottom: 3rem;
-
-    @media (max-width: 768px) {
-        grid-template-columns: 1fr;
-    }
+    @media (max-width: 768px) { grid-template-columns: 1fr; }
 `;
 
 const SummaryCard = styled.div`
@@ -67,7 +59,6 @@ const SummaryCard = styled.div`
     justify-content: center;
     gap: 0.8rem;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
-
     &:hover {
         transform: translateY(-5px);
         box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
@@ -89,9 +80,8 @@ const CardValue = styled.p`
     color: #f8fafc;
     margin: 0;
     text-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
-
-    &.positive { color: #10b981; } /* Tailwind green-500 */
-    &.negative { color: #ef4444; } /* Tailwind red-500 */
+    &.positive { color: #10b981; }
+    &.negative { color: #ef4444; }
 `;
 
 const HoldingsSection = styled.div`
@@ -102,11 +92,8 @@ const HoldingsSection = styled.div`
     padding: 2rem;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
     border: 1px solid rgba(0, 173, 237, 0.2);
-    margin-bottom: 3rem; /* Added margin-bottom */
-
-    @media (max-width: 768px) {
-        padding: 1.5rem;
-    }
+    margin-bottom: 3rem;
+    @media (max-width: 768px) { padding: 1.5rem; }
 `;
 
 const HoldingsTable = styled.table`
@@ -114,17 +101,14 @@ const HoldingsTable = styled.table`
     border-collapse: separate;
     border-spacing: 0;
     margin-top: 1.5rem;
-
     th, td {
         padding: 0.8rem 1rem;
         text-align: left;
         border-bottom: 1px solid #334155;
-        white-space: nowrap; /* Prevent text wrapping */
-
+        white-space: nowrap;
         &:first-child { border-left: none; }
         &:last-child { border-right: none; }
     }
-
     th {
         color: #00adef;
         font-size: 1rem;
@@ -133,32 +117,24 @@ const HoldingsTable = styled.table`
         padding-bottom: 1rem;
         position: sticky;
         top: 0;
-        background: #1e293b; /* Ensure header stays visible on scroll */
+        background: #1e293b;
         z-index: 10;
     }
-
     td {
         color: #f8fafc;
         font-size: 1.1rem;
-
         &.positive { color: #10b981; }
         &.negative { color: #ef4444; }
     }
-
-    tr:last-child td {
-        border-bottom: none;
-    }
+    tr:last-child td { border-bottom: none; }
 `;
 
 const TableWrapper = styled.div`
-    max-height: 500px; /* Enable vertical scrolling for holdings */
+    max-height: 500px;
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: #00adef #1a273b;
-
-    &::-webkit-scrollbar {
-        width: 8px;
-    }
+    &::-webkit-scrollbar { width: 8px; }
     &::-webkit-scrollbar-track {
         background: #1a273b;
         border-radius: 10px;
@@ -207,7 +183,6 @@ const RotatingRefresh = styled(RefreshCcw)`
     }
 `;
 
-// --- New Styled Components for Add Holding Form ---
 const AddHoldingSection = styled.div`
     width: 100%;
     max-width: 1200px;
@@ -216,12 +191,8 @@ const AddHoldingSection = styled.div`
     padding: 2rem;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
     border: 1px solid rgba(0, 173, 237, 0.2);
-    margin-bottom: 3rem; /* Space before holdings table */
-
-    @media (max-width: 768px) {
-        padding: 1.5rem;
-    }
-
+    margin-bottom: 3rem;
+    @media (max-width: 768px) { padding: 1.5rem; }
     h3 {
         color: #00adef;
         margin-bottom: 1.5rem;
@@ -234,23 +205,18 @@ const AddHoldingForm = styled.form`
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 1.5rem;
-    align-items: end; /* Align items to the bottom */
-
-    @media (max-width: 600px) {
-        grid-template-columns: 1fr; /* Stack vertically on small screens */
-    }
+    align-items: end;
+    @media (max-width: 600px) { grid-template-columns: 1fr; }
 `;
 
 const FormGroup = styled.div`
     display: flex;
     flex-direction: column;
-
     label {
         font-size: 0.95rem;
         color: #94a3b8;
         margin-bottom: 0.5rem;
     }
-
     input {
         padding: 0.8rem 1rem;
         border: 1px solid #334155;
@@ -260,16 +226,11 @@ const FormGroup = styled.div`
         font-size: 1rem;
         outline: none;
         transition: border-color 0.2s ease, box-shadow 0.2s ease;
-
         &:focus {
             border-color: #00adef;
             box-shadow: 0 0 0 3px rgba(0, 173, 237, 0.3);
         }
-
-        &::placeholder {
-            color: #64748b;
-        }
-
+        &::placeholder { color: #64748b; }
         &:disabled {
             background-color: #2c3e50;
             color: #94a3b8;
@@ -292,12 +253,10 @@ const SubmitButton = styled.button`
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-
     &:hover:not(:disabled) {
         background-color: #008cc0;
         transform: translateY(-2px);
     }
-
     &:disabled {
         background-color: #64748b;
         cursor: not-allowed;
@@ -309,17 +268,14 @@ const FormError = styled.p`
     font-size: 0.9rem;
     text-align: center;
     margin-top: 1rem;
-    grid-column: 1 / -1; /* Span across all columns */
+    grid-column: 1 / -1;
 `;
 
-
-// Helper function to format time (can be outside the component)
 const formatLastUpdateTime = (timestamp) => {
     if (!timestamp) return 'Never updated';
     const date = new Date(timestamp);
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 };
-
 
 // --- PortfolioPage Component ---
 const PortfolioPage = () => {
@@ -327,142 +283,72 @@ const PortfolioPage = () => {
     const [portfolio, setPortfolio] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-
-    const [isUpdatingPrices, setIsUpdatingPrices] = useState(false);
-    const [priceUpdateError, setPriceUpdateError] = useState(null);
     const [lastPriceUpdateTimestamp, setLastPriceUpdateTimestamp] = useState(null);
-    const POLLING_INTERVAL = 15000; // 15 seconds for price polling
 
-    // State for the "Add Holding" form
     const [newHoldingSymbol, setNewHoldingSymbol] = useState('');
     const [newHoldingQuantity, setNewHoldingQuantity] = useState('');
     const [newHoldingPurchasePrice, setNewHoldingPurchasePrice] = useState('');
     const [addHoldingLoading, setAddHoldingLoading] = useState(false);
     const [addHoldingError, setAddHoldingError] = useState(null);
 
+    const hasFetchedRef = useRef(false);
 
-    // Function to fetch the entire portfolio (including aggregates)
-    const fetchPortfolio = useCallback(async () => {
-        if (!isAuthenticated || !api) {
-            setLoading(false);
-            if (!authLoading && !isAuthenticated) {
-                setError("Please log in to view your portfolio.");
-            }
-            return;
-        }
-
-        // Only show full loading spinner on initial fetch, not for price updates
-        if (!portfolio) setLoading(true); // Only show spinner if portfolio is null initially
-        setError(null);
-        try {
-            const res = await api.get('/api/portfolio');
-            setPortfolio(res.data);
-            if (res.data.lastUpdatedAt) { // If backend provides a lastUpdatedAt field
-                setLastPriceUpdateTimestamp(res.data.lastUpdatedAt);
-            } else {
-                setLastPriceUpdateTimestamp(new Date().toISOString()); // Or use client-side time for now
-            }
-        } catch (err) {
-            console.error('Error fetching portfolio:', err.response?.data?.msg || err.message);
-            setError('Failed to load portfolio data. Please try again.');
-            setPortfolio(null);
-        } finally {
-            setLoading(false);
-        }
-    }, [isAuthenticated, api, authLoading, portfolio]); // Added portfolio to dependencies for correct loading state
-
-
-    // Function to fetch only current prices for holdings
-    const fetchCurrentPrices = useCallback(async (currentHoldings) => {
-        if (!isAuthenticated || !api || !currentHoldings || currentHoldings.length === 0) {
-            setIsUpdatingPrices(false);
-            return;
-        }
-
-        setIsUpdatingPrices(true);
-        setPriceUpdateError(null);
-
-        try {
-            const symbols = currentHoldings.map(h => h.symbol).join(',');
-            const response = await api.get(`/api/market-data/quotes?symbols=${symbols}`);
-            const { prices: newPrices, lastUpdatedAt } = response.data;
-
-            // Optimistically update holdings with new prices for immediate UI feedback
-            setPortfolio(prevPortfolio => {
-                if (!prevPortfolio) return null;
-
-                let updatedHoldings = prevPortfolio.holdings.map(holding => {
-                    const latestPrice = newPrices[holding.symbol.toUpperCase()];
-                    if (latestPrice !== undefined && latestPrice !== holding.currentPrice) {
-                        return { ...holding, currentPrice: latestPrice };
-                    }
-                    return holding;
-                });
-
-                // Trigger a full re-fetch of the portfolio after individual prices are updated
-                // to get totalValue, totalChange, etc., recalculated from the backend.
-                // This makes the UI update in two stages: immediate price change, then full aggregate refresh.
-                fetchPortfolio();
-
-                // Return the prevPortfolio with only updated holdings for immediate UI reflection
-                return { ...prevPortfolio, holdings: updatedHoldings };
-            });
-
-            setLastPriceUpdateTimestamp(lastUpdatedAt);
-
-        } catch (err) {
-            console.error('Error updating prices:', err.response?.data?.msg || err.message);
-            setPriceUpdateError('Failed to fetch latest prices.');
-        } finally {
-            setIsUpdatingPrices(false);
-        }
-    }, [isAuthenticated, api, fetchPortfolio]);
-
-
-    // Effect for initial portfolio data fetch
+    // ✅ FIX: Fetch portfolio ONCE on mount
     useEffect(() => {
-        if (!authLoading) {
-            fetchPortfolio();
-        }
-    }, [authLoading, fetchPortfolio]);
+        const fetchPortfolio = async () => {
+            if (!isAuthenticated || !api || authLoading || hasFetchedRef.current) {
+                return;
+            }
 
-    // Effect for price polling
-    useEffect(() => {
-        let pricePollingInterval;
-        if (isAuthenticated && api && portfolio && portfolio.holdings && portfolio.holdings.length > 0) {
-            fetchCurrentPrices(portfolio.holdings); // Fetch prices immediately upon starting polling
+            hasFetchedRef.current = true;
+            setLoading(true);
+            setError(null);
 
-            pricePollingInterval = setInterval(() => {
-                fetchCurrentPrices(portfolio.holdings);
-            }, POLLING_INTERVAL);
-        }
-
-        return () => {
-            if (pricePollingInterval) {
-                clearInterval(pricePollingInterval);
+            try {
+                console.log('Fetching portfolio...');
+                const res = await api.get('/portfolio');
+                console.log('Portfolio received:', res.data);
+                setPortfolio(res.data);
+                setLastPriceUpdateTimestamp(res.data.lastUpdatedAt || new Date().toISOString());
+            } catch (err) {
+                console.error('Error fetching portfolio:', err);
+                setError('Failed to load portfolio data. Please try again.');
+                setPortfolio(null);
+                hasFetchedRef.current = false; // Allow retry
+            } finally {
+                setLoading(false);
             }
         };
-    }, [isAuthenticated, api, portfolio, fetchCurrentPrices, POLLING_INTERVAL]);
 
-    // --- Add Holding Functionality ---
+        if (!authLoading && isAuthenticated) {
+            fetchPortfolio();
+        } else if (!authLoading && !isAuthenticated) {
+            setError("Please log in to view your portfolio.");
+            setLoading(false);
+        }
+    }, [isAuthenticated, authLoading, api]);
+
+    // Add Holding Handler
     const handleAddHoldingSubmit = async (e) => {
         e.preventDefault();
         setAddHoldingLoading(true);
         setAddHoldingError(null);
 
-        // Basic frontend validation
         if (!newHoldingSymbol || !newHoldingQuantity || !newHoldingPurchasePrice) {
             setAddHoldingError('All fields are required.');
             setAddHoldingLoading(false);
             return;
         }
+
         const quantity = parseFloat(newHoldingQuantity);
         const purchasePrice = parseFloat(newHoldingPurchasePrice);
+
         if (isNaN(quantity) || quantity <= 0) {
             setAddHoldingError('Quantity must be a positive number.');
             setAddHoldingLoading(false);
             return;
         }
+
         if (isNaN(purchasePrice) || purchasePrice <= 0) {
             setAddHoldingError('Purchase price must be a positive number.');
             setAddHoldingLoading(false);
@@ -474,25 +360,27 @@ const PortfolioPage = () => {
                 symbol: newHoldingSymbol,
                 quantity: quantity,
                 purchasePrice: purchasePrice,
-                purchaseDate: new Date().toISOString(), // Use current date for purchase
+                purchaseDate: new Date().toISOString(),
             };
-            const res = await api.post('/api/portfolio/add', body);
-            setPortfolio(res.data); // Update portfolio with the new data from the backend
-            setNewHoldingSymbol(''); // Clear form fields
+            const res = await api.post('/portfolio/add', body);
+            setPortfolio(res.data);
+            setNewHoldingSymbol('');
             setNewHoldingQuantity('');
             setNewHoldingPurchasePrice('');
-            setAddHoldingError(null); // Clear any previous errors
-            setLastPriceUpdateTimestamp(new Date().toISOString()); // Update timestamp after adding
+            setAddHoldingError(null);
+            setLastPriceUpdateTimestamp(new Date().toISOString());
         } catch (err) {
-            console.error('Error adding holding:', err.response ? err.response.data : err.message);
-            setAddHoldingError(err.response?.data?.errors?.[0]?.msg || err.response?.data?.msg || 'Failed to add holding. Please check inputs and try again.');
+            console.error('Error adding holding:', err);
+            setAddHoldingError(
+                err.response?.data?.errors?.[0]?.msg || 
+                err.response?.data?.msg || 
+                'Failed to add holding. Please check inputs and try again.'
+            );
         } finally {
             setAddHoldingLoading(false);
         }
     };
 
-
-    // --- Conditional Rendering ---
     if (loading) {
         return (
             <PortfolioPageContainer>
@@ -511,27 +399,14 @@ const PortfolioPage = () => {
         );
     }
 
-    // Safely access portfolio data, providing defaults if portfolio is still null or empty
     const { totalValue = 0, totalChange = 0, totalChangePercent = 0, cashBalance = 0, holdings = [] } = portfolio || {};
-
     const isPositiveChange = totalChange >= 0;
 
     return (
         <PortfolioPageContainer>
             <PortfolioHeader>My Portfolio</PortfolioHeader>
 
-            {isUpdatingPrices && !priceUpdateError && (
-                <Message style={{ fontSize: '0.9rem', color: '#00adef', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
-                    <RotatingRefresh size={18} /> Updating prices...
-                </Message>
-            )}
-            {priceUpdateError && (
-                <ErrorMessage style={{ fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
-                    <RefreshCcw size={18} color="#ef4444" /> {priceUpdateError}
-                </ErrorMessage>
-            )}
-
-            {lastPriceUpdateTimestamp && !isUpdatingPrices && (
+            {lastPriceUpdateTimestamp && (
                 <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '1.5rem' }}>
                     Last updated: {formatLastUpdateTime(lastPriceUpdateTimestamp)}
                 </p>
@@ -554,7 +429,6 @@ const PortfolioPage = () => {
                 </SummaryCard>
             </SummarySection>
 
-            {/* --- Add Holding Form Section --- */}
             <AddHoldingSection>
                 <h3><PlusCircle size={24} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} /> Add New Holding</h3>
                 <AddHoldingForm onSubmit={handleAddHoldingSubmit}>
@@ -603,7 +477,6 @@ const PortfolioPage = () => {
                 </AddHoldingForm>
             </AddHoldingSection>
 
-
             <HoldingsSection>
                 <h3>Your Holdings</h3>
                 {holdings.length > 0 ? (
@@ -622,18 +495,17 @@ const PortfolioPage = () => {
                             </thead>
                             <tbody>
                                 {holdings.map((holding) => {
-                                    // Make sure these fields exist on your holding object coming from backend
-                                    const marketValue = holding.currentValue !== undefined ? holding.currentValue : (holding.currentPrice * holding.quantity);
-                                    const costBasis = holding.purchasePrice * holding.quantity; // Use purchasePrice for initial cost basis
-                                    const gainLoss = holding.profitLoss !== undefined ? holding.profitLoss : (marketValue - costBasis);
-                                    const percentGainLoss = holding.profitLossPercentage !== undefined ? holding.profitLossPercentage : (costBasis === 0 ? 0 : (gainLoss / costBasis) * 100);
+                                    const marketValue = holding.currentPrice * holding.quantity;
+                                    const costBasis = holding.purchasePrice * holding.quantity;
+                                    const gainLoss = marketValue - costBasis;
+                                    const percentGainLoss = costBasis === 0 ? 0 : (gainLoss / costBasis) * 100;
                                     const isHoldingPositive = gainLoss >= 0;
 
                                     return (
-                                        <tr key={holding._id || holding.symbol}> {/* Use _id if available, fallback to symbol */}
+                                        <tr key={holding._id || holding.symbol}>
                                             <td>{holding.symbol.toUpperCase()}</td>
                                             <td>{holding.quantity.toFixed(2)}</td>
-                                            <td>${holding.purchasePrice.toFixed(2)}</td> {/* Use purchasePrice from backend */}
+                                            <td>${holding.purchasePrice.toFixed(2)}</td>
                                             <td>${holding.currentPrice.toFixed(2)}</td>
                                             <td>${marketValue.toFixed(2)}</td>
                                             <td className={isHoldingPositive ? 'positive' : 'negative'}>
@@ -642,7 +514,6 @@ const PortfolioPage = () => {
                                             <td className={isHoldingPositive ? 'positive' : 'negative'}>
                                                 {percentGainLoss.toFixed(2)}%
                                             </td>
-                                            {/* Add Edit/Delete buttons here later */}
                                         </tr>
                                     );
                                 })}
