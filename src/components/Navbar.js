@@ -367,7 +367,6 @@ const MobileMenuButton = styled.button`
 `;
 
 const MobileMenu = styled.div`
-    display: none;
     position: fixed;
     top: 80px;
     left: 0;
@@ -378,9 +377,10 @@ const MobileMenu = styled.div`
     z-index: 999;
     animation: ${fadeIn} 0.3s ease-out;
     overflow-y: auto;
+    display: ${props => props.$open ? 'block' : 'none'};
 
-    @media (max-width: 768px) {
-        display: ${props => props.$open ? 'block' : 'none'};
+    @media (min-width: 769px) {
+        display: none !important;
     }
 `;
 
@@ -441,6 +441,15 @@ const Navbar = () => {
         navigate('/login');
         setDropdownOpen(false);
         setMobileMenuOpen(false);
+    };
+
+    const handleMobileMenuToggle = () => {
+        setMobileMenuOpen(!mobileMenuOpen);
+        setDropdownOpen(false); // Close dropdown when opening mobile menu
+    };
+
+    const handleMobileNavClick = () => {
+        setMobileMenuOpen(false); // Close mobile menu when clicking a nav item
     };
 
     const getUserInitials = () => {
@@ -525,7 +534,7 @@ const Navbar = () => {
                         )}
                     </div>
 
-                    <MobileMenuButton onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+                    <MobileMenuButton onClick={handleMobileMenuToggle}>
                         {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
                     </MobileMenuButton>
                 </UserSection>
@@ -541,6 +550,7 @@ const Navbar = () => {
                                 key={item.path}
                                 to={item.path}
                                 $active={location.pathname === item.path}
+                                onClick={handleMobileNavClick}
                             >
                                 <Icon size={24} />
                                 {item.label}
@@ -548,11 +558,11 @@ const Navbar = () => {
                         );
                     })}
                     <Divider />
-                    <MobileNavLink to="/profile">
+                    <MobileNavLink to="/profile" onClick={handleMobileNavClick}>
                         <User size={24} />
                         Profile
                     </MobileNavLink>
-                    <MobileNavLink to="/settings">
+                    <MobileNavLink to="/settings" onClick={handleMobileNavClick}>
                         <Settings size={24} />
                         Settings
                     </MobileNavLink>
