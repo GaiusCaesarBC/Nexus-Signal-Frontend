@@ -1,4 +1,4 @@
-// src/App.js - FIXED import paths
+// src/App.js - FIXED import paths + CHAT ROUTE ADDED + ABOUT ROUTE ADDED
 
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
@@ -17,9 +17,11 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import PredictPage from './pages/PredictionsPage';
+import ChatPage from './pages/ChatPage';
 import PricingPage from './pages/PricingPage';
 import WatchlistPage from './pages/WatchlistPage';
 import PortfolioPage from './pages/PortfolioPage';
+import AboutPage from './pages/AboutPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import DisclaimerPage from './pages/DisclaimerPage';
@@ -55,6 +57,7 @@ function App() {
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/register" element={<RegisterPage />} />
                     <Route path="/pricing" element={<PricingPage />} />
+                    <Route path="/about" element={<AboutPage />} />
                     <Route path="/terms" element={<TermsOfServicePage />} />
                     <Route path="/privacy" element={<PrivacyPolicyPage />} />
                     <Route path="/disclaimer" element={<DisclaimerPage />} />
@@ -64,6 +67,7 @@ function App() {
                     <Route path="/watchlist" element={<ProtectedRoute><WatchlistPage /></ProtectedRoute>} />
                     <Route path="/portfolio" element={<ProtectedRoute><PortfolioPage /></ProtectedRoute>} />
                     <Route path="/predict" element={<ProtectedRoute><PredictPage /></ProtectedRoute>} />
+                    <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
                     <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
 
                     {/* Stock Details Page Route */}

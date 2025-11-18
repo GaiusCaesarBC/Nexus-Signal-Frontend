@@ -1,329 +1,485 @@
-// client/src/pages/PortfolioPage.js - COMPLETE with Add/Edit/Delete
+// client/src/pages/PortfolioPage.js - ULTIMATE EPIC VERSION
 
 import React, { useState, useEffect } from 'react';
-import styled, { keyframes } from 'styled-components';
+import styled, { keyframes, css } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
-import { TrendingUp, TrendingDown, Plus, Trash2, Edit2, Brain, Target, Zap, AlertCircle, X } from 'lucide-react';
+import {
+    TrendingUp, TrendingDown, DollarSign, PieChart, BarChart3,
+    Activity, Plus, Trash2, X, Brain, Target, Zap, 
+    ArrowUpRight, ArrowDownRight, Eye, Flame, Star
+} from 'lucide-react';
+import {
+    PieChart as RechartsPie, Pie, Cell, ResponsiveContainer,
+    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+    AreaChart, Area
+} from 'recharts';
 
+// ============ ANIMATIONS ============
 const fadeIn = keyframes`
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
 `;
 
-const pulse = keyframes`
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
+const slideIn = keyframes`
+    from { transform: translateX(-100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
 `;
 
+const pulse = keyframes`
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+`;
+
+const glow = keyframes`
+    0%, 100% { box-shadow: 0 0 20px rgba(0, 173, 237, 0.3); }
+    50% { box-shadow: 0 0 40px rgba(0, 173, 237, 0.6); }
+`;
+
+const shimmer = keyframes`
+    0% { background-position: -200% center; }
+    100% { background-position: 200% center; }
+`;
+
+const float = keyframes`
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+`;
+
+// ============ STYLED COMPONENTS ============
 const PageContainer = styled.div`
-    padding: 3rem 2rem;
-    max-width: 1400px;
-    margin: 0 auto;
+    min-height: 100vh;
+    background: linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
     color: #e0e6ed;
-    background: linear-gradient(145deg, #0d1a2f 0%, #1a273b 100%);
-    min-height: calc(100vh - var(--navbar-height));
-    animation: ${fadeIn} 0.8s ease-out;
+    padding: 6rem 2rem 2rem;
+    position: relative;
+    overflow-x: hidden;
 `;
 
 const Header = styled.div`
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-    
-    @media (max-width: 768px) {
-        flex-direction: column;
-        gap: 1rem;
-    }
+    margin-bottom: 3rem;
+    animation: ${fadeIn} 0.8s ease-out;
+    text-align: center;
+    position: relative;
 `;
 
 const Title = styled.h1`
-    font-size: 3rem;
-    color: #00adef;
-    text-shadow: 0 0 15px rgba(0, 173, 237, 0.6);
-    
-    @media (max-width: 768px) {
-        font-size: 2.5rem;
-    }
+    font-size: 3.5rem;
+    background: linear-gradient(135deg, #00adef 0%, #00ff88 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.5rem;
+    font-weight: 900;
+    text-shadow: 0 0 30px rgba(0, 173, 237, 0.5);
 `;
 
-const HeaderActions = styled.div`
-    display: flex;
-    gap: 1rem;
+const Subtitle = styled.p`
+    color: #94a3b8;
+    font-size: 1.2rem;
 `;
 
-const Button = styled.button`
-    padding: 0.75rem 1.5rem;
-    border-radius: 8px;
+const AddButton = styled.button`
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
     border: none;
-    background: ${props => props.variant === 'primary' 
-        ? 'linear-gradient(135deg, #00adef 0%, #0088cc 100%)'
-        : props.variant === 'danger'
-        ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
-        : 'rgba(255, 255, 255, 0.1)'};
     color: white;
-    font-size: 1rem;
-    font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    justify-content: center;
+    box-shadow: 0 8px 32px rgba(16, 185, 129, 0.4);
+    transition: all 0.3s ease;
+    z-index: 100;
+    animation: ${float} 3s ease-in-out infinite;
 
-    &:hover:not(:disabled) {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 173, 237, 0.4);
+    &:hover {
+        transform: scale(1.1);
+        box-shadow: 0 12px 48px rgba(16, 185, 129, 0.6);
     }
 
-    &:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
+    @media (max-width: 768px) {
+        bottom: 1rem;
+        right: 1rem;
     }
 `;
 
-const SummaryCards = styled.div`
+// ============ STATS GRID ============
+const StatsGrid = styled.div`
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 1.5rem;
-    margin-bottom: 2rem;
+    margin-bottom: 3rem;
 `;
 
-const SummaryCard = styled.div`
-    background: linear-gradient(135deg, #1e293b 0%, #2c3e50 100%);
-    border-radius: 12px;
-    padding: 1.5rem;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+const StatCard = styled.div`
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    backdrop-filter: blur(10px);
     border: 1px solid rgba(0, 173, 237, 0.2);
+    border-radius: 16px;
+    padding: 1.5rem;
+    position: relative;
+    overflow: hidden;
+    animation: ${fadeIn} 0.6s ease-out;
+    transition: all 0.3s ease;
+
+    &:hover {
+        transform: translateY(-5px);
+        border-color: rgba(0, 173, 237, 0.5);
+        box-shadow: 0 10px 40px rgba(0, 173, 237, 0.3);
+    }
+
+    &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background: ${props => {
+            if (props.variant === 'success') return 'linear-gradient(90deg, #10b981, #059669)';
+            if (props.variant === 'danger') return 'linear-gradient(90deg, #ef4444, #dc2626)';
+            return 'linear-gradient(90deg, #00adef, #0088cc)';
+        }};
+    }
 `;
 
-const CardLabel = styled.div`
-    font-size: 0.9rem;
-    color: #94a3b8;
-    margin-bottom: 0.5rem;
-`;
-
-const CardValue = styled.div`
-    font-size: 2rem;
-    font-weight: bold;
+const StatIcon = styled.div`
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+    background: ${props => {
+        if (props.variant === 'success') return 'rgba(16, 185, 129, 0.2)';
+        if (props.variant === 'danger') return 'rgba(239, 68, 68, 0.2)';
+        return 'rgba(0, 173, 237, 0.2)';
+    }};
     color: ${props => {
-        if (props.positive) return '#10b981';
-        if (props.negative) return '#ef4444';
-        return '#f8fafc';
+        if (props.variant === 'success') return '#10b981';
+        if (props.variant === 'danger') return '#ef4444';
+        return '#00adef';
     }};
 `;
 
-const HoldingsSection = styled.div`
-    margin-top: 2rem;
+const StatLabel = styled.div`
+    color: #94a3b8;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 `;
 
-const SectionHeader = styled.div`
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
+const StatValue = styled.div`
+    font-size: 2.5rem;
+    font-weight: 900;
+    color: ${props => {
+        if (props.positive) return '#10b981';
+        if (props.negative) return '#ef4444';
+        return '#00adef';
+    }};
+    margin-bottom: 0.5rem;
 `;
 
-const SectionTitle = styled.h2`
-    font-size: 1.5rem;
-    color: #00adef;
+const StatSubtext = styled.div`
+    font-size: 0.9rem;
+    color: ${props => props.positive ? '#10b981' : props.negative ? '#ef4444' : '#94a3b8'};
     display: flex;
     align-items: center;
     gap: 0.5rem;
 `;
 
+// ============ HOLDINGS GRID ============
+const HoldingsGrid = styled.div`
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+
+    @media (max-width: 768px) {
+        grid-template-columns: 1fr;
+    }
+`;
+
 const HoldingCard = styled.div`
-    background: linear-gradient(135deg, #1e293b 0%, #2c3e50 100%);
-    border-radius: 12px;
-    padding: 1.5rem;
-    margin-bottom: 1rem;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    backdrop-filter: blur(10px);
     border: 1px solid rgba(0, 173, 237, 0.2);
+    border-radius: 16px;
+    padding: 1.5rem;
+    position: relative;
+    overflow: hidden;
     animation: ${fadeIn} 0.5s ease-out;
+    transition: all 0.3s ease;
+
+    &:hover {
+        transform: translateY(-5px);
+        border-color: rgba(0, 173, 237, 0.5);
+        box-shadow: 0 10px 40px rgba(0, 173, 237, 0.3);
+    }
+
+    &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background: ${props => props.positive ? 
+            'linear-gradient(90deg, #10b981, #059669)' : 
+            'linear-gradient(90deg, #ef4444, #dc2626)'
+        };
+    }
 `;
 
 const HoldingHeader = styled.div`
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid rgba(0, 173, 237, 0.2);
+    align-items: start;
+    margin-bottom: 1.5rem;
 `;
 
-const SymbolInfo = styled.div`
+const HoldingSymbol = styled.div`
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: #00adef;
     display: flex;
     align-items: center;
+    gap: 0.5rem;
+`;
+
+const DeleteButton = styled.button`
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+
+    &:hover {
+        background: rgba(239, 68, 68, 0.2);
+        transform: scale(1.1);
+    }
+`;
+
+const HoldingStats = styled.div`
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 1rem;
+    margin-bottom: 1rem;
 `;
 
-const Symbol = styled.h3`
-    font-size: 1.5rem;
-    color: #f8fafc;
-    margin: 0;
+const StatItem = styled.div``;
+
+const StatItemLabel = styled.div`
+    color: #94a3b8;
+    font-size: 0.85rem;
+    margin-bottom: 0.25rem;
 `;
 
-const PriceInfo = styled.div`
-    text-align: right;
+const StatItemValue = styled.div`
+    color: #e0e6ed;
+    font-weight: 700;
+    font-size: 1.1rem;
 `;
 
-const CurrentPrice = styled.div`
-    font-size: 1.2rem;
-    font-weight: bold;
-    color: #00adef;
+const PerformanceBar = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: ${props => props.positive ? 
+        'rgba(16, 185, 129, 0.1)' : 
+        'rgba(239, 68, 68, 0.1)'
+    };
+    border: 1px solid ${props => props.positive ? 
+        'rgba(16, 185, 129, 0.3)' : 
+        'rgba(239, 68, 68, 0.3)'
+    };
+    border-radius: 12px;
+    margin-bottom: 1rem;
 `;
 
-const PriceChange = styled.div`
+const PerformanceIcon = styled.div`
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: ${props => props.positive ? 
+        'rgba(16, 185, 129, 0.2)' : 
+        'rgba(239, 68, 68, 0.2)'
+    };
+    color: ${props => props.positive ? '#10b981' : '#ef4444'};
+    display: flex;
+    align-items: center;
+    justify-content: center;
+`;
+
+const PerformanceDetails = styled.div`
+    flex: 1;
+`;
+
+const PerformanceValue = styled.div`
+    font-size: 1.3rem;
+    font-weight: 900;
+    color: ${props => props.positive ? '#10b981' : '#ef4444'};
+`;
+
+const PerformancePercent = styled.div`
     font-size: 0.9rem;
     color: ${props => props.positive ? '#10b981' : '#ef4444'};
 `;
 
-const HoldingGrid = styled.div`
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 1rem;
-    margin-bottom: 1rem;
-`;
-
-const InfoBox = styled.div`
-    background: rgba(0, 0, 0, 0.2);
-    padding: 0.75rem;
-    border-radius: 8px;
-`;
-
-const InfoLabel = styled.div`
-    font-size: 0.85rem;
-    color: #94a3b8;
-    margin-bottom: 0.3rem;
-`;
-
-const InfoValue = styled.div`
-    font-size: 1.1rem;
-    font-weight: bold;
-    color: #f8fafc;
-`;
-
-const PredictionSection = styled.div`
-    background: rgba(139, 92, 246, 0.1);
-    border-radius: 8px;
+// ============ AI PREDICTION BADGE ============
+const PredictionBadge = styled.div`
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(59, 130, 246, 0.15) 100%);
+    border: 1px solid rgba(139, 92, 246, 0.4);
+    border-radius: 12px;
     padding: 1rem;
-    margin-top: 1rem;
-    border: 1px solid rgba(139, 92, 246, 0.3);
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(45deg, transparent 30%, rgba(139, 92, 246, 0.1) 50%, transparent 70%);
+        background-size: 200% 200%;
+        animation: ${shimmer} 3s linear infinite;
+    }
 `;
 
 const PredictionHeader = styled.div`
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.5rem;
+    position: relative;
+    z-index: 1;
+`;
+
+const PredictionText = styled.div`
+    font-size: 0.9rem;
     color: #a78bfa;
-    font-weight: 600;
+    position: relative;
+    z-index: 1;
 `;
 
-const PredictionGrid = styled.div`
+const ConfidenceBar = styled.div`
+    width: 100%;
+    height: 6px;
+    background: rgba(0, 173, 237, 0.2);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 0.5rem;
+    position: relative;
+    z-index: 1;
+`;
+
+const ConfidenceFill = styled.div`
+    height: 100%;
+    width: ${props => props.value || 0}%;
+    background: linear-gradient(90deg, #10b981, #00adef);
+    border-radius: 3px;
+    transition: width 1s ease-out;
+`;
+
+// ============ CHARTS SECTION ============
+const ChartsGrid = styled.div`
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 0.75rem;
-`;
+    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+    gap: 2rem;
+    margin-bottom: 3rem;
 
-const PredictionItem = styled.div`
-    text-align: center;
-    padding: 0.5rem;
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 6px;
-`;
-
-const PredLabel = styled.div`
-    font-size: 0.75rem;
-    color: #94a3b8;
-    margin-bottom: 0.25rem;
-`;
-
-const PredValue = styled.div`
-    font-size: 0.95rem;
-    font-weight: bold;
-    color: ${props => {
-        if (props.direction === 'UP') return '#10b981';
-        if (props.direction === 'DOWN') return '#ef4444';
-        return '#f8fafc';
-    }};
-`;
-
-const Actions = styled.div`
-    display: flex;
-    gap: 0.5rem;
-    margin-top: 1rem;
-`;
-
-const IconButton = styled.button`
-    padding: 0.5rem;
-    border-radius: 6px;
-    border: none;
-    background: ${props => props.danger ? 'rgba(239, 68, 68, 0.2)' : 'rgba(255, 255, 255, 0.1)'};
-    color: ${props => props.danger ? '#ef4444' : 'white'};
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    &:hover {
-        background: ${props => props.danger ? 'rgba(239, 68, 68, 0.3)' : 'rgba(0, 173, 237, 0.3)'};
-        transform: scale(1.05);
+    @media (max-width: 768px) {
+        grid-template-columns: 1fr;
     }
 `;
 
-// Modal Styles
-const ModalOverlay = styled.div`
+const ChartPanel = styled.div`
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(0, 173, 237, 0.2);
+    border-radius: 16px;
+    padding: 2rem;
+    animation: ${fadeIn} 0.8s ease-out;
+`;
+
+const ChartTitle = styled.h2`
+    font-size: 1.5rem;
+    color: #00adef;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+`;
+
+// ============ MODAL ============
+const Modal = styled.div`
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 1000;
     animation: ${fadeIn} 0.3s ease-out;
+    padding: 1rem;
 `;
 
-const Modal = styled.div`
-    background: linear-gradient(135deg, #1e293b 0%, #2c3e50 100%);
-    border-radius: 12px;
+const ModalContent = styled.div`
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.98) 100%);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(0, 173, 237, 0.3);
+    border-radius: 16px;
     padding: 2rem;
     max-width: 500px;
-    width: 90%;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
-    border: 1px solid rgba(0, 173, 237, 0.3);
+    width: 100%;
     position: relative;
-`;
-
-const ModalHeader = styled.div`
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
+    animation: ${slideIn} 0.3s ease-out;
 `;
 
 const ModalTitle = styled.h2`
-    font-size: 1.5rem;
     color: #00adef;
-    margin: 0;
+    margin-bottom: 2rem;
+    font-size: 1.8rem;
 `;
 
 const CloseButton = styled.button`
-    background: none;
-    border: none;
-    color: #94a3b8;
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
     cursor: pointer;
-    padding: 0.5rem;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
 
     &:hover {
-        color: #f8fafc;
+        background: rgba(239, 68, 68, 0.2);
         transform: scale(1.1);
     }
 `;
@@ -331,7 +487,7 @@ const CloseButton = styled.button`
 const Form = styled.form`
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 1.5rem;
 `;
 
 const FormGroup = styled.div`
@@ -347,68 +503,81 @@ const Label = styled.label`
 `;
 
 const Input = styled.input`
-    padding: 0.75rem;
-    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    background: rgba(0, 173, 237, 0.05);
     border: 1px solid rgba(0, 173, 237, 0.3);
-    background: rgba(0, 0, 0, 0.2);
-    color: #f8fafc;
+    border-radius: 10px;
+    color: #e0e6ed;
     font-size: 1rem;
+    transition: all 0.2s ease;
 
     &:focus {
         outline: none;
         border-color: #00adef;
+        background: rgba(0, 173, 237, 0.1);
         box-shadow: 0 0 0 3px rgba(0, 173, 237, 0.2);
+    }
+
+    &::placeholder {
+        color: #64748b;
     }
 `;
 
-const FormActions = styled.div`
-    display: flex;
-    gap: 1rem;
-    margin-top: 1rem;
-`;
+const SubmitButton = styled.button`
+    padding: 0.75rem 1.5rem;
+    background: linear-gradient(135deg, #00adef 0%, #0088cc 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 1rem;
+    transition: all 0.3s ease;
 
-const LoadingMessage = styled.div`
-    text-align: center;
-    padding: 3rem;
-    color: #00adef;
-    font-size: 1.2rem;
-`;
+    &:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(0, 173, 237, 0.4);
+    }
 
-const ErrorMessage = styled.div`
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    color: #ef4444;
-    padding: 1rem;
-    border-radius: 8px;
-    text-align: center;
-    margin: 2rem 0;
+    &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
 `;
 
 const EmptyState = styled.div`
     text-align: center;
     padding: 4rem 2rem;
-    color: #94a3b8;
+    animation: ${fadeIn} 0.5s ease-out;
 `;
 
+const EmptyIcon = styled.div`
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 2rem;
+    background: linear-gradient(135deg, rgba(0, 173, 237, 0.2) 0%, rgba(0, 173, 237, 0.05) 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px dashed rgba(0, 173, 237, 0.3);
+`;
+
+const COLORS = ['#00adef', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+
+// ============ COMPONENT ============
 const PortfolioPage = () => {
     const { api } = useAuth();
-    const [holdings, setHoldings] = useState([]);
-    const [predictions, setPredictions] = useState({});
+    const [portfolio, setPortfolio] = useState([]);
+    const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [loadingPredictions, setLoadingPredictions] = useState(false);
-    const [error, setError] = useState(null);
-    
-    // Modal states
     const [showAddModal, setShowAddModal] = useState(false);
-    const [showEditModal, setShowEditModal] = useState(false);
-    const [showDeleteModal, setShowDeleteModal] = useState(false);
-    const [selectedHolding, setSelectedHolding] = useState(null);
-    
-    // Form states
+    const [predictions, setPredictions] = useState({});
+    const [loadingPredictions, setLoadingPredictions] = useState({});
     const [formData, setFormData] = useState({
         symbol: '',
-        quantity: '',
-        purchasePrice: ''
+        shares: '',
+        averagePrice: ''
     });
 
     useEffect(() => {
@@ -419,445 +588,458 @@ const PortfolioPage = () => {
         try {
             setLoading(true);
             const response = await api.get('/portfolio');
+            const holdings = response.data.holdings || response.data || [];
+            setPortfolio(holdings);
+            calculateStats(holdings);
             
-            let holdingsData = [];
-            if (Array.isArray(response.data)) {
-                holdingsData = response.data;
-            } else if (response.data.holdings && Array.isArray(response.data.holdings)) {
-                holdingsData = response.data.holdings;
-            } else if (response.data.portfolio && Array.isArray(response.data.portfolio)) {
-                holdingsData = response.data.portfolio;
-            }
-            
-            setHoldings(holdingsData);
-            
-            if (holdingsData.length > 0) {
-                fetchPredictions(holdingsData);
-            }
-        } catch (err) {
-            console.error('Portfolio fetch error:', err);
-            setError('Failed to load portfolio');
+            holdings.forEach(holding => {
+                fetchPrediction(holding.symbol || holding.ticker);
+            });
+        } catch (error) {
+            console.error('Error fetching portfolio:', error);
+            setPortfolio([]);
         } finally {
             setLoading(false);
         }
     };
 
-    const fetchPredictions = async (holdingsData) => {
+    const fetchPrediction = async (symbol) => {
+        if (!symbol) return;
+        
+        setLoadingPredictions(prev => ({ ...prev, [symbol]: true }));
         try {
-            setLoadingPredictions(true);
-            const symbols = holdingsData.map(h => h.symbol);
-            
-            const response = await api.post('/predictions/batch', {
-                symbols,
+            const response = await api.post('/predictions/predict', {
+                symbol: symbol.toUpperCase(),
                 days: 7
             });
-            
-            const predMap = {};
-            response.data.predictions.forEach(pred => {
-                predMap[pred.symbol] = pred;
-            });
-            
-            setPredictions(predMap);
-        } catch (err) {
-            console.error('Predictions fetch error:', err);
+            setPredictions(prev => ({ ...prev, [symbol]: response.data }));
+        } catch (error) {
+            console.error(`Error fetching prediction for ${symbol}:`, error);
         } finally {
-            setLoadingPredictions(false);
+            setLoadingPredictions(prev => ({ ...prev, [symbol]: false }));
         }
+    };
+
+    const calculateStats = (holdings) => {
+        if (!holdings || holdings.length === 0) {
+            setStats(null);
+            return;
+        }
+
+        const totalValue = holdings.reduce((sum, h) => {
+            const price = h.currentPrice || h.current_price || h.price || 0;
+            const shares = h.shares || h.quantity || 0;
+            return sum + (price * shares);
+        }, 0);
+
+        const totalCost = holdings.reduce((sum, h) => {
+            const avgPrice = h.averagePrice || h.average_price || h.purchasePrice || h.price || 0;
+            const shares = h.shares || h.quantity || 0;
+            return sum + (avgPrice * shares);
+        }, 0);
+
+        const totalGain = totalValue - totalCost;
+        const totalGainPercent = totalCost > 0 ? (totalGain / totalCost) * 100 : 0;
+
+        setStats({
+            totalValue,
+            totalCost,
+            totalGain,
+            totalGainPercent,
+            holdingsCount: holdings.length
+        });
     };
 
     const handleAddHolding = async (e) => {
         e.preventDefault();
         try {
-            await api.post('/portfolio', {
+            await api.post('/portfolio/holdings', {
                 symbol: formData.symbol.toUpperCase(),
-                quantity: parseFloat(formData.quantity),
-                purchasePrice: parseFloat(formData.purchasePrice)
+                shares: parseFloat(formData.shares),
+                averagePrice: parseFloat(formData.averagePrice)
             });
             
             setShowAddModal(false);
-            setFormData({ symbol: '', quantity: '', purchasePrice: '' });
+            setFormData({ symbol: '', shares: '', averagePrice: '' });
             fetchPortfolio();
-        } catch (err) {
-            console.error('Add holding error:', err);
-            alert('Failed to add holding');
+        } catch (error) {
+            console.error('Error adding holding:', error);
+            alert(error.response?.data?.error || 'Failed to add holding');
         }
     };
 
-    const handleEditHolding = async (e) => {
-        e.preventDefault();
-        try {
-            await api.put(`/portfolio/${selectedHolding._id}`, {
-                quantity: parseFloat(formData.quantity),
-                purchasePrice: parseFloat(formData.purchasePrice)
-            });
-            
-            setShowEditModal(false);
-            setSelectedHolding(null);
-            setFormData({ symbol: '', quantity: '', purchasePrice: '' });
-            fetchPortfolio();
-        } catch (err) {
-            console.error('Edit holding error:', err);
-            alert('Failed to update holding');
-        }
-    };
+    const handleDeleteHolding = async (holdingId, symbol) => {
+        if (!window.confirm(`Delete ${symbol} from portfolio?`)) return;
 
-    const handleDeleteHolding = async () => {
         try {
-            await api.delete(`/portfolio/${selectedHolding._id}`);
-            
-            setShowDeleteModal(false);
-            setSelectedHolding(null);
+            await api.delete(`/portfolio/holdings/${holdingId}`);
             fetchPortfolio();
-        } catch (err) {
-            console.error('Delete holding error:', err);
+        } catch (error) {
+            console.error('Error deleting holding:', error);
             alert('Failed to delete holding');
         }
     };
 
-    const openEditModal = (holding) => {
-        setSelectedHolding(holding);
-        setFormData({
-            symbol: holding.symbol,
-            quantity: holding.quantity.toString(),
-            purchasePrice: holding.purchasePrice.toString()
-        });
-        setShowEditModal(true);
+    const getPieData = () => {
+        return portfolio.map(h => {
+            const price = h.currentPrice || h.current_price || h.price || 0;
+            const shares = h.shares || h.quantity || 0;
+            return {
+                name: h.symbol || h.ticker || 'Unknown',
+                value: price * shares
+            };
+        }).filter(d => d.value > 0);
     };
 
-    const openDeleteModal = (holding) => {
-        setSelectedHolding(holding);
-        setShowDeleteModal(true);
-    };
-
-    const calculateTotals = () => {
-        if (!Array.isArray(holdings) || holdings.length === 0) {
-            return { totalValue: 0, totalCost: 0, totalGain: 0, totalGainPercent: 0 };
-        }
-        
-        const totalValue = holdings.reduce((sum, h) => 
-            sum + (h.currentPrice * h.quantity), 0
-        );
-        const totalCost = holdings.reduce((sum, h) => 
-            sum + (h.purchasePrice * h.quantity), 0
-        );
-        const totalGain = totalValue - totalCost;
-        const totalGainPercent = totalCost > 0 ? (totalGain / totalCost) * 100 : 0;
-        
-        return { totalValue, totalCost, totalGain, totalGainPercent };
-    };
-
-    const getPredictionForSymbol = (symbol) => {
-        return predictions[symbol];
+    const getPerformanceData = () => {
+        return portfolio
+            .map(h => {
+                const currentPrice = h.currentPrice || h.current_price || h.price || 0;
+                const avgPrice = h.averagePrice || h.average_price || h.purchasePrice || currentPrice;
+                const gain = avgPrice > 0 ? ((currentPrice - avgPrice) / avgPrice) * 100 : 0;
+                
+                return {
+                    symbol: h.symbol || h.ticker || 'Unknown',
+                    gain: gain
+                };
+            })
+            .sort((a, b) => b.gain - a.gain);
     };
 
     if (loading) {
         return (
             <PageContainer>
-                <LoadingMessage>Loading portfolio...</LoadingMessage>
+                <div style={{ textAlign: 'center', padding: '4rem' }}>
+                    <Activity size={64} color="#00adef" />
+                    <h2 style={{ marginTop: '1rem', color: '#00adef' }}>Loading Portfolio...</h2>
+                </div>
             </PageContainer>
         );
     }
 
-    if (error) {
+    if (!portfolio || portfolio.length === 0) {
         return (
             <PageContainer>
-                <ErrorMessage>
-                    <AlertCircle size={20} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
-                    {error}
-                </ErrorMessage>
+                <Header>
+                    <Title>My Portfolio</Title>
+                    <Subtitle>Track your investments with AI-powered insights</Subtitle>
+                </Header>
+                <EmptyState>
+                    <EmptyIcon>
+                        <PieChart size={64} color="#00adef" />
+                    </EmptyIcon>
+                    <h2 style={{ color: '#00adef', marginBottom: '0.5rem' }}>Your portfolio is empty</h2>
+                    <p style={{ color: '#94a3b8', marginBottom: '2rem' }}>Add your first holding to start tracking</p>
+                </EmptyState>
+                <AddButton onClick={() => setShowAddModal(true)}>
+                    <Plus size={28} />
+                </AddButton>
+
+                {showAddModal && (
+                    <Modal onClick={() => setShowAddModal(false)}>
+                        <ModalContent onClick={(e) => e.stopPropagation()}>
+                            <CloseButton onClick={() => setShowAddModal(false)}>
+                                <X size={20} />
+                            </CloseButton>
+                            <ModalTitle>Add New Holding</ModalTitle>
+                            <Form onSubmit={handleAddHolding}>
+                                <FormGroup>
+                                    <Label>Stock Symbol</Label>
+                                    <Input
+                                        type="text"
+                                        placeholder="AAPL"
+                                        value={formData.symbol}
+                                        onChange={(e) => setFormData({ ...formData, symbol: e.target.value.toUpperCase() })}
+                                        required
+                                    />
+                                </FormGroup>
+                                <FormGroup>
+                                    <Label>Number of Shares</Label>
+                                    <Input
+                                        type="number"
+                                        step="0.01"
+                                        placeholder="10"
+                                        value={formData.shares}
+                                        onChange={(e) => setFormData({ ...formData, shares: e.target.value })}
+                                        required
+                                    />
+                                </FormGroup>
+                                <FormGroup>
+                                    <Label>Average Purchase Price</Label>
+                                    <Input
+                                        type="number"
+                                        step="0.01"
+                                        placeholder="150.00"
+                                        value={formData.averagePrice}
+                                        onChange={(e) => setFormData({ ...formData, averagePrice: e.target.value })}
+                                        required
+                                    />
+                                </FormGroup>
+                                <SubmitButton type="submit">Add Holding</SubmitButton>
+                            </Form>
+                        </ModalContent>
+                    </Modal>
+                )}
             </PageContainer>
         );
     }
-
-    const { totalValue, totalCost, totalGain, totalGainPercent } = calculateTotals();
 
     return (
         <PageContainer>
             <Header>
                 <Title>My Portfolio</Title>
-                <HeaderActions>
-                    <Button variant="primary" onClick={() => setShowAddModal(true)}>
-                        <Plus size={20} />
-                        Add Holding
-                    </Button>
-                    <Button onClick={() => fetchPredictions(holdings)}>
-                        <Brain size={20} />
-                        Refresh Predictions
-                    </Button>
-                </HeaderActions>
+                <Subtitle>AI-powered portfolio tracking and predictions</Subtitle>
             </Header>
 
-            <SummaryCards>
-                <SummaryCard>
-                    <CardLabel>Total Value</CardLabel>
-                    <CardValue>${totalValue.toFixed(2)}</CardValue>
-                </SummaryCard>
-                
-                <SummaryCard>
-                    <CardLabel>Total Cost</CardLabel>
-                    <CardValue>${totalCost.toFixed(2)}</CardValue>
-                </SummaryCard>
-                
-                <SummaryCard>
-                    <CardLabel>Total Gain/Loss</CardLabel>
-                    <CardValue positive={totalGain >= 0} negative={totalGain < 0}>
-                        {totalGain >= 0 ? '+' : ''}${totalGain.toFixed(2)}
-                    </CardValue>
-                    <PriceChange positive={totalGainPercent >= 0}>
-                        {totalGainPercent >= 0 ? '+' : ''}{totalGainPercent.toFixed(2)}%
-                    </PriceChange>
-                </SummaryCard>
-                
-                <SummaryCard>
-                    <CardLabel>Holdings</CardLabel>
-                    <CardValue>{holdings.length}</CardValue>
-                </SummaryCard>
-            </SummaryCards>
+            {/* STATS */}
+            {stats && (
+                <StatsGrid>
+                    <StatCard>
+                        <StatIcon>
+                            <DollarSign size={24} />
+                        </StatIcon>
+                        <StatLabel>Total Value</StatLabel>
+                        <StatValue>
+                            ${stats.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </StatValue>
+                        <StatSubtext>
+                            <Eye size={16} />
+                            {stats.holdingsCount} Holdings
+                        </StatSubtext>
+                    </StatCard>
 
-            <HoldingsSection>
-                <SectionHeader>
-                    <SectionTitle>
-                        <Zap size={24} />
-                        Holdings with AI Predictions
-                    </SectionTitle>
-                    {loadingPredictions && (
-                        <span style={{ color: '#a78bfa', fontSize: '0.9rem' }}>
-                            Loading predictions...
-                        </span>
-                    )}
-                </SectionHeader>
+                    <StatCard variant={stats.totalGain >= 0 ? 'success' : 'danger'}>
+                        <StatIcon variant={stats.totalGain >= 0 ? 'success' : 'danger'}>
+                            {stats.totalGain >= 0 ? <TrendingUp size={24} /> : <TrendingDown size={24} />}
+                        </StatIcon>
+                        <StatLabel>Total Gain/Loss</StatLabel>
+                        <StatValue positive={stats.totalGain >= 0} negative={stats.totalGain < 0}>
+                            ${Math.abs(stats.totalGain).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </StatValue>
+                        <StatSubtext positive={stats.totalGainPercent >= 0} negative={stats.totalGainPercent < 0}>
+                            {stats.totalGainPercent >= 0 ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
+                            {stats.totalGainPercent >= 0 ? '+' : ''}{stats.totalGainPercent.toFixed(2)}%
+                        </StatSubtext>
+                    </StatCard>
 
-                {holdings.length === 0 ? (
-                    <EmptyState>
-                        <h3>No holdings yet</h3>
-                        <p>Click "Add Holding" to get started</p>
-                        <Button variant="primary" onClick={() => setShowAddModal(true)} style={{ marginTop: '1rem' }}>
-                            <Plus size={20} />
-                            Add Your First Holding
-                        </Button>
-                    </EmptyState>
-                ) : (
-                    holdings.map(holding => {
-                        const gain = (holding.currentPrice - holding.purchasePrice) * holding.quantity;
-                        const gainPercent = ((holding.currentPrice - holding.purchasePrice) / holding.purchasePrice) * 100;
-                        const prediction = getPredictionForSymbol(holding.symbol);
+                    <StatCard>
+                        <StatIcon>
+                            <Target size={24} />
+                        </StatIcon>
+                        <StatLabel>Cost Basis</StatLabel>
+                        <StatValue>
+                            ${stats.totalCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </StatValue>
+                        <StatSubtext>
+                            <Activity size={16} />
+                            Initial Investment
+                        </StatSubtext>
+                    </StatCard>
+                </StatsGrid>
+            )}
 
-                        return (
-                            <HoldingCard key={holding._id}>
-                                <HoldingHeader>
-                                    <SymbolInfo>
-                                        <Symbol>{holding.symbol}</Symbol>
-                                    </SymbolInfo>
-                                    <PriceInfo>
-                                        <CurrentPrice>${holding.currentPrice.toFixed(2)}</CurrentPrice>
-                                        <PriceChange positive={gainPercent >= 0}>
-                                            {gainPercent >= 0 ? '+' : ''}{gainPercent.toFixed(2)}%
-                                        </PriceChange>
-                                    </PriceInfo>
-                                </HoldingHeader>
+            {/* HOLDINGS */}
+            <HoldingsGrid>
+                {portfolio.map((holding) => {
+                    const currentPrice = holding.currentPrice || holding.current_price || holding.price || 0;
+                    const avgPrice = holding.averagePrice || holding.average_price || holding.purchasePrice || currentPrice;
+                    const shares = holding.shares || holding.quantity || 0;
+                    const symbol = holding.symbol || holding.ticker || 'Unknown';
+                    
+                    const totalValue = currentPrice * shares;
+                    const totalCost = avgPrice * shares;
+                    const gain = totalValue - totalCost;
+                    const gainPercent = totalCost > 0 ? (gain / totalCost) * 100 : 0;
 
-                                <HoldingGrid>
-                                    <InfoBox>
-                                        <InfoLabel>Quantity</InfoLabel>
-                                        <InfoValue>{holding.quantity}</InfoValue>
-                                    </InfoBox>
-                                    
-                                    <InfoBox>
-                                        <InfoLabel>Purchase Price</InfoLabel>
-                                        <InfoValue>${holding.purchasePrice.toFixed(2)}</InfoValue>
-                                    </InfoBox>
-                                    
-                                    <InfoBox>
-                                        <InfoLabel>Total Value</InfoLabel>
-                                        <InfoValue>${(holding.currentPrice * holding.quantity).toFixed(2)}</InfoValue>
-                                    </InfoBox>
-                                    
-                                    <InfoBox>
-                                        <InfoLabel>Gain/Loss</InfoLabel>
-                                        <InfoValue style={{ color: gain >= 0 ? '#10b981' : '#ef4444' }}>
-                                            {gain >= 0 ? '+' : ''}${gain.toFixed(2)}
-                                        </InfoValue>
-                                    </InfoBox>
-                                </HoldingGrid>
+                    const prediction = predictions[symbol];
+                    const loadingPred = loadingPredictions[symbol];
 
-                                {prediction && prediction.prediction && (
-                                    <PredictionSection>
-                                        <PredictionHeader>
-                                            <Brain size={16} />
-                                            7-Day AI Prediction
-                                        </PredictionHeader>
-                                        <PredictionGrid>
-                                            <PredictionItem>
-                                                <PredLabel>Direction</PredLabel>
-                                                <PredValue direction={prediction.prediction.direction}>
-                                                    {prediction.prediction.direction === 'UP' && <TrendingUp size={16} style={{ verticalAlign: 'middle' }} />}
-                                                    {prediction.prediction.direction === 'DOWN' && <TrendingDown size={16} style={{ verticalAlign: 'middle' }} />}
-                                                    {' '}{prediction.prediction.direction}
-                                                </PredValue>
-                                            </PredictionItem>
-                                            
-                                            <PredictionItem>
-                                                <PredLabel>Confidence</PredLabel>
-                                                <PredValue>{prediction.prediction.confidence.toFixed(1)}%</PredValue>
-                                            </PredictionItem>
-                                            
-                                            <PredictionItem>
-                                                <PredLabel>Target Price</PredLabel>
-                                                <PredValue>${prediction.prediction.target_price.toFixed(2)}</PredValue>
-                                            </PredictionItem>
-                                            
-                                            <PredictionItem>
-                                                <PredLabel>Expected Change</PredLabel>
-                                                <PredValue direction={prediction.prediction.price_change_percent >= 0 ? 'UP' : 'DOWN'}>
-                                                    {prediction.prediction.price_change_percent >= 0 ? '+' : ''}
-                                                    {prediction.prediction.price_change_percent.toFixed(2)}%
-                                                </PredValue>
-                                            </PredictionItem>
-                                        </PredictionGrid>
-                                    </PredictionSection>
+                    return (
+                        <HoldingCard key={holding._id || symbol} positive={gain >= 0}>
+                            <HoldingHeader>
+                                <HoldingSymbol>
+                                    {symbol}
+                                    {gain >= 0 ? 
+                                        <Star size={20} color="#10b981" /> : 
+                                        <Flame size={20} color="#ef4444" />
+                                    }
+                                </HoldingSymbol>
+                                <DeleteButton onClick={() => handleDeleteHolding(holding._id, symbol)}>
+                                    <Trash2 size={18} />
+                                </DeleteButton>
+                            </HoldingHeader>
+
+                            <HoldingStats>
+                                <StatItem>
+                                    <StatItemLabel>Shares</StatItemLabel>
+                                    <StatItemValue>{shares}</StatItemValue>
+                                </StatItem>
+                                <StatItem>
+                                    <StatItemLabel>Avg Price</StatItemLabel>
+                                    <StatItemValue>${avgPrice.toFixed(2)}</StatItemValue>
+                                </StatItem>
+                                <StatItem>
+                                    <StatItemLabel>Current Price</StatItemLabel>
+                                    <StatItemValue>${currentPrice.toFixed(2)}</StatItemValue>
+                                </StatItem>
+                                <StatItem>
+                                    <StatItemLabel>Total Value</StatItemLabel>
+                                    <StatItemValue>${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</StatItemValue>
+                                </StatItem>
+                            </HoldingStats>
+
+                            <PerformanceBar positive={gain >= 0}>
+                                <PerformanceIcon positive={gain >= 0}>
+                                    {gain >= 0 ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
+                                </PerformanceIcon>
+                                <PerformanceDetails>
+                                    <PerformanceValue positive={gain >= 0}>
+                                        ${Math.abs(gain).toFixed(2)}
+                                    </PerformanceValue>
+                                    <PerformancePercent positive={gain >= 0}>
+                                        {gainPercent >= 0 ? '+' : ''}{gainPercent.toFixed(2)}%
+                                    </PerformancePercent>
+                                </PerformanceDetails>
+                            </PerformanceBar>
+
+                            <PredictionBadge>
+                                <PredictionHeader>
+                                    <Brain size={18} color="#a78bfa" />
+                                    <strong style={{ color: '#a78bfa' }}>AI Forecast (7d)</strong>
+                                </PredictionHeader>
+                                <PredictionText>
+                                    {loadingPred ? (
+                                        'Analyzing...'
+                                    ) : prediction ? (
+                                        <>
+                                            <strong>${prediction.prediction?.target_price?.toFixed(2)}</strong> • {prediction.prediction?.direction} • {prediction.prediction?.confidence?.toFixed(0)}% confidence
+                                        </>
+                                    ) : (
+                                        'No prediction available'
+                                    )}
+                                </PredictionText>
+                                {prediction && (
+                                    <ConfidenceBar>
+                                        <ConfidenceFill value={prediction.prediction?.confidence || 0} />
+                                    </ConfidenceBar>
                                 )}
+                            </PredictionBadge>
+                        </HoldingCard>
+                    );
+                })}
+            </HoldingsGrid>
 
-                                <Actions>
-                                    <IconButton onClick={() => openEditModal(holding)} title="Edit holding">
-                                        <Edit2 size={16} />
-                                    </IconButton>
-                                    <IconButton danger onClick={() => openDeleteModal(holding)} title="Remove holding">
-                                        <Trash2 size={16} />
-                                    </IconButton>
-                                </Actions>
-                            </HoldingCard>
-                        );
-                    })
-                )}
-            </HoldingsSection>
+            {/* CHARTS */}
+            <ChartsGrid>
+                <ChartPanel>
+                    <ChartTitle>
+                        <PieChart size={24} />
+                        Asset Allocation
+                    </ChartTitle>
+                    <ResponsiveContainer width="100%" height={300}>
+                        <RechartsPie>
+                            <Pie
+                                data={getPieData()}
+                                cx="50%"
+                                cy="50%"
+                                labelLine={false}
+                                label={(entry) => `${entry.name} (${((entry.value / stats.totalValue) * 100).toFixed(1)}%)`}
+                                outerRadius={100}
+                                fill="#8884d8"
+                                dataKey="value"
+                            >
+                                {getPieData().map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                ))}
+                            </Pie>
+                            <Tooltip 
+                                formatter={(value) => `$${value.toLocaleString()}`}
+                                contentStyle={{ 
+                                    background: '#1e293b', 
+                                    border: '1px solid rgba(0, 173, 237, 0.3)',
+                                    borderRadius: '8px'
+                                }}
+                            />
+                        </RechartsPie>
+                    </ResponsiveContainer>
+                </ChartPanel>
 
-            {/* Add Modal */}
+                <ChartPanel>
+                    <ChartTitle>
+                        <BarChart3 size={24} />
+                        Performance by Stock
+                    </ChartTitle>
+                    <ResponsiveContainer width="100%" height={300}>
+                        <BarChart data={getPerformanceData()}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.1)" />
+                            <XAxis dataKey="symbol" stroke="#94a3b8" />
+                            <YAxis stroke="#94a3b8" />
+                            <Tooltip
+                                formatter={(value) => `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`}
+                                contentStyle={{ 
+                                    background: '#1e293b', 
+                                    border: '1px solid rgba(0, 173, 237, 0.3)',
+                                    borderRadius: '8px'
+                                }}
+                            />
+                            <Bar dataKey="gain" fill="#00adef">
+                                {getPerformanceData().map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.gain >= 0 ? '#10b981' : '#ef4444'} />
+                                ))}
+                            </Bar>
+                        </BarChart>
+                    </ResponsiveContainer>
+                </ChartPanel>
+            </ChartsGrid>
+
+            <AddButton onClick={() => setShowAddModal(true)}>
+                <Plus size={28} />
+            </AddButton>
+
             {showAddModal && (
-                <ModalOverlay onClick={() => setShowAddModal(false)}>
-                    <Modal onClick={(e) => e.stopPropagation()}>
-                        <ModalHeader>
-                            <ModalTitle>Add New Holding</ModalTitle>
-                            <CloseButton onClick={() => setShowAddModal(false)}>
-                                <X size={24} />
-                            </CloseButton>
-                        </ModalHeader>
+                <Modal onClick={() => setShowAddModal(false)}>
+                    <ModalContent onClick={(e) => e.stopPropagation()}>
+                        <CloseButton onClick={() => setShowAddModal(false)}>
+                            <X size={20} />
+                        </CloseButton>
+                        <ModalTitle>Add New Holding</ModalTitle>
                         <Form onSubmit={handleAddHolding}>
                             <FormGroup>
-                                <Label>Symbol</Label>
+                                <Label>Stock Symbol</Label>
                                 <Input
                                     type="text"
-                                    placeholder="AAPL, BTC, etc."
+                                    placeholder="AAPL"
                                     value={formData.symbol}
                                     onChange={(e) => setFormData({ ...formData, symbol: e.target.value.toUpperCase() })}
                                     required
                                 />
                             </FormGroup>
                             <FormGroup>
-                                <Label>Quantity</Label>
+                                <Label>Number of Shares</Label>
                                 <Input
                                     type="number"
-                                    step="any"
+                                    step="0.01"
                                     placeholder="10"
-                                    value={formData.quantity}
-                                    onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+                                    value={formData.shares}
+                                    onChange={(e) => setFormData({ ...formData, shares: e.target.value })}
                                     required
                                 />
                             </FormGroup>
                             <FormGroup>
-                                <Label>Purchase Price</Label>
+                                <Label>Average Purchase Price</Label>
                                 <Input
                                     type="number"
-                                    step="any"
+                                    step="0.01"
                                     placeholder="150.00"
-                                    value={formData.purchasePrice}
-                                    onChange={(e) => setFormData({ ...formData, purchasePrice: e.target.value })}
+                                    value={formData.averagePrice}
+                                    onChange={(e) => setFormData({ ...formData, averagePrice: e.target.value })}
                                     required
                                 />
                             </FormGroup>
-                            <FormActions>
-                                <Button type="submit" variant="primary">
-                                    <Plus size={20} />
-                                    Add Holding
-                                </Button>
-                                <Button type="button" onClick={() => setShowAddModal(false)}>
-                                    Cancel
-                                </Button>
-                            </FormActions>
+                            <SubmitButton type="submit">Add Holding</SubmitButton>
                         </Form>
-                    </Modal>
-                </ModalOverlay>
-            )}
-
-            {/* Edit Modal */}
-            {showEditModal && selectedHolding && (
-                <ModalOverlay onClick={() => setShowEditModal(false)}>
-                    <Modal onClick={(e) => e.stopPropagation()}>
-                        <ModalHeader>
-                            <ModalTitle>Edit {selectedHolding.symbol}</ModalTitle>
-                            <CloseButton onClick={() => setShowEditModal(false)}>
-                                <X size={24} />
-                            </CloseButton>
-                        </ModalHeader>
-                        <Form onSubmit={handleEditHolding}>
-                            <FormGroup>
-                                <Label>Quantity</Label>
-                                <Input
-                                    type="number"
-                                    step="any"
-                                    value={formData.quantity}
-                                    onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-                                    required
-                                />
-                            </FormGroup>
-                            <FormGroup>
-                                <Label>Purchase Price</Label>
-                                <Input
-                                    type="number"
-                                    step="any"
-                                    value={formData.purchasePrice}
-                                    onChange={(e) => setFormData({ ...formData, purchasePrice: e.target.value })}
-                                    required
-                                />
-                            </FormGroup>
-                            <FormActions>
-                                <Button type="submit" variant="primary">
-                                    <Edit2 size={20} />
-                                    Update Holding
-                                </Button>
-                                <Button type="button" onClick={() => setShowEditModal(false)}>
-                                    Cancel
-                                </Button>
-                            </FormActions>
-                        </Form>
-                    </Modal>
-                </ModalOverlay>
-            )}
-
-            {/* Delete Confirmation Modal */}
-            {showDeleteModal && selectedHolding && (
-                <ModalOverlay onClick={() => setShowDeleteModal(false)}>
-                    <Modal onClick={(e) => e.stopPropagation()}>
-                        <ModalHeader>
-                            <ModalTitle>Delete Holding</ModalTitle>
-                            <CloseButton onClick={() => setShowDeleteModal(false)}>
-                                <X size={24} />
-                            </CloseButton>
-                        </ModalHeader>
-                        <p style={{ marginBottom: '1.5rem', color: '#94a3b8' }}>
-                            Are you sure you want to delete <strong style={{ color: '#f8fafc' }}>{selectedHolding.symbol}</strong>?
-                            This action cannot be undone.
-                        </p>
-                        <FormActions>
-                            <Button variant="danger" onClick={handleDeleteHolding}>
-                                <Trash2 size={20} />
-                                Delete
-                            </Button>
-                            <Button onClick={() => setShowDeleteModal(false)}>
-                                Cancel
-                            </Button>
-                        </FormActions>
-                    </Modal>
-                </ModalOverlay>
+                    </ModalContent>
+                </Modal>
             )}
         </PageContainer>
     );
