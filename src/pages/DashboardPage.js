@@ -1,18 +1,18 @@
 // client/src/pages/DashboardPage.js - THE MOST LEGENDARY DASHBOARD EVER - ENHANCED EDITION
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styled, { keyframes, css } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import {
     TrendingUp, TrendingDown, Activity, DollarSign, PieChart,
-    Zap, Target, Brain, Eye, AlertCircle, ArrowUpRight, ArrowDownRight,
-    Clock, BarChart3, Flame, Award, Star, Bell, Trophy, Rocket,
-    TrendingUpIcon, CheckCircle, XCircle, AlertTriangle, Calendar,
-    RefreshCw, Filter, Download, Share2, Sparkles
+    Zap, Target, Brain, Eye, ArrowUpRight, ArrowDownRight,
+    Clock, BarChart3, Flame, Star, Bell, Trophy,
+    CheckCircle, AlertTriangle,
+    RefreshCw, Download, Sparkles
 } from 'lucide-react';
 import {
-    LineChart, Line, AreaChart, Area, BarChart, Bar,
-    XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart as RechartPieChart, Pie
+    AreaChart, Area,
+    XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 
 // ============ ANIMATIONS ============
@@ -861,6 +861,7 @@ const DashboardPage = () => {
 
     useEffect(() => {
         fetchDashboardData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const fetchDashboardData = async () => {
