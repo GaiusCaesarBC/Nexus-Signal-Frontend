@@ -367,9 +367,40 @@ const MessageText = styled.p`
     margin: 0;
     color: #e0e6ed;
     font-size: 0.95rem;
-    line-height: 1.5;
+    line-height: 1.6;
     position: relative;
     z-index: 1;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+
+    /* Handle markdown-style formatting */
+    strong, b {
+        font-weight: 700;
+        color: #00adef;
+    }
+
+    em, i {
+        font-style: italic;
+        color: #a78bfa;
+    }
+
+    code {
+        background: rgba(0, 173, 237, 0.1);
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+        font-family: 'Courier New', monospace;
+        font-size: 0.9rem;
+    }
+
+    /* Style lists */
+    ul, ol {
+        margin: 0.5rem 0;
+        padding-left: 1.5rem;
+    }
+
+    li {
+        margin: 0.25rem 0;
+    }
 `;
 
 const MessageTime = styled.span`
@@ -592,6 +623,23 @@ const AIChatWidget = () => {
         scrollToBottom();
     }, [messages]);
 
+    const formatMessageText = (text) => {
+        // Convert markdown-style formatting to HTML
+        let formatted = text
+            // Bold text **text** or __text__
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/__(.*?)__/g, '<strong>$1</strong>')
+            // Italic text *text* or _text_
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/_(.*?)_/g, '<em>$1</em>')
+            // Inline code `code`
+            .replace(/`(.*?)`/g, '<code>$1</code>')
+            // Line breaks
+            .replace(/\n/g, '<br/>');
+
+        return formatted;
+    };
+
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
@@ -753,7 +801,7 @@ const AIChatWidget = () => {
                                                 }
                                             </MessageAvatar>
                                             <MessageBubble isUser={message.isUser}>
-                                                <MessageText>{message.text}</MessageText>
+                                                <MessageText dangerouslySetInnerHTML={{ __html: formatMessageText(message.text) }} />
                                                 <MessageTime>{message.timestamp}</MessageTime>
                                             </MessageBubble>
                                         </Message>
