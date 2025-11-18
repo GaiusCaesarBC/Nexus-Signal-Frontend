@@ -32,6 +32,12 @@ import NotFoundPage from './pages/NotFoundPage';
 import StockPage from './pages/StockPage';
 import ProfilePage from './pages/ProfilePage';
 import CookiePolicyPage from './pages/CookiePolicyPage';
+import ScrollToTop from './components/ScrollToTop';
+import ScreenerPage from './pages/ScreenerPage';
+import NewsPage from './pages/NewsPage';
+import HeatmapPage from './pages/HeatmapPage';
+import JournalPage from './pages/JournalPage';
+
 
 // ✅ NEW COMPONENT - Wraps content with styled-components theme
 function AppContent() {
@@ -44,6 +50,7 @@ function AppContent() {
 
     return (
         <StyledThemeProvider theme={theme}>
+            <ScrollToTop />
             <Navbar />
             <main style={{ flexGrow: 1, minHeight: 'calc(100vh - 120px)' }}>
                 <Routes>
@@ -66,7 +73,11 @@ function AppContent() {
                     <Route path="/predict" element={<ProtectedRoute><PredictPage /></ProtectedRoute>} />
                     <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
                     <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
-
+                    <Route path="/screener" element={<ProtectedRoute><ScreenerPage /></ProtectedRoute>} />
+                    <Route path="/news" element={<ProtectedRoute><NewsPage /></ProtectedRoute>} />
+                    <Route path="/heatmap" element={<ProtectedRoute><HeatmapPage /></ProtectedRoute>} />
+                    <Route path="/journal" element={<ProtectedRoute><JournalPage /></ProtectedRoute>} />
+                    
                     {/* Stock Details Page Route */}
                     <Route path="/stocks/:symbol" element={<ProtectedRoute><StockPage /></ProtectedRoute>} />
 

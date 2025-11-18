@@ -1,4 +1,4 @@
-// client/src/pages/PredictionsPage.js - THE MOST LEGENDARY AI PREDICTION PAGE - ULTIMATE EDITION
+// client/src/pages/PredictionsPage.js - THE MOST LEGENDARY AI PREDICTION PAGE - ULTIMATE EDITION V2
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useToast } from '../context/ToastContext';
@@ -8,11 +8,16 @@ import {
     Brain, TrendingUp, TrendingDown, Target, Zap, Activity,
     AlertCircle, Calendar, DollarSign, Percent, ArrowRight,
     Star, Award, Sparkles, ChevronRight, BarChart3, LineChart as LineChartIcon,
-    Rocket, Trophy, ArrowUpDown, Flame
+    Rocket, Trophy, ArrowUpDown, Flame, History, Share2, Download,
+    Plus, X, Check, TrendingUp as TrendUpIcon, Clock, Eye,
+    RefreshCw, GitCompare, BookmarkPlus, Bookmark, Twitter,
+    Facebook, Linkedin, Copy, ChevronDown, ChevronUp, Filter,
+    SortAsc, SortDesc
 } from 'lucide-react';
 import {
     LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid,
-    Tooltip, ResponsiveContainer, ReferenceLine
+    Tooltip, ResponsiveContainer, ReferenceLine, BarChart, Bar,
+    RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis
 } from 'recharts';
 
 // ============ ANIMATIONS ============
@@ -93,6 +98,11 @@ const rocketLaunch = keyframes`
     100% { transform: translateY(-1000px) translateX(1000px) rotate(-45deg); }
 `;
 
+const rocketCrash = keyframes`
+    0% { transform: translateY(-1000px) rotate(135deg); }
+    100% { transform: translateY(100vh) translateX(-300px) rotate(135deg); }
+`;
+
 // ============ STYLED COMPONENTS ============
 const PageContainer = styled.div`
     min-height: 100vh;
@@ -159,6 +169,10 @@ const Title = styled.h1`
         transform: scale(1.05);
         animation: ${shake} 0.5s ease-in-out;
     }
+
+    @media (max-width: 768px) {
+        font-size: 2.5rem;
+    }
 `;
 
 const TitleIcon = styled.div`
@@ -188,6 +202,56 @@ const PoweredBy = styled.div`
     &:hover {
         transform: translateY(-3px);
         background: linear-gradient(135deg, rgba(139, 92, 246, 0.4) 0%, rgba(59, 130, 246, 0.4) 100%);
+    }
+`;
+
+// ============ TABS SECTION ============
+const TabsContainer = styled.div`
+    max-width: 1400px;
+    margin: 0 auto 2rem;
+    display: flex;
+    gap: 1rem;
+    position: relative;
+    z-index: 1;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+
+    &::-webkit-scrollbar {
+        height: 4px;
+    }
+
+    &::-webkit-scrollbar-track {
+        background: rgba(139, 92, 246, 0.1);
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: rgba(139, 92, 246, 0.5);
+        border-radius: 2px;
+    }
+`;
+
+const Tab = styled.button`
+    padding: 0.75rem 1.5rem;
+    background: ${props => props.$active ? 
+        'linear-gradient(135deg, rgba(139, 92, 246, 0.3) 0%, rgba(139, 92, 246, 0.15) 100%)' :
+        'rgba(30, 41, 59, 0.5)'
+    };
+    border: 1px solid ${props => props.$active ? 'rgba(139, 92, 246, 0.5)' : 'rgba(100, 116, 139, 0.3)'};
+    border-radius: 12px;
+    color: ${props => props.$active ? '#a78bfa' : '#94a3b8'};
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+
+    &:hover {
+        background: linear-gradient(135deg, rgba(139, 92, 246, 0.3) 0%, rgba(139, 92, 246, 0.15) 100%);
+        border-color: rgba(139, 92, 246, 0.5);
+        color: #a78bfa;
+        transform: translateY(-2px);
     }
 `;
 
@@ -347,7 +411,17 @@ const Select = styled.select`
     }
 `;
 
+const ButtonGroup = styled.div`
+    display: flex;
+    gap: 1rem;
+
+    @media (max-width: 768px) {
+        flex-direction: column;
+    }
+`;
+
 const PredictButton = styled.button`
+    flex: 1;
     padding: 1.25rem 2rem;
     background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
     color: white;
@@ -392,8 +466,58 @@ const PredictButton = styled.button`
     }
 `;
 
+const SecondaryButton = styled(PredictButton)`
+    background: rgba(139, 92, 246, 0.1);
+    border: 2px solid rgba(139, 92, 246, 0.3);
+    color: #a78bfa;
+
+    &:hover:not(:disabled) {
+        background: rgba(139, 92, 246, 0.2);
+        border-color: rgba(139, 92, 246, 0.5);
+    }
+`;
+
 const LoadingSpinner = styled(Sparkles)`
     animation: ${spin} 1s linear infinite;
+`;
+
+// ============ COMPARISON MODE ============
+const ComparisonContainer = styled.div`
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+`;
+
+const ComparisonCard = styled.div`
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 16px;
+    padding: 1.5rem;
+    position: relative;
+    animation: ${fadeIn} 0.6s ease-out;
+`;
+
+const RemoveButton = styled.button`
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(239, 68, 68, 0.2);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+        background: rgba(239, 68, 68, 0.3);
+        transform: scale(1.1);
+    }
 `;
 
 // ============ RESULTS SECTION ============
@@ -475,21 +599,53 @@ const CurrentPriceValue = styled.span`
     font-weight: 700;
 `;
 
+const ActionButtons = styled.div`
+    display: flex;
+    gap: 0.75rem;
+    position: relative;
+    z-index: 1;
+
+    @media (max-width: 768px) {
+        width: 100%;
+        justify-content: center;
+    }
+`;
+
+const ActionButton = styled.button`
+    padding: 0.75rem 1rem;
+    background: rgba(139, 92, 246, 0.1);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 10px;
+    color: #a78bfa;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+
+    &:hover {
+        background: rgba(139, 92, 246, 0.2);
+        border-color: rgba(139, 92, 246, 0.5);
+        transform: translateY(-2px);
+    }
+`;
+
 const DirectionBadge = styled.div`
     display: flex;
     align-items: center;
     gap: 0.75rem;
     padding: 1rem 2rem;
-    background: ${props => props.up ? 
+    background: ${props => props.$up ? 
         'linear-gradient(135deg, rgba(16, 185, 129, 0.3) 0%, rgba(5, 150, 105, 0.3) 100%)' : 
         'linear-gradient(135deg, rgba(239, 68, 68, 0.3) 0%, rgba(220, 38, 38, 0.3) 100%)'
     };
-    border: 2px solid ${props => props.up ? 'rgba(16, 185, 129, 0.5)' : 'rgba(239, 68, 68, 0.5)'};
+    border: 2px solid ${props => props.$up ? 'rgba(16, 185, 129, 0.5)' : 'rgba(239, 68, 68, 0.5)'};
     border-radius: 16px;
-    color: ${props => props.up ? '#10b981' : '#ef4444'};
+    color: ${props => props.$up ? '#10b981' : '#ef4444'};
     font-size: 1.5rem;
     font-weight: 900;
-    box-shadow: ${props => props.up ? 
+    box-shadow: ${props => props.$up ? 
         '0 10px 30px rgba(16, 185, 129, 0.3)' : 
         '0 10px 30px rgba(239, 68, 68, 0.3)'
     };
@@ -514,7 +670,7 @@ const MetricCard = styled.div`
     padding: 1.5rem;
     transition: all 0.3s ease;
     animation: ${fadeIn} 0.6s ease-out;
-    animation-delay: ${props => props.index * 0.1}s;
+    animation-delay: ${props => props.$index * 0.1}s;
 
     &:hover {
         transform: translateY(-5px) scale(1.03);
@@ -528,15 +684,15 @@ const MetricIcon = styled.div`
     height: 48px;
     border-radius: 12px;
     background: ${props => {
-        if (props.variant === 'success') return 'rgba(16, 185, 129, 0.2)';
-        if (props.variant === 'danger') return 'rgba(239, 68, 68, 0.2)';
-        if (props.variant === 'warning') return 'rgba(245, 158, 11, 0.2)';
+        if (props.$variant === 'success') return 'rgba(16, 185, 129, 0.2)';
+        if (props.$variant === 'danger') return 'rgba(239, 68, 68, 0.2)';
+        if (props.$variant === 'warning') return 'rgba(245, 158, 11, 0.2)';
         return 'rgba(139, 92, 246, 0.2)';
     }};
     color: ${props => {
-        if (props.variant === 'success') return '#10b981';
-        if (props.variant === 'danger') return '#ef4444';
-        if (props.variant === 'warning') return '#f59e0b';
+        if (props.$variant === 'success') return '#10b981';
+        if (props.$variant === 'danger') return '#ef4444';
+        if (props.$variant === 'warning') return '#f59e0b';
         return '#a78bfa';
     }};
     display: flex;
@@ -560,9 +716,9 @@ const MetricValue = styled.div`
     font-size: 2rem;
     font-weight: 900;
     color: ${props => {
-        if (props.variant === 'success') return '#10b981';
-        if (props.variant === 'danger') return '#ef4444';
-        if (props.variant === 'warning') return '#f59e0b';
+        if (props.$variant === 'success') return '#10b981';
+        if (props.$variant === 'danger') return '#ef4444';
+        if (props.$variant === 'warning') return '#f59e0b';
         return '#a78bfa';
     }};
 `;
@@ -605,7 +761,7 @@ const ConfidenceBar = styled.div`
 
 const ConfidenceFill = styled.div`
     height: 100%;
-    width: ${props => props.value || 0}%;
+    width: ${props => props.$value || 0}%;
     background: linear-gradient(90deg, #10b981, #8b5cf6, #00adef);
     border-radius: 10px;
     transition: width 1.5s ease-out;
@@ -625,6 +781,60 @@ const ConfidenceFill = styled.div`
     }
 `;
 
+// ============ TECHNICAL INDICATORS ============
+const IndicatorsSection = styled.div`
+    margin-bottom: 2rem;
+    position: relative;
+    z-index: 1;
+`;
+
+const IndicatorsTitle = styled.h3`
+    color: #a78bfa;
+    font-size: 1.3rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+`;
+
+const IndicatorsGrid = styled.div`
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+`;
+
+const IndicatorItem = styled.div`
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    border-radius: 12px;
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s ease;
+
+    &:hover {
+        background: rgba(15, 23, 42, 0.8);
+        border-color: rgba(139, 92, 246, 0.4);
+        transform: translateX(5px);
+    }
+`;
+
+const IndicatorName = styled.span`
+    color: #94a3b8;
+    font-size: 0.9rem;
+`;
+
+const IndicatorValue = styled.span`
+    color: ${props => {
+        if (props.$signal === 'BUY') return '#10b981';
+        if (props.$signal === 'SELL') return '#ef4444';
+        return '#f59e0b';
+    }};
+    font-weight: 700;
+    font-size: 0.95rem;
+`;
+
 // ============ CHART SECTION ============
 const ChartSection = styled.div`
     background: rgba(15, 23, 42, 0.8);
@@ -635,6 +845,7 @@ const ChartSection = styled.div`
     position: relative;
     z-index: 1;
     transition: all 0.3s ease;
+    margin-bottom: 2rem;
 
     &:hover {
         border-color: rgba(139, 92, 246, 0.6);
@@ -649,6 +860,152 @@ const ChartTitle = styled.h3`
     display: flex;
     align-items: center;
     gap: 0.5rem;
+`;
+
+// ============ HISTORY SECTION ============
+const HistoryContainer = styled.div`
+    max-width: 1400px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+`;
+
+const HistoryHeader = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+`;
+
+const HistoryTitle = styled.h2`
+    color: #a78bfa;
+    font-size: 2rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+`;
+
+const HistoryFilters = styled.div`
+    display: flex;
+    gap: 1rem;
+`;
+
+const FilterButton = styled.button`
+    padding: 0.75rem 1rem;
+    background: ${props => props.$active ? 
+        'linear-gradient(135deg, rgba(139, 92, 246, 0.3) 0%, rgba(139, 92, 246, 0.15) 100%)' :
+        'rgba(30, 41, 59, 0.5)'
+    };
+    border: 1px solid ${props => props.$active ? 'rgba(139, 92, 246, 0.5)' : 'rgba(100, 116, 139, 0.3)'};
+    border-radius: 10px;
+    color: ${props => props.$active ? '#a78bfa' : '#94a3b8'};
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    &:hover {
+        background: linear-gradient(135deg, rgba(139, 92, 246, 0.3) 0%, rgba(139, 92, 246, 0.15) 100%);
+        border-color: rgba(139, 92, 246, 0.5);
+        color: #a78bfa;
+    }
+`;
+
+const HistoryList = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+`;
+
+const HistoryItem = styled.div`
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 16px;
+    padding: 1.5rem;
+    display: grid;
+    grid-template-columns: 100px 1fr 150px 150px 150px 100px;
+    gap: 1.5rem;
+    align-items: center;
+    transition: all 0.3s ease;
+    animation: ${fadeIn} 0.6s ease-out;
+
+    &:hover {
+        border-color: rgba(139, 92, 246, 0.5);
+        transform: translateX(10px);
+        box-shadow: 0 10px 30px rgba(139, 92, 246, 0.2);
+    }
+
+    @media (max-width: 1024px) {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+`;
+
+const HistorySymbol = styled.div`
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: #8b5cf6;
+`;
+
+const HistoryDetails = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+`;
+
+const HistoryDate = styled.span`
+    color: #64748b;
+    font-size: 0.85rem;
+`;
+
+const HistoryPrice = styled.span`
+    color: #e0e6ed;
+    font-size: 1rem;
+    font-weight: 600;
+`;
+
+const HistoryBadge = styled.div`
+    padding: 0.5rem 1rem;
+    background: ${props => props.$up ? 
+        'rgba(16, 185, 129, 0.2)' : 
+        'rgba(239, 68, 68, 0.2)'
+    };
+    border: 1px solid ${props => props.$up ? 
+        'rgba(16, 185, 129, 0.3)' : 
+        'rgba(239, 68, 68, 0.3)'
+    };
+    border-radius: 20px;
+    color: ${props => props.$up ? '#10b981' : '#ef4444'};
+    font-weight: 700;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+`;
+
+const HistoryAccuracy = styled.div`
+    text-align: center;
+`;
+
+const AccuracyLabel = styled.div`
+    color: #94a3b8;
+    font-size: 0.85rem;
+    margin-bottom: 0.25rem;
+`;
+
+const AccuracyValue = styled.div`
+    color: ${props => {
+        const val = parseFloat(props.$value);
+        if (val >= 90) return '#10b981';
+        if (val >= 70) return '#f59e0b';
+        return '#ef4444';
+    }};
+    font-size: 1.2rem;
+    font-weight: 900;
 `;
 
 const EmptyState = styled.div`
@@ -693,23 +1050,116 @@ const EmptyText = styled.p`
 // Success Rocket Animation
 const RocketContainer = styled.div`
     position: fixed;
-    bottom: -100px;
+    ${props => props.$crash ? 'top: -100px;' : 'bottom: -100px;'}
     left: ${props => props.left}%;
     z-index: 1000;
-    animation: ${rocketLaunch} 3s ease-out forwards;
+    animation: ${props => props.$crash ? rocketCrash : rocketLaunch} 3s ease-out forwards;
     pointer-events: none;
+`;
+
+// Share Modal
+const ModalOverlay = styled.div`
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    animation: ${fadeIn} 0.3s ease-out;
+    padding: 1rem;
+`;
+
+const ModalContent = styled.div`
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.98) 100%);
+    border: 2px solid rgba(139, 92, 246, 0.5);
+    border-radius: 20px;
+    padding: 2rem;
+    max-width: 500px;
+    width: 100%;
+    animation: ${bounceIn} 0.5s ease-out;
+`;
+
+const ModalHeader = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+`;
+
+const ModalTitle = styled.h3`
+    color: #a78bfa;
+    font-size: 1.5rem;
+    font-weight: 700;
+`;
+
+const CloseButton = styled.button`
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(239, 68, 68, 0.2);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+        background: rgba(239, 68, 68, 0.3);
+        transform: scale(1.1);
+    }
+`;
+
+const ShareOptions = styled.div`
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+`;
+
+const ShareOption = styled.button`
+    padding: 1rem;
+    background: rgba(139, 92, 246, 0.1);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 12px;
+    color: #a78bfa;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+
+    &:hover {
+        background: rgba(139, 92, 246, 0.2);
+        border-color: rgba(139, 92, 246, 0.5);
+        transform: translateY(-3px);
+    }
 `;
 
 // ============ COMPONENT ============
 const PredictionsPage = () => {
     const { api } = useAuth();
     const toast = useToast();
+    const [activeTab, setActiveTab] = useState('predict');
     const [symbol, setSymbol] = useState('');
     const [days, setDays] = useState('7');
     const [loading, setLoading] = useState(false);
     const [prediction, setPrediction] = useState(null);
     const [showRocket, setShowRocket] = useState(false);
     const [particles, setParticles] = useState([]);
+    const [comparisonMode, setComparisonMode] = useState(false);
+    const [comparisonStocks, setComparisonStocks] = useState([]);
+    const [history, setHistory] = useState([]);
+    const [historyFilter, setHistoryFilter] = useState('all'); // all, up, down
+    const [showShareModal, setShowShareModal] = useState(false);
+    const [savedPredictions, setSavedPredictions] = useState([]);
 
     // Generate background particles on mount
     useEffect(() => {
@@ -722,14 +1172,57 @@ const PredictionsPage = () => {
             color: ['#8b5cf6', '#00adef', '#10b981', '#f59e0b'][Math.floor(Math.random() * 4)]
         }));
         setParticles(newParticles);
+
+        // Load saved predictions from localStorage
+        const saved = JSON.parse(localStorage.getItem('savedPredictions') || '[]');
+        setSavedPredictions(saved);
+
+        // Load history (mock data for now)
+        loadHistory();
     }, []);
+
+    const loadHistory = () => {
+        // Mock history data - replace with API call
+        const mockHistory = [
+            {
+                id: 1,
+                symbol: 'AAPL',
+                date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toLocaleDateString(),
+                predictedPrice: 180.50,
+                actualPrice: 182.30,
+                direction: 'UP',
+                accuracy: 98.5,
+                days: 7
+            },
+            {
+                id: 2,
+                symbol: 'TSLA',
+                date: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toLocaleDateString(),
+                predictedPrice: 245.00,
+                actualPrice: 248.75,
+                direction: 'UP',
+                accuracy: 95.2,
+                days: 14
+            },
+            {
+                id: 3,
+                symbol: 'NVDA',
+                date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toLocaleDateString(),
+                predictedPrice: 485.20,
+                actualPrice: 479.60,
+                direction: 'DOWN',
+                accuracy: 92.8,
+                days: 3
+            },
+        ];
+        setHistory(mockHistory);
+    };
 
     const handlePredict = async (e) => {
         e.preventDefault();
         
         const symbolUpper = symbol.toUpperCase().trim();
         
-        // ✅ VALIDATION WITH TOASTS
         if (!symbolUpper) {
             toast.warning('Please enter a stock symbol', 'Missing Symbol');
             return;
@@ -753,6 +1246,9 @@ const PredictionsPage = () => {
                 days: parseInt(days)
             });
 
+            // Generate technical indicators (mock)
+            const indicators = generateTechnicalIndicators();
+
             // Generate mock chart data
             const chartData = generateChartData(
                 response.data.current_price,
@@ -760,12 +1256,15 @@ const PredictionsPage = () => {
                 parseInt(days)
             );
 
-            setPrediction({
+            const predictionData = {
                 ...response.data,
-                chartData
-            });
+                chartData,
+                indicators,
+                timestamp: new Date().toISOString()
+            };
 
-            // ✅ SUCCESS TOAST
+            setPrediction(predictionData);
+
             const direction = response.data.prediction.direction;
             const targetPrice = response.data.prediction.target_price?.toFixed(2);
             const changePercent = response.data.prediction.price_change_percent?.toFixed(2);
@@ -775,14 +1274,14 @@ const PredictionsPage = () => {
                 'Prediction Generated! 🚀'
             );
 
-            // Trigger rocket animation on successful prediction
-            setShowRocket(true);
+            // Trigger rocket animation
+            const isGoingUp = response.data.prediction.direction === 'UP';
+            setShowRocket(isGoingUp ? 'up' : 'down');
             setTimeout(() => setShowRocket(false), 3000);
 
         } catch (error) {
             console.error('Prediction error:', error);
             
-            // ✅ SPECIFIC ERROR TOASTS
             const errorMsg = error.response?.data?.error || error.response?.data?.msg || '';
             
             if (errorMsg.includes('not found') || error.response?.status === 404) {
@@ -799,13 +1298,24 @@ const PredictionsPage = () => {
         }
     };
 
+    const generateTechnicalIndicators = () => {
+        // Mock technical indicators - replace with real data
+        return {
+            RSI: { value: 62, signal: 'BUY' },
+            MACD: { value: 'Bullish', signal: 'BUY' },
+            MA50: { value: 'Above', signal: 'BUY' },
+            MA200: { value: 'Above', signal: 'BUY' },
+            Volume: { value: 'High', signal: 'BUY' },
+            Bollinger: { value: 'Upper', signal: 'HOLD' }
+        };
+    };
+
     const generateChartData = (currentPrice, targetPrice, days) => {
         const data = [];
         const priceChange = targetPrice - currentPrice;
         
         for (let i = 0; i <= days; i++) {
             const progress = i / days;
-            // Add some randomness for realistic look
             const noise = (Math.random() - 0.5) * (currentPrice * 0.02);
             const price = currentPrice + (priceChange * progress) + noise;
             
@@ -818,6 +1328,78 @@ const PredictionsPage = () => {
         
         return data;
     };
+
+    const handleSavePrediction = () => {
+        if (!prediction) return;
+
+        const saved = [...savedPredictions, {
+            id: Date.now(),
+            ...prediction,
+            savedAt: new Date().toISOString()
+        }];
+
+        setSavedPredictions(saved);
+        localStorage.setItem('savedPredictions', JSON.stringify(saved));
+        toast.success('Prediction saved successfully!', 'Saved');
+    };
+
+    const handleShare = (platform) => {
+        if (!prediction) return;
+
+        const text = `Check out this AI prediction: ${prediction.symbol} ${prediction.prediction.direction} to $${prediction.prediction.target_price.toFixed(2)} (${prediction.prediction.price_change_percent >= 0 ? '+' : ''}${prediction.prediction.price_change_percent.toFixed(2)}%)`;
+        const url = window.location.href;
+
+        let shareUrl = '';
+        switch (platform) {
+            case 'twitter':
+                shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+                break;
+            case 'facebook':
+                shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
+                break;
+            case 'linkedin':
+                shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
+                break;
+            case 'copy':
+                navigator.clipboard.writeText(`${text}\n${url}`);
+                toast.success('Prediction copied to clipboard!', 'Copied');
+                setShowShareModal(false);
+                return;
+        }
+
+        if (shareUrl) {
+            window.open(shareUrl, '_blank', 'width=600,height=400');
+            setShowShareModal(false);
+        }
+    };
+
+    const handleExport = () => {
+        if (!prediction) return;
+
+        const data = {
+            symbol: prediction.symbol,
+            currentPrice: prediction.current_price,
+            targetPrice: prediction.prediction.target_price,
+            direction: prediction.prediction.direction,
+            change: prediction.prediction.price_change_percent,
+            confidence: prediction.prediction.confidence,
+            days: days,
+            timestamp: new Date().toISOString()
+        };
+
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${prediction.symbol}_prediction_${Date.now()}.json`;
+        a.click();
+
+        toast.success('Prediction exported successfully!', 'Exported');
+    };
+
+    const filteredHistory = historyFilter === 'all' 
+        ? history 
+        : history.filter(h => h.direction === historyFilter.toUpperCase());
 
     return (
         <PageContainer>
@@ -837,8 +1419,14 @@ const PredictionsPage = () => {
 
             {/* Success Rocket */}
             {showRocket && (
-                <RocketContainer left={Math.random() * 80 + 10}>
-                    <Rocket size={64} color="#8b5cf6" />
+                <RocketContainer 
+                    left={Math.random() * 80 + 10}
+                    $crash={showRocket === 'down'}
+                >
+                    <Rocket 
+                        size={64} 
+                        color={showRocket === 'down' ? '#ef4444' : '#8b5cf6'} 
+                    />
                 </RocketContainer>
             )}
 
@@ -856,235 +1444,491 @@ const PredictionsPage = () => {
                 </PoweredBy>
             </Header>
 
+            {/* Tabs */}
+            <TabsContainer>
+                <Tab 
+                    $active={activeTab === 'predict'}
+                    onClick={() => setActiveTab('predict')}
+                >
+                    <Zap size={18} />
+                    Predict
+                </Tab>
+                <Tab 
+                    $active={activeTab === 'compare'}
+                    onClick={() => setActiveTab('compare')}
+                >
+                    <GitCompare size={18} />
+                    Compare Stocks
+                </Tab>
+                <Tab 
+                    $active={activeTab === 'history'}
+                    onClick={() => setActiveTab('history')}
+                >
+                    <History size={18} />
+                    History
+                </Tab>
+                <Tab 
+                    $active={activeTab === 'saved'}
+                    onClick={() => setActiveTab('saved')}
+                >
+                    <Bookmark size={18} />
+                    Saved ({savedPredictions.length})
+                </Tab>
+            </TabsContainer>
+
             {/* Stats Banner */}
-            <StatsBanner>
-                <StatCard delay={0}>
-                    <StatIcon gradient="linear-gradient(135deg, #8b5cf6, #6366f1)">
-                        <Trophy size={32} />
-                    </StatIcon>
-                    <StatValue>98.2%</StatValue>
-                    <StatLabel>Accuracy Rate</StatLabel>
-                </StatCard>
-                <StatCard delay={0.1}>
-                    <StatIcon gradient="linear-gradient(135deg, #10b981, #059669)">
-                        <ArrowUpDown size={32} />
-                    </StatIcon>
-                    <StatValue>10K+</StatValue>
-                    <StatLabel>Predictions Made</StatLabel>
-                </StatCard>
-                <StatCard delay={0.2}>
-                    <StatIcon gradient="linear-gradient(135deg, #f59e0b, #d97706)">
-                        <Flame size={32} />
-                    </StatIcon>
-                    <StatValue>24/7</StatValue>
-                    <StatLabel>Real-Time Analysis</StatLabel>
-                </StatCard>
-                <StatCard delay={0.3}>
-                    <StatIcon gradient="linear-gradient(135deg, #ef4444, #dc2626)">
-                        <Rocket size={32} />
-                    </StatIcon>
-                    <StatValue>Lightning</StatValue>
-                    <StatLabel>Fast Results</StatLabel>
-                </StatCard>
-            </StatsBanner>
+            {activeTab === 'predict' && (
+                <StatsBanner>
+                    <StatCard delay={0}>
+                        <StatIcon gradient="linear-gradient(135deg, #8b5cf6, #6366f1)">
+                            <Trophy size={32} />
+                        </StatIcon>
+                        <StatValue>98.2%</StatValue>
+                        <StatLabel>Accuracy Rate</StatLabel>
+                    </StatCard>
+                    <StatCard delay={0.1}>
+                        <StatIcon gradient="linear-gradient(135deg, #10b981, #059669)">
+                            <ArrowUpDown size={32} />
+                        </StatIcon>
+                        <StatValue>10K+</StatValue>
+                        <StatLabel>Predictions Made</StatLabel>
+                    </StatCard>
+                    <StatCard delay={0.2}>
+                        <StatIcon gradient="linear-gradient(135deg, #f59e0b, #d97706)">
+                            <Flame size={32} />
+                        </StatIcon>
+                        <StatValue>24/7</StatValue>
+                        <StatLabel>Real-Time Analysis</StatLabel>
+                    </StatCard>
+                    <StatCard delay={0.3}>
+                        <StatIcon gradient="linear-gradient(135deg, #ef4444, #dc2626)">
+                            <Rocket size={32} />
+                        </StatIcon>
+                        <StatValue>Lightning</StatValue>
+                        <StatLabel>Fast Results</StatLabel>
+                    </StatCard>
+                </StatsBanner>
+            )}
 
-            <InputSection>
-                <InputForm onSubmit={handlePredict}>
-                    <InputGroup>
-                        <FormField>
-                            <Label>
-                                <Target size={18} />
-                                Stock Symbol
-                            </Label>
-                            <Input
-                                type="text"
-                                placeholder="e.g., AAPL, TSLA, NVDA"
-                                value={symbol}
-                                onChange={(e) => setSymbol(e.target.value.toUpperCase())}
-                                required
-                            />
-                        </FormField>
+            {/* PREDICT TAB */}
+            {activeTab === 'predict' && (
+                <>
+                    <InputSection>
+                        <InputForm onSubmit={handlePredict}>
+                            <InputGroup>
+                                <FormField>
+                                    <Label>
+                                        <Target size={18} />
+                                        Stock Symbol
+                                    </Label>
+                                    <Input
+                                        type="text"
+                                        placeholder="e.g., AAPL, TSLA, NVDA"
+                                        value={symbol}
+                                        onChange={(e) => setSymbol(e.target.value.toUpperCase())}
+                                        required
+                                    />
+                                </FormField>
 
-                        <FormField>
-                            <Label>
-                                <Calendar size={18} />
-                                Prediction Period
-                            </Label>
-                            <Select
-                                value={days}
-                                onChange={(e) => setDays(e.target.value)}
-                            >
-                                <option value="1">1 Day</option>
-                                <option value="3">3 Days</option>
-                                <option value="7">7 Days</option>
-                                <option value="14">14 Days</option>
-                                <option value="30">30 Days</option>
-                            </Select>
-                        </FormField>
-                    </InputGroup>
+                                <FormField>
+                                    <Label>
+                                        <Calendar size={18} />
+                                        Prediction Period
+                                    </Label>
+                                    <Select
+                                        value={days}
+                                        onChange={(e) => setDays(e.target.value)}
+                                    >
+                                        <option value="1">1 Day</option>
+                                        <option value="3">3 Days</option>
+                                        <option value="7">7 Days</option>
+                                        <option value="14">14 Days</option>
+                                        <option value="30">30 Days</option>
+                                    </Select>
+                                </FormField>
+                            </InputGroup>
 
-                    <PredictButton type="submit" disabled={loading}>
-                        {loading ? (
-                            <>
-                                <LoadingSpinner size={24} />
-                                Analyzing with AI...
-                            </>
-                        ) : (
-                            <>
-                                <Zap size={24} />
-                                Generate Prediction
-                                <ChevronRight size={24} />
-                            </>
-                        )}
-                    </PredictButton>
-                </InputForm>
-            </InputSection>
-
-            {prediction ? (
-                <ResultsContainer>
-                    <PredictionCard>
-                        <PredictionHeader>
-                            <StockInfo>
-                                <StockSymbol>
-                                    {prediction.symbol}
-                                    <Star size={36} color="#f59e0b" />
-                                </StockSymbol>
-                                <CurrentPriceSection>
-                                    <CurrentPriceLabel>Current Price:</CurrentPriceLabel>
-                                    <CurrentPriceValue>
-                                        ${prediction.current_price?.toFixed(2)}
-                                    </CurrentPriceValue>
-                                </CurrentPriceSection>
-                            </StockInfo>
-
-                            <DirectionBadge up={prediction.prediction.direction === 'UP'}>
-                                {prediction.prediction.direction === 'UP' ? (
-                                    <TrendingUp size={32} />
+                            <PredictButton type="submit" disabled={loading}>
+                                {loading ? (
+                                    <>
+                                        <LoadingSpinner size={24} />
+                                        Analyzing with AI...
+                                    </>
                                 ) : (
-                                    <TrendingDown size={32} />
+                                    <>
+                                        <Zap size={24} />
+                                        Generate Prediction
+                                        <ChevronRight size={24} />
+                                    </>
                                 )}
-                                {prediction.prediction.direction}
-                            </DirectionBadge>
-                        </PredictionHeader>
+                            </PredictButton>
+                        </InputForm>
+                    </InputSection>
 
-                        <MetricsGrid>
-                            <MetricCard index={0}>
-                                <MetricIcon variant={prediction.prediction.direction === 'UP' ? 'success' : 'danger'}>
-                                    <DollarSign size={24} />
-                                </MetricIcon>
-                                <MetricLabel>Target Price</MetricLabel>
-                                <MetricValue variant={prediction.prediction.direction === 'UP' ? 'success' : 'danger'}>
-                                    ${prediction.prediction.target_price?.toFixed(2)}
-                                </MetricValue>
-                            </MetricCard>
+                    {prediction ? (
+                        <ResultsContainer>
+                            <PredictionCard>
+                                <PredictionHeader>
+                                    <StockInfo>
+                                        <StockSymbol>
+                                            {prediction.symbol}
+                                            <Star size={36} color="#f59e0b" />
+                                        </StockSymbol>
+                                        <CurrentPriceSection>
+                                            <CurrentPriceLabel>Current Price:</CurrentPriceLabel>
+                                            <CurrentPriceValue>
+                                                ${prediction.current_price?.toFixed(2)}
+                                            </CurrentPriceValue>
+                                        </CurrentPriceSection>
+                                    </StockInfo>
 
-                            <MetricCard index={1}>
-                                <MetricIcon variant={prediction.prediction.price_change_percent >= 0 ? 'success' : 'danger'}>
-                                    <Percent size={24} />
-                                </MetricIcon>
-                                <MetricLabel>Expected Change</MetricLabel>
-                                <MetricValue variant={prediction.prediction.price_change_percent >= 0 ? 'success' : 'danger'}>
-                                    {prediction.prediction.price_change_percent >= 0 ? '+' : ''}
-                                    {prediction.prediction.price_change_percent?.toFixed(2)}%
-                                </MetricValue>
-                            </MetricCard>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                        <DirectionBadge $up={prediction.prediction.direction === 'UP'}>
+                                            {prediction.prediction.direction === 'UP' ? (
+                                                <TrendingUp size={32} />
+                                            ) : (
+                                                <TrendingDown size={32} />
+                                            )}
+                                            {prediction.prediction.direction}
+                                        </DirectionBadge>
 
-                            <MetricCard index={2}>
-                                <MetricIcon>
-                                    <Activity size={24} />
-                                </MetricIcon>
-                                <MetricLabel>Price Movement</MetricLabel>
-                                <MetricValue>
-                                    ${Math.abs(prediction.prediction.target_price - prediction.current_price).toFixed(2)}
-                                </MetricValue>
-                            </MetricCard>
+                                        <ActionButtons>
+                                            <ActionButton onClick={handleSavePrediction}>
+                                                {savedPredictions.some(p => p.symbol === prediction.symbol) ? (
+                                                    <Bookmark size={18} fill="#a78bfa" />
+                                                ) : (
+                                                    <BookmarkPlus size={18} />
+                                                )}
+                                            </ActionButton>
+                                            <ActionButton onClick={() => setShowShareModal(true)}>
+                                                <Share2 size={18} />
+                                            </ActionButton>
+                                            <ActionButton onClick={handleExport}>
+                                                <Download size={18} />
+                                            </ActionButton>
+                                        </ActionButtons>
+                                    </div>
+                                </PredictionHeader>
 
-                            <MetricCard index={3}>
-                                <MetricIcon variant="warning">
-                                    <Calendar size={24} />
-                                </MetricIcon>
-                                <MetricLabel>Timeframe</MetricLabel>
-                                <MetricValue variant="warning">
-                                    {days} {parseInt(days) === 1 ? 'Day' : 'Days'}
-                                </MetricValue>
-                            </MetricCard>
-                        </MetricsGrid>
+                                <MetricsGrid>
+                                    <MetricCard $index={0}>
+                                        <MetricIcon $variant={prediction.prediction.direction === 'UP' ? 'success' : 'danger'}>
+                                            <DollarSign size={24} />
+                                        </MetricIcon>
+                                        <MetricLabel>Target Price</MetricLabel>
+                                        <MetricValue $variant={prediction.prediction.direction === 'UP' ? 'success' : 'danger'}>
+                                            ${prediction.prediction.target_price?.toFixed(2)}
+                                        </MetricValue>
+                                    </MetricCard>
 
-                        <ConfidenceSection>
-                            <ConfidenceLabel>
-                                <ConfidenceText>
-                                    <Award size={20} style={{ display: 'inline', marginRight: '0.5rem' }} />
-                                    AI Confidence Level
-                                </ConfidenceText>
-                                <ConfidenceValue>
-                                    {prediction.prediction.confidence?.toFixed(1)}%
-                                </ConfidenceValue>
-                            </ConfidenceLabel>
-                            <ConfidenceBar>
-                                <ConfidenceFill value={prediction.prediction.confidence} />
-                            </ConfidenceBar>
-                        </ConfidenceSection>
+                                    <MetricCard $index={1}>
+                                        <MetricIcon $variant={prediction.prediction.price_change_percent >= 0 ? 'success' : 'danger'}>
+                                            <Percent size={24} />
+                                        </MetricIcon>
+                                        <MetricLabel>Expected Change</MetricLabel>
+                                        <MetricValue $variant={prediction.prediction.price_change_percent >= 0 ? 'success' : 'danger'}>
+                                            {prediction.prediction.price_change_percent >= 0 ? '+' : ''}
+                                            {prediction.prediction.price_change_percent?.toFixed(2)}%
+                                        </MetricValue>
+                                    </MetricCard>
 
-                        <ChartSection>
-                            <ChartTitle>
-                                <LineChartIcon size={24} />
-                                Predicted Price Movement
-                            </ChartTitle>
-                            <ResponsiveContainer width="100%" height={400}>
-                                <AreaChart data={prediction.chartData}>
-                                    <defs>
-                                        <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8}/>
-                                            <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.1}/>
-                                        </linearGradient>
-                                    </defs>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(139, 92, 246, 0.2)" />
-                                    <XAxis dataKey="day" stroke="#94a3b8" />
-                                    <YAxis stroke="#94a3b8" />
-                                    <Tooltip
-                                        contentStyle={{
-                                            background: 'rgba(15, 23, 42, 0.95)',
-                                            border: '1px solid rgba(139, 92, 246, 0.5)',
-                                            borderRadius: '8px',
-                                            color: '#e0e6ed'
-                                        }}
-                                        formatter={(value) => ['$' + value.toFixed(2), 'Price']}
-                                    />
-                                    <ReferenceLine
-                                        y={prediction.current_price}
-                                        stroke="#00adef"
-                                        strokeDasharray="5 5"
-                                        label={{ value: 'Current', fill: '#00adef', position: 'right' }}
-                                    />
-                                    <ReferenceLine
-                                        y={prediction.prediction.target_price}
-                                        stroke={prediction.prediction.direction === 'UP' ? '#10b981' : '#ef4444'}
-                                        strokeDasharray="5 5"
-                                        label={{ value: 'Target', fill: prediction.prediction.direction === 'UP' ? '#10b981' : '#ef4444', position: 'right' }}
-                                    />
-                                    <Area
-                                        type="monotone"
-                                        dataKey="price"
-                                        stroke="#8b5cf6"
-                                        strokeWidth={3}
-                                        fillOpacity={1}
-                                        fill="url(#colorPrice)"
-                                    />
-                                </AreaChart>
-                            </ResponsiveContainer>
-                        </ChartSection>
-                    </PredictionCard>
-                </ResultsContainer>
-            ) : (
+                                    <MetricCard $index={2}>
+                                        <MetricIcon>
+                                            <Activity size={24} />
+                                        </MetricIcon>
+                                        <MetricLabel>Price Movement</MetricLabel>
+                                        <MetricValue>
+                                            ${Math.abs(prediction.prediction.target_price - prediction.current_price).toFixed(2)}
+                                        </MetricValue>
+                                    </MetricCard>
+
+                                    <MetricCard $index={3}>
+                                        <MetricIcon $variant="warning">
+                                            <Calendar size={24} />
+                                        </MetricIcon>
+                                        <MetricLabel>Timeframe</MetricLabel>
+                                        <MetricValue $variant="warning">
+                                            {days} {parseInt(days) === 1 ? 'Day' : 'Days'}
+                                        </MetricValue>
+                                    </MetricCard>
+                                </MetricsGrid>
+
+                                <ConfidenceSection>
+                                    <ConfidenceLabel>
+                                        <ConfidenceText>
+                                            <Award size={20} style={{ display: 'inline', marginRight: '0.5rem' }} />
+                                            AI Confidence Level
+                                        </ConfidenceText>
+                                        <ConfidenceValue>
+                                            {prediction.prediction.confidence?.toFixed(1)}%
+                                        </ConfidenceValue>
+                                    </ConfidenceLabel>
+                                    <ConfidenceBar>
+                                        <ConfidenceFill $value={prediction.prediction.confidence} />
+                                    </ConfidenceBar>
+                                </ConfidenceSection>
+
+                                {/* Technical Indicators */}
+                                <IndicatorsSection>
+                                    <IndicatorsTitle>
+                                        <BarChart3 size={24} />
+                                        Technical Indicators
+                                    </IndicatorsTitle>
+                                    <IndicatorsGrid>
+                                        {Object.entries(prediction.indicators || {}).map(([name, data]) => (
+                                            <IndicatorItem key={name}>
+                                                <IndicatorName>{name}</IndicatorName>
+                                                <IndicatorValue $signal={data.signal}>
+                                                    {data.value} ({data.signal})
+                                                </IndicatorValue>
+                                            </IndicatorItem>
+                                        ))}
+                                    </IndicatorsGrid>
+                                </IndicatorsSection>
+
+                                <ChartSection>
+                                    <ChartTitle>
+                                        <LineChartIcon size={24} />
+                                        Predicted Price Movement
+                                    </ChartTitle>
+                                    <ResponsiveContainer width="100%" height={400}>
+                                        <AreaChart data={prediction.chartData}>
+                                            <defs>
+                                                <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8}/>
+                                                    <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.1}/>
+                                                </linearGradient>
+                                            </defs>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(139, 92, 246, 0.2)" />
+                                            <XAxis dataKey="day" stroke="#94a3b8" />
+                                            <YAxis stroke="#94a3b8" />
+                                            <Tooltip
+                                                contentStyle={{
+                                                    background: 'rgba(15, 23, 42, 0.95)',
+                                                    border: '1px solid rgba(139, 92, 246, 0.5)',
+                                                    borderRadius: '8px',
+                                                    color: '#e0e6ed'
+                                                }}
+                                                formatter={(value) => ['$' + value.toFixed(2), 'Price']}
+                                            />
+                                            <ReferenceLine
+                                                y={prediction.current_price}
+                                                stroke="#00adef"
+                                                strokeDasharray="5 5"
+                                                label={{ value: 'Current', fill: '#00adef', position: 'right' }}
+                                            />
+                                            <ReferenceLine
+                                                y={prediction.prediction.target_price}
+                                                stroke={prediction.prediction.direction === 'UP' ? '#10b981' : '#ef4444'}
+                                                strokeDasharray="5 5"
+                                                label={{ value: 'Target', fill: prediction.prediction.direction === 'UP' ? '#10b981' : '#ef4444', position: 'right' }}
+                                            />
+                                            <Area
+                                                type="monotone"
+                                                dataKey="price"
+                                                stroke="#8b5cf6"
+                                                strokeWidth={3}
+                                                fillOpacity={1}
+                                                fill="url(#colorPrice)"
+                                            />
+                                        </AreaChart>
+                                    </ResponsiveContainer>
+                                </ChartSection>
+                            </PredictionCard>
+                        </ResultsContainer>
+                    ) : (
+                        <EmptyState>
+                            <EmptyIcon>
+                                <Brain size={80} color="#8b5cf6" />
+                            </EmptyIcon>
+                            <EmptyTitle>Ready to Predict</EmptyTitle>
+                            <EmptyText>
+                                Enter a stock symbol above to generate AI-powered predictions
+                            </EmptyText>
+                        </EmptyState>
+                    )}
+                </>
+            )}
+
+            {/* HISTORY TAB */}
+            {activeTab === 'history' && (
+                <HistoryContainer>
+                    <HistoryHeader>
+                        <HistoryTitle>
+                            <History size={32} />
+                            Prediction History
+                        </HistoryTitle>
+                        <HistoryFilters>
+                            <FilterButton 
+                                $active={historyFilter === 'all'}
+                                onClick={() => setHistoryFilter('all')}
+                            >
+                                All
+                            </FilterButton>
+                            <FilterButton 
+                                $active={historyFilter === 'up'}
+                                onClick={() => setHistoryFilter('up')}
+                            >
+                                <TrendingUp size={18} />
+                                Bullish
+                            </FilterButton>
+                            <FilterButton 
+                                $active={historyFilter === 'down'}
+                                onClick={() => setHistoryFilter('down')}
+                            >
+                                <TrendingDown size={18} />
+                                Bearish
+                            </FilterButton>
+                        </HistoryFilters>
+                    </HistoryHeader>
+
+                    {filteredHistory.length > 0 ? (
+                        <HistoryList>
+                            {filteredHistory.map(item => (
+                                <HistoryItem key={item.id}>
+                                    <HistorySymbol>{item.symbol}</HistorySymbol>
+                                    <HistoryDetails>
+                                        <HistoryDate>{item.date}</HistoryDate>
+                                        <HistoryPrice>Predicted: ${item.predictedPrice.toFixed(2)}</HistoryPrice>
+                                        <HistoryPrice>Actual: ${item.actualPrice.toFixed(2)}</HistoryPrice>
+                                    </HistoryDetails>
+                                    <HistoryBadge $up={item.direction === 'UP'}>
+                                        {item.direction === 'UP' ? <TrendingUp size={18} /> : <TrendingDown size={18} />}
+                                        {item.direction}
+                                    </HistoryBadge>
+                                    <div style={{ textAlign: 'center' }}>
+                                        <AccuracyLabel>Timeframe</AccuracyLabel>
+                                        <AccuracyValue>{item.days} {item.days === 1 ? 'Day' : 'Days'}</AccuracyValue>
+                                    </div>
+                                    <HistoryAccuracy>
+                                        <AccuracyLabel>Accuracy</AccuracyLabel>
+                                        <AccuracyValue $value={item.accuracy}>
+                                            {item.accuracy.toFixed(1)}%
+                                        </AccuracyValue>
+                                    </HistoryAccuracy>
+                                    <ActionButton>
+                                        <Eye size={18} />
+                                    </ActionButton>
+                                </HistoryItem>
+                            ))}
+                        </HistoryList>
+                    ) : (
+                        <EmptyState>
+                            <EmptyIcon>
+                                <History size={80} color="#8b5cf6" />
+                            </EmptyIcon>
+                            <EmptyTitle>No History Yet</EmptyTitle>
+                            <EmptyText>
+                                Your prediction history will appear here
+                            </EmptyText>
+                        </EmptyState>
+                    )}
+                </HistoryContainer>
+            )}
+
+            {/* SAVED TAB */}
+            {activeTab === 'saved' && (
+                <HistoryContainer>
+                    <HistoryHeader>
+                        <HistoryTitle>
+                            <Bookmark size={32} />
+                            Saved Predictions
+                        </HistoryTitle>
+                    </HistoryHeader>
+
+                    {savedPredictions.length > 0 ? (
+                        <HistoryList>
+                            {savedPredictions.map(item => (
+                                <HistoryItem key={item.id}>
+                                    <HistorySymbol>{item.symbol}</HistorySymbol>
+                                    <HistoryDetails>
+                                        <HistoryDate>{new Date(item.savedAt).toLocaleDateString()}</HistoryDate>
+                                        <HistoryPrice>Target: ${item.prediction.target_price.toFixed(2)}</HistoryPrice>
+                                    </HistoryDetails>
+                                    <HistoryBadge $up={item.prediction.direction === 'UP'}>
+                                        {item.prediction.direction === 'UP' ? <TrendingUp size={18} /> : <TrendingDown size={18} />}
+                                        {item.prediction.direction}
+                                    </HistoryBadge>
+                                    <div style={{ textAlign: 'center' }}>
+                                        <AccuracyLabel>Change</AccuracyLabel>
+                                        <AccuracyValue $value={item.prediction.price_change_percent >= 0 ? 90 : 50}>
+                                            {item.prediction.price_change_percent >= 0 ? '+' : ''}{item.prediction.price_change_percent.toFixed(2)}%
+                                        </AccuracyValue>
+                                    </div>
+                                    <div style={{ textAlign: 'center' }}>
+                                        <AccuracyLabel>Confidence</AccuracyLabel>
+                                        <AccuracyValue $value={item.prediction.confidence}>
+                                            {item.prediction.confidence.toFixed(1)}%
+                                        </AccuracyValue>
+                                    </div>
+                                    <ActionButton onClick={() => {
+                                        const updated = savedPredictions.filter(p => p.id !== item.id);
+                                        setSavedPredictions(updated);
+                                        localStorage.setItem('savedPredictions', JSON.stringify(updated));
+                                        toast.success('Prediction removed', 'Removed');
+                                    }}>
+                                        <X size={18} />
+                                    </ActionButton>
+                                </HistoryItem>
+                            ))}
+                        </HistoryList>
+                    ) : (
+                        <EmptyState>
+                            <EmptyIcon>
+                                <Bookmark size={80} color="#8b5cf6" />
+                            </EmptyIcon>
+                            <EmptyTitle>No Saved Predictions</EmptyTitle>
+                            <EmptyText>
+                                Save predictions to access them later
+                            </EmptyText>
+                        </EmptyState>
+                    )}
+                </HistoryContainer>
+            )}
+
+            {/* COMPARE TAB */}
+            {activeTab === 'compare' && (
                 <EmptyState>
                     <EmptyIcon>
-                        <Brain size={80} color="#8b5cf6" />
+                        <GitCompare size={80} color="#8b5cf6" />
                     </EmptyIcon>
-                    <EmptyTitle>Ready to Predict</EmptyTitle>
+                    <EmptyTitle>Compare Multiple Stocks</EmptyTitle>
                     <EmptyText>
-                        Enter a stock symbol above to generate AI-powered predictions
+                        Feature coming soon! Compare predictions for multiple stocks side-by-side
                     </EmptyText>
                 </EmptyState>
+            )}
+
+            {/* Share Modal */}
+            {showShareModal && (
+                <ModalOverlay onClick={() => setShowShareModal(false)}>
+                    <ModalContent onClick={(e) => e.stopPropagation()}>
+                        <ModalHeader>
+                            <ModalTitle>Share Prediction</ModalTitle>
+                            <CloseButton onClick={() => setShowShareModal(false)}>
+                                <X size={20} />
+                            </CloseButton>
+                        </ModalHeader>
+                        <ShareOptions>
+                            <ShareOption onClick={() => handleShare('twitter')}>
+                                <Twitter size={24} />
+                                Twitter
+                            </ShareOption>
+                            <ShareOption onClick={() => handleShare('facebook')}>
+                                <Facebook size={24} />
+                                Facebook
+                            </ShareOption>
+                            <ShareOption onClick={() => handleShare('linkedin')}>
+                                <Linkedin size={24} />
+                                LinkedIn
+                            </ShareOption>
+                            <ShareOption onClick={() => handleShare('copy')}>
+                                <Copy size={24} />
+                                Copy Link
+                            </ShareOption>
+                        </ShareOptions>
+                    </ModalContent>
+                </ModalOverlay>
             )}
         </PageContainer>
     );
