@@ -16,7 +16,7 @@ const getBaseURL = () => {
         return 'http://localhost:5000/api';
     } else {
         // Production - use production API
-        return 'https://nexus-signal.onrender.com/api';  // ✅ CHANGED THIS!
+        return 'https://api.nexussignal.ai/api';  // ✅ FIXED - Using your custom domain!
     }
 };
 
@@ -27,6 +27,22 @@ const API = axios.create({
         'Content-Type': 'application/json',
     },
 });
+
+// Response interceptor to handle auth errors
+API.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response?.status === 401) {
+            // Don't redirect on auth endpoints (login/register)
+            const isAuthEndpoint = error.config.url?.includes('/auth/');
+            if (!isAuthEndpoint) {
+                console.log('401 Unauthorized - redirecting to login');
+                window.location.href = '/login';
+            }
+        }
+        return Promise.reject(error);
+    }
+);
 
 // Log which API we're using (helpful for debugging)
 console.log('API Base URL:', API.defaults.baseURL);

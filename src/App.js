@@ -7,7 +7,7 @@ import { useAuth } from './context/AuthContext';
 // Component imports (from src/components/)
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
-import Copilot from './components/Copilot';
+import AIChatWidget from './components/AIChatWidget';
 import SettingsPage from './components/SettingsPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -78,7 +78,7 @@ function App() {
                 </Routes>
             </main>
             <Footer />
-            <Copilot />
+            <AIChatWidget />
         </>
     );
 }
