@@ -372,12 +372,14 @@ const MobileMenu = styled.div`
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(10, 14, 39, 0.98);
+    min-height: calc(100vh - 80px);
+    background: #0a0e27;
     backdrop-filter: blur(20px);
-    z-index: 999;
+    z-index: 9999;
     animation: ${fadeIn} 0.3s ease-out;
     overflow-y: auto;
     display: ${props => props.$open ? 'block' : 'none'};
+    border-top: 2px solid rgba(0, 173, 237, 0.3);
 
     @media (min-width: 769px) {
         display: none !important;
@@ -389,6 +391,8 @@ const MobileNavLinks = styled.div`
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    min-height: 100vh;
+    background: #0a0e27;
 `;
 
 const MobileNavLink = styled(Link)`
@@ -396,14 +400,15 @@ const MobileNavLink = styled(Link)`
     align-items: center;
     gap: 1rem;
     padding: 1rem 1.5rem;
-    color: ${props => props.$active ? '#00adef' : '#94a3b8'};
+    color: ${props => props.$active ? '#00adef' : '#f8fafc'};
     text-decoration: none;
     font-weight: 600;
     font-size: 1.1rem;
     border-radius: 12px;
-    background: ${props => props.$active ? 'rgba(0, 173, 237, 0.15)' : 'transparent'};
-    border: 1px solid ${props => props.$active ? 'rgba(0, 173, 237, 0.3)' : 'transparent'};
+    background: ${props => props.$active ? 'rgba(0, 173, 237, 0.15)' : 'rgba(30, 41, 59, 0.5)'};
+    border: 1px solid ${props => props.$active ? 'rgba(0, 173, 237, 0.3)' : 'rgba(100, 116, 139, 0.3)'};
     transition: all 0.2s ease;
+    min-height: 60px;
 
     &:hover {
         color: #00adef;
@@ -444,6 +449,7 @@ const Navbar = () => {
     };
 
     const handleMobileMenuToggle = () => {
+        console.log('Mobile menu toggled. Current state:', mobileMenuOpen, 'New state:', !mobileMenuOpen);
         setMobileMenuOpen(!mobileMenuOpen);
         setDropdownOpen(false); // Close dropdown when opening mobile menu
     };
