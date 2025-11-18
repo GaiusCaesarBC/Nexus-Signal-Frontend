@@ -1,367 +1,774 @@
-import React, { useState, useEffect, useCallback } from 'react';
+// client/src/pages/DashboardPage.js - THE MOST BADASS DASHBOARD EVER
+
+import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate, Link } from 'react-router-dom';
-import Loader from '../components/Loader';
+import {
+    TrendingUp, TrendingDown, Activity, DollarSign, PieChart,
+    Zap, Target, Brain, Eye, AlertCircle, ArrowUpRight, ArrowDownRight,
+    Clock, BarChart3, Flame, Award, Star
+} from 'lucide-react';
+import {
+    LineChart, Line, AreaChart, Area, BarChart, Bar,
+    XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell
+} from 'recharts';
 
-// Import dashboard sub-components
-import DashboardHeader from '../components/dashboard/DashboardHeader';
-import StatCardsGrid from '../components/dashboard/StatCardsGrid';
-import MarketDataSearch from '../components/dashboard/MarketDataSearch';
-import AIDataGraph from '../components/dashboard/AIDataGraph';
-import NewsFeedCard from '../components/dashboard/NewsFeedCard';
-import DashboardCard from '../components/dashboard/DashboardCard';
-
-// Icon Imports
-import { BriefcaseBusiness, Bitcoin, LineChart } from 'lucide-react';
-
-// Keyframes
+// ============ ANIMATIONS ============
 const fadeIn = keyframes`
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
 `;
 
-const pulseGlow = keyframes`
-    0% { box-shadow: 0 0 5px rgba(0, 173, 237, 0.4); }
-    50% { box-shadow: 0 0 20px rgba(0, 173, 237, 0.8); }
-    100% { box-shadow: 0 0 5px rgba(0, 173, 237, 0.4); }
+const slideIn = keyframes`
+    from { transform: translateX(-100%); }
+    to { transform: translateX(0); }
 `;
 
-const DashboardContainer = styled.div`
+const glow = keyframes`
+    0%, 100% { box-shadow: 0 0 20px rgba(0, 173, 237, 0.5); }
+    50% { box-shadow: 0 0 40px rgba(0, 173, 237, 0.8); }
+`;
+
+const pulse = keyframes`
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+`;
+
+const scrollTicker = keyframes`
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+`;
+
+const shimmer = keyframes`
+    0% { background-position: -1000px 0; }
+    100% { background-position: 1000px 0; }
+`;
+
+// ============ STYLED COMPONENTS ============
+const PageContainer = styled.div`
+    min-height: 100vh;
+    background: linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
+    color: #e0e6ed;
+    padding: 2rem;
+    position: relative;
+    overflow-x: hidden;
+`;
+
+const Header = styled.div`
+    margin-bottom: 2rem;
+    animation: ${fadeIn} 0.8s ease-out;
+`;
+
+const Title = styled.h1`
+    font-size: 3.5rem;
+    background: linear-gradient(135deg, #00adef 0%, #00ff88 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 0 30px rgba(0, 173, 237, 0.5);
+    font-weight: 900;
+`;
+
+const Subtitle = styled.p`
+    color: #94a3b8;
+    font-size: 1.2rem;
+`;
+
+// ============ STOCK TICKER ============
+const TickerContainer = styled.div`
+    background: rgba(0, 173, 237, 0.1);
+    border: 1px solid rgba(0, 173, 237, 0.3);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 2rem;
+    padding: 1rem 0;
+    position: relative;
+`;
+
+const TickerTrack = styled.div`
     display: flex;
-    flex-direction: column;
+    animation: ${scrollTicker} 30s linear infinite;
+    white-space: nowrap;
+`;
+
+const TickerItem = styled.div`
+    display: inline-flex;
     align-items: center;
-    padding: 3rem 1.5rem;
-    min-height: calc(100vh - var(--navbar-height));
-    background: linear-gradient(145deg, #0d1a2f 0%, #1a273b 100%);
-    color: #e0e0e0;
-    font-family: 'Inter', sans-serif;
+    gap: 0.5rem;
+    margin: 0 2rem;
+    font-weight: 600;
+`;
+
+const TickerSymbol = styled.span`
+    color: #00adef;
+    font-size: 1.1rem;
+`;
+
+const TickerPrice = styled.span`
+    color: #e0e6ed;
+`;
+
+const TickerChange = styled.span`
+    color: ${props => props.positive ? '#10b981' : '#ef4444'};
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+`;
+
+// ============ STATS GRID ============
+const StatsGrid = styled.div`
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+`;
+
+const StatCard = styled.div`
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(0, 173, 237, 0.2);
+    border-radius: 16px;
+    padding: 1.5rem;
     position: relative;
     overflow: hidden;
+    animation: ${fadeIn} 0.6s ease-out;
+    transition: all 0.3s ease;
 
-    &::before, &::after {
-        content: '';
-        position: absolute;
-        width: 100vw;
-        height: 100vw;
-        border-radius: 50%;
-        opacity: 0.05;
-        z-index: 0;
-        filter: blur(100px);
+    &:hover {
+        transform: translateY(-5px);
+        border-color: rgba(0, 173, 237, 0.5);
+        box-shadow: 0 10px 40px rgba(0, 173, 237, 0.3);
     }
 
     &::before {
-        background: radial-gradient(circle, #00adef, transparent 50%);
-        top: -50vw;
-        left: -50vw;
-    }
-
-    &::after {
-        background: radial-gradient(circle, #f97316, transparent 50%);
-        bottom: -50vw;
-        right: -50vw;
-    }
-`;
-
-const ContentWrapper = styled.div`
-    width: 100%;
-    max-width: 1400px;
-    z-index: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 2.5rem;
-    animation: ${fadeIn} 1s ease-out forwards;
-`;
-
-const SectionTitle = styled.h2`
-    font-size: 2.5rem;
-    color: #f8fafc;
-    margin-bottom: 1.5rem;
-    text-align: center;
-    position: relative;
-    padding-bottom: 0.5rem;
-
-    &::after {
         content: '';
         position: absolute;
-        left: 50%;
-        bottom: 0;
-        transform: translateX(-50%);
-        width: 80px;
-        height: 3px;
-        background-color: #00adef;
-        border-radius: 2px;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background: ${props => {
+            if (props.variant === 'success') return 'linear-gradient(90deg, #10b981, #059669)';
+            if (props.variant === 'danger') return 'linear-gradient(90deg, #ef4444, #dc2626)';
+            if (props.variant === 'warning') return 'linear-gradient(90deg, #f59e0b, #d97706)';
+            return 'linear-gradient(90deg, #00adef, #0088cc)';
+        }};
     }
 `;
 
-const TwoColumnLayout = styled.div`
+const StatIcon = styled.div`
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+    background: ${props => {
+        if (props.variant === 'success') return 'rgba(16, 185, 129, 0.2)';
+        if (props.variant === 'danger') return 'rgba(239, 68, 68, 0.2)';
+        if (props.variant === 'warning') return 'rgba(245, 158, 11, 0.2)';
+        return 'rgba(0, 173, 237, 0.2)';
+    }};
+    color: ${props => {
+        if (props.variant === 'success') return '#10b981';
+        if (props.variant === 'danger') return '#ef4444';
+        if (props.variant === 'warning') return '#f59e0b';
+        return '#00adef';
+    }};
+`;
+
+const StatLabel = styled.div`
+    color: #94a3b8;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+`;
+
+const StatValue = styled.div`
+    font-size: 2.5rem;
+    font-weight: 900;
+    color: ${props => {
+        if (props.positive) return '#10b981';
+        if (props.negative) return '#ef4444';
+        return '#00adef';
+    }};
+    margin-bottom: 0.5rem;
+`;
+
+const StatSubtext = styled.div`
+    font-size: 0.9rem;
+    color: ${props => props.positive ? '#10b981' : props.negative ? '#ef4444' : '#94a3b8'};
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+`;
+
+// ============ MAIN CONTENT GRID ============
+const ContentGrid = styled.div`
     display: grid;
     grid-template-columns: 2fr 1fr;
-    gap: 2.5rem;
+    gap: 2rem;
+    margin-bottom: 2rem;
 
-    @media (max-width: 1024px) {
+    @media (max-width: 1200px) {
         grid-template-columns: 1fr;
     }
 `;
 
-const MainContentArea = styled.div`
-    display: flex;
-    flex-direction: column;
-    gap: 2.5rem;
-`;
-
-const SideContentArea = styled.div`
-    display: flex;
-    flex-direction: column;
-    gap: 2.5rem;
-`;
-
-const Card = styled.div`
-    background: linear-gradient(135deg, #1e293b 0%, #2c3e50 100%);
-    border-radius: 12px;
-    padding: 2rem;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+const Panel = styled.div`
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    backdrop-filter: blur(10px);
     border: 1px solid rgba(0, 173, 237, 0.2);
+    border-radius: 16px;
+    padding: 2rem;
+    animation: ${fadeIn} 0.8s ease-out;
 `;
 
-const ErrorMessage = styled.p`
-    color: #ff6b6b;
-    margin-top: 1.5rem;
-    font-size: 1rem;
-    font-weight: bold;
-    text-align: center;
-    animation: ${pulseGlow} 1.5s infinite alternate;
+const PanelHeader = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
 `;
 
-const MarketOverviewGrid = styled.div`
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1.5rem;
-    margin-top: 1.5rem;
+const PanelTitle = styled.h2`
+    font-size: 1.5rem;
+    color: #00adef;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 `;
 
-const DashboardPage = () => {
-    const { user, api, isAuthenticated, loading: authLoading } = useAuth();
-    const navigate = useNavigate();
+const Badge = styled.span`
+    background: ${props => {
+        if (props.variant === 'success') return 'rgba(16, 185, 129, 0.2)';
+        if (props.variant === 'danger') return 'rgba(239, 68, 68, 0.2)';
+        return 'rgba(0, 173, 237, 0.2)';
+    }};
+    color: ${props => {
+        if (props.variant === 'success') return '#10b981';
+        if (props.variant === 'danger') return '#ef4444';
+        return '#00adef';
+    }};
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+`;
 
-    const [dashboardSummary, setDashboardSummary] = useState([]);
-    const [dashboardLoading, setDashboardLoading] = useState(true);
-    const [dashboardError, setDashboardError] = useState(null);
+// ============ MARKET MOVERS ============
+const MoversList = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+`;
 
-    const [marketData, setMarketData] = useState(null);
-    const [loadingMarketData, setLoadingMarketData] = useState(true);
-    const [errorMarketData, setErrorMarketData] = useState(null);
+const MoverItem = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: rgba(0, 173, 237, 0.05);
+    border: 1px solid rgba(0, 173, 237, 0.1);
+    border-radius: 12px;
+    transition: all 0.2s ease;
 
-    const [aiGraphData, setAiGraphData] = useState([]);
-    const [aiGraphLoading, setAiGraphLoading] = useState(true);
-    const [aiGraphError, setAiGraphError] = useState(null);
-
-    const [news, setNews] = useState([]);
-    const [newsLoading, setNewsLoading] = useState(true);
-    const [newsError, setNewsError] = useState(null);
-
-    useEffect(() => {
-        if (!authLoading && !isAuthenticated) {
-            navigate('/login');
-        }
-    }, [isAuthenticated, authLoading, navigate]);
-
-    // ✅ FIXED: Fetch Dashboard Summary
-    const fetchDashboardSummary = useCallback(async () => {
-        if (!api || !isAuthenticated) {
-            setDashboardLoading(false);
-            return;
-        }
-
-        setDashboardLoading(true);
-        setDashboardError(null);
-        try {
-            const res = await api.get('/dashboard/summary');
-            
-            if (res.data && res.data.mainMetrics && Array.isArray(res.data.mainMetrics)) {
-                setDashboardSummary(res.data.mainMetrics);
-            } else {
-                setDashboardError('Invalid summary data format.');
-                setDashboardSummary([]);
-            }
-        } catch (err) {
-            console.error('Error fetching dashboard summary:', err);
-            setDashboardError('Failed to fetch dashboard summary.');
-        } finally {
-            setDashboardLoading(false);
-        }
-    }, [api, isAuthenticated]);
-
-    // Fetch Market Overview Data
-    const fetchMarketOverview = useCallback(async () => {
-        if (!api || !isAuthenticated) {
-            setLoadingMarketData(false);
-            return;
-        }
-
-        setLoadingMarketData(true);
-        setErrorMarketData(null);
-        try {
-            const res = await api.get('/dashboard/market-overview');
-            setMarketData(res.data);
-        } catch (err) {
-            console.error("Error fetching market overview:", err);
-            setErrorMarketData("Failed to load market data.");
-        } finally {
-            setLoadingMarketData(false);
-        }
-    }, [api, isAuthenticated]);
-
-    // ✅ FIXED: Fetch AI Graph Data
-    const fetchAiGraphData = useCallback(async () => {
-        if (!api || !isAuthenticated) {
-            setAiGraphLoading(false);
-            return;
-        }
-
-        setAiGraphLoading(true);
-        setAiGraphError(null);
-        try {
-            const res = await api.get('/dashboard/ai-graph-data');
-            
-            if (res.data && Array.isArray(res.data) && res.data.length > 0) {
-                setAiGraphData(res.data);
-            } else {
-                setAiGraphError('Invalid AI graph data format.');
-                setAiGraphData([]);
-            }
-        } catch (err) {
-            console.error('Error fetching AI graph data:', err);
-            setAiGraphError('Failed to fetch AI graph data.');
-        } finally {
-            setAiGraphLoading(false);
-        }
-    }, [api, isAuthenticated]);
-
-    // Fetch News Data
-    const fetchNews = useCallback(async () => {
-        if (!api || !isAuthenticated) {
-            setNewsLoading(false);
-            return;
-        }
-
-        setNewsLoading(true);
-        setNewsError(null);
-        try {
-            const res = await api.get('/dashboard/news');
-            if (res.data && Array.isArray(res.data)) {
-                setNews(res.data);
-            } else {
-                setNewsError('Invalid news data format.');
-                setNews([]);
-            }
-        } catch (err) {
-            console.error('Error fetching news:', err);
-            setNewsError('Failed to fetch news.');
-        } finally {
-            setNewsLoading(false);
-        }
-    }, [api, isAuthenticated]);
-
-    useEffect(() => {
-        if (isAuthenticated && !authLoading && api) {
-            fetchDashboardSummary();
-            fetchMarketOverview();
-            fetchAiGraphData();
-            fetchNews();
-        }
-    }, [isAuthenticated, authLoading, api, fetchDashboardSummary, fetchMarketOverview, fetchAiGraphData, fetchNews]);
-
-    if (authLoading || dashboardLoading || aiGraphLoading || loadingMarketData || newsLoading) {
-        return <Loader />;
+    &:hover {
+        background: rgba(0, 173, 237, 0.1);
+        border-color: rgba(0, 173, 237, 0.3);
+        transform: translateX(5px);
     }
+`;
 
-    if (!isAuthenticated) {
+const MoverInfo = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+`;
+
+const MoverSymbol = styled.div`
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #00adef;
+    min-width: 60px;
+`;
+
+const MoverName = styled.div`
+    color: #94a3b8;
+    font-size: 0.9rem;
+`;
+
+const MoverPrice = styled.div`
+    text-align: right;
+`;
+
+const MoverPriceValue = styled.div`
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #e0e6ed;
+`;
+
+const MoverChange = styled.div`
+    color: ${props => props.positive ? '#10b981' : '#ef4444'};
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.9rem;
+`;
+
+// ============ AI PREDICTIONS ============
+const PredictionCard = styled.div`
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(45deg, transparent 30%, rgba(139, 92, 246, 0.1) 50%, transparent 70%);
+        background-size: 200% 200%;
+        animation: ${shimmer} 3s linear infinite;
+    }
+`;
+
+const PredictionHeader = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+`;
+
+const PredictionSymbol = styled.div`
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #a78bfa;
+`;
+
+const PredictionDirection = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: ${props => props.up ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'};
+    border-radius: 20px;
+    color: ${props => props.up ? '#10b981' : '#ef4444'};
+    font-weight: 600;
+`;
+
+const PredictionDetails = styled.div`
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+`;
+
+const PredictionDetail = styled.div``;
+
+const DetailLabel = styled.div`
+    color: #94a3b8;
+    font-size: 0.85rem;
+    margin-bottom: 0.25rem;
+`;
+
+const DetailValue = styled.div`
+    color: #e0e6ed;
+    font-weight: 600;
+    font-size: 1.1rem;
+`;
+
+const ConfidenceBar = styled.div`
+    width: 100%;
+    height: 8px;
+    background: rgba(0, 173, 237, 0.2);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 1rem;
+`;
+
+const ConfidenceFill = styled.div`
+    height: 100%;
+    width: ${props => props.value}%;
+    background: linear-gradient(90deg, #10b981, #00adef);
+    border-radius: 4px;
+    transition: width 1s ease-out;
+`;
+
+// ============ QUICK ACTIONS ============
+const QuickActionsGrid = styled.div`
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+`;
+
+const ActionButton = styled.button`
+    padding: 1.5rem;
+    background: linear-gradient(135deg, rgba(0, 173, 237, 0.2) 0%, rgba(0, 173, 237, 0.05) 100%);
+    border: 1px solid rgba(0, 173, 237, 0.3);
+    border-radius: 12px;
+    color: #00adef;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    transition: all 0.3s ease;
+
+    &:hover {
+        background: linear-gradient(135deg, rgba(0, 173, 237, 0.3) 0%, rgba(0, 173, 237, 0.1) 100%);
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0, 173, 237, 0.3);
+    }
+`;
+
+const ActionIcon = styled.div`
+    font-size: 2rem;
+`;
+
+const ActionLabel = styled.div`
+    font-size: 0.9rem;
+`;
+
+// ============ COMPONENT ============
+const DashboardPage = () => {
+    const { api, user } = useAuth();
+    const [portfolioStats, setPortfolioStats] = useState(null);
+    const [marketMovers, setMarketMovers] = useState([]);
+    const [predictions, setPredictions] = useState([]);
+    const [tickerData, setTickerData] = useState([]);
+    const [chartData, setChartData] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetchDashboardData();
+    }, []);
+
+    const fetchDashboardData = async () => {
+        try {
+            setLoading(true);
+            
+            // Fetch portfolio
+            const portfolioRes = await api.get('/portfolio');
+            calculatePortfolioStats(portfolioRes.data.holdings || []);
+
+            // Fetch trending stocks for ticker
+            setTickerData([
+                { symbol: 'AAPL', price: 175.50, change: 2.5 },
+                { symbol: 'TSLA', price: 242.80, change: -1.2 },
+                { symbol: 'NVDA', price: 495.20, change: 5.8 },
+                { symbol: 'MSFT', price: 378.90, change: 1.4 },
+                { symbol: 'GOOGL', price: 140.20, change: -0.8 },
+                { symbol: 'AMZN', price: 178.30, change: 3.2 },
+                { symbol: 'META', price: 485.60, change: 2.1 },
+                { symbol: 'AMD', price: 142.70, change: 4.5 },
+            ]);
+
+            // Set market movers
+            setMarketMovers([
+                { symbol: 'NVDA', name: 'NVIDIA Corp', price: 495.20, change: 5.8 },
+                { symbol: 'AMD', name: 'Advanced Micro', price: 142.70, change: 4.5 },
+                { symbol: 'AMZN', name: 'Amazon.com', price: 178.30, change: 3.2 },
+                { symbol: 'TSLA', name: 'Tesla Inc', price: 242.80, change: -1.2 },
+            ]);
+
+            // Mock predictions
+            setPredictions([
+                {
+                    symbol: 'AAPL',
+                    direction: 'UP',
+                    targetPrice: 182.50,
+                    confidence: 85,
+                    timeframe: '7 days'
+                },
+                {
+                    symbol: 'NVDA',
+                    direction: 'UP',
+                    targetPrice: 520.00,
+                    confidence: 78,
+                    timeframe: '7 days'
+                }
+            ]);
+
+            // Mock chart data
+            setChartData([
+                { date: 'Mon', value: 10000 },
+                { date: 'Tue', value: 10500 },
+                { date: 'Wed', value: 10200 },
+                { date: 'Thu', value: 11000 },
+                { date: 'Fri', value: 11500 },
+            ]);
+
+        } catch (error) {
+            console.error('Error fetching dashboard data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const calculatePortfolioStats = (holdings) => {
+        if (!holdings || holdings.length === 0) {
+            setPortfolioStats(null);
+            return;
+        }
+
+        const totalValue = holdings.reduce((sum, h) => {
+            const price = h.currentPrice || h.price || 0;
+            const shares = h.shares || h.quantity || 0;
+            return sum + (price * shares);
+        }, 0);
+
+        const totalCost = holdings.reduce((sum, h) => {
+            const avgPrice = h.averagePrice || h.purchasePrice || 0;
+            const shares = h.shares || h.quantity || 0;
+            return sum + (avgPrice * shares);
+        }, 0);
+
+        const totalGain = totalValue - totalCost;
+        const totalGainPercent = totalCost > 0 ? (totalGain / totalCost) * 100 : 0;
+
+        setPortfolioStats({
+            totalValue,
+            totalGain,
+            totalGainPercent,
+            holdingsCount: holdings.length
+        });
+    };
+
+    if (loading) {
         return (
-            <DashboardContainer>
-                <ContentWrapper>
-                    <Card>
-                        <ErrorMessage>You need to be logged in to view this page.</ErrorMessage>
-                        <button onClick={() => navigate('/login')}>Login Now</button>
-                    </Card>
-                </ContentWrapper>
-            </DashboardContainer>
+            <PageContainer>
+                <div style={{ textAlign: 'center', padding: '4rem' }}>
+                    <Activity size={64} color="#00adef" />
+                    <h2 style={{ marginTop: '1rem', color: '#00adef' }}>Loading Dashboard...</h2>
+                </div>
+            </PageContainer>
         );
     }
 
     return (
-        <DashboardContainer>
-            <ContentWrapper>
-                <DashboardHeader username={user ? user.username : 'Trader'} />
+        <PageContainer>
+            <Header>
+                <Title>Mission Control</Title>
+                <Subtitle>Welcome back, {user?.name || 'Trader'} • Real-time market intelligence</Subtitle>
+            </Header>
 
-                {dashboardError && <ErrorMessage>{dashboardError}</ErrorMessage>}
+            {/* STOCK TICKER */}
+            <TickerContainer>
+                <TickerTrack>
+                    {[...tickerData, ...tickerData].map((stock, index) => (
+                        <TickerItem key={index}>
+                            <TickerSymbol>{stock.symbol}</TickerSymbol>
+                            <TickerPrice>${stock.price.toFixed(2)}</TickerPrice>
+                            <TickerChange positive={stock.change >= 0}>
+                                {stock.change >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
+                                {stock.change >= 0 ? '+' : ''}{stock.change}%
+                            </TickerChange>
+                        </TickerItem>
+                    ))}
+                </TickerTrack>
+            </TickerContainer>
 
-                <StatCardsGrid summary={dashboardSummary} error={dashboardError} />
+            {/* STATS CARDS */}
+            <StatsGrid>
+                <StatCard>
+                    <StatIcon>
+                        <DollarSign size={24} />
+                    </StatIcon>
+                    <StatLabel>Portfolio Value</StatLabel>
+                    <StatValue>
+                        ${portfolioStats?.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2 }) || '0.00'}
+                    </StatValue>
+                    <StatSubtext>
+                        <Eye size={16} />
+                        {portfolioStats?.holdingsCount || 0} Holdings
+                    </StatSubtext>
+                </StatCard>
 
-                <SectionTitle>Real-Time Market Data & Analytics</SectionTitle>
+                <StatCard variant={portfolioStats?.totalGain >= 0 ? 'success' : 'danger'}>
+                    <StatIcon variant={portfolioStats?.totalGain >= 0 ? 'success' : 'danger'}>
+                        {portfolioStats?.totalGain >= 0 ? <TrendingUp size={24} /> : <TrendingDown size={24} />}
+                    </StatIcon>
+                    <StatLabel>Total Gain/Loss</StatLabel>
+                    <StatValue positive={portfolioStats?.totalGain >= 0} negative={portfolioStats?.totalGain < 0}>
+                        ${Math.abs(portfolioStats?.totalGain || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </StatValue>
+                    <StatSubtext positive={portfolioStats?.totalGainPercent >= 0} negative={portfolioStats?.totalGainPercent < 0}>
+                        {portfolioStats?.totalGainPercent >= 0 ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
+                        {portfolioStats?.totalGainPercent >= 0 ? '+' : ''}{portfolioStats?.totalGainPercent?.toFixed(2) || 0}%
+                    </StatSubtext>
+                </StatCard>
 
-                <TwoColumnLayout>
-                    <MainContentArea>
-                        <AIDataGraph
-                            data={aiGraphData}
-                            loading={aiGraphLoading}
-                            error={aiGraphError}
-                        />
+                <StatCard variant="warning">
+                    <StatIcon variant="warning">
+                        <Flame size={24} />
+                    </StatIcon>
+                    <StatLabel>Hot Stocks</StatLabel>
+                    <StatValue>{marketMovers.filter(m => m.change > 3).length}</StatValue>
+                    <StatSubtext>
+                        <Star size={16} />
+                        Top Movers Today
+                    </StatSubtext>
+                </StatCard>
 
-                        <Card>
-                            <SectionTitle style={{ marginBottom: '1rem', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-                                <LineChart size={24} color="#00adef" /> Global Market Snapshot
-                            </SectionTitle>
-                            {loadingMarketData ? (
-                                <p>Loading market data...</p>
-                            ) : errorMarketData ? (
-                                <ErrorMessage>{errorMarketData}</ErrorMessage>
-                            ) : (
-                                <MarketOverviewGrid>
-                                    {marketData?.stockOverview?.map((item, index) => (
-                                        <DashboardCard
-                                            key={`stock-${index}`}
-                                            title={item.name}
-                                            value={item.value}
-                                            change={item.change}
-                                            changePercent={item.changePercent}
-                                            icon={<BriefcaseBusiness size={24} color="#00adef" />}
-                                        />
-                                    ))}
-                                    {marketData?.cryptoOverview?.map((item, index) => (
-                                        <DashboardCard
-                                            key={`crypto-${index}`}
-                                            title={item.name}
-                                            value={item.price}
-                                            change={item.change24h}
-                                            changePercent={item.changePercent24h}
-                                            icon={<Bitcoin size={24} color="#f79316" />}
-                                        />
-                                    ))}
-                                </MarketOverviewGrid>
-                            )}
-                        </Card>
+                <StatCard>
+                    <StatIcon>
+                        <Brain size={24} />
+                    </StatIcon>
+                    <StatLabel>AI Predictions</StatLabel>
+                    <StatValue>{predictions.length}</StatValue>
+                    <StatSubtext>
+                        <Target size={16} />
+                        Active Forecasts
+                    </StatSubtext>
+                </StatCard>
+            </StatsGrid>
 
-                        <MarketDataSearch api={api} />
-                    </MainContentArea>
+            {/* QUICK ACTIONS */}
+            <QuickActionsGrid>
+                <ActionButton onClick={() => window.location.href = '/portfolio'}>
+                    <ActionIcon><PieChart size={32} /></ActionIcon>
+                    <ActionLabel>Portfolio</ActionLabel>
+                </ActionButton>
+                <ActionButton onClick={() => window.location.href = '/predict'}>
+                    <ActionIcon><Brain size={32} /></ActionIcon>
+                    <ActionLabel>AI Predict</ActionLabel>
+                </ActionButton>
+                <ActionButton onClick={() => window.location.href = '/watchlist'}>
+                    <ActionIcon><Eye size={32} /></ActionIcon>
+                    <ActionLabel>Watchlist</ActionLabel>
+                </ActionButton>
+                <ActionButton onClick={() => window.location.href = '/chat'}>
+                    <ActionIcon><Zap size={32} /></ActionIcon>
+                    <ActionLabel>AI Chat</ActionLabel>
+                </ActionButton>
+            </QuickActionsGrid>
 
-                    <SideContentArea>
-                        <NewsFeedCard
-                            news={news}
-                            loading={newsLoading}
-                            error={newsError}
-                        />
-                        <Card>
-                            <h3>Quick Links</h3>
-                            <ul>
-                                <li><Link to="/predict" style={{ color: '#00adef', textDecoration: 'none', fontWeight: 'bold' }}>Go to Predictions</Link></li>
-                                <li><Link to="/settings" style={{ color: '#00adef', textDecoration: 'none', fontWeight: 'bold' }}>Account Settings</Link></li>
-                            </ul>
-                        </Card>
-                    </SideContentArea>
-                </TwoColumnLayout>
-            </ContentWrapper>
-        </DashboardContainer>
+            {/* MAIN CONTENT */}
+            <ContentGrid>
+                {/* LEFT COLUMN - CHARTS & MOVERS */}
+                <div>
+                    <Panel>
+                        <PanelHeader>
+                            <PanelTitle>
+                                <BarChart3 size={24} />
+                                Portfolio Performance
+                            </PanelTitle>
+                            <Badge>5 Days</Badge>
+                        </PanelHeader>
+                        <ResponsiveContainer width="100%" height={300}>
+                            <AreaChart data={chartData}>
+                                <defs>
+                                    <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#00adef" stopOpacity={0.8}/>
+                                        <stop offset="95%" stopColor="#00adef" stopOpacity={0}/>
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.1)" />
+                                <XAxis dataKey="date" stroke="#94a3b8" />
+                                <YAxis stroke="#94a3b8" />
+                                <Tooltip 
+                                    contentStyle={{ 
+                                        background: '#1e293b', 
+                                        border: '1px solid rgba(0, 173, 237, 0.3)',
+                                        borderRadius: '8px'
+                                    }}
+                                />
+                                <Area 
+                                    type="monotone" 
+                                    dataKey="value" 
+                                    stroke="#00adef" 
+                                    fillOpacity={1} 
+                                    fill="url(#colorValue)" 
+                                />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    </Panel>
+
+                    <Panel style={{ marginTop: '2rem' }}>
+                        <PanelHeader>
+                            <PanelTitle>
+                                <Flame size={24} />
+                                Market Movers
+                            </PanelTitle>
+                            <Badge variant="success">Live</Badge>
+                        </PanelHeader>
+                        <MoversList>
+                            {marketMovers.map((mover, index) => (
+                                <MoverItem key={index}>
+                                    <MoverInfo>
+                                        <MoverSymbol>{mover.symbol}</MoverSymbol>
+                                        <MoverName>{mover.name}</MoverName>
+                                    </MoverInfo>
+                                    <MoverPrice>
+                                        <MoverPriceValue>${mover.price.toFixed(2)}</MoverPriceValue>
+                                        <MoverChange positive={mover.change >= 0}>
+                                            {mover.change >= 0 ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
+                                            {mover.change >= 0 ? '+' : ''}{mover.change}%
+                                        </MoverChange>
+                                    </MoverPrice>
+                                </MoverItem>
+                            ))}
+                        </MoversList>
+                    </Panel>
+                </div>
+
+                {/* RIGHT COLUMN - AI PREDICTIONS */}
+                <Panel>
+                    <PanelHeader>
+                        <PanelTitle>
+                            <Brain size={24} />
+                            AI Predictions
+                        </PanelTitle>
+                        <Badge>Powered by ML</Badge>
+                    </PanelHeader>
+                    
+                    {predictions.map((pred, index) => (
+                        <PredictionCard key={index}>
+                            <PredictionHeader>
+                                <PredictionSymbol>{pred.symbol}</PredictionSymbol>
+                                <PredictionDirection up={pred.direction === 'UP'}>
+                                    {pred.direction === 'UP' ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
+                                    {pred.direction}
+                                </PredictionDirection>
+                            </PredictionHeader>
+                            
+                            <PredictionDetails>
+                                <PredictionDetail>
+                                    <DetailLabel>Target Price</DetailLabel>
+                                    <DetailValue>${pred.targetPrice.toFixed(2)}</DetailValue>
+                                </PredictionDetail>
+                                <PredictionDetail>
+                                    <DetailLabel>Timeframe</DetailLabel>
+                                    <DetailValue>{pred.timeframe}</DetailValue>
+                                </PredictionDetail>
+                            </PredictionDetails>
+                            
+                            <div style={{ marginTop: '1rem' }}>
+                                <DetailLabel>Confidence Level</DetailLabel>
+                                <ConfidenceBar>
+                                    <ConfidenceFill value={pred.confidence} />
+                                </ConfidenceBar>
+                                <div style={{ textAlign: 'right', marginTop: '0.5rem', color: '#10b981', fontWeight: 600 }}>
+                                    {pred.confidence}%
+                                </div>
+                            </div>
+                        </PredictionCard>
+                    ))}
+                </Panel>
+            </ContentGrid>
+        </PageContainer>
     );
 };
 

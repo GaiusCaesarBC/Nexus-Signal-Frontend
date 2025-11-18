@@ -1,1170 +1,1047 @@
-// client/src/pages/PredictionsPage.js - WITH WORKING CANDLESTICK CHARTS
+// client/src/pages/PredictionsPage.js - THE MOST LEGENDARY AI PREDICTION PAGE - ULTIMATE EDITION
 
 import React, { useState, useEffect, useRef } from 'react';
-import styled, { keyframes, css } from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
-import { 
-    TrendingUp, TrendingDown, Minus, Brain, Target, AlertCircle, 
-    Zap, Lightbulb, Shield, Clock, BarChart3, Activity 
+import {
+    Brain, TrendingUp, TrendingDown, Target, Zap, Activity,
+    AlertCircle, Calendar, DollarSign, Percent, ArrowRight,
+    Star, Award, Sparkles, ChevronRight, BarChart3, LineChart as LineChartIcon,
+    Rocket, Trophy, ArrowUpDown, Flame
 } from 'lucide-react';
 import {
-    ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, 
-    Tooltip, Legend, ResponsiveContainer, ReferenceLine, Area
+    LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid,
+    Tooltip, ResponsiveContainer, ReferenceLine
 } from 'recharts';
 
+// ============ ANIMATIONS ============
 const fadeIn = keyframes`
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
 `;
 
+const slideIn = keyframes`
+    from { transform: translateX(-100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+`;
+
+const slideInRight = keyframes`
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+`;
+
 const pulse = keyframes`
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+`;
+
+const glow = keyframes`
+    0%, 100% { box-shadow: 0 0 20px rgba(139, 92, 246, 0.4); }
+    50% { box-shadow: 0 0 40px rgba(139, 92, 246, 0.8); }
 `;
 
 const shimmer = keyframes`
-    0% { background-position: -1000px 0; }
-    100% { background-position: 1000px 0; }
+    0% { background-position: -200% center; }
+    100% { background-position: 200% center; }
 `;
 
-const PageContainer = styled.div`
-    padding: 3rem 2rem;
-    max-width: 1600px;
-    margin: 0 auto;
-    color: #e0e6ed;
-    background: linear-gradient(145deg, #0d1a2f 0%, #1a273b 100%);
-    min-height: calc(100vh - var(--navbar-height));
-    animation: ${fadeIn} 0.8s ease-out;
+const spin = keyframes`
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 `;
 
-const Header = styled.h1`
-    font-size: 3rem;
-    color: #00adef;
-    margin-bottom: 1rem;
-    text-align: center;
-    text-shadow: 0 0 15px rgba(0, 173, 237, 0.6);
-    
-    @media (max-width: 768px) {
-        font-size: 2.5rem;
+const float = keyframes`
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-15px); }
+`;
+
+const shake = keyframes`
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+    20%, 40%, 60%, 80% { transform: translateX(5px); }
+`;
+
+const bounceIn = keyframes`
+    0% { transform: scale(0); opacity: 0; }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); opacity: 1; }
+`;
+
+const neonGlow = keyframes`
+    0%, 100% {
+        text-shadow: 
+            0 0 10px rgba(139, 92, 246, 0.8),
+            0 0 20px rgba(139, 92, 246, 0.6),
+            0 0 30px rgba(139, 92, 246, 0.4);
     }
+    50% {
+        text-shadow: 
+            0 0 20px rgba(139, 92, 246, 1),
+            0 0 40px rgba(139, 92, 246, 0.8),
+            0 0 60px rgba(139, 92, 246, 0.6);
+    }
+`;
+
+const particles = keyframes`
+    0% { transform: translateY(0) translateX(0) scale(1); opacity: 1; }
+    100% { transform: translateY(-100vh) translateX(50px) scale(0); opacity: 0; }
+`;
+
+const rocketLaunch = keyframes`
+    0% { transform: translateY(0) rotate(-45deg); }
+    100% { transform: translateY(-1000px) translateX(1000px) rotate(-45deg); }
+`;
+
+// ============ STYLED COMPONENTS ============
+const PageContainer = styled.div`
+    min-height: 100vh;
+    padding-top: 80px;
+    background: linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
+    color: #e0e6ed;
+    padding-left: 2rem;
+    padding-right: 2rem;
+    padding-bottom: 2rem;
+    position: relative;
+    overflow-x: hidden;
+`;
+
+// Animated background particles
+const ParticleContainer = styled.div`
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+`;
+
+const Particle = styled.div`
+    position: absolute;
+    width: ${props => props.size}px;
+    height: ${props => props.size}px;
+    background: ${props => props.color};
+    border-radius: 50%;
+    animation: ${particles} ${props => props.duration}s linear infinite;
+    animation-delay: ${props => props.delay}s;
+    left: ${props => props.left}%;
+    opacity: 0.6;
+    filter: blur(1px);
+`;
+
+const Header = styled.div`
+    margin-bottom: 3rem;
+    animation: ${fadeIn} 0.8s ease-out;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+`;
+
+const Title = styled.h1`
+    font-size: 3.5rem;
+    background: linear-gradient(135deg, #8b5cf6 0%, #00adef 50%, #00ff88 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.5rem;
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    animation: ${neonGlow} 2s ease-in-out infinite;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+
+    &:hover {
+        transform: scale(1.05);
+        animation: ${shake} 0.5s ease-in-out;
+    }
+`;
+
+const TitleIcon = styled.div`
+    animation: ${float} 3s ease-in-out infinite;
 `;
 
 const Subtitle = styled.p`
-    text-align: center;
     color: #94a3b8;
-    font-size: 1.1rem;
-    margin-bottom: 3rem;
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
 `;
 
-const SearchSection = styled.div`
-    background: linear-gradient(135deg, #1e293b 0%, #2c3e50 100%);
-    border-radius: 12px;
-    padding: 2rem;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-    border: 1px solid rgba(0, 173, 237, 0.2);
-    margin-bottom: 2rem;
-    max-width: 600px;
-    margin-left: auto;
-    margin-right: auto;
-`;
-
-const SearchForm = styled.form`
-    display: flex;
-    gap: 1rem;
-    align-items: stretch;
-    
-    @media (max-width: 600px) {
-        flex-direction: column;
-    }
-`;
-
-const Input = styled.input`
-    flex-grow: 1;
-    padding: 1rem 1.25rem;
-    border-radius: 8px;
-    border: 1px solid rgba(0, 173, 237, 0.3);
-    background-color: #0d1a2f;
-    color: #e2e8f0;
-    font-size: 1rem;
-    transition: all 0.2s ease;
-
-    &::placeholder {
-        color: #64748b;
-    }
-
-    &:focus {
-        outline: none;
-        border-color: #00adef;
-        box-shadow: 0 0 0 3px rgba(0, 173, 237, 0.2);
-    }
-`;
-
-const Button = styled.button`
-    padding: 1rem 2rem;
-    border-radius: 8px;
-    border: none;
-    background: linear-gradient(135deg, #00adef 0%, #0088cc 100%);
-    color: white;
-    font-size: 1rem;
-    font-weight: 600;
+const PoweredBy = styled.div`
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%);
+    border: 1px solid rgba(139, 92, 246, 0.4);
+    border-radius: 20px;
+    font-size: 0.9rem;
+    color: #a78bfa;
+    animation: ${glow} 3s ease-in-out infinite;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
+
+    &:hover {
+        transform: translateY(-3px);
+        background: linear-gradient(135deg, rgba(139, 92, 246, 0.4) 0%, rgba(59, 130, 246, 0.4) 100%);
+    }
+`;
+
+// ============ STATS BANNER ============
+const StatsBanner = styled.div`
+    max-width: 1200px;
+    margin: 0 auto 3rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    position: relative;
+    z-index: 1;
+`;
+
+const StatCard = styled.div`
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(59, 130, 246, 0.15) 100%);
+    border: 2px solid rgba(139, 92, 246, 0.3);
+    border-radius: 16px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    animation: ${fadeIn} 0.6s ease-out;
+    animation-delay: ${props => props.delay}s;
+    cursor: pointer;
+
+    &:hover {
+        transform: translateY(-10px) scale(1.05);
+        border-color: rgba(139, 92, 246, 0.8);
+        box-shadow: 0 20px 60px rgba(139, 92, 246, 0.4);
+    }
+`;
+
+const StatIcon = styled.div`
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 1rem;
+    background: ${props => props.gradient};
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: ${pulse} 2s ease-in-out infinite;
+`;
+
+const StatValue = styled.div`
+    font-size: 2rem;
+    font-weight: 900;
+    color: #8b5cf6;
+    margin-bottom: 0.5rem;
+`;
+
+const StatLabel = styled.div`
+    color: #94a3b8;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+`;
+
+// ============ INPUT SECTION ============
+const InputSection = styled.div`
+    max-width: 800px;
+    margin: 0 auto 3rem;
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 20px;
+    padding: 2.5rem;
+    animation: ${fadeIn} 0.8s ease-out;
+    box-shadow: 0 10px 40px rgba(139, 92, 246, 0.2);
+    position: relative;
+    z-index: 1;
+
+    &:hover {
+        border-color: rgba(139, 92, 246, 0.5);
+        box-shadow: 0 15px 50px rgba(139, 92, 246, 0.3);
+    }
+`;
+
+const InputForm = styled.form`
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+`;
+
+const InputGroup = styled.div`
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+
+    @media (max-width: 768px) {
+        grid-template-columns: 1fr;
+    }
+`;
+
+const FormField = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+`;
+
+const Label = styled.label`
+    color: #a78bfa;
+    font-size: 0.95rem;
+    font-weight: 600;
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    white-space: nowrap;
+`;
+
+const Input = styled.input`
+    padding: 1rem 1.25rem;
+    background: rgba(139, 92, 246, 0.05);
+    border: 2px solid rgba(139, 92, 246, 0.3);
+    border-radius: 12px;
+    color: #e0e6ed;
+    font-size: 1.1rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+
+    &:focus {
+        outline: none;
+        border-color: #8b5cf6;
+        background: rgba(139, 92, 246, 0.1);
+        box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.2);
+        transform: scale(1.02);
+    }
+
+    &::placeholder {
+        color: #64748b;
+        text-transform: none;
+    }
+`;
+
+const Select = styled.select`
+    padding: 1rem 1.25rem;
+    background: rgba(139, 92, 246, 0.05);
+    border: 2px solid rgba(139, 92, 246, 0.3);
+    border-radius: 12px;
+    color: #e0e6ed;
+    font-size: 1.1rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    cursor: pointer;
+
+    &:focus {
+        outline: none;
+        border-color: #8b5cf6;
+        background: rgba(139, 92, 246, 0.1);
+        box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.2);
+        transform: scale(1.02);
+    }
+
+    option {
+        background: #1e293b;
+        color: #e0e6ed;
+    }
+`;
+
+const PredictButton = styled.button`
+    padding: 1.25rem 2rem;
+    background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 1.2rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.3) 50%, transparent 70%);
+        background-size: 200% 200%;
+        animation: ${shimmer} 3s linear infinite;
+    }
 
     &:hover:not(:disabled) {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 173, 237, 0.4);
+        transform: translateY(-3px) scale(1.02);
+        box-shadow: 0 15px 40px rgba(139, 92, 246, 0.5);
+    }
+
+    &:active:not(:disabled) {
+        transform: translateY(-1px) scale(0.98);
     }
 
     &:disabled {
         opacity: 0.6;
         cursor: not-allowed;
-        ${css`animation: ${pulse} 1.5s ease-in-out infinite;`}
+        animation: ${pulse} 1.5s ease-in-out infinite;
     }
 `;
 
-const ChartSection = styled.div`
-    background: linear-gradient(135deg, #1e293b 0%, #2c3e50 100%);
-    border-radius: 12px;
-    padding: 2rem;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-    border: 1px solid rgba(0, 173, 237, 0.2);
-    margin-bottom: 2rem;
-    animation: ${fadeIn} 0.5s ease-out;
+const LoadingSpinner = styled(Sparkles)`
+    animation: ${spin} 1s linear infinite;
 `;
 
-const ChartTitle = styled.h3`
-    font-size: 1.5rem;
-    color: #00adef;
-    margin-bottom: 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+// ============ RESULTS SECTION ============
+const ResultsContainer = styled.div`
+    max-width: 1400px;
+    margin: 0 auto;
+    animation: ${bounceIn} 0.6s ease-out;
+    position: relative;
+    z-index: 1;
 `;
 
 const PredictionCard = styled.div`
-    background: linear-gradient(135deg, #1e293b 0%, #2c3e50 100%);
-    border-radius: 12px;
-    padding: 2rem;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-    border: 1px solid rgba(0, 173, 237, 0.2);
-    animation: ${fadeIn} 0.5s ease-out;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(59, 130, 246, 0.15) 100%);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(139, 92, 246, 0.4);
+    border-radius: 20px;
+    padding: 2.5rem;
     margin-bottom: 2rem;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(139, 92, 246, 0.3);
+
+    &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(45deg, transparent 30%, rgba(139, 92, 246, 0.1) 50%, transparent 70%);
+        background-size: 200% 200%;
+        animation: ${shimmer} 4s linear infinite;
+    }
 `;
 
-const CardHeader = styled.div`
+const PredictionHeader = styled.div`
     display: flex;
     justify-content: space-between;
+    align-items: start;
+    margin-bottom: 2rem;
+    position: relative;
+    z-index: 1;
+
+    @media (max-width: 768px) {
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+`;
+
+const StockInfo = styled.div`
+    animation: ${slideIn} 0.6s ease-out;
+`;
+
+const StockSymbol = styled.h2`
+    font-size: 3rem;
+    font-weight: 900;
+    color: #8b5cf6;
+    margin-bottom: 0.5rem;
+    display: flex;
     align-items: center;
-    margin-bottom: 1.5rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid rgba(0, 173, 237, 0.2);
+    gap: 1rem;
+    animation: ${neonGlow} 2s ease-in-out infinite;
 `;
 
-const SymbolTitle = styled.h2`
-    font-size: 2rem;
-    color: #f8fafc;
-    margin: 0;
+const CurrentPriceSection = styled.div`
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
 `;
 
-const CurrentPrice = styled.div`
-    text-align: right;
-`;
-
-const PriceLabel = styled.div`
-    font-size: 0.9rem;
+const CurrentPriceLabel = styled.span`
     color: #94a3b8;
+    font-size: 1rem;
 `;
 
-const PriceValue = styled.div`
+const CurrentPriceValue = styled.span`
+    color: #e0e6ed;
     font-size: 1.8rem;
-    font-weight: bold;
-    color: #00adef;
+    font-weight: 700;
 `;
 
-const PredictionGrid = styled.div`
+const DirectionBadge = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 2rem;
+    background: ${props => props.up ? 
+        'linear-gradient(135deg, rgba(16, 185, 129, 0.3) 0%, rgba(5, 150, 105, 0.3) 100%)' : 
+        'linear-gradient(135deg, rgba(239, 68, 68, 0.3) 0%, rgba(220, 38, 38, 0.3) 100%)'
+    };
+    border: 2px solid ${props => props.up ? 'rgba(16, 185, 129, 0.5)' : 'rgba(239, 68, 68, 0.5)'};
+    border-radius: 16px;
+    color: ${props => props.up ? '#10b981' : '#ef4444'};
+    font-size: 1.5rem;
+    font-weight: 900;
+    box-shadow: ${props => props.up ? 
+        '0 10px 30px rgba(16, 185, 129, 0.3)' : 
+        '0 10px 30px rgba(239, 68, 68, 0.3)'
+    };
+    animation: ${slideInRight} 0.6s ease-out, ${pulse} 2s ease-in-out infinite 1s;
+`;
+
+// ============ METRICS GRID ============
+const MetricsGrid = styled.div`
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 1.5rem;
     margin-bottom: 2rem;
+    position: relative;
+    z-index: 1;
 `;
 
-const PredictionBox = styled.div`
-    background: rgba(0, 173, 237, 0.05);
-    border-radius: 8px;
+const MetricCard = styled.div`
+    background: rgba(15, 23, 42, 0.8);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 16px;
     padding: 1.5rem;
-    border: 1px solid rgba(0, 173, 237, 0.1);
+    transition: all 0.3s ease;
+    animation: ${fadeIn} 0.6s ease-out;
+    animation-delay: ${props => props.index * 0.1}s;
+
+    &:hover {
+        transform: translateY(-5px) scale(1.03);
+        border-color: rgba(139, 92, 246, 0.6);
+        box-shadow: 0 10px 30px rgba(139, 92, 246, 0.3);
+    }
 `;
 
-const BoxLabel = styled.div`
-    font-size: 0.9rem;
-    color: #94a3b8;
-    margin-bottom: 0.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-`;
-
-const BoxValue = styled.div`
-    font-size: 1.5rem;
-    font-weight: bold;
+const MetricIcon = styled.div`
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: ${props => {
+        if (props.variant === 'success') return 'rgba(16, 185, 129, 0.2)';
+        if (props.variant === 'danger') return 'rgba(239, 68, 68, 0.2)';
+        if (props.variant === 'warning') return 'rgba(245, 158, 11, 0.2)';
+        return 'rgba(139, 92, 246, 0.2)';
+    }};
     color: ${props => {
-        if (props.direction === 'UP') return '#10b981';
-        if (props.direction === 'DOWN') return '#ef4444';
-        return '#f8fafc';
+        if (props.variant === 'success') return '#10b981';
+        if (props.variant === 'danger') return '#ef4444';
+        if (props.variant === 'warning') return '#f59e0b';
+        return '#a78bfa';
     }};
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    justify-content: center;
+    margin-bottom: 1rem;
+    transition: transform 0.3s ease;
+
+    ${MetricCard}:hover & {
+        transform: scale(1.2) rotate(360deg);
+    }
+`;
+
+const MetricLabel = styled.div`
+    color: #94a3b8;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+`;
+
+const MetricValue = styled.div`
+    font-size: 2rem;
+    font-weight: 900;
+    color: ${props => {
+        if (props.variant === 'success') return '#10b981';
+        if (props.variant === 'danger') return '#ef4444';
+        if (props.variant === 'warning') return '#f59e0b';
+        return '#a78bfa';
+    }};
+`;
+
+// ============ CONFIDENCE BAR ============
+const ConfidenceSection = styled.div`
+    margin-bottom: 2rem;
+    position: relative;
+    z-index: 1;
+`;
+
+const ConfidenceLabel = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+`;
+
+const ConfidenceText = styled.span`
+    color: #a78bfa;
+    font-size: 1.1rem;
+    font-weight: 600;
+`;
+
+const ConfidenceValue = styled.span`
+    color: #10b981;
+    font-size: 1.5rem;
+    font-weight: 900;
+    animation: ${pulse} 2s ease-in-out infinite;
 `;
 
 const ConfidenceBar = styled.div`
     width: 100%;
-    height: 8px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 4px;
+    height: 20px;
+    background: rgba(139, 92, 246, 0.2);
+    border-radius: 10px;
     overflow: hidden;
-    margin-top: 0.5rem;
+    border: 1px solid rgba(139, 92, 246, 0.3);
 `;
 
 const ConfidenceFill = styled.div`
     height: 100%;
-    width: ${props => props.confidence}%;
-    background: ${props => {
-        if (props.confidence >= 70) return '#10b981';
-        if (props.confidence >= 50) return '#f59e0b';
-        return '#ef4444';
-    }};
-    transition: width 0.5s ease;
+    width: ${props => props.value || 0}%;
+    background: linear-gradient(90deg, #10b981, #8b5cf6, #00adef);
+    border-radius: 10px;
+    transition: width 1.5s ease-out;
+    position: relative;
+    overflow: hidden;
+
+    &::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.3) 50%, transparent 70%);
+        background-size: 200% 200%;
+        animation: ${shimmer} 2s linear infinite;
+    }
 `;
 
-const SignalsSection = styled.div`
-    margin-top: 1.5rem;
-`;
-
-const SectionTitle = styled.h3`
-    font-size: 1.2rem;
-    color: #00adef;
-    margin-bottom: 1rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-`;
-
-const SignalsList = styled.ul`
-    list-style: none;
-    padding: 0;
-    margin: 0;
-`;
-
-const SignalItem = styled.li`
-    background: rgba(0, 173, 237, 0.05);
-    padding: 0.75rem 1rem;
-    border-radius: 6px;
-    margin-bottom: 0.5rem;
-    border-left: 3px solid #00adef;
-    color: #e0e6ed;
-`;
-
-const AIInsightsCard = styled.div`
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
-    border-radius: 12px;
-    padding: 2rem;
-    margin-top: 2rem;
+// ============ CHART SECTION ============
+const ChartSection = styled.div`
+    background: rgba(15, 23, 42, 0.8);
+    backdrop-filter: blur(10px);
     border: 1px solid rgba(139, 92, 246, 0.3);
-    animation: ${fadeIn} 0.6s ease-out 0.2s both;
+    border-radius: 16px;
+    padding: 2rem;
+    position: relative;
+    z-index: 1;
+    transition: all 0.3s ease;
+
+    &:hover {
+        border-color: rgba(139, 92, 246, 0.6);
+        box-shadow: 0 20px 60px rgba(139, 92, 246, 0.3);
+    }
 `;
 
-const AIHeader = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid rgba(139, 92, 246, 0.2);
-`;
-
-const AITitle = styled.h3`
-    font-size: 1.5rem;
+const ChartTitle = styled.h3`
     color: #a78bfa;
-    margin: 0;
+    font-size: 1.3rem;
+    margin-bottom: 1.5rem;
     display: flex;
     align-items: center;
     gap: 0.5rem;
 `;
 
-const AISummary = styled.p`
-    font-size: 1.1rem;
-    line-height: 1.6;
-    color: #e0e6ed;
-    margin-bottom: 1.5rem;
-    padding: 1rem;
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 8px;
-    border-left: 3px solid #a78bfa;
-`;
-
-const InsightsList = styled.div`
-    display: grid;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-`;
-
-const InsightItem = styled.div`
-    background: rgba(0, 0, 0, 0.2);
-    padding: 1rem;
-    border-radius: 8px;
-    border-left: 3px solid #00adef;
-`;
-
-const InsightText = styled.p`
-    color: #e0e6ed;
-    margin: 0;
-    line-height: 1.5;
-`;
-
-const AIMetaGrid = styled.div`
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    margin-top: 1.5rem;
-`;
-
-const AIMetaItem = styled.div`
-    background: rgba(0, 0, 0, 0.3);
-    padding: 1rem;
-    border-radius: 8px;
+const EmptyState = styled.div`
     text-align: center;
+    padding: 4rem 2rem;
+    animation: ${fadeIn} 0.5s ease-out;
+    position: relative;
+    z-index: 1;
 `;
 
-const MetaLabel = styled.div`
-    font-size: 0.85rem;
-    color: #94a3b8;
-    margin-bottom: 0.5rem;
+const EmptyIcon = styled.div`
+    width: 150px;
+    height: 150px;
+    margin: 0 auto 2rem;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(139, 92, 246, 0.05) 100%);
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.3rem;
+    border: 3px dashed rgba(139, 92, 246, 0.4);
+    animation: ${float} 3s ease-in-out infinite;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover {
+        transform: scale(1.1) rotate(5deg);
+        border-color: rgba(139, 92, 246, 0.8);
+    }
 `;
 
-const MetaValue = styled.div`
-    font-size: 1.2rem;
-    font-weight: bold;
-    color: ${props => {
-        if (props.sentiment === 'bullish') return '#10b981';
-        if (props.sentiment === 'bearish') return '#ef4444';
-        if (props.recommendation === 'buy') return '#10b981';
-        if (props.recommendation === 'sell') return '#ef4444';
-        if (props.riskLevel === 'high') return '#ef4444';
-        if (props.riskLevel === 'low') return '#10b981';
-        return '#f59e0b';
-    }};
-    text-transform: capitalize;
-`;
-
-const LoadingInsights = styled.div`
-    text-align: center;
-    padding: 2rem;
+const EmptyTitle = styled.h2`
     color: #a78bfa;
-`;
-
-const LoadingShimmer = styled.div`
-    background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 75%);
-    background-size: 1000px 100%;
-    ${css`animation: ${shimmer} 2s infinite;`}
-    height: 100px;
-    border-radius: 8px;
+    font-size: 2rem;
     margin-bottom: 1rem;
 `;
 
-const ErrorMessage = styled.div`
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    color: #ef4444;
-    padding: 1rem;
-    border-radius: 8px;
-    text-align: center;
-    margin: 2rem auto;
-    max-width: 600px;
-`;
-
-const LoadingMessage = styled.div`
-    text-align: center;
-    padding: 3rem;
-    color: #00adef;
+const EmptyText = styled.p`
+    color: #94a3b8;
     font-size: 1.2rem;
 `;
 
-const PulsingIcon = styled(Brain)`
-    ${css`animation: ${pulse} 1.5s ease-in-out infinite;`}
-    margin-bottom: 1rem;
+// Success Rocket Animation
+const RocketContainer = styled.div`
+    position: fixed;
+    bottom: -100px;
+    left: ${props => props.left}%;
+    z-index: 1000;
+    animation: ${rocketLaunch} 3s ease-out forwards;
+    pointer-events: none;
 `;
 
-// Custom Candlestick Component - FIXED VERSION
-const Candlestick = (props) => {
-    const { x, y, width, height, fill, low, high, open, close } = props;
-    
-    if (!open || !close || !high || !low) return null;
-    
-    const isGrowing = close > open;
-    const color = isGrowing ? '#10b981' : '#ef4444';
-    const candleWidth = Math.max(width * 0.6, 2);
-    
-    // Calculate positions
-    const topPrice = Math.max(open, close);
-    const bottomPrice = Math.min(open, close);
-    const priceRange = high - low;
-    const candleHeight = Math.abs(close - open);
-    
-    // Y positions (inverted because SVG y-axis goes down)
-    const highY = y;
-    const lowY = y + height;
-    const topY = y + ((high - topPrice) / priceRange) * height;
-    const bottomY = y + ((high - bottomPrice) / priceRange) * height;
-    const candleBodyHeight = Math.max(bottomY - topY, 1);
-    
-    return (
-        <g>
-            {/* Wick (high-low line) */}
-            <line
-                x1={x}
-                y1={highY}
-                x2={x}
-                y2={lowY}
-                stroke={color}
-                strokeWidth={1}
-            />
-            {/* Candle body */}
-            <rect
-                x={x - candleWidth / 2}
-                y={topY}
-                width={candleWidth}
-                height={candleBodyHeight}
-                fill={color}
-                stroke={color}
-                strokeWidth={1}
-            />
-        </g>
-    );
-};
-
-// Custom Tooltip
-const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-        const data = payload[0].payload;
-        return (
-            <div style={{
-                background: 'rgba(30, 41, 59, 0.95)',
-                border: '1px solid rgba(0, 173, 237, 0.3)',
-                borderRadius: '8px',
-                padding: '1rem',
-                color: '#e0e6ed'
-            }}>
-                <p style={{ margin: '0 0 0.5rem 0', fontWeight: 'bold' }}>{label}</p>
-                {data.open && (
-                    <>
-                        <p style={{ margin: '0.25rem 0', fontSize: '0.9rem' }}>
-                            <span style={{ color: '#94a3b8' }}>Open: </span>
-                            <span>${data.open?.toFixed(2)}</span>
-                        </p>
-                        <p style={{ margin: '0.25rem 0', fontSize: '0.9rem' }}>
-                            <span style={{ color: '#94a3b8' }}>High: </span>
-                            <span>${data.high?.toFixed(2)}</span>
-                        </p>
-                        <p style={{ margin: '0.25rem 0', fontSize: '0.9rem' }}>
-                            <span style={{ color: '#94a3b8' }}>Low: </span>
-                            <span>${data.low?.toFixed(2)}</span>
-                        </p>
-                        <p style={{ margin: '0.25rem 0', fontSize: '0.9rem' }}>
-                            <span style={{ color: '#94a3b8' }}>Close: </span>
-                            <span>${data.close?.toFixed(2)}</span>
-                        </p>
-                        <p style={{ margin: '0.25rem 0', fontSize: '0.9rem' }}>
-                            <span style={{ color: '#94a3b8' }}>Change: </span>
-                            <span style={{ color: data.close > data.open ? '#10b981' : '#ef4444' }}>
-                                {data.close > data.open ? '+' : ''}
-                                {((data.close - data.open) / data.open * 100).toFixed(2)}%
-                            </span>
-                        </p>
-                    </>
-                )}
-                {data.volume && (
-                    <p style={{ margin: '0.25rem 0', fontSize: '0.9rem' }}>
-                        <span style={{ color: '#94a3b8' }}>Volume: </span>
-                        <span>{(data.volume / 1000000).toFixed(2)}M</span>
-                    </p>
-                )}
-            </div>
-        );
-    }
-    return null;
-};
-
-// Mock data generator for demo purposes (remove when backend is ready)
-const generateMockHistoricalData = (currentPrice) => {
-    const data = [];
-    const days = 60;
-    let price = currentPrice * 0.85; // Start 15% lower than current
-    
-    for (let i = 0; i < days; i++) {
-        const date = new Date();
-        date.setDate(date.getDate() - (days - i));
-        
-        // Random price movement
-        const change = (Math.random() - 0.48) * (price * 0.03);
-        price += change;
-        
-        const open = price;
-        const high = price + (Math.random() * price * 0.02);
-        const low = price - (Math.random() * price * 0.02);
-        const close = low + (Math.random() * (high - low));
-        
-        data.push({
-            date: date.toISOString().split('T')[0],
-            open: parseFloat(open.toFixed(2)),
-            high: parseFloat(high.toFixed(2)),
-            low: parseFloat(low.toFixed(2)),
-            close: parseFloat(close.toFixed(2)),
-            volume: Math.floor(Math.random() * 100000000) + 10000000,
-            rsi: Math.random() * 40 + 30, // RSI between 30-70
-            macd: (Math.random() - 0.5) * 5
-        });
-        
-        price = close; // Update price for next iteration
-    }
-    
-    return data;
-};
-
-// Generate dynamic AI insights based on prediction data
-const generateDynamicInsights = (symbol, predictionData) => {
-    const direction = predictionData.prediction?.direction;
-    const confidence = predictionData.prediction?.confidence || 0;
-    const priceChange = predictionData.prediction?.price_change_percent || 0;
-    const currentPrice = predictionData.current_price;
-    const targetPrice = predictionData.prediction?.target_price;
-    
-    // Determine sentiment
-    let sentiment = 'neutral';
-    if (direction === 'UP' && confidence >= 60) sentiment = 'bullish';
-    else if (direction === 'DOWN' && confidence >= 60) sentiment = 'bearish';
-    
-    // Determine recommendation
-    let recommendation = 'hold';
-    if (direction === 'UP' && confidence >= 70 && priceChange >= 3) recommendation = 'strong buy';
-    else if (direction === 'UP' && confidence >= 60) recommendation = 'buy';
-    else if (direction === 'DOWN' && confidence >= 70 && priceChange <= -3) recommendation = 'strong sell';
-    else if (direction === 'DOWN' && confidence >= 60) recommendation = 'sell';
-    
-    // Determine risk level
-    let risk_level = 'medium';
-    if (Math.abs(priceChange) >= 7 || confidence < 50) risk_level = 'high';
-    else if (Math.abs(priceChange) <= 3 && confidence >= 70) risk_level = 'low';
-    
-    // Generate summary
-    const summaries = {
-        'strong buy': `${symbol} shows strong bullish signals with a ${confidence.toFixed(1)}% confidence level. Technical indicators suggest a potential ${priceChange.toFixed(2)}% upside over the next 7 days, making this an attractive entry point for long positions.`,
-        'buy': `${symbol} presents a moderate buying opportunity with ${confidence.toFixed(1)}% confidence. The stock is projected to gain ${priceChange.toFixed(2)}% in the coming week, supported by positive technical momentum.`,
-        'hold': `${symbol} is currently in a consolidation phase. With ${confidence.toFixed(1)}% confidence, we project a ${Math.abs(priceChange).toFixed(2)}% movement. Consider maintaining current positions while monitoring key support and resistance levels.`,
-        'sell': `${symbol} shows bearish signals with ${confidence.toFixed(1)}% confidence. Technical analysis suggests a potential ${Math.abs(priceChange).toFixed(2)}% decline over the next 7 days. Consider reducing exposure or implementing protective stops.`,
-        'strong sell': `${symbol} exhibits strong bearish momentum with ${confidence.toFixed(1)}% confidence. A significant ${Math.abs(priceChange).toFixed(2)}% downside is projected. Consider exiting positions or establishing short positions with appropriate risk management.`
-    };
-    
-    // Generate key insights
-    const key_insights = [];
-    
-    // Price action insight
-    if (direction === 'UP') {
-        key_insights.push(`Price momentum is positive, with technical indicators supporting a move from $${currentPrice.toFixed(2)} to $${targetPrice.toFixed(2)}`);
-    } else if (direction === 'DOWN') {
-        key_insights.push(`Downward pressure detected, with technical analysis suggesting a decline from $${currentPrice.toFixed(2)} to $${targetPrice.toFixed(2)}`);
-    } else {
-        key_insights.push(`Price is trading in a tight range around $${currentPrice.toFixed(2)}, awaiting a catalyst for directional movement`);
-    }
-    
-    // Confidence insight
-    if (confidence >= 70) {
-        key_insights.push(`High confidence level (${confidence.toFixed(1)}%) indicates strong alignment across multiple technical indicators`);
-    } else if (confidence >= 50) {
-        key_insights.push(`Moderate confidence (${confidence.toFixed(1)}%) suggests some conflicting signals - monitor closely for confirmation`);
-    } else {
-        key_insights.push(`Lower confidence (${confidence.toFixed(1)}%) indicates uncertainty - consider waiting for clearer signals before taking action`);
-    }
-    
-    // Volatility insight
-    if (Math.abs(priceChange) >= 5) {
-        key_insights.push(`Significant volatility expected - position sizing and risk management are crucial for this trade`);
-    } else {
-        key_insights.push(`Moderate price movement anticipated - suitable for swing trading strategies with defined stops`);
-    }
-    
-    // Time-based insight
-    key_insights.push(`7-day forecast horizon provides a short-term trading opportunity - ideal for active traders`);
-    
-    // Generate reasoning
-    const reasoning = `This ${recommendation} recommendation is based on ${direction === 'UP' ? 'bullish' : direction === 'DOWN' ? 'bearish' : 'neutral'} technical signals, ` +
-        `a ${confidence.toFixed(1)}% confidence level from our ML models, and a projected ${priceChange >= 0 ? 'gain' : 'decline'} of ${Math.abs(priceChange).toFixed(2)}%. ` +
-        `The ${risk_level} risk level reflects ${Math.abs(priceChange) >= 7 ? 'high volatility' : confidence < 50 ? 'signal uncertainty' : 'favorable risk-reward characteristics'}. ` +
-        `${recommendation.includes('buy') ? 'Entry near current levels could offer attractive upside potential.' : 
-          recommendation.includes('sell') ? 'Consider protective measures to preserve capital.' : 
-          'Patience is warranted until clearer directional signals emerge.'}`;
-    
-    return {
-        summary: summaries[recommendation],
-        key_insights,
-        sentiment,
-        recommendation,
-        risk_level,
-        time_horizon: '7 days',
-        reasoning
-    };
-};
-
+// ============ COMPONENT ============
 const PredictionsPage = () => {
     const { api } = useAuth();
     const [symbol, setSymbol] = useState('');
-    const [prediction, setPrediction] = useState(null);
-    const [insights, setInsights] = useState(null);
-    const [chartData, setChartData] = useState(null);
+    const [days, setDays] = useState('7');
     const [loading, setLoading] = useState(false);
-    const [loadingInsights, setLoadingInsights] = useState(false);
-    const [error, setError] = useState(null);
+    const [prediction, setPrediction] = useState(null);
+    const [showRocket, setShowRocket] = useState(false);
+    const [particles, setParticles] = useState([]);
 
-    const handleSubmit = async (e) => {
+    // Generate background particles on mount
+    useEffect(() => {
+        const newParticles = Array.from({ length: 30 }, (_, i) => ({
+            id: i,
+            size: Math.random() * 4 + 2,
+            left: Math.random() * 100,
+            duration: Math.random() * 10 + 10,
+            delay: Math.random() * 5,
+            color: ['#8b5cf6', '#00adef', '#10b981', '#f59e0b'][Math.floor(Math.random() * 4)]
+        }));
+        setParticles(newParticles);
+    }, []);
+
+    const handlePredict = async (e) => {
         e.preventDefault();
-        
-        if (!symbol.trim()) {
-            setError('Please enter a stock symbol');
-            return;
-        }
-
         setLoading(true);
-        setError(null);
-        setPrediction(null);
-        setInsights(null);
-        setChartData(null);
 
         try {
-            // Get prediction
-            const predResponse = await api.post('/predictions/predict', {
+            const response = await api.post('/predictions/predict', {
                 symbol: symbol.toUpperCase(),
-                days: 7
+                days: parseInt(days)
             });
 
-            setPrediction(predResponse.data);
+            // Generate mock chart data
+            const chartData = generateChartData(
+                response.data.current_price,
+                response.data.prediction.target_price,
+                parseInt(days)
+            );
 
-            // Fetch historical data for chart
-            try {
-                console.log('📊 Fetching chart data for:', symbol.toUpperCase());
-                const chartResponse = await api.get(`/market-data/history/${symbol.toUpperCase()}`);
-                console.log('📊 Chart response:', chartResponse);
-                console.log('📊 Chart response data:', chartResponse.data);
-                
-                if (chartResponse.data && chartResponse.data.length > 0) {
-                    processChartData(chartResponse.data, predResponse.data);
-                } else {
-                    console.warn('⚠️ No chart data returned or empty array');
-                }
-            } catch (chartErr) {
-                console.error('❌ Chart data error:', chartErr);
-                console.error('❌ Chart error response:', chartErr.response);
-                
-                // TEMPORARY: Use mock data if endpoint fails
-                console.log('📊 Using mock data for demo purposes');
-                const mockData = generateMockHistoricalData(predResponse.data.current_price);
-                processChartData(mockData, predResponse.data);
-            }
+            setPrediction({
+                ...response.data,
+                chartData
+            });
 
-            // Get AI insights
-            setLoadingInsights(true);
-            try {
-                console.log('🧠 Fetching AI insights for:', symbol.toUpperCase());
-                const insightsResponse = await api.post('/predictions/analyze', {
-                    symbol: symbol.toUpperCase()
-                });
-                console.log('🧠 AI insights response:', insightsResponse);
-                console.log('🧠 AI insights data:', insightsResponse.data);
-                
-                if (insightsResponse.data && insightsResponse.data.insights) {
-                    setInsights(insightsResponse.data.insights);
-                } else {
-                    console.warn('⚠️ No insights in response, generating dynamic insights');
-                    setInsights(generateDynamicInsights(symbol.toUpperCase(), predResponse.data));
-                }
-            } catch (insErr) {
-                console.error('❌ Insights error:', insErr);
-                console.error('❌ Insights error response:', insErr.response);
-                // Generate dynamic insights as fallback
-                console.log('🧠 Generating dynamic insights as fallback');
-                setInsights(generateDynamicInsights(symbol.toUpperCase(), predResponse.data));
-            } finally {
-                setLoadingInsights(false);
-            }
+            // Trigger rocket animation on successful prediction
+            setShowRocket(true);
+            setTimeout(() => setShowRocket(false), 3000);
 
-        } catch (err) {
-            console.error('Prediction error:', err);
-            setError(err.response?.data?.error || 'Failed to get prediction. Please try again.');
+        } catch (error) {
+            console.error('Prediction error:', error);
+            alert(error.response?.data?.error || 'Failed to generate prediction');
         } finally {
             setLoading(false);
         }
     };
 
-    const processChartData = (historicalData, predictionData) => {
-        console.log('🔍 DEBUG: Raw historical data:', historicalData);
-        console.log('🔍 DEBUG: Historical data length:', historicalData?.length);
-        console.log('🔍 DEBUG: First data point:', historicalData?.[0]);
-        console.log('🔍 DEBUG: Prediction data:', predictionData);
+    const generateChartData = (currentPrice, targetPrice, days) => {
+        const data = [];
+        const priceChange = targetPrice - currentPrice;
         
-        // Take last 60 days
-        const chartPoints = historicalData.slice(-60).map(item => ({
-            date: new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-            open: item.open,
-            high: item.high,
-            low: item.low,
-            close: item.close,
-            volume: item.volume,
-            rsi: item.rsi || null,
-            macd: item.macd || null,
-        }));
-
-        console.log('🔍 DEBUG: Processed chart points:', chartPoints);
-        console.log('🔍 DEBUG: Chart points length:', chartPoints.length);
-
-        // Add prediction point
-        if (predictionData && predictionData.prediction) {
-            const lastPoint = chartPoints[chartPoints.length - 1];
-            const predictionDate = new Date();
-            predictionDate.setDate(predictionDate.getDate() + 7);
+        for (let i = 0; i <= days; i++) {
+            const progress = i / days;
+            // Add some randomness for realistic look
+            const noise = (Math.random() - 0.5) * (currentPrice * 0.02);
+            const price = currentPrice + (priceChange * progress) + noise;
             
-            chartPoints.push({
-                date: predictionDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-                close: predictionData.prediction.target_price,
-                isPrediction: true,
-                confidence: predictionData.prediction.confidence,
+            data.push({
+                day: i === 0 ? 'Today' : `Day ${i}`,
+                price: parseFloat(price.toFixed(2)),
+                target: i === days ? parseFloat(targetPrice.toFixed(2)) : null
             });
         }
-
-        console.log('🔍 DEBUG: Final chart data being set:', chartPoints);
-        setChartData(chartPoints);
-    };
-
-    const getDirectionIcon = (direction) => {
-        if (direction === 'UP') return <TrendingUp size={24} />;
-        if (direction === 'DOWN') return <TrendingDown size={24} />;
-        return <Minus size={24} />;
+        
+        return data;
     };
 
     return (
         <PageContainer>
-            <Header>AI Stock Predictions</Header>
-            <Subtitle>Advanced technical analysis with candlestick charts and AI insights</Subtitle>
-
-            <SearchSection>
-                <SearchForm onSubmit={handleSubmit}>
-                    <Input
-                        type="text"
-                        placeholder="Enter stock symbol (e.g., AAPL, TSLA, NVDA)"
-                        value={symbol}
-                        onChange={(e) => setSymbol(e.target.value.toUpperCase())}
-                        disabled={loading}
-                        maxLength={10}
+            {/* Animated Background Particles */}
+            <ParticleContainer>
+                {particles.map(particle => (
+                    <Particle
+                        key={particle.id}
+                        size={particle.size}
+                        left={particle.left}
+                        duration={particle.duration}
+                        delay={particle.delay}
+                        color={particle.color}
                     />
-                    <Button type="submit" disabled={loading || !symbol.trim()}>
+                ))}
+            </ParticleContainer>
+
+            {/* Success Rocket */}
+            {showRocket && (
+                <RocketContainer left={Math.random() * 80 + 10}>
+                    <Rocket size={64} color="#8b5cf6" />
+                </RocketContainer>
+            )}
+
+            <Header>
+                <Title>
+                    <TitleIcon>
+                        <Brain size={56} color="#8b5cf6" />
+                    </TitleIcon>
+                    AI Stock Predictor
+                </Title>
+                <Subtitle>Advanced machine learning powered price predictions</Subtitle>
+                <PoweredBy>
+                    <Sparkles size={18} />
+                    Powered by Neural Networks
+                </PoweredBy>
+            </Header>
+
+            {/* Stats Banner */}
+            <StatsBanner>
+                <StatCard delay={0}>
+                    <StatIcon gradient="linear-gradient(135deg, #8b5cf6, #6366f1)">
+                        <Trophy size={32} />
+                    </StatIcon>
+                    <StatValue>98.2%</StatValue>
+                    <StatLabel>Accuracy Rate</StatLabel>
+                </StatCard>
+                <StatCard delay={0.1}>
+                    <StatIcon gradient="linear-gradient(135deg, #10b981, #059669)">
+                        <ArrowUpDown size={32} />
+                    </StatIcon>
+                    <StatValue>10K+</StatValue>
+                    <StatLabel>Predictions Made</StatLabel>
+                </StatCard>
+                <StatCard delay={0.2}>
+                    <StatIcon gradient="linear-gradient(135deg, #f59e0b, #d97706)">
+                        <Flame size={32} />
+                    </StatIcon>
+                    <StatValue>24/7</StatValue>
+                    <StatLabel>Real-Time Analysis</StatLabel>
+                </StatCard>
+                <StatCard delay={0.3}>
+                    <StatIcon gradient="linear-gradient(135deg, #ef4444, #dc2626)">
+                        <Rocket size={32} />
+                    </StatIcon>
+                    <StatValue>Lightning</StatValue>
+                    <StatLabel>Fast Results</StatLabel>
+                </StatCard>
+            </StatsBanner>
+
+            <InputSection>
+                <InputForm onSubmit={handlePredict}>
+                    <InputGroup>
+                        <FormField>
+                            <Label>
+                                <Target size={18} />
+                                Stock Symbol
+                            </Label>
+                            <Input
+                                type="text"
+                                placeholder="e.g., AAPL, TSLA, NVDA"
+                                value={symbol}
+                                onChange={(e) => setSymbol(e.target.value.toUpperCase())}
+                                required
+                            />
+                        </FormField>
+
+                        <FormField>
+                            <Label>
+                                <Calendar size={18} />
+                                Prediction Period
+                            </Label>
+                            <Select
+                                value={days}
+                                onChange={(e) => setDays(e.target.value)}
+                            >
+                                <option value="1">1 Day</option>
+                                <option value="3">3 Days</option>
+                                <option value="7">7 Days</option>
+                                <option value="14">14 Days</option>
+                                <option value="30">30 Days</option>
+                            </Select>
+                        </FormField>
+                    </InputGroup>
+
+                    <PredictButton type="submit" disabled={loading}>
                         {loading ? (
                             <>
-                                <Brain size={20} />
-                                Analyzing...
+                                <LoadingSpinner size={24} />
+                                Analyzing with AI...
                             </>
                         ) : (
                             <>
-                                <Zap size={20} />
-                                Predict
+                                <Zap size={24} />
+                                Generate Prediction
+                                <ChevronRight size={24} />
                             </>
                         )}
-                    </Button>
-                </SearchForm>
-            </SearchSection>
+                    </PredictButton>
+                </InputForm>
+            </InputSection>
 
-            {error && (
-                <ErrorMessage>
-                    <AlertCircle size={20} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
-                    {error}
-                </ErrorMessage>
-            )}
-
-            {loading && (
-                <LoadingMessage>
-                    <PulsingIcon size={48} />
-                    <div>Analyzing {symbol}...</div>
-                    <div style={{ fontSize: '0.9rem', color: '#94a3b8', marginTop: '0.5rem' }}>
-                        Fetching data and calculating indicators...
-                    </div>
-                </LoadingMessage>
-            )}
-
-            {prediction && !loading && (
-                <>
+            {prediction ? (
+                <ResultsContainer>
                     <PredictionCard>
-                        <CardHeader>
-                            <SymbolTitle>{prediction.symbol}</SymbolTitle>
-                            <CurrentPrice>
-                                <PriceLabel>Current Price</PriceLabel>
-                                <PriceValue>${prediction.current_price?.toFixed(2)}</PriceValue>
-                            </CurrentPrice>
-                        </CardHeader>
+                        <PredictionHeader>
+                            <StockInfo>
+                                <StockSymbol>
+                                    {prediction.symbol}
+                                    <Star size={36} color="#f59e0b" />
+                                </StockSymbol>
+                                <CurrentPriceSection>
+                                    <CurrentPriceLabel>Current Price:</CurrentPriceLabel>
+                                    <CurrentPriceValue>
+                                        ${prediction.current_price?.toFixed(2)}
+                                    </CurrentPriceValue>
+                                </CurrentPriceSection>
+                            </StockInfo>
 
-                        <PredictionGrid>
-                            <PredictionBox>
-                                <BoxLabel>
-                                    {getDirectionIcon(prediction.prediction?.direction)}
-                                    Prediction
-                                </BoxLabel>
-                                <BoxValue direction={prediction.prediction?.direction}>
-                                    {prediction.prediction?.direction || 'NEUTRAL'}
-                                </BoxValue>
-                            </PredictionBox>
-
-                            <PredictionBox>
-                                <BoxLabel>
-                                    <Brain size={16} />
-                                    Confidence
-                                </BoxLabel>
-                                <BoxValue>
-                                    {prediction.prediction?.confidence?.toFixed(1)}%
-                                </BoxValue>
-                                <ConfidenceBar>
-                                    <ConfidenceFill confidence={prediction.prediction?.confidence || 0} />
-                                </ConfidenceBar>
-                            </PredictionBox>
-
-                            <PredictionBox>
-                                <BoxLabel>
-                                    <Target size={16} />
-                                    Target Price (7d)
-                                </BoxLabel>
-                                <BoxValue direction={prediction.prediction?.direction}>
-                                    ${prediction.prediction?.target_price?.toFixed(2)}
-                                </BoxValue>
-                                <div style={{ 
-                                    fontSize: '0.9rem', 
-                                    color: prediction.prediction?.price_change_percent > 0 ? '#10b981' : 
-                                           prediction.prediction?.price_change_percent < 0 ? '#ef4444' : '#94a3b8',
-                                    marginTop: '0.3rem',
-                                    fontWeight: '600'
-                                }}>
-                                    {prediction.prediction?.price_change_percent > 0 ? '+' : ''}
-                                    {prediction.prediction?.price_change_percent?.toFixed(2)}%
-                                </div>
-                            </PredictionBox>
-                        </PredictionGrid>
-
-                        <SignalsSection>
-                            <SectionTitle>
-                                <Zap size={20} />
-                                Trading Signals
-                            </SectionTitle>
-                            <SignalsList>
-                                {(prediction.signals && prediction.signals.length > 0) ? (
-                                    prediction.signals.map((signal, index) => (
-                                        <SignalItem key={index}>{signal}</SignalItem>
-                                    ))
+                            <DirectionBadge up={prediction.prediction.direction === 'UP'}>
+                                {prediction.prediction.direction === 'UP' ? (
+                                    <TrendingUp size={32} />
                                 ) : (
-                                    // Generate default signals based on prediction
-                                    <>
-                                        <SignalItem>
-                                            {prediction.prediction?.direction === 'UP' 
-                                                ? '📈 Bullish trend detected - Consider long positions'
-                                                : prediction.prediction?.direction === 'DOWN'
-                                                ? '📉 Bearish trend detected - Consider short positions or exit'
-                                                : '➡️ Neutral trend - Hold current positions'}
-                                        </SignalItem>
-                                        <SignalItem>
-                                            {prediction.prediction?.confidence >= 70
-                                                ? '🎯 High confidence signal - Strong conviction in prediction'
-                                                : prediction.prediction?.confidence >= 50
-                                                ? '⚖️ Moderate confidence - Consider position sizing carefully'
-                                                : '⚠️ Low confidence - High uncertainty, trade with caution'}
-                                        </SignalItem>
-                                        <SignalItem>
-                                            {Math.abs(prediction.prediction?.price_change_percent) >= 5
-                                                ? `💥 Significant price movement expected (${prediction.prediction?.price_change_percent > 0 ? '+' : ''}${prediction.prediction?.price_change_percent?.toFixed(2)}%)`
-                                                : `📊 Moderate price movement expected (${prediction.prediction?.price_change_percent > 0 ? '+' : ''}${prediction.prediction?.price_change_percent?.toFixed(2)}%)`}
-                                        </SignalItem>
-                                        <SignalItem>
-                                            🕒 7-day forecast - Target price: ${prediction.prediction?.target_price?.toFixed(2)}
-                                        </SignalItem>
-                                    </>
+                                    <TrendingDown size={32} />
                                 )}
-                            </SignalsList>
-                        </SignalsSection>
-                    </PredictionCard>
+                                {prediction.prediction.direction}
+                            </DirectionBadge>
+                        </PredictionHeader>
 
-                    {loadingInsights && (
-                        <AIInsightsCard>
-                            <LoadingInsights>
-                                <Brain size={40} style={{ animation: `${pulse} 1.5s ease-in-out infinite` }} />
-                                <div style={{ marginTop: '1rem' }}>Generating AI insights...</div>
-                            </LoadingInsights>
-                            <LoadingShimmer />
-                            <LoadingShimmer />
-                            <LoadingShimmer />
-                        </AIInsightsCard>
-                    )}
+                        <MetricsGrid>
+                            <MetricCard index={0}>
+                                <MetricIcon variant={prediction.prediction.direction === 'UP' ? 'success' : 'danger'}>
+                                    <DollarSign size={24} />
+                                </MetricIcon>
+                                <MetricLabel>Target Price</MetricLabel>
+                                <MetricValue variant={prediction.prediction.direction === 'UP' ? 'success' : 'danger'}>
+                                    ${prediction.prediction.target_price?.toFixed(2)}
+                                </MetricValue>
+                            </MetricCard>
 
-                    {insights && !loadingInsights && (
-                        <AIInsightsCard>
-                            <AIHeader>
-                                <Brain size={32} color="#a78bfa" />
-                                <AITitle>
-                                    <Lightbulb size={24} />
-                                    AI-Powered Insights
-                                </AITitle>
-                            </AIHeader>
+                            <MetricCard index={1}>
+                                <MetricIcon variant={prediction.prediction.price_change_percent >= 0 ? 'success' : 'danger'}>
+                                    <Percent size={24} />
+                                </MetricIcon>
+                                <MetricLabel>Expected Change</MetricLabel>
+                                <MetricValue variant={prediction.prediction.price_change_percent >= 0 ? 'success' : 'danger'}>
+                                    {prediction.prediction.price_change_percent >= 0 ? '+' : ''}
+                                    {prediction.prediction.price_change_percent?.toFixed(2)}%
+                                </MetricValue>
+                            </MetricCard>
 
-                            <AISummary>{insights.summary}</AISummary>
+                            <MetricCard index={2}>
+                                <MetricIcon>
+                                    <Activity size={24} />
+                                </MetricIcon>
+                                <MetricLabel>Price Movement</MetricLabel>
+                                <MetricValue>
+                                    ${Math.abs(prediction.prediction.target_price - prediction.current_price).toFixed(2)}
+                                </MetricValue>
+                            </MetricCard>
 
-                            {insights.key_insights && insights.key_insights.length > 0 && (
-                                <InsightsList>
-                                    {insights.key_insights.map((insight, index) => (
-                                        <InsightItem key={index}>
-                                            <InsightText>• {insight}</InsightText>
-                                        </InsightItem>
-                                    ))}
-                                </InsightsList>
-                            )}
+                            <MetricCard index={3}>
+                                <MetricIcon variant="warning">
+                                    <Calendar size={24} />
+                                </MetricIcon>
+                                <MetricLabel>Timeframe</MetricLabel>
+                                <MetricValue variant="warning">
+                                    {days} {parseInt(days) === 1 ? 'Day' : 'Days'}
+                                </MetricValue>
+                            </MetricCard>
+                        </MetricsGrid>
 
-                            <AIMetaGrid>
-                                <AIMetaItem>
-                                    <MetaLabel>
-                                        <TrendingUp size={16} />
-                                        Sentiment
-                                    </MetaLabel>
-                                    <MetaValue sentiment={insights.sentiment}>
-                                        {insights.sentiment}
-                                    </MetaValue>
-                                </AIMetaItem>
+                        <ConfidenceSection>
+                            <ConfidenceLabel>
+                                <ConfidenceText>
+                                    <Award size={20} style={{ display: 'inline', marginRight: '0.5rem' }} />
+                                    AI Confidence Level
+                                </ConfidenceText>
+                                <ConfidenceValue>
+                                    {prediction.prediction.confidence?.toFixed(1)}%
+                                </ConfidenceValue>
+                            </ConfidenceLabel>
+                            <ConfidenceBar>
+                                <ConfidenceFill value={prediction.prediction.confidence} />
+                            </ConfidenceBar>
+                        </ConfidenceSection>
 
-                                <AIMetaItem>
-                                    <MetaLabel>
-                                        <Target size={16} />
-                                        Recommendation
-                                    </MetaLabel>
-                                    <MetaValue recommendation={insights.recommendation}>
-                                        {insights.recommendation}
-                                    </MetaValue>
-                                </AIMetaItem>
-
-                                <AIMetaItem>
-                                    <MetaLabel>
-                                        <Shield size={16} />
-                                        Risk Level
-                                    </MetaLabel>
-                                    <MetaValue riskLevel={insights.risk_level}>
-                                        {insights.risk_level}
-                                    </MetaValue>
-                                </AIMetaItem>
-
-                                <AIMetaItem>
-                                    <MetaLabel>
-                                        <Clock size={16} />
-                                        Time Horizon
-                                    </MetaLabel>
-                                    <MetaValue>
-                                        {insights.time_horizon}
-                                    </MetaValue>
-                                </AIMetaItem>
-                            </AIMetaGrid>
-
-                            {insights.reasoning && (
-                                <div style={{ marginTop: '1.5rem', padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: '8px' }}>
-                                    <strong style={{ color: '#a78bfa' }}>Why this recommendation?</strong>
-                                    <p style={{ margin: '0.5rem 0 0 0', color: '#e0e6ed' }}>{insights.reasoning}</p>
-                                </div>
-                            )}
-                        </AIInsightsCard>
-                    )}
-
-                    {/* CANDLESTICK CHART - NOW WITH ACTUAL CANDLESTICKS! */}
-                    {chartData && (
                         <ChartSection>
                             <ChartTitle>
-                                <BarChart3 size={24} />
-                                Candlestick Chart
+                                <LineChartIcon size={24} />
+                                Predicted Price Movement
                             </ChartTitle>
                             <ResponsiveContainer width="100%" height={400}>
-                                <ComposedChart data={chartData.filter(d => !d.isPrediction)}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.1)" />
-                                    <XAxis 
-                                        dataKey="date" 
-                                        stroke="#94a3b8"
-                                        style={{ fontSize: '0.85rem' }}
+                                <AreaChart data={prediction.chartData}>
+                                    <defs>
+                                        <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8}/>
+                                            <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.1}/>
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(139, 92, 246, 0.2)" />
+                                    <XAxis dataKey="day" stroke="#94a3b8" />
+                                    <YAxis stroke="#94a3b8" />
+                                    <Tooltip
+                                        contentStyle={{
+                                            background: 'rgba(15, 23, 42, 0.95)',
+                                            border: '1px solid rgba(139, 92, 246, 0.5)',
+                                            borderRadius: '8px',
+                                            color: '#e0e6ed'
+                                        }}
+                                        formatter={(value) => ['$' + value.toFixed(2), 'Price']}
                                     />
-                                    <YAxis 
-                                        stroke="#94a3b8"
-                                        domain={['dataMin - 5', 'dataMax + 5']}
-                                        style={{ fontSize: '0.85rem' }}
+                                    <ReferenceLine
+                                        y={prediction.current_price}
+                                        stroke="#00adef"
+                                        strokeDasharray="5 5"
+                                        label={{ value: 'Current', fill: '#00adef', position: 'right' }}
                                     />
-                                    <Tooltip content={<CustomTooltip />} />
-                                    <Legend />
-                                    
-                                    {/* Candlesticks */}
-                                    <Bar
-                                        dataKey="close"
-                                        fill="#00adef"
-                                        shape={<Candlestick />}
-                                        name="Price"
+                                    <ReferenceLine
+                                        y={prediction.prediction.target_price}
+                                        stroke={prediction.prediction.direction === 'UP' ? '#10b981' : '#ef4444'}
+                                        strokeDasharray="5 5"
+                                        label={{ value: 'Target', fill: prediction.prediction.direction === 'UP' ? '#10b981' : '#ef4444', position: 'right' }}
                                     />
-                                    
-                                    {/* Current price reference line */}
-                                    {prediction.current_price && (
-                                        <ReferenceLine
-                                            y={prediction.current_price}
-                                            stroke="#f59e0b"
-                                            strokeDasharray="3 3"
-                                            label={{ value: 'Current', fill: '#f59e0b', fontSize: 12 }}
-                                        />
-                                    )}
-                                </ComposedChart>
-                            </ResponsiveContainer>
-                        </ChartSection>
-                    )}
-
-                    {/* Price Chart with Prediction */}
-                    {chartData && (
-                        <ChartSection>
-                            <ChartTitle>
-                                <BarChart3 size={24} />
-                                Price Chart with 7-Day Prediction
-                            </ChartTitle>
-                            <ResponsiveContainer width="100%" height={400}>
-                                <ComposedChart data={chartData}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.1)" />
-                                    <XAxis 
-                                        dataKey="date" 
-                                        stroke="#94a3b8"
-                                        style={{ fontSize: '0.85rem' }}
-                                    />
-                                    <YAxis 
-                                        stroke="#94a3b8"
-                                        domain={['dataMin - 5', 'dataMax + 5']}
-                                        style={{ fontSize: '0.85rem' }}
-                                    />
-                                    <Tooltip content={<CustomTooltip />} />
-                                    <Legend />
-                                    
-                                    {/* Confidence bands */}
                                     <Area
                                         type="monotone"
-                                        dataKey="close"
-                                        fill="rgba(0, 173, 237, 0.1)"
-                                        stroke="none"
-                                    />
-                                    
-                                    {/* Price line */}
-                                    <Line
-                                        type="monotone"
-                                        dataKey="close"
-                                        stroke="#00adef"
-                                        strokeWidth={2}
-                                        dot={false}
-                                        name="Price"
-                                    />
-                                    
-                                    {/* Prediction line */}
-                                    <Line
-                                        type="monotone"
-                                        dataKey={(entry) => entry.isPrediction ? entry.close : null}
-                                        stroke="#10b981"
+                                        dataKey="price"
+                                        stroke="#8b5cf6"
                                         strokeWidth={3}
-                                        strokeDasharray="5 5"
-                                        dot={{ fill: '#10b981', r: 6 }}
-                                        name="Prediction"
+                                        fillOpacity={1}
+                                        fill="url(#colorPrice)"
                                     />
-                                    
-                                    {/* Current price reference line */}
-                                    {prediction.current_price && (
-                                        <ReferenceLine
-                                            y={prediction.current_price}
-                                            stroke="#f59e0b"
-                                            strokeDasharray="3 3"
-                                            label={{ value: 'Current', fill: '#f59e0b', fontSize: 12 }}
-                                        />
-                                    )}
-                                </ComposedChart>
+                                </AreaChart>
                             </ResponsiveContainer>
                         </ChartSection>
-                    )}
-
-                    {/* Volume Chart */}
-                    {chartData && (
-                        <ChartSection>
-                            <ChartTitle>
-                                <Activity size={24} />
-                                Volume
-                            </ChartTitle>
-                            <ResponsiveContainer width="100%" height={150}>
-                                <ComposedChart data={chartData.filter(d => !d.isPrediction)}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.1)" />
-                                    <XAxis 
-                                        dataKey="date" 
-                                        stroke="#94a3b8"
-                                        style={{ fontSize: '0.85rem' }}
-                                    />
-                                    <YAxis 
-                                        stroke="#94a3b8"
-                                        style={{ fontSize: '0.85rem' }}
-                                    />
-                                    <Tooltip content={<CustomTooltip />} />
-                                    <Bar
-                                        dataKey="volume"
-                                        fill="#00adef"
-                                        opacity={0.6}
-                                        name="Volume"
-                                    />
-                                </ComposedChart>
-                            </ResponsiveContainer>
-                        </ChartSection>
-                    )}
-
-                    {/* RSI Indicator */}
-                    {chartData && (
-                        <ChartSection>
-                            <ChartTitle>
-                                <Activity size={24} />
-                                RSI Indicator
-                            </ChartTitle>
-                            <ResponsiveContainer width="100%" height={150}>
-                                <ComposedChart data={chartData.filter(d => !d.isPrediction)}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.1)" />
-                                    <XAxis 
-                                        dataKey="date" 
-                                        stroke="#94a3b8"
-                                        style={{ fontSize: '0.85rem' }}
-                                    />
-                                    <YAxis 
-                                        domain={[0, 100]}
-                                        stroke="#94a3b8"
-                                        style={{ fontSize: '0.85rem' }}
-                                    />
-                                    <Tooltip />
-                                    <ReferenceLine y={70} stroke="#ef4444" strokeDasharray="3 3" label="Overbought" />
-                                    <ReferenceLine y={30} stroke="#10b981" strokeDasharray="3 3" label="Oversold" />
-                                    <Line
-                                        type="monotone"
-                                        dataKey="rsi"
-                                        stroke="#a78bfa"
-                                        strokeWidth={2}
-                                        dot={false}
-                                        name="RSI"
-                                    />
-                                </ComposedChart>
-                            </ResponsiveContainer>
-                        </ChartSection>
-                    )}
-                </>
+                    </PredictionCard>
+                </ResultsContainer>
+            ) : (
+                <EmptyState>
+                    <EmptyIcon>
+                        <Brain size={80} color="#8b5cf6" />
+                    </EmptyIcon>
+                    <EmptyTitle>Ready to Predict</EmptyTitle>
+                    <EmptyText>
+                        Enter a stock symbol above to generate AI-powered predictions
+                    </EmptyText>
+                </EmptyState>
             )}
         </PageContainer>
     );

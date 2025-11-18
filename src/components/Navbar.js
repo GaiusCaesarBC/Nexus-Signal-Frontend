@@ -1,372 +1,574 @@
-// client/src/components/Navbar.js - With integrated stock search & Hamburger Menu (FIXED ORDER)
-import React, { useState } from 'react';
-import styled, { keyframes, css } from 'styled-components'; // <-- IMPORT keyframes and css
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+// client/src/components/Navbar.js - THE SICKEST NAVBAR EVER (WITH REAL LOGO!)
+
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import styled, { keyframes } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
-import logoImage from '../assets/nexus-signal-logo.png';
+import {
+    Home, TrendingUp, PieChart, Eye, Brain, MessageSquare,
+    DollarSign, LogOut, User, Menu, X, ChevronDown, Zap,
+    Settings, Bell
+} from 'lucide-react';
+import nexusSignalLogo from '../assets/nexus-signal-logo.png';
 
-// --- NEON GLOW PULSE KEYFRAMES ---
-const neonGlowPulse = keyframes`
-  0%, 100% {
-    text-shadow:
-      0 0 5px rgba(0, 255, 255, 0.7),
-      0 0 10px rgba(0, 255, 255, 0.5),
-      0 0 15px rgba(0, 255, 255, 0.3);
-    color: #00FFFF; /* Bright Cyan/Aqua */
-    transform: scale(1);
-    opacity: 1;
-  }
-  50% {
-    text-shadow:
-      0 0 10px rgba(0, 255, 255, 1),
-      0 0 20px rgba(0, 255, 255, 0.8),
-      0 0 30px rgba(0, 255, 255, 0.6);
-    color: #00EEFF; /* Slightly brighter blue */
-    transform: scale(1.05); /* Slight pulsation effect */
-    opacity: 0.9;
-  }
+// ============ ANIMATIONS ============
+const fadeIn = keyframes`
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
 `;
 
-// --- NEW STYLED COMPONENTS FOR MOBILE MENU ---
-// Define HamburgerIcon first, it doesn't depend on other styled components
-const HamburgerIcon = styled.div`
-    display: none; /* Hidden by default */
-    flex-direction: column;
-    cursor: pointer;
-    span {
-        height: 3px;
-        width: 25px;
-        background: #e0e6ed;
-        margin-bottom: 4px;
-        border-radius: 5px;
-        transition: all 0.3s linear;
-    }
-
-    @media (max-width: 900px) { /* Adjust breakpoint as needed */
-        display: flex;
-        justify-content: space-around;
-        align-items: center;
-        width: 30px;
-        height: 25px;
-        position: relative; /* To position it above other elements */
-        z-index: 1001; /* Ensure it's above the mobile menu itself */
-
-        span {
-            &:first-child {
-                transform: ${({ open }) => (open ? 'rotate(45deg) translate(6px, 6px)' : 'rotate(0)')};
-            }
-            &:nth-child(2) {
-                opacity: ${({ open }) => (open ? '0' : '1')};
-                transform: ${({ open }) => (open ? 'translateX(20px)' : 'translateX(0)')};
-            }
-            &:nth-child(3) {
-                transform: ${({ open }) => (open ? 'rotate(-45deg) translate(6px, -6px)' : 'rotate(0)')};
-            }
-        }
-    }
+const slideDown = keyframes`
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
 `;
 
-// Main Navbar container and basic elements
+const glow = keyframes`
+    0%, 100% { box-shadow: 0 0 20px rgba(0, 173, 237, 0.3); }
+    50% { box-shadow: 0 0 40px rgba(0, 173, 237, 0.6); }
+`;
+
+const pulse = keyframes`
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+`;
+
+const shimmer = keyframes`
+    0% { background-position: -200% center; }
+    100% { background-position: 200% center; }
+`;
+
+const float = keyframes`
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-5px); }
+`;
+
+// ============ STYLED COMPONENTS ============
 const NavContainer = styled.nav`
-    background-color: #1a273b;
-    color: white;
-    padding: 0 1.5rem;
-    height: var(--navbar-height);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background: rgba(10, 14, 39, 0.95);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(0, 173, 237, 0.2);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    animation: ${fadeIn} 0.5s ease-out;
+`;
+
+const NavInner = styled.div`
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 0 2rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
-    position: sticky;
-    top: 0;
-    z-index: 1000;
+    height: 80px;
+
+    @media (max-width: 768px) {
+        padding: 0 1rem;
+    }
 `;
 
-const LogoWrapper = styled(Link)`
+// ============ LOGO ============
+const Logo = styled(Link)`
     display: flex;
     align-items: center;
+    gap: 0.75rem;
     text-decoration: none;
+    font-size: 1.5rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, #00adef 0%, #00ff88 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    position: relative;
+    transition: all 0.3s ease;
+
+    &:hover {
+        transform: translateY(-2px);
+        filter: brightness(1.2);
+    }
+
+    &::before {
+        content: '';
+        position: absolute;
+        left: -10px;
+        width: 4px;
+        height: 100%;
+        background: linear-gradient(180deg, #00adef, #00ff88);
+        border-radius: 2px;
+        animation: ${pulse} 2s ease-in-out infinite;
+    }
 `;
 
-const LogoImg = styled.img`
+const LogoIcon = styled.div`
+    width: 40px;
     height: 40px;
-    margin-right: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    filter: drop-shadow(0 0 10px rgba(0, 173, 237, 0.8)) 
+            drop-shadow(0 0 20px rgba(0, 173, 237, 0.6))
+            drop-shadow(0 0 30px rgba(0, 173, 237, 0.4));
+    animation: ${glow} 3s ease-in-out infinite, ${float} 3s ease-in-out infinite;
+    transition: all 0.3s ease;
+
+    &:hover {
+        filter: drop-shadow(0 0 15px rgba(0, 173, 237, 1)) 
+                drop-shadow(0 0 30px rgba(0, 173, 237, 0.8))
+                drop-shadow(0 0 45px rgba(0, 173, 237, 0.6));
+        transform: scale(1.1);
+    }
+`;
+
+const LogoImage = styled.img`
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
 `;
 
 const LogoText = styled.span`
-    font-size: 1.8rem;
-    font-weight: bold;
-    color: #e0e0e0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    letter-spacing: -0.5px;
-    white-space: nowrap;
+    letter-spacing: 1px;
 `;
 
-// NavLinks, NavLink, NavButton, SearchForm, SearchInput, SearchButton must be defined BEFORE MobileMenu
-// because MobileMenu references them in its styles.
-
-// Modify NavLinks to hide on mobile
+// ============ NAV LINKS ============
 const NavLinks = styled.div`
     display: flex;
     align-items: center;
+    gap: 0.5rem;
 
-    @media (max-width: 900px) { /* Adjust breakpoint to match HamburgerIcon */
-        display: none; /* Hide on mobile when hamburger is active */
+    @media (max-width: 768px) {
+        display: none;
     }
 `;
 
-// --- MODIFIED NavLink to include the pulsating pricing style ---
 const NavLink = styled(Link)`
-    color: #b0c4de;
-    text-decoration: none;
-    font-size: 1rem;
-    margin-left: 1.5rem;
-    padding: 0.5rem 0.8rem;
-    border-radius: 4px;
-    transition: background-color 0.3s ease, color 0.3s ease;
-
-    &:hover {
-        color: #e0e0e0;
-        background-color: rgba(0, 173, 237, 0.1);
-    }
-
-    /* Apply the pulsating style if the 'ispulsating' prop is true */
-    ${({ ispulsating }) => ispulsating && css`
-        animation: ${neonGlowPulse} 1.5s infinite alternate;
-        color: #00FFFF; /* Ensure the base color is neon blue */
-        font-weight: bold;
-    `}
-`;
-
-const NavButton = styled.button`
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    padding: 0.7rem 1.2rem;
-    font-size: 1.05rem;
-    cursor: pointer;
-    margin-left: 1.5rem;
-    transition: background-color 0.3s ease;
-
-    &:hover {
-        background-color: #0056b3;
-    }
-`;
-
-const SearchForm = styled.form`
     display: flex;
     align-items: center;
-    margin-right: 1.5rem;
-    /* Adjust for mobile: hide on screens where mobile menu is active */
-    @media (max-width: 900px) { /* Match breakpoint */
-        display: none; /* Hide on mobile, will be in MobileMenu */
-    }
-`;
-
-const SearchInput = styled.input`
-    padding: 0.6rem 0.8rem;
-    border: 1px solid #4a627a;
-    border-radius: 4px;
-    background-color: #0d1a2f;
-    color: #e0e6ed;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    color: ${props => props.$active ? '#00adef' : '#94a3b8'};
+    text-decoration: none;
+    font-weight: 600;
     font-size: 0.95rem;
-    width: 200px;
-    transition: border-color 0.3s ease, box-shadow 0.3s ease;
-
-    &:focus {
-        outline: none;
-        border-color: #00adef;
-        box-shadow: 0 0 0 2px rgba(0, 173, 237, 0.3);
-    }
-
-    &::placeholder {
-        color: #94a3b8;
-    }
-`;
-
-const SearchButton = styled.button`
-    background-color: #00adef;
-    color: white;
-    border: none;
-    border-radius: 0 4px 4px 0;
-    padding: 0.6rem 0.9rem;
-    font-size: 0.95rem;
-    cursor: pointer;
-    margin-left: -1px;
-    transition: background-color 0.3s ease;
+    border-radius: 10px;
+    position: relative;
+    transition: all 0.3s ease;
+    background: ${props => props.$active ? 'rgba(0, 173, 237, 0.15)' : 'transparent'};
+    border: 1px solid ${props => props.$active ? 'rgba(0, 173, 237, 0.3)' : 'transparent'};
 
     &:hover {
-        background-color: #007bff;
+        color: #00adef;
+        background: rgba(0, 173, 237, 0.1);
+        border-color: rgba(0, 173, 237, 0.3);
+        transform: translateY(-2px);
+    }
+
+    &::after {
+        content: '';
+        position: absolute;
+        bottom: -1px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: ${props => props.$active ? '60%' : '0'};
+        height: 2px;
+        background: linear-gradient(90deg, #00adef, #00ff88);
+        border-radius: 2px;
+        transition: width 0.3s ease;
+    }
+
+    &:hover::after {
+        width: 60%;
     }
 `;
 
-// MobileMenu MUST be defined after NavLink, NavButton, SearchForm, SearchInput, SearchButton
-const MobileMenu = styled.div`
-    display: none; /* Hidden by default */
-    @media (max-width: 900px) { /* Adjust breakpoint as needed */
+// ============ USER MENU ============
+const UserSection = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+
+    @media (max-width: 768px) {
+        gap: 0.5rem;
+    }
+`;
+
+const NotificationButton = styled.button`
+    position: relative;
+    background: rgba(0, 173, 237, 0.1);
+    border: 1px solid rgba(0, 173, 237, 0.3);
+    color: #00adef;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover {
+        background: rgba(0, 173, 237, 0.2);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0, 173, 237, 0.3);
+    }
+
+    @media (max-width: 768px) {
+        display: none;
+    }
+`;
+
+const NotificationBadge = styled.span`
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 700;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid rgba(10, 14, 39, 0.95);
+    animation: ${pulse} 2s ease-in-out infinite;
+`;
+
+const UserMenuButton = styled.button`
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 1rem;
+    background: linear-gradient(135deg, rgba(0, 173, 237, 0.15) 0%, rgba(0, 173, 237, 0.05) 100%);
+    border: 1px solid rgba(0, 173, 237, 0.3);
+    border-radius: 12px;
+    color: #e0e6ed;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+
+    &:hover {
+        background: linear-gradient(135deg, rgba(0, 173, 237, 0.25) 0%, rgba(0, 173, 237, 0.1) 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0, 173, 237, 0.3);
+    }
+
+    @media (max-width: 768px) {
+        padding: 0.5rem;
+        gap: 0;
+    }
+`;
+
+const UserAvatar = styled.div`
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #00adef 0%, #0088cc 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1rem;
+    color: white;
+    box-shadow: 0 2px 10px rgba(0, 173, 237, 0.4);
+`;
+
+const UserName = styled.span`
+    @media (max-width: 768px) {
+        display: none;
+    }
+`;
+
+const DropdownIcon = styled(ChevronDown)`
+    transition: transform 0.3s ease;
+    transform: ${props => props.$open ? 'rotate(180deg)' : 'rotate(0)'};
+
+    @media (max-width: 768px) {
+        display: none;
+    }
+`;
+
+// ============ DROPDOWN MENU ============
+const DropdownMenu = styled.div`
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    background: rgba(15, 23, 42, 0.98);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(0, 173, 237, 0.3);
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+    min-width: 220px;
+    overflow: hidden;
+    animation: ${slideDown} 0.3s ease-out;
+    z-index: 1001;
+`;
+
+const DropdownItem = styled.button`
+    width: 100%;
+    padding: 0.75rem 1.25rem;
+    background: transparent;
+    border: none;
+    color: #e0e6ed;
+    text-align: left;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid rgba(0, 173, 237, 0.1);
+
+    &:last-child {
+        border-bottom: none;
+    }
+
+    &:hover {
+        background: rgba(0, 173, 237, 0.15);
+        color: #00adef;
+        padding-left: 1.5rem;
+    }
+
+    &.danger {
+        color: #ef4444;
+
+        &:hover {
+            background: rgba(239, 68, 68, 0.15);
+        }
+    }
+`;
+
+// ============ MOBILE MENU ============
+const MobileMenuButton = styled.button`
+    display: none;
+    background: rgba(0, 173, 237, 0.1);
+    border: 1px solid rgba(0, 173, 237, 0.3);
+    color: #00adef;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover {
+        background: rgba(0, 173, 237, 0.2);
+        transform: translateY(-2px);
+    }
+
+    @media (max-width: 768px) {
         display: flex;
-        flex-direction: column;
-        background-color: #1a273b; /* Same as Navbar background */
-        position: fixed;
-        top: var(--navbar-height); /* Position right below the fixed Navbar */
-        left: 0;
-        width: 100%;
-        height: calc(100vh - var(--navbar-height)); /* Take remaining height */
-        transform: ${({ open }) => (open ? 'translateX(0)' : 'translateX(-100%)')};
-        transition: transform 0.3s ease-in-out;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.6);
-        z-index: 999; /* Below the hamburger icon, above other content */
-        padding: 1rem 0;
-
-        & > ${NavLink}, & > ${NavButton} { /* Target NavLink and NavButton inside MobileMenu */
-            margin: 0.5rem 1.5rem; /* Adjust padding for mobile links */
-            width: calc(100% - 3rem); /* Full width with padding */
-            text-align: left;
-            border-radius: 0; /* Remove border-radius for full-width links */
-            &:hover {
-                background-color: rgba(0, 173, 237, 0.2);
-            }
-        }
-
-        & > ${SearchForm} { /* Target SearchForm inside MobileMenu */
-            width: calc(100% - 3rem);
-            margin: 0.5rem 1.5rem;
-            display: flex; /* Ensure the search form displays flex within the mobile menu */
-            ${SearchInput} {
-                width: calc(100% - 60px); /* Adjust width of input within mobile form */
-                border-radius: 4px 0 0 4px;
-            }
-            ${SearchButton} {
-                border-radius: 0 4px 4px 0;
-            }
-        }
     }
 `;
 
+const MobileMenu = styled.div`
+    display: none;
+    position: fixed;
+    top: 80px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(10, 14, 39, 0.98);
+    backdrop-filter: blur(20px);
+    z-index: 999;
+    animation: ${fadeIn} 0.3s ease-out;
+    overflow-y: auto;
 
+    @media (max-width: 768px) {
+        display: ${props => props.$open ? 'block' : 'none'};
+    }
+`;
+
+const MobileNavLinks = styled.div`
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+`;
+
+const MobileNavLink = styled(Link)`
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    color: ${props => props.$active ? '#00adef' : '#94a3b8'};
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1.1rem;
+    border-radius: 12px;
+    background: ${props => props.$active ? 'rgba(0, 173, 237, 0.15)' : 'transparent'};
+    border: 1px solid ${props => props.$active ? 'rgba(0, 173, 237, 0.3)' : 'transparent'};
+    transition: all 0.2s ease;
+
+    &:hover {
+        color: #00adef;
+        background: rgba(0, 173, 237, 0.1);
+        border-color: rgba(0, 173, 237, 0.3);
+        transform: translateX(5px);
+    }
+`;
+
+const Divider = styled.div`
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0, 173, 237, 0.3), transparent);
+    margin: 1rem 0;
+`;
+
+// ============ COMPONENT ============
 const Navbar = () => {
-    const { isAuthenticated, logout } = useAuth();
-    const navigate = useNavigate();
+    const { user, logout } = useAuth();
     const location = useLocation();
+    const navigate = useNavigate();
+    const [dropdownOpen, setDropdownOpen] = useState(false);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-    const [searchTerm, setSearchTerm] = useState('');
-    const [menuOpen, setMenuOpen] = useState(false); // <--- NEW: State for hamburger menu
-
-    const pagesWithoutAuthLinks = [
-        '/',
-        '/pricing',
-        '/terms',
-        '/privacy',
-        '/disclaimer'
+    const navItems = [
+        { path: '/dashboard', label: 'Dashboard', icon: Home },
+        { path: '/portfolio', label: 'Portfolio', icon: PieChart },
+        { path: '/watchlist', label: 'Watchlist', icon: Eye },
+        { path: '/predict', label: 'AI Predict', icon: Brain },
+        { path: '/chat', label: 'AI Chat', icon: MessageSquare },
+        { path: '/pricing', label: 'Pricing', icon: DollarSign },
     ];
-    const shouldHideAuthLinks = pagesWithoutAuthLinks.includes(location.pathname);
 
     const handleLogout = () => {
         logout();
         navigate('/login');
-        setMenuOpen(false); // Close menu on logout
+        setDropdownOpen(false);
+        setMobileMenuOpen(false);
     };
 
-    const handleSearchSubmit = (e) => {
-        e.preventDefault();
-        if (searchTerm.trim()) {
-            navigate(`/stocks/${searchTerm.toUpperCase()}`);
-            setSearchTerm('');
-            setMenuOpen(false); // Close menu after search
-        }
+    const getUserInitials = () => {
+        if (!user?.name) return 'U';
+        return user.name
+            .split(' ')
+            .map(n => n[0])
+            .join('')
+            .toUpperCase()
+            .substring(0, 2);
     };
+
+    useEffect(() => {
+        // Close mobile menu when route changes
+        setMobileMenuOpen(false);
+        setDropdownOpen(false);
+    }, [location]);
 
     return (
         <NavContainer>
-            <LogoWrapper to={isAuthenticated ? "/dashboard" : "/"}>
-                <LogoImg src={logoImage} alt="Nexus Signal AI Logo" />
-                <LogoText>Nexus Signal.AI</LogoText>
-            </LogoWrapper>
-            
-            {/* NEW: Hamburger Icon - visible on mobile */}
-            <HamburgerIcon open={menuOpen} onClick={() => setMenuOpen(!menuOpen)}>
-                <span></span>
-                <span></span>
-                <span></span>
-            </HamburgerIcon>
+            <NavInner>
+                {/* LOGO */}
+                <Logo to="/dashboard">
+                    <LogoIcon>
+                        <LogoImage src={nexusSignalLogo} alt="Nexus Signal Logo" />
+                    </LogoIcon>
+                    <LogoText>Nexus Signal</LogoText>
+                </Logo>
 
-            {/* Regular NavLinks (hidden on mobile) */}
-            <NavLinks>
-                {isAuthenticated && (
-                    <>
-                        {/* Search bar for desktop */}
-                        <SearchForm onSubmit={handleSearchSubmit}>
-                            <SearchInput
-                                type="text"
-                                placeholder="Search Symbol (e.g., AAPL)"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                            <SearchButton type="submit">Search</SearchButton>
-                        </SearchForm>
+                {/* DESKTOP NAV LINKS */}
+                <NavLinks>
+                    {navItems.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                            <NavLink
+                                key={item.path}
+                                to={item.path}
+                                $active={location.pathname === item.path}
+                            >
+                                <Icon size={18} />
+                                {item.label}
+                            </NavLink>
+                        );
+                    })}
+                </NavLinks>
 
-                        <NavLink to="/dashboard">Dashboard</NavLink>
-                        {/* <NavLink to="/stocks/AAPL">Stocks</NavLink> */}
-                        <NavLink to="/portfolio">Portfolio</NavLink>
-                        <NavLink to="/watchlist">Watchlist</NavLink>
-                        <NavLink to="/predict">Predict</NavLink>
-                        {/* Pricing link for authenticated users - desktop */}
-                        <NavLink to="/pricing" ispulsating="true">Pricing</NavLink>
-                        <NavButton onClick={handleLogout}>Logout</NavButton>
-                    </>
-                )}
-                {/* Non-authenticated links (desktop) */}
-                {!isAuthenticated && !shouldHideAuthLinks && (
-                    <>
-                        <NavLink to="/login">Login</NavLink>
-                        <NavLink to="/register">Register</NavLink>
-                        {/* Pricing link for non-authenticated users - desktop */}
-                        <NavLink to="/pricing" ispulsating="true">Pricing</NavLink>
-                    </>
-                )}
-                {!isAuthenticated && shouldHideAuthLinks && (
-                    // Pricing link for non-authenticated users on specific pages - desktop
-                    <NavLink to="/pricing" ispulsating="true">Pricing</NavLink>
-                )}
-            </NavLinks>
+                {/* USER SECTION */}
+                <UserSection>
+                    <NotificationButton>
+                        <Bell size={20} />
+                        <NotificationBadge>3</NotificationBadge>
+                    </NotificationButton>
 
-            {/* NEW: Mobile Menu - visible and animated on mobile */}
-            <MobileMenu open={menuOpen}>
-                {isAuthenticated ? (
-                    <>
-                        {/* Search bar for mobile */}
-                        <SearchForm onSubmit={handleSearchSubmit}>
-                            <SearchInput
-                                type="text"
-                                placeholder="Search Symbol (e.g., AAPL)"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                            <SearchButton type="submit">Search</SearchButton>
-                        </SearchForm>
+                    <div style={{ position: 'relative' }}>
+                        <UserMenuButton onClick={() => setDropdownOpen(!dropdownOpen)}>
+                            <UserAvatar>{getUserInitials()}</UserAvatar>
+                            <UserName>{user?.name || 'User'}</UserName>
+                            <DropdownIcon size={18} $open={dropdownOpen} />
+                        </UserMenuButton>
 
-                        <NavLink to="/dashboard" onClick={() => setMenuOpen(false)}>Dashboard</NavLink>
-                        <NavLink to="/stocks/AAPL" onClick={() => setMenuOpen(false)}>Stocks</NavLink>
-                        <NavLink to="/portfolio" onClick={() => setMenuOpen(false)}>Portfolio</NavLink>
-                        <NavLink to="/watchlist" onClick={() => setMenuOpen(false)}>Watchlist</NavLink>
-                        <NavLink to="/predict" onClick={() => setMenuOpen(false)}>Predict</NavLink>
-                        {/* Pricing link for authenticated users - mobile */}
-                        <NavLink to="/pricing" onClick={() => setMenuOpen(false)} ispulsating="true">Pricing</NavLink>
-                        <NavButton onClick={handleLogout}>Logout</NavButton>
-                    </>
-                ) : (
-                    shouldHideAuthLinks ? (
-                        // Pricing link for non-authenticated users on specific pages - mobile
-                        <NavLink to="/pricing" onClick={() => setMenuOpen(false)} ispulsating="true">Pricing</NavLink>
-                    ) : (
-                        <>
-                            <NavLink to="/login" onClick={() => setMenuOpen(false)}>Login</NavLink>
-                            <NavLink to="/register" onClick={() => setMenuOpen(false)}>Register</NavLink>
-                            {/* Pricing link for non-authenticated users - mobile */}
-                            <NavLink to="/pricing" onClick={() => setMenuOpen(false)} ispulsating="true">Pricing</NavLink>
-                        </>
-                    )
-                )}
+                        {dropdownOpen && (
+                            <DropdownMenu>
+                                <DropdownItem onClick={() => {
+                                    navigate('/profile');
+                                    setDropdownOpen(false);
+                                }}>
+                                    <User size={18} />
+                                    Profile
+                                </DropdownItem>
+                                <DropdownItem onClick={() => {
+                                    navigate('/settings');
+                                    setDropdownOpen(false);
+                                }}>
+                                    <Settings size={18} />
+                                    Settings
+                                </DropdownItem>
+                                <DropdownItem className="danger" onClick={handleLogout}>
+                                    <LogOut size={18} />
+                                    Logout
+                                </DropdownItem>
+                            </DropdownMenu>
+                        )}
+                    </div>
+
+                    <MobileMenuButton onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+                        {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+                    </MobileMenuButton>
+                </UserSection>
+            </NavInner>
+
+            {/* MOBILE MENU */}
+            <MobileMenu $open={mobileMenuOpen}>
+                <MobileNavLinks>
+                    {navItems.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                            <MobileNavLink
+                                key={item.path}
+                                to={item.path}
+                                $active={location.pathname === item.path}
+                            >
+                                <Icon size={24} />
+                                {item.label}
+                            </MobileNavLink>
+                        );
+                    })}
+                    <Divider />
+                    <MobileNavLink to="/profile">
+                        <User size={24} />
+                        Profile
+                    </MobileNavLink>
+                    <MobileNavLink to="/settings">
+                        <Settings size={24} />
+                        Settings
+                    </MobileNavLink>
+                    <MobileNavLink
+                        as="button"
+                        style={{ 
+                            border: 'none', 
+                            width: '100%',
+                            color: '#ef4444'
+                        }}
+                        onClick={handleLogout}
+                    >
+                        <LogOut size={24} />
+                        Logout
+                    </MobileNavLink>
+                </MobileNavLinks>
             </MobileMenu>
         </NavContainer>
     );
