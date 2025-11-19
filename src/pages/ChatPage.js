@@ -665,56 +665,54 @@ const ChatPage = () => {
     }, []);
 
     const handleSend = async (messageText = input) => {
-        if (!messageText.trim() || loading) return;
+    if (!messageText.trim() || loading) return;
 
-        const userMessage = messageText.trim();
-        setInput('');
-        setError(null);
+    const userMessage = messageText.trim();
+    setInput('');
+    setError(null);
 
-        // Add user message to chat
+    // Add user message to chat
+    setMessages(prev => [...prev, {
+        role: 'user',
+        content: userMessage
+    }]);
+
+    setLoading(true);
+
+    try {
+        // Get conversation history (last 10 messages for context)
+        const conversationHistory = messages.slice(-10).map(msg => ({
+            role: msg.role,
+            content: msg.content
+        }));
+
+        console.log('📤 Sending message:', userMessage);
+        console.log('📚 Conversation history:', conversationHistory);
+        console.log('📊 History length:', conversationHistory.length);
+
+        const response = await api.post('/chat/message', {
+            message: userMessage,
+           conversationHistory: conversationHistory
+        });
+
+        console.log('📥 Received response:', response.data.response);
+
+        // Add assistant response
         setMessages(prev => [...prev, {
-            role: 'user',
-            content: userMessage
+            role: 'assistant',
+            content: response.data.response
         }]);
 
-        setLoading(true);
-
-        try {
-            // Get conversation history (last 10 messages for context)
-            const conversationHistory = messages.slice(-10).map(msg => ({
-                role: msg.role,
-                content: msg.content
-            }));
-
-            // TODO: Get user context (portfolio, watchlist, predictions)
-            const userContext = {
-                portfolio: [],
-                watchlist: [],
-                recentPredictions: []
-            };
-
-            const response = await api.post('/chat/message', {
-                message: userMessage,
-                conversationHistory,
-                userContext
-            });
-
-            // Add assistant response
-            setMessages(prev => [...prev, {
-                role: 'assistant',
-                content: response.data.message
-            }]);
-
-        } catch (err) {
-            console.error('Chat error:', err);
-            setError(err.response?.data?.error || 'Failed to get response. Please try again.');
-            
-            // Remove the user message if request failed
-            setMessages(prev => prev.slice(0, -1));
-        } finally {
-            setLoading(false);
-        }
-    };
+    } catch (err) {
+        console.error('❌ Chat error:', err);
+        setError(err.response?.data?.msg || 'Failed to get response. Please try again.');
+        
+        // Remove the user message if request failed
+        setMessages(prev => prev.slice(0, -1));
+    } finally {
+        setLoading(false);
+    }
+};
 
     const handleKeyPress = (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
