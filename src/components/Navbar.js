@@ -90,16 +90,7 @@ const Logo = styled(Link)`
         filter: brightness(1.2);
     }
 
-    &::before {
-        content: '';
-        position: absolute;
-        left: -10px;
-        width: 4px;
-        height: 100%;
-        background: linear-gradient(180deg, #00adef, #00ff88);
-        border-radius: 2px;
-        animation: ${pulse} 2s ease-in-out infinite;
-    }
+    
 `;
 
 const LogoIcon = styled.div`
@@ -108,17 +99,12 @@ const LogoIcon = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
-    filter: drop-shadow(0 0 10px rgba(0, 173, 237, 0.8)) 
-            drop-shadow(0 0 20px rgba(0, 173, 237, 0.6))
-            drop-shadow(0 0 30px rgba(0, 173, 237, 0.4));
-    animation: ${glow} 3s ease-in-out infinite, ${float} 3s ease-in-out infinite;
+    filter: drop-shadow(0 2px 8px rgba(0, 173, 237, 0.3));
     transition: all 0.3s ease;
 
     &:hover {
-        filter: drop-shadow(0 0 15px rgba(0, 173, 237, 1)) 
-                drop-shadow(0 0 30px rgba(0, 173, 237, 0.8))
-                drop-shadow(0 0 45px rgba(0, 173, 237, 0.6));
-        transform: scale(1.1);
+        filter: drop-shadow(0 4px 12px rgba(0, 173, 237, 0.5));
+        transform: translateY(-2px);
     }
 `;
 

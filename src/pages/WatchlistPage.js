@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
+import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 import {
     TrendingUp, TrendingDown, Plus, Trash2, X, Eye, Star,
@@ -668,6 +669,7 @@ const WatchlistPage = () => {
                     <StatIcon variant={stats.avgChange >= 0 ? 'success' : 'danger'}>
                         <BarChart3 size={24} />
                     </StatIcon>
+                    const toast = useToast();
                     <StatLabel>Avg Change</StatLabel>
                     <StatValue>{stats.avgChange >= 0 ? '+' : ''}{stats.avgChange.toFixed(2)}%</StatValue>
                     <StatSubtext>Average performance</StatSubtext>

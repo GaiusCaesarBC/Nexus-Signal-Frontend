@@ -1,6 +1,7 @@
 // client/src/pages/PredictionsPage.js - THE MOST LEGENDARY AI PREDICTION PAGE - ULTIMATE EDITION
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useToast } from '../context/ToastContext';
 import styled, { keyframes } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -702,6 +703,7 @@ const RocketContainer = styled.div`
 // ============ COMPONENT ============
 const PredictionsPage = () => {
     const { api } = useAuth();
+    const toast = useToast();
     const [symbol, setSymbol] = useState('');
     const [days, setDays] = useState('7');
     const [loading, setLoading] = useState(false);
@@ -724,11 +726,30 @@ const PredictionsPage = () => {
 
     const handlePredict = async (e) => {
         e.preventDefault();
+        
+        const symbolUpper = symbol.toUpperCase().trim();
+        
+        // ✅ VALIDATION WITH TOASTS
+        if (!symbolUpper) {
+            toast.warning('Please enter a stock symbol', 'Missing Symbol');
+            return;
+        }
+        
+        if (symbolUpper.length > 5) {
+            toast.warning('Stock symbol must be 5 characters or less', 'Invalid Symbol');
+            return;
+        }
+        
+        if (!days || parseInt(days) <= 0) {
+            toast.warning('Please select a valid prediction period', 'Invalid Period');
+            return;
+        }
+        
         setLoading(true);
 
         try {
             const response = await api.post('/predictions/predict', {
-                symbol: symbol.toUpperCase(),
+                symbol: symbolUpper,
                 days: parseInt(days)
             });
 
@@ -744,13 +765,35 @@ const PredictionsPage = () => {
                 chartData
             });
 
+            // ✅ SUCCESS TOAST
+            const direction = response.data.prediction.direction;
+            const targetPrice = response.data.prediction.target_price?.toFixed(2);
+            const changePercent = response.data.prediction.price_change_percent?.toFixed(2);
+            
+            toast.success(
+                `${symbolUpper}: ${direction} to $${targetPrice} (${changePercent >= 0 ? '+' : ''}${changePercent}%)`,
+                'Prediction Generated! 🚀'
+            );
+
             // Trigger rocket animation on successful prediction
             setShowRocket(true);
             setTimeout(() => setShowRocket(false), 3000);
 
         } catch (error) {
             console.error('Prediction error:', error);
-            alert(error.response?.data?.error || 'Failed to generate prediction');
+            
+            // ✅ SPECIFIC ERROR TOASTS
+            const errorMsg = error.response?.data?.error || error.response?.data?.msg || '';
+            
+            if (errorMsg.includes('not found') || error.response?.status === 404) {
+                toast.error(`Stock symbol ${symbolUpper} not found`, 'Invalid Symbol');
+            } else if (errorMsg.includes('limit') || error.response?.status === 429) {
+                toast.warning('Too many prediction requests. Please wait a moment.', 'Rate Limited');
+            } else if (errorMsg.includes('insufficient data')) {
+                toast.warning(`Not enough data available for ${symbolUpper}`, 'Data Unavailable');
+            } else {
+                toast.error('Failed to generate prediction. Please try again.', 'Prediction Failed');
+            }
         } finally {
             setLoading(false);
         }
