@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes, css } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import {
     TrendingUp, TrendingDown, DollarSign, PieChart, BarChart3,
     Activity, Plus, Trash2, X, Brain, Target, Zap, 
@@ -568,6 +569,7 @@ const COLORS = ['#00adef', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'
 // ============ COMPONENT ============
 const PortfolioPage = () => {
     const { api } = useAuth();
+    const toast = useToast();
     const [portfolio, setPortfolio] = useState([]);
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -597,6 +599,7 @@ const PortfolioPage = () => {
             });
         } catch (error) {
             console.error('Error fetching portfolio:', error);
+            toast.error('Failed to load portfolio', 'Error');
             setPortfolio([]);
         } finally {
             setLoading(false);
@@ -652,19 +655,53 @@ const PortfolioPage = () => {
 
     const handleAddHolding = async (e) => {
         e.preventDefault();
+        
+        const symbol = formData.symbol.toUpperCase().trim();
+        const shares = parseFloat(formData.shares);
+        const avgPrice = parseFloat(formData.averagePrice);
+        
+        // ✅ VALIDATION WITH TOASTS
+        if (!symbol) {
+            toast.warning('Please enter a stock symbol', 'Missing Symbol');
+            return;
+        }
+        
+        if (shares <= 0) {
+            toast.warning('Number of shares must be greater than 0', 'Invalid Shares');
+            return;
+        }
+        
+        if (avgPrice <= 0) {
+            toast.warning('Average price must be greater than 0', 'Invalid Price');
+            return;
+        }
+        
         try {
             await api.post('/portfolio/holdings', {
-                symbol: formData.symbol.toUpperCase(),
-                shares: parseFloat(formData.shares),
-                averagePrice: parseFloat(formData.averagePrice)
+                symbol,
+                shares,
+                averagePrice: avgPrice
             });
             
+            toast.success(`${shares} shares of ${symbol} added to portfolio!`, 'Holding Added'); // ✅ SUCCESS TOAST
             setShowAddModal(false);
             setFormData({ symbol: '', shares: '', averagePrice: '' });
             fetchPortfolio();
         } catch (error) {
             console.error('Error adding holding:', error);
-            alert(error.response?.data?.error || 'Failed to add holding');
+            
+            // ✅ SPECIFIC ERROR TOASTS
+            const errorMsg = error.response?.data?.error || error.response?.data?.msg || '';
+            
+            if (errorMsg.includes('already exists') || error.response?.status === 409) {
+                toast.warning(`${symbol} is already in your portfolio`, 'Already Exists');
+            } else if (errorMsg.includes('not found') || error.response?.status === 404) {
+                toast.error(`Stock symbol ${symbol} not found`, 'Invalid Symbol');
+            } else if (error.response?.status === 429) {
+                toast.warning('Too many requests. Please wait a moment.', 'Slow Down');
+            } else {
+                toast.error('Failed to add holding to portfolio', 'Error');
+            }
         }
     };
 
@@ -673,10 +710,11 @@ const PortfolioPage = () => {
 
         try {
             await api.delete(`/portfolio/holdings/${holdingId}`);
+            toast.success(`${symbol} removed from portfolio`, 'Holding Deleted'); // ✅ SUCCESS TOAST
             fetchPortfolio();
         } catch (error) {
             console.error('Error deleting holding:', error);
-            alert('Failed to delete holding');
+            toast.error(`Failed to remove ${symbol}`, 'Error'); // ✅ ERROR TOAST
         }
     };
 

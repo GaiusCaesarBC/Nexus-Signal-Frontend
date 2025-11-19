@@ -4,6 +4,7 @@ import styled, { keyframes } from 'styled-components';
 import { LogIn, User, Lock, ArrowRight, Zap, Shield, Eye, EyeOff } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext'; // ✅ CORRECT LOCATION
 
 // ============ INSANE ANIMATIONS ============
 const fadeIn = keyframes`
@@ -444,6 +445,7 @@ const LoginPage = () => {
     const [shapes, setShapes] = useState([]);
 
     const { login, loading: authLoading } = useAuth();
+    const toast = useToast(); // ✅ CORRECT LOCATION - Use toast hook
     const isLoading = localLoading || authLoading;
 
     // Generate background particles and shapes on mount
@@ -475,6 +477,19 @@ const LoginPage = () => {
         e.preventDefault();
         setLocalLoading(true);
         setLocalError('');
+
+        // ✅ CLIENT-SIDE VALIDATION WITH TOASTS
+        if (!email || !password) {
+            toast.warning('Please fill in all fields', 'Missing Information');
+            setLocalLoading(false);
+            return;
+        }
+
+        if (!email.includes('@')) {
+            toast.warning('Please enter a valid email address', 'Invalid Email');
+            setLocalLoading(false);
+            return;
+        }
 
         console.log('LoginPage handleSubmit: Submitting login form...');
 

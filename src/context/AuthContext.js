@@ -1,8 +1,9 @@
-// client/src/context/AuthContext.js - FIXED (No circular import)
+// client/src/context/AuthContext.js - WITH TOAST NOTIFICATIONS
 
 import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API from '../api/axios';
+import { useToast } from './ToastContext'; // ✅ ADD TOAST
 
 const AuthContext = createContext(null);
 
@@ -12,6 +13,7 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const navigate = useNavigate();
+    const toast = useToast(); // ✅ USE TOAST
 
     // Logout Function
     const logout = useCallback(async () => {
@@ -20,15 +22,17 @@ export const AuthProvider = ({ children }) => {
             setError(null);
             await API.post('/auth/logout');
             console.log("Logout successful");
+            toast.info('You have been logged out', 'Goodbye'); // ✅ TOAST
         } catch (err) {
             console.error('Logout error:', err.message);
+            toast.error('Logout failed. Please try again.', 'Error'); // ✅ TOAST
         } finally {
             setIsAuthenticated(false);
             setUser(null);
             setLoading(false);
             navigate('/login');
         }
-    }, [navigate]);
+    }, [navigate, toast]);
 
     // Load user from cookie
     const loadUser = useCallback(async () => {
@@ -68,7 +72,7 @@ export const AuthProvider = ({ children }) => {
         return () => {
             isMounted = false;
         };
-    }, []); // ✅ Empty deps - only run once on mount
+    }, []); // eslint-disable-next-line react-hooks/exhaustive-deps
 
     // Login
     const login = useCallback(async (email, password) => {
@@ -81,10 +85,12 @@ export const AuthProvider = ({ children }) => {
             const userLoaded = await loadUser();
 
             if (userLoaded) {
+                toast.success('Welcome back! 🎉', 'Login Successful'); // ✅ TOAST
                 navigate('/dashboard');
                 return { success: true };
             } else {
                 setError("Failed to establish session");
+                toast.error('Failed to establish session', 'Error'); // ✅ TOAST
                 return { success: false, error: "Session error" };
             }
         } catch (err) {
@@ -93,11 +99,21 @@ export const AuthProvider = ({ children }) => {
             setError(errorMessage);
             setIsAuthenticated(false);
             setUser(null);
+            
+            // ✅ SPECIFIC ERROR TOASTS
+            if (errorMessage.includes('Invalid credentials') || errorMessage.includes('password')) {
+                toast.error('Invalid email or password', 'Login Failed');
+            } else if (errorMessage.includes('not found')) {
+                toast.error('Account not found. Please register.', 'Login Failed');
+            } else {
+                toast.error(errorMessage, 'Login Failed');
+            }
+            
             return { success: false, error: errorMessage };
         } finally {
             setLoading(false);
         }
-    }, [loadUser, navigate]);
+    }, [loadUser, navigate, toast]);
 
     // Register
     const register = useCallback(async (userData) => {
@@ -110,10 +126,12 @@ export const AuthProvider = ({ children }) => {
             const userLoaded = await loadUser();
 
             if (userLoaded) {
+                toast.success('Account created successfully! Welcome! 🎉', 'Registration Complete'); // ✅ TOAST
                 navigate('/dashboard');
                 return { success: true };
             } else {
                 setError("Failed to establish session");
+                toast.error('Failed to establish session', 'Error'); // ✅ TOAST
                 return { success: false, error: "Session error" };
             }
         } catch (err) {
@@ -122,11 +140,23 @@ export const AuthProvider = ({ children }) => {
             setError(errorMessage);
             setIsAuthenticated(false);
             setUser(null);
+            
+            // ✅ SPECIFIC ERROR TOASTS
+            if (errorMessage.includes('already exists')) {
+                toast.error('This email is already registered. Try logging in.', 'Registration Failed');
+            } else if (errorMessage.includes('password')) {
+                toast.error('Password must be at least 8 characters', 'Weak Password');
+            } else if (errorMessage.includes('email')) {
+                toast.error('Please enter a valid email address', 'Invalid Email');
+            } else {
+                toast.error(errorMessage, 'Registration Failed');
+            }
+            
             return { success: false, error: errorMessage };
         } finally {
             setLoading(false);
         }
-    }, [loadUser, navigate]);
+    }, [loadUser, navigate, toast]);
 
     const value = {
         isAuthenticated,

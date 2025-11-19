@@ -1,4 +1,4 @@
-// src/App.js - FIXED import paths + CHAT ROUTE ADDED + ABOUT ROUTE ADDED
+// src/App.js - FIXED with LoadingScreen + Ready for Toast
 
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
@@ -8,6 +8,7 @@ import { useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import AIChatWidget from './components/AIChatWidget';
+import LoadingScreen from './components/LoadingScreen'; 
 import SettingsPage from './components/SettingsPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -27,24 +28,13 @@ import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import DisclaimerPage from './pages/DisclaimerPage';
 import NotFoundPage from './pages/NotFoundPage';
 import StockPage from './pages/StockPage';
+import ProfilePage from './pages/ProfilePage';
 
 function App() {
     const { loading } = useAuth();
 
     if (loading) {
-        return (
-            <div style={{
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                height: '100vh',
-                backgroundColor: '#0d1a2f',
-                color: '#e0e0e0',
-                fontSize: '1.5rem'
-            }}>
-                Loading application...
-            </div>
-        );
+        return <LoadingScreen message="Loading your AI-powered trading platform..." />; // ✅ FIXED!
     }
 
     return (
@@ -61,6 +51,7 @@ function App() {
                     <Route path="/terms" element={<TermsOfServicePage />} />
                     <Route path="/privacy" element={<PrivacyPolicyPage />} />
                     <Route path="/disclaimer" element={<DisclaimerPage />} />
+                    <Route path="/profile" element={<ProfilePage />} />
 
                     {/* Protected Routes */}
                     <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
