@@ -786,7 +786,7 @@ const RefreshButton = styled.button`
 
 // ============ COMPONENT ============
 const WatchlistPage = () => {
-    const { api } = useAuth();
+    const { api, isAuthenticated } = useAuth();
     const toast = useToast();
     const [watchlist, setWatchlist] = useState([]);
     const [filteredWatchlist, setFilteredWatchlist] = useState([]);
@@ -806,34 +806,37 @@ const WatchlistPage = () => {
     });
 
     useEffect(() => {
+    if (isAuthenticated) {
         fetchWatchlist();
-    }, []);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [isAuthenticated]);
 
     useEffect(() => {
         filterAndSortWatchlist();
     }, [watchlist, searchQuery, sortBy, filterBy]);
 
     const fetchWatchlist = async () => {
-        try {
-            setLoading(true);
-            const response = await api.get('/watchlist');
-            
-            // Mock data with charts for demo
-            const watchlistData = (response.data.watchlist || response.data || []).map(item => ({
-                ...item,
-                chartData: generateMockChartData(),
-                hasAlert: Math.random() > 0.7 // Random alerts for demo
-            }));
-            
-            setWatchlist(watchlistData);
-        } catch (error) {
-            console.error('Error fetching watchlist:', error);
-            toast.error('Failed to load watchlist', 'Error');
-            setWatchlist([]);
-        } finally {
-            setLoading(false);
-        }
-    };
+    setLoading(true);
+    try {
+        const response = await api.get('/watchlist');
+        console.log('Watchlist response:', response.data);
+        
+        // ✅ Handle different response formats
+        const watchlistData = Array.isArray(response.data) 
+            ? response.data 
+            : response.data.watchlist || [];
+        
+        setWatchlist(watchlistData);
+        toast.success('Watchlist loaded', 'Success');
+    } catch (error) {
+        console.error('Error fetching watchlist:', error);
+        toast.error('Failed to load watchlist', 'Error');
+        setWatchlist([]); // ✅ Set empty array on error
+    } finally {
+        setLoading(false);
+    }
+};
 
     const handleRefresh = async () => {
         setRefreshing(true);
@@ -1039,17 +1042,21 @@ const WatchlistPage = () => {
     };
 
     const getStats = () => {
-        const totalStocks = watchlist.length;
-        const gainers = watchlist.filter(s => (s.changePercent || 0) > 0).length;
-        const losers = watchlist.filter(s => (s.changePercent || 0) < 0).length;
-        const avgChange = watchlist.length > 0 
-            ? watchlist.reduce((sum, s) => sum + (s.changePercent || 0), 0) / watchlist.length 
-            : 0;
-        const alertsActive = watchlist.filter(s => s.hasAlert).length;
+    // ✅ Add safety check
+    if (!Array.isArray(watchlist)) {
+        return { totalStocks: 0, gainers: 0, losers: 0, avgChange: 0, alertsActive: 0 };
+    }
+    
+    const totalStocks = watchlist.length;
+    const gainers = watchlist.filter(s => (s.changePercent || 0) > 0).length;
+    const losers = watchlist.filter(s => (s.changePercent || 0) < 0).length;
+    const avgChange = watchlist.length > 0 
+        ? watchlist.reduce((sum, s) => sum + (s.changePercent || 0), 0) / watchlist.length 
+        : 0;
+    const alertsActive = watchlist.filter(s => s.hasAlert).length;
 
-        return { totalStocks, gainers, losers, avgChange, alertsActive };
-    };
-
+    return { totalStocks, gainers, losers, avgChange, alertsActive };
+};
     const stats = getStats();
 
     if (loading) {

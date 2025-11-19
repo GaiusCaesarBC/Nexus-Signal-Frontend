@@ -720,7 +720,7 @@ const LoadingText = styled.div`
 
 // ============ COMPONENT ============
 const ScreenerPage = () => {
-    const { api } = useAuth();
+    const { api, isAuthenticated } = useAuth();
     const toast = useToast();
     const [mode, setMode] = useState('stocks'); // 'stocks' or 'crypto'
     const [loading, setLoading] = useState(false);
@@ -744,34 +744,43 @@ const ScreenerPage = () => {
     // Quick filters
     const [activeQuickFilters, setActiveQuickFilters] = useState([]);
 
-    useEffect(() => {
-        // Load watchlist from localStorage
-        const saved = JSON.parse(localStorage.getItem('watchlist') || '[]');
-        setWatchlist(saved);
-        
-        // Fetch initial results
+   useEffect(() => {
+    if (isAuthenticated) {
         fetchResults();
-    }, [mode]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [mode, isAuthenticated]);
 
     const fetchResults = async () => {
-        setLoading(true);
+    setLoading(true);
+    try {
+        const endpoint = mode === 'stocks' ? '/screener/stocks' : '/screener/crypto';
         
-        try {
-            // Mock data for now - replace with real API calls
-            const mockData = mode === 'stocks' ? generateMockStocks() : generateMockCrypto();
-            
-            // Simulate API delay
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            setResults(mockData);
-            toast.success(`Loaded ${mockData.length} ${mode === 'stocks' ? 'stocks' : 'cryptocurrencies'}`, 'Screener Updated');
-        } catch (error) {
-            console.error('Error fetching results:', error);
-            toast.error('Failed to load screener data', 'Error');
-        } finally {
-            setLoading(false);
+        // Build query params from filters
+        const params = new URLSearchParams();
+        if (minPrice) params.append('minPrice', minPrice);
+        if (maxPrice) params.append('maxPrice', maxPrice);
+        if (minVolume) params.append('minVolume', minVolume);
+        if (minMarketCap) params.append('minMarketCap', minMarketCap);
+        if (maxMarketCap) params.append('maxMarketCap', maxMarketCap);
+        if (changeFilter && changeFilter !== 'all') {
+            params.append('changeFilter', changeFilter);
         }
-    };
+        if (sortBy) params.append('sortBy', sortBy);
+
+        const response = await api.get(`${endpoint}?${params.toString()}`);
+        console.log('Screener response:', response.data);
+        
+        setResults(response.data || []);
+        toast.success(`Found ${response.data?.length || 0} results`, 'Screener Updated');
+    } catch (error) {
+        console.error('Error fetching screener data:', error);
+        toast.error('Failed to load screener data', 'Error');
+        setResults([]);
+    } finally {
+        setLoading(false);
+    }
+};
 
     const generateMockStocks = () => {
         const stocks = [
@@ -806,19 +815,21 @@ const ScreenerPage = () => {
     };
 
     const formatNumber = (num) => {
-        if (num >= 1000000000000) return `$${(num / 1000000000000).toFixed(2)}T`;
-        if (num >= 1000000000) return `$${(num / 1000000000).toFixed(2)}B`;
-        if (num >= 1000000) return `$${(num / 1000000).toFixed(2)}M`;
-        if (num >= 1000) return `$${(num / 1000).toFixed(2)}K`;
-        return `$${num.toFixed(2)}`;
-    };
+    if (!num || num === undefined) return '$0';
+    if (num >= 1000000000000) return `$${(num / 1000000000000).toFixed(2)}T`;
+    if (num >= 1000000000) return `$${(num / 1000000000).toFixed(2)}B`;
+    if (num >= 1000000) return `$${(num / 1000000).toFixed(2)}M`;
+    if (num >= 1000) return `$${(num / 1000).toFixed(2)}K`;
+    return `$${num.toFixed(2)}`;
+};
 
-    const formatVolume = (vol) => {
-        if (vol >= 1000000000) return `${(vol / 1000000000).toFixed(2)}B`;
-        if (vol >= 1000000) return `${(vol / 1000000).toFixed(2)}M`;
-        if (vol >= 1000) return `${(vol / 1000).toFixed(2)}K`;
-        return vol.toLocaleString();
-    };
+const formatVolume = (vol) => {
+    if (!vol || vol === undefined) return '0';
+    if (vol >= 1000000000) return `${(vol / 1000000000).toFixed(2)}B`;
+    if (vol >= 1000000) return `${(vol / 1000000).toFixed(2)}M`;
+    if (vol >= 1000) return `${(vol / 1000000).toFixed(2)}K`;
+    return vol.toLocaleString();
+};
 
     const handleSort = (field) => {
         if (sortBy === field) {
@@ -1266,24 +1277,24 @@ const ScreenerPage = () => {
                                         <Name>{item.name}</Name>
                                     </TableCell>
                                     <TableCell>
-                                        <PriceCell>${item.price.toLocaleString()}</PriceCell>
-                                    </TableCell>
-                                    <TableCell>
-                                        <ChangeCell $positive={item.changePercent > 0}>
-                                            {item.changePercent > 0 ? (
-                                                <TrendingUp size={16} />
-                                            ) : (
-                                                <TrendingDown size={16} />
-                                            )}
-                                            {item.changePercent >= 0 ? '+' : ''}{item.changePercent.toFixed(2)}%
-                                        </ChangeCell>
-                                    </TableCell>
-                                    <TableCell>
-                                        <VolumeCell>{formatVolume(item.volume)}</VolumeCell>
-                                    </TableCell>
-                                    <TableCell>
-                                        <VolumeCell>{formatNumber(item.marketCap)}</VolumeCell>
-                                    </TableCell>
+    <PriceCell>${(item.price || 0).toLocaleString()}</PriceCell>
+</TableCell>
+<TableCell>
+    <ChangeCell $positive={(item.changePercent || 0) > 0}>
+        {(item.changePercent || 0) > 0 ? (
+            <TrendingUp size={16} />
+        ) : (
+            <TrendingDown size={16} />
+        )}
+        {(item.changePercent || 0) >= 0 ? '+' : ''}{(item.changePercent || 0).toFixed(2)}%
+    </ChangeCell>
+</TableCell>
+<TableCell>
+    <VolumeCell>{formatVolume(item.volume || 0)}</VolumeCell>
+</TableCell>
+<TableCell>
+    <VolumeCell>{formatNumber(item.marketCap || 0)}</VolumeCell>
+</TableCell>
                                     <TableCell>
                                         {item.badge && (
                                             <BadgeCell $type={item.badge}>

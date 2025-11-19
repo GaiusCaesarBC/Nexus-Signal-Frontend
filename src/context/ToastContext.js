@@ -62,7 +62,7 @@ const Toast = styled.div`
     display: flex;
     align-items: flex-start;
     gap: 1rem;
-    animation: ${props => props.isExiting ? slideOut : slideIn} 0.3s ease-out forwards;
+    animation: ${props => props.$isExiting ? slideOut : slideIn} 0.3s ease-out forwards;
     pointer-events: all;
     position: relative;
     overflow: hidden;
@@ -225,7 +225,7 @@ const ToastItem = ({ toast, onClose }) => {
     }, []);
 
     return (
-        <Toast type={toast.type} isExiting={isExiting}>
+        <Toast type={toast.type} $isExiting={isExiting}>
             <IconWrapper type={toast.type}>
                 {getIcon(toast.type)}
             </IconWrapper>

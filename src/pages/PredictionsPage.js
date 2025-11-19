@@ -1160,6 +1160,8 @@ const PredictionsPage = () => {
     const [historyFilter, setHistoryFilter] = useState('all'); // all, up, down
     const [showShareModal, setShowShareModal] = useState(false);
     const [savedPredictions, setSavedPredictions] = useState([]);
+    const [timeframe, setTimeframe] = useState(7);
+    const [predictionHistory, setPredictionHistory] = useState([]);
 
     // Generate background particles on mount
     useEffect(() => {
@@ -1218,85 +1220,58 @@ const PredictionsPage = () => {
         setHistory(mockHistory);
     };
 
-    const handlePredict = async (e) => {
-        e.preventDefault();
+    const fetchPrediction = async (e) => {
+    e.preventDefault();
+    
+    if (!symbol) {
+        toast.warning('Please enter a stock symbol', 'Missing Symbol');
+        return;
+    }
+
+    setLoading(true);
+    setPrediction(null);
+    
+    try {
+        const response = await api.post('/predictions/predict', {
+            symbol: symbol.toUpperCase(),
+            days: parseInt(days)
+        });
         
-        const symbolUpper = symbol.toUpperCase().trim();
+        console.log('Prediction response:', response.data);
         
-        if (!symbolUpper) {
-            toast.warning('Please enter a stock symbol', 'Missing Symbol');
-            return;
-        }
+        // Generate technical indicators (mock)
+        const indicators = generateTechnicalIndicators();
+
+        // Generate mock chart data
+        const chartData = generateChartData(
+            response.data.current_price,
+            response.data.prediction.target_price,
+            parseInt(days)
+        );
+
+        const predictionData = {
+            ...response.data,
+            chartData,
+            indicators,
+            timestamp: new Date().toISOString()
+        };
+
+        setPrediction(predictionData);
         
-        if (symbolUpper.length > 5) {
-            toast.warning('Stock symbol must be 5 characters or less', 'Invalid Symbol');
-            return;
-        }
+        toast.success(`Prediction generated for ${symbol.toUpperCase()}`, 'Success');
+
+        // Trigger rocket animation
+        const isGoingUp = response.data.prediction.direction === 'UP';
+        setShowRocket(isGoingUp ? 'up' : 'down');
+        setTimeout(() => setShowRocket(false), 3000);
         
-        if (!days || parseInt(days) <= 0) {
-            toast.warning('Please select a valid prediction period', 'Invalid Period');
-            return;
-        }
-        
-        setLoading(true);
-
-        try {
-            const response = await api.post('/predictions/predict', {
-                symbol: symbolUpper,
-                days: parseInt(days)
-            });
-
-            // Generate technical indicators (mock)
-            const indicators = generateTechnicalIndicators();
-
-            // Generate mock chart data
-            const chartData = generateChartData(
-                response.data.current_price,
-                response.data.prediction.target_price,
-                parseInt(days)
-            );
-
-            const predictionData = {
-                ...response.data,
-                chartData,
-                indicators,
-                timestamp: new Date().toISOString()
-            };
-
-            setPrediction(predictionData);
-
-            const direction = response.data.prediction.direction;
-            const targetPrice = response.data.prediction.target_price?.toFixed(2);
-            const changePercent = response.data.prediction.price_change_percent?.toFixed(2);
-            
-            toast.success(
-                `${symbolUpper}: ${direction} to $${targetPrice} (${changePercent >= 0 ? '+' : ''}${changePercent}%)`,
-                'Prediction Generated! 🚀'
-            );
-
-            // Trigger rocket animation
-            const isGoingUp = response.data.prediction.direction === 'UP';
-            setShowRocket(isGoingUp ? 'up' : 'down');
-            setTimeout(() => setShowRocket(false), 3000);
-
-        } catch (error) {
-            console.error('Prediction error:', error);
-            
-            const errorMsg = error.response?.data?.error || error.response?.data?.msg || '';
-            
-            if (errorMsg.includes('not found') || error.response?.status === 404) {
-                toast.error(`Stock symbol ${symbolUpper} not found`, 'Invalid Symbol');
-            } else if (errorMsg.includes('limit') || error.response?.status === 429) {
-                toast.warning('Too many prediction requests. Please wait a moment.', 'Rate Limited');
-            } else if (errorMsg.includes('insufficient data')) {
-                toast.warning(`Not enough data available for ${symbolUpper}`, 'Data Unavailable');
-            } else {
-                toast.error('Failed to generate prediction. Please try again.', 'Prediction Failed');
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
+    } catch (error) {
+        console.error('Error fetching prediction:', error);
+        toast.error(error.response?.data?.error || 'Failed to generate prediction', 'Error');
+    } finally {
+        setLoading(false);
+    }
+};
 
     const generateTechnicalIndicators = () => {
         // Mock technical indicators - replace with real data
@@ -1514,7 +1489,7 @@ const PredictionsPage = () => {
             {activeTab === 'predict' && (
                 <>
                     <InputSection>
-                        <InputForm onSubmit={handlePredict}>
+                        <InputForm onSubmit={fetchPrediction}>
                             <InputGroup>
                                 <FormField>
                                     <Label>
