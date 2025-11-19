@@ -1,215 +1,529 @@
-// client/src/components/SettingsPage.js - REFINED
+// client/src/pages/SettingsPage.js - LEGENDARY SETTINGS PAGE
+
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
-import Loader from './Loader';
+import { useToast } from '../context/ToastContext';
+import {
+    User, Mail, Lock, Bell, Palette, Shield, CreditCard,
+    AlertTriangle, Save, Eye, EyeOff, Trash2, Calendar,
+    Settings as SettingsIcon, Sparkles, Clock, Monitor,
+    Zap, RefreshCw, Check, X
+} from 'lucide-react';
 
-const pulseGlow = keyframes`
-    0% { box-shadow: 0 0 5px rgba(255, 107, 107, 0.4); }
-    50% { box-shadow: 0 0 20px rgba(255, 107, 107, 0.8); }
-    100% { box-shadow: 0 0 5px rgba(255, 107, 107, 0.4); }
+// ============ ANIMATIONS ============
+const fadeIn = keyframes`
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
 `;
 
-const SettingsWrapper = styled.div`
+const slideIn = keyframes`
+    from { transform: translateX(-100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+`;
+
+const pulse = keyframes`
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+`;
+
+const rotate = keyframes`
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+`;
+
+const shimmer = keyframes`
+    0% { background-position: -200% center; }
+    100% { background-position: 200% center; }
+`;
+
+// ============ STYLED COMPONENTS ============
+const PageContainer = styled.div`
+    min-height: 100vh;
+    background: linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
+    color: #e0e6ed;
+    padding: 6rem 2rem 2rem;
+    position: relative;
+    overflow-x: hidden;
+`;
+
+const Header = styled.div`
+    max-width: 1200px;
+    margin: 0 auto 3rem;
+    animation: ${fadeIn} 0.8s ease-out;
+    text-align: center;
+`;
+
+const Title = styled.h1`
+    font-size: 3rem;
+    background: linear-gradient(135deg, #00adef 0%, #00ff88 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.5rem;
+    font-weight: 900;
+
+    @media (max-width: 768px) {
+        font-size: 2.5rem;
+    }
+`;
+
+const Subtitle = styled.p`
+    color: #94a3b8;
+    font-size: 1.2rem;
+`;
+
+const ContentContainer = styled.div`
+    max-width: 1200px;
+    margin: 0 auto;
+`;
+
+const TabsContainer = styled.div`
     display: flex;
-    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+
+    &::-webkit-scrollbar {
+        height: 4px;
+    }
+
+    &::-webkit-scrollbar-track {
+        background: rgba(0, 173, 237, 0.1);
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: rgba(0, 173, 237, 0.5);
+        border-radius: 2px;
+    }
+`;
+
+const Tab = styled.button`
+    padding: 0.75rem 1.5rem;
+    background: ${props => props.$active ? 
+        'linear-gradient(135deg, rgba(0, 173, 237, 0.2) 0%, rgba(0, 173, 237, 0.1) 100%)' :
+        'rgba(30, 41, 59, 0.5)'
+    };
+    border: 1px solid ${props => props.$active ? 'rgba(0, 173, 237, 0.5)' : 'rgba(100, 116, 139, 0.3)'};
+    border-radius: 12px;
+    color: ${props => props.$active ? '#00adef' : '#94a3b8'};
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
     align-items: center;
-    justify-content: center;
-    min-height: calc(100vh - var(--navbar-height, 60px) - var(--footer-height, 60px)); /* Adjust for actual navbar/footer height */
-    padding: 20px;
-    background-color: #0d1a2f; /* Apply background to the whole area */
-    color: #e2e8f0;
-    position: relative; /* For absolute positioning of loader/error */
+    gap: 0.5rem;
+    white-space: nowrap;
+
+    &:hover {
+        background: linear-gradient(135deg, rgba(0, 173, 237, 0.2) 0%, rgba(0, 173, 237, 0.1) 100%);
+        border-color: rgba(0, 173, 237, 0.5);
+        color: #00adef;
+        transform: translateY(-2px);
+    }
 `;
 
-const SettingsContainer = styled.div`
-    max-width: 800px;
-    width: 100%; /* Ensure it takes full width up to max-width */
-    margin: auto; /* Center horizontally */
-    padding: 2rem; /* Consistent padding */
-    background: linear-gradient(135deg, #1e293b 0%, #2c3e50 100%); /* Consistent card background */
-    border-radius: 12px; /* Consistent border radius */
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5); /* Consistent shadow */
-    border: 1px solid rgba(0, 173, 237, 0.2); /* Consistent border */
+const Section = styled.div`
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(0, 173, 237, 0.3);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    animation: ${fadeIn} 0.6s ease-out;
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background: linear-gradient(90deg, #00adef, #00ff88);
+    }
+`;
+
+const SectionHeader = styled.div`
     display: flex;
-    flex-direction: column;
-    gap: 1.5rem; /* Consistent spacing */
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
 `;
 
-const Header = styled.h1`
-    text-align: center;
-    margin-bottom: 1.5rem; /* Consistent spacing */
-    color: #00adef; /* Nexus blue for primary headers */
-    font-size: 2rem; /* Make header more prominent */
+const SectionTitle = styled.h2`
+    font-size: 1.5rem;
+    color: #00adef;
+    font-weight: 700;
 `;
 
-const Message = styled.div`
-    background-color: ${props => props.$success ? 'rgba(76, 175, 80, 0.2)' : 'rgba(244, 67, 54, 0.2)'}; /* Lighter background for messages */
-    color: ${props => props.$success ? '#4CAF50' : '#FF6B6B'};
-    padding: 15px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-    text-align: center;
-    border: 1px solid ${props => props.$success ? '#4CAF50' : '#FF6B6B'};
+const SectionDescription = styled.p`
+    color: #94a3b8;
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
 `;
 
 const Form = styled.form`
     display: flex;
     flex-direction: column;
-    gap: 1.5rem; /* Consistent spacing */
+    gap: 1.5rem;
 `;
 
-const Section = styled.section`
-    background-color: #1a273b; /* Slightly darker background for sections */
-    padding: 1.5rem; /* Consistent padding */
-    border-radius: 8px;
-    border: 1px solid rgba(0, 173, 237, 0.1);
-`;
+const FormRow = styled.div`
+    display: grid;
+    grid-template-columns: ${props => props.$columns || '1fr'};
+    gap: 1.5rem;
 
-const SectionHeader = styled.h2`
-    color: #00adef;
-    margin-bottom: 1rem;
-    border-bottom: 1px solid rgba(0, 173, 237, 0.3);
-    padding-bottom: 0.8rem;
-    font-size: 1.3rem;
+    @media (max-width: 768px) {
+        grid-template-columns: 1fr;
+    }
 `;
 
 const FormGroup = styled.div`
-    margin-bottom: 1rem; /* Consistent spacing */
     display: flex;
     flex-direction: column;
+    gap: 0.5rem;
 `;
 
 const Label = styled.label`
-    margin-bottom: 0.5rem;
     color: #94a3b8;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+`;
+
+const InputWrapper = styled.div`
+    position: relative;
 `;
 
 const Input = styled.input`
-    padding: 0.8rem 1rem;
-    border-radius: 8px;
-    border: 1px solid #00adef;
-    background-color: #0d1a2f;
-    color: #e0e0e0;
+    padding: 0.75rem 1rem;
+    padding-right: ${props => props.$hasIcon ? '3rem' : '1rem'};
+    background: rgba(0, 173, 237, 0.05);
+    border: 1px solid rgba(0, 173, 237, 0.3);
+    border-radius: 10px;
+    color: #e0e6ed;
     font-size: 1rem;
+    width: 100%;
+    transition: all 0.2s ease;
+
     &:focus {
         outline: none;
-        box-shadow: 0 0 0 3px rgba(0, 173, 237, 0.5);
+        border-color: #00adef;
+        background: rgba(0, 173, 237, 0.1);
+        box-shadow: 0 0 0 3px rgba(0, 173, 237, 0.2);
     }
+
     &:disabled {
-        background-color: #1a273b;
+        background: rgba(30, 41, 59, 0.5);
         cursor: not-allowed;
+        color: #64748b;
+        border-color: rgba(100, 116, 139, 0.3);
+    }
+
+    &::placeholder {
         color: #64748b;
     }
 `;
 
-const CheckboxLabel = styled.label`
-    color: #a0aec0;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-`;
+const TextArea = styled.textarea`
+    padding: 0.75rem 1rem;
+    background: rgba(0, 173, 237, 0.05);
+    border: 1px solid rgba(0, 173, 237, 0.3);
+    border-radius: 10px;
+    color: #e0e6ed;
+    font-size: 1rem;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 100px;
+    transition: all 0.2s ease;
 
-const Checkbox = styled.input.attrs({ type: 'checkbox' })`
-    transform: scale(1.2);
-    accent-color: #00adef; /* Style checkbox itself */
+    &:focus {
+        outline: none;
+        border-color: #00adef;
+        background: rgba(0, 173, 237, 0.1);
+        box-shadow: 0 0 0 3px rgba(0, 173, 237, 0.2);
+    }
+
+    &::placeholder {
+        color: #64748b;
+    }
 `;
 
 const Select = styled.select`
-    padding: 0.8rem 1rem;
-    border-radius: 8px;
-    border: 1px solid #00adef;
-    background-color: #0d1a2f;
-    color: #e0e0e0;
+    padding: 0.75rem 1rem;
+    background: rgba(0, 173, 237, 0.05);
+    border: 1px solid rgba(0, 173, 237, 0.3);
+    border-radius: 10px;
+    color: #e0e6ed;
     font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
     &:focus {
         outline: none;
-        box-shadow: 0 0 0 3px rgba(0, 173, 237, 0.5);
+        border-color: #00adef;
+        background: rgba(0, 173, 237, 0.1);
+    }
+
+    option {
+        background: #1a1f3a;
+        color: #e0e6ed;
+    }
+`;
+
+const IconButton = styled.button`
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+
+    &:hover {
+        color: #00adef;
+    }
+`;
+
+const ToggleWrapper = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    background: rgba(0, 173, 237, 0.05);
+    border: 1px solid rgba(0, 173, 237, 0.2);
+    border-radius: 10px;
+    transition: all 0.2s ease;
+
+    &:hover {
+        background: rgba(0, 173, 237, 0.1);
+        border-color: rgba(0, 173, 237, 0.3);
+    }
+`;
+
+const ToggleLabel = styled.div`
+    flex: 1;
+`;
+
+const ToggleLabelText = styled.div`
+    color: #e0e6ed;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+`;
+
+const ToggleDescription = styled.div`
+    color: #94a3b8;
+    font-size: 0.85rem;
+`;
+
+const Toggle = styled.button`
+    width: 50px;
+    height: 28px;
+    background: ${props => props.$active ? 
+        'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 
+        'rgba(100, 116, 139, 0.3)'
+    };
+    border: none;
+    border-radius: 14px;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &::after {
+        content: '';
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        background: white;
+        border-radius: 50%;
+        top: 4px;
+        left: ${props => props.$active ? '26px' : '4px'};
+        transition: left 0.3s ease;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    &:hover {
+        transform: scale(1.05);
+    }
+`;
+
+const ButtonGroup = styled.div`
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+
+    @media (max-width: 768px) {
+        flex-direction: column;
     }
 `;
 
 const Button = styled.button`
-    padding: 0.8rem 1.5rem;
-    border-radius: 8px;
-    border: none;
-    background-color: #00adef;
+    padding: 0.75rem 1.5rem;
+    background: linear-gradient(135deg, #00adef 0%, #0088cc 100%);
     color: white;
+    border: none;
+    border-radius: 10px;
     cursor: pointer;
+    font-weight: 700;
     font-size: 1rem;
-    font-weight: bold;
-    margin-top: 0.5rem;
-    transition: background-color 0.3s ease, transform 0.2s ease;
-    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+
     &:hover:not(:disabled) {
-        background-color: #008cc7;
         transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(0, 173, 237, 0.4);
     }
-    &:active {
-        transform: translateY(0);
-    }
+
     &:disabled {
-        background-color: #64748b;
+        opacity: 0.6;
         cursor: not-allowed;
-        opacity: 0.7;
     }
 `;
 
 const DangerButton = styled(Button)`
-    background-color: #ef4444; /* Brighter red for danger */
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+
     &:hover:not(:disabled) {
-        background-color: #dc2626;
+        box-shadow: 0 8px 24px rgba(239, 68, 68, 0.4);
     }
 `;
 
-const SaveButton = styled(Button)`
-    background-color: #22c55e; /* Green for save */
+const SecondaryButton = styled(Button)`
+    background: rgba(0, 173, 237, 0.1);
+    border: 1px solid rgba(0, 173, 237, 0.3);
+    color: #00adef;
+
     &:hover:not(:disabled) {
-        background-color: #16a34a;
+        background: rgba(0, 173, 237, 0.2);
+        box-shadow: none;
     }
-    align-self: flex-end; /* Align to the right */
-    width: fit-content; /* Only take content width */
 `;
 
-const CenteredMessage = styled.div`
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 10;
-    text-align: center;
-    width: 90%;
-    max-width: 400px; /* Limit width for readability */
+const DangerZone = styled.div`
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.1) 100%);
+    border: 2px solid rgba(239, 68, 68, 0.3);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-top: 2rem;
 `;
 
-const StyledLoader = styled(Loader)`
-    ${CenteredMessage}
+const DangerZoneTitle = styled.h3`
+    color: #ef4444;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
 `;
 
-const ErrorMessage = styled(CenteredMessage)`
-    color: #ff6b6b;
-    font-weight: bold;
-    animation: ${pulseGlow} 1.5s infinite alternate;
-    background-color: rgba(255, 107, 107, 0.1);
-    border-radius: 8px;
-    padding: 20px;
-    border: 1px solid #ff6b6b;
-`;
-
-const InfoMessage = styled(CenteredMessage)`
+const DangerZoneDescription = styled.p`
     color: #94a3b8;
-    background-color: rgba(148, 163, 184, 0.1);
-    border-radius: 8px;
-    padding: 20px;
-    border: 1px solid #94a3b8;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
 `;
 
+const InfoBox = styled.div`
+    background: rgba(0, 173, 237, 0.1);
+    border: 1px solid rgba(0, 173, 237, 0.3);
+    border-radius: 10px;
+    padding: 1rem;
+    display: flex;
+    align-items: start;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+`;
 
+const InfoIcon = styled.div`
+    color: #00adef;
+    flex-shrink: 0;
+    margin-top: 0.15rem;
+`;
+
+const InfoText = styled.div`
+    color: #94a3b8;
+    font-size: 0.9rem;
+    line-height: 1.5;
+`;
+
+const StatCard = styled.div`
+    background: rgba(0, 173, 237, 0.05);
+    border: 1px solid rgba(0, 173, 237, 0.2);
+    border-radius: 10px;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+`;
+
+const StatIcon = styled.div`
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    background: rgba(0, 173, 237, 0.2);
+    color: #00adef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+`;
+
+const StatContent = styled.div`
+    flex: 1;
+`;
+
+const StatLabel = styled.div`
+    color: #94a3b8;
+    font-size: 0.85rem;
+    margin-bottom: 0.25rem;
+`;
+
+const StatValue = styled.div`
+    color: #e0e6ed;
+    font-size: 1.2rem;
+    font-weight: 700;
+`;
+
+const LoadingContainer = styled.div`
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 60vh;
+    gap: 1rem;
+`;
+
+const LoadingSpinner = styled(Sparkles)`
+    animation: ${rotate} 1s linear infinite;
+    color: #00adef;
+`;
+
+const LoadingText = styled.div`
+    color: #94a3b8;
+    font-size: 1.1rem;
+`;
+
+// ============ COMPONENT ============
 const SettingsPage = () => {
-    const { logout, api } = useAuth();
-    const [userProfile, setUserProfile] = useState(null);
+    const { logout, api, user } = useAuth();
+    const toast = useToast();
+    const [activeTab, setActiveTab] = useState('profile');
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+    const [showNewPassword, setShowNewPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    
     const [form, setForm] = useState({
         username: '',
         email: '',
@@ -219,61 +533,56 @@ const SettingsPage = () => {
         notifications: {
             email: true,
             push: false,
-            dailySummary: true
+            dailySummary: true,
+            priceAlerts: true,
+            portfolioUpdates: true
         },
         appPreferences: {
             theme: 'dark',
             defaultView: 'dashboard',
-            refreshInterval: 5
+            refreshInterval: 5,
+            language: 'en',
+            timezone: 'America/New_York'
         }
     });
-    const [message, setMessage] = useState(''); // For success/error messages
 
     useEffect(() => {
-        const fetchUserProfile = async () => {
-            if (!api) {
-                setError("API client not available. Please ensure AuthProvider is correctly set up.");
-                setLoading(false);
-                return;
-            }
-
-            try {
-                // Ensure correct endpoint: remove leading `/api` if `axios.baseURL` already ends with `/api`
-                const res = await api.get('/auth/me'); // Corrected endpoint if base URL includes /api
-                const userData = res.data;
-
-                setUserProfile(userData);
-
-                setForm(prevForm => ({
-                    ...prevForm,
-                    username: userData.username || (userData.email ? userData.email.split('@')[0] : ''),
-                    email: userData.email,
-                    notifications: userData.notifications || prevForm.notifications,
-                    appPreferences: userData.appPreferences || prevForm.appPreferences,
-                }));
-                setLoading(false);
-            } catch (err) {
-                console.error('Error fetching user profile:', err.response?.data?.msg || err.message);
-                setError(err.response?.data?.msg || 'Failed to fetch user profile. Please try again.');
-                setLoading(false);
-                if (err.response && err.response.status === 401) {
-                    logout(); // Log out if token is invalid/expired
-                }
-            }
-        };
-
         fetchUserProfile();
-    }, [api, logout]);
+    }, []);
+
+    const fetchUserProfile = async () => {
+        try {
+            setLoading(true);
+            const res = await api.get('/auth/me');
+            const userData = res.data;
+
+            setForm(prevForm => ({
+                ...prevForm,
+                username: userData.username || userData.name || (userData.email ? userData.email.split('@')[0] : ''),
+                email: userData.email,
+                notifications: userData.notifications || prevForm.notifications,
+                appPreferences: userData.appPreferences || prevForm.appPreferences,
+            }));
+        } catch (err) {
+            console.error('Error fetching user profile:', err);
+            toast.error('Failed to load settings', 'Error');
+            if (err.response && err.response.status === 401) {
+                logout();
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleChange = (e) => {
-        const { name, value, type, checked } = e.target;
+        const { name, value } = e.target;
         if (name.startsWith('notifications.')) {
             const subFieldName = name.split('.')[1];
             setForm(prevForm => ({
                 ...prevForm,
                 notifications: {
                     ...prevForm.notifications,
-                    [subFieldName]: type === 'checkbox' ? checked : value
+                    [subFieldName]: value
                 }
             }));
         } else if (name.startsWith('appPreferences.')) {
@@ -282,7 +591,7 @@ const SettingsPage = () => {
                 ...prevForm,
                 appPreferences: {
                     ...prevForm.appPreferences,
-                    [subFieldName]: type === 'checkbox' ? checked : value
+                    [subFieldName]: value
                 }
             }));
         } else {
@@ -290,26 +599,30 @@ const SettingsPage = () => {
         }
     };
 
+    const toggleNotification = (key) => {
+        setForm(prevForm => ({
+            ...prevForm,
+            notifications: {
+                ...prevForm.notifications,
+                [key]: !prevForm.notifications[key]
+            }
+        }));
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setMessage('');
-
-        if (!api) {
-            setMessage("Authentication error. API client not available.");
-            return;
-        }
 
         if (form.newPassword) {
             if (form.newPassword !== form.confirmNewPassword) {
-                setMessage("New passwords do not match.");
+                toast.warning('New passwords do not match', 'Password Error');
                 return;
             }
             if (form.newPassword.length < 6) {
-                setMessage("New password must be at least 6 characters.");
+                toast.warning('Password must be at least 6 characters', 'Password Error');
                 return;
             }
             if (!form.currentPassword) {
-                setMessage("Current password is required to change password.");
+                toast.warning('Current password is required', 'Password Error');
                 return;
             }
         }
@@ -327,10 +640,8 @@ const SettingsPage = () => {
         }
 
         try {
-            // Ensure correct endpoint: remove leading `/api` if `axios.baseURL` already ends with `/api`
-            const res = await api.put('/auth/update-profile', updateData); // Corrected endpoint
-            setUserProfile(res.data.user);
-            setMessage(res.data.msg || 'Settings updated successfully!');
+            await api.put('/auth/update-profile', updateData);
+            toast.success('Settings saved successfully!', 'Saved');
             setForm(prevForm => ({
                 ...prevForm,
                 currentPassword: '',
@@ -338,199 +649,481 @@ const SettingsPage = () => {
                 confirmNewPassword: ''
             }));
         } catch (err) {
-            console.error('Error updating settings:', err.response ? err.response.data : err.message);
-            setMessage(err.response ? err.response.data.msg || 'Failed to update settings.' : 'Failed to update settings.');
+            console.error('Error updating settings:', err);
+            toast.error(err.response?.data?.msg || 'Failed to update settings', 'Error');
         }
     };
 
-    // Render loading, error, or info messages centrally if no profile data
-    if (loading) return <StyledLoader text="Loading settings..." />;
-    if (error) return <ErrorMessage>{error}</ErrorMessage>;
-    if (!userProfile) return <InfoMessage>No user profile data found.</InfoMessage>;
+    const handleDeleteAccount = () => {
+        if (window.confirm('Are you absolutely sure? This action cannot be undone and will permanently delete your account and all data.')) {
+            if (window.confirm('Last chance! Type "DELETE" in the next prompt to confirm.')) {
+                const confirmation = prompt('Type "DELETE" to confirm account deletion:');
+                if (confirmation === 'DELETE') {
+                    toast.info('Account deletion is not yet implemented', 'Coming Soon');
+                } else {
+                    toast.info('Account deletion cancelled', 'Cancelled');
+                }
+            }
+        }
+    };
+
+    const tabs = [
+        { id: 'profile', label: 'Profile', icon: User },
+        { id: 'security', label: 'Security', icon: Lock },
+        { id: 'notifications', label: 'Notifications', icon: Bell },
+        { id: 'preferences', label: 'Preferences', icon: Palette },
+        { id: 'billing', label: 'Billing', icon: CreditCard },
+    ];
+
+    if (loading) {
+        return (
+            <PageContainer>
+                <LoadingContainer>
+                    <LoadingSpinner size={64} />
+                    <LoadingText>Loading settings...</LoadingText>
+                </LoadingContainer>
+            </PageContainer>
+        );
+    }
 
     return (
-        <SettingsWrapper>
-            <SettingsContainer>
-                <Header>User Settings</Header>
+        <PageContainer>
+            <Header>
+                <Title>Settings</Title>
+                <Subtitle>Customize your trading experience</Subtitle>
+            </Header>
 
-                {message && (
-                    <Message $success={message.includes('successfully')}>
-                        {message}
-                    </Message>
-                )}
+            <ContentContainer>
+                <TabsContainer>
+                    {tabs.map(tab => {
+                        const Icon = tab.icon;
+                        return (
+                            <Tab
+                                key={tab.id}
+                                $active={activeTab === tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                            >
+                                <Icon size={18} />
+                                {tab.label}
+                            </Tab>
+                        );
+                    })}
+                </TabsContainer>
 
                 <Form onSubmit={handleSubmit}>
-                    {/* Profile Management */}
-                    <Section>
-                        <SectionHeader>Profile Management</SectionHeader>
-                        <FormGroup>
-                            <Label htmlFor="username">Username:</Label>
-                            <Input
-                                type="text"
-                                id="username"
-                                name="username"
-                                value={form.username}
-                                onChange={handleChange}
-                            />
-                        </FormGroup>
-                        <FormGroup>
-                            <Label htmlFor="email">Email:</Label>
-                            <Input
-                                type="email"
-                                id="email"
-                                name="email"
-                                value={form.email}
-                                onChange={handleChange}
-                            />
-                        </FormGroup>
-                        <FormGroup>
-                            <Label>User ID:</Label>
-                            <Input type="text" value={userProfile._id} readOnly disabled />
-                        </FormGroup>
-                        <FormGroup>
-                            <Label>Member Since:</Label>
-                            <Input
-                                type="text"
-                                value={new Date(userProfile.date).toLocaleDateString()}
-                                readOnly
-                                disabled
-                            />
-                        </FormGroup>
-                    </Section>
+                    {/* PROFILE TAB */}
+                    {activeTab === 'profile' && (
+                        <>
+                            <Section>
+                                <SectionHeader>
+                                    <User size={24} />
+                                    <SectionTitle>Profile Information</SectionTitle>
+                                </SectionHeader>
+                                <SectionDescription>
+                                    Update your personal information and profile details
+                                </SectionDescription>
 
-                    {/* Password Change */}
-                    <Section>
-                        <SectionHeader>Change Password</SectionHeader>
-                        <FormGroup>
-                            <Label htmlFor="currentPassword">Current Password:</Label>
-                            <Input
-                                type="password"
-                                id="currentPassword"
-                                name="currentPassword"
-                                value={form.currentPassword}
-                                onChange={handleChange}
-                            />
-                        </FormGroup>
-                        <FormGroup>
-                            <Label htmlFor="newPassword">New Password:</Label>
-                            <Input
-                                type="password"
-                                id="newPassword"
-                                name="newPassword"
-                                value={form.newPassword}
-                                onChange={handleChange}
-                            />
-                        </FormGroup>
-                        <FormGroup>
-                            <Label htmlFor="confirmNewPassword">Confirm New Password:</Label>
-                            <Input
-                                type="password"
-                                id="confirmNewPassword"
-                                name="confirmNewPassword"
-                                value={form.confirmNewPassword}
-                                onChange={handleChange}
-                                autoComplete="new-password" // Helps browsers not auto-fill
-                            />
-                        </FormGroup>
-                    </Section>
+                                <FormRow $columns="1fr 1fr">
+                                    <FormGroup>
+                                        <Label>
+                                            <User size={16} />
+                                            Username
+                                        </Label>
+                                        <Input
+                                            type="text"
+                                            name="username"
+                                            value={form.username}
+                                            onChange={handleChange}
+                                            placeholder="Enter username"
+                                        />
+                                    </FormGroup>
 
-                    {/* Notification Preferences */}
-                    <Section>
-                        <SectionHeader>Notification Preferences</SectionHeader>
-                        <FormGroup>
-                            <CheckboxLabel>
-                                <Checkbox
-                                    name="notifications.email"
-                                    checked={form.notifications.email}
-                                    onChange={handleChange}
-                                /> Email Notifications
-                            </CheckboxLabel>
-                        </FormGroup>
-                        <FormGroup>
-                            <CheckboxLabel>
-                                <Checkbox
-                                    name="notifications.push"
-                                    checked={form.notifications.push}
-                                    onChange={handleChange}
-                                /> Push Notifications (Coming Soon)
-                            </CheckboxLabel>
-                        </FormGroup>
-                        <FormGroup>
-                            <CheckboxLabel>
-                                <Checkbox
-                                    name="notifications.dailySummary"
-                                    checked={form.notifications.dailySummary}
-                                    onChange={handleChange}
-                                /> Daily Market Summary
-                            </CheckboxLabel>
-                        </FormGroup>
-                    </Section>
+                                    <FormGroup>
+                                        <Label>
+                                            <Mail size={16} />
+                                            Email Address
+                                        </Label>
+                                        <Input
+                                            type="email"
+                                            name="email"
+                                            value={form.email}
+                                            onChange={handleChange}
+                                            placeholder="Enter email"
+                                        />
+                                    </FormGroup>
+                                </FormRow>
 
-                    {/* Application Preferences */}
-                    <Section>
-                        <SectionHeader>Application Preferences</SectionHeader>
-                        <FormGroup>
-                            <Label htmlFor="theme">Theme:</Label>
-                            <Select
-                                id="theme"
-                                name="appPreferences.theme"
-                                value={form.appPreferences.theme}
-                                onChange={handleChange}
-                            >
-                                <option value="dark">Dark Mode</option>
-                                <option value="light">Light Mode</option>
-                            </Select>
-                        </FormGroup>
-                        <FormGroup>
-                            <Label htmlFor="defaultView">Default View:</Label>
-                            <Select
-                                id="defaultView"
-                                name="appPreferences.defaultView"
-                                value={form.appPreferences.defaultView}
-                                onChange={handleChange}
-                            >
-                                <option value="dashboard">Dashboard</option>
-                                <option value="watchlist">Watchlist</option>
-                                <option value="market-data">Market Data</option>
-                            </Select>
-                        </FormGroup>
-                        <FormGroup>
-                            <Label htmlFor="refreshInterval">Data Refresh Interval (min):</Label>
-                            <Select
-                                id="refreshInterval"
-                                name="appPreferences.refreshInterval"
-                                value={form.appPreferences.refreshInterval}
-                                onChange={handleChange}
-                            >
-                                <option value={1}>1 Minute</option>
-                                <option value={5}>5 Minutes</option>
-                                <option value={10}>10 Minutes</option>
-                            </Select>
-                        </FormGroup>
-                    </Section>
+                                <FormRow $columns="1fr 1fr">
+                                    <StatCard>
+                                        <StatIcon>
+                                            <Shield size={24} />
+                                        </StatIcon>
+                                        <StatContent>
+                                            <StatLabel>User ID</StatLabel>
+                                            <StatValue>{user?._id?.substring(0, 12)}...</StatValue>
+                                        </StatContent>
+                                    </StatCard>
 
-                    {/* Subscription & Billing (Placeholder for now) */}
-                    <Section>
-                        <SectionHeader>Subscription & Billing</SectionHeader>
-                        {userProfile.subscriptionStatus ? (
-                            <p>Current Plan: {userProfile.subscriptionStatus}</p>
-                        ) : (
-                            <InfoMessage as="p">No subscription details available.</InfoMessage>
-                        )}
-                        <Button type="button">Manage Subscription</Button>
-                        <Button type="button">View Billing History</Button>
-                    </Section>
+                                    <StatCard>
+                                        <StatIcon>
+                                            <Calendar size={24} />
+                                        </StatIcon>
+                                        <StatContent>
+                                            <StatLabel>Member Since</StatLabel>
+                                            <StatValue>
+                                                {user?.date ? new Date(user.date).toLocaleDateString('en-US', { 
+                                                    month: 'short', 
+                                                    year: 'numeric' 
+                                                }) : 'Recently'}
+                                            </StatValue>
+                                        </StatContent>
+                                    </StatCard>
+                                </FormRow>
+                            </Section>
+                        </>
+                    )}
 
-                    {/* Danger Zone */}
-                    <Section>
-                        <SectionHeader>Danger Zone</SectionHeader>
-                        <DangerButton type="button" onClick={() => alert('Account deletion not yet implemented.')}>Delete Account</DangerButton>
-                    </Section>
+                    {/* SECURITY TAB */}
+                    {activeTab === 'security' && (
+                        <>
+                            <Section>
+                                <SectionHeader>
+                                    <Lock size={24} />
+                                    <SectionTitle>Password & Security</SectionTitle>
+                                </SectionHeader>
+                                <SectionDescription>
+                                    Manage your password and account security settings
+                                </SectionDescription>
 
-                    <SaveButton type="submit">Save Changes</SaveButton>
+                                <InfoBox>
+                                    <InfoIcon>
+                                        <Shield size={20} />
+                                    </InfoIcon>
+                                    <InfoText>
+                                        For your security, we recommend using a strong password with at least 8 characters, 
+                                        including uppercase, lowercase, numbers, and special characters.
+                                    </InfoText>
+                                </InfoBox>
+
+                                <FormGroup>
+                                    <Label>
+                                        <Lock size={16} />
+                                        Current Password
+                                    </Label>
+                                    <InputWrapper>
+                                        <Input
+                                            type={showCurrentPassword ? 'text' : 'password'}
+                                            name="currentPassword"
+                                            value={form.currentPassword}
+                                            onChange={handleChange}
+                                            placeholder="Enter current password"
+                                            $hasIcon
+                                        />
+                                        <IconButton
+                                            type="button"
+                                            onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                                        >
+                                            {showCurrentPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                        </IconButton>
+                                    </InputWrapper>
+                                </FormGroup>
+
+                                <FormRow $columns="1fr 1fr">
+                                    <FormGroup>
+                                        <Label>
+                                            <Lock size={16} />
+                                            New Password
+                                        </Label>
+                                        <InputWrapper>
+                                            <Input
+                                                type={showNewPassword ? 'text' : 'password'}
+                                                name="newPassword"
+                                                value={form.newPassword}
+                                                onChange={handleChange}
+                                                placeholder="Enter new password"
+                                                $hasIcon
+                                            />
+                                            <IconButton
+                                                type="button"
+                                                onClick={() => setShowNewPassword(!showNewPassword)}
+                                            >
+                                                {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                            </IconButton>
+                                        </InputWrapper>
+                                    </FormGroup>
+
+                                    <FormGroup>
+                                        <Label>
+                                            <Lock size={16} />
+                                            Confirm New Password
+                                        </Label>
+                                        <InputWrapper>
+                                            <Input
+                                                type={showConfirmPassword ? 'text' : 'password'}
+                                                name="confirmNewPassword"
+                                                value={form.confirmNewPassword}
+                                                onChange={handleChange}
+                                                placeholder="Confirm new password"
+                                                $hasIcon
+                                            />
+                                            <IconButton
+                                                type="button"
+                                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                            >
+                                                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                            </IconButton>
+                                        </InputWrapper>
+                                    </FormGroup>
+                                </FormRow>
+                            </Section>
+
+                            <DangerZone>
+                                <DangerZoneTitle>
+                                    <AlertTriangle size={20} />
+                                    Danger Zone
+                                </DangerZoneTitle>
+                                <DangerZoneDescription>
+                                    Once you delete your account, there is no going back. Please be certain.
+                                </DangerZoneDescription>
+                                <DangerButton type="button" onClick={handleDeleteAccount}>
+                                    <Trash2 size={18} />
+                                    Delete Account
+                                </DangerButton>
+                            </DangerZone>
+                        </>
+                    )}
+
+                    {/* NOTIFICATIONS TAB */}
+                    {activeTab === 'notifications' && (
+                        <Section>
+                            <SectionHeader>
+                                <Bell size={24} />
+                                <SectionTitle>Notification Preferences</SectionTitle>
+                            </SectionHeader>
+                            <SectionDescription>
+                                Choose how you want to be notified about important updates
+                            </SectionDescription>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                <ToggleWrapper>
+                                    <ToggleLabel>
+                                        <ToggleLabelText>Email Notifications</ToggleLabelText>
+                                        <ToggleDescription>Receive important updates via email</ToggleDescription>
+                                    </ToggleLabel>
+                                    <Toggle
+                                        type="button"
+                                        $active={form.notifications.email}
+                                        onClick={() => toggleNotification('email')}
+                                    />
+                                </ToggleWrapper>
+
+                                <ToggleWrapper>
+                                    <ToggleLabel>
+                                        <ToggleLabelText>Push Notifications</ToggleLabelText>
+                                        <ToggleDescription>Get instant alerts on your device (Coming Soon)</ToggleDescription>
+                                    </ToggleLabel>
+                                    <Toggle
+                                        type="button"
+                                        $active={form.notifications.push}
+                                        onClick={() => toggleNotification('push')}
+                                    />
+                                </ToggleWrapper>
+
+                                <ToggleWrapper>
+                                    <ToggleLabel>
+                                        <ToggleLabelText>Daily Market Summary</ToggleLabelText>
+                                        <ToggleDescription>Receive a daily summary of market activity</ToggleDescription>
+                                    </ToggleLabel>
+                                    <Toggle
+                                        type="button"
+                                        $active={form.notifications.dailySummary}
+                                        onClick={() => toggleNotification('dailySummary')}
+                                    />
+                                </ToggleWrapper>
+
+                                <ToggleWrapper>
+                                    <ToggleLabel>
+                                        <ToggleLabelText>Price Alerts</ToggleLabelText>
+                                        <ToggleDescription>Get notified when stocks hit your target prices</ToggleDescription>
+                                    </ToggleLabel>
+                                    <Toggle
+                                        type="button"
+                                        $active={form.notifications.priceAlerts}
+                                        onClick={() => toggleNotification('priceAlerts')}
+                                    />
+                                </ToggleWrapper>
+
+                                <ToggleWrapper>
+                                    <ToggleLabel>
+                                        <ToggleLabelText>Portfolio Updates</ToggleLabelText>
+                                        <ToggleDescription>Receive notifications about portfolio changes</ToggleDescription>
+                                    </ToggleLabel>
+                                    <Toggle
+                                        type="button"
+                                        $active={form.notifications.portfolioUpdates}
+                                        onClick={() => toggleNotification('portfolioUpdates')}
+                                    />
+                                </ToggleWrapper>
+                            </div>
+                        </Section>
+                    )}
+
+                    {/* PREFERENCES TAB */}
+                    {activeTab === 'preferences' && (
+                        <Section>
+                            <SectionHeader>
+                                <Palette size={24} />
+                                <SectionTitle>Application Preferences</SectionTitle>
+                            </SectionHeader>
+                            <SectionDescription>
+                                Customize how the application looks and behaves
+                            </SectionDescription>
+
+                            <FormRow $columns="1fr 1fr">
+                                <FormGroup>
+                                    <Label>
+                                        <Monitor size={16} />
+                                        Theme
+                                    </Label>
+                                    <Select
+                                        name="appPreferences.theme"
+                                        value={form.appPreferences.theme}
+                                        onChange={handleChange}
+                                    >
+                                        <option value="dark">Dark Mode (Active)</option>
+                                        <option value="light" disabled>Light Mode (Coming Soon)</option>
+                                        <option value="auto" disabled>Auto (Coming Soon)</option>
+                                    </Select>
+                                </FormGroup>
+
+                                <FormGroup>
+                                    <Label>
+                                        <Zap size={16} />
+                                        Default View
+                                    </Label>
+                                    <Select
+                                        name="appPreferences.defaultView"
+                                        value={form.appPreferences.defaultView}
+                                        onChange={handleChange}
+                                    >
+                                        <option value="dashboard">Dashboard</option>
+                                        <option value="portfolio">Portfolio</option>
+                                        <option value="watchlist">Watchlist</option>
+                                        <option value="predict">AI Predictions</option>
+                                    </Select>
+                                </FormGroup>
+                            </FormRow>
+
+                            <FormRow $columns="1fr 1fr">
+                                <FormGroup>
+                                    <Label>
+                                        <RefreshCw size={16} />
+                                        Data Refresh Interval
+                                    </Label>
+                                    <Select
+                                        name="appPreferences.refreshInterval"
+                                        value={form.appPreferences.refreshInterval}
+                                        onChange={handleChange}
+                                    >
+                                        <option value={1}>1 Minute</option>
+                                        <option value={5}>5 Minutes (Recommended)</option>
+                                        <option value={10}>10 Minutes</option>
+                                        <option value={30}>30 Minutes</option>
+                                    </Select>
+                                </FormGroup>
+
+                                <FormGroup>
+                                    <Label>
+                                        <Clock size={16} />
+                                        Timezone
+                                    </Label>
+                                    <Select
+                                        name="appPreferences.timezone"
+                                        value={form.appPreferences.timezone}
+                                        onChange={handleChange}
+                                    >
+                                        <option value="America/New_York">Eastern Time (ET)</option>
+                                        <option value="America/Chicago">Central Time (CT)</option>
+                                        <option value="America/Denver">Mountain Time (MT)</option>
+                                        <option value="America/Los_Angeles">Pacific Time (PT)</option>
+                                        <option value="UTC">UTC</option>
+                                    </Select>
+                                </FormGroup>
+                            </FormRow>
+                        </Section>
+                    )}
+
+                    {/* BILLING TAB */}
+                    {activeTab === 'billing' && (
+                        <Section>
+                            <SectionHeader>
+                                <CreditCard size={24} />
+                                <SectionTitle>Subscription & Billing</SectionTitle>
+                            </SectionHeader>
+                            <SectionDescription>
+                                Manage your subscription and billing information
+                            </SectionDescription>
+
+                            <InfoBox>
+                                <InfoIcon>
+                                    <Sparkles size={20} />
+                                </InfoIcon>
+                                <InfoText>
+                                    You're currently on the <strong>Free Plan</strong>. Upgrade to unlock premium features, 
+                                    advanced AI predictions, and priority support.
+                                </InfoText>
+                            </InfoBox>
+
+                            <FormRow $columns="1fr 1fr">
+                                <StatCard>
+                                    <StatIcon>
+                                        <CreditCard size={24} />
+                                    </StatIcon>
+                                    <StatContent>
+                                        <StatLabel>Current Plan</StatLabel>
+                                        <StatValue>Free</StatValue>
+                                    </StatContent>
+                                </StatCard>
+
+                                <StatCard>
+                                    <StatIcon>
+                                        <Calendar size={24} />
+                                    </StatIcon>
+                                    <StatContent>
+                                        <StatLabel>Next Billing Date</StatLabel>
+                                        <StatValue>N/A</StatValue>
+                                    </StatContent>
+                                </StatCard>
+                            </FormRow>
+
+                            <ButtonGroup>
+                                <Button type="button" onClick={() => window.location.href = '/pricing'}>
+                                    <Sparkles size={18} />
+                                    Upgrade to Premium
+                                </Button>
+                                <SecondaryButton type="button" onClick={() => toast.info('Coming soon!', 'Feature')}>
+                                    View Billing History
+                                </SecondaryButton>
+                            </ButtonGroup>
+                        </Section>
+                    )}
+
+                    {/* SAVE BUTTON */}
+                    {activeTab !== 'billing' && (
+                        <ButtonGroup>
+                            <Button type="submit">
+                                <Save size={18} />
+                                Save Changes
+                            </Button>
+                            <SecondaryButton type="button" onClick={() => window.location.reload()}>
+                                <X size={18} />
+                                Cancel
+                            </SecondaryButton>
+                        </ButtonGroup>
+                    )}
                 </Form>
-            </SettingsContainer>
-        </SettingsWrapper>
+            </ContentContainer>
+        </PageContainer>
     );
 };
 

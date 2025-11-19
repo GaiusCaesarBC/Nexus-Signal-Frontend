@@ -1,8 +1,10 @@
-// src/App.js - FIXED with LoadingScreen + Ready for Toast
+// src/App.js - WITH THEME SYSTEM! 🎨
 
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
+import { ThemeProvider as StyledThemeProvider } from 'styled-components'; // ✅ ADD THIS
 import { useAuth } from './context/AuthContext';
+import { ThemeProvider, useTheme } from './context/ThemeContext'; // ✅ UPDATED THIS
 
 // Component imports (from src/components/)
 import Navbar from './components/Navbar';
@@ -29,16 +31,19 @@ import DisclaimerPage from './pages/DisclaimerPage';
 import NotFoundPage from './pages/NotFoundPage';
 import StockPage from './pages/StockPage';
 import ProfilePage from './pages/ProfilePage';
+import CookiePolicyPage from './pages/CookiePolicyPage';
 
-function App() {
+// ✅ NEW COMPONENT - Wraps content with styled-components theme
+function AppContent() {
+    const { theme } = useTheme();
     const { loading } = useAuth();
 
     if (loading) {
-        return <LoadingScreen message="Loading your AI-powered trading platform..." />; // ✅ FIXED!
+        return <LoadingScreen message="Loading your AI-powered trading platform..." />;
     }
 
     return (
-        <>
+        <StyledThemeProvider theme={theme}>
             <Navbar />
             <main style={{ flexGrow: 1, minHeight: 'calc(100vh - 120px)' }}>
                 <Routes>
@@ -52,6 +57,7 @@ function App() {
                     <Route path="/privacy" element={<PrivacyPolicyPage />} />
                     <Route path="/disclaimer" element={<DisclaimerPage />} />
                     <Route path="/profile" element={<ProfilePage />} />
+                    <Route path="/cookie-policy" element={<CookiePolicyPage />} />
 
                     {/* Protected Routes */}
                     <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
@@ -70,7 +76,16 @@ function App() {
             </main>
             <Footer />
             <AIChatWidget />
-        </>
+        </StyledThemeProvider>
+    );
+}
+
+// ✅ MAIN APP - Wraps everything in ThemeProvider
+function App() {
+    return (
+        <ThemeProvider>
+            <AppContent />
+        </ThemeProvider>
     );
 }
 

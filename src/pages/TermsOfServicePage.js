@@ -1,228 +1,760 @@
-// client/src/pages/TermsOfServicePage.js - Complete File
+// client/src/pages/TermsOfServicePage.js - LEGENDARY TERMS OF SERVICE PAGE
 
 import React from 'react';
 import styled, { keyframes } from 'styled-components';
-import { FileText, User, Lock, ExternalLink, MessageSquare } from 'lucide-react'; // Icons for sections
+import { 
+    FileText, User, Lock, ExternalLink, MessageSquare, 
+    Shield, CreditCard, AlertTriangle, CheckCircle,
+    Scale, Clock, Mail, Globe, Bell
+} from 'lucide-react';
 
-// Keyframe for fade-in animation
+// ============ ANIMATIONS ============
 const fadeIn = keyframes`
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
 `;
 
-const TermsOfServiceContainer = styled.div`
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 4rem 1.5rem;
-    min-height: calc(100vh - var(--navbar-height));
-    background: linear-gradient(180deg, #0d1a2f 0%, #1a273b 100%);
-    color: #f8fafc;
-    font-family: 'Inter', sans-serif;
-    animation: ${fadeIn} 0.8s ease-out forwards;
-    line-height: 1.7;
+const slideIn = keyframes`
+    from { transform: translateX(-100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+`;
+
+const shimmer = keyframes`
+    0% { background-position: -200% center; }
+    100% { background-position: 200% center; }
+`;
+
+// ============ STYLED COMPONENTS ============
+const PageContainer = styled.div`
+    min-height: 100vh;
+    background: linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
+    color: #e0e6ed;
+    padding: 6rem 2rem 4rem;
+    position: relative;
+    overflow-x: hidden;
 `;
 
 const Header = styled.div`
-    text-align: center;
     max-width: 900px;
-    margin-bottom: 3rem;
-    animation: ${fadeIn} 1s ease-out forwards;
+    margin: 0 auto 4rem;
+    text-align: center;
+    animation: ${fadeIn} 0.8s ease-out;
+`;
 
-    h1 {
-        font-size: 3.2rem;
-        color: #8b5cf6; /* Purple for official/agreement tone */
-        margin-bottom: 1rem;
-        letter-spacing: -0.5px;
-        text-shadow: 0 0 10px rgba(139, 92, 246, 0.4);
-        line-height: 1.2;
+const TitleContainer = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
 
-        @media (max-width: 768px) {
-            font-size: 2.5rem;
-        }
+    @media (max-width: 768px) {
+        flex-direction: column;
     }
+`;
 
-    p {
-        font-size: 1.1rem;
+const IconWrapper = styled.div`
+    width: 80px;
+    height: 80px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(124, 58, 237, 0.2) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid rgba(139, 92, 246, 0.3);
+
+    @media (max-width: 768px) {
+        width: 60px;
+        height: 60px;
+    }
+`;
+
+const Title = styled.h1`
+    font-size: 3.5rem;
+    background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 900;
+    line-height: 1.2;
+
+    @media (max-width: 768px) {
+        font-size: 2.5rem;
+    }
+`;
+
+const Subtitle = styled.p`
+    color: #94a3b8;
+    font-size: 1.2rem;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+
+    @media (max-width: 768px) {
+        font-size: 1rem;
+    }
+`;
+
+const LastUpdated = styled.div`
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: rgba(139, 92, 246, 0.15);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 20px;
+    color: #a78bfa;
+    font-size: 0.9rem;
+    font-weight: 600;
+`;
+
+const ContentWrapper = styled.div`
+    max-width: 900px;
+    margin: 0 auto;
+`;
+
+const TableOfContents = styled.div`
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 3rem;
+    animation: ${fadeIn} 0.6s ease-out 0.2s backwards;
+`;
+
+const TOCTitle = styled.h3`
+    color: #a78bfa;
+    font-size: 1.3rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+`;
+
+const TOCList = styled.ul`
+    list-style: none;
+    padding: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+
+    @media (max-width: 768px) {
+        grid-template-columns: 1fr;
+    }
+`;
+
+const TOCItem = styled.li`
+    a {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1rem;
+        background: rgba(139, 92, 246, 0.05);
+        border: 1px solid rgba(139, 92, 246, 0.2);
+        border-radius: 10px;
         color: #94a3b8;
-        line-height: 1.6;
+        text-decoration: none;
+        transition: all 0.3s ease;
 
-        @media (max-width: 768px) {
-            font-size: 0.95rem;
+        &:hover {
+            background: rgba(139, 92, 246, 0.15);
+            border-color: rgba(139, 92, 246, 0.4);
+            color: #a78bfa;
+            transform: translateX(5px);
         }
     }
 `;
 
-const ContentSection = styled.section`
-    width: 100%;
-    max-width: 900px;
-    background-color: rgba(26, 39, 59, 0.6); /* Slightly darker, semi-transparent background */
-    border-radius: 12px;
-    padding: 2.5rem 3rem;
-    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(139, 92, 246, 0.2); /* Purple border for emphasis */
-    margin-bottom: 3rem;
+const Section = styled.section`
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 16px;
+    padding: 2.5rem;
+    margin-bottom: 2rem;
+    animation: ${slideIn} 0.5s ease-out;
+    position: relative;
+    overflow: hidden;
 
-    h2 {
-        font-size: 2rem;
-        color: #f8fafc; /* White for section titles */
-        margin-bottom: 1.5rem;
-        display: flex;
+    &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 3px;
+        background: linear-gradient(90deg, #8b5cf6, #a78bfa);
+    }
+
+    @media (max-width: 768px) {
+        padding: 1.5rem;
+    }
+`;
+
+const SectionHeader = styled.div`
+    display: flex;
+    align-items: start;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+
+    @media (max-width: 768px) {
+        flex-direction: column;
         align-items: center;
-        gap: 0.8rem;
-        
-        svg {
-            color: #8b5cf6; /* Purple icon */
-        }
-
-        @media (max-width: 768px) {
-            font-size: 1.6rem;
-            flex-direction: column;
-            text-align: center;
-        }
+        text-align: center;
     }
+`;
 
-    h3 {
-        font-size: 1.4rem;
-        color: #f8fafc;
-        margin-top: 2rem;
-        margin-bottom: 0.8rem;
-        @media (max-width: 768px) {
-            font-size: 1.2rem;
-        }
+const SectionIcon = styled.div`
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: rgba(139, 92, 246, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #a78bfa;
+    flex-shrink: 0;
+`;
+
+const SectionTitle = styled.h2`
+    color: #a78bfa;
+    font-size: 1.8rem;
+    font-weight: 700;
+    flex: 1;
+
+    @media (max-width: 768px) {
+        font-size: 1.5rem;
     }
+`;
+
+const SectionContent = styled.div`
+    color: #cbd5e1;
+    font-size: 1rem;
+    line-height: 1.8;
 
     p {
-        font-size: 1rem;
-        color: #cbd5e1;
         margin-bottom: 1rem;
-    }
-
-    ol, ul {
-        list-style: decimal inside;
-        color: #cbd5e1;
-        padding-left: 1.5rem;
-        margin-bottom: 1rem;
-    }
-
-    li {
-        margin-bottom: 0.5rem;
-        font-size: 0.95rem;
-    }
-
-    a {
-        color: #00adef; /* Blue for links */
-        text-decoration: none;
-        &:hover {
-            text-decoration: underline;
-        }
     }
 
     strong {
-        color: #f8fafc;
-    }
-`;
-
-const ContactInfo = styled.div`
-    text-align: center;
-    font-size: 1rem;
-    color: #94a3b8;
-    max-width: 600px;
-    margin-top: 2rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid rgba(148, 163, 184, 0.2);
-
-    p {
-        margin-bottom: 0.5rem;
+        color: #e0e6ed;
+        font-weight: 700;
     }
 
     a {
         color: #00adef;
         text-decoration: none;
+        font-weight: 600;
+        transition: all 0.2s ease;
+
+        &:hover {
+            color: #00ff88;
+            text-decoration: underline;
+        }
+    }
+`;
+
+const Subsection = styled.div`
+    margin-top: 1.5rem;
+    padding-left: 1rem;
+    border-left: 3px solid rgba(139, 92, 246, 0.3);
+`;
+
+const SubsectionTitle = styled.h3`
+    color: #e0e6ed;
+    font-size: 1.3rem;
+    margin-bottom: 0.75rem;
+    font-weight: 700;
+`;
+
+const List = styled.ol`
+    list-style: none;
+    counter-reset: item;
+    padding-left: 0;
+    margin: 1rem 0;
+
+    li {
+        counter-increment: item;
+        margin-bottom: 1rem;
+        padding-left: 2.5rem;
+        position: relative;
+        color: #cbd5e1;
+
+        &::before {
+            content: counter(item);
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 28px;
+            height: 28px;
+            background: rgba(139, 92, 246, 0.2);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #a78bfa;
+            font-weight: 700;
+            font-size: 0.85rem;
+        }
+    }
+`;
+
+const BulletList = styled.ul`
+    list-style: none;
+    padding-left: 0;
+    margin: 1rem 0;
+
+    li {
+        margin-bottom: 0.75rem;
+        padding-left: 2rem;
+        position: relative;
+        color: #cbd5e1;
+
+        &::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0.6rem;
+            width: 8px;
+            height: 8px;
+            background: #a78bfa;
+            border-radius: 50%;
+        }
+    }
+`;
+
+const HighlightBox = styled.div`
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.1) 100%);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+    display: flex;
+    gap: 1rem;
+    align-items: start;
+`;
+
+const HighlightIcon = styled.div`
+    color: #ef4444;
+    flex-shrink: 0;
+`;
+
+const HighlightContent = styled.div`
+    flex: 1;
+    color: #fca5a5;
+    line-height: 1.6;
+
+    strong {
+        color: #ef4444;
+    }
+`;
+
+const InfoBox = styled.div`
+    background: rgba(0, 173, 237, 0.1);
+    border: 1px solid rgba(0, 173, 237, 0.3);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+    display: flex;
+    gap: 1rem;
+    align-items: start;
+`;
+
+const InfoIcon = styled.div`
+    color: #00adef;
+    flex-shrink: 0;
+`;
+
+const InfoContent = styled.div`
+    flex: 1;
+    color: #94a3b8;
+    line-height: 1.6;
+
+    a {
+        color: #00adef;
+        font-weight: 600;
+        text-decoration: none;
+
         &:hover {
             text-decoration: underline;
         }
     }
 `;
 
+const ContactSection = styled.div`
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(0, 173, 237, 0.3);
+    border-radius: 16px;
+    padding: 2.5rem;
+    margin-top: 3rem;
+    text-align: center;
+    animation: ${fadeIn} 0.8s ease-out;
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 3px;
+        background: linear-gradient(90deg, #00adef, #00ff88);
+    }
+`;
+
+const ContactTitle = styled.h3`
+    color: #00adef;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+`;
+
+const ContactInfo = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 1.5rem;
+`;
+
+const ContactItem = styled.a`
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: rgba(0, 173, 237, 0.1);
+    border: 1px solid rgba(0, 173, 237, 0.3);
+    border-radius: 10px;
+    color: #00adef;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    font-weight: 600;
+
+    &:hover {
+        background: rgba(0, 173, 237, 0.2);
+        border-color: rgba(0, 173, 237, 0.5);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(0, 173, 237, 0.3);
+    }
+`;
+
+// ============ COMPONENT ============
 const TermsOfServicePage = () => {
     return (
-        <TermsOfServiceContainer>
+        <PageContainer>
             <Header>
-                <h1>Terms of Service for Nexus Signal.AI</h1>
-                <p>
-                    Welcome to Nexus Signal.AI\! These Terms of Service ("Terms") govern your access to and use of our website, services, and products.
-                    Please read them carefully before using our platform.
-                </p>
-                <p><strong>Last updated: October 01, 2025</strong></p>
+                <TitleContainer>
+                    <IconWrapper>
+                        <Scale size={48} color="#a78bfa" />
+                    </IconWrapper>
+                    <Title>Terms of Service</Title>
+                </TitleContainer>
+                <Subtitle>
+                    Welcome to Nexus Signal.AI! These Terms of Service govern your access to and use of our platform. 
+                    Please read them carefully before using our services.
+                </Subtitle>
+                <LastUpdated>
+                    <Clock size={16} />
+                    Last Updated: October 01, 2025
+                </LastUpdated>
             </Header>
 
-            <ContentSection>
-                <h2><FileText size={28} /> 1. Acceptance of Terms</h2>
-                <p>
-                    By accessing or using Nexus Signal.AI, you agree to be bound by these Terms and our Privacy Policy. If you do not agree to all the terms and conditions,
-                    you may not access or use our services.
-                </p>
+            <ContentWrapper>
+                {/* TABLE OF CONTENTS */}
+                <TableOfContents>
+                    <TOCTitle>
+                        <FileText size={20} />
+                        Quick Navigation
+                    </TOCTitle>
+                    <TOCList>
+                        <TOCItem><a href="#acceptance"><CheckCircle size={16} /> Acceptance of Terms</a></TOCItem>
+                        <TOCItem><a href="#accounts"><User size={16} /> User Accounts</a></TOCItem>
+                        <TOCItem><a href="#payments"><CreditCard size={16} /> Subscriptions & Payments</a></TOCItem>
+                        <TOCItem><a href="#conduct"><Shield size={16} /> Prohibited Conduct</a></TOCItem>
+                        <TOCItem><a href="#disclaimers"><AlertTriangle size={16} /> Disclaimers & Liability</a></TOCItem>
+                        <TOCItem><a href="#ip"><Lock size={16} /> Intellectual Property</a></TOCItem>
+                        <TOCItem><a href="#law"><Scale size={16} /> Governing Law</a></TOCItem>
+                        <TOCItem><a href="#changes"><FileText size={16} /> Changes to Terms</a></TOCItem>
+                    </TOCList>
+                </TableOfContents>
 
-                <h2><User size={28} /> 2. User Accounts</h2>
-                <ol>
-                    <li><strong>Account Creation:</strong> To access certain features of our service, you must register for an account. You agree to provide accurate, current, and complete information during the registration process and to update such information to keep it accurate, current, and complete.</li>
-                    <li><strong>Account Security:</strong> You are responsible for maintaining the confidentiality of your account password and for all activities that occur under your account. You agree to notify us immediately of any unauthorized use of your password or account or any other breach of security.</li>
-                    <li><strong>Eligibility:</strong> You must be at least 18 years old to use our services. By using our services, you represent and warrant that you are at least 18 years of age.</li>
-                </ol>
+                {/* SECTION 1 */}
+                <Section id="acceptance">
+                    <SectionHeader>
+                        <SectionIcon>
+                            <CheckCircle size={24} />
+                        </SectionIcon>
+                        <SectionTitle>1. Acceptance of Terms</SectionTitle>
+                    </SectionHeader>
+                    <SectionContent>
+                        <p>
+                            By accessing or using Nexus Signal.AI, you agree to be bound by these Terms of Service and our 
+                            <a href="/privacy-policy"> Privacy Policy</a>. If you do not agree to all the terms and conditions, 
+                            you may not access or use our services.
+                        </p>
+                        <InfoBox>
+                            <InfoIcon>
+                                <AlertTriangle size={20} />
+                            </InfoIcon>
+                            <InfoContent>
+                                <strong>Important:</strong> By creating an account or using our services, you acknowledge that you have read, 
+                                understood, and agree to be bound by these Terms of Service.
+                            </InfoContent>
+                        </InfoBox>
+                    </SectionContent>
+                </Section>
 
-                <h2><Lock size={28} /> 3. Subscriptions and Payments</h2>
-                <ol>
-                    <li><strong>Subscription Plans:</strong> Nexus Signal.AI offers various subscription plans. Details of these plans, including pricing and features, are available on our <a href="/pricing" target="_blank" rel="noopener noreferrer">Pricing Page</a>.</li>
-                    <li><strong>Billing:</strong> You agree to pay all fees associated with your chosen subscription plan. Payments are processed securely by third-party payment processors (e.g., Stripe).</li>
-                    <li><strong>Automatic Renewal:</strong> Subscriptions typically auto-renew unless canceled. You can manage your subscription settings within your account.</li>
-                    <li><strong>Refunds:</strong> All sales are final. We do not offer refunds, except where required by law. Please refer to our specific refund policy if applicable.</li>
-                </ol>
+                {/* SECTION 2 */}
+                <Section id="accounts">
+                    <SectionHeader>
+                        <SectionIcon>
+                            <User size={24} />
+                        </SectionIcon>
+                        <SectionTitle>2. User Accounts</SectionTitle>
+                    </SectionHeader>
+                    <SectionContent>
+                        <List>
+                            <li>
+                                <strong>Account Creation:</strong> To access certain features of our service, you must register for an account. 
+                                You agree to provide accurate, current, and complete information during the registration process and to update 
+                                such information to keep it accurate, current, and complete.
+                            </li>
+                            <li>
+                                <strong>Account Security:</strong> You are responsible for maintaining the confidentiality of your account password 
+                                and for all activities that occur under your account. You agree to notify us immediately of any unauthorized use 
+                                of your password or account or any other breach of security.
+                            </li>
+                            <li>
+                                <strong>Eligibility:</strong> You must be at least 18 years old to use our services. By using our services, 
+                                you represent and warrant that you are at least 18 years of age and have the legal capacity to enter into this agreement.
+                            </li>
+                        </List>
+                    </SectionContent>
+                </Section>
 
-                <h2><ExternalLink size={28} /> 4. Prohibited Conduct</h2>
-                <p>You agree not to:</p>
-                <ul>
-                    <li>Use the service for any illegal purpose or in violation of any local, state, national, or international law.</li>
-                    <li>Engage in any activity that could damage, disable, overburden, or impair the service.</li>
-                    <li>Attempt to gain unauthorized access to any part of the service, other accounts, computer systems, or networks.</li>
-                    <li>Distribute or reproduce any content from Nexus Signal.AI without our express written permission.</li>
-                    <li>Use our AI signals for purposes other than personal investment information, or attempt to reverse-engineer our algorithms.</li>
-                </ul>
+                {/* SECTION 3 */}
+                <Section id="payments">
+                    <SectionHeader>
+                        <SectionIcon>
+                            <CreditCard size={24} />
+                        </SectionIcon>
+                        <SectionTitle>3. Subscriptions and Payments</SectionTitle>
+                    </SectionHeader>
+                    <SectionContent>
+                        <List>
+                            <li>
+                                <strong>Subscription Plans:</strong> Nexus Signal.AI offers various subscription plans. Details of these plans, 
+                                including pricing and features, are available on our <a href="/pricing">Pricing Page</a>.
+                            </li>
+                            <li>
+                                <strong>Billing:</strong> You agree to pay all fees associated with your chosen subscription plan. Payments are 
+                                processed securely by third-party payment processors (e.g., Stripe). All fees are in USD unless otherwise specified.
+                            </li>
+                            <li>
+                                <strong>Automatic Renewal:</strong> Subscriptions typically auto-renew at the end of each billing cycle unless 
+                                canceled. You can manage your subscription settings and cancel at any time within your account settings.
+                            </li>
+                            <li>
+                                <strong>Refunds:</strong> All sales are final. We do not offer refunds, except where required by law. Please 
+                                carefully review your subscription before purchase.
+                            </li>
+                        </List>
+                        <InfoBox>
+                            <InfoIcon>
+                                <CreditCard size={20} />
+                            </InfoIcon>
+                            <InfoContent>
+                                You can view your billing history and manage your subscription at any time through your 
+                                <a href="/settings"> Account Settings</a>.
+                            </InfoContent>
+                        </InfoBox>
+                    </SectionContent>
+                </Section>
 
-                <h2><MessageSquare size={28} /> 5. Disclaimers and Limitation of Liability</h2>
-                <p>
-                    Please refer to our separate <a href="/disclaimer" target="_blank" rel="noopener noreferrer">Disclaimer Page</a> for detailed information regarding investment risks, hypothetical performance, and other important disclaimers.
-                </p>
-                <p>
-                    To the maximum extent permitted by applicable law, Nexus Signal.AI and its affiliates, directors, employees, and agents shall not be liable for any indirect, incidental, special, consequential, or punitive damages,
-                    including but not limited to, loss of profits, data, use, goodwill, or other intangible losses, resulting from (i) your access to or use of or inability to access or use the service; (ii) any conduct or content of
-                    any third party on the service; (iii) any content obtained from the service; and (iv) unauthorized access, use, or alteration of your transmissions or content, whether based on warranty, contract, tort (including negligence)
-                    or any other legal theory, whether or not we have been informed of the possibility of such damage.
-                </p>
+                {/* SECTION 4 */}
+                <Section id="conduct">
+                    <SectionHeader>
+                        <SectionIcon>
+                            <Shield size={24} />
+                        </SectionIcon>
+                        <SectionTitle>4. Prohibited Conduct</SectionTitle>
+                    </SectionHeader>
+                    <SectionContent>
+                        <p>You agree not to engage in any of the following prohibited activities:</p>
+                        <BulletList>
+                            <li>Use the service for any illegal purpose or in violation of any local, state, national, or international law.</li>
+                            <li>Engage in any activity that could damage, disable, overburden, or impair the service.</li>
+                            <li>Attempt to gain unauthorized access to any part of the service, other accounts, computer systems, or networks.</li>
+                            <li>Distribute or reproduce any content from Nexus Signal.AI without our express written permission.</li>
+                            <li>Use our AI signals for purposes other than personal investment information.</li>
+                            <li>Attempt to reverse-engineer, decompile, or discover the source code of our algorithms or models.</li>
+                            <li>Scrape, spider, or use automated means to access the service without permission.</li>
+                            <li>Impersonate any person or entity or falsely state or misrepresent your affiliation with any person or entity.</li>
+                        </BulletList>
+                        <HighlightBox>
+                            <HighlightIcon>
+                                <AlertTriangle size={24} />
+                            </HighlightIcon>
+                            <HighlightContent>
+                                <strong>Warning:</strong> Violation of these terms may result in immediate termination of your account and 
+                                potential legal action.
+                            </HighlightContent>
+                        </HighlightBox>
+                    </SectionContent>
+                </Section>
 
-                <h2><Lock size={28} /> 6. Intellectual Property</h2>
-                <p>
-                    All content on Nexus Signal.AI, including text, graphics, logos, images, as well as the compilation thereof, and any software used on the site, is the property of Nexus Signal.AI or its suppliers and protected by copyright and other laws that protect intellectual property and proprietary rights.
-                </p>
+                {/* SECTION 5 */}
+                <Section id="disclaimers">
+                    <SectionHeader>
+                        <SectionIcon>
+                            <AlertTriangle size={24} />
+                        </SectionIcon>
+                        <SectionTitle>5. Disclaimers and Limitation of Liability</SectionTitle>
+                    </SectionHeader>
+                    <SectionContent>
+                        <InfoBox>
+                            <InfoIcon>
+                                <ExternalLink size={20} />
+                            </InfoIcon>
+                            <InfoContent>
+                                Please refer to our separate <a href="/disclaimer">Disclaimer Page</a> for detailed information regarding 
+                                investment risks, hypothetical performance, and other important disclaimers.
+                            </InfoContent>
+                        </InfoBox>
+                        
+                        <Subsection>
+                            <SubsectionTitle>Limitation of Liability</SubsectionTitle>
+                            <p>
+                                To the maximum extent permitted by applicable law, Nexus Signal.AI and its affiliates, directors, employees, 
+                                and agents shall not be liable for any indirect, incidental, special, consequential, or punitive damages, 
+                                including but not limited to:
+                            </p>
+                            <BulletList>
+                                <li>Loss of profits, data, use, goodwill, or other intangible losses</li>
+                                <li>Your access to or use of or inability to access or use the service</li>
+                                <li>Any conduct or content of any third party on the service</li>
+                                <li>Any content obtained from the service</li>
+                                <li>Unauthorized access, use, or alteration of your transmissions or content</li>
+                            </BulletList>
+                            <p>
+                                Whether based on warranty, contract, tort (including negligence) or any other legal theory, whether or not 
+                                we have been informed of the possibility of such damage, and even if a remedy set forth herein is found to 
+                                have failed of its essential purpose.
+                            </p>
+                        </Subsection>
+                    </SectionContent>
+                </Section>
 
-                <h2><FileText size={28} /> 7. Governing Law</h2>
-                <p>
-                    These Terms shall be governed and construed in accordance with the laws of [USA], without regard to its conflict of law provisions.
-                </p>
+                {/* SECTION 6 */}
+                <Section id="ip">
+                    <SectionHeader>
+                        <SectionIcon>
+                            <Lock size={24} />
+                        </SectionIcon>
+                        <SectionTitle>6. Intellectual Property</SectionTitle>
+                    </SectionHeader>
+                    <SectionContent>
+                        <p>
+                            All content on Nexus Signal.AI, including text, graphics, logos, images, as well as the compilation thereof, 
+                            and any software used on the site, is the property of Nexus Signal.AI or its suppliers and protected by copyright, 
+                            trademark, and other laws that protect intellectual property and proprietary rights.
+                        </p>
+                        <Subsection>
+                            <SubsectionTitle>Your License to Use</SubsectionTitle>
+                            <p>
+                                Subject to these Terms, we grant you a limited, non-exclusive, non-transferable, non-sublicensable license 
+                                to access and use the service for your personal, non-commercial use. This license does not include any:
+                            </p>
+                            <BulletList>
+                                <li>Resale or commercial use of the service or its contents</li>
+                                <li>Collection and use of any product listings, descriptions, or prices</li>
+                                <li>Derivative use of the service or its contents</li>
+                                <li>Downloading or copying of account information for the benefit of another merchant</li>
+                                <li>Use of data mining, robots, or similar data gathering and extraction tools</li>
+                            </BulletList>
+                        </Subsection>
+                    </SectionContent>
+                </Section>
 
-                <h2><MessageSquare size={28} /> 8. Changes to Terms</h2>
-                <p>
-                    We reserve the right, at our sole discretion, to modify or replace these Terms at any time. If a revision is material, we will try to provide at least 30 days' notice prior to any new terms taking effect. What constitutes a material change will be determined at our sole discretion.
-                </p>
-            </ContentSection>
+                {/* SECTION 7 */}
+                <Section id="law">
+                    <SectionHeader>
+                        <SectionIcon>
+                            <Scale size={24} />
+                        </SectionIcon>
+                        <SectionTitle>7. Governing Law</SectionTitle>
+                    </SectionHeader>
+                    <SectionContent>
+                        <p>
+                            These Terms shall be governed and construed in accordance with the laws of the United States of America, 
+                            without regard to its conflict of law provisions. Our failure to enforce any right or provision of these 
+                            Terms will not be considered a waiver of those rights.
+                        </p>
+                        <Subsection>
+                            <SubsectionTitle>Dispute Resolution</SubsectionTitle>
+                            <p>
+                                Any disputes arising out of or relating to these Terms or the service shall be resolved through binding 
+                                arbitration in accordance with the rules of the American Arbitration Association. You agree to waive any 
+                                right to a jury trial or to participate in a class action lawsuit.
+                            </p>
+                        </Subsection>
+                    </SectionContent>
+                </Section>
 
-            <ContactInfo>
-                <p>If you have any questions about these Terms of Service, please contact us:</p>
-                <p>Email: <a href="mailto:support@nexussignal.ai">support@nexussignal.ai</a></p>
-                <p>Website: <a href="https://www.nexussignal.ai/contact" target="_blank" rel="noopener noreferrer">Contact Us Page</a></p>
-            </ContactInfo>
-        </TermsOfServiceContainer>
+                {/* SECTION 8 */}
+                <Section id="changes">
+                    <SectionHeader>
+                        <SectionIcon>
+                            <FileText size={24} />
+                        </SectionIcon>
+                        <SectionTitle>8. Changes to Terms</SectionTitle>
+                    </SectionHeader>
+                    <SectionContent>
+                        <p>
+                            We reserve the right, at our sole discretion, to modify or replace these Terms at any time. If a revision is 
+                            material, we will try to provide at least 30 days' notice prior to any new terms taking effect. What constitutes 
+                            a material change will be determined at our sole discretion.
+                        </p>
+                        <InfoBox>
+                            <InfoIcon>
+                                <Bell size={20} />
+                            </InfoIcon>
+                            <InfoContent>
+                                By continuing to access or use our service after those revisions become effective, you agree to be bound by 
+                                the revised terms. If you do not agree to the new terms, please stop using the service.
+                            </InfoContent>
+                        </InfoBox>
+                    </SectionContent>
+                </Section>
+
+                {/* CONTACT SECTION */}
+                <ContactSection>
+                    <ContactTitle>
+                        <MessageSquare size={24} />
+                        Questions About These Terms?
+                    </ContactTitle>
+                    <p style={{ color: '#94a3b8', marginBottom: '1.5rem' }}>
+                        If you have any questions about these Terms of Service, please don't hesitate to contact us.
+                    </p>
+                    <ContactInfo>
+                        <ContactItem href="mailto:support@nexussignal.ai">
+                            <Mail size={18} />
+                            support@nexussignal.ai
+                        </ContactItem>
+                        <ContactItem href="/contact">
+                            <Globe size={18} />
+                            Visit Our Contact Page
+                        </ContactItem>
+                    </ContactInfo>
+                </ContactSection>
+            </ContentWrapper>
+        </PageContainer>
     );
 };
 
