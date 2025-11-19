@@ -1,13 +1,16 @@
-// client/src/components/Navbar.js - THE SICKEST NAVBAR EVER (WITH REAL LOGO!)
+// client/src/components/Navbar.js - THE SICKEST NAVBAR EVER (WITH THEME TOGGLE!)
+// client/src/components/Navbar.js - THE SICKEST NAVBAR EVER (WITH WORKING NOTIFICATIONS!)
 
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
+
 import {
     Home, TrendingUp, PieChart, Eye, Brain, MessageSquare,
     DollarSign, LogOut, User, Menu, X, ChevronDown, Zap,
-    Settings, Bell
+    Settings, Bell, CheckCircle, AlertCircle, TrendingUp as TrendingUpIcon,
+    DollarSign as DollarIcon, Clock, ArrowUpRight, ArrowDownRight
 } from 'lucide-react';
 import nexusSignalLogo from '../assets/nexus-signal-logo.png';
 
@@ -40,6 +43,12 @@ const shimmer = keyframes`
 const float = keyframes`
     0%, 100% { transform: translateY(0px); }
     50% { transform: translateY(-5px); }
+`;
+
+const shake = keyframes`
+    0%, 100% { transform: rotate(0deg); }
+    10%, 30%, 50%, 70%, 90% { transform: rotate(-10deg); }
+    20%, 40%, 60%, 80% { transform: rotate(10deg); }
 `;
 
 // ============ STYLED COMPONENTS ============
@@ -89,8 +98,6 @@ const Logo = styled(Link)`
         transform: translateY(-2px);
         filter: brightness(1.2);
     }
-
-    
 `;
 
 const LogoIcon = styled.div`
@@ -198,6 +205,10 @@ const NotificationButton = styled.button`
         background: rgba(0, 173, 237, 0.2);
         transform: translateY(-2px);
         box-shadow: 0 4px 15px rgba(0, 173, 237, 0.3);
+        
+        svg {
+            animation: ${shake} 0.5s ease-in-out;
+        }
     }
 
     @media (max-width: 768px) {
@@ -221,6 +232,187 @@ const NotificationBadge = styled.span`
     justify-content: center;
     border: 2px solid rgba(10, 14, 39, 0.95);
     animation: ${pulse} 2s ease-in-out infinite;
+`;
+
+// ============ NOTIFICATION PANEL ============
+const NotificationPanel = styled.div`
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    background: rgba(15, 23, 42, 0.98);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(0, 173, 237, 0.3);
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+    width: 400px;
+    max-height: 500px;
+    overflow: hidden;
+    animation: ${slideDown} 0.3s ease-out;
+    z-index: 1001;
+    display: flex;
+    flex-direction: column;
+
+    @media (max-width: 768px) {
+        width: 90vw;
+        right: -50px;
+    }
+`;
+
+const NotificationHeader = styled.div`
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid rgba(0, 173, 237, 0.2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+`;
+
+const NotificationTitle = styled.h3`
+    color: #00adef;
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0;
+`;
+
+const MarkAllRead = styled.button`
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+        color: #00adef;
+    }
+`;
+
+const NotificationList = styled.div`
+    overflow-y: auto;
+    max-height: 400px;
+
+    &::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+        background: rgba(0, 173, 237, 0.05);
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: rgba(0, 173, 237, 0.3);
+        border-radius: 3px;
+
+        &:hover {
+            background: rgba(0, 173, 237, 0.5);
+        }
+    }
+`;
+
+const NotificationItem = styled.div`
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid rgba(0, 173, 237, 0.1);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: ${props => props.$unread ? 'rgba(0, 173, 237, 0.05)' : 'transparent'};
+    position: relative;
+
+    &:hover {
+        background: rgba(0, 173, 237, 0.1);
+    }
+
+    &:last-child {
+        border-bottom: none;
+    }
+`;
+
+const NotificationItemHeader = styled.div`
+    display: flex;
+    align-items: start;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+`;
+
+const NotificationIcon = styled.div`
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: ${props => {
+        if (props.$type === 'success') return 'rgba(16, 185, 129, 0.2)';
+        if (props.$type === 'warning') return 'rgba(245, 158, 11, 0.2)';
+        if (props.$type === 'error') return 'rgba(239, 68, 68, 0.2)';
+        return 'rgba(0, 173, 237, 0.2)';
+    }};
+    color: ${props => {
+        if (props.$type === 'success') return '#10b981';
+        if (props.$type === 'warning') return '#f59e0b';
+        if (props.$type === 'error') return '#ef4444';
+        return '#00adef';
+    }};
+`;
+
+const NotificationContent = styled.div`
+    flex: 1;
+`;
+
+const NotificationItemTitle = styled.div`
+    color: #e0e6ed;
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-bottom: 0.25rem;
+`;
+
+const NotificationItemText = styled.div`
+    color: #94a3b8;
+    font-size: 0.85rem;
+    line-height: 1.4;
+`;
+
+const NotificationTime = styled.div`
+    color: #64748b;
+    font-size: 0.75rem;
+    margin-top: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+`;
+
+const UnreadDot = styled.div`
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #00adef;
+    position: absolute;
+    top: 1.25rem;
+    right: 1.25rem;
+    animation: ${pulse} 2s ease-in-out infinite;
+`;
+
+const EmptyState = styled.div`
+    padding: 3rem 2rem;
+    text-align: center;
+    color: #64748b;
+`;
+
+const EmptyStateIcon = styled.div`
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 1rem;
+    border-radius: 50%;
+    background: rgba(0, 173, 237, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #00adef;
+`;
+
+const EmptyStateText = styled.div`
+    font-size: 0.95rem;
+    color: #94a3b8;
 `;
 
 const UserMenuButton = styled.button`
@@ -416,7 +608,57 @@ const Navbar = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const [dropdownOpen, setDropdownOpen] = useState(false);
+    const [notificationsOpen, setNotificationsOpen] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+    // Mock notifications - replace with real data from API
+    const [notifications, setNotifications] = useState([
+        {
+            id: 1,
+            type: 'success',
+            title: 'AI Prediction Correct!',
+            text: 'Your AAPL prediction hit the target price of $180',
+            time: '5 minutes ago',
+            unread: true,
+            icon: TrendingUpIcon
+        },
+        {
+            id: 2,
+            type: 'info',
+            title: 'Portfolio Update',
+            text: 'Your portfolio value increased by 2.5% today',
+            time: '1 hour ago',
+            unread: true,
+            icon: PieChart
+        },
+        {
+            id: 3,
+            type: 'warning',
+            title: 'Price Alert',
+            text: 'TSLA reached your watchlist target of $250',
+            time: '2 hours ago',
+            unread: true,
+            icon: AlertCircle
+        },
+        {
+            id: 4,
+            type: 'success',
+            title: 'Trade Executed',
+            text: 'Successfully purchased 10 shares of NVDA',
+            time: '1 day ago',
+            unread: false,
+            icon: CheckCircle
+        },
+        {
+            id: 5,
+            type: 'info',
+            title: 'Market Insight',
+            text: 'New AI analysis available for tech sector',
+            time: '2 days ago',
+            unread: false,
+            icon: Brain
+        }
+    ]);
 
     const navItems = [
         { path: '/dashboard', label: 'Dashboard', icon: Home },
@@ -427,6 +669,8 @@ const Navbar = () => {
         { path: '/pricing', label: 'Pricing', icon: DollarSign },
     ];
 
+    const unreadCount = notifications.filter(n => n.unread).length;
+
     const handleLogout = () => {
         logout();
         navigate('/login');
@@ -435,13 +679,35 @@ const Navbar = () => {
     };
 
     const handleMobileMenuToggle = () => {
-        console.log('Mobile menu toggled. Current state:', mobileMenuOpen, 'New state:', !mobileMenuOpen);
         setMobileMenuOpen(!mobileMenuOpen);
-        setDropdownOpen(false); // Close dropdown when opening mobile menu
+        setDropdownOpen(false);
+        setNotificationsOpen(false);
     };
 
     const handleMobileNavClick = () => {
-        setMobileMenuOpen(false); // Close mobile menu when clicking a nav item
+        setMobileMenuOpen(false);
+    };
+
+    const handleNotificationClick = (notification) => {
+        // Mark as read
+        setNotifications(notifications.map(n => 
+            n.id === notification.id ? { ...n, unread: false } : n
+        ));
+
+        // Navigate based on notification type
+        if (notification.type === 'success' && notification.title.includes('Prediction')) {
+            navigate('/predict');
+        } else if (notification.title.includes('Portfolio')) {
+            navigate('/portfolio');
+        } else if (notification.title.includes('Price Alert')) {
+            navigate('/watchlist');
+        }
+
+        setNotificationsOpen(false);
+    };
+
+    const handleMarkAllRead = () => {
+        setNotifications(notifications.map(n => ({ ...n, unread: false })));
     };
 
     const getUserInitials = () => {
@@ -455,10 +721,25 @@ const Navbar = () => {
     };
 
     useEffect(() => {
-        // Close mobile menu when route changes
         setMobileMenuOpen(false);
         setDropdownOpen(false);
+        setNotificationsOpen(false);
     }, [location]);
+
+    // Close dropdowns when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (!e.target.closest('[data-notification-panel]') && !e.target.closest('[data-notification-button]')) {
+                setNotificationsOpen(false);
+            }
+            if (!e.target.closest('[data-user-menu]')) {
+                setDropdownOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     return (
         <NavContainer>
@@ -490,12 +771,74 @@ const Navbar = () => {
 
                 {/* USER SECTION */}
                 <UserSection>
-                    <NotificationButton>
-                        <Bell size={20} />
-                        <NotificationBadge>3</NotificationBadge>
-                    </NotificationButton>
-
+                    {/* NOTIFICATION BELL */}
                     <div style={{ position: 'relative' }}>
+                        <NotificationButton 
+                            onClick={() => setNotificationsOpen(!notificationsOpen)}
+                            data-notification-button
+                        >
+                            <Bell size={20} />
+                            {unreadCount > 0 && (
+                                <NotificationBadge>{unreadCount}</NotificationBadge>
+                            )}
+                        </NotificationButton>
+
+                        {notificationsOpen && (
+                            <NotificationPanel data-notification-panel>
+                                <NotificationHeader>
+                                    <NotificationTitle>Notifications</NotificationTitle>
+                                    {unreadCount > 0 && (
+                                        <MarkAllRead onClick={handleMarkAllRead}>
+                                            Mark all read
+                                        </MarkAllRead>
+                                    )}
+                                </NotificationHeader>
+                                <NotificationList>
+                                    {notifications.length === 0 ? (
+                                        <EmptyState>
+                                            <EmptyStateIcon>
+                                                <Bell size={32} />
+                                            </EmptyStateIcon>
+                                            <EmptyStateText>No notifications yet</EmptyStateText>
+                                        </EmptyState>
+                                    ) : (
+                                        notifications.map(notification => {
+                                            const Icon = notification.icon;
+                                            return (
+                                                <NotificationItem
+                                                    key={notification.id}
+                                                    $unread={notification.unread}
+                                                    onClick={() => handleNotificationClick(notification)}
+                                                >
+                                                    {notification.unread && <UnreadDot />}
+                                                    <NotificationItemHeader>
+                                                        <NotificationIcon $type={notification.type}>
+                                                            <Icon size={20} />
+                                                        </NotificationIcon>
+                                                        <NotificationContent>
+                                                            <NotificationItemTitle>
+                                                                {notification.title}
+                                                            </NotificationItemTitle>
+                                                            <NotificationItemText>
+                                                                {notification.text}
+                                                            </NotificationItemText>
+                                                            <NotificationTime>
+                                                                <Clock size={12} />
+                                                                {notification.time}
+                                                            </NotificationTime>
+                                                        </NotificationContent>
+                                                    </NotificationItemHeader>
+                                                </NotificationItem>
+                                            );
+                                        })
+                                    )}
+                                </NotificationList>
+                            </NotificationPanel>
+                        )}
+                    </div>
+
+                    {/* USER MENU */}
+                    <div style={{ position: 'relative' }} data-user-menu>
                         <UserMenuButton onClick={() => setDropdownOpen(!dropdownOpen)}>
                             <UserAvatar>{getUserInitials()}</UserAvatar>
                             <UserName>{user?.name || 'User'}</UserName>

@@ -1,13 +1,16 @@
-// client/src/pages/PortfolioPage.js - ULTIMATE EPIC VERSION
+// client/src/pages/PortfolioPage.js - LEGENDARY PORTFOLIO WITH DRAG-DROP & ALL FEATURES
 
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes, css } from 'styled-components';
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import {
     TrendingUp, TrendingDown, DollarSign, PieChart, BarChart3,
     Activity, Plus, Trash2, X, Brain, Target, Zap, 
-    ArrowUpRight, ArrowDownRight, Eye, Flame, Star
+    ArrowUpRight, ArrowDownRight, Eye, Flame, Star,
+    GripVertical, CheckSquare, Square, Download, RefreshCw,
+    Search, Filter, SortAsc, Edit, Copy, Trash
 } from 'lucide-react';
 import {
     PieChart as RechartsPie, Pie, Cell, ResponsiveContainer,
@@ -46,6 +49,11 @@ const float = keyframes`
     50% { transform: translateY(-10px); }
 `;
 
+const rotate = keyframes`
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+`;
+
 // ============ STYLED COMPONENTS ============
 const PageContainer = styled.div`
     min-height: 100vh;
@@ -59,9 +67,23 @@ const PageContainer = styled.div`
 const Header = styled.div`
     margin-bottom: 3rem;
     animation: ${fadeIn} 0.8s ease-out;
-    text-align: center;
-    position: relative;
 `;
+
+const HeaderTop = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+
+    @media (max-width: 768px) {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+`;
+
+const HeaderLeft = styled.div``;
 
 const Title = styled.h1`
     font-size: 3.5rem;
@@ -72,11 +94,193 @@ const Title = styled.h1`
     margin-bottom: 0.5rem;
     font-weight: 900;
     text-shadow: 0 0 30px rgba(0, 173, 237, 0.5);
+
+    @media (max-width: 768px) {
+        font-size: 2.5rem;
+    }
 `;
 
 const Subtitle = styled.p`
     color: #94a3b8;
     font-size: 1.2rem;
+`;
+
+const HeaderRight = styled.div`
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+
+    @media (max-width: 768px) {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+`;
+
+// ============ TOOLBAR ============
+const Toolbar = styled.div`
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    align-items: center;
+`;
+
+const SearchBar = styled.div`
+    flex: 1;
+    min-width: 300px;
+    position: relative;
+
+    @media (max-width: 768px) {
+        min-width: 100%;
+    }
+`;
+
+const SearchInput = styled.input`
+    width: 100%;
+    padding: 0.75rem 1rem 0.75rem 3rem;
+    background: rgba(0, 173, 237, 0.05);
+    border: 1px solid rgba(0, 173, 237, 0.3);
+    border-radius: 12px;
+    color: #e0e6ed;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+
+    &:focus {
+        outline: none;
+        border-color: #00adef;
+        background: rgba(0, 173, 237, 0.1);
+        box-shadow: 0 0 0 3px rgba(0, 173, 237, 0.2);
+    }
+
+    &::placeholder {
+        color: #64748b;
+    }
+`;
+
+const SearchIcon = styled(Search)`
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #00adef;
+`;
+
+const ToolbarButton = styled.button`
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    background: ${props => props.$active ? 
+        'linear-gradient(135deg, rgba(0, 173, 237, 0.2) 0%, rgba(0, 173, 237, 0.1) 100%)' :
+        'rgba(0, 173, 237, 0.05)'
+    };
+    border: 1px solid ${props => props.$active ? 'rgba(0, 173, 237, 0.5)' : 'rgba(0, 173, 237, 0.3)'};
+    border-radius: 12px;
+    color: ${props => props.$active ? '#00adef' : '#94a3b8'};
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+
+    &:hover {
+        background: linear-gradient(135deg, rgba(0, 173, 237, 0.2) 0%, rgba(0, 173, 237, 0.1) 100%);
+        border-color: rgba(0, 173, 237, 0.5);
+        color: #00adef;
+        transform: translateY(-2px);
+    }
+
+    ${props => props.$danger && `
+        background: rgba(239, 68, 68, 0.1);
+        border-color: rgba(239, 68, 68, 0.3);
+        color: #ef4444;
+
+        &:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.5);
+        }
+    `}
+`;
+
+const Select = styled.select`
+    padding: 0.75rem 1rem;
+    background: rgba(0, 173, 237, 0.05);
+    border: 1px solid rgba(0, 173, 237, 0.3);
+    border-radius: 12px;
+    color: #e0e6ed;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:focus {
+        outline: none;
+        border-color: #00adef;
+        background: rgba(0, 173, 237, 0.1);
+    }
+
+    option {
+        background: #1a1f3a;
+        color: #e0e6ed;
+    }
+`;
+
+// ============ BATCH ACTIONS BAR ============
+const BatchActionsBar = styled.div`
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(59, 130, 246, 0.15) 100%);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 16px;
+    padding: 1rem 1.5rem;
+    margin-bottom: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    animation: ${slideIn} 0.3s ease-out;
+
+    @media (max-width: 768px) {
+        flex-direction: column;
+        gap: 1rem;
+    }
+`;
+
+const BatchInfo = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: #a78bfa;
+    font-weight: 600;
+`;
+
+const BatchActions = styled.div`
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+`;
+
+const RefreshButton = styled.button`
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    background: rgba(0, 173, 237, 0.1);
+    border: 1px solid rgba(0, 173, 237, 0.3);
+    border-radius: 12px;
+    color: #00adef;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+        background: rgba(0, 173, 237, 0.2);
+        transform: translateY(-2px);
+    }
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    svg {
+        animation: ${props => props.$refreshing ? rotate : 'none'} 1s linear infinite;
+    }
 `;
 
 const AddButton = styled.button`
@@ -218,6 +422,7 @@ const HoldingCard = styled.div`
     overflow: hidden;
     animation: ${fadeIn} 0.5s ease-out;
     transition: all 0.3s ease;
+    user-select: none;
 
     &:hover {
         transform: translateY(-5px);
@@ -237,6 +442,37 @@ const HoldingCard = styled.div`
             'linear-gradient(90deg, #ef4444, #dc2626)'
         };
     }
+
+    ${props => props.$isDragging && `
+        opacity: 0.5;
+        transform: rotate(5deg);
+    `}
+
+    ${props => props.$selected && `
+        border-color: rgba(139, 92, 246, 0.5);
+        background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(59, 130, 246, 0.15) 100%);
+    `}
+`;
+
+const DragHandle = styled.div`
+    position: absolute;
+    left: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #64748b;
+    cursor: grab;
+    padding: 0.5rem;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+
+    &:hover {
+        color: #00adef;
+        background: rgba(0, 173, 237, 0.1);
+    }
+
+    &:active {
+        cursor: grabbing;
+    }
 `;
 
 const HoldingHeader = styled.div`
@@ -244,6 +480,31 @@ const HoldingHeader = styled.div`
     justify-content: space-between;
     align-items: start;
     margin-bottom: 1.5rem;
+    padding-left: 2rem;
+`;
+
+const HoldingSymbolSection = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+`;
+
+const SelectCheckbox = styled.div`
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    border: 2px solid ${props => props.$checked ? '#8b5cf6' : 'rgba(0, 173, 237, 0.3)'};
+    background: ${props => props.$checked ? '#8b5cf6' : 'transparent'};
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+        border-color: #8b5cf6;
+        transform: scale(1.1);
+    }
 `;
 
 const HoldingSymbol = styled.div`
@@ -255,10 +516,21 @@ const HoldingSymbol = styled.div`
     gap: 0.5rem;
 `;
 
-const DeleteButton = styled.button`
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    color: #ef4444;
+const ActionButtons = styled.div`
+    display: flex;
+    gap: 0.5rem;
+`;
+
+const IconButton = styled.button`
+    background: ${props => props.variant === 'danger' ? 
+        'rgba(239, 68, 68, 0.1)' : 
+        'rgba(0, 173, 237, 0.1)'
+    };
+    border: 1px solid ${props => props.variant === 'danger' ? 
+        'rgba(239, 68, 68, 0.3)' : 
+        'rgba(0, 173, 237, 0.3)'
+    };
+    color: ${props => props.variant === 'danger' ? '#ef4444' : '#00adef'};
     width: 36px;
     height: 36px;
     border-radius: 8px;
@@ -269,7 +541,10 @@ const DeleteButton = styled.button`
     transition: all 0.2s ease;
 
     &:hover {
-        background: rgba(239, 68, 68, 0.2);
+        background: ${props => props.variant === 'danger' ? 
+            'rgba(239, 68, 68, 0.2)' : 
+            'rgba(0, 173, 237, 0.2)'
+        };
         transform: scale(1.1);
     }
 `;
@@ -428,6 +703,58 @@ const ChartTitle = styled.h2`
     gap: 0.5rem;
 `;
 
+// ============ COMPARISON MODE ============
+const ComparisonPanel = styled.div`
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(59, 130, 246, 0.15) 100%);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 3rem;
+    animation: ${slideIn} 0.3s ease-out;
+`;
+
+const ComparisonTitle = styled.h3`
+    color: #a78bfa;
+    font-size: 1.3rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+`;
+
+const ComparisonGrid = styled.div`
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+`;
+
+const ComparisonCard = styled.div`
+    background: rgba(139, 92, 246, 0.1);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+`;
+
+const ComparisonSymbol = styled.div`
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: #a78bfa;
+    margin-bottom: 0.5rem;
+`;
+
+const ComparisonStat = styled.div`
+    color: #94a3b8;
+    font-size: 0.85rem;
+    margin-bottom: 0.25rem;
+`;
+
+const ComparisonValue = styled.div`
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: ${props => props.positive ? '#10b981' : props.negative ? '#ef4444' : '#e0e6ed'};
+`;
+
 // ============ MODAL ============
 const Modal = styled.div`
     position: fixed;
@@ -455,6 +782,8 @@ const ModalContent = styled.div`
     width: 100%;
     position: relative;
     animation: ${slideIn} 0.3s ease-out;
+    max-height: 90vh;
+    overflow-y: auto;
 `;
 
 const ModalTitle = styled.h2`
@@ -571,11 +900,20 @@ const PortfolioPage = () => {
     const { api } = useAuth();
     const toast = useToast();
     const [portfolio, setPortfolio] = useState([]);
+    const [filteredPortfolio, setFilteredPortfolio] = useState([]);
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [showAddModal, setShowAddModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [selectedHolding, setSelectedHolding] = useState(null);
+    const [selectedHoldings, setSelectedHoldings] = useState(new Set());
+    const [showComparison, setShowComparison] = useState(false);
     const [predictions, setPredictions] = useState({});
     const [loadingPredictions, setLoadingPredictions] = useState({});
+    const [searchQuery, setSearchQuery] = useState('');
+    const [sortBy, setSortBy] = useState('symbol');
+    const [filterBy, setFilterBy] = useState('all');
     const [formData, setFormData] = useState({
         symbol: '',
         shares: '',
@@ -585,6 +923,10 @@ const PortfolioPage = () => {
     useEffect(() => {
         fetchPortfolio();
     }, []);
+
+    useEffect(() => {
+        filterAndSortPortfolio();
+    }, [portfolio, searchQuery, sortBy, filterBy]);
 
     const fetchPortfolio = async () => {
         try {
@@ -606,6 +948,13 @@ const PortfolioPage = () => {
         }
     };
 
+    const handleRefresh = async () => {
+        setRefreshing(true);
+        await fetchPortfolio();
+        setTimeout(() => setRefreshing(false), 500);
+        toast.success('Portfolio refreshed!', 'Updated');
+    };
+
     const fetchPrediction = async (symbol) => {
         if (!symbol) return;
         
@@ -621,6 +970,54 @@ const PortfolioPage = () => {
         } finally {
             setLoadingPredictions(prev => ({ ...prev, [symbol]: false }));
         }
+    };
+
+    const filterAndSortPortfolio = () => {
+        let filtered = [...portfolio];
+
+        // Search filter
+        if (searchQuery) {
+            filtered = filtered.filter(holding => {
+                const symbol = (holding.symbol || '').toLowerCase();
+                const query = searchQuery.toLowerCase();
+                return symbol.includes(query);
+            });
+        }
+
+        // Category filter
+        if (filterBy === 'gainers') {
+            filtered = filtered.filter(h => {
+                const currentPrice = h.currentPrice || h.current_price || h.price || 0;
+                const avgPrice = h.averagePrice || h.average_price || h.purchasePrice || currentPrice;
+                return currentPrice > avgPrice;
+            });
+        } else if (filterBy === 'losers') {
+            filtered = filtered.filter(h => {
+                const currentPrice = h.currentPrice || h.current_price || h.price || 0;
+                const avgPrice = h.averagePrice || h.average_price || h.purchasePrice || currentPrice;
+                return currentPrice < avgPrice;
+            });
+        }
+
+        // Sort
+        filtered.sort((a, b) => {
+            switch (sortBy) {
+                case 'symbol':
+                    return (a.symbol || '').localeCompare(b.symbol || '');
+                case 'value':
+                    const aValue = (a.currentPrice || 0) * (a.shares || 0);
+                    const bValue = (b.currentPrice || 0) * (b.shares || 0);
+                    return bValue - aValue;
+                case 'gain':
+                    const aGain = ((a.currentPrice || 0) - (a.averagePrice || 0)) * (a.shares || 0);
+                    const bGain = ((b.currentPrice || 0) - (b.averagePrice || 0)) * (b.shares || 0);
+                    return bGain - aGain;
+                default:
+                    return 0;
+            }
+        });
+
+        setFilteredPortfolio(filtered);
     };
 
     const calculateStats = (holdings) => {
@@ -660,7 +1057,6 @@ const PortfolioPage = () => {
         const shares = parseFloat(formData.shares);
         const avgPrice = parseFloat(formData.averagePrice);
         
-        // ✅ VALIDATION WITH TOASTS
         if (!symbol) {
             toast.warning('Please enter a stock symbol', 'Missing Symbol');
             return;
@@ -683,14 +1079,13 @@ const PortfolioPage = () => {
                 averagePrice: avgPrice
             });
             
-            toast.success(`${shares} shares of ${symbol} added to portfolio!`, 'Holding Added'); // ✅ SUCCESS TOAST
+            toast.success(`${shares} shares of ${symbol} added to portfolio!`, 'Holding Added');
             setShowAddModal(false);
             setFormData({ symbol: '', shares: '', averagePrice: '' });
             fetchPortfolio();
         } catch (error) {
             console.error('Error adding holding:', error);
             
-            // ✅ SPECIFIC ERROR TOASTS
             const errorMsg = error.response?.data?.error || error.response?.data?.msg || '';
             
             if (errorMsg.includes('already exists') || error.response?.status === 409) {
@@ -705,17 +1100,172 @@ const PortfolioPage = () => {
         }
     };
 
+    const handleEditHolding = (holding) => {
+        setSelectedHolding(holding);
+        setFormData({
+            symbol: holding.symbol || '',
+            shares: holding.shares || '',
+            averagePrice: holding.averagePrice || holding.average_price || ''
+        });
+        setShowEditModal(true);
+    };
+
+    const handleUpdateHolding = async (e) => {
+        e.preventDefault();
+        
+        const shares = parseFloat(formData.shares);
+        const avgPrice = parseFloat(formData.averagePrice);
+        
+        if (shares <= 0 || avgPrice <= 0) {
+            toast.warning('Invalid values', 'Error');
+            return;
+        }
+
+        try {
+            await api.put(`/portfolio/holdings/${selectedHolding._id}`, {
+                shares,
+                averagePrice: avgPrice
+            });
+            
+            toast.success(`${selectedHolding.symbol} updated!`, 'Holding Updated');
+            setShowEditModal(false);
+            setSelectedHolding(null);
+            fetchPortfolio();
+        } catch (error) {
+            console.error('Error updating holding:', error);
+            toast.error('Failed to update holding', 'Error');
+        }
+    };
+
     const handleDeleteHolding = async (holdingId, symbol) => {
         if (!window.confirm(`Delete ${symbol} from portfolio?`)) return;
 
         try {
             await api.delete(`/portfolio/holdings/${holdingId}`);
-            toast.success(`${symbol} removed from portfolio`, 'Holding Deleted'); // ✅ SUCCESS TOAST
+            toast.success(`${symbol} removed from portfolio`, 'Holding Deleted');
             fetchPortfolio();
         } catch (error) {
             console.error('Error deleting holding:', error);
-            toast.error(`Failed to remove ${symbol}`, 'Error'); // ✅ ERROR TOAST
+            toast.error(`Failed to remove ${symbol}`, 'Error');
         }
+    };
+
+    const toggleSelectHolding = (symbol) => {
+        setSelectedHoldings(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(symbol)) {
+                newSet.delete(symbol);
+            } else {
+                newSet.add(symbol);
+            }
+            return newSet;
+        });
+    };
+
+    const handleSelectAll = () => {
+        if (selectedHoldings.size === filteredPortfolio.length) {
+            setSelectedHoldings(new Set());
+        } else {
+            setSelectedHoldings(new Set(filteredPortfolio.map(h => h.symbol || h.ticker)));
+        }
+    };
+
+    const handleBatchDelete = async () => {
+        if (selectedHoldings.size === 0) return;
+        
+        if (!window.confirm(`Delete ${selectedHoldings.size} holdings from portfolio?`)) return;
+
+        try {
+            const holdingsToDelete = portfolio.filter(h => selectedHoldings.has(h.symbol || h.ticker));
+            
+            await Promise.all(
+                holdingsToDelete.map(h => api.delete(`/portfolio/holdings/${h._id}`))
+            );
+            
+            toast.success(`${selectedHoldings.size} holdings removed`, 'Batch Delete Complete');
+            setSelectedHoldings(new Set());
+            fetchPortfolio();
+        } catch (error) {
+            console.error('Error batch deleting:', error);
+            toast.error('Failed to delete some holdings', 'Error');
+        }
+    };
+
+    const handleExportCSV = () => {
+        const csv = [
+            ['Symbol', 'Shares', 'Avg Price', 'Current Price', 'Total Value', 'Gain/Loss', 'Gain %'].join(','),
+            ...filteredPortfolio.map(h => {
+                const currentPrice = h.currentPrice || h.current_price || h.price || 0;
+                const avgPrice = h.averagePrice || h.average_price || h.purchasePrice || currentPrice;
+                const shares = h.shares || h.quantity || 0;
+                const totalValue = currentPrice * shares;
+                const totalCost = avgPrice * shares;
+                const gain = totalValue - totalCost;
+                const gainPercent = totalCost > 0 ? (gain / totalCost) * 100 : 0;
+                
+                return [
+                    h.symbol || '',
+                    shares,
+                    avgPrice.toFixed(2),
+                    currentPrice.toFixed(2),
+                    totalValue.toFixed(2),
+                    gain.toFixed(2),
+                    gainPercent.toFixed(2)
+                ].join(',');
+            })
+        ].join('\n');
+
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `portfolio-${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        
+        toast.success('Portfolio exported!', 'CSV Downloaded');
+    };
+
+    const handleDragEnd = (result) => {
+        if (!result.destination) return;
+
+        const items = Array.from(filteredPortfolio);
+        const [reorderedItem] = items.splice(result.source.index, 1);
+        items.splice(result.destination.index, 0, reorderedItem);
+
+        setFilteredPortfolio(items);
+        setPortfolio(items);
+        
+        toast.success('Order saved!', 'Reordered');
+    };
+
+    const toggleComparison = () => {
+        if (selectedHoldings.size < 2) {
+            toast.warning('Select at least 2 holdings to compare', 'Need More Holdings');
+            return;
+        }
+        setShowComparison(!showComparison);
+    };
+
+    const getComparisonData = () => {
+        return portfolio
+            .filter(h => selectedHoldings.has(h.symbol || h.ticker))
+            .map(h => {
+                const currentPrice = h.currentPrice || h.current_price || h.price || 0;
+                const avgPrice = h.averagePrice || h.average_price || h.purchasePrice || currentPrice;
+                const shares = h.shares || h.quantity || 0;
+                const totalValue = currentPrice * shares;
+                const totalCost = avgPrice * shares;
+                const gain = totalValue - totalCost;
+                const gainPercent = totalCost > 0 ? (gain / totalCost) * 100 : 0;
+
+                return {
+                    symbol: h.symbol || h.ticker || 'Unknown',
+                    totalValue,
+                    gain,
+                    gainPercent,
+                    shares
+                };
+            });
     };
 
     const getPieData = () => {
@@ -759,8 +1309,12 @@ const PortfolioPage = () => {
         return (
             <PageContainer>
                 <Header>
-                    <Title>My Portfolio</Title>
-                    <Subtitle>Track your investments with AI-powered insights</Subtitle>
+                    <HeaderTop>
+                        <HeaderLeft>
+                            <Title>My Portfolio</Title>
+                            <Subtitle>Track your investments with AI-powered insights</Subtitle>
+                        </HeaderLeft>
+                    </HeaderTop>
                 </Header>
                 <EmptyState>
                     <EmptyIcon>
@@ -789,6 +1343,7 @@ const PortfolioPage = () => {
                                         value={formData.symbol}
                                         onChange={(e) => setFormData({ ...formData, symbol: e.target.value.toUpperCase() })}
                                         required
+                                        autoFocus
                                     />
                                 </FormGroup>
                                 <FormGroup>
@@ -825,9 +1380,108 @@ const PortfolioPage = () => {
     return (
         <PageContainer>
             <Header>
-                <Title>My Portfolio</Title>
-                <Subtitle>AI-powered portfolio tracking and predictions</Subtitle>
+                <HeaderTop>
+                    <HeaderLeft>
+                        <Title>My Portfolio</Title>
+                        <Subtitle>AI-powered tracking • {filteredPortfolio.length} of {portfolio.length} holdings</Subtitle>
+                    </HeaderLeft>
+                    <HeaderRight>
+                        <RefreshButton onClick={handleRefresh} disabled={refreshing} $refreshing={refreshing}>
+                            <RefreshCw size={18} />
+                            Refresh
+                        </RefreshButton>
+                        <ToolbarButton onClick={handleExportCSV}>
+                            <Download size={18} />
+                            Export CSV
+                        </ToolbarButton>
+                    </HeaderRight>
+                </HeaderTop>
+
+                {/* TOOLBAR */}
+                <Toolbar>
+                    <SearchBar>
+                        <SearchIcon size={20} />
+                        <SearchInput
+                            type="text"
+                            placeholder="Search holdings..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                    </SearchBar>
+
+                    <Select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+                        <option value="symbol">Sort by Symbol</option>
+                        <option value="value">Sort by Value</option>
+                        <option value="gain">Sort by Gain</option>
+                    </Select>
+
+                    <Select value={filterBy} onChange={(e) => setFilterBy(e.target.value)}>
+                        <option value="all">All Holdings</option>
+                        <option value="gainers">Gainers Only</option>
+                        <option value="losers">Losers Only</option>
+                    </Select>
+
+                    <ToolbarButton onClick={handleSelectAll}>
+                        {selectedHoldings.size === filteredPortfolio.length ? <CheckSquare size={18} /> : <Square size={18} />}
+                        Select All
+                    </ToolbarButton>
+
+                    {selectedHoldings.size >= 2 && (
+                        <ToolbarButton $active={showComparison} onClick={toggleComparison}>
+                            <BarChart3 size={18} />
+                            Compare ({selectedHoldings.size})
+                        </ToolbarButton>
+                    )}
+                </Toolbar>
             </Header>
+
+            {/* BATCH ACTIONS */}
+            {selectedHoldings.size > 0 && (
+                <BatchActionsBar>
+                    <BatchInfo>
+                        <CheckSquare size={20} />
+                        {selectedHoldings.size} selected
+                    </BatchInfo>
+                    <BatchActions>
+                        <ToolbarButton $danger onClick={handleBatchDelete}>
+                            <Trash size={18} />
+                            Delete Selected
+                        </ToolbarButton>
+                        <ToolbarButton onClick={() => setSelectedHoldings(new Set())}>
+                            <X size={18} />
+                            Clear Selection
+                        </ToolbarButton>
+                    </BatchActions>
+                </BatchActionsBar>
+            )}
+
+            {/* COMPARISON MODE */}
+            {showComparison && selectedHoldings.size >= 2 && (
+                <ComparisonPanel>
+                    <ComparisonTitle>
+                        <BarChart3 size={24} />
+                        Comparing {selectedHoldings.size} Holdings
+                    </ComparisonTitle>
+                    <ComparisonGrid>
+                        {getComparisonData().map(data => (
+                            <ComparisonCard key={data.symbol}>
+                                <ComparisonSymbol>{data.symbol}</ComparisonSymbol>
+                                <ComparisonStat>Total Value</ComparisonStat>
+                                <ComparisonValue>${data.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</ComparisonValue>
+                                <ComparisonStat style={{ marginTop: '1rem' }}>Gain/Loss</ComparisonStat>
+                                <ComparisonValue positive={data.gain >= 0} negative={data.gain < 0}>
+                                    {data.gain >= 0 ? '+' : ''}${Math.abs(data.gain).toFixed(2)}
+                                    <div style={{ fontSize: '0.9rem', marginTop: '0.25rem' }}>
+                                        ({data.gain >= 0 ? '+' : ''}{data.gainPercent.toFixed(2)}%)
+                                    </div>
+                                </ComparisonValue>
+                                <ComparisonStat style={{ marginTop: '1rem' }}>Shares</ComparisonStat>
+                                <ComparisonValue>{data.shares}</ComparisonValue>
+                            </ComparisonCard>
+                        ))}
+                    </ComparisonGrid>
+                </ComparisonPanel>
+            )}
 
             {/* STATS */}
             {stats && (
@@ -876,96 +1530,146 @@ const PortfolioPage = () => {
                 </StatsGrid>
             )}
 
-            {/* HOLDINGS */}
-            <HoldingsGrid>
-                {portfolio.map((holding) => {
-                    const currentPrice = holding.currentPrice || holding.current_price || holding.price || 0;
-                    const avgPrice = holding.averagePrice || holding.average_price || holding.purchasePrice || currentPrice;
-                    const shares = holding.shares || holding.quantity || 0;
-                    const symbol = holding.symbol || holding.ticker || 'Unknown';
-                    
-                    const totalValue = currentPrice * shares;
-                    const totalCost = avgPrice * shares;
-                    const gain = totalValue - totalCost;
-                    const gainPercent = totalCost > 0 ? (gain / totalCost) * 100 : 0;
+            {/* HOLDINGS WITH DRAG & DROP */}
+            <DragDropContext onDragEnd={handleDragEnd}>
+                <Droppable droppableId="portfolio">
+                    {(provided) => (
+                        <HoldingsGrid {...provided.droppableProps} ref={provided.innerRef}>
+                            {filteredPortfolio.map((holding, index) => {
+                                const currentPrice = holding.currentPrice || holding.current_price || holding.price || 0;
+                                const avgPrice = holding.averagePrice || holding.average_price || holding.purchasePrice || currentPrice;
+                                const shares = holding.shares || holding.quantity || 0;
+                                const symbol = holding.symbol || holding.ticker || 'Unknown';
+                                
+                                const totalValue = currentPrice * shares;
+                                const totalCost = avgPrice * shares;
+                                const gain = totalValue - totalCost;
+                                const gainPercent = totalCost > 0 ? (gain / totalCost) * 100 : 0;
+                                const positive = gain >= 0;
+                                const isSelected = selectedHoldings.has(symbol);
 
-                    const prediction = predictions[symbol];
-                    const loadingPred = loadingPredictions[symbol];
+                                const prediction = predictions[symbol];
+                                const loadingPred = loadingPredictions[symbol];
 
-                    return (
-                        <HoldingCard key={holding._id || symbol} positive={gain >= 0}>
-                            <HoldingHeader>
-                                <HoldingSymbol>
-                                    {symbol}
-                                    {gain >= 0 ? 
-                                        <Star size={20} color="#10b981" /> : 
-                                        <Flame size={20} color="#ef4444" />
-                                    }
-                                </HoldingSymbol>
-                                <DeleteButton onClick={() => handleDeleteHolding(holding._id, symbol)}>
-                                    <Trash2 size={18} />
-                                </DeleteButton>
-                            </HoldingHeader>
+                                return (
+                                    <Draggable key={holding._id || symbol} draggableId={holding._id || symbol} index={index}>
+                                        {(provided, snapshot) => (
+                                            <HoldingCard
+                                                ref={provided.innerRef}
+                                                {...provided.draggableProps}
+                                                positive={positive}
+                                                $isDragging={snapshot.isDragging}
+                                                $selected={isSelected}
+                                            >
+                                                <DragHandle {...provided.dragHandleProps}>
+                                                    <GripVertical size={20} />
+                                                </DragHandle>
 
-                            <HoldingStats>
-                                <StatItem>
-                                    <StatItemLabel>Shares</StatItemLabel>
-                                    <StatItemValue>{shares}</StatItemValue>
-                                </StatItem>
-                                <StatItem>
-                                    <StatItemLabel>Avg Price</StatItemLabel>
-                                    <StatItemValue>${avgPrice.toFixed(2)}</StatItemValue>
-                                </StatItem>
-                                <StatItem>
-                                    <StatItemLabel>Current Price</StatItemLabel>
-                                    <StatItemValue>${currentPrice.toFixed(2)}</StatItemValue>
-                                </StatItem>
-                                <StatItem>
-                                    <StatItemLabel>Total Value</StatItemLabel>
-                                    <StatItemValue>${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</StatItemValue>
-                                </StatItem>
-                            </HoldingStats>
+                                                <HoldingHeader>
+                                                    <HoldingSymbolSection>
+                                                        <SelectCheckbox
+                                                            $checked={isSelected}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                toggleSelectHolding(symbol);
+                                                            }}
+                                                        >
+                                                            {isSelected && <CheckSquare size={16} color="white" />}
+                                                        </SelectCheckbox>
+                                                        <HoldingSymbol>
+                                                            {symbol}
+                                                            {positive ? 
+                                                                <Star size={20} color="#10b981" /> : 
+                                                                <Flame size={20} color="#ef4444" />
+                                                            }
+                                                        </HoldingSymbol>
+                                                    </HoldingSymbolSection>
+                                                    <ActionButtons>
+                                                        <IconButton
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleEditHolding(holding);
+                                                            }}
+                                                        >
+                                                            <Edit size={18} />
+                                                        </IconButton>
+                                                        <IconButton 
+                                                            variant="danger"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleDeleteHolding(holding._id, symbol);
+                                                            }}
+                                                        >
+                                                            <Trash2 size={18} />
+                                                        </IconButton>
+                                                    </ActionButtons>
+                                                </HoldingHeader>
 
-                            <PerformanceBar positive={gain >= 0}>
-                                <PerformanceIcon positive={gain >= 0}>
-                                    {gain >= 0 ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
-                                </PerformanceIcon>
-                                <PerformanceDetails>
-                                    <PerformanceValue positive={gain >= 0}>
-                                        ${Math.abs(gain).toFixed(2)}
-                                    </PerformanceValue>
-                                    <PerformancePercent positive={gain >= 0}>
-                                        {gainPercent >= 0 ? '+' : ''}{gainPercent.toFixed(2)}%
-                                    </PerformancePercent>
-                                </PerformanceDetails>
-                            </PerformanceBar>
+                                                <HoldingStats>
+                                                    <StatItem>
+                                                        <StatItemLabel>Shares</StatItemLabel>
+                                                        <StatItemValue>{shares}</StatItemValue>
+                                                    </StatItem>
+                                                    <StatItem>
+                                                        <StatItemLabel>Avg Price</StatItemLabel>
+                                                        <StatItemValue>${avgPrice.toFixed(2)}</StatItemValue>
+                                                    </StatItem>
+                                                    <StatItem>
+                                                        <StatItemLabel>Current Price</StatItemLabel>
+                                                        <StatItemValue>${currentPrice.toFixed(2)}</StatItemValue>
+                                                    </StatItem>
+                                                    <StatItem>
+                                                        <StatItemLabel>Total Value</StatItemLabel>
+                                                        <StatItemValue>${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</StatItemValue>
+                                                    </StatItem>
+                                                </HoldingStats>
 
-                            <PredictionBadge>
-                                <PredictionHeader>
-                                    <Brain size={18} color="#a78bfa" />
-                                    <strong style={{ color: '#a78bfa' }}>AI Forecast (7d)</strong>
-                                </PredictionHeader>
-                                <PredictionText>
-                                    {loadingPred ? (
-                                        'Analyzing...'
-                                    ) : prediction ? (
-                                        <>
-                                            <strong>${prediction.prediction?.target_price?.toFixed(2)}</strong> • {prediction.prediction?.direction} • {prediction.prediction?.confidence?.toFixed(0)}% confidence
-                                        </>
-                                    ) : (
-                                        'No prediction available'
-                                    )}
-                                </PredictionText>
-                                {prediction && (
-                                    <ConfidenceBar>
-                                        <ConfidenceFill value={prediction.prediction?.confidence || 0} />
-                                    </ConfidenceBar>
-                                )}
-                            </PredictionBadge>
-                        </HoldingCard>
-                    );
-                })}
-            </HoldingsGrid>
+                                                <PerformanceBar positive={positive}>
+                                                    <PerformanceIcon positive={positive}>
+                                                        {positive ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
+                                                    </PerformanceIcon>
+                                                    <PerformanceDetails>
+                                                        <PerformanceValue positive={positive}>
+                                                            ${Math.abs(gain).toFixed(2)}
+                                                        </PerformanceValue>
+                                                        <PerformancePercent positive={positive}>
+                                                            {gainPercent >= 0 ? '+' : ''}{gainPercent.toFixed(2)}%
+                                                        </PerformancePercent>
+                                                    </PerformanceDetails>
+                                                </PerformanceBar>
+
+                                                <PredictionBadge>
+                                                    <PredictionHeader>
+                                                        <Brain size={18} color="#a78bfa" />
+                                                        <strong style={{ color: '#a78bfa' }}>AI Forecast (7d)</strong>
+                                                    </PredictionHeader>
+                                                    <PredictionText>
+                                                        {loadingPred ? (
+                                                            'Analyzing...'
+                                                        ) : prediction ? (
+                                                            <>
+                                                                <strong>${prediction.prediction?.target_price?.toFixed(2)}</strong> • {prediction.prediction?.direction} • {prediction.prediction?.confidence?.toFixed(0)}% confidence
+                                                            </>
+                                                        ) : (
+                                                            'No prediction available'
+                                                        )}
+                                                    </PredictionText>
+                                                    {prediction && (
+                                                        <ConfidenceBar>
+                                                            <ConfidenceFill value={prediction.prediction?.confidence || 0} />
+                                                        </ConfidenceBar>
+                                                    )}
+                                                </PredictionBadge>
+                                            </HoldingCard>
+                                        )}
+                                    </Draggable>
+                                );
+                            })}
+                            {provided.placeholder}
+                        </HoldingsGrid>
+                    )}
+                </Droppable>
+            </DragDropContext>
 
             {/* CHARTS */}
             <ChartsGrid>
@@ -1034,6 +1738,7 @@ const PortfolioPage = () => {
                 <Plus size={28} />
             </AddButton>
 
+            {/* ADD HOLDING MODAL */}
             {showAddModal && (
                 <Modal onClick={() => setShowAddModal(false)}>
                     <ModalContent onClick={(e) => e.stopPropagation()}>
@@ -1050,6 +1755,7 @@ const PortfolioPage = () => {
                                     value={formData.symbol}
                                     onChange={(e) => setFormData({ ...formData, symbol: e.target.value.toUpperCase() })}
                                     required
+                                    autoFocus
                                 />
                             </FormGroup>
                             <FormGroup>
@@ -1075,6 +1781,44 @@ const PortfolioPage = () => {
                                 />
                             </FormGroup>
                             <SubmitButton type="submit">Add Holding</SubmitButton>
+                        </Form>
+                    </ModalContent>
+                </Modal>
+            )}
+
+            {/* EDIT HOLDING MODAL */}
+            {showEditModal && selectedHolding && (
+                <Modal onClick={() => setShowEditModal(false)}>
+                    <ModalContent onClick={(e) => e.stopPropagation()}>
+                        <CloseButton onClick={() => setShowEditModal(false)}>
+                            <X size={20} />
+                        </CloseButton>
+                        <ModalTitle>Edit {selectedHolding.symbol}</ModalTitle>
+                        <Form onSubmit={handleUpdateHolding}>
+                            <FormGroup>
+                                <Label>Number of Shares</Label>
+                                <Input
+                                    type="number"
+                                    step="0.01"
+                                    placeholder="10"
+                                    value={formData.shares}
+                                    onChange={(e) => setFormData({ ...formData, shares: e.target.value })}
+                                    required
+                                    autoFocus
+                                />
+                            </FormGroup>
+                            <FormGroup>
+                                <Label>Average Purchase Price</Label>
+                                <Input
+                                    type="number"
+                                    step="0.01"
+                                    placeholder="150.00"
+                                    value={formData.averagePrice}
+                                    onChange={(e) => setFormData({ ...formData, averagePrice: e.target.value })}
+                                    required
+                                />
+                            </FormGroup>
+                            <SubmitButton type="submit">Update Holding</SubmitButton>
                         </Form>
                     </ModalContent>
                 </Modal>

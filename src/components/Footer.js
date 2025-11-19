@@ -562,7 +562,7 @@ const Footer = () => {
                         <LegalLink to="/terms">Terms of Service</LegalLink>
                         <LegalLink to="/privacy">Privacy Policy</LegalLink>
                         <LegalLink to="/disclaimer">Disclaimer</LegalLink>
-                        <LegalLink to="/cookies">Cookie Policy</LegalLink>
+                        <LegalLink to="/cookie-policy">Cookie Policy</LegalLink>
                     </LegalLinks>
                 </FooterBottom>
             </FooterContent>

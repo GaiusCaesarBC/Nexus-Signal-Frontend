@@ -1,6 +1,7 @@
 // client/src/pages/DashboardPage.js - THE MOST LEGENDARY DASHBOARD EVER - ENHANCED EDITION
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useTheme } from '../context/ThemeContext';
 import styled, { keyframes, css } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -75,8 +76,8 @@ const bounce = keyframes`
 const PageContainer = styled.div`
     min-height: 100vh;
     padding-top: 80px;
-    background: linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
-    color: #e0e6ed;
+    background: ${props => props.theme.colors.bg.primary};
+    color: ${props => props.theme.colors.text.primary};
     padding-left: 2rem;
     padding-right: 2rem;
     padding-bottom: 2rem;
@@ -808,6 +809,7 @@ const LoadingSpinner = styled.div`
 // ============ COMPONENT ============
 const DashboardPage = () => {
     const { api, user } = useAuth();
+    const { theme } = useTheme();
     const [portfolioStats, setPortfolioStats] = useState(null);
     const [marketMovers, setMarketMovers] = useState([]);
     const [predictions, setPredictions] = useState([]);
@@ -1000,7 +1002,7 @@ const DashboardPage = () => {
     }
 
     return (
-        <PageContainer>
+        <PageContainer theme={theme}>
             {/* Animated Background Particles */}
             <ParticleContainer>
                 {particles.map(particle => (
@@ -1026,19 +1028,19 @@ const DashboardPage = () => {
                     </HeaderLeft>
                     <HeaderRight>
                         <LiveClock>
-                            <Clock size={24} />
-                            <div>
-                                <ClockTime>{formatTime(currentTime)}</ClockTime>
-                                <ClockDate>{formatDate(currentTime)}</ClockDate>
-                            </div>
-                        </LiveClock>
-                        <MarketStatus open={marketOpen}>
-                            <StatusDot open={marketOpen} />
-                            <StatusText open={marketOpen}>
-                                {marketOpen ? 'Market Open' : 'Market Closed'}
-                            </StatusText>
-                        </MarketStatus>
-                    </HeaderRight>
+        <Clock size={24} />
+        <div>
+            <ClockTime>{formatTime(currentTime)}</ClockTime>
+            <ClockDate>{formatDate(currentTime)}</ClockDate>
+        </div>
+    </LiveClock>
+    <MarketStatus open={marketOpen}>
+        <StatusDot open={marketOpen} />
+        <StatusText open={marketOpen}>
+            {marketOpen ? 'Market Open' : 'Market Closed'}
+        </StatusText>
+    </MarketStatus>
+</HeaderRight>
                 </Header>
 
                 {/* STOCK TICKER */}
