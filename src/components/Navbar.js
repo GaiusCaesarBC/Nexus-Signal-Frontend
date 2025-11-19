@@ -10,7 +10,7 @@ import {
     Home, TrendingUp, PieChart, Eye, Filter, MapPin, Newspaper, BookOpen, Brain, MessageSquare,
     DollarSign, LogOut, User, Menu, X, ChevronDown, Zap,
     Settings, Bell, CheckCircle, AlertCircle, TrendingUp as TrendingUpIcon,
-    DollarSign as DollarIcon, Clock, ArrowUpRight, ArrowDownRight
+    DollarSign as DollarIcon, Clock, ArrowUpRight, ArrowDownRight, Trophy
 } from 'lucide-react';
 import nexusSignalLogo from '../assets/nexus-signal-logo.png';
 
@@ -286,6 +286,8 @@ const MarkAllRead = styled.button`
         color: #00adef;
     }
 `;
+
+
 
 const NotificationList = styled.div`
     overflow-y: auto;
@@ -661,17 +663,18 @@ const Navbar = () => {
     ]);
 
     const navItems = [
-        { path: '/dashboard', label: 'Dashboard', icon: Home },
-        { path: '/portfolio', label: 'Portfolio', icon: PieChart },
-        { path: '/watchlist', label: 'Watchlist', icon: Eye },
-        { path: '/screener', label: 'Screener', icon: Filter },
-        { path: '/heatmap', label: 'Heatmap', icon: MapPin },
-        { path: '/journal', label: 'Journal', icon: BookOpen },  
-        { path: '/news', label: 'News', icon: Newspaper },
-        { path: '/predict', label: 'AI Predict', icon: Brain },
-        { path: '/chat', label: 'AI Chat', icon: MessageSquare },
-        { path: '/pricing', label: 'Pricing', icon: DollarSign },
-    ];
+    { path: '/dashboard', label: 'Dashboard', icon: Home },
+    { path: '/portfolio', label: 'Portfolio', icon: PieChart },
+    { path: '/watchlist', label: 'Watchlist', icon: Eye },
+    { path: '/screener', label: 'Screener', icon: Filter },
+    { path: '/heatmap', label: 'Heatmap', icon: MapPin },
+    { path: '/leaderboard', label: 'Leaderboard', icon: Trophy },  // 🏆 ADD THIS
+    { path: '/journal', label: 'Journal', icon: BookOpen },  
+    { path: '/news', label: 'News', icon: Newspaper },
+    { path: '/predict', label: 'AI Predict', icon: Brain },
+    { path: '/chat', label: 'AI Chat', icon: MessageSquare },
+    { path: '/pricing', label: 'Pricing', icon: DollarSign },
+];
 
     const unreadCount = notifications.filter(n => n.unread).length;
 

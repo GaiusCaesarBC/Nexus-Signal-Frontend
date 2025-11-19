@@ -37,6 +37,8 @@ import ScreenerPage from './pages/ScreenerPage';
 import NewsPage from './pages/NewsPage';
 import HeatmapPage from './pages/HeatmapPage';
 import JournalPage from './pages/JournalPage';
+import LeaderboardPage from './pages/LeaderboardPage';
+import PublicProfilePage from './pages/PublicProfilePage';
 
 
 // ✅ NEW COMPONENT - Wraps content with styled-components theme
@@ -53,37 +55,39 @@ function AppContent() {
             <ScrollToTop />
             <Navbar />
             <main style={{ flexGrow: 1, minHeight: 'calc(100vh - 120px)' }}>
-                <Routes>
-                    {/* Public Routes */}
-                    <Route path="/" element={<LandingPage />} />
-                    <Route path="/login" element={<LoginPage />} />
-                    <Route path="/register" element={<RegisterPage />} />
-                    <Route path="/pricing" element={<PricingPage />} />
-                    <Route path="/about" element={<AboutPage />} />
-                    <Route path="/terms" element={<TermsOfServicePage />} />
-                    <Route path="/privacy" element={<PrivacyPolicyPage />} />
-                    <Route path="/disclaimer" element={<DisclaimerPage />} />
-                    <Route path="/profile" element={<ProfilePage />} />
-                    <Route path="/cookie-policy" element={<CookiePolicyPage />} />
+             <Routes>
+    {/* Public Routes */}
+    <Route path="/" element={<LandingPage />} />
+    <Route path="/login" element={<LoginPage />} />
+    <Route path="/register" element={<RegisterPage />} />
+    <Route path="/pricing" element={<PricingPage />} />
+    <Route path="/about" element={<AboutPage />} />
+    <Route path="/terms" element={<TermsOfServicePage />} />
+    <Route path="/privacy" element={<PrivacyPolicyPage />} />
+    <Route path="/disclaimer" element={<DisclaimerPage />} />
+    <Route path="/cookie-policy" element={<CookiePolicyPage />} />
 
-                    {/* Protected Routes */}
-                    <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-                    <Route path="/watchlist" element={<ProtectedRoute><WatchlistPage /></ProtectedRoute>} />
-                    <Route path="/portfolio" element={<ProtectedRoute><PortfolioPage /></ProtectedRoute>} />
-                    <Route path="/predict" element={<ProtectedRoute><PredictPage /></ProtectedRoute>} />
-                    <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
-                    <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
-                    <Route path="/screener" element={<ProtectedRoute><ScreenerPage /></ProtectedRoute>} />
-                    <Route path="/news" element={<ProtectedRoute><NewsPage /></ProtectedRoute>} />
-                    <Route path="/heatmap" element={<ProtectedRoute><HeatmapPage /></ProtectedRoute>} />
-                    <Route path="/journal" element={<ProtectedRoute><JournalPage /></ProtectedRoute>} />
-                    
-                    {/* Stock Details Page Route */}
-                    <Route path="/stocks/:symbol" element={<ProtectedRoute><StockPage /></ProtectedRoute>} />
+    {/* Protected Routes */}
+    <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+    <Route path="/watchlist" element={<ProtectedRoute><WatchlistPage /></ProtectedRoute>} />
+    <Route path="/portfolio" element={<ProtectedRoute><PortfolioPage /></ProtectedRoute>} />
+    <Route path="/predict" element={<ProtectedRoute><PredictPage /></ProtectedRoute>} />
+    <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+    <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+    <Route path="/screener" element={<ProtectedRoute><ScreenerPage /></ProtectedRoute>} />
+    <Route path="/news" element={<ProtectedRoute><NewsPage /></ProtectedRoute>} />
+    <Route path="/heatmap" element={<ProtectedRoute><HeatmapPage /></ProtectedRoute>} />
+    <Route path="/journal" element={<ProtectedRoute><JournalPage /></ProtectedRoute>} />
+    <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+    <Route path="/leaderboard" element={<ProtectedRoute><LeaderboardPage /></ProtectedRoute>} />
+    <Route path="/trader/:userId" element={<ProtectedRoute><PublicProfilePage /></ProtectedRoute>} />
+    
+    {/* Stock Details Page Route */}
+    <Route path="/stocks/:symbol" element={<ProtectedRoute><StockPage /></ProtectedRoute>} />
 
-                    {/* Catch-all for 404 Not Found pages */}
-                    <Route path="*" element={<NotFoundPage />} />
-                </Routes>
+    {/* Catch-all for 404 Not Found pages */}
+    <Route path="*" element={<NotFoundPage />} />
+</Routes> 
             </main>
             <Footer />
             <AIChatWidget />
