@@ -772,50 +772,57 @@ const LoadingText = styled.div`
 
 // ============ COMPONENT ============
 const NewsPage = () => {
-    const { api } = useAuth();
+    const { api, isAuthenticated } = useAuth();
     const toast = useToast();
     const [loading, setLoading] = useState(false);
-    const [articles, setArticles] = useState([]);
-    const [filteredArticles, setFilteredArticles] = useState([]);
-    const [searchTerm, setSearchTerm] = useState('');
     const [activeTab, setActiveTab] = useState('all'); // all, stocks, crypto, trending
-    const [sentimentFilter, setSentimentFilter] = useState('all'); // all, bullish, bearish, neutral
     const [savedArticles, setSavedArticles] = useState([]);
     const [selectedArticle, setSelectedArticle] = useState(null);
     const [showModal, setShowModal] = useState(false);
+    const [newsArticles, setNewsArticles] = useState([]);
+    const [filteredNews, setFilteredNews] = useState([]);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState('all');
+    const [sentimentFilter, setSentimentFilter] = useState('all');
+    
 
-    useEffect(() => {
-        // Load saved articles from localStorage
-        const saved = JSON.parse(localStorage.getItem('savedArticles') || '[]');
-        setSavedArticles(saved);
-        
-        // Fetch initial articles
+   useEffect(() => {
+    if (isAuthenticated) {
         fetchNews();
-    }, []);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [isAuthenticated]);
 
-    useEffect(() => {
-        applyFilters();
-    }, [articles, searchTerm, activeTab, sentimentFilter]);
+useEffect(() => {
+    console.log('newsArticles changed!', newsArticles.length);
+    applyFilters();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [newsArticles, searchQuery, selectedCategory, sentimentFilter]);
 
-    const fetchNews = async () => {
-        setLoading(true);
-        
-        try {
-            // Mock data for now - replace with real API
-            const mockArticles = generateMockArticles();
-            
-            // Simulate API delay
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            
-            setArticles(mockArticles);
-            toast.success(`Loaded ${mockArticles.length} latest articles`, 'News Updated');
-        } catch (error) {
-            console.error('Error fetching news:', error);
-            toast.error('Failed to load news feed', 'Error');
-        } finally {
-            setLoading(false);
+  const fetchNews = async () => {
+    setLoading(true);
+    try {
+        const params = new URLSearchParams();
+        if (selectedCategory && selectedCategory !== 'all') {
+            params.append('category', selectedCategory);
         }
-    };
+        params.append('limit', 50);
+
+        const response = await api.get(`/news?${params.toString()}`);
+        console.log('News response:', response.data);
+        
+        setNewsArticles(response.data || []);
+        
+        
+        toast.success(`Loaded ${response.data?.length || 0} articles`, 'News Updated');
+    } catch (error) {
+        console.error('Error fetching news:', error);
+        toast.error('Failed to load news', 'Error');
+        setNewsArticles([]);
+    } finally {
+        setLoading(false);
+    }
+};  
 
     const generateMockArticles = () => {
         const articles = [
@@ -975,33 +982,39 @@ const NewsPage = () => {
     };
 
     const applyFilters = () => {
-        let filtered = [...articles];
+    console.log('applyFilters called!');
+    console.log('newsArticles:', newsArticles);
+    console.log('newsArticles length:', newsArticles.length);
+    
+    let filtered = [...newsArticles];
 
-        // Search filter
-        if (searchTerm) {
-            filtered = filtered.filter(article =>
-                article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                article.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                article.tickers.some(ticker => ticker.toLowerCase().includes(searchTerm.toLowerCase()))
-            );
-        }
+    // Search filter
+    if (searchQuery) {
+        filtered = filtered.filter(article => {
+            const title = (article.title || '').toLowerCase();
+            const description = (article.description || '').toLowerCase();
+            const query = searchQuery.toLowerCase();
+            return title.includes(query) || description.includes(query);
+        });
+    }
 
-        // Category filter
-        if (activeTab !== 'all') {
-            if (activeTab === 'trending') {
-                filtered = filtered.filter(article => article.trending);
-            } else {
-                filtered = filtered.filter(article => article.category === activeTab);
-            }
-        }
+    // Category filter
+    if (selectedCategory && selectedCategory !== 'all') {
+        filtered = filtered.filter(article => 
+            (article.category || '').toLowerCase() === selectedCategory.toLowerCase()
+        );
+    }
 
-        // Sentiment filter
-        if (sentimentFilter !== 'all') {
-            filtered = filtered.filter(article => article.sentiment === sentimentFilter);
-        }
+    // Sentiment filter
+    if (sentimentFilter && sentimentFilter !== 'all') {
+        filtered = filtered.filter(article => 
+            (article.sentiment || '').toLowerCase() === sentimentFilter.toLowerCase()
+        );
+    }
 
-        setFilteredArticles(filtered);
-    };
+    console.log('filtered length:', filtered.length);
+    setFilteredNews(filtered);
+};
 
     const handleToggleSave = (articleId) => {
         let updated;
@@ -1088,8 +1101,8 @@ const NewsPage = () => {
                     <SearchInput
                         type="text"
                         placeholder="Search news or ticker symbols..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
+                       value={searchQuery}
+onChange={(e) => setSearchQuery(e.target.value)}
                     />
                 </SearchBar>
 
@@ -1171,9 +1184,9 @@ const NewsPage = () => {
                     <LoadingSpinner size={64} />
                     <LoadingText>Analyzing latest market news with AI...</LoadingText>
                 </LoadingContainer>
-            ) : filteredArticles.length > 0 ? (
+            ) : filteredNews.length > 0 ? (
                 <NewsGrid>
-                    {filteredArticles.map((article) => (
+                    {filteredNews.map((article) => (
                         <NewsCard
                             key={article.id}
                             $sentiment={article.sentiment}

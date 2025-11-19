@@ -895,59 +895,95 @@ const EmptyIcon = styled.div`
 
 const COLORS = ['#00adef', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
-// ============ COMPONENT ============
 const PortfolioPage = () => {
     const { api } = useAuth();
     const toast = useToast();
-    const [portfolio, setPortfolio] = useState([]);
+    
+    // Portfolio data
+    const [portfolio, setPortfolio] = useState([]); // ✅ ADD THIS
+    const [holdings, setHoldings] = useState([]);
     const [filteredPortfolio, setFilteredPortfolio] = useState([]);
-    const [stats, setStats] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState(null); // ✅ ADD THIS
+    const [totalValue, setTotalValue] = useState(0);
+    const [totalCost, setTotalCost] = useState(0);
+    const [totalGainLoss, setTotalGainLoss] = useState(0);
+    const [totalGainLossPercent, setTotalGainLossPercent] = useState(0);
+    
+    // UI state
+    const [loading, setLoading] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
     const [showAddModal, setShowAddModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [selectedHolding, setSelectedHolding] = useState(null);
     const [selectedHoldings, setSelectedHoldings] = useState(new Set());
     const [showComparison, setShowComparison] = useState(false);
+    
+    // Predictions
     const [predictions, setPredictions] = useState({});
     const [loadingPredictions, setLoadingPredictions] = useState({});
+    
+    // Filters
     const [searchQuery, setSearchQuery] = useState('');
     const [sortBy, setSortBy] = useState('symbol');
     const [filterBy, setFilterBy] = useState('all');
-    const [formData, setFormData] = useState({
+    
+    // Form data for adding/editing
+    const [formData, setFormData] = useState({ // ✅ ADD THIS
         symbol: '',
         shares: '',
         averagePrice: ''
     });
+    
+    const [newHolding, setNewHolding] = useState({
+        symbol: '',
+        type: 'stock',
+        shares: '',
+        avgPrice: '',
+        purchaseDate: new Date().toISOString().split('T')[0]
+    });
+    
+    // ... rest of your code
 
     useEffect(() => {
-        fetchPortfolio();
-    }, []);
+    fetchPortfolio();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+}, []);
 
     useEffect(() => {
         filterAndSortPortfolio();
     }, [portfolio, searchQuery, sortBy, filterBy]);
 
     const fetchPortfolio = async () => {
-        try {
-            setLoading(true);
-            const response = await api.get('/portfolio');
-            const holdings = response.data.holdings || response.data || [];
-            setPortfolio(holdings);
-            calculateStats(holdings);
+    setLoading(true);
+    try {
+        const response = await api.get('/portfolio');
+        console.log('Portfolio response:', response.data); // ✅ DEBUG
+        
+        if (response.data.holdings && response.data.holdings.length > 0) {
+            setPortfolio(response.data.holdings); // ✅ Set portfolio state
+            setHoldings(response.data.holdings);
+            setTotalValue(response.data.totalValue || 0);
+            setTotalCost(response.data.totalCost || 0);
+            setTotalGainLoss(response.data.totalGainLoss || 0);
+            setTotalGainLossPercent(response.data.totalGainLossPercent || 0);
             
-            holdings.forEach(holding => {
-                fetchPrediction(holding.symbol || holding.ticker);
-            });
-        } catch (error) {
-            console.error('Error fetching portfolio:', error);
-            toast.error('Failed to load portfolio', 'Error');
+            // Calculate stats
+            calculateStats(response.data.holdings);
+        } else {
+            console.log('No holdings found');
             setPortfolio([]);
-        } finally {
-            setLoading(false);
+            setHoldings([]);
         }
-    };
-
+        
+        toast.success('Portfolio loaded', 'Success');
+    } catch (error) {
+        console.error('Error fetching portfolio:', error);
+        console.error('Error response:', error.response?.data); // ✅ DEBUG
+        toast.error('Failed to load portfolio', 'Error');
+    } finally {
+        setLoading(false);
+    }
+};
     const handleRefresh = async () => {
         setRefreshing(true);
         await fetchPortfolio();
@@ -1050,56 +1086,35 @@ const PortfolioPage = () => {
         });
     };
 
-    const handleAddHolding = async (e) => {
-        e.preventDefault();
-        
-        const symbol = formData.symbol.toUpperCase().trim();
-        const shares = parseFloat(formData.shares);
-        const avgPrice = parseFloat(formData.averagePrice);
-        
-        if (!symbol) {
-            toast.warning('Please enter a stock symbol', 'Missing Symbol');
-            return;
-        }
-        
-        if (shares <= 0) {
-            toast.warning('Number of shares must be greater than 0', 'Invalid Shares');
-            return;
-        }
-        
-        if (avgPrice <= 0) {
-            toast.warning('Average price must be greater than 0', 'Invalid Price');
-            return;
-        }
-        
-        try {
-            await api.post('/portfolio/holdings', {
-                symbol,
-                shares,
-                averagePrice: avgPrice
-            });
-            
-            toast.success(`${shares} shares of ${symbol} added to portfolio!`, 'Holding Added');
-            setShowAddModal(false);
-            setFormData({ symbol: '', shares: '', averagePrice: '' });
-            fetchPortfolio();
-        } catch (error) {
-            console.error('Error adding holding:', error);
-            
-            const errorMsg = error.response?.data?.error || error.response?.data?.msg || '';
-            
-            if (errorMsg.includes('already exists') || error.response?.status === 409) {
-                toast.warning(`${symbol} is already in your portfolio`, 'Already Exists');
-            } else if (errorMsg.includes('not found') || error.response?.status === 404) {
-                toast.error(`Stock symbol ${symbol} not found`, 'Invalid Symbol');
-            } else if (error.response?.status === 429) {
-                toast.warning('Too many requests. Please wait a moment.', 'Slow Down');
-            } else {
-                toast.error('Failed to add holding to portfolio', 'Error');
-            }
-        }
-    };
+   const addHolding = async (e) => {
+    e.preventDefault();
+    
+    if (!formData.symbol || !formData.shares || !formData.averagePrice) {
+        toast.warning('Please fill in all fields', 'Missing Information');
+        return;
+    }
 
+    try {
+        const response = await api.post('/portfolio/holdings', {
+            symbol: formData.symbol.toUpperCase(),
+            shares: parseFloat(formData.shares),
+            averagePrice: parseFloat(formData.averagePrice), // ✅ Changed from avgPrice
+            purchaseDate: new Date().toISOString().split('T')[0]
+        });
+
+        console.log('Add holding response:', response.data);
+
+        toast.success(`${formData.symbol.toUpperCase()} added to portfolio`, 'Success');
+        setShowAddModal(false);
+        setFormData({ symbol: '', shares: '', averagePrice: '' });
+        
+        await fetchPortfolio();
+    } catch (error) {
+        console.error('Error adding holding:', error);
+        console.error('Error response:', error.response?.data);
+        toast.error(error.response?.data?.error || 'Failed to add holding', 'Error');
+    }
+};
     const handleEditHolding = (holding) => {
         setSelectedHolding(holding);
         setFormData({
@@ -1137,18 +1152,20 @@ const PortfolioPage = () => {
         }
     };
 
-    const handleDeleteHolding = async (holdingId, symbol) => {
-        if (!window.confirm(`Delete ${symbol} from portfolio?`)) return;
+    const deleteHolding = async (holdingId) => {
+    if (!window.confirm('Are you sure you want to remove this holding?')) {
+        return;
+    }
 
-        try {
-            await api.delete(`/portfolio/holdings/${holdingId}`);
-            toast.success(`${symbol} removed from portfolio`, 'Holding Deleted');
-            fetchPortfolio();
-        } catch (error) {
-            console.error('Error deleting holding:', error);
-            toast.error(`Failed to remove ${symbol}`, 'Error');
-        }
-    };
+    try {
+        await api.delete(`/portfolio/holdings/${holdingId}`);
+        toast.success('Holding removed from portfolio', 'Deleted');
+        fetchPortfolio(); // Reload portfolio
+    } catch (error) {
+        console.error('Error deleting holding:', error);
+        toast.error('Failed to delete holding', 'Error');
+    }
+};
 
     const toggleSelectHolding = (symbol) => {
         setSelectedHoldings(prev => {
@@ -1334,7 +1351,7 @@ const PortfolioPage = () => {
                                 <X size={20} />
                             </CloseButton>
                             <ModalTitle>Add New Holding</ModalTitle>
-                            <Form onSubmit={handleAddHolding}>
+                            <Form onSubmit={addHolding}>
                                 <FormGroup>
                                     <Label>Stock Symbol</Label>
                                     <Input
@@ -1587,9 +1604,9 @@ const PortfolioPage = () => {
                                                     <ActionButtons>
                                                         <IconButton
                                                             onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleEditHolding(holding);
-                                                            }}
+    e.stopPropagation();
+    deleteHolding(holding._id);
+}}
                                                         >
                                                             <Edit size={18} />
                                                         </IconButton>
@@ -1597,7 +1614,7 @@ const PortfolioPage = () => {
                                                             variant="danger"
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
-                                                                handleDeleteHolding(holding._id, symbol);
+                                                                deleteHolding(holding._id);
                                                             }}
                                                         >
                                                             <Trash2 size={18} />
@@ -1746,7 +1763,7 @@ const PortfolioPage = () => {
                             <X size={20} />
                         </CloseButton>
                         <ModalTitle>Add New Holding</ModalTitle>
-                        <Form onSubmit={handleAddHolding}>
+                        <Form onSubmit={addHolding}>
                             <FormGroup>
                                 <Label>Stock Symbol</Label>
                                 <Input

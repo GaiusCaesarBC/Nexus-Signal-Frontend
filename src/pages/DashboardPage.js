@@ -4,12 +4,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import styled, { keyframes, css } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import {
     TrendingUp, TrendingDown, Activity, DollarSign, PieChart,
     Zap, Target, Brain, Eye, ArrowUpRight, ArrowDownRight,
     Clock, BarChart3, Flame, Star, Bell, Trophy,
     CheckCircle, AlertTriangle,
-    RefreshCw, Download, Sparkles
+    RefreshCw, Download, Sparkles,
 } from 'lucide-react';
 import {
     AreaChart, Area,
@@ -808,8 +809,9 @@ const LoadingSpinner = styled.div`
 
 // ============ COMPONENT ============
 const DashboardPage = () => {
-    const { api, user } = useAuth();
+    const { api, isAuthenticated, user } = useAuth();
     const { theme } = useTheme();
+    const toast = useToast();
     const [portfolioStats, setPortfolioStats] = useState(null);
     const [marketMovers, setMarketMovers] = useState([]);
     const [predictions, setPredictions] = useState([]);
@@ -862,39 +864,68 @@ const DashboardPage = () => {
     }, []);
 
     useEffect(() => {
+    if (isAuthenticated) {
         fetchDashboardData();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [isAuthenticated]);
 
-    const fetchDashboardData = async () => {
-        try {
-            setLoading(true);
-            
-            // Fetch portfolio
-            const portfolioRes = await api.get('/portfolio');
-            calculatePortfolioStats(portfolioRes.data.holdings || []);
+const fetchDashboardData = async () => {
+    try {
+        setLoading(true);
+        
+        // ✅ Fetch data with fallbacks for missing endpoints
+        const [portfolioRes, watchlistRes, newsRes, predictionsRes] = await Promise.all([
+            api.get('/portfolio').catch(() => ({ data: { holdings: [], totalValue: 0 } })),
+            api.get('/watchlist').catch(() => ({ data: [] })),
+            api.get('/news?limit=5').catch(() => ({ data: [] })),
+            api.get('/predictions/recent').catch(() => ({ data: [] }))
+        ]);
 
-            // Fetch trending stocks for ticker
+        // ✅ REAL PORTFOLIO DATA
+        calculatePortfolioStats(portfolioRes.data.holdings || []);
+
+        // ✅ REAL TICKER DATA - Get from watchlist or top holdings
+        if (watchlistRes.data && watchlistRes.data.length > 0) {
+            const tickerSymbols = watchlistRes.data.slice(0, 8).map(item => ({
+                symbol: item.symbol,
+                price: item.currentPrice || 0,
+                change: item.change || 0
+            }));
+            setTickerData(tickerSymbols);
+        } else {
+            // Fallback ticker data
             setTickerData([
                 { symbol: 'AAPL', price: 175.50, change: 2.5 },
                 { symbol: 'TSLA', price: 242.80, change: -1.2 },
                 { symbol: 'NVDA', price: 495.20, change: 5.8 },
-                { symbol: 'MSFT', price: 378.90, change: 1.4 },
-                { symbol: 'GOOGL', price: 140.20, change: -0.8 },
-                { symbol: 'AMZN', price: 178.30, change: 3.2 },
-                { symbol: 'META', price: 485.60, change: 2.1 },
-                { symbol: 'AMD', price: 142.70, change: 4.5 },
             ]);
+        }
 
-            // Set market movers
+        // ✅ REAL MARKET MOVERS - Get from screener
+        try {
+            const screenRes = await api.get('/screener/stocks?changeFilter=gainers');
+            if (screenRes.data && screenRes.data.length > 0) {
+                setMarketMovers(screenRes.data.slice(0, 4).map(stock => ({
+                    symbol: stock.symbol,
+                    name: stock.name || stock.symbol,
+                    price: stock.price,
+                    change: stock.changePercent
+                })));
+            }
+        } catch (error) {
+            console.log('Market movers not available, using fallback');
             setMarketMovers([
                 { symbol: 'NVDA', name: 'NVIDIA Corp', price: 495.20, change: 5.8 },
                 { symbol: 'AMD', name: 'Advanced Micro', price: 142.70, change: 4.5 },
-                { symbol: 'AMZN', name: 'Amazon.com', price: 178.30, change: 3.2 },
-                { symbol: 'TSLA', name: 'Tesla Inc', price: 242.80, change: -1.2 },
             ]);
+        }
 
-            // Mock predictions
+        // ✅ REAL PREDICTIONS
+        if (predictionsRes.data && predictionsRes.data.length > 0) {
+            setPredictions(predictionsRes.data.slice(0, 2));
+        } else {
+            // Fallback predictions
             setPredictions([
                 {
                     symbol: 'AAPL',
@@ -902,39 +933,61 @@ const DashboardPage = () => {
                     targetPrice: 182.50,
                     confidence: 85,
                     timeframe: '7 days'
-                },
-                {
-                    symbol: 'NVDA',
-                    direction: 'UP',
-                    targetPrice: 520.00,
-                    confidence: 78,
-                    timeframe: '7 days'
                 }
             ]);
-
-            // Mock chart data
-            setChartData([
-                { date: 'Mon', value: 10000 },
-                { date: 'Tue', value: 10500 },
-                { date: 'Wed', value: 10200 },
-                { date: 'Thu', value: 11000 },
-                { date: 'Fri', value: 11500 },
-            ]);
-
-            // Mock activity feed
-            setActivities([
-                { type: 'success', icon: CheckCircle, text: 'AAPL prediction was correct! +2.5%', time: '2 hours ago' },
-                { type: 'info', icon: Bell, text: 'New AI prediction available for NVDA', time: '3 hours ago' },
-                { type: 'warning', icon: AlertTriangle, text: 'TSLA volatility alert', time: '5 hours ago' },
-                { type: 'success', icon: TrendingUp, text: 'Portfolio gained $250 today', time: '6 hours ago' },
-            ]);
-
-        } catch (error) {
-            console.error('Error fetching dashboard data:', error);
-        } finally {
-            setLoading(false);
         }
-    };
+
+        // ✅ REAL CHART DATA - Portfolio performance
+        if (portfolioRes.data.performanceHistory) {
+            setChartData(portfolioRes.data.performanceHistory);
+        } else {
+            const today = new Date();
+            const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+            const baseValue = portfolioRes.data.totalValue || 10000;
+            const mockChart = days.map((day, index) => ({
+                date: day,
+                value: baseValue * (0.95 + (index * 0.025))
+            }));
+            setChartData(mockChart);
+        }
+
+        // ✅ REAL ACTIVITY FEED
+        const recentActivities = [];
+        
+        if (portfolioRes.data.totalGainLoss) {
+            const isGain = portfolioRes.data.totalGainLoss > 0;
+            recentActivities.push({
+                type: isGain ? 'success' : 'warning',
+                icon: isGain ? TrendingUp : TrendingDown,
+                text: `Portfolio ${isGain ? 'gained' : 'lost'} $${Math.abs(portfolioRes.data.totalGainLoss).toFixed(2)} today`,
+                time: 'Today'
+            });
+        }
+
+        if (newsRes.data && newsRes.data.length > 0) {
+            newsRes.data.slice(0, 2).forEach(article => {
+                recentActivities.push({
+                    type: 'info',
+                    icon: Bell,
+                    text: article.title.substring(0, 60) + '...',
+                    time: 'Recent'
+                });
+            });
+        }
+
+        setActivities(recentActivities.length > 0 ? recentActivities.slice(0, 4) : [
+            { type: 'info', icon: Bell, text: 'Welcome to your dashboard!', time: 'Now' }
+        ]);
+
+        toast.success('Dashboard loaded', 'Welcome back!');
+
+    } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+        toast.error('Some data failed to load', 'Warning');
+    } finally {
+        setLoading(false);
+    }
+};
 
     const calculatePortfolioStats = (holdings) => {
         if (!holdings || holdings.length === 0) {
@@ -1050,7 +1103,7 @@ const DashboardPage = () => {
                             <TickerItem key={index}>
                                 <TickerSymbol>{stock.symbol}</TickerSymbol>
                                 <TickerPrice>${stock.price.toFixed(2)}</TickerPrice>
-                                <TickerChange positive={stock.change >= 0}>
+                                <TickerChange $positive={stock.change >= 0}>
                                     {stock.change >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
                                     {stock.change >= 0 ? '+' : ''}{stock.change}%
                                 </TickerChange>
@@ -1080,10 +1133,10 @@ const DashboardPage = () => {
                             {portfolioStats?.totalGain >= 0 ? <TrendingUp size={24} /> : <TrendingDown size={24} />}
                         </StatIcon>
                         <StatLabel>Total Gain/Loss</StatLabel>
-                        <StatValue positive={portfolioStats?.totalGain >= 0} negative={portfolioStats?.totalGain < 0}>
+                        <StatValue $positive={portfolioStats?.totalGain >= 0} $negative={portfolioStats?.totalGain < 0}>
                             ${Math.abs(portfolioStats?.totalGain || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                         </StatValue>
-                        <StatSubtext positive={portfolioStats?.totalGainPercent >= 0} negative={portfolioStats?.totalGainPercent < 0}>
+                        <StatSubtext $positive={portfolioStats?.totalGainPercent >= 0} $negative={portfolioStats?.totalGainPercent < 0}>
                             {portfolioStats?.totalGainPercent >= 0 ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
                             {portfolioStats?.totalGainPercent >= 0 ? '+' : ''}{portfolioStats?.totalGainPercent?.toFixed(2) || 0}%
                         </StatSubtext>
@@ -1228,7 +1281,7 @@ const DashboardPage = () => {
                                         </MoverInfo>
                                         <MoverPrice>
                                             <MoverPriceValue>${mover.price.toFixed(2)}</MoverPriceValue>
-                                            <MoverChange positive={mover.change >= 0}>
+                                            <MoverChange $positive={mover.change >= 0}>
                                                 {mover.change >= 0 ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
                                                 {mover.change >= 0 ? '+' : ''}{mover.change}%
                                             </MoverChange>

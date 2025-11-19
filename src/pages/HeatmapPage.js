@@ -568,7 +568,7 @@ const EmptyText = styled.p`
 
 // ============ COMPONENT ============
 const HeatmapPage = () => {
-    const { api } = useAuth();
+    const { api, isAuthenticated } = useAuth();
     const toast = useToast();
     const [loading, setLoading] = useState(false);
     const [mode, setMode] = useState('stocks'); // 'stocks' or 'crypto'
@@ -583,29 +583,32 @@ const HeatmapPage = () => {
     });
 
     useEffect(() => {
+    if (isAuthenticated) {
         fetchMarketData();
-    }, [mode]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [mode, isAuthenticated]);
 
     const fetchMarketData = async () => {
-        setLoading(true);
+    setLoading(true);
+    
+    try {
+        const endpoint = mode === 'stocks' ? '/heatmap/stocks' : '/heatmap/crypto';
+        const response = await api.get(endpoint);
         
-        try {
-            // Mock data for now - replace with real API
-            const mockData = mode === 'stocks' ? generateMockStocks() : generateMockCrypto();
-            
-            // Simulate API delay
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            
-            setData(mockData);
-            calculateStats(mockData);
-            toast.success(`Loaded ${mockData.length} ${mode === 'stocks' ? 'stocks' : 'cryptocurrencies'}`, 'Market Updated');
-        } catch (error) {
-            console.error('Error fetching market data:', error);
-            toast.error('Failed to load market data', 'Error');
-        } finally {
-            setLoading(false);
-        }
-    };
+        console.log('Heatmap response:', response.data); // DEBUG
+        
+        setData(response.data || []);
+        calculateStats(response.data || []);
+        toast.success(`Loaded ${response.data?.length || 0} ${mode === 'stocks' ? 'stocks' : 'cryptocurrencies'}`, 'Market Updated');
+    } catch (error) {
+        console.error('Error fetching market data:', error);
+        toast.error('Failed to load market data', 'Error');
+        setData([]); // Empty on error
+    } finally {
+        setLoading(false);
+    }
+};
 
     const generateMockStocks = () => {
         const stocks = [
