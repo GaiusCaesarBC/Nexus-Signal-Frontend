@@ -1,22 +1,30 @@
-// client/src/index.js - CORRECT ORDER - ToastProvider OUTSIDE AuthProvider
-
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
+import './index.css';
 import App from './App';
+import reportWebVitals from './reportWebVitals';
+import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
-import './index.css';
+import { ThemeProvider } from './context/ThemeContext';
+import { StripeProvider } from './context/StripeContext';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
+
 root.render(
-    <React.StrictMode>
-        <BrowserRouter>
-            <ToastProvider> {/* ✅ TOAST MUST BE OUTSIDE - AuthContext needs it! */}
-                <AuthProvider>
-                    <App />
-                </AuthProvider>
-            </ToastProvider>
-        </BrowserRouter>
-    </React.StrictMode>
+  <React.StrictMode>
+    <BrowserRouter>
+      <ToastProvider>
+        <AuthProvider>
+          <ThemeProvider>
+            <StripeProvider>
+              <App />
+            </StripeProvider>
+          </ThemeProvider>
+        </AuthProvider>
+      </ToastProvider>
+    </BrowserRouter>
+  </React.StrictMode>
 );
+
+reportWebVitals();
