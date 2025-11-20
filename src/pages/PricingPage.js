@@ -1,8 +1,11 @@
-// client/src/pages/PricingPage.js - THE MOST LEGENDARY PRICING PAGE
+// client/src/pages/PricingPage.js - WITH WORKING STRIPE CHECKOUT
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { Check, Zap, Crown, Star, Rocket, Sparkles, TrendingUp, Shield, Award } from 'lucide-react';
 import nexusSignalLogo from '../assets/nexus-signal-logo.png';
+import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
+import { useNavigate } from 'react-router-dom';
 
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`
@@ -33,11 +36,6 @@ const particles = keyframes`
 const pulse = keyframes`
     0%, 100% { transform: scale(1); }
     50% { transform: scale(1.05); }
-`;
-
-const rotate = keyframes`
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
 `;
 
 const neonGlow = keyframes`
@@ -71,7 +69,6 @@ const PricingContainer = styled.div`
     overflow: hidden;
 `;
 
-// Animated background particles
 const ParticleContainer = styled.div`
     position: fixed;
     top: 0;
@@ -413,6 +410,17 @@ const ActionButton = styled.button`
     }
 `;
 
+const ComparisonBadge = styled.div`
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    margin-top: 1rem;
+    font-size: 0.85rem;
+    color: #10b981;
+    font-weight: 600;
+`;
+
 const FooterHashtags = styled.div`
     z-index: 2;
     margin-top: 5rem;
@@ -444,22 +452,22 @@ const FooterHashtags = styled.div`
     }
 `;
 
-const ComparisonBadge = styled.div`
-    background: rgba(16, 185, 129, 0.1);
-    border: 1px solid rgba(16, 185, 129, 0.3);
-    border-radius: 8px;
-    padding: 0.5rem 1rem;
-    margin-top: 1rem;
-    font-size: 0.85rem;
-    color: #10b981;
-    font-weight: 600;
-`;
-
 // ============ COMPONENT ============
 const PricingPage = () => {
+    const { api, user } = useAuth();
+    const toast = useToast();
+    const navigate = useNavigate();
     const [particles, setParticles] = useState([]);
+    const [loading, setLoading] = useState(null);
 
-    // Generate background particles on mount
+    // Price IDs
+    const PRICE_IDS = {
+        starter: 'price_1SV9d8CtdTItnGjydNZsbXl3',
+        pro: 'price_1SV9dTCtdTItnGjycfSxQtAg',
+        premium: 'price_1SV9doCtdTItnGjyYb8yG97j',
+        elite: 'price_1SV9eACtdTItnGjyzSNaNYhP'
+    };
+
     useEffect(() => {
         const newParticles = Array.from({ length: 30 }, (_, i) => ({
             id: i,
@@ -472,9 +480,30 @@ const PricingPage = () => {
         setParticles(newParticles);
     }, []);
 
+    const handleSubscribe = async (plan) => {
+        if (!user) {
+            toast.warning('Please log in to subscribe', 'Login Required');
+            navigate('/login');
+            return;
+        }
+
+        setLoading(plan);
+
+        try {
+            const priceId = PRICE_IDS[plan];
+            const response = await api.post('/stripe/create-checkout-session', { priceId });
+
+            // Redirect to Stripe Checkout
+            window.location.href = response.data.url;
+        } catch (error) {
+            console.error('Checkout error:', error);
+            toast.error('Failed to start checkout. Please try again.', 'Error');
+            setLoading(null);
+        }
+    };
+
     return (
         <PricingContainer>
-            {/* Animated Background Particles */}
             <ParticleContainer>
                 {particles.map(particle => (
                     <Particle
@@ -515,7 +544,13 @@ const PricingPage = () => {
                         <FeatureItem><Check size={18} /> Email Support</FeatureItem>
                         <FeatureItem><Check size={18} /> Mobile App Access</FeatureItem>
                     </FeatureList>
-                    <ActionButton planType="starter" disabled>Coming Soon</ActionButton>
+                    <ActionButton 
+                        planType="starter" 
+                        onClick={() => handleSubscribe('starter')}
+                        disabled={loading !== null}
+                    >
+                        {loading === 'starter' ? 'Loading...' : 'Get Started'}
+                    </ActionButton>
                 </Card>
 
                 {/* Pro Tier - $25 */}
@@ -539,7 +574,13 @@ const PricingPage = () => {
                         <FeatureItem><Check size={18} /> Priority Email Support</FeatureItem>
                     </FeatureList>
                     <ComparisonBadge>2x More Features than Starter</ComparisonBadge>
-                    <ActionButton planType="pro" disabled>Coming Soon</ActionButton>
+                    <ActionButton 
+                        planType="pro"
+                        onClick={() => handleSubscribe('pro')}
+                        disabled={loading !== null}
+                    >
+                        {loading === 'pro' ? 'Loading...' : 'Get Started'}
+                    </ActionButton>
                 </Card>
 
                 {/* Premium Tier - $50 */}
@@ -566,7 +607,13 @@ const PricingPage = () => {
                         <FeatureItem><Check size={18} /> Priority Support (24/7)</FeatureItem>
                     </FeatureList>
                     <ComparisonBadge>3x More Features than Pro</ComparisonBadge>
-                    <ActionButton planType="premium" disabled>Coming Soon</ActionButton>
+                    <ActionButton 
+                        planType="premium"
+                        onClick={() => handleSubscribe('premium')}
+                        disabled={loading !== null}
+                    >
+                        {loading === 'premium' ? 'Loading...' : 'Get Started'}
+                    </ActionButton>
                 </Card>
 
                 {/* Elite Tier - $125 */}
@@ -595,7 +642,13 @@ const PricingPage = () => {
                         <FeatureItem><Check size={18} /> VIP Discord Community Access</FeatureItem>
                     </FeatureList>
                     <ComparisonBadge>5x More Features than Premium</ComparisonBadge>
-                    <ActionButton planType="elite" disabled>Coming Soon</ActionButton>
+                    <ActionButton 
+                        planType="elite"
+                        onClick={() => handleSubscribe('elite')}
+                        disabled={loading !== null}
+                    >
+                        {loading === 'elite' ? 'Loading...' : 'Get Started'}
+                    </ActionButton>
                 </Card>
             </PricingCards>
 
@@ -604,7 +657,6 @@ const PricingPage = () => {
                 <span>#AITrading</span>
                 <span>#MarketPredictions</span>
                 <span>#UnfairAdvantage</span>
-                <span>#ComingSoon</span>
             </FooterHashtags>
         </PricingContainer>
     );

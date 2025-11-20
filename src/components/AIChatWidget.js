@@ -1,4 +1,4 @@
-// client/src/components/AIChatWidget.js - THE MOST LEGENDARY AI CHAT WIDGET EVER (FIXED!)
+// client/src/components/AIChatWidget.js - FIXED WITH REAL API!
 
 import React, { useState, useEffect, useRef } from 'react';
 import styled, { keyframes, css } from 'styled-components';
@@ -583,29 +583,43 @@ const AIChatWidget = () => {
 
     const suggestedPrompts = [
         { icon: TrendingUp, text: 'What stocks should I watch today?' },
-        { icon: Brain, text: 'Explain how your AI predictions work' },
-        { icon: Target, text: 'Help me build a diversified portfolio' },
-        { icon: Sparkles, text: 'What are the hottest tech stocks right now?' },
+        { icon: Brain, text: 'Should I buy SPY right now?' },
+        { icon: Target, text: 'What do you think about Tesla?' },
+        { icon: Sparkles, text: 'Analyze NVDA for me' },
     ];
 
-    // Mock AI responses for demo purposes
-    const getAIResponse = (userMessage) => {
-        const message = userMessage.toLowerCase();
-        
-        if (message.includes('predict') || message.includes('price')) {
-            return "Based on my AI analysis, AAPL shows strong momentum with a predicted target of $185-190 next week. Current technical indicators suggest bullish sentiment with RSI at 62 and MACD showing positive crossover. 📈";
-        } else if (message.includes('portfolio') || message.includes('analyze')) {
-            return "Your portfolio is performing well! You're up 12.5% this month with strong diversification across tech and healthcare sectors. Consider rebalancing if tech allocation exceeds 40%. 💼";
-        } else if (message.includes('market') || message.includes('trend')) {
-            return "Current market trends show tech sector leading with +3.2%, while energy is lagging at -1.5%. Fed rate decisions are influencing volatility. Key levels to watch: SPY 480 support, 490 resistance. 📊";
-        } else if (message.includes('tips') || message.includes('advice')) {
-            return "Here are my top investment tips: 1) Diversify across sectors 2) Use stop-losses to protect gains 3) Don't chase pumps 4) Research before investing 5) Consider dollar-cost averaging for long-term holdings. 💡";
-        } else if (message.includes('how') || message.includes('work')) {
-            return "I use advanced machine learning models trained on millions of data points including price action, volume, sentiment analysis, and market indicators. My predictions combine technical analysis, fundamental data, and real-time news sentiment to generate accurate forecasts. 🤖";
-        } else if (message.includes('stock') || message.includes('buy')) {
-            return "Some stocks on my radar: NVDA (strong AI growth), MSFT (solid fundamentals), TSLA (high volatility play), and AAPL (stable blue chip). Always do your own research before investing! 🎯";
-        } else {
-            return "I'm here to help you with stock analysis, predictions, and market insights! Feel free to ask me about specific stocks, portfolio strategies, or market trends. What would you like to know? 🚀";
+    // ✅ REAL API CALL - No more mock responses!
+    const getAIResponse = async (userMessage) => {
+        try {
+            // Build conversation history from existing messages
+            const conversationHistory = messages
+                .filter(m => m.text) // Only messages with text
+                .map(m => ({
+                    role: m.isUser ? 'user' : 'assistant',
+                    content: m.text
+                }))
+                .slice(-10); // Last 10 messages
+
+            console.log('📤 Widget calling API:', { message: userMessage, historyLength: conversationHistory.length });
+
+            const response = await api.post('/chat/message', {
+                message: userMessage,
+                conversationHistory: conversationHistory
+            });
+
+            console.log('✅ Widget received response:', response.data.response?.substring(0, 100));
+
+            return response.data.response || "Sorry, I couldn't process that request. Please try again!";
+
+        } catch (error) {
+            console.error('❌ Widget API error:', error);
+            
+            // Return error message
+            if (error.response?.status === 403) {
+                return "⚠️ This feature requires a Pro plan or higher. Upgrade to unlock AI chat!";
+            }
+            
+            return "Sorry, I'm having trouble connecting right now. Please try again in a moment!";
         }
     };
 
@@ -632,14 +646,17 @@ const AIChatWidget = () => {
         setInputValue('');
         setIsTyping(true);
 
-        // Simulate AI thinking time
-        setTimeout(() => {
+        // Call real API
+        try {
+            const aiResponse = await getAIResponse(messageToProcess);
+            
             const aiMessage = {
                 id: Date.now() + 1,
-                text: getAIResponse(messageToProcess),
+                text: aiResponse,
                 isUser: false,
                 timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             };
+            
             setMessages(prev => [...prev, aiMessage]);
             setIsTyping(false);
 
@@ -647,19 +664,9 @@ const AIChatWidget = () => {
             if (!isOpen) {
                 setHasNotification(true);
             }
-        }, 1500);
-
-        // Optional: Try to call real API in background (won't break if it fails)
-        if (api) {
-            try {
-                await api.post('/chat/message', {
-                    message: messageToProcess,
-                    conversationId: messages[0]?.conversationId || null
-                });
-            } catch (error) {
-                // Silently fail - we're using mock responses anyway
-                console.log('API not available, using mock responses');
-            }
+        } catch (error) {
+            console.error('Error getting AI response:', error);
+            setIsTyping(false);
         }
     };
 
@@ -743,7 +750,7 @@ const AIChatWidget = () => {
                                     </WelcomeIcon>
                                     <WelcomeTitle>Hey {user?.name || 'Trader'}! 👋</WelcomeTitle>
                                     <WelcomeText>
-                                        I'm your AI assistant powered by advanced machine learning. 
+                                        I'm your AI assistant powered by Claude. 
                                         Ask me anything about stocks, predictions, or market analysis!
                                     </WelcomeText>
                                     <SuggestedPrompts>

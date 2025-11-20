@@ -1,11 +1,12 @@
-// client/src/pages/ChatPage.js - THE MOST LEGENDARY AI CHAT PAGE
+// client/src/pages/ChatPage.js - FIXED styled-components keyframe errors
+
 import React, { useState, useEffect, useRef } from 'react';
-import styled, { keyframes } from 'styled-components';
+import styled, { keyframes, css } from 'styled-components'; // ✅ Import css helper
 import { useAuth } from '../context/AuthContext';
 import { 
     Send, Brain, User, Sparkles, TrendingUp, AlertCircle, 
     Zap, MessageSquare, Stars, Rocket, Flame, ChevronDown,
-    Copy, ThumbsUp, ThumbsDown, RotateCcw, Volume2
+    Copy, ThumbsUp, ThumbsDown
 } from 'lucide-react';
 
 // ============ ANIMATIONS ============
@@ -44,11 +45,6 @@ const float = keyframes`
     50% { transform: translateY(-10px); }
 `;
 
-const spin = keyframes`
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-`;
-
 const bounce = keyframes`
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-10px); }
@@ -57,11 +53,6 @@ const bounce = keyframes`
 const particles = keyframes`
     0% { transform: translateY(0) translateX(0) scale(1); opacity: 1; }
     100% { transform: translateY(-100vh) translateX(50px) scale(0); opacity: 0; }
-`;
-
-const waveAnimation = keyframes`
-    0%, 100% { transform: scaleY(1); }
-    50% { transform: scaleY(1.5); }
 `;
 
 const neonGlow = keyframes`
@@ -79,11 +70,6 @@ const neonGlow = keyframes`
     }
 `;
 
-const typing = keyframes`
-    0%, 100% { opacity: 0.3; }
-    50% { opacity: 1; }
-`;
-
 // ============ STYLED COMPONENTS ============
 const PageContainer = styled.div`
     display: flex;
@@ -96,7 +82,6 @@ const PageContainer = styled.div`
     overflow: hidden;
 `;
 
-// Animated background particles
 const ParticleContainer = styled.div`
     position: fixed;
     top: 0;
@@ -114,11 +99,14 @@ const Particle = styled.div`
     height: ${props => props.size}px;
     background: ${props => props.color};
     border-radius: 50%;
-    animation: ${particles} ${props => props.duration}s linear infinite;
-    animation-delay: ${props => props.delay}s;
     left: ${props => props.left}%;
     opacity: 0.6;
     filter: blur(1px);
+    
+    ${props => css`
+        animation: ${particles} ${props.duration}s linear infinite;
+        animation-delay: ${props.delay}s;
+    `}
 `;
 
 const Header = styled.div`
@@ -194,7 +182,6 @@ const MessagesArea = styled.div`
     gap: 1.5rem;
     margin-bottom: 1rem;
 
-    /* Custom scrollbar */
     &::-webkit-scrollbar {
         width: 8px;
     }
@@ -218,10 +205,13 @@ const MessagesArea = styled.div`
 const Message = styled.div`
     display: flex;
     gap: 1rem;
-    animation: ${props => props.isUser ? slideInRight : slideInLeft} 0.5s ease-out;
     align-items: flex-start;
-    ${props => props.isUser && `
+    
+    ${props => props.isUser ? css`
         flex-direction: row-reverse;
+        animation: ${slideInRight} 0.5s ease-out;
+    ` : css`
+        animation: ${slideInLeft} 0.5s ease-out;
     `}
 `;
 
@@ -234,15 +224,16 @@ const Avatar = styled.div`
     justify-content: center;
     flex-shrink: 0;
     position: relative;
-    ${props => props.isUser ? `
+    transition: transform 0.3s ease;
+
+    ${props => props.isUser ? css`
         background: linear-gradient(135deg, #00adef 0%, #0088cc 100%);
         box-shadow: 0 4px 15px rgba(0, 173, 237, 0.4);
-    ` : `
+    ` : css`
         background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
         box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
         animation: ${float} 3s ease-in-out infinite;
     `}
-    transition: transform 0.3s ease;
 
     &:hover {
         transform: scale(1.1) rotate(5deg);
@@ -275,12 +266,19 @@ const MessageContent = styled.div`
 const MessageBubble = styled.div`
     padding: 1rem 1.25rem;
     border-radius: 12px;
-    ${props => props.isUser ? `
+    line-height: 1.6;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+
+    ${props => props.isUser ? css`
         background: linear-gradient(135deg, #00adef 0%, #0088cc 100%);
         color: white;
         border-bottom-right-radius: 4px;
         box-shadow: 0 4px 15px rgba(0, 173, 237, 0.3);
-    ` : `
+    ` : css`
         background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
         backdrop-filter: blur(10px);
         border: 1px solid rgba(0, 173, 237, 0.2);
@@ -288,11 +286,6 @@ const MessageBubble = styled.div`
         border-bottom-left-radius: 4px;
         box-shadow: 0 4px 15px rgba(0, 173, 237, 0.2);
     `}
-    line-height: 1.6;
-    word-wrap: break-word;
-    transition: all 0.3s ease;
-    position: relative;
-    overflow: hidden;
 
     &::before {
         content: '';
@@ -308,9 +301,9 @@ const MessageBubble = styled.div`
 
     &:hover {
         transform: translateY(-2px);
-        ${props => props.isUser ? `
+        ${props => props.isUser ? css`
             box-shadow: 0 8px 25px rgba(0, 173, 237, 0.4);
-        ` : `
+        ` : css`
             box-shadow: 0 8px 25px rgba(0, 173, 237, 0.3);
         `}
     }
@@ -321,6 +314,7 @@ const MessageActions = styled.div`
     gap: 0.5rem;
     opacity: 0;
     transition: opacity 0.3s ease;
+    
     ${Message}:hover & {
         opacity: 1;
     }
@@ -342,6 +336,10 @@ const ActionButton = styled.button`
     &:hover {
         background: rgba(0, 173, 237, 0.2);
         transform: translateY(-2px);
+    }
+
+    &:active {
+        transform: translateY(0);
     }
 `;
 
@@ -444,8 +442,11 @@ const Dot = styled.span`
     height: 8px;
     border-radius: 50%;
     background: #00adef;
-    animation: ${bounce} 1.4s ease-in-out infinite;
-    animation-delay: ${props => props.delay}s;
+    
+    ${props => css`
+        animation: ${bounce} 1.4s ease-in-out infinite;
+        animation-delay: ${props.delay}s;
+    `}
 `;
 
 const ThinkingAnimation = styled.div`
@@ -500,6 +501,7 @@ const ErrorMessage = styled.div`
     gap: 0.5rem;
     margin-bottom: 1rem;
     animation: ${fadeIn} 0.3s ease-out;
+    white-space: pre-wrap;
 `;
 
 const WelcomeCard = styled.div`
@@ -601,7 +603,7 @@ const ScrollToBottom = styled.button`
         box-shadow: 0 6px 20px rgba(0, 173, 237, 0.6);
     }
 
-    ${props => !props.show && `
+    ${props => !props.show && css`
         opacity: 0;
         pointer-events: none;
     `}
@@ -616,6 +618,7 @@ const ChatPage = () => {
     const [error, setError] = useState(null);
     const [showScrollButton, setShowScrollButton] = useState(false);
     const [particles, setParticles] = useState([]);
+    const [copiedIndex, setCopiedIndex] = useState(null);
     const messagesEndRef = useRef(null);
     const messagesAreaRef = useRef(null);
 
@@ -627,7 +630,6 @@ const ChatPage = () => {
         { icon: Rocket, text: "Is the market bullish or bearish?" }
     ];
 
-    // Generate background particles on mount
     useEffect(() => {
         const newParticles = Array.from({ length: 20 }, (_, i) => ({
             id: i,
@@ -648,7 +650,6 @@ const ChatPage = () => {
         scrollToBottom();
     }, [messages, loading]);
 
-    // Handle scroll to show/hide scroll button
     const handleScroll = () => {
         if (messagesAreaRef.current) {
             const { scrollTop, scrollHeight, clientHeight } = messagesAreaRef.current;
@@ -665,54 +666,48 @@ const ChatPage = () => {
     }, []);
 
     const handleSend = async (messageText = input) => {
-    if (!messageText.trim() || loading) return;
+        if (!messageText.trim() || loading) return;
 
-    const userMessage = messageText.trim();
-    setInput('');
-    setError(null);
+        const userMessage = messageText.trim();
+        setInput('');
+        setError(null);
 
-    // Add user message to chat
-    setMessages(prev => [...prev, {
-        role: 'user',
-        content: userMessage
-    }]);
-
-    setLoading(true);
-
-    try {
-        // Get conversation history (last 10 messages for context)
-        const conversationHistory = messages.slice(-10).map(msg => ({
-            role: msg.role,
-            content: msg.content
-        }));
-
-        console.log('📤 Sending message:', userMessage);
-        console.log('📚 Conversation history:', conversationHistory);
-        console.log('📊 History length:', conversationHistory.length);
-
-        const response = await api.post('/chat/message', {
-            message: userMessage,
-           conversationHistory: conversationHistory
-        });
-
-        console.log('📥 Received response:', response.data.response);
-
-        // Add assistant response
-        setMessages(prev => [...prev, {
-            role: 'assistant',
-            content: response.data.response
-        }]);
-
-    } catch (err) {
-        console.error('❌ Chat error:', err);
-        setError(err.response?.data?.msg || 'Failed to get response. Please try again.');
+        const newUserMessage = {
+            role: 'user',
+            content: userMessage
+        };
         
-        // Remove the user message if request failed
-        setMessages(prev => prev.slice(0, -1));
-    } finally {
-        setLoading(false);
-    }
-};
+        setMessages(prev => [...prev, newUserMessage]);
+        setLoading(true);
+
+        try {
+            const conversationHistory = messages.slice(-10);
+
+            console.log('📤 Sending to API:', {
+                message: userMessage,
+                historyLength: conversationHistory.length
+            });
+
+            const response = await api.post('/chat/message', {
+                message: userMessage,
+                conversationHistory: conversationHistory
+            });
+
+            console.log('✅ Response received:', response.data.response);
+
+            setMessages(prev => [...prev, {
+                role: 'assistant',
+                content: response.data.response
+            }]);
+
+        } catch (err) {
+            console.error('❌ Chat error:', err);
+            setError(err.response?.data?.error || 'Failed to get response');
+            setMessages(prev => prev.slice(0, -1));
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleKeyPress = (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -725,14 +720,14 @@ const ChatPage = () => {
         handleSend(suggestion);
     };
 
-    const copyToClipboard = (text) => {
+    const copyToClipboard = (text, index) => {
         navigator.clipboard.writeText(text);
-        // Could add a toast notification here
+        setCopiedIndex(index);
+        setTimeout(() => setCopiedIndex(null), 2000);
     };
 
     return (
         <PageContainer>
-            {/* Animated Background Particles */}
             <ParticleContainer>
                 {particles.map(particle => (
                     <Particle
@@ -830,9 +825,9 @@ const ChatPage = () => {
                                 </MessageBubble>
                                 {message.role === 'assistant' && (
                                     <MessageActions>
-                                        <ActionButton onClick={() => copyToClipboard(message.content)}>
+                                        <ActionButton onClick={() => copyToClipboard(message.content, index)}>
                                             <Copy size={14} />
-                                            Copy
+                                            {copiedIndex === index ? 'Copied!' : 'Copy'}
                                         </ActionButton>
                                         <ActionButton>
                                             <ThumbsUp size={14} />

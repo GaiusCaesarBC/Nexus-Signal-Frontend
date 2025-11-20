@@ -6,7 +6,8 @@
   "proxy": "http://localhost:5000",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.69.0",
-    "@stripe/stripe-js": "^8.1.0",
+    "@stripe/react-stripe-js": "^5.4.0",
+    "@stripe/stripe-js": "^8.5.2",
     "@vercel/analytics": "^1.5.0",
     "@vercel/speed-insights": "^1.2.0",
     "axios": "^1.13.1",
