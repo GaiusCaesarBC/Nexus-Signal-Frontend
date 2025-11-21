@@ -363,7 +363,7 @@ const MessageBubble = styled.div`
     }
 `;
 
-const MessageText = styled.p`
+const MessageText = styled.div`
     margin: 0;
     color: #e0e6ed;
     font-size: 0.95rem;

@@ -1,6 +1,7 @@
-// client/src/pages/LeaderboardPage.js - EPIC LEADERBOARD & SOCIAL
+// client/src/pages/LeaderboardPage.js - EPIC LEADERBOARD & SOCIAL (UPDATED)
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -37,6 +38,7 @@ const glow = keyframes`
         filter: drop-shadow(0 0 40px rgba(255, 215, 0, 0.6));
     }
 `;
+
 const shimmer = keyframes`
     0% { background-position: -200% center; }
     100% { background-position: 200% center; }
@@ -75,7 +77,6 @@ const Header = styled.div`
     margin: 0 auto 3rem;
     animation: ${fadeIn} 0.8s ease-out;
     text-align: center;
-    /* Remove any border properties if they exist */
 `;
 
 const Title = styled.h1`
@@ -93,13 +94,14 @@ const Title = styled.h1`
     animation: ${glow} 2s ease-in-out infinite;
     border: none;
     outline: none;
-    box-shadow: none; /* ✅ ADD THIS */
-    padding: 0; /* ✅ ADD THIS */
+    box-shadow: none;
+    padding: 0;
 
     @media (max-width: 768px) {
         font-size: 2.5rem;
     }
 `;
+
 const TitleIcon = styled.div`
     animation: ${float} 3s ease-in-out infinite;
 `;
@@ -485,6 +487,11 @@ const FollowButton = styled.button`
             'rgba(255, 215, 0, 0.4)'
         };
     }
+
+    &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
 `;
 
 // ============ EMPTY STATE ============
@@ -541,28 +548,45 @@ const LoadingText = styled.div`
 const LeaderboardPage = () => {
     const { api, user } = useAuth();
     const toast = useToast();
+    const navigate = useNavigate();
     
     const [activeTab, setActiveTab] = useState('all'); // all, following, myRank
     const [leaderboard, setLeaderboard] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-    const [timeframe, setTimeframe] = useState('all'); // all, week, month
+    const [sortBy, setSortBy] = useState('totalReturnPercent'); // Sort field
     const [following, setFollowing] = useState(new Set());
 
     useEffect(() => {
         fetchLeaderboard();
         fetchFollowing();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [timeframe]);
+    }, [sortBy]);
 
     const fetchLeaderboard = async () => {
         setLoading(true);
         try {
-            const response = await api.get(`/social/leaderboard?timeframe=${timeframe}&limit=100`);
+            // ✅ UPDATED: Use new leaderboard endpoint
+            const response = await api.get(`/users/leaderboard?sortBy=${sortBy}&limit=100`);
             console.log('Leaderboard:', response.data);
-            setLeaderboard(response.data || []);
-            toast.success(`Loaded ${response.data?.length || 0} traders`, 'Leaderboard Updated');
+            
+            // ✅ UPDATED: Map the response to match your UI expectations
+            const mappedData = response.data.map((trader, index) => ({
+                rank: index + 1,
+                userId: trader._id,
+                displayName: trader.profile?.displayName || trader.username,
+                username: trader.username,
+                avatar: trader.profile?.avatar,
+                badges: trader.profile?.badges || [],
+                totalReturn: trader.stats?.totalReturnPercent || 0,
+                winRate: trader.stats?.winRate || 0,
+                totalTrades: trader.stats?.totalTrades || 0,
+                followersCount: trader.social?.followersCount || 0,
+            }));
+            
+            setLeaderboard(mappedData);
+            toast.success(`Loaded ${mappedData.length} traders`, 'Leaderboard Updated');
         } catch (error) {
             console.error('Error fetching leaderboard:', error);
             toast.error('Failed to load leaderboard', 'Error');
@@ -574,7 +598,8 @@ const LeaderboardPage = () => {
 
     const fetchFollowing = async () => {
         try {
-            const response = await api.get('/auth/user');
+            // ✅ UPDATED: Get current user's full profile
+            const response = await api.get('/users/me/full');
             if (response.data.social?.following) {
                 setFollowing(new Set(response.data.social.following.map(id => id.toString())));
             }
@@ -593,14 +618,15 @@ const LeaderboardPage = () => {
         try {
             const isFollowing = following.has(userId);
             
+            // ✅ UPDATED: Use new follow/unfollow endpoints
             if (isFollowing) {
-                await api.post(`/social/unfollow/${userId}`);
+                await api.delete(`/users/follow/${userId}`);
                 const newFollowing = new Set(following);
                 newFollowing.delete(userId);
                 setFollowing(newFollowing);
                 toast.success('Unfollowed user', 'Success');
             } else {
-                await api.post(`/social/follow/${userId}`);
+                await api.post(`/users/follow/${userId}`);
                 const newFollowing = new Set(following);
                 newFollowing.add(userId);
                 setFollowing(newFollowing);
@@ -608,8 +634,13 @@ const LeaderboardPage = () => {
             }
         } catch (error) {
             console.error('Error following/unfollowing:', error);
-            toast.error(error.response?.data?.error || 'Failed to follow user', 'Error');
+            toast.error(error.response?.data?.msg || 'Failed to follow user', 'Error');
         }
+    };
+
+    const handleCardClick = (trader) => {
+        // Navigate to trader's profile using username
+        navigate(`/trader/${trader.username}`);
     };
 
     const getRankIcon = (rank) => {
@@ -621,7 +652,8 @@ const LeaderboardPage = () => {
 
     const filteredLeaderboard = leaderboard.filter(trader => {
         if (searchQuery) {
-            return trader.displayName.toLowerCase().includes(searchQuery.toLowerCase());
+            return trader.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                   trader.username.toLowerCase().includes(searchQuery.toLowerCase());
         }
         if (activeTab === 'following') {
             return following.has(trader.userId);
@@ -707,22 +739,22 @@ const LeaderboardPage = () => {
                 </SearchBar>
 
                 <FilterButton
-                    $active={timeframe === 'all'}
-                    onClick={() => setTimeframe('all')}
+                    $active={sortBy === 'totalReturnPercent'}
+                    onClick={() => setSortBy('totalReturnPercent')}
                 >
-                    All Time
+                    Total Return %
                 </FilterButton>
                 <FilterButton
-                    $active={timeframe === 'month'}
-                    onClick={() => setTimeframe('month')}
+                    $active={sortBy === 'winRate'}
+                    onClick={() => setSortBy('winRate')}
                 >
-                    This Month
+                    Win Rate
                 </FilterButton>
                 <FilterButton
-                    $active={timeframe === 'week'}
-                    onClick={() => setTimeframe('week')}
+                    $active={sortBy === 'totalTrades'}
+                    onClick={() => setSortBy('totalTrades')}
                 >
-                    This Week
+                    Total Trades
                 </FilterButton>
 
                 <RefreshButton onClick={handleRefresh} disabled={refreshing} $loading={refreshing}>
@@ -740,6 +772,7 @@ const LeaderboardPage = () => {
                                 key={trader.userId}
                                 $rank={trader.rank}
                                 $index={index}
+                                onClick={() => handleCardClick(trader)}
                             >
                                 <RankBadge $rank={trader.rank}>
                                     #{trader.rank}

@@ -1,4 +1,4 @@
-// client/src/components/Navbar.js - THE SICKEST NAVBAR EVER (WITH WORKING NOTIFICATIONS!)
+// client/src/components/Navbar.js - ORGANIZED NAVBAR WITH DROPDOWNS
 
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -7,9 +7,10 @@ import { useAuth } from '../context/AuthContext';
 
 import {
     Home, TrendingUp, PieChart, Eye, Filter, MapPin, Newspaper, BookOpen, Brain, MessageSquare,
-    DollarSign, LogOut, User, Menu, X, ChevronDown, Zap,
+    DollarSign, LogOut, User, Menu, X, ChevronDown, Zap, Users,
     Settings, Bell, CheckCircle, AlertCircle, TrendingUp as TrendingUpIcon,
-    DollarSign as DollarIcon, Clock, ArrowUpRight, ArrowDownRight, Trophy, Twitter
+    DollarSign as DollarIcon, Clock, ArrowUpRight, ArrowDownRight, Trophy, Twitter,
+    Briefcase, BarChart3, Activity, Sparkles, Globe, Calculator, TrendingDown, MessageCircle
 } from 'lucide-react';
 import nexusSignalLogo from '../assets/nexus-signal-logo.png';
 
@@ -24,24 +25,9 @@ const slideDown = keyframes`
     to { opacity: 1; transform: translateY(0); }
 `;
 
-const glow = keyframes`
-    0%, 100% { box-shadow: 0 0 20px rgba(0, 173, 237, 0.3); }
-    50% { box-shadow: 0 0 40px rgba(0, 173, 237, 0.6); }
-`;
-
 const pulse = keyframes`
     0%, 100% { transform: scale(1); }
     50% { transform: scale(1.05); }
-`;
-
-const shimmer = keyframes`
-    0% { background-position: -200% center; }
-    100% { background-position: 200% center; }
-`;
-
-const float = keyframes`
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-5px); }
 `;
 
 const shake = keyframes`
@@ -130,9 +116,13 @@ const NavLinks = styled.div`
     align-items: center;
     gap: 0.5rem;
 
-    @media (max-width: 768px) {
+    @media (max-width: 1024px) {
         display: none;
     }
+`;
+
+const NavItem = styled.div`
+    position: relative;
 `;
 
 const NavLink = styled(Link)`
@@ -156,26 +146,74 @@ const NavLink = styled(Link)`
         border-color: rgba(0, 173, 237, 0.3);
         transform: translateY(-2px);
     }
+`;
 
-    &::after {
-        content: '';
-        position: absolute;
-        bottom: -1px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: ${props => props.$active ? '60%' : '0'};
-        height: 2px;
-        background: linear-gradient(90deg, #00adef, #00ff88);
-        border-radius: 2px;
-        transition: width 0.3s ease;
+const DropdownTrigger = styled.button`
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    color: ${props => props.$active ? '#00adef' : '#94a3b8'};
+    background: ${props => props.$active ? 'rgba(0, 173, 237, 0.15)' : 'transparent'};
+    border: 1px solid ${props => props.$active ? 'rgba(0, 173, 237, 0.3)' : 'transparent'};
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover {
+        color: #00adef;
+        background: rgba(0, 173, 237, 0.1);
+        border-color: rgba(0, 173, 237, 0.3);
+        transform: translateY(-2px);
     }
 
-    &:hover::after {
-        width: 60%;
+    svg:last-child {
+        transition: transform 0.3s ease;
+        transform: ${props => props.$open ? 'rotate(180deg)' : 'rotate(0)'};
     }
 `;
 
-// ============ USER MENU ============
+const DropdownMenu = styled.div`
+    position: absolute;
+    top: calc(100% + 10px);
+    left: 0;
+    background: rgba(15, 23, 42, 0.98);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(0, 173, 237, 0.3);
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+    min-width: 220px;
+    overflow: hidden;
+    animation: ${slideDown} 0.3s ease-out;
+    z-index: 1001;
+`;
+
+const DropdownItem = styled(Link)`
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.875rem 1.25rem;
+    color: ${props => props.$active ? '#00adef' : '#e0e6ed'};
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid rgba(0, 173, 237, 0.1);
+    background: ${props => props.$active ? 'rgba(0, 173, 237, 0.15)' : 'transparent'};
+
+    &:last-child {
+        border-bottom: none;
+    }
+
+    &:hover {
+        background: rgba(0, 173, 237, 0.15);
+        color: #00adef;
+        padding-left: 1.5rem;
+    }
+`;
+
+// ============ USER SECTION ============
 const UserSection = styled.div`
     display: flex;
     align-items: center;
@@ -285,8 +323,6 @@ const MarkAllRead = styled.button`
         color: #00adef;
     }
 `;
-
-
 
 const NotificationList = styled.div`
     overflow-y: auto;
@@ -471,8 +507,8 @@ const DropdownIcon = styled(ChevronDown)`
     }
 `;
 
-// ============ DROPDOWN MENU ============
-const DropdownMenu = styled.div`
+// ============ USER DROPDOWN MENU ============
+const UserDropdownMenu = styled.div`
     position: absolute;
     top: calc(100% + 10px);
     right: 0;
@@ -487,7 +523,7 @@ const DropdownMenu = styled.div`
     z-index: 1001;
 `;
 
-const DropdownItem = styled.button`
+const UserDropdownItem = styled.button`
     width: 100%;
     padding: 0.75rem 1.25rem;
     background: transparent;
@@ -540,7 +576,7 @@ const MobileMenuButton = styled.button`
         transform: translateY(-2px);
     }
 
-    @media (max-width: 768px) {
+    @media (max-width: 1024px) {
         display: flex;
     }
 `;
@@ -560,7 +596,7 @@ const MobileMenu = styled.div`
     display: ${props => props.$open ? 'block' : 'none'};
     border-top: 2px solid rgba(0, 173, 237, 0.3);
 
-    @media (min-width: 769px) {
+    @media (min-width: 1025px) {
         display: none !important;
     }
 `;
@@ -574,6 +610,23 @@ const MobileNavLinks = styled.div`
     background: #0a0e27;
 `;
 
+const MobileNavCategory = styled.div`
+    margin-bottom: 0.5rem;
+`;
+
+const MobileCategoryTitle = styled.div`
+    color: #64748b;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 0.5rem 1rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+`;
+
 const MobileNavLink = styled(Link)`
     display: flex;
     align-items: center;
@@ -582,12 +635,12 @@ const MobileNavLink = styled(Link)`
     color: ${props => props.$active ? '#00adef' : '#f8fafc'};
     text-decoration: none;
     font-weight: 600;
-    font-size: 1.1rem;
+    font-size: 1rem;
     border-radius: 12px;
     background: ${props => props.$active ? 'rgba(0, 173, 237, 0.15)' : 'rgba(30, 41, 59, 0.5)'};
     border: 1px solid ${props => props.$active ? 'rgba(0, 173, 237, 0.3)' : 'rgba(100, 116, 139, 0.3)'};
     transition: all 0.2s ease;
-    min-height: 60px;
+    min-height: 56px;
 
     &:hover {
         color: #00adef;
@@ -608,11 +661,20 @@ const Navbar = () => {
     const { user, logout } = useAuth();
     const location = useLocation();
     const navigate = useNavigate();
-    const [dropdownOpen, setDropdownOpen] = useState(false);
+    
+    const [dropdowns, setDropdowns] = useState({
+        trading: false,
+        analysis: false,
+        community: false,
+        ai: false,
+        market: false,
+    });
+    
+    const [userDropdownOpen, setUserDropdownOpen] = useState(false);
     const [notificationsOpen, setNotificationsOpen] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-    // Mock notifications - replace with real data from API
+    // Mock notifications
     const [notifications, setNotifications] = useState([
         {
             id: 1,
@@ -641,68 +703,68 @@ const Navbar = () => {
             unread: true,
             icon: AlertCircle
         },
-        {
-            id: 4,
-            type: 'success',
-            title: 'Trade Executed',
-            text: 'Successfully purchased 10 shares of NVDA',
-            time: '1 day ago',
-            unread: false,
-            icon: CheckCircle
-        },
-        {
-            id: 5,
-            type: 'info',
-            title: 'Market Insight',
-            text: 'New AI analysis available for tech sector',
-            time: '2 days ago',
-            unread: false,
-            icon: Brain
-        }
     ]);
 
-    const navItems = [
-        { path: '/dashboard', label: 'Dashboard', icon: Home },
-        { path: '/portfolio', label: 'Portfolio', icon: PieChart },
-        { path: '/watchlist', label: 'Watchlist', icon: Eye },
-        { path: '/screener', label: 'Screener', icon: Filter },
-        { path: '/heatmap', label: 'Heatmap', icon: MapPin },
-        { path: '/leaderboard', label: 'Leaderboard', icon: Trophy },  
-        { path: '/journal', label: 'Journal', icon: BookOpen },  
-        { path: '/calculators', label: 'Calculators', icon: DollarSign },
-        { path: '/sentiment', label: 'Sentiment', icon: Twitter },
-        { path: '/news', label: 'News', icon: Newspaper },
-        { path: '/predict', label: 'AI Predict', icon: Brain },
-        { path: '/chat', label: 'AI Chat', icon: MessageSquare },
-        { path: '/pricing', label: 'Pricing', icon: DollarSign },
-    ];
-
     const unreadCount = notifications.filter(n => n.unread).length;
+
+    // Navigation structure
+    const navStructure = {
+        single: [
+            { path: '/dashboard', label: 'Dashboard', icon: Home },
+        ],
+        trading: [
+            { path: '/portfolio', label: 'Portfolio', icon: Briefcase },
+            { path: '/watchlist', label: 'Watchlist', icon: Eye },
+            { path: '/paper-trading', label: 'Paper Trading', icon: TrendingUp },
+        ],
+        analysis: [
+            { path: '/screener', label: 'Screener', icon: Filter },
+            { path: '/heatmap', label: 'Heatmap', icon: MapPin },
+            { path: '/sentiment', label: 'Sentiment', icon: Activity },
+        ],
+        community: [
+            { path: '/leaderboard', label: 'Leaderboard', icon: Trophy },
+            { path: '/discover', label: 'Discover', icon: Sparkles },
+            { path: '/journal', label: 'Journal', icon: BookOpen },
+        ],
+        ai: [
+            { path: '/predict', label: 'AI Predict', icon: Brain },
+            { path: '/chat', label: 'AI Chat', icon: MessageSquare },
+        ],
+        market: [
+            { path: '/news', label: 'News', icon: Newspaper },
+            { path: '/calculators', label: 'Calculators', icon: Calculator },
+        ],
+        bottom: [
+            { path: '/pricing', label: 'Pricing', icon: DollarSign },
+        ],
+    };
+
+    const handleDropdownToggle = (dropdown) => {
+        setDropdowns(prev => ({
+            ...prev,
+            [dropdown]: !prev[dropdown]
+        }));
+    };
 
     const handleLogout = () => {
         logout();
         navigate('/login');
-        setDropdownOpen(false);
+        setUserDropdownOpen(false);
         setMobileMenuOpen(false);
     };
 
     const handleMobileMenuToggle = () => {
         setMobileMenuOpen(!mobileMenuOpen);
-        setDropdownOpen(false);
+        setUserDropdownOpen(false);
         setNotificationsOpen(false);
     };
 
-    const handleMobileNavClick = () => {
-        setMobileMenuOpen(false);
-    };
-
     const handleNotificationClick = (notification) => {
-        // Mark as read
         setNotifications(notifications.map(n => 
             n.id === notification.id ? { ...n, unread: false } : n
         ));
 
-        // Navigate based on notification type
         if (notification.type === 'success' && notification.title.includes('Prediction')) {
             navigate('/predict');
         } else if (notification.title.includes('Portfolio')) {
@@ -728,20 +790,39 @@ const Navbar = () => {
             .substring(0, 2);
     };
 
+    const isPathActive = (paths) => {
+        return paths.some(item => location.pathname === item.path);
+    };
+
     useEffect(() => {
         setMobileMenuOpen(false);
-        setDropdownOpen(false);
+        setUserDropdownOpen(false);
         setNotificationsOpen(false);
+        setDropdowns({
+            trading: false,
+            analysis: false,
+            community: false,
+            ai: false,
+            market: false,
+        });
     }, [location]);
 
-    // Close dropdowns when clicking outside
     useEffect(() => {
         const handleClickOutside = (e) => {
             if (!e.target.closest('[data-notification-panel]') && !e.target.closest('[data-notification-button]')) {
                 setNotificationsOpen(false);
             }
             if (!e.target.closest('[data-user-menu]')) {
-                setDropdownOpen(false);
+                setUserDropdownOpen(false);
+            }
+            if (!e.target.closest('[data-dropdown]')) {
+                setDropdowns({
+                    trading: false,
+                    analysis: false,
+                    community: false,
+                    ai: false,
+                    market: false,
+                });
             }
         };
 
@@ -762,19 +843,173 @@ const Navbar = () => {
 
                 {/* DESKTOP NAV LINKS */}
                 <NavLinks>
-                    {navItems.map((item) => {
-                        const Icon = item.icon;
-                        return (
-                            <NavLink
-                                key={item.path}
-                                to={item.path}
-                                $active={location.pathname === item.path}
-                            >
-                                <Icon size={18} />
-                                {item.label}
-                            </NavLink>
-                        );
-                    })}
+                    {/* Dashboard */}
+                    <NavLink to="/dashboard" $active={location.pathname === '/dashboard'}>
+                        <Home size={18} />
+                        Dashboard
+                    </NavLink>
+
+                    <NavLink to="/feed">
+  <MessageCircle className="w-5 h-5" />
+  Social Feed
+</NavLink>
+
+
+                    {/* Trading Dropdown */}
+                    <NavItem data-dropdown>
+                        <DropdownTrigger
+                            onClick={() => handleDropdownToggle('trading')}
+                            $open={dropdowns.trading}
+                            $active={isPathActive(navStructure.trading)}
+                        >
+                            <Briefcase size={18} />
+                            Trading
+                            <ChevronDown size={16} />
+                        </DropdownTrigger>
+                        {dropdowns.trading && (
+                            <DropdownMenu>
+                                {navStructure.trading.map(item => {
+                                    const Icon = item.icon;
+                                    return (
+                                        <DropdownItem
+                                            key={item.path}
+                                            to={item.path}
+                                            $active={location.pathname === item.path}
+                                        >
+                                            <Icon size={18} />
+                                            {item.label}
+                                        </DropdownItem>
+                                    );
+                                })}
+                            </DropdownMenu>
+                        )}
+                    </NavItem>
+
+                    {/* Analysis Dropdown */}
+                    <NavItem data-dropdown>
+                        <DropdownTrigger
+                            onClick={() => handleDropdownToggle('analysis')}
+                            $open={dropdowns.analysis}
+                            $active={isPathActive(navStructure.analysis)}
+                        >
+                            <BarChart3 size={18} />
+                            Analysis
+                            <ChevronDown size={16} />
+                        </DropdownTrigger>
+                        {dropdowns.analysis && (
+                            <DropdownMenu>
+                                {navStructure.analysis.map(item => {
+                                    const Icon = item.icon;
+                                    return (
+                                        <DropdownItem
+                                            key={item.path}
+                                            to={item.path}
+                                            $active={location.pathname === item.path}
+                                        >
+                                            <Icon size={18} />
+                                            {item.label}
+                                        </DropdownItem>
+                                    );
+                                })}
+                            </DropdownMenu>
+                        )}
+                    </NavItem>
+
+                    {/* Community Dropdown */}
+                    <NavItem data-dropdown>
+                        <DropdownTrigger
+                            onClick={() => handleDropdownToggle('community')}
+                            $open={dropdowns.community}
+                            $active={isPathActive(navStructure.community)}
+                        >
+                            <Users size={18} />
+                            Community
+                            <ChevronDown size={16} />
+                        </DropdownTrigger>
+                        {dropdowns.community && (
+                            <DropdownMenu>
+                                {navStructure.community.map(item => {
+                                    const Icon = item.icon;
+                                    return (
+                                        <DropdownItem
+                                            key={item.path}
+                                            to={item.path}
+                                            $active={location.pathname === item.path}
+                                        >
+                                            <Icon size={18} />
+                                            {item.label}
+                                        </DropdownItem>
+                                    );
+                                })}
+                            </DropdownMenu>
+                        )}
+                    </NavItem>
+
+                    {/* AI Tools Dropdown */}
+                    <NavItem data-dropdown>
+                        <DropdownTrigger
+                            onClick={() => handleDropdownToggle('ai')}
+                            $open={dropdowns.ai}
+                            $active={isPathActive(navStructure.ai)}
+                        >
+                            <Zap size={18} />
+                            AI Tools
+                            <ChevronDown size={16} />
+                        </DropdownTrigger>
+                        {dropdowns.ai && (
+                            <DropdownMenu>
+                                {navStructure.ai.map(item => {
+                                    const Icon = item.icon;
+                                    return (
+                                        <DropdownItem
+                                            key={item.path}
+                                            to={item.path}
+                                            $active={location.pathname === item.path}
+                                        >
+                                            <Icon size={18} />
+                                            {item.label}
+                                        </DropdownItem>
+                                    );
+                                })}
+                            </DropdownMenu>
+                        )}
+                    </NavItem>
+
+                    {/* Market Dropdown */}
+                    <NavItem data-dropdown>
+                        <DropdownTrigger
+                            onClick={() => handleDropdownToggle('market')}
+                            $open={dropdowns.market}
+                            $active={isPathActive(navStructure.market)}
+                        >
+                            <Globe size={18} />
+                            Market
+                            <ChevronDown size={16} />
+                        </DropdownTrigger>
+                        {dropdowns.market && (
+                            <DropdownMenu>
+                                {navStructure.market.map(item => {
+                                    const Icon = item.icon;
+                                    return (
+                                        <DropdownItem
+                                            key={item.path}
+                                            to={item.path}
+                                            $active={location.pathname === item.path}
+                                        >
+                                            <Icon size={18} />
+                                            {item.label}
+                                        </DropdownItem>
+                                    );
+                                })}
+                            </DropdownMenu>
+                        )}
+                    </NavItem>
+
+                    {/* Pricing */}
+                    <NavLink to="/pricing" $active={location.pathname === '/pricing'}>
+                        <DollarSign size={18} />
+                        Pricing
+                    </NavLink>
                 </NavLinks>
 
                 {/* USER SECTION */}
@@ -847,33 +1082,33 @@ const Navbar = () => {
 
                     {/* USER MENU */}
                     <div style={{ position: 'relative' }} data-user-menu>
-                        <UserMenuButton onClick={() => setDropdownOpen(!dropdownOpen)}>
+                        <UserMenuButton onClick={() => setUserDropdownOpen(!userDropdownOpen)}>
                             <UserAvatar>{getUserInitials()}</UserAvatar>
                             <UserName>{user?.name || 'User'}</UserName>
-                            <DropdownIcon size={18} $open={dropdownOpen} />
+                            <DropdownIcon size={18} $open={userDropdownOpen} />
                         </UserMenuButton>
 
-                        {dropdownOpen && (
-                            <DropdownMenu>
-                                <DropdownItem onClick={() => {
+                        {userDropdownOpen && (
+                            <UserDropdownMenu>
+                                <UserDropdownItem onClick={() => {
                                     navigate('/profile');
-                                    setDropdownOpen(false);
+                                    setUserDropdownOpen(false);
                                 }}>
                                     <User size={18} />
                                     Profile
-                                </DropdownItem>
-                                <DropdownItem onClick={() => {
+                                </UserDropdownItem>
+                                <UserDropdownItem onClick={() => {
                                     navigate('/settings');
-                                    setDropdownOpen(false);
+                                    setUserDropdownOpen(false);
                                 }}>
                                     <Settings size={18} />
                                     Settings
-                                </DropdownItem>
-                                <DropdownItem className="danger" onClick={handleLogout}>
+                                </UserDropdownItem>
+                                <UserDropdownItem className="danger" onClick={handleLogout}>
                                     <LogOut size={18} />
                                     Logout
-                                </DropdownItem>
-                            </DropdownMenu>
+                                </UserDropdownItem>
+                            </UserDropdownMenu>
                         )}
                     </div>
 
@@ -886,29 +1121,147 @@ const Navbar = () => {
             {/* MOBILE MENU */}
             <MobileMenu $open={mobileMenuOpen}>
                 <MobileNavLinks>
-                    {navItems.map((item) => {
-                        const Icon = item.icon;
-                        return (
-                            <MobileNavLink
-                                key={item.path}
-                                to={item.path}
-                                $active={location.pathname === item.path}
-                                onClick={handleMobileNavClick}
-                            >
-                                <Icon size={24} />
-                                {item.label}
-                            </MobileNavLink>
-                        );
-                    })}
+                    <MobileNavLink 
+                        to="/dashboard" 
+                        $active={location.pathname === '/dashboard'}
+                        onClick={() => setMobileMenuOpen(false)}
+                    >
+                        <Home size={22} />
+                        Dashboard
+                    </MobileNavLink>
+
+                    <MobileNavCategory>
+                        <MobileCategoryTitle>
+                            <Briefcase size={16} />
+                            Trading
+                        </MobileCategoryTitle>
+                        {navStructure.trading.map(item => {
+                            const Icon = item.icon;
+                            return (
+                                <MobileNavLink
+                                    key={item.path}
+                                    to={item.path}
+                                    $active={location.pathname === item.path}
+                                    onClick={() => setMobileMenuOpen(false)}
+                                >
+                                    <Icon size={22} />
+                                    {item.label}
+                                </MobileNavLink>
+                            );
+                        })}
+                    </MobileNavCategory>
+
+                    <MobileNavCategory>
+                        <MobileCategoryTitle>
+                            <BarChart3 size={16} />
+                            Analysis
+                        </MobileCategoryTitle>
+                        {navStructure.analysis.map(item => {
+                            const Icon = item.icon;
+                            return (
+                                <MobileNavLink
+                                    key={item.path}
+                                    to={item.path}
+                                    $active={location.pathname === item.path}
+                                    onClick={() => setMobileMenuOpen(false)}
+                                >
+                                    <Icon size={22} />
+                                    {item.label}
+                                </MobileNavLink>
+                            );
+                        })}
+                    </MobileNavCategory>
+
+                    <MobileNavCategory>
+                        <MobileCategoryTitle>
+                            <Users size={16} />
+                            Community
+                        </MobileCategoryTitle>
+                        {navStructure.community.map(item => {
+                            const Icon = item.icon;
+                            return (
+                                <MobileNavLink
+                                    key={item.path}
+                                    to={item.path}
+                                    $active={location.pathname === item.path}
+                                    onClick={() => setMobileMenuOpen(false)}
+                                >
+                                    <Icon size={22} />
+                                    {item.label}
+                                </MobileNavLink>
+                            );
+                        })}
+                    </MobileNavCategory>
+
+                    <MobileNavCategory>
+                        <MobileCategoryTitle>
+                            <Zap size={16} />
+                            AI Tools
+                        </MobileCategoryTitle>
+                        {navStructure.ai.map(item => {
+                            const Icon = item.icon;
+                            return (
+                                <MobileNavLink
+                                    key={item.path}
+                                    to={item.path}
+                                    $active={location.pathname === item.path}
+                                    onClick={() => setMobileMenuOpen(false)}
+                                >
+                                    <Icon size={22} />
+                                    {item.label}
+                                </MobileNavLink>
+                            );
+                        })}
+                    </MobileNavCategory>
+
+                    <MobileNavCategory>
+                        <MobileCategoryTitle>
+                            <Globe size={16} />
+                            Market
+                        </MobileCategoryTitle>
+                        {navStructure.market.map(item => {
+                            const Icon = item.icon;
+                            return (
+                                <MobileNavLink
+                                    key={item.path}
+                                    to={item.path}
+                                    $active={location.pathname === item.path}
+                                    onClick={() => setMobileMenuOpen(false)}
+                                >
+                                    <Icon size={22} />
+                                    {item.label}
+                                </MobileNavLink>
+                            );
+                        })}
+                    </MobileNavCategory>
+
                     <Divider />
-                    <MobileNavLink to="/profile" onClick={handleMobileNavClick}>
-                        <User size={24} />
+                    
+                    <MobileNavLink 
+                        to="/pricing" 
+                        $active={location.pathname === '/pricing'}
+                        onClick={() => setMobileMenuOpen(false)}
+                    >
+                        <DollarSign size={22} />
+                        Pricing
+                    </MobileNavLink>
+                    
+                    <MobileNavLink 
+                        to="/profile" 
+                        onClick={() => setMobileMenuOpen(false)}
+                    >
+                        <User size={22} />
                         Profile
                     </MobileNavLink>
-                    <MobileNavLink to="/settings" onClick={handleMobileNavClick}>
-                        <Settings size={24} />
+                    
+                    <MobileNavLink 
+                        to="/settings" 
+                        onClick={() => setMobileMenuOpen(false)}
+                    >
+                        <Settings size={22} />
                         Settings
                     </MobileNavLink>
+                    
                     <MobileNavLink
                         as="button"
                         style={{ 
@@ -918,7 +1271,7 @@ const Navbar = () => {
                         }}
                         onClick={handleLogout}
                     >
-                        <LogOut size={24} />
+                        <LogOut size={22} />
                         Logout
                     </MobileNavLink>
                 </MobileNavLinks>
