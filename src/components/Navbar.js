@@ -1,5 +1,3 @@
-// client/src/components/Navbar.js - ORGANIZED NAVBAR WITH DROPDOWNS
-
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
@@ -849,11 +847,11 @@ const Navbar = () => {
                         Dashboard
                     </NavLink>
 
-                    <NavLink to="/feed">
-  <MessageCircle className="w-5 h-5" />
-  Social Feed
-</NavLink>
-
+                    {/* Social Feed */}
+                    <NavLink to="/feed" $active={location.pathname === '/feed'}>
+                        <MessageCircle size={18} />
+                        Social Feed
+                    </NavLink>
 
                     {/* Trading Dropdown */}
                     <NavItem data-dropdown>
@@ -1128,6 +1126,15 @@ const Navbar = () => {
                     >
                         <Home size={22} />
                         Dashboard
+                    </MobileNavLink>
+
+                    <MobileNavLink 
+                        to="/feed" 
+                        $active={location.pathname === '/feed'}
+                        onClick={() => setMobileMenuOpen(false)}
+                    >
+                        <MessageCircle size={22} />
+                        Social Feed
                     </MobileNavLink>
 
                     <MobileNavCategory>
