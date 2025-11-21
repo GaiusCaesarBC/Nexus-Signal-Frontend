@@ -4,6 +4,7 @@ import {
   X, MessageSquare, TrendingUp, Trophy, Target, 
   BookOpen, Send, Sparkles, Crown, Zap
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext'; // ✅ IMPORT AUTH
 
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`
@@ -321,6 +322,7 @@ const SubmitButton = styled(Button)`
 `;
 
 const CreatePostModal = ({ onClose, onPostCreated }) => {
+  const { api, isAuthenticated } = useAuth(); // ✅ USE AUTH CONTEXT
   const [postType, setPostType] = useState('status');
   const [text, setText] = useState('');
   const [visibility, setVisibility] = useState('public');
@@ -345,6 +347,13 @@ const CreatePostModal = ({ onClose, onPostCreated }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // ✅ Check authentication
+    if (!isAuthenticated) {
+      alert('You must be logged in to create a post');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -361,38 +370,19 @@ const CreatePostModal = ({ onClose, onPostCreated }) => {
         };
       }
 
-      // Try multiple possible token keys
-      const token = localStorage.getItem('token') || 
-                    localStorage.getItem('authToken') || 
-                    localStorage.getItem('x-auth-token');
-      
-      if (!token) {
-        alert('You must be logged in to create a post');
-        setLoading(false);
-        return;
-      }
-
-      const response = await fetch('http://localhost:5000/api/feed/post', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-          'x-auth-token': token
-        },
-        body: JSON.stringify({ type: postType, content, visibility })
+      // ✅ Use api instance from context - no tokens needed!
+      const response = await api.post('/feed/post', {
+        type: postType,
+        content,
+        visibility
       });
 
-      const data = await response.json();
-      
-      if (response.ok) {
-        onPostCreated(data);
-        onClose();
-      } else {
-        alert(data.msg || 'Failed to create post');
-      }
+      // Success!
+      onPostCreated(response.data);
+      onClose();
     } catch (error) {
       console.error('Error creating post:', error);
-      alert('Failed to create post');
+      alert(error.response?.data?.msg || 'Failed to create post');
     } finally {
       setLoading(false);
     }
