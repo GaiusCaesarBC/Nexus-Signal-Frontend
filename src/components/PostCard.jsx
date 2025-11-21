@@ -552,7 +552,8 @@ const PostCard = ({ post, onLike, onComment, onDelete }) => {
           <UserSection>
             <Avatar $src={post.user.profile?.avatar}>
               {!post.user.profile?.avatar && 
-                (post.user.profile?.displayName?.charAt(0) || post.user.username.charAt(0)).toUpperCase()
+  (post.user.profile?.displayName?.charAt(0) || post.user.username?.charAt(0) || 'U').toUpperCase()
+}
               }
             </Avatar>
             
@@ -635,8 +636,8 @@ const PostCard = ({ post, onLike, onComment, onDelete }) => {
             {post.comments.map((comment) => (
               <Comment key={comment._id}>
                 <CommentAvatar>
-                  {(comment.user.profile?.displayName?.charAt(0) || comment.user.username.charAt(0)).toUpperCase()}
-                </CommentAvatar>
+  {(comment.user.profile?.displayName?.charAt(0) || comment.user.username?.charAt(0) || 'U').toUpperCase()}
+</CommentAvatar>
                 <CommentContent>
                   <CommentHeader>
                     <CommentAuthor>
