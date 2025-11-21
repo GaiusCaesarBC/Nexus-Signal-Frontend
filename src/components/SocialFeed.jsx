@@ -3,6 +3,7 @@ import { MessageCircle, Heart, TrendingUp, Users, Plus, Filter, Sparkles, Flame,
 import styled, { keyframes } from 'styled-components';
 import PostCard from './PostCard';
 import CreatePostModal from './CreatePostModal';
+import { useAuth } from '../context/AuthContext'; // ✅ IMPORT AUTH
 
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`
@@ -235,6 +236,7 @@ const EndMessage = styled.div`
 `;
 
 const SocialFeed = () => {
+  const { api, isAuthenticated, user } = useAuth(); // ✅ USE AUTH CONTEXT
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all'); // all, following, trending
@@ -243,41 +245,15 @@ const SocialFeed = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const observerTarget = useRef(null);
 
-  // Fetch feed
+  // ✅ FIXED: Fetch feed using api instance (handles cookies automatically)
   const fetchFeed = async (filterType = filter, pageNum = 1, append = false) => {
     try {
       setLoading(true);
+
+      // ✅ Use the api instance from context - no need for tokens!
+      const response = await api.get(`/feed?filter=${filterType}&page=${pageNum}&limit=20`);
       
-      // Try multiple possible token keys
-      const token = localStorage.getItem('token') || 
-                    localStorage.getItem('authToken') || 
-                    localStorage.getItem('x-auth-token');
-      
-      if (!token) {
-        console.error('No auth token found');
-        setPosts([]);
-        setLoading(false);
-        return;
-      }
-
-      const response = await fetch(
-        `http://localhost:5000/api/feed?filter=${filterType}&page=${pageNum}&limit=20`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'x-auth-token': token
-          }
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      // Handle case where posts might be undefined
-      const newPosts = data.posts || [];
+      const newPosts = response.data.posts || [];
 
       if (append) {
         setPosts(prev => [...prev, ...newPosts]);
@@ -285,11 +261,11 @@ const SocialFeed = () => {
         setPosts(newPosts);
       }
 
-      setHasMore(data.hasMore || false);
+      setHasMore(response.data.hasMore || false);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching feed:', error);
-      setPosts([]); // Set empty array on error
+      setPosts([]);
       setHasMore(false);
       setLoading(false);
     }
@@ -297,8 +273,10 @@ const SocialFeed = () => {
 
   // Initial load
   useEffect(() => {
-    fetchFeed(filter, 1, false);
-  }, [filter]);
+    if (isAuthenticated) {
+      fetchFeed(filter, 1, false);
+    }
+  }, [filter, isAuthenticated]);
 
   // Infinite scroll
   useEffect(() => {
@@ -323,30 +301,15 @@ const SocialFeed = () => {
     };
   }, [hasMore, loading, page, filter]);
 
-  // Handle like
+  // ✅ FIXED: Handle like using api instance
   const handleLike = async (postId) => {
     try {
-      const token = localStorage.getItem('token') || 
-                    localStorage.getItem('authToken') || 
-                    localStorage.getItem('x-auth-token');
-      
-      const response = await fetch(
-        `http://localhost:5000/api/feed/${postId}/like`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'x-auth-token': token
-          }
-        }
-      );
-
-      const data = await response.json();
+      const response = await api.post(`/feed/${postId}/like`);
 
       // Update post in state
       setPosts(posts.map(post => 
         post._id === postId 
-          ? { ...post, isLiked: data.liked, likesCount: data.likesCount }
+          ? { ...post, isLiked: response.data.liked, likesCount: response.data.likesCount }
           : post
       ));
     } catch (error) {
@@ -354,35 +317,18 @@ const SocialFeed = () => {
     }
   };
 
-  // Handle comment
+  // ✅ FIXED: Handle comment using api instance
   const handleComment = async (postId, text) => {
     try {
-      const token = localStorage.getItem('token') || 
-                    localStorage.getItem('authToken') || 
-                    localStorage.getItem('x-auth-token');
-      
-      const response = await fetch(
-        `http://localhost:5000/api/feed/${postId}/comment`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-            'x-auth-token': token
-          },
-          body: JSON.stringify({ text })
-        }
-      );
-
-      const data = await response.json();
+      const response = await api.post(`/feed/${postId}/comment`, { text });
 
       // Update post in state
       setPosts(posts.map(post => 
         post._id === postId 
           ? { 
               ...post, 
-              comments: [...post.comments, data.comment],
-              commentsCount: data.commentsCount 
+              comments: [...post.comments, response.data.comment],
+              commentsCount: response.data.commentsCount 
             }
           : post
       ));
@@ -391,20 +337,10 @@ const SocialFeed = () => {
     }
   };
 
-  // Handle delete post
+  // ✅ FIXED: Handle delete post using api instance
   const handleDeletePost = async (postId) => {
     try {
-      const token = localStorage.getItem('token') || 
-                    localStorage.getItem('authToken') || 
-                    localStorage.getItem('x-auth-token');
-      
-      await fetch(`http://localhost:5000/api/feed/${postId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'x-auth-token': token
-        }
-      });
+      await api.delete(`/feed/${postId}`);
 
       // Remove post from state
       setPosts(posts.filter(post => post._id !== postId));
