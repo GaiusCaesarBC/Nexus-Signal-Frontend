@@ -1,4 +1,4 @@
-// client/src/pages/PublicProfilePage.js - PUBLIC TRADER PROFILE PAGE
+// client/src/pages/PublicProfilePage.js - PUBLIC TRADER PROFILE PAGE (UPDATED)
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -597,16 +597,24 @@ const PublicProfilePage = () => {
     const fetchProfile = async () => {
         setLoading(true);
         try {
-            const response = await api.get(`/social/profile/${userId}`);
+            // ✅ UPDATED: Use the new users API endpoint
+            const response = await api.get(`/users/profile/${userId}`);
             setProfile(response.data);
             
-            // Check if following
-            const userResponse = await api.get('/auth/user');
-            setIsFollowing(userResponse.data.social?.following?.some(id => id.toString() === userId));
+            // ✅ UPDATED: Check if following using new endpoint
+            if (currentUser && response.data._id) {
+                try {
+                    const followStatus = await api.get(`/users/${response.data._id}/is-following`);
+                    setIsFollowing(followStatus.data.isFollowing);
+                } catch (err) {
+                    console.error('Error checking follow status:', err);
+                    setIsFollowing(false);
+                }
+            }
             
         } catch (error) {
             console.error('Error fetching profile:', error);
-            if (error.response?.status === 404) {
+            if (error.response?.status === 404 || error.response?.status === 403) {
                 // Profile is private or doesn't exist
                 setProfile({ private: true });
             } else {
@@ -619,21 +627,39 @@ const PublicProfilePage = () => {
     };
 
     const handleFollow = async () => {
+        if (!profile || !profile._id) return;
+        
         setFollowLoading(true);
         try {
+            // ✅ UPDATED: Use new follow/unfollow endpoints
             if (isFollowing) {
-                await api.post(`/social/unfollow/${userId}`);
+                await api.delete(`/users/follow/${profile._id}`);
                 setIsFollowing(false);
                 toast.success('Unfollowed user', 'Success');
+                // Update local follower count
+                setProfile(prev => ({
+                    ...prev,
+                    social: {
+                        ...prev.social,
+                        followersCount: Math.max(0, (prev.social?.followersCount || 0) - 1)
+                    }
+                }));
             } else {
-                await api.post(`/social/follow/${userId}`);
+                await api.post(`/users/follow/${profile._id}`);
                 setIsFollowing(true);
                 toast.success('Following user!', 'Success');
+                // Update local follower count
+                setProfile(prev => ({
+                    ...prev,
+                    social: {
+                        ...prev.social,
+                        followersCount: (prev.social?.followersCount || 0) + 1
+                    }
+                }));
             }
-            fetchProfile(); // Refresh counts
         } catch (error) {
             console.error('Error following/unfollowing:', error);
-            toast.error(error.response?.data?.error || 'Failed to follow user', 'Error');
+            toast.error(error.response?.data?.msg || 'Failed to follow user', 'Error');
         } finally {
             setFollowLoading(false);
         }
@@ -719,7 +745,7 @@ const PublicProfilePage = () => {
         );
     }
 
-    const isOwnProfile = userId === currentUser?.id;
+    const isOwnProfile = profile._id === currentUser?.id;
 
     return (
         <PageContainer>
@@ -732,7 +758,7 @@ const PublicProfilePage = () => {
                 <HeaderTop>
                     <UserInfoSection>
                         <AvatarLarge $src={profile.profile?.avatar} $rank={profile.stats?.rank}>
-                            {!profile.profile?.avatar && (profile.profile?.displayName?.charAt(0) || 'T')}
+                            {!profile.profile?.avatar && (profile.profile?.displayName?.charAt(0) || profile.username?.charAt(0) || 'T')}
                             {profile.stats?.rank && (
                                 <RankBadge $rank={profile.stats.rank}>
                                     #{profile.stats.rank}
@@ -742,7 +768,7 @@ const PublicProfilePage = () => {
 
                         <UserDetails>
                             <DisplayName>
-                                {profile.profile?.displayName || 'Anonymous Trader'}
+                                {profile.profile?.displayName || profile.username || 'Anonymous Trader'}
                                 {profile.stats?.rank === 1 && <Crown size={32} color="#ffd700" />}
                                 {profile.profile?.badges?.includes('verified') && <Check size={24} color="#10b981" />}
                             </DisplayName>
@@ -752,15 +778,15 @@ const PublicProfilePage = () => {
                             <UserMeta>
                                 <MetaItem>
                                     <Calendar size={16} />
-                                    Joined {new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                                    Joined {new Date(profile.date || Date.now()).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                                 </MetaItem>
                                 <MetaItem>
                                     <Users size={16} />
-                                    {profile.followersCount || 0} Followers
+                                    {profile.social?.followersCount || 0} Followers
                                 </MetaItem>
                                 <MetaItem>
                                     <Eye size={16} />
-                                    {profile.followingCount || 0} Following
+                                    {profile.social?.followingCount || 0} Following
                                 </MetaItem>
                             </UserMeta>
                         </UserDetails>

@@ -41,6 +41,9 @@ import LeaderboardPage from './pages/LeaderboardPage';
 import PublicProfilePage from './pages/PublicProfilePage';
 import CalculatorsPage from './pages/CalculatorsPage';
 import SentimentPage from './pages/SentimentPage';
+import PaperTradingPage from './pages/PaperTradingPage';
+import DiscoveryPage from './pages/DiscoveryPage';
+import SocialFeed from './components/SocialFeed';
 
 
 // ✅ NEW COMPONENT - Wraps content with styled-components theme
@@ -85,6 +88,9 @@ function AppContent() {
     <Route path="/trader/:userId" element={<ProtectedRoute><PublicProfilePage /></ProtectedRoute>} />
     <Route path="/calculators" element={<CalculatorsPage />} />
     <Route path="/sentiment" element={<ProtectedRoute><SentimentPage /></ProtectedRoute>} />
+    <Route path="/paper-trading" element={<ProtectedRoute><PaperTradingPage /></ProtectedRoute>} />
+    <Route path="/discover" element={<ProtectedRoute><DiscoveryPage /></ProtectedRoute>} />
+    <Route path="/feed" element={<SocialFeed />} />
 
     {/* Stock Details Page Route */}
     <Route path="/stocks/:symbol" element={<ProtectedRoute><StockPage /></ProtectedRoute>} />
