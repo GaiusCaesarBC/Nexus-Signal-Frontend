@@ -1,9 +1,9 @@
-// client/src/context/AuthContext.js - WITH TOAST NOTIFICATIONS
+// client/src/context/AuthContext.js - FIXED WITH TOKEN STORAGE
 
 import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API from '../api/axios';
-import { useToast } from './ToastContext'; // ✅ ADD TOAST
+import { useToast } from './ToastContext';
 
 const AuthContext = createContext(null);
 
@@ -13,7 +13,7 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const navigate = useNavigate();
-    const toast = useToast(); // ✅ USE TOAST
+    const toast = useToast();
 
     // Logout Function
     const logout = useCallback(async () => {
@@ -21,11 +21,15 @@ export const AuthProvider = ({ children }) => {
             setLoading(true);
             setError(null);
             await API.post('/auth/logout');
+            
+            // ✅ CLEAR TOKEN FROM LOCALSTORAGE
+            localStorage.removeItem('token');
+            
             console.log("Logout successful");
-            toast.info('You have been logged out', 'Goodbye'); // ✅ TOAST
+            toast.info('You have been logged out', 'Goodbye');
         } catch (err) {
             console.error('Logout error:', err.message);
-            toast.error('Logout failed. Please try again.', 'Error'); // ✅ TOAST
+            toast.error('Logout failed. Please try again.', 'Error');
         } finally {
             setIsAuthenticated(false);
             setUser(null);
@@ -79,18 +83,26 @@ export const AuthProvider = ({ children }) => {
         setLoading(true);
         setError(null);
         try {
-            await API.post('/auth/login', { email, password });
+            // ✅ CAPTURE THE RESPONSE
+            const response = await API.post('/auth/login', { email, password });
+            
+            // ✅ SAVE TOKEN TO LOCALSTORAGE
+            if (response.data.token) {
+                localStorage.setItem('token', response.data.token);
+                console.log("Token saved to localStorage");
+            }
+            
             console.log("Login successful, loading user...");
 
             const userLoaded = await loadUser();
 
             if (userLoaded) {
-                toast.success('Welcome back! 🎉', 'Login Successful'); // ✅ TOAST
+                toast.success('Welcome back! 🎉', 'Login Successful');
                 navigate('/dashboard');
                 return { success: true };
             } else {
                 setError("Failed to establish session");
-                toast.error('Failed to establish session', 'Error'); // ✅ TOAST
+                toast.error('Failed to establish session', 'Error');
                 return { success: false, error: "Session error" };
             }
         } catch (err) {
@@ -120,18 +132,26 @@ export const AuthProvider = ({ children }) => {
         setLoading(true);
         setError(null);
         try {
-            await API.post('/auth/register', userData);
+            // ✅ CAPTURE THE RESPONSE
+            const response = await API.post('/auth/register', userData);
+            
+            // ✅ SAVE TOKEN TO LOCALSTORAGE
+            if (response.data.token) {
+                localStorage.setItem('token', response.data.token);
+                console.log("Token saved to localStorage");
+            }
+            
             console.log("Registration successful, loading user...");
 
             const userLoaded = await loadUser();
 
             if (userLoaded) {
-                toast.success('Account created successfully! Welcome! 🎉', 'Registration Complete'); // ✅ TOAST
+                toast.success('Account created successfully! Welcome! 🎉', 'Registration Complete');
                 navigate('/dashboard');
                 return { success: true };
             } else {
                 setError("Failed to establish session");
-                toast.error('Failed to establish session', 'Error'); // ✅ TOAST
+                toast.error('Failed to establish session', 'Error');
                 return { success: false, error: "Session error" };
             }
         } catch (err) {
