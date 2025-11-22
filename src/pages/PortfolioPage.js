@@ -1107,33 +1107,40 @@ const PortfolioPage = () => {
     }, [portfolio.length]);
 
     const fetchPortfolio = async () => {
+    try {
         setLoading(true);
-        try {
-            const response = await api.get('/portfolio');
-            
-            if (response.data.holdings && response.data.holdings.length > 0) {
-                setPortfolio(response.data.holdings);
-                setHoldings(response.data.holdings);
-                setTotalValue(response.data.totalValue || 0);
-                setTotalCost(response.data.totalCost || 0);
-                setTotalGainLoss(response.data.totalGainLoss || 0);
-                setTotalGainLossPercent(response.data.totalGainLossPercent || 0);
-                
-                calculateStats(response.data.holdings);
-            } else {
-                setPortfolio([]);
-                setHoldings([]);
-            }
-            
-            toast.success('Portfolio loaded', 'Success');
-        } catch (error) {
-            console.error('Error fetching portfolio:', error);
-            toast.error('Failed to load portfolio', 'Error');
-        } finally {
-            setLoading(false);
+        const response = await api.get('/portfolio');
+        
+        console.log('📊 Portfolio API Response:', response.data);
+        
+        // ✅ FIX: Data is nested under 'portfolio'
+        const portfolioData = response.data.portfolio || response.data;
+        const holdingsData = portfolioData.holdings || [];
+        
+        console.log('📊 Holdings:', holdingsData);
+        
+        // ✅ SET BOTH STATES!
+        setHoldings(holdingsData);
+        setPortfolio(holdingsData);  // ← ADD THIS LINE!
+        
+        // ✅ Also set the other stats
+        setTotalValue(portfolioData.totalValue || 0);
+        setTotalCost(portfolioData.totalInvested || 0);
+        setTotalGainLoss(portfolioData.totalChange || 0);
+        setTotalGainLossPercent(portfolioData.totalChangePercent || 0);
+        
+        // Calculate stats
+        if (holdingsData.length > 0) {
+            calculateStats(holdingsData);
         }
-    };
-
+        
+    } catch (error) {
+        console.error('Error fetching portfolio:', error);
+        toast.error('Failed to load portfolio');
+    } finally {
+        setLoading(false);
+    }
+};
     const handleAutoRefresh = async () => {
         try {
             const response = await api.get('/portfolio');

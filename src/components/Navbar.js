@@ -540,14 +540,32 @@ const UserAvatar = styled.div`
     width: 36px;
     height: 36px;
     border-radius: 10px;
-    background: linear-gradient(135deg, #00adef 0%, #0088cc 100%);
+    background: ${props => props.$src ? 
+        `url(${props.$src}) center/cover` : 
+        'linear-gradient(135deg, #00adef 0%, #0088cc 100%)'
+    };
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: 700;
-    font-size: 1rem;
+    font-size: ${props => props.$src ? '0' : '1rem'}; // Hide text when image exists
     color: white;
     box-shadow: 0 2px 10px rgba(0, 173, 237, 0.4);
+    position: relative;
+    overflow: hidden;
+`;
+
+const AvatarImage = styled.img`
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    position: absolute;
+    inset: 0;
+`;
+
+const AvatarInitials = styled.div`
+    position: relative;
+    z-index: 1;
 `;
 
 const UserName = styled.span`
@@ -1141,7 +1159,21 @@ const Navbar = () => {
                     {/* USER MENU */}
                     <div style={{ position: 'relative' }} data-user-menu>
                         <UserMenuButton onClick={() => setUserDropdownOpen(!userDropdownOpen)}>
-                            <UserAvatar>{getUserInitials()}</UserAvatar>
+                            <UserAvatar $src={user?.profile?.avatar}>
+    {user?.profile?.avatar ? (
+        <AvatarImage 
+            src={user.profile.avatar} 
+            alt={user?.name || 'User'}
+            onError={(e) => {
+                e.target.style.display = 'none';
+            }}
+        />
+    ) : (
+        <AvatarInitials>
+            {getUserInitials()}
+        </AvatarInitials>
+    )}
+</UserAvatar>
                             <UserName>{user?.name || 'User'}</UserName>
                             <DropdownIcon size={18} $open={userDropdownOpen} />
                         </UserMenuButton>

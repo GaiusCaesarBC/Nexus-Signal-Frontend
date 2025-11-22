@@ -1,23 +1,20 @@
-// client/src/pages/PredictionsPage.js - THE MOST LEGENDARY AI PREDICTION PAGE - ULTIMATE EDITION V2
+// client/src/pages/PredictionsPage.js - COMPLETE WORKING VERSION
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useToast } from '../context/ToastContext';
 import styled, { keyframes } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import {
     Brain, TrendingUp, TrendingDown, Target, Zap, Activity,
-    AlertCircle, Calendar, DollarSign, Percent, ArrowRight,
+    Calendar, DollarSign, Percent, ArrowRight,
     Star, Award, Sparkles, ChevronRight, BarChart3, LineChart as LineChartIcon,
     Rocket, Trophy, ArrowUpDown, Flame, History, Share2, Download,
-    Plus, X, Check, TrendingUp as TrendUpIcon, Clock, Eye,
-    RefreshCw, GitCompare, BookmarkPlus, Bookmark, Twitter,
-    Facebook, Linkedin, Copy, ChevronDown, ChevronUp, Filter,
-    SortAsc, SortDesc
+    X, Eye, RefreshCw, GitCompare, BookmarkPlus, Bookmark, Twitter,
+    Facebook, Linkedin, Copy
 } from 'lucide-react';
 import {
-    LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid,
-    Tooltip, ResponsiveContainer, ReferenceLine, BarChart, Bar,
-    RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis
+    AreaChart, Area, XAxis, YAxis, CartesianGrid,
+    Tooltip, ResponsiveContainer, ReferenceLine
 } from 'recharts';
 
 // ============ ANIMATIONS ============
@@ -116,7 +113,6 @@ const PageContainer = styled.div`
     overflow-x: hidden;
 `;
 
-// Animated background particles
 const ParticleContainer = styled.div`
     position: fixed;
     top: 0;
@@ -205,7 +201,6 @@ const PoweredBy = styled.div`
     }
 `;
 
-// ============ TABS SECTION ============
 const TabsContainer = styled.div`
     max-width: 1400px;
     margin: 0 auto 2rem;
@@ -255,7 +250,6 @@ const Tab = styled.button`
     }
 `;
 
-// ============ STATS BANNER ============
 const StatsBanner = styled.div`
     max-width: 1200px;
     margin: 0 auto 3rem;
@@ -310,7 +304,6 @@ const StatLabel = styled.div`
     letter-spacing: 1px;
 `;
 
-// ============ INPUT SECTION ============
 const InputSection = styled.div`
     max-width: 800px;
     margin: 0 auto 3rem;
@@ -411,15 +404,6 @@ const Select = styled.select`
     }
 `;
 
-const ButtonGroup = styled.div`
-    display: flex;
-    gap: 1rem;
-
-    @media (max-width: 768px) {
-        flex-direction: column;
-    }
-`;
-
 const PredictButton = styled.button`
     flex: 1;
     padding: 1.25rem 2rem;
@@ -466,61 +450,10 @@ const PredictButton = styled.button`
     }
 `;
 
-const SecondaryButton = styled(PredictButton)`
-    background: rgba(139, 92, 246, 0.1);
-    border: 2px solid rgba(139, 92, 246, 0.3);
-    color: #a78bfa;
-
-    &:hover:not(:disabled) {
-        background: rgba(139, 92, 246, 0.2);
-        border-color: rgba(139, 92, 246, 0.5);
-    }
-`;
-
 const LoadingSpinner = styled(Sparkles)`
     animation: ${spin} 1s linear infinite;
 `;
 
-// ============ COMPARISON MODE ============
-const ComparisonContainer = styled.div`
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 2rem;
-`;
-
-const ComparisonCard = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
-    border: 1px solid rgba(139, 92, 246, 0.3);
-    border-radius: 16px;
-    padding: 1.5rem;
-    position: relative;
-    animation: ${fadeIn} 0.6s ease-out;
-`;
-
-const RemoveButton = styled.button`
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: rgba(239, 68, 68, 0.2);
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    color: #ef4444;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s ease;
-
-    &:hover {
-        background: rgba(239, 68, 68, 0.3);
-        transform: scale(1.1);
-    }
-`;
-
-// ============ RESULTS SECTION ============
 const ResultsContainer = styled.div`
     max-width: 1400px;
     margin: 0 auto;
@@ -652,7 +585,6 @@ const DirectionBadge = styled.div`
     animation: ${slideInRight} 0.6s ease-out, ${pulse} 2s ease-in-out infinite 1s;
 `;
 
-// ============ METRICS GRID ============
 const MetricsGrid = styled.div`
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -723,7 +655,6 @@ const MetricValue = styled.div`
     }};
 `;
 
-// ============ CONFIDENCE BAR ============
 const ConfidenceSection = styled.div`
     margin-bottom: 2rem;
     position: relative;
@@ -781,7 +712,6 @@ const ConfidenceFill = styled.div`
     }
 `;
 
-// ============ TECHNICAL INDICATORS ============
 const IndicatorsSection = styled.div`
     margin-bottom: 2rem;
     position: relative;
@@ -835,7 +765,6 @@ const IndicatorValue = styled.span`
     font-size: 0.95rem;
 `;
 
-// ============ CHART SECTION ============
 const ChartSection = styled.div`
     background: rgba(15, 23, 42, 0.8);
     backdrop-filter: blur(10px);
@@ -860,152 +789,6 @@ const ChartTitle = styled.h3`
     display: flex;
     align-items: center;
     gap: 0.5rem;
-`;
-
-// ============ HISTORY SECTION ============
-const HistoryContainer = styled.div`
-    max-width: 1400px;
-    margin: 0 auto;
-    position: relative;
-    z-index: 1;
-`;
-
-const HistoryHeader = styled.div`
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-`;
-
-const HistoryTitle = styled.h2`
-    color: #a78bfa;
-    font-size: 2rem;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-`;
-
-const HistoryFilters = styled.div`
-    display: flex;
-    gap: 1rem;
-`;
-
-const FilterButton = styled.button`
-    padding: 0.75rem 1rem;
-    background: ${props => props.$active ? 
-        'linear-gradient(135deg, rgba(139, 92, 246, 0.3) 0%, rgba(139, 92, 246, 0.15) 100%)' :
-        'rgba(30, 41, 59, 0.5)'
-    };
-    border: 1px solid ${props => props.$active ? 'rgba(139, 92, 246, 0.5)' : 'rgba(100, 116, 139, 0.3)'};
-    border-radius: 10px;
-    color: ${props => props.$active ? '#a78bfa' : '#94a3b8'};
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-
-    &:hover {
-        background: linear-gradient(135deg, rgba(139, 92, 246, 0.3) 0%, rgba(139, 92, 246, 0.15) 100%);
-        border-color: rgba(139, 92, 246, 0.5);
-        color: #a78bfa;
-    }
-`;
-
-const HistoryList = styled.div`
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-`;
-
-const HistoryItem = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
-    border: 1px solid rgba(139, 92, 246, 0.3);
-    border-radius: 16px;
-    padding: 1.5rem;
-    display: grid;
-    grid-template-columns: 100px 1fr 150px 150px 150px 100px;
-    gap: 1.5rem;
-    align-items: center;
-    transition: all 0.3s ease;
-    animation: ${fadeIn} 0.6s ease-out;
-
-    &:hover {
-        border-color: rgba(139, 92, 246, 0.5);
-        transform: translateX(10px);
-        box-shadow: 0 10px 30px rgba(139, 92, 246, 0.2);
-    }
-
-    @media (max-width: 1024px) {
-        grid-template-columns: 1fr;
-        gap: 1rem;
-    }
-`;
-
-const HistorySymbol = styled.div`
-    font-size: 1.5rem;
-    font-weight: 900;
-    color: #8b5cf6;
-`;
-
-const HistoryDetails = styled.div`
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-`;
-
-const HistoryDate = styled.span`
-    color: #64748b;
-    font-size: 0.85rem;
-`;
-
-const HistoryPrice = styled.span`
-    color: #e0e6ed;
-    font-size: 1rem;
-    font-weight: 600;
-`;
-
-const HistoryBadge = styled.div`
-    padding: 0.5rem 1rem;
-    background: ${props => props.$up ? 
-        'rgba(16, 185, 129, 0.2)' : 
-        'rgba(239, 68, 68, 0.2)'
-    };
-    border: 1px solid ${props => props.$up ? 
-        'rgba(16, 185, 129, 0.3)' : 
-        'rgba(239, 68, 68, 0.3)'
-    };
-    border-radius: 20px;
-    color: ${props => props.$up ? '#10b981' : '#ef4444'};
-    font-weight: 700;
-    text-align: center;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-`;
-
-const HistoryAccuracy = styled.div`
-    text-align: center;
-`;
-
-const AccuracyLabel = styled.div`
-    color: #94a3b8;
-    font-size: 0.85rem;
-    margin-bottom: 0.25rem;
-`;
-
-const AccuracyValue = styled.div`
-    color: ${props => {
-        const val = parseFloat(props.$value);
-        if (val >= 90) return '#10b981';
-        if (val >= 70) return '#f59e0b';
-        return '#ef4444';
-    }};
-    font-size: 1.2rem;
-    font-weight: 900;
 `;
 
 const EmptyState = styled.div`
@@ -1047,7 +830,6 @@ const EmptyText = styled.p`
     font-size: 1.2rem;
 `;
 
-// Success Rocket Animation
 const RocketContainer = styled.div`
     position: fixed;
     ${props => props.$crash ? 'top: -100px;' : 'bottom: -100px;'}
@@ -1057,7 +839,6 @@ const RocketContainer = styled.div`
     pointer-events: none;
 `;
 
-// Share Modal
 const ModalOverlay = styled.div`
     position: fixed;
     top: 0;
@@ -1154,16 +935,38 @@ const PredictionsPage = () => {
     const [prediction, setPrediction] = useState(null);
     const [showRocket, setShowRocket] = useState(false);
     const [particles, setParticles] = useState([]);
-    const [comparisonMode, setComparisonMode] = useState(false);
-    const [comparisonStocks, setComparisonStocks] = useState([]);
-    const [history, setHistory] = useState([]);
-    const [historyFilter, setHistoryFilter] = useState('all'); // all, up, down
     const [showShareModal, setShowShareModal] = useState(false);
     const [savedPredictions, setSavedPredictions] = useState([]);
-    const [timeframe, setTimeframe] = useState(7);
-    const [predictionHistory, setPredictionHistory] = useState([]);
 
-    // Generate background particles on mount
+    const [platformStats, setPlatformStats] = useState({
+        accuracy: 0,
+        totalPredictions: 0,
+        loading: true
+    });
+
+    useEffect(() => {
+        const fetchPlatformStats = async () => {
+            try {
+                const response = await api.get('/predictions/platform-stats');
+                
+                if (response.data.success) {
+                    setPlatformStats({
+                        accuracy: response.data.accuracy || 0,
+                        totalPredictions: response.data.totalPredictions || 0,
+                        loading: false
+                    });
+                }
+            } catch (error) {
+                console.error('Error fetching platform stats:', error);
+                setPlatformStats(prev => ({ ...prev, loading: false }));
+            }
+        };
+
+        fetchPlatformStats();
+        const interval = setInterval(fetchPlatformStats, 30000);
+        return () => clearInterval(interval);
+    }, [api]);
+
     useEffect(() => {
         const newParticles = Array.from({ length: 30 }, (_, i) => ({
             id: i,
@@ -1175,50 +978,9 @@ const PredictionsPage = () => {
         }));
         setParticles(newParticles);
 
-        // Load saved predictions from localStorage
         const saved = JSON.parse(localStorage.getItem('savedPredictions') || '[]');
         setSavedPredictions(saved);
-
-        // Load history (mock data for now)
-        loadHistory();
     }, []);
-
-    const loadHistory = () => {
-        // Mock history data - replace with API call
-        const mockHistory = [
-            {
-                id: 1,
-                symbol: 'AAPL',
-                date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toLocaleDateString(),
-                predictedPrice: 180.50,
-                actualPrice: 182.30,
-                direction: 'UP',
-                accuracy: 98.5,
-                days: 7
-            },
-            {
-                id: 2,
-                symbol: 'TSLA',
-                date: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toLocaleDateString(),
-                predictedPrice: 245.00,
-                actualPrice: 248.75,
-                direction: 'UP',
-                accuracy: 95.2,
-                days: 14
-            },
-            {
-                id: 3,
-                symbol: 'NVDA',
-                date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toLocaleDateString(),
-                predictedPrice: 485.20,
-                actualPrice: 479.60,
-                direction: 'DOWN',
-                accuracy: 92.8,
-                days: 3
-            },
-        ];
-        setHistory(mockHistory);
-    };
 
     const fetchPrediction = async (e) => {
     e.preventDefault();
@@ -1239,10 +1001,9 @@ const PredictionsPage = () => {
         
         console.log('Prediction response:', response.data);
         
-        // Generate technical indicators (mock)
-        const indicators = generateTechnicalIndicators();
+        // ✅ REMOVE THIS LINE - no more mock indicators!
+        // const indicators = generateTechnicalIndicators();
 
-        // Generate mock chart data
         const chartData = generateChartData(
             response.data.current_price,
             response.data.prediction.target_price,
@@ -1252,7 +1013,8 @@ const PredictionsPage = () => {
         const predictionData = {
             ...response.data,
             chartData,
-            indicators,
+            // ✅ Use real indicators from API
+            indicators: response.data.indicators,
             timestamp: new Date().toISOString()
         };
 
@@ -1260,7 +1022,6 @@ const PredictionsPage = () => {
         
         toast.success(`Prediction generated for ${symbol.toUpperCase()}`, 'Success');
 
-        // Trigger rocket animation
         const isGoingUp = response.data.prediction.direction === 'UP';
         setShowRocket(isGoingUp ? 'up' : 'down');
         setTimeout(() => setShowRocket(false), 3000);
@@ -1272,18 +1033,6 @@ const PredictionsPage = () => {
         setLoading(false);
     }
 };
-
-    const generateTechnicalIndicators = () => {
-        // Mock technical indicators - replace with real data
-        return {
-            RSI: { value: 62, signal: 'BUY' },
-            MACD: { value: 'Bullish', signal: 'BUY' },
-            MA50: { value: 'Above', signal: 'BUY' },
-            MA200: { value: 'Above', signal: 'BUY' },
-            Volume: { value: 'High', signal: 'BUY' },
-            Bollinger: { value: 'Upper', signal: 'HOLD' }
-        };
-    };
 
     const generateChartData = (currentPrice, targetPrice, days) => {
         const data = [];
@@ -1372,13 +1121,8 @@ const PredictionsPage = () => {
         toast.success('Prediction exported successfully!', 'Exported');
     };
 
-    const filteredHistory = historyFilter === 'all' 
-        ? history 
-        : history.filter(h => h.direction === historyFilter.toUpperCase());
-
     return (
         <PageContainer>
-            {/* Animated Background Particles */}
             <ParticleContainer>
                 {particles.map(particle => (
                     <Particle
@@ -1392,7 +1136,6 @@ const PredictionsPage = () => {
                 ))}
             </ParticleContainer>
 
-            {/* Success Rocket */}
             {showRocket && (
                 <RocketContainer 
                     left={Math.random() * 80 + 10}
@@ -1419,7 +1162,6 @@ const PredictionsPage = () => {
                 </PoweredBy>
             </Header>
 
-            {/* Tabs */}
             <TabsContainer>
                 <Tab 
                     $active={activeTab === 'predict'}
@@ -1427,20 +1169,6 @@ const PredictionsPage = () => {
                 >
                     <Zap size={18} />
                     Predict
-                </Tab>
-                <Tab 
-                    $active={activeTab === 'compare'}
-                    onClick={() => setActiveTab('compare')}
-                >
-                    <GitCompare size={18} />
-                    Compare Stocks
-                </Tab>
-                <Tab 
-                    $active={activeTab === 'history'}
-                    onClick={() => setActiveTab('history')}
-                >
-                    <History size={18} />
-                    History
                 </Tab>
                 <Tab 
                     $active={activeTab === 'saved'}
@@ -1451,43 +1179,56 @@ const PredictionsPage = () => {
                 </Tab>
             </TabsContainer>
 
-            {/* Stats Banner */}
-            {activeTab === 'predict' && (
-                <StatsBanner>
-                    <StatCard delay={0}>
-                        <StatIcon gradient="linear-gradient(135deg, #8b5cf6, #6366f1)">
-                            <Trophy size={32} />
-                        </StatIcon>
-                        <StatValue>98.2%</StatValue>
-                        <StatLabel>Accuracy Rate</StatLabel>
-                    </StatCard>
-                    <StatCard delay={0.1}>
-                        <StatIcon gradient="linear-gradient(135deg, #10b981, #059669)">
-                            <ArrowUpDown size={32} />
-                        </StatIcon>
-                        <StatValue>10K+</StatValue>
-                        <StatLabel>Predictions Made</StatLabel>
-                    </StatCard>
-                    <StatCard delay={0.2}>
-                        <StatIcon gradient="linear-gradient(135deg, #f59e0b, #d97706)">
-                            <Flame size={32} />
-                        </StatIcon>
-                        <StatValue>24/7</StatValue>
-                        <StatLabel>Real-Time Analysis</StatLabel>
-                    </StatCard>
-                    <StatCard delay={0.3}>
-                        <StatIcon gradient="linear-gradient(135deg, #ef4444, #dc2626)">
-                            <Rocket size={32} />
-                        </StatIcon>
-                        <StatValue>Lightning</StatValue>
-                        <StatLabel>Fast Results</StatLabel>
-                    </StatCard>
-                </StatsBanner>
-            )}
-
-            {/* PREDICT TAB */}
             {activeTab === 'predict' && (
                 <>
+                    <StatsBanner>
+                        <StatCard delay={0}>
+                            <StatIcon gradient="linear-gradient(135deg, #8b5cf6, #6366f1)">
+                                <Trophy size={32} />
+                            </StatIcon>
+                            <StatValue>
+                                {platformStats.loading ? (
+                                    <RefreshCw size={24} style={{ animation: 'spin 1s linear infinite' }} />
+                                ) : (
+                                    `${platformStats.accuracy.toFixed(1)}%`
+                                )}
+                            </StatValue>
+                            <StatLabel>Accuracy Rate</StatLabel>
+                        </StatCard>
+                        
+                        <StatCard delay={0.1}>
+                            <StatIcon gradient="linear-gradient(135deg, #10b981, #059669)">
+                                <ArrowUpDown size={32} />
+                            </StatIcon>
+                            <StatValue>
+                                {platformStats.loading ? (
+                                    <RefreshCw size={24} style={{ animation: 'spin 1s linear infinite' }} />
+                                ) : (
+                                    platformStats.totalPredictions >= 1000
+                                        ? `${(platformStats.totalPredictions / 1000).toFixed(1)}K+`
+                                        : platformStats.totalPredictions
+                                )}
+                            </StatValue>
+                            <StatLabel>Predictions Made</StatLabel>
+                        </StatCard>
+                        
+                        <StatCard delay={0.2}>
+                            <StatIcon gradient="linear-gradient(135deg, #f59e0b, #d97706)">
+                                <Flame size={32} />
+                            </StatIcon>
+                            <StatValue>24/7</StatValue>
+                            <StatLabel>Real-Time Analysis</StatLabel>
+                        </StatCard>
+                        
+                        <StatCard delay={0.3}>
+                            <StatIcon gradient="linear-gradient(135deg, #ef4444, #dc2626)">
+                                <Rocket size={32} />
+                            </StatIcon>
+                            <StatValue>Lightning</StatValue>
+                            <StatLabel>Fast Results</StatLabel>
+                        </StatCard>
+                    </StatsBanner>
+
                     <InputSection>
                         <InputForm onSubmit={fetchPrediction}>
                             <InputGroup>
@@ -1643,7 +1384,77 @@ const PredictionsPage = () => {
                                     </ConfidenceBar>
                                 </ConfidenceSection>
 
-                                {/* Technical Indicators */}
+                                {prediction.sentiment && (
+                                    <IndicatorsSection style={{ marginBottom: '2rem' }}>
+                                        <IndicatorsTitle>
+                                            <Activity size={24} />
+                                            News Sentiment Analysis
+                                        </IndicatorsTitle>
+                                        
+                                        <div style={{
+                                            background: 'rgba(15, 23, 42, 0.6)',
+                                            border: `2px solid ${
+                                                prediction.sentiment.label === 'POSITIVE' ? 'rgba(16, 185, 129, 0.5)' :
+                                                prediction.sentiment.label === 'NEGATIVE' ? 'rgba(239, 68, 68, 0.5)' :
+                                                'rgba(245, 158, 11, 0.5)'
+                                            }`,
+                                            borderRadius: '16px',
+                                            padding: '1.5rem',
+                                            display: 'grid',
+                                            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                                            gap: '1rem'
+                                        }}>
+                                            <div>
+                                                <div style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+                                                    Overall Sentiment
+                                                </div>
+                                                <div style={{
+                                                    fontSize: '1.5rem',
+                                                    fontWeight: '900',
+                                                    color: prediction.sentiment.label === 'POSITIVE' ? '#10b981' :
+                                                           prediction.sentiment.label === 'NEGATIVE' ? '#ef4444' :
+                                                           '#f59e0b'
+                                                }}>
+                                                    {prediction.sentiment.label}
+                                                </div>
+                                            </div>
+                                            
+                                            <div>
+                                                <div style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+                                                    Sentiment Score
+                                                </div>
+                                                <div style={{
+                                                    fontSize: '1.5rem',
+                                                    fontWeight: '900',
+                                                    color: prediction.sentiment.score > 0 ? '#10b981' :
+                                                           prediction.sentiment.score < 0 ? '#ef4444' :
+                                                           '#f59e0b'
+                                                }}>
+                                                    {(prediction.sentiment.score * 100).toFixed(0)}%
+                                                </div>
+                                            </div>
+                                            
+                                            <div>
+                                                <div style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+                                                    Confidence
+                                                </div>
+                                                <div style={{ fontSize: '1.5rem', fontWeight: '900', color: '#a78bfa' }}>
+                                                    {prediction.sentiment.confidence}%
+                                                </div>
+                                            </div>
+                                            
+                                            <div style={{ gridColumn: '1 / -1' }}>
+                                                <div style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+                                                    Analysis
+                                                </div>
+                                                <div style={{ color: '#e0e6ed', fontSize: '1rem' }}>
+                                                    {prediction.sentiment.summary}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </IndicatorsSection>
+                                )}
+
                                 <IndicatorsSection>
                                     <IndicatorsTitle>
                                         <BarChart3 size={24} />
@@ -1725,156 +1536,6 @@ const PredictionsPage = () => {
                 </>
             )}
 
-            {/* HISTORY TAB */}
-            {activeTab === 'history' && (
-                <HistoryContainer>
-                    <HistoryHeader>
-                        <HistoryTitle>
-                            <History size={32} />
-                            Prediction History
-                        </HistoryTitle>
-                        <HistoryFilters>
-                            <FilterButton 
-                                $active={historyFilter === 'all'}
-                                onClick={() => setHistoryFilter('all')}
-                            >
-                                All
-                            </FilterButton>
-                            <FilterButton 
-                                $active={historyFilter === 'up'}
-                                onClick={() => setHistoryFilter('up')}
-                            >
-                                <TrendingUp size={18} />
-                                Bullish
-                            </FilterButton>
-                            <FilterButton 
-                                $active={historyFilter === 'down'}
-                                onClick={() => setHistoryFilter('down')}
-                            >
-                                <TrendingDown size={18} />
-                                Bearish
-                            </FilterButton>
-                        </HistoryFilters>
-                    </HistoryHeader>
-
-                    {filteredHistory.length > 0 ? (
-                        <HistoryList>
-                            {filteredHistory.map(item => (
-                                <HistoryItem key={item.id}>
-                                    <HistorySymbol>{item.symbol}</HistorySymbol>
-                                    <HistoryDetails>
-                                        <HistoryDate>{item.date}</HistoryDate>
-                                        <HistoryPrice>Predicted: ${item.predictedPrice.toFixed(2)}</HistoryPrice>
-                                        <HistoryPrice>Actual: ${item.actualPrice.toFixed(2)}</HistoryPrice>
-                                    </HistoryDetails>
-                                    <HistoryBadge $up={item.direction === 'UP'}>
-                                        {item.direction === 'UP' ? <TrendingUp size={18} /> : <TrendingDown size={18} />}
-                                        {item.direction}
-                                    </HistoryBadge>
-                                    <div style={{ textAlign: 'center' }}>
-                                        <AccuracyLabel>Timeframe</AccuracyLabel>
-                                        <AccuracyValue>{item.days} {item.days === 1 ? 'Day' : 'Days'}</AccuracyValue>
-                                    </div>
-                                    <HistoryAccuracy>
-                                        <AccuracyLabel>Accuracy</AccuracyLabel>
-                                        <AccuracyValue $value={item.accuracy}>
-                                            {item.accuracy.toFixed(1)}%
-                                        </AccuracyValue>
-                                    </HistoryAccuracy>
-                                    <ActionButton>
-                                        <Eye size={18} />
-                                    </ActionButton>
-                                </HistoryItem>
-                            ))}
-                        </HistoryList>
-                    ) : (
-                        <EmptyState>
-                            <EmptyIcon>
-                                <History size={80} color="#8b5cf6" />
-                            </EmptyIcon>
-                            <EmptyTitle>No History Yet</EmptyTitle>
-                            <EmptyText>
-                                Your prediction history will appear here
-                            </EmptyText>
-                        </EmptyState>
-                    )}
-                </HistoryContainer>
-            )}
-
-            {/* SAVED TAB */}
-            {activeTab === 'saved' && (
-                <HistoryContainer>
-                    <HistoryHeader>
-                        <HistoryTitle>
-                            <Bookmark size={32} />
-                            Saved Predictions
-                        </HistoryTitle>
-                    </HistoryHeader>
-
-                    {savedPredictions.length > 0 ? (
-                        <HistoryList>
-                            {savedPredictions.map(item => (
-                                <HistoryItem key={item.id}>
-                                    <HistorySymbol>{item.symbol}</HistorySymbol>
-                                    <HistoryDetails>
-                                        <HistoryDate>{new Date(item.savedAt).toLocaleDateString()}</HistoryDate>
-                                        <HistoryPrice>Target: ${item.prediction.target_price.toFixed(2)}</HistoryPrice>
-                                    </HistoryDetails>
-                                    <HistoryBadge $up={item.prediction.direction === 'UP'}>
-                                        {item.prediction.direction === 'UP' ? <TrendingUp size={18} /> : <TrendingDown size={18} />}
-                                        {item.prediction.direction}
-                                    </HistoryBadge>
-                                    <div style={{ textAlign: 'center' }}>
-                                        <AccuracyLabel>Change</AccuracyLabel>
-                                        <AccuracyValue $value={item.prediction.price_change_percent >= 0 ? 90 : 50}>
-                                            {item.prediction.price_change_percent >= 0 ? '+' : ''}{item.prediction.price_change_percent.toFixed(2)}%
-                                        </AccuracyValue>
-                                    </div>
-                                    <div style={{ textAlign: 'center' }}>
-                                        <AccuracyLabel>Confidence</AccuracyLabel>
-                                        <AccuracyValue $value={item.prediction.confidence}>
-                                            {item.prediction.confidence.toFixed(1)}%
-                                        </AccuracyValue>
-                                    </div>
-                                    <ActionButton onClick={() => {
-                                        const updated = savedPredictions.filter(p => p.id !== item.id);
-                                        setSavedPredictions(updated);
-                                        localStorage.setItem('savedPredictions', JSON.stringify(updated));
-                                        toast.success('Prediction removed', 'Removed');
-                                    }}>
-                                        <X size={18} />
-                                    </ActionButton>
-                                </HistoryItem>
-                            ))}
-                        </HistoryList>
-                    ) : (
-                        <EmptyState>
-                            <EmptyIcon>
-                                <Bookmark size={80} color="#8b5cf6" />
-                            </EmptyIcon>
-                            <EmptyTitle>No Saved Predictions</EmptyTitle>
-                            <EmptyText>
-                                Save predictions to access them later
-                            </EmptyText>
-                        </EmptyState>
-                    )}
-                </HistoryContainer>
-            )}
-
-            {/* COMPARE TAB */}
-            {activeTab === 'compare' && (
-                <EmptyState>
-                    <EmptyIcon>
-                        <GitCompare size={80} color="#8b5cf6" />
-                    </EmptyIcon>
-                    <EmptyTitle>Compare Multiple Stocks</EmptyTitle>
-                    <EmptyText>
-                        Feature coming soon! Compare predictions for multiple stocks side-by-side
-                    </EmptyText>
-                </EmptyState>
-            )}
-
-            {/* Share Modal */}
             {showShareModal && (
                 <ModalOverlay onClick={() => setShowShareModal(false)}>
                     <ModalContent onClick={(e) => e.stopPropagation()}>
