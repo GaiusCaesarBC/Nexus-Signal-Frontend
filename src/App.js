@@ -85,7 +85,7 @@ function AppContent() {
     <Route path="/journal" element={<ProtectedRoute><JournalPage /></ProtectedRoute>} />
     <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
     <Route path="/leaderboard" element={<ProtectedRoute><LeaderboardPage /></ProtectedRoute>} />
-    <Route path="/trader/:userId" element={<ProtectedRoute><PublicProfilePage /></ProtectedRoute>} />
+    <Route path="/trader/:username" element={<ProtectedRoute><PublicProfilePage /></ProtectedRoute>} />
     <Route path="/calculators" element={<CalculatorsPage />} />
     <Route path="/sentiment" element={<ProtectedRoute><SentimentPage /></ProtectedRoute>} />
     <Route path="/paper-trading" element={<ProtectedRoute><PaperTradingPage /></ProtectedRoute>} />

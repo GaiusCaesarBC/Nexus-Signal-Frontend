@@ -76,11 +76,37 @@ const Avatar = styled.div`
   font-size: 1.2rem;
   flex-shrink: 0;
   transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
 
   &:hover {
     transform: scale(1.1);
     box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
   }
+
+  /* Show initials only when there's no image */
+  ${props => props.$src && `
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: url(${props.$src}) center/cover;
+    }
+  `}
+`;
+
+const AvatarImage = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  position: absolute;
+  inset: 0;
+`;
+
+const AvatarInitials = styled.div`
+  position: relative;
+  z-index: 1;
 `;
 
 const UserInfo = styled.div`
@@ -368,7 +394,10 @@ const CommentAvatar = styled.div`
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #ffd700, #ffed4e);
+  background: ${props => props.$src ? 
+    `url(${props.$src}) center/cover` : 
+    'linear-gradient(135deg, #ffd700, #ffed4e)'
+  };
   border: 2px solid rgba(255, 215, 0, 0.5);
   display: flex;
   align-items: center;
@@ -376,6 +405,28 @@ const CommentAvatar = styled.div`
   color: #0a0e27;
   font-weight: 900;
   flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    transform: scale(1.1);
+  }
+`;
+
+const CommentAvatarImage = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  position: absolute;
+  inset: 0;
+`;
+
+const CommentAvatarInitials = styled.div`
+  position: relative;
+  z-index: 1;
+  font-size: 0.9rem;
 `;
 
 const CommentContent = styled.div`
@@ -481,6 +532,12 @@ const PostCard = ({ post, onLike, onComment, onDelete }) => {
     }
   };
 
+  // Helper to get user initials
+  const getInitials = (user) => {
+    const displayName = user?.profile?.displayName || user?.username || 'U';
+    return displayName.charAt(0).toUpperCase();
+  };
+
   const renderPostContent = () => {
     switch (post.type) {
       case 'trade':
@@ -550,11 +607,21 @@ const PostCard = ({ post, onLike, onComment, onDelete }) => {
       <PostHeader>
         <HeaderTop>
           <UserSection>
-            <Avatar $src={post.user.profile?.avatar}>
-              {!post.user.profile?.avatar && 
-  (post.user.profile?.displayName?.charAt(0) || post.user.username?.charAt(0) || 'U').toUpperCase()
-}
-              
+            <Avatar>
+              {post.user.profile?.avatar ? (
+                <AvatarImage 
+                  src={post.user.profile.avatar} 
+                  alt={post.user.profile?.displayName || post.user.username}
+                  onError={(e) => {
+                    // Hide image on error and show initials
+                    e.target.style.display = 'none';
+                  }}
+                />
+              ) : (
+                <AvatarInitials>
+                  {getInitials(post.user)}
+                </AvatarInitials>
+              )}
             </Avatar>
             
             <UserInfo>
@@ -636,8 +703,20 @@ const PostCard = ({ post, onLike, onComment, onDelete }) => {
             {post.comments.map((comment) => (
               <Comment key={comment._id}>
                 <CommentAvatar>
-  {(comment.user.profile?.displayName?.charAt(0) || comment.user.username?.charAt(0) || 'U').toUpperCase()}
-</CommentAvatar>
+                  {comment.user.profile?.avatar ? (
+                    <CommentAvatarImage 
+                      src={comment.user.profile.avatar} 
+                      alt={comment.user.profile?.displayName || comment.user.username}
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    <CommentAvatarInitials>
+                      {getInitials(comment.user)}
+                    </CommentAvatarInitials>
+                  )}
+                </CommentAvatar>
                 <CommentContent>
                   <CommentHeader>
                     <CommentAuthor>

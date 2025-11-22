@@ -1,8 +1,8 @@
-// src/pages/DiscoveryPage.js - User Search & Discovery
+// src/pages/DiscoveryPage.js - User Search & Discovery (UPDATED WITH AVATARS)
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import styled, { keyframes } from 'styled-components';
+import styled, { keyframes, css } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import {
@@ -265,14 +265,12 @@ const CardTop = styled.div`
     margin-bottom: 1rem;
 `;
 
+// ✅ UPDATED AVATAR COMPONENTS
 const Avatar = styled.div`
     width: 70px;
     height: 70px;
     border-radius: 50%;
-    background: ${props => props.$src ? 
-        `url(${props.$src}) center/cover` : 
-        'linear-gradient(135deg, #ffd700, #ffed4e)'
-    };
+    background: ${props => props.$hasImage ? 'transparent' : 'linear-gradient(135deg, #ffd700, #ffed4e)'};
     border: 3px solid rgba(255, 215, 0, 0.5);
     display: flex;
     align-items: center;
@@ -282,6 +280,21 @@ const Avatar = styled.div`
     font-size: 1.8rem;
     flex-shrink: 0;
     position: relative;
+    overflow: hidden;
+`;
+
+const AvatarImage = styled.img`
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+`;
+
+const AvatarInitials = styled.div`
+    position: relative;
+    z-index: 0;
 `;
 
 const RankBadge = styled.div`
@@ -305,6 +318,7 @@ const RankBadge = styled.div`
     font-size: 0.7rem;
     font-weight: 900;
     animation: ${pulse} 2s ease-in-out infinite;
+    z-index: 10;
 `;
 
 const UserInfo = styled.div`
@@ -484,7 +498,7 @@ const DiscoveryPage = () => {
     const navigate = useNavigate();
     
     const [searchQuery, setSearchQuery] = useState('');
-    const [activeFilter, setActiveFilter] = useState('suggested'); // suggested, top, new
+    const [activeFilter, setActiveFilter] = useState('suggested');
     const [traders, setTraders] = useState([]);
     const [searchResults, setSearchResults] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -501,7 +515,7 @@ const DiscoveryPage = () => {
         if (searchQuery.length >= 2) {
             const timeoutId = setTimeout(() => {
                 handleSearch();
-            }, 500); // Debounce search
+            }, 500);
             return () => clearTimeout(timeoutId);
         } else {
             setSearchResults([]);
@@ -512,19 +526,8 @@ const DiscoveryPage = () => {
     const fetchSuggestedTraders = async () => {
         setLoading(true);
         try {
-            let response;
-            
-            if (activeFilter === 'suggested') {
-                // Get top traders by return %
-                response = await api.get('/users/discover?limit=20');
-            } else if (activeFilter === 'top') {
-                // Get leaderboard top performers
-                response = await api.get('/users/leaderboard?sortBy=totalReturnPercent&limit=20');
-            } else if (activeFilter === 'active') {
-                // Get most active traders
-                response = await api.get('/users/leaderboard?sortBy=totalTrades&limit=20');
-            }
-            
+            // ✅ UPDATED: Use social/leaderboard endpoint
+            const response = await api.get('/social/leaderboard?limit=20');
             setTraders(response.data || []);
         } catch (error) {
             console.error('Error fetching traders:', error);
@@ -540,7 +543,8 @@ const DiscoveryPage = () => {
         
         setSearching(true);
         try {
-            const response = await api.get(`/users/search?q=${encodeURIComponent(searchQuery)}`);
+            // ✅ UPDATED: Use social/search endpoint
+            const response = await api.get(`/social/search?q=${encodeURIComponent(searchQuery)}`);
             setSearchResults(response.data || []);
         } catch (error) {
             console.error('Error searching traders:', error);
@@ -553,7 +557,8 @@ const DiscoveryPage = () => {
 
     const fetchFollowing = async () => {
         try {
-            const response = await api.get('/users/me/full');
+            // ✅ UPDATED: Get current user data
+            const response = await api.get('/auth/me');
             if (response.data.social?.following) {
                 setFollowing(new Set(response.data.social.following.map(id => id.toString())));
             }
@@ -568,14 +573,15 @@ const DiscoveryPage = () => {
         try {
             const isFollowing = following.has(userId);
             
+            // ✅ UPDATED: Use social follow endpoints
             if (isFollowing) {
-                await api.delete(`/users/follow/${userId}`);
+                await api.post(`/social/unfollow/${userId}`);
                 const newFollowing = new Set(following);
                 newFollowing.delete(userId);
                 setFollowing(newFollowing);
                 toast.success('Unfollowed user', 'Success');
             } else {
-                await api.post(`/users/follow/${userId}`);
+                await api.post(`/social/follow/${userId}`);
                 const newFollowing = new Set(following);
                 newFollowing.add(userId);
                 setFollowing(newFollowing);
@@ -596,29 +602,49 @@ const DiscoveryPage = () => {
         setSearchResults([]);
     };
 
+    // ✅ Helper to get initials
+    const getInitials = (trader) => {
+        const name = trader.profile?.displayName || trader.displayName || trader.username || 'T';
+        return name.charAt(0).toUpperCase();
+    };
+
     const renderTraderCard = (trader, index) => {
-        const isOwnProfile = trader._id === user?.id;
+        const isOwnProfile = trader._id === user?.id || trader.userId === user?.id;
+        const traderId = trader._id || trader.userId;
         
         return (
             <TraderCard 
-                key={trader._id} 
+                key={traderId} 
                 $index={index}
                 onClick={() => handleCardClick(trader)}
             >
                 <CardTop>
-                    <Avatar $src={trader.profile?.avatar}>
-                        {!trader.profile?.avatar && (trader.profile?.displayName?.charAt(0) || trader.username?.charAt(0) || 'T').toUpperCase()}
-                        {trader.stats?.rank && trader.stats.rank <= 10 && (
-                            <RankBadge $rank={trader.stats.rank}>
-                                #{trader.stats.rank}
+                    {/* ✅ UPDATED: Show real avatar or initials */}
+                    <Avatar $hasImage={!!(trader.profile?.avatar || trader.avatar)}>
+                        {(trader.profile?.avatar || trader.avatar) ? (
+                            <AvatarImage 
+                                src={trader.profile?.avatar || trader.avatar} 
+                                alt={trader.profile?.displayName || trader.displayName || trader.username}
+                                onError={(e) => {
+                                    e.target.style.display = 'none';
+                                }}
+                            />
+                        ) : (
+                            <AvatarInitials>
+                                {getInitials(trader)}
+                            </AvatarInitials>
+                        )}
+                        {(trader.stats?.rank || trader.rank) && (trader.stats?.rank || trader.rank) <= 10 && (
+                            <RankBadge $rank={trader.stats?.rank || trader.rank}>
+                                #{trader.stats?.rank || trader.rank}
                             </RankBadge>
                         )}
                     </Avatar>
                     
                     <UserInfo>
                         <DisplayName>
-                            {trader.profile?.displayName || trader.username}
-                            {trader.stats?.rank === 1 && <Crown size={16} color="#ffd700" />}
+                            {trader.profile?.displayName || trader.displayName || trader.username}
+                            {(trader.stats?.rank || trader.rank) === 1 && <Crown size={16} color="#ffd700" />}
                             {trader.profile?.badges?.includes('verified') && <Check size={16} color="#10b981" />}
                         </DisplayName>
                         <Username>@{trader.username}</Username>
@@ -629,13 +655,13 @@ const DiscoveryPage = () => {
                                     Lvl {trader.profile.level}
                                 </Badge>
                             )}
-                            {(trader.stats?.winRate || 0) >= 70 && (
+                            {(trader.stats?.winRate || trader.winRate || 0) >= 70 && (
                                 <Badge $type="fire">
                                     <Flame size={12} />
                                     Hot Streak
                                 </Badge>
                             )}
-                            {(trader.social?.followersCount || 0) >= 100 && (
+                            {(trader.social?.followersCount || trader.followersCount || 0) >= 100 && (
                                 <Badge>
                                     <Users size={12} />
                                     Popular
@@ -649,33 +675,33 @@ const DiscoveryPage = () => {
                     <StatBox>
                         <StatLabel>Return</StatLabel>
                         <StatValue 
-                            $positive={(trader.stats?.totalReturnPercent || 0) >= 0} 
-                            $negative={(trader.stats?.totalReturnPercent || 0) < 0}
+                            $positive={(trader.stats?.totalReturnPercent || trader.totalReturn || 0) >= 0} 
+                            $negative={(trader.stats?.totalReturnPercent || trader.totalReturn || 0) < 0}
                         >
-                            {(trader.stats?.totalReturnPercent || 0) >= 0 ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
-                            {(trader.stats?.totalReturnPercent || 0) >= 0 ? '+' : ''}
-                            {(trader.stats?.totalReturnPercent || 0).toFixed(1)}%
+                            {(trader.stats?.totalReturnPercent || trader.totalReturn || 0) >= 0 ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+                            {(trader.stats?.totalReturnPercent || trader.totalReturn || 0) >= 0 ? '+' : ''}
+                            {(trader.stats?.totalReturnPercent || trader.totalReturn || 0).toFixed(1)}%
                         </StatValue>
                     </StatBox>
                     
                     <StatBox>
                         <StatLabel>Win Rate</StatLabel>
                         <StatValue>
-                            {(trader.stats?.winRate || 0).toFixed(0)}%
+                            {(trader.stats?.winRate || trader.winRate || 0).toFixed(0)}%
                         </StatValue>
                     </StatBox>
                     
                     <StatBox>
                         <StatLabel>Trades</StatLabel>
                         <StatValue>
-                            {trader.stats?.totalTrades || 0}
+                            {trader.stats?.totalTrades || trader.totalTrades || 0}
                         </StatValue>
                     </StatBox>
                 </StatsGrid>
 
                 <FollowButton
-                    $following={following.has(trader._id)}
-                    onClick={(e) => handleFollow(e, trader._id)}
+                    $following={following.has(traderId)}
+                    onClick={(e) => handleFollow(e, traderId)}
                     disabled={isOwnProfile}
                 >
                     {isOwnProfile ? (
@@ -683,7 +709,7 @@ const DiscoveryPage = () => {
                             <Star size={18} />
                             Your Profile
                         </>
-                    ) : following.has(trader._id) ? (
+                    ) : following.has(traderId) ? (
                         <>
                             <UserMinus size={18} />
                             Unfollow

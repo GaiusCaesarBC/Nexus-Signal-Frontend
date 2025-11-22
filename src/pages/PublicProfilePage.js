@@ -1,8 +1,8 @@
-// client/src/pages/PublicProfilePage.js - PUBLIC TRADER PROFILE PAGE (UPDATED)
+// client/src/pages/PublicProfilePage.js - PUBLIC TRADER PROFILE PAGE (FIXED)
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import styled, { keyframes } from 'styled-components';
+import styled, { keyframes, css } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import {
@@ -149,13 +149,13 @@ const AvatarLarge = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 3rem;
+    font-size: ${props => props.$src ? '0' : '3rem'};  // ✅ ADD THIS LINE
     font-weight: 900;
     color: #0a0e27;
     box-shadow: 0 10px 40px rgba(255, 215, 0, 0.4);
     position: relative;
 
-    ${props => props.$rank <= 3 && `
+    ${props => props.$rank <= 3 && css`
         animation: ${glow} 3s ease-in-out infinite;
     `}
 `;
@@ -578,7 +578,7 @@ const PrivateText = styled.p`
 
 // ============ COMPONENT ============
 const PublicProfilePage = () => {
-    const { userId } = useParams();
+    const { username } = useParams();
     const { api, user: currentUser } = useAuth();
     const toast = useToast();
     const navigate = useNavigate();
@@ -592,34 +592,30 @@ const PublicProfilePage = () => {
     useEffect(() => {
         fetchProfile();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [userId]);
+    }, [username]);
 
     const fetchProfile = async () => {
         setLoading(true);
         try {
-            // ✅ UPDATED: Use the new users API endpoint
-            const response = await api.get(`/users/profile/${userId}`);
+            const response = await api.get(`/social/profile/username/${username}`);
             setProfile(response.data);
             
-            // ✅ UPDATED: Check if following using new endpoint
-            if (currentUser && response.data._id) {
-                try {
-                    const followStatus = await api.get(`/users/${response.data._id}/is-following`);
-                    setIsFollowing(followStatus.data.isFollowing);
-                } catch (err) {
-                    console.error('Error checking follow status:', err);
-                    setIsFollowing(false);
-                }
+            // Check if following
+            if (currentUser && response.data.social?.followers) {
+                const isCurrentlyFollowing = response.data.social.followers.some(
+                    follower => follower._id === currentUser.id || follower === currentUser.id
+                );
+                setIsFollowing(isCurrentlyFollowing);
             }
             
         } catch (error) {
             console.error('Error fetching profile:', error);
-            if (error.response?.status === 404 || error.response?.status === 403) {
-                // Profile is private or doesn't exist
+            if (error.response?.status === 403) {
                 setProfile({ private: true });
+            } else if (error.response?.status === 404) {
+                setProfile(null);
             } else {
                 toast.error('Failed to load profile', 'Error');
-                navigate('/leaderboard');
             }
         } finally {
             setLoading(false);
@@ -627,16 +623,16 @@ const PublicProfilePage = () => {
     };
 
     const handleFollow = async () => {
-        if (!profile || !profile._id) return;
+        if (!profile?.userId && !profile?._id) return;
+        
+        const profileId = profile.userId || profile._id;
         
         setFollowLoading(true);
         try {
-            // ✅ UPDATED: Use new follow/unfollow endpoints
             if (isFollowing) {
-                await api.delete(`/users/follow/${profile._id}`);
+                await api.post(`/social/unfollow/${profileId}`);
                 setIsFollowing(false);
                 toast.success('Unfollowed user', 'Success');
-                // Update local follower count
                 setProfile(prev => ({
                     ...prev,
                     social: {
@@ -645,10 +641,9 @@ const PublicProfilePage = () => {
                     }
                 }));
             } else {
-                await api.post(`/users/follow/${profile._id}`);
+                await api.post(`/social/follow/${profileId}`);
                 setIsFollowing(true);
                 toast.success('Following user!', 'Success');
-                // Update local follower count
                 setProfile(prev => ({
                     ...prev,
                     social: {
@@ -659,7 +654,7 @@ const PublicProfilePage = () => {
             }
         } catch (error) {
             console.error('Error following/unfollowing:', error);
-            toast.error(error.response?.data?.msg || 'Failed to follow user', 'Error');
+            toast.error(error.response?.data?.error || 'Failed to follow user', 'Error');
         } finally {
             setFollowLoading(false);
         }
@@ -736,6 +731,10 @@ const PublicProfilePage = () => {
     if (!profile) {
         return (
             <PageContainer>
+                <BackButton onClick={() => navigate('/leaderboard')}>
+                    <ChevronLeft size={20} />
+                    Back to Leaderboard
+                </BackButton>
                 <EmptyState>
                     <Trophy size={64} color="#ffd700" style={{ margin: '0 auto 1rem' }} />
                     <h2 style={{ color: '#ffd700', marginBottom: '0.5rem' }}>Profile Not Found</h2>
@@ -745,7 +744,7 @@ const PublicProfilePage = () => {
         );
     }
 
-    const isOwnProfile = profile._id === currentUser?.id;
+    const isOwnProfile = (profile.userId || profile._id) === currentUser?.id;
 
     return (
         <PageContainer>
@@ -758,13 +757,13 @@ const PublicProfilePage = () => {
                 <HeaderTop>
                     <UserInfoSection>
                         <AvatarLarge $src={profile.profile?.avatar} $rank={profile.stats?.rank}>
-                            {!profile.profile?.avatar && (profile.profile?.displayName?.charAt(0) || profile.username?.charAt(0) || 'T')}
-                            {profile.stats?.rank && (
-                                <RankBadge $rank={profile.stats.rank}>
-                                    #{profile.stats.rank}
-                                </RankBadge>
-                            )}
-                        </AvatarLarge>
+    {!profile.profile?.avatar && (profile.profile?.displayName?.charAt(0) || profile.username?.charAt(0) || 'T')}
+    {profile.stats?.rank && (
+        <RankBadge $rank={profile.stats.rank}>
+            #{profile.stats.rank}
+        </RankBadge>
+    )}
+</AvatarLarge>
 
                         <UserDetails>
                             <DisplayName>
@@ -795,9 +794,9 @@ const PublicProfilePage = () => {
                     <ActionButtons>
                         {isOwnProfile ? (
                             <>
-                                <ActionButton $primary onClick={() => navigate('/profile')}>
+                                <ActionButton $primary onClick={() => navigate('/settings')}>
                                     <Settings size={18} />
-                                    View My Profile
+                                    Edit Profile
                                 </ActionButton>
                                 <ActionButton onClick={handleShare}>
                                     <Share2 size={18} />

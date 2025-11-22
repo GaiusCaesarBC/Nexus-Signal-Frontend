@@ -1,4 +1,4 @@
-// client/src/pages/SettingsPage.js - LEGENDARY SETTINGS PAGE
+// client/src/pages/SettingsPage.js - LEGENDARY SETTINGS PAGE WITH PRIVACY
 
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
@@ -8,7 +8,7 @@ import {
     User, Mail, Lock, Bell, Palette, Shield, CreditCard,
     AlertTriangle, Save, Eye, EyeOff, Trash2, Calendar,
     Settings as SettingsIcon, Sparkles, Clock, Monitor,
-    Zap, RefreshCw, Check, X
+    Zap, RefreshCw, Check, X, Globe, Star, MessageSquare
 } from 'lucide-react';
 
 // ============ ANIMATIONS ============
@@ -523,56 +523,65 @@ const SettingsPage = () => {
     const [showCurrentPassword, setShowCurrentPassword] = useState(false);
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [isPublic, setIsPublic] = useState(true);
+    const [showPortfolio, setShowPortfolio] = useState(true);
     
     const [form, setForm] = useState({
-        username: '',
-        email: '',
-        currentPassword: '',
-        newPassword: '',
-        confirmNewPassword: '',
-        notifications: {
-            email: true,
-            push: false,
-            dailySummary: true,
-            priceAlerts: true,
-            portfolioUpdates: true
-        },
-        appPreferences: {
-            theme: 'dark',
-            defaultView: 'dashboard',
-            refreshInterval: 5,
-            language: 'en',
-            timezone: 'America/New_York'
-        }
-    });
+    username: '',
+    email: '',
+    displayName: '',  // ✅ Add this
+    bio: '',          // ✅ Add this
+    currentPassword: '',
+    newPassword: '',
+    confirmNewPassword: '',
+    notifications: {
+        email: true,
+        push: false,
+        dailySummary: true,
+        priceAlerts: true,
+        portfolioUpdates: true
+    },
+    appPreferences: {
+        theme: 'dark',
+        defaultView: 'dashboard',
+        refreshInterval: 5,
+        language: 'en',
+        timezone: 'America/New_York'
+    }
+});
 
     useEffect(() => {
         fetchUserProfile();
     }, []);
 
     const fetchUserProfile = async () => {
-        try {
-            setLoading(true);
-            const res = await api.get('/auth/me');
-            const userData = res.data;
+    try {
+        setLoading(true);
+        const res = await api.get('/auth/me');
+        const userData = res.data;
 
-            setForm(prevForm => ({
-                ...prevForm,
-                username: userData.username || userData.name || (userData.email ? userData.email.split('@')[0] : ''),
-                email: userData.email,
-                notifications: userData.notifications || prevForm.notifications,
-                appPreferences: userData.appPreferences || prevForm.appPreferences,
-            }));
-        } catch (err) {
-            console.error('Error fetching user profile:', err);
-            toast.error('Failed to load settings', 'Error');
-            if (err.response && err.response.status === 401) {
-                logout();
-            }
-        } finally {
-            setLoading(false);
+        setForm(prevForm => ({
+            ...prevForm,
+            username: userData.username || userData.name || (userData.email ? userData.email.split('@')[0] : ''),
+            email: userData.email,
+            displayName: userData.profile?.displayName || '',  // ✅ Add this
+            bio: userData.profile?.bio || '',                  // ✅ Add this
+            notifications: userData.notifications || prevForm.notifications,
+            appPreferences: userData.appPreferences || prevForm.appPreferences,
+        }));
+        
+        setIsPublic(userData.profile?.isPublic ?? true);
+        setShowPortfolio(userData.profile?.showPortfolio ?? true);
+    } catch (err) {
+        console.error('Error fetching user profile:', err);
+        toast.error('Failed to load settings', 'Error');
+        if (err.response && err.response.status === 401) {
+            logout();
         }
-    };
+    } finally {
+        setLoading(false);
+    }
+};
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -609,50 +618,90 @@ const SettingsPage = () => {
         }));
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-
-        if (form.newPassword) {
-            if (form.newPassword !== form.confirmNewPassword) {
-                toast.warning('New passwords do not match', 'Password Error');
-                return;
-            }
-            if (form.newPassword.length < 6) {
-                toast.warning('Password must be at least 6 characters', 'Password Error');
-                return;
-            }
-            if (!form.currentPassword) {
-                toast.warning('Current password is required', 'Password Error');
-                return;
-            }
-        }
-
-        const updateData = {
-            username: form.username,
-            email: form.email,
-            notifications: form.notifications,
-            appPreferences: form.appPreferences
-        };
-
-        if (form.newPassword) {
-            updateData.currentPassword = form.currentPassword;
-            updateData.newPassword = form.newPassword;
-        }
-
+    const handleTogglePublic = async (newValue) => {
         try {
-            await api.put('/auth/update-profile', updateData);
-            toast.success('Settings saved successfully!', 'Saved');
-            setForm(prevForm => ({
-                ...prevForm,
-                currentPassword: '',
-                newPassword: '',
-                confirmNewPassword: ''
-            }));
-        } catch (err) {
-            console.error('Error updating settings:', err);
-            toast.error(err.response?.data?.msg || 'Failed to update settings', 'Error');
+            await api.put('/social/profile', {
+                isPublic: newValue
+            });
+            setIsPublic(newValue);
+            toast.success(
+                newValue ? 'Profile is now public' : 'Profile is now private',
+                'Privacy Updated'
+            );
+        } catch (error) {
+            console.error('Error updating privacy:', error);
+            toast.error('Failed to update privacy settings', 'Error');
         }
     };
+
+    const handleTogglePortfolio = async (newValue) => {
+        try {
+            await api.put('/social/profile', {
+                showPortfolio: newValue
+            });
+            setShowPortfolio(newValue);
+            toast.success(
+                newValue ? 'Portfolio is now visible' : 'Portfolio is now hidden',
+                'Portfolio Updated'
+            );
+        } catch (error) {
+            console.error('Error updating portfolio settings:', error);
+            toast.error('Failed to update portfolio settings', 'Error');
+        }
+    };
+
+    const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (form.newPassword) {
+        if (form.newPassword !== form.confirmNewPassword) {
+            toast.warning('New passwords do not match', 'Password Error');
+            return;
+        }
+        if (form.newPassword.length < 6) {
+            toast.warning('Password must be at least 6 characters', 'Password Error');
+            return;
+        }
+        if (!form.currentPassword) {
+            toast.warning('Current password is required', 'Password Error');
+            return;
+        }
+    }
+
+    const updateData = {
+        username: form.username,
+        email: form.email,
+        notifications: form.notifications,
+        appPreferences: form.appPreferences
+    };
+
+    if (form.newPassword) {
+        updateData.currentPassword = form.currentPassword;
+        updateData.newPassword = form.newPassword;
+    }
+
+    try {
+        // Update basic profile info
+        await api.put('/auth/update-profile', updateData);
+        
+        // ✅ ADD THIS - Update public profile (display name & bio)
+        await api.put('/social/profile', {
+            displayName: form.displayName,
+            bio: form.bio
+        });
+        
+        toast.success('Settings saved successfully!', 'Saved');
+        setForm(prevForm => ({
+            ...prevForm,
+            currentPassword: '',
+            newPassword: '',
+            confirmNewPassword: ''
+        }));
+    } catch (err) {
+        console.error('Error updating settings:', err);
+        toast.error(err.response?.data?.msg || 'Failed to update settings', 'Error');
+    }
+};
 
     const handleDeleteAccount = () => {
         if (window.confirm('Are you absolutely sure? This action cannot be undone and will permanently delete your account and all data.')) {
@@ -779,6 +828,104 @@ const SettingsPage = () => {
                                         </StatContent>
                                     </StatCard>
                                 </FormRow>
+                            </Section>
+
+
+                               <Section>
+    <SectionHeader>
+        <User size={24} />
+        <SectionTitle>Public Profile</SectionTitle>
+    </SectionHeader>
+    <SectionDescription>
+        Customize how you appear to other traders
+    </SectionDescription>
+
+    <FormGroup>
+        <Label>
+            <Star size={16} />
+            Display Name
+        </Label>
+        <Input
+            type="text"
+            name="displayName"
+            value={form.displayName || ''}
+            onChange={handleChange}
+            placeholder="How you want to be known"
+            maxLength={50}
+        />
+    </FormGroup>
+
+    <FormGroup>
+        <Label>
+            <MessageSquare size={16} />
+            Bio
+        </Label>
+        <TextArea
+            name="bio"
+            value={form.bio || ''}
+            onChange={handleChange}
+            placeholder="Tell other traders about yourself, your trading strategy, or what you're interested in..."
+            maxLength={500}
+            rows={4}
+        />
+        <div style={{ color: '#64748b', fontSize: '0.85rem', marginTop: '0.5rem' }}>
+            {(form.bio || '').length}/500 characters
+        </div>
+    </FormGroup>
+</Section>                     
+
+
+
+                            <Section>
+                                <SectionHeader>
+                                    <Globe size={24} />
+                                    <SectionTitle>Profile Privacy</SectionTitle>
+                                </SectionHeader>
+                                <SectionDescription>
+                                    Control who can see your profile and trading activity
+                                </SectionDescription>
+
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                    <ToggleWrapper>
+                                        <ToggleLabel>
+                                            <ToggleLabelText style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                {isPublic ? <Eye size={18} /> : <EyeOff size={18} />}
+                                                Public Profile
+                                            </ToggleLabelText>
+                                            <ToggleDescription>
+                                                {isPublic 
+                                                    ? 'Your profile is visible to everyone on the leaderboard and discovery page'
+                                                    : 'Your profile is hidden from public view'
+                                                }
+                                            </ToggleDescription>
+                                        </ToggleLabel>
+                                        <Toggle
+                                            type="button"
+                                            $active={isPublic}
+                                            onClick={() => handleTogglePublic(!isPublic)}
+                                        />
+                                    </ToggleWrapper>
+
+                                    <ToggleWrapper>
+                                        <ToggleLabel>
+                                            <ToggleLabelText style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                {showPortfolio ? <Eye size={18} /> : <EyeOff size={18} />}
+                                                Show Portfolio
+                                            </ToggleLabelText>
+                                            <ToggleDescription>
+                                                {showPortfolio 
+                                                    ? 'Your trades and portfolio are visible on your profile'
+                                                    : 'Only your stats are visible, trades are hidden'
+                                                }
+                                            </ToggleDescription>
+                                        </ToggleLabel>
+                                        <Toggle
+                                            type="button"
+                                            $active={showPortfolio}
+                                            onClick={() => handleTogglePortfolio(!showPortfolio)}
+                                        />
+                                    </ToggleWrapper>
+                                </div>
                             </Section>
                         </>
                     )}
@@ -1109,11 +1256,24 @@ const SettingsPage = () => {
                     )}
 
                     {/* SAVE BUTTON */}
-                    {activeTab !== 'billing' && (
+                    {activeTab !== 'billing' && activeTab !== 'profile' && (
                         <ButtonGroup>
                             <Button type="submit">
                                 <Save size={18} />
                                 Save Changes
+                            </Button>
+                            <SecondaryButton type="button" onClick={() => window.location.reload()}>
+                                <X size={18} />
+                                Cancel
+                            </SecondaryButton>
+                        </ButtonGroup>
+                    )}
+                    
+                    {activeTab === 'profile' && (
+                        <ButtonGroup>
+                            <Button type="submit">
+                                <Save size={18} />
+                                Save Profile Changes
                             </Button>
                             <SecondaryButton type="button" onClick={() => window.location.reload()}>
                                 <X size={18} />
