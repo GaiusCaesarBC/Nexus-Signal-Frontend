@@ -1,6 +1,6 @@
-// client/src/pages/DashboardPage.js - THE MOST LEGENDARY DASHBOARD EVER - ENHANCED EDITION
+// src/pages/DashboardPage.js - THE MOST LEGENDARY DASHBOARD EVER - COMPLETE FIXED VERSION
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import styled, { keyframes, css } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
@@ -9,13 +9,14 @@ import {
     TrendingUp, TrendingDown, Activity, DollarSign, PieChart,
     Zap, Target, Brain, Eye, ArrowUpRight, ArrowDownRight,
     Clock, BarChart3, Flame, Star, Bell, Trophy,
-    CheckCircle, AlertTriangle,
     RefreshCw, Download, Sparkles,
 } from 'lucide-react';
 import {
     AreaChart, Area,
     XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
+import nexusSignalLogo from '../assets/nexus-signal-logo.png';
+import AdvancedChart from '../components/AdvancedChart';
 
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`
@@ -23,19 +24,9 @@ const fadeIn = keyframes`
     to { opacity: 1; transform: translateY(0); }
 `;
 
-const slideIn = keyframes`
-    from { transform: translateX(-100%); }
-    to { transform: translateX(0); }
-`;
-
 const slideInRight = keyframes`
     from { opacity: 0; transform: translateX(50px); }
     to { opacity: 1; transform: translateX(0); }
-`;
-
-const glow = keyframes`
-    0%, 100% { box-shadow: 0 0 20px rgba(0, 173, 237, 0.5); }
-    50% { box-shadow: 0 0 40px rgba(0, 173, 237, 0.8); }
 `;
 
 const pulse = keyframes`
@@ -86,7 +77,6 @@ const PageContainer = styled.div`
     overflow-x: hidden;
 `;
 
-// Animated background particles
 const ParticleContainer = styled.div`
     position: fixed;
     top: 0;
@@ -127,7 +117,11 @@ const Header = styled.div`
     gap: 1rem;
 `;
 
-const HeaderLeft = styled.div``;
+const HeaderLeft = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+`;
 
 const Title = styled.h1`
     font-size: 3.5rem;
@@ -158,7 +152,6 @@ const HeaderRight = styled.div`
     gap: 1rem;
 `;
 
-// Live Clock
 const LiveClock = styled.div`
     background: rgba(0, 173, 237, 0.1);
     border: 1px solid rgba(0, 173, 237, 0.3);
@@ -181,7 +174,6 @@ const ClockDate = styled.div`
     color: #94a3b8;
 `;
 
-// Market Status
 const MarketStatus = styled.div`
     background: ${props => props.open ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)'};
     border: 1px solid ${props => props.open ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'};
@@ -206,7 +198,6 @@ const StatusText = styled.div`
     color: ${props => props.open ? '#10b981' : '#ef4444'};
 `;
 
-// ============ STOCK TICKER ============
 const TickerContainer = styled.div`
     background: rgba(0, 173, 237, 0.1);
     border: 1px solid rgba(0, 173, 237, 0.3);
@@ -241,13 +232,159 @@ const TickerPrice = styled.span`
 `;
 
 const TickerChange = styled.span`
-    color: ${props => props.positive ? '#10b981' : '#ef4444'};
+    color: ${props => props.$positive ? '#10b981' : '#ef4444'};
     display: flex;
     align-items: center;
     gap: 0.25rem;
 `;
 
-// ============ STATS GRID ============
+const StaticLogo = styled.img`
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    filter: drop-shadow(0 0 20px rgba(0, 217, 255, 0.7))
+            drop-shadow(0 0 35px rgba(139, 92, 246, 0.6))
+            drop-shadow(0 0 50px rgba(236, 72, 153, 0.5));
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+
+    &:hover {
+        filter: drop-shadow(0 0 30px rgba(0, 217, 255, 0.9))
+                drop-shadow(0 0 50px rgba(139, 92, 246, 0.8))
+                drop-shadow(0 0 70px rgba(236, 72, 153, 0.7));
+        transform: scale(1.05) rotate(5deg);
+    }
+
+    @media (max-width: 768px) {
+        width: 60px;
+        height: 60px;
+    }
+`;
+
+const DashboardHeader = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+`;
+
+const HeaderContent = styled.div`
+    flex: 1;
+`;
+
+const ChartSection = styled.div`
+    margin-bottom: 3rem;
+    animation: ${fadeIn} 0.8s ease-out;
+`;
+
+const SearchContainer = styled.div`
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+`;
+
+const SearchInput = styled.input`
+    flex: 1;
+    min-width: 250px;
+    padding: 0.75rem 1.5rem;
+    background: rgba(0, 173, 237, 0.05);
+    border: 1px solid rgba(0, 173, 237, 0.3);
+    border-radius: 12px;
+    color: #e0e6ed;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+
+    &:focus {
+        outline: none;
+        background: rgba(0, 173, 237, 0.1);
+        border-color: rgba(0, 217, 255, 0.5);
+        box-shadow: 0 0 20px rgba(0, 217, 255, 0.2);
+    }
+
+    &::placeholder {
+        color: #64748b;
+        font-weight: 500;
+    }
+`;
+
+const SearchButton = styled.button`
+    padding: 0.75rem 2rem;
+    background: linear-gradient(135deg, rgba(0, 217, 255, 0.3) 0%, rgba(139, 92, 246, 0.2) 100%);
+    border: 1px solid rgba(0, 217, 255, 0.5);
+    border-radius: 12px;
+    color: #00d9ff;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    &:hover {
+        background: linear-gradient(135deg, rgba(0, 217, 255, 0.4) 0%, rgba(139, 92, 246, 0.3) 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(0, 217, 255, 0.3);
+    }
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+    }
+`;
+
+const QuickSelectLabel = styled.div`
+    color: #94a3b8;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-right: 0.5rem;
+`;
+
+const SymbolSelector = styled.div`
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+`;
+
+const SymbolButton = styled.button`
+    padding: 0.75rem 1.5rem;
+    background: ${props => props.$active ? 
+        'linear-gradient(135deg, rgba(0, 217, 255, 0.3) 0%, rgba(139, 92, 246, 0.2) 100%)' : 
+        'rgba(0, 173, 237, 0.05)'
+    };
+    border: 1px solid ${props => props.$active ? 'rgba(0, 217, 255, 0.5)' : 'rgba(0, 173, 237, 0.2)'};
+    border-radius: 12px;
+    color: ${props => props.$active ? '#00d9ff' : '#94a3b8'};
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+        background: linear-gradient(135deg, rgba(0, 217, 255, 0.2) 0%, rgba(139, 92, 246, 0.15) 100%);
+        border-color: rgba(0, 217, 255, 0.5);
+        color: #00d9ff;
+        transform: translateY(-2px);
+    }
+`;
+
+const LoadingChartPlaceholder = styled.div`
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    border: 1px solid rgba(0, 173, 237, 0.2);
+    border-radius: 16px;
+    padding: 4rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 600px;
+`;
+
 const StatsGrid = styled.div`
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -339,8 +476,8 @@ const StatValue = styled.div`
     font-size: 2.5rem;
     font-weight: 900;
     color: ${props => {
-        if (props.positive) return '#10b981';
-        if (props.negative) return '#ef4444';
+        if (props.$positive) return '#10b981';
+        if (props.$negative) return '#ef4444';
         return '#00adef';
     }};
     margin-bottom: 0.5rem;
@@ -350,7 +487,7 @@ const StatValue = styled.div`
 
 const StatSubtext = styled.div`
     font-size: 0.9rem;
-    color: ${props => props.positive ? '#10b981' : props.negative ? '#ef4444' : '#94a3b8'};
+    color: ${props => props.$positive ? '#10b981' : props.$negative ? '#ef4444' : '#94a3b8'};
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -358,7 +495,6 @@ const StatSubtext = styled.div`
     z-index: 1;
 `;
 
-// ============ ACHIEVEMENTS/BADGES ============
 const AchievementsSection = styled.div`
     background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
     border: 1px solid rgba(139, 92, 246, 0.3);
@@ -417,88 +553,61 @@ const BadgeLabel = styled.div`
     font-weight: 600;
 `;
 
-// ============ ACTIVITY FEED ============
-const ActivityFeed = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
-    border: 1px solid rgba(0, 173, 237, 0.2);
-    border-radius: 16px;
-    padding: 1.5rem;
-    max-height: 400px;
-    overflow-y: auto;
-
-    &::-webkit-scrollbar {
-        width: 8px;
-    }
-
-    &::-webkit-scrollbar-track {
-        background: rgba(0, 173, 237, 0.1);
-        border-radius: 4px;
-    }
-
-    &::-webkit-scrollbar-thumb {
-        background: rgba(0, 173, 237, 0.5);
-        border-radius: 4px;
-
-        &:hover {
-            background: rgba(0, 173, 237, 0.7);
-        }
-    }
-`;
-
-const ActivityItem = styled.div`
-    display: flex;
+const QuickActionsGrid = styled.div`
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 1rem;
-    padding: 1rem;
-    border-bottom: 1px solid rgba(0, 173, 237, 0.1);
-    ${props => css`
-        animation: ${slideInRight} 0.4s ease-out;
-        animation-delay: ${props.delay}s;
-        animation-fill-mode: backwards;
-    `}
+    margin-bottom: 2rem;
+`;
 
-    &:last-child {
-        border-bottom: none;
+const ActionButton = styled.button`
+    padding: 1.5rem;
+    background: linear-gradient(135deg, rgba(0, 173, 237, 0.2) 0%, rgba(0, 173, 237, 0.05) 100%);
+    border: 1px solid rgba(0, 173, 237, 0.3);
+    border-radius: 12px;
+    color: #00adef;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(45deg, transparent 30%, rgba(0, 173, 237, 0.2) 50%, transparent 70%);
+        background-size: 200% 200%;
+        ${css`animation: ${shimmer} 3s linear infinite;`}
+    }
+
+    &:hover {
+        background: linear-gradient(135deg, rgba(0, 173, 237, 0.3) 0%, rgba(0, 173, 237, 0.1) 100%);
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0, 173, 237, 0.3);
     }
 `;
 
-const ActivityIconWrapper = styled.div`
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: ${props => {
-        if (props.type === 'success') return 'rgba(16, 185, 129, 0.2)';
-        if (props.type === 'warning') return 'rgba(245, 158, 11, 0.2)';
-        if (props.type === 'danger') return 'rgba(239, 68, 68, 0.2)';
-        return 'rgba(0, 173, 237, 0.2)';
-    }};
-    color: ${props => {
-        if (props.type === 'success') return '#10b981';
-        if (props.type === 'warning') return '#f59e0b';
-        if (props.type === 'danger') return '#ef4444';
-        return '#00adef';
-    }};
-    flex-shrink: 0;
+const ActionIcon = styled.div`
+    font-size: 2rem;
+    ${css`animation: ${float} 3s ease-in-out infinite;`}
+    position: relative;
+    z-index: 1;
 `;
 
-const ActivityContent = styled.div`
-    flex: 1;
+const ActionLabel = styled.div`
+    font-size: 0.9rem;
+    position: relative;
+    z-index: 1;
 `;
 
-const ActivityText = styled.div`
-    color: #e0e6ed;
-    margin-bottom: 0.25rem;
-    font-size: 0.95rem;
-`;
-
-const ActivityTime = styled.div`
-    color: #64748b;
-    font-size: 0.85rem;
-`;
-
-// ============ MAIN CONTENT GRID ============
 const ContentGrid = styled.div`
     display: grid;
     grid-template-columns: 2fr 1fr;
@@ -594,7 +703,6 @@ const Badge = styled.span`
     gap: 0.5rem;
 `;
 
-// ============ MARKET MOVERS ============
 const MoversList = styled.div`
     display: flex;
     flex-direction: column;
@@ -649,7 +757,7 @@ const MoverPriceValue = styled.div`
 `;
 
 const MoverChange = styled.div`
-    color: ${props => props.positive ? '#10b981' : '#ef4444'};
+    color: ${props => props.$positive ? '#10b981' : '#ef4444'};
     font-weight: 600;
     display: flex;
     align-items: center;
@@ -657,7 +765,6 @@ const MoverChange = styled.div`
     font-size: 0.9rem;
 `;
 
-// ============ AI PREDICTIONS ============
 const PredictionCard = styled.div`
     background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
     border: 1px solid rgba(139, 92, 246, 0.3);
@@ -747,60 +854,84 @@ const ConfidenceFill = styled.div`
     transition: width 1s ease-out;
 `;
 
-// ============ QUICK ACTIONS ============
-const QuickActionsGrid = styled.div`
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 1rem;
-    margin-bottom: 2rem;
-`;
-
-const ActionButton = styled.button`
+const ActivityFeed = styled.div`
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    border: 1px solid rgba(0, 173, 237, 0.2);
+    border-radius: 16px;
     padding: 1.5rem;
-    background: linear-gradient(135deg, rgba(0, 173, 237, 0.2) 0%, rgba(0, 173, 237, 0.05) 100%);
-    border: 1px solid rgba(0, 173, 237, 0.3);
-    border-radius: 12px;
-    color: #00adef;
-    font-weight: 600;
-    cursor: pointer;
+    max-height: 400px;
+    overflow-y: auto;
+
+    &::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    &::-webkit-scrollbar-track {
+        background: rgba(0, 173, 237, 0.1);
+        border-radius: 4px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: rgba(0, 173, 237, 0.5);
+        border-radius: 4px;
+
+        &:hover {
+            background: rgba(0, 173, 237, 0.7);
+        }
+    }
+`;
+
+const ActivityItem = styled.div`
     display: flex;
-    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+    border-bottom: 1px solid rgba(0, 173, 237, 0.1);
+    ${props => css`
+        animation: ${slideInRight} 0.4s ease-out;
+        animation-delay: ${props.delay}s;
+        animation-fill-mode: backwards;
+    `}
+
+    &:last-child {
+        border-bottom: none;
+    }
+`;
+
+const ActivityIconWrapper = styled.div`
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
     align-items: center;
-    gap: 0.75rem;
-    transition: all 0.3s ease;
-    position: relative;
-    overflow: hidden;
-
-    &::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(45deg, transparent 30%, rgba(0, 173, 237, 0.2) 50%, transparent 70%);
-        background-size: 200% 200%;
-        ${css`animation: ${shimmer} 3s linear infinite;`}
-    }
-
-    &:hover {
-        background: linear-gradient(135deg, rgba(0, 173, 237, 0.3) 0%, rgba(0, 173, 237, 0.1) 100%);
-        transform: translateY(-5px);
-        box-shadow: 0 10px 30px rgba(0, 173, 237, 0.3);
-    }
+    justify-content: center;
+    background: ${props => {
+        if (props.type === 'success') return 'rgba(16, 185, 129, 0.2)';
+        if (props.type === 'warning') return 'rgba(245, 158, 11, 0.2)';
+        if (props.type === 'danger') return 'rgba(239, 68, 68, 0.2)';
+        return 'rgba(0, 173, 237, 0.2)';
+    }};
+    color: ${props => {
+        if (props.type === 'success') return '#10b981';
+        if (props.type === 'warning') return '#f59e0b';
+        if (props.type === 'danger') return '#ef4444';
+        return '#00adef';
+    }};
+    flex-shrink: 0;
 `;
 
-const ActionIcon = styled.div`
-    font-size: 2rem;
-    ${css`animation: ${float} 3s ease-in-out infinite;`}
-    position: relative;
-    z-index: 1;
+const ActivityContent = styled.div`
+    flex: 1;
 `;
 
-const ActionLabel = styled.div`
-    font-size: 0.9rem;
-    position: relative;
-    z-index: 1;
+const ActivityText = styled.div`
+    color: #e0e6ed;
+    margin-bottom: 0.25rem;
+    font-size: 0.95rem;
+`;
+
+const ActivityTime = styled.div`
+    color: #64748b;
+    font-size: 0.85rem;
 `;
 
 const LoadingSpinner = styled.div`
@@ -812,16 +943,25 @@ const DashboardPage = () => {
     const { api, isAuthenticated, user } = useAuth();
     const { theme } = useTheme();
     const toast = useToast();
+    
+    // Portfolio & Dashboard States
     const [portfolioStats, setPortfolioStats] = useState(null);
     const [marketMovers, setMarketMovers] = useState([]);
     const [predictions, setPredictions] = useState([]);
     const [tickerData, setTickerData] = useState([]);
-    const [chartData, setChartData] = useState([]);
+    const [performanceChartData, setPerformanceChartData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [currentTime, setCurrentTime] = useState(new Date());
     const [marketOpen, setMarketOpen] = useState(false);
     const [particles, setParticles] = useState([]);
     const [activities, setActivities] = useState([]);
+    
+    // Advanced Chart States
+    const [advancedChartData, setAdvancedChartData] = useState([]);
+    const [selectedSymbol, setSelectedSymbol] = useState('AAPL');
+    const [selectedTimeframe, setSelectedTimeframe] = useState('1D');
+    const [loadingChart, setLoadingChart] = useState(false);
+    const [searchSymbol, setSearchSymbol] = useState('');
 
     // Generate particles on mount
     useEffect(() => {
@@ -844,14 +984,13 @@ const DashboardPage = () => {
         return () => clearInterval(timer);
     }, []);
 
-    // Check if market is open (simplified)
+    // Check if market is open
     useEffect(() => {
         const checkMarketStatus = () => {
             const now = new Date();
             const day = now.getDay();
             const hour = now.getHours();
             
-            // Simple check: Monday-Friday, 9:30 AM - 4:00 PM EST
             const isWeekday = day >= 1 && day <= 5;
             const isMarketHours = hour >= 9 && hour < 16;
             
@@ -859,135 +998,189 @@ const DashboardPage = () => {
         };
         
         checkMarketStatus();
-        const timer = setInterval(checkMarketStatus, 60000); // Check every minute
+        const timer = setInterval(checkMarketStatus, 60000);
         return () => clearInterval(timer);
     }, []);
 
+    // Fetch dashboard data on mount
     useEffect(() => {
-    if (isAuthenticated) {
-        fetchDashboardData();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [isAuthenticated]);
-
-const fetchDashboardData = async () => {
-    try {
-        setLoading(true);
-        
-        // ✅ Fetch data with fallbacks for missing endpoints
-        const [portfolioRes, watchlistRes, newsRes, predictionsRes] = await Promise.all([
-            api.get('/portfolio').catch(() => ({ data: { holdings: [], totalValue: 0 } })),
-            api.get('/watchlist').catch(() => ({ data: [] })),
-            api.get('/news?limit=5').catch(() => ({ data: [] })),
-            api.get('/predictions/recent').catch(() => ({ data: [] }))
-        ]);
-
-        // ✅ REAL PORTFOLIO DATA
-        calculatePortfolioStats(portfolioRes.data.holdings || []);
-
-        // ✅ REAL TICKER DATA - Get from watchlist or top holdings
-        if (watchlistRes.data && watchlistRes.data.length > 0) {
-            const tickerSymbols = watchlistRes.data.slice(0, 8).map(item => ({
-                symbol: item.symbol,
-                price: item.currentPrice || 0,
-                change: item.change || 0
-            }));
-            setTickerData(tickerSymbols);
-        } else {
-            // Fallback ticker data
-            setTickerData([
-                { symbol: 'AAPL', price: 175.50, change: 2.5 },
-                { symbol: 'TSLA', price: 242.80, change: -1.2 },
-                { symbol: 'NVDA', price: 495.20, change: 5.8 },
-            ]);
+        if (isAuthenticated) {
+            fetchDashboardData();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isAuthenticated]);
 
-        // ✅ REAL MARKET MOVERS - Get from screener
+    // Fetch chart data when symbol or timeframe changes
+    useEffect(() => {
+        if (selectedSymbol) {
+            fetchChartData(selectedSymbol, selectedTimeframe);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedSymbol, selectedTimeframe]);
+
+    // Fetch real chart data function
+    const fetchChartData = async (symbol, interval) => {
+        setLoadingChart(true);
+        setAdvancedChartData([]);
+        
         try {
-            const screenRes = await api.get('/screener/stocks?changeFilter=gainers');
-            if (screenRes.data && screenRes.data.length > 0) {
-                setMarketMovers(screenRes.data.slice(0, 4).map(stock => ({
-                    symbol: stock.symbol,
-                    name: stock.name || stock.symbol,
-                    price: stock.price,
-                    change: stock.changePercent
-                })));
+            console.log(`Fetching chart data for ${symbol} ${interval}`);
+            
+            const response = await api.get(`/chart/${symbol}/${interval}`);
+            
+            if (response.data.success && response.data.data && response.data.data.length > 0) {
+                setAdvancedChartData(response.data.data);
+                console.log(`✅ Loaded ${response.data.data.length} candles for ${symbol}`);
+                toast.success(`Loaded ${symbol} chart`, 'Success');
+            } else {
+                toast.error('No data available for this symbol', 'Error');
+                setAdvancedChartData([]);
             }
         } catch (error) {
-            console.log('Market movers not available, using fallback');
-            setMarketMovers([
-                { symbol: 'NVDA', name: 'NVIDIA Corp', price: 495.20, change: 5.8 },
-                { symbol: 'AMD', name: 'Advanced Micro', price: 142.70, change: 4.5 },
-            ]);
+            console.error('Error fetching chart data:', error);
+            setAdvancedChartData([]);
+            
+            if (error.response?.status === 429) {
+                toast.error('API rate limit reached. Please wait a moment.', 'Rate Limited');
+            } else if (error.response?.status === 404) {
+                toast.error(`Symbol ${symbol} not found`, 'Not Found');
+            } else {
+                toast.error(`Failed to load ${symbol} data`, 'Error');
+            }
+        } finally {
+            setLoadingChart(false);
         }
+    };
 
-        // ✅ REAL PREDICTIONS
-        if (predictionsRes.data && predictionsRes.data.length > 0) {
-            setPredictions(predictionsRes.data.slice(0, 2));
-        } else {
-            // Fallback predictions
-            setPredictions([
-                {
-                    symbol: 'AAPL',
-                    direction: 'UP',
-                    targetPrice: 182.50,
-                    confidence: 85,
-                    timeframe: '7 days'
+    const handleTimeframeChange = (timeframe) => {
+        setSelectedTimeframe(timeframe);
+        toast.info(`Switching to ${timeframe} chart`, 'Timeframe Changed');
+    };
+
+    const handleSymbolChange = (symbol) => {
+        if (symbol !== selectedSymbol) {
+            setSelectedSymbol(symbol);
+            setAdvancedChartData([]);
+            toast.info(`Loading ${symbol} chart`, 'Symbol Changed');
+        }
+    };
+
+    const handleSearchSymbol = () => {
+        if (searchSymbol.trim()) {
+            setSelectedSymbol(searchSymbol.trim().toUpperCase());
+            toast.info(`Loading ${searchSymbol.trim().toUpperCase()} chart`, 'Searching...');
+            setSearchSymbol('');
+        }
+    };
+
+    const fetchDashboardData = async () => {
+        try {
+            setLoading(true);
+            
+            const [portfolioRes, watchlistRes, newsRes, predictionsRes] = await Promise.all([
+                api.get('/portfolio').catch(() => ({ data: { holdings: [], totalValue: 0 } })),
+                api.get('/watchlist').catch(() => ({ data: [] })),
+                api.get('/news?limit=5').catch(() => ({ data: [] })),
+                api.get('/predictions/recent').catch(() => ({ data: [] }))
+            ]);
+
+            calculatePortfolioStats(portfolioRes.data.holdings || []);
+
+            if (watchlistRes.data && watchlistRes.data.length > 0) {
+                const tickerSymbols = watchlistRes.data.slice(0, 8).map(item => ({
+                    symbol: item.symbol,
+                    price: item.currentPrice || 0,
+                    change: item.change || 0
+                }));
+                setTickerData(tickerSymbols);
+            } else {
+                setTickerData([
+                    { symbol: 'AAPL', price: 175.50, change: 2.5 },
+                    { symbol: 'TSLA', price: 242.80, change: -1.2 },
+                    { symbol: 'NVDA', price: 495.20, change: 5.8 },
+                ]);
+            }
+
+            try {
+                const screenRes = await api.get('/screener/stocks?changeFilter=gainers');
+                if (screenRes.data && screenRes.data.length > 0) {
+                    setMarketMovers(screenRes.data.slice(0, 4).map(stock => ({
+                        symbol: stock.symbol,
+                        name: stock.name || stock.symbol,
+                        price: stock.price,
+                        change: stock.changePercent
+                    })));
                 }
-            ]);
-        }
+            } catch (error) {
+                console.log('Market movers not available, using fallback');
+                setMarketMovers([
+                    { symbol: 'NVDA', name: 'NVIDIA Corp', price: 495.20, change: 5.8 },
+                    { symbol: 'AMD', name: 'Advanced Micro', price: 142.70, change: 4.5 },
+                ]);
+            }
 
-        // ✅ REAL CHART DATA - Portfolio performance
-        if (portfolioRes.data.performanceHistory) {
-            setChartData(portfolioRes.data.performanceHistory);
-        } else {
-            const today = new Date();
-            const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
-            const baseValue = portfolioRes.data.totalValue || 10000;
-            const mockChart = days.map((day, index) => ({
-                date: day,
-                value: baseValue * (0.95 + (index * 0.025))
-            }));
-            setChartData(mockChart);
-        }
+            if (predictionsRes.data && predictionsRes.data.length > 0) {
+                setPredictions(predictionsRes.data.slice(0, 2));
+            } else {
+                setPredictions([
+                    {
+                        symbol: 'AAPL',
+                        direction: 'UP',
+                        targetPrice: 182.50,
+                        confidence: 85,
+                        timeframe: '7 days'
+                    }
+                ]);
+            }
 
-        // ✅ REAL ACTIVITY FEED
-        const recentActivities = [];
-        
-        if (portfolioRes.data.totalGainLoss) {
-            const isGain = portfolioRes.data.totalGainLoss > 0;
-            recentActivities.push({
-                type: isGain ? 'success' : 'warning',
-                icon: isGain ? TrendingUp : TrendingDown,
-                text: `Portfolio ${isGain ? 'gained' : 'lost'} $${Math.abs(portfolioRes.data.totalGainLoss).toFixed(2)} today`,
-                time: 'Today'
-            });
-        }
+            if (portfolioRes.data.performanceHistory) {
+                setPerformanceChartData(portfolioRes.data.performanceHistory);
+            } else {
+                const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+                const baseValue = portfolioRes.data.totalValue || 10000;
+                const mockChart = days.map((day, index) => ({
+                    date: day,
+                    value: baseValue * (0.95 + (index * 0.025))
+                }));
+                setPerformanceChartData(mockChart);
+            }
 
-        if (newsRes.data && newsRes.data.length > 0) {
-            newsRes.data.slice(0, 2).forEach(article => {
+            const recentActivities = [];
+            
+            if (portfolioRes.data.totalGainLoss) {
+                const isGain = portfolioRes.data.totalGainLoss > 0;
                 recentActivities.push({
-                    type: 'info',
-                    icon: Bell,
-                    text: article.title.substring(0, 60) + '...',
-                    time: 'Recent'
+                    type: isGain ? 'success' : 'warning',
+                    icon: isGain ? TrendingUp : TrendingDown,
+                    text: `Portfolio ${isGain ? 'gained' : 'lost'} $${Math.abs(portfolioRes.data.totalGainLoss).toFixed(2)} today`,
+                    time: 'Today'
                 });
-            });
+            }
+
+            if (newsRes.data && newsRes.data.length > 0) {
+                newsRes.data.slice(0, 2).forEach(article => {
+                    recentActivities.push({
+                        type: 'info',
+                        icon: Bell,
+                        text: article.title.substring(0, 60) + '...',
+                        time: 'Recent'
+                    });
+                });
+            }
+
+            setActivities(recentActivities.length > 0 ? recentActivities.slice(0, 4) : [
+                { type: 'info', icon: Bell, text: 'Welcome to your dashboard!', time: 'Now' }
+            ]);
+
+            toast.success('Dashboard loaded', 'Welcome back!');
+
+        } catch (error) {
+            console.error('Error fetching dashboard data:', error);
+            toast.error('Some data failed to load', 'Warning');
+        } finally {
+            setLoading(false);
         }
-
-        setActivities(recentActivities.length > 0 ? recentActivities.slice(0, 4) : [
-            { type: 'info', icon: Bell, text: 'Welcome to your dashboard!', time: 'Now' }
-        ]);
-
-        toast.success('Dashboard loaded', 'Welcome back!');
-
-    } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-        toast.error('Some data failed to load', 'Warning');
-    } finally {
-        setLoading(false);
-    }
-};
+    };
 
     const calculatePortfolioStats = (holdings) => {
         if (!holdings || holdings.length === 0) {
@@ -1056,7 +1249,6 @@ const fetchDashboardData = async () => {
 
     return (
         <PageContainer theme={theme}>
-            {/* Animated Background Particles */}
             <ParticleContainer>
                 {particles.map(particle => (
                     <Particle
@@ -1073,27 +1265,35 @@ const fetchDashboardData = async () => {
             <ContentWrapper>
                 <Header>
                     <HeaderLeft>
-                        <Title>Mission Control</Title>
-                        <Subtitle>
-                            <Sparkles size={20} />
-                            Welcome back, {user?.name || 'Trader'} • Real-time market intelligence
-                        </Subtitle>
+                        <DashboardHeader>
+                            <StaticLogo 
+                                src={nexusSignalLogo} 
+                                alt="Nexus Signal Logo"
+                            />
+                            <HeaderContent>
+                                <Title>Mission Control</Title>
+                                <Subtitle>
+                                    <Sparkles size={20} />
+                                    Welcome back, {user?.name || 'Trader'} • Real-time market intelligence
+                                </Subtitle>
+                            </HeaderContent>
+                        </DashboardHeader>
                     </HeaderLeft>
                     <HeaderRight>
                         <LiveClock>
-        <Clock size={24} />
-        <div>
-            <ClockTime>{formatTime(currentTime)}</ClockTime>
-            <ClockDate>{formatDate(currentTime)}</ClockDate>
-        </div>
-    </LiveClock>
-    <MarketStatus open={marketOpen}>
-        <StatusDot open={marketOpen} />
-        <StatusText open={marketOpen}>
-            {marketOpen ? 'Market Open' : 'Market Closed'}
-        </StatusText>
-    </MarketStatus>
-</HeaderRight>
+                            <Clock size={24} />
+                            <div>
+                                <ClockTime>{formatTime(currentTime)}</ClockTime>
+                                <ClockDate>{formatDate(currentTime)}</ClockDate>
+                            </div>
+                        </LiveClock>
+                        <MarketStatus open={marketOpen}>
+                            <StatusDot open={marketOpen} />
+                            <StatusText open={marketOpen}>
+                                {marketOpen ? 'Market Open' : 'Market Closed'}
+                            </StatusText>
+                        </MarketStatus>
+                    </HeaderRight>
                 </Header>
 
                 {/* STOCK TICKER */}
@@ -1111,6 +1311,65 @@ const fetchDashboardData = async () => {
                         ))}
                     </TickerTrack>
                 </TickerContainer>
+
+                {/* ADVANCED CHART SECTION */}
+                <ChartSection>
+                    <SearchContainer>
+                        <SearchInput
+                            type="text"
+                            placeholder="Search any stock or crypto (e.g., AAPL, BTC-USD, ETH-USD)..."
+                            value={searchSymbol}
+                            onChange={(e) => setSearchSymbol(e.target.value.toUpperCase())}
+                            onKeyPress={(e) => {
+                                if (e.key === 'Enter') {
+                                    handleSearchSymbol();
+                                }
+                            }}
+                        />
+                        <SearchButton 
+                            onClick={handleSearchSymbol}
+                            disabled={!searchSymbol.trim()}
+                        >
+                            <Eye size={20} />
+                            Load Chart
+                        </SearchButton>
+                    </SearchContainer>
+
+                    <SymbolSelector>
+                        <QuickSelectLabel>Quick Select:</QuickSelectLabel>
+                        {['AAPL', 'TSLA', 'NVDA', 'MSFT', 'GOOGL', 'AMZN', 'META', 'AMD', 'BTC-USD', 'ETH-USD', 'SOL-USD', 'DOGE-USD'].map(sym => (
+                            <SymbolButton
+                                key={sym}
+                                $active={selectedSymbol === sym}
+                                onClick={() => handleSymbolChange(sym)}
+                            >
+                                {sym}
+                            </SymbolButton>
+                        ))}
+                    </SymbolSelector>
+                    
+                    {loadingChart ? (
+                        <LoadingChartPlaceholder>
+                            <LoadingSpinner>
+                                <Activity size={64} color="#00adef" />
+                            </LoadingSpinner>
+                            <p style={{ color: '#94a3b8', marginTop: '1rem', fontSize: '1.2rem' }}>
+                                Loading {selectedSymbol} chart data...
+                            </p>
+                        </LoadingChartPlaceholder>
+                    ) : (
+                        <AdvancedChart
+                            symbol={selectedSymbol}
+                            data={advancedChartData}
+                            height="600px"
+                            timeframe={selectedTimeframe}
+                            onTimeframeChange={handleTimeframeChange}
+                            onChartTypeChange={(type) => {
+                                console.log('Chart type changed:', type);
+                            }}
+                        />
+                    )}
+                </ChartSection>
 
                 {/* STATS CARDS */}
                 <StatsGrid>
@@ -1218,7 +1477,6 @@ const fetchDashboardData = async () => {
 
                 {/* MAIN CONTENT */}
                 <ContentGrid>
-                    {/* LEFT COLUMN - CHARTS & MOVERS */}
                     <div>
                         <Panel>
                             <PanelHeader>
@@ -1233,7 +1491,7 @@ const fetchDashboardData = async () => {
                                 </PanelActions>
                             </PanelHeader>
                             <ResponsiveContainer width="100%" height={300}>
-                                <AreaChart data={chartData}>
+                                <AreaChart data={performanceChartData}>
                                     <defs>
                                         <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
                                             <stop offset="5%" stopColor="#00adef" stopOpacity={0.8}/>
@@ -1292,7 +1550,6 @@ const fetchDashboardData = async () => {
                         </Panel>
                     </div>
 
-                    {/* RIGHT COLUMN - AI PREDICTIONS & ACTIVITY */}
                     <div>
                         <Panel>
                             <PanelHeader>

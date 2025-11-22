@@ -1,4 +1,4 @@
-// client/src/pages/SentimentPage.js - SOCIAL SENTIMENT DASHBOARD 🔥
+// client/src/pages/SentimentPage.js - SOCIAL SENTIMENT + AI PREDICTIONS 🔥
 
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
@@ -8,7 +8,8 @@ import {
     TrendingUp, TrendingDown, Twitter, Search, Flame, Brain,
     ThumbsUp, ThumbsDown, Minus, RefreshCw, Zap, Target,
     Award, Activity, Clock, Users, MessageCircle, Heart,
-    Repeat2, BarChart3, PieChart, ArrowUpCircle, ArrowDownCircle
+    Repeat2, BarChart3, PieChart, ArrowUpCircle, ArrowDownCircle,
+    Calendar, Percent
 } from 'lucide-react';
 
 // ============ ANIMATIONS ============
@@ -256,6 +257,75 @@ const SentimentBadge = styled.div`
     font-size: 1.5rem;
     font-weight: 900;
     margin-bottom: 1.5rem;
+`;
+
+// Prediction Card Styles
+const PredictionCard = styled.div`
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(124, 58, 237, 0.15) 100%);
+    border: 2px solid rgba(139, 92, 246, 0.3);
+    border-radius: 20px;
+    padding: 2rem;
+    margin-top: 2rem;
+    animation: ${fadeIn} 0.6s ease-out;
+`;
+
+const PredictionHeader = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+
+    @media (max-width: 768px) {
+        flex-direction: column;
+        gap: 1rem;
+    }
+`;
+
+const PredictionBadge = styled.div`
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: ${props => props.$direction === 'UP' ? 
+        'linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(5, 150, 105, 0.3))' : 
+        'linear-gradient(135deg, rgba(239, 68, 68, 0.3), rgba(220, 38, 38, 0.3))'};
+    border: 2px solid ${props => props.$direction === 'UP' ? '#10b981' : '#ef4444'};
+    border-radius: 12px;
+    color: ${props => props.$direction === 'UP' ? '#10b981' : '#ef4444'};
+    font-size: 1.3rem;
+    font-weight: 900;
+`;
+
+const PredictionStats = styled.div`
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+
+    @media (max-width: 768px) {
+        grid-template-columns: repeat(2, 1fr);
+    }
+`;
+
+const PredictionStat = styled.div`
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    border-radius: 12px;
+    padding: 1rem;
+    text-align: center;
+`;
+
+const PredStatValue = styled.div`
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: ${props => props.$color || '#8b5cf6'};
+    margin-bottom: 0.5rem;
+`;
+
+const PredStatLabel = styled.div`
+    color: #94a3b8;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 `;
 
 const DistributionBar = styled.div`
@@ -541,10 +611,10 @@ const SentimentPage = () => {
                     <Twitter size={48} color="#1DA1F2" />
                     Social Sentiment
                 </Title>
-                <Subtitle>Real-time Twitter sentiment analysis for stocks & crypto</Subtitle>
+                <Subtitle>Real-time sentiment analysis + AI predictions for stocks & crypto</Subtitle>
                 <PoweredBy>
                     <Zap size={18} />
-                    Powered by Twitter API + AI
+                    Powered by StockTwits + AI
                 </PoweredBy>
             </Header>
 
@@ -677,6 +747,57 @@ const SentimentPage = () => {
                             </MetricsGrid>
                         </SentimentCard>
 
+                        {/* 🔥 AI PREDICTION CARD */}
+                        {sentiment.prediction && sentiment.prediction.prediction && (
+                            <PredictionCard>
+                                <PredictionHeader>
+                                    <CardTitle style={{ marginBottom: 0 }}>
+                                        <Brain size={24} />
+                                        AI Prediction: ${sentiment.symbol}
+                                    </CardTitle>
+                                    <PredictionBadge $direction={sentiment.prediction.prediction.direction}>
+                                        {sentiment.prediction.prediction.direction === 'UP' ? (
+                                            <TrendingUp size={28} />
+                                        ) : (
+                                            <TrendingDown size={28} />
+                                        )}
+                                        {sentiment.prediction.prediction.direction === 'UP' ? 'BULLISH' : 'BEARISH'}
+                                    </PredictionBadge>
+                                </PredictionHeader>
+
+                                <PredictionStats>
+                                    <PredictionStat>
+                                        <PredStatValue $color="#8b5cf6">
+                                            ${sentiment.prediction.prediction.target_price.toFixed(2)}
+                                        </PredStatValue>
+                                        <PredStatLabel>Target Price</PredStatLabel>
+                                    </PredictionStat>
+
+                                    <PredictionStat>
+                                        <PredStatValue $color={sentiment.prediction.prediction.price_change_percent > 0 ? '#10b981' : '#ef4444'}>
+                                            {sentiment.prediction.prediction.price_change_percent > 0 ? '+' : ''}
+                                            {sentiment.prediction.prediction.price_change_percent.toFixed(2)}%
+                                        </PredStatValue>
+                                        <PredStatLabel>Expected Change</PredStatLabel>
+                                    </PredictionStat>
+
+                                    <PredictionStat>
+                                        <PredStatValue $color="#f59e0b">
+                                            {sentiment.prediction.prediction.confidence.toFixed(1)}%
+                                        </PredStatValue>
+                                        <PredStatLabel>Confidence</PredStatLabel>
+                                    </PredictionStat>
+
+                                    <PredictionStat>
+                                        <PredStatValue $color="#1DA1F2">
+                                            {sentiment.prediction.prediction.days} days
+                                        </PredStatValue>
+                                        <PredStatLabel>Timeframe</PredStatLabel>
+                                    </PredictionStat>
+                                </PredictionStats>
+                            </PredictionCard>
+                        )}
+
                         <SentimentCard style={{ marginTop: '2rem' }}>
                             <CardTitle>
                                 <MessageCircle size={24} />
@@ -706,11 +827,7 @@ const SentimentPage = () => {
                                             </MetaItem>
                                             <MetaItem>
                                                 <Repeat2 size={14} />
-                                                {tweet.retweets}
-                                            </MetaItem>
-                                            <MetaItem>
-                                                <MessageCircle size={14} />
-                                                {tweet.replies}
+                                                {tweet.reshares || 0}
                                             </MetaItem>
                                         </TweetMeta>
                                     </TweetCard>
@@ -752,9 +869,9 @@ const SentimentPage = () => {
                     <EmptyIcon>
                         <Twitter size={80} color="#1DA1F2" />
                     </EmptyIcon>
-                    <EmptyTitle>Search Twitter Sentiment</EmptyTitle>
+                    <EmptyTitle>Search Stock Sentiment</EmptyTitle>
                     <EmptyText>
-                        Enter a stock or crypto symbol to analyze real-time social media sentiment
+                        Enter a stock or crypto symbol to analyze real-time sentiment + get AI predictions
                     </EmptyText>
                 </EmptyState>
             )}

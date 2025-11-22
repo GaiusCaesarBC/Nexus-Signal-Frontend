@@ -768,72 +768,65 @@ const CalculatorsPage = () => {
         { id: 'dca', label: 'DCA', icon: Calendar, description: 'Dollar cost averaging' },
     ];
 
-    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    
 
     const handleCalculate = async () => {
-        setLoading(true);
-        setResults(null);
+    setLoading(true);
+    setResults(null);
 
-        try {
-            let endpoint = '';
-            let data = {};
+    try {
+        let endpoint = '';
+        let data = {};
 
-            switch (activeCalculator) {
-                case 'position-size':
-                    endpoint = '/api/calculators/position-size';
-                    data = positionSizeData;
-                    break;
-                case 'risk-reward':
-                    endpoint = '/api/calculators/risk-reward';
-                    data = riskRewardData;
-                    break;
-                case 'compound-interest':
-                    endpoint = '/api/calculators/compound-interest';
-                    data = compoundData;
-                    break;
-                case 'retirement':
-                    endpoint = '/api/calculators/retirement';
-                    data = retirementData;
-                    break;
-                case 'options':
-                    endpoint = '/api/calculators/options-profit';
-                    data = optionsData;
-                    break;
-                case 'staking':
-                    endpoint = '/api/calculators/staking-rewards';
-                    data = stakingData;
-                    break;
-                case 'dca':
-                    endpoint = '/api/calculators/dca';
-                    data = dcaData;
-                    break;
-                default:
-                    break;
-            }
-
-            const response = await fetch(`${API_URL}${endpoint}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            });
-
-            const result = await response.json();
-
-            if (result.success) {
-                setResults(result.data);
-                toast.success('Calculation Complete', 'Results ready!');
-            } else {
-                toast.error('Calculation failed', result.error || 'Please check your inputs');
-            }
-        } catch (error) {
-            console.error('Calculation error:', error);
-            toast.error('Error', 'Failed to calculate. Please try again.');
-        } finally {
-            setLoading(false);
+        switch (activeCalculator) {
+            case 'position-size':
+                endpoint = '/calculators/position-size';
+                data = positionSizeData;
+                break;
+            case 'risk-reward':
+                endpoint = '/calculators/risk-reward';
+                data = riskRewardData;
+                break;
+            case 'compound-interest':
+                endpoint = '/calculators/compound-interest';
+                data = compoundData;
+                break;
+            case 'retirement':
+                endpoint = '/calculators/retirement';
+                data = retirementData;
+                break;
+            case 'options':
+                endpoint = '/calculators/options-profit';
+                data = optionsData;
+                break;
+            case 'staking':
+                endpoint = '/calculators/staking-rewards';
+                data = stakingData;
+                break;
+            case 'dca':
+                endpoint = '/calculators/dca';
+                data = dcaData;
+                break;
+            default:
+                break;
         }
-    };
+
+        // ✅ USE api INSTEAD OF fetch
+        const response = await api.post(endpoint, data);
+
+        if (response.data.success) {
+            setResults(response.data.data);
+            toast.success('Calculation Complete', 'Results ready!');
+        } else {
+            toast.error('Calculation failed', response.data.error || 'Please check your inputs');
+        }
+    } catch (error) {
+        console.error('Calculation error:', error);
+        toast.error('Error', error.response?.data?.error || 'Failed to calculate. Please try again.');
+    } finally {
+        setLoading(false);
+    }
+};
 
     const handleCalculatorChange = (calculatorId) => {
         setActiveCalculator(calculatorId);

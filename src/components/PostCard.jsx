@@ -554,7 +554,7 @@ const PostCard = ({ post, onLike, onComment, onDelete }) => {
               {!post.user.profile?.avatar && 
   (post.user.profile?.displayName?.charAt(0) || post.user.username?.charAt(0) || 'U').toUpperCase()
 }
-              }
+              
             </Avatar>
             
             <UserInfo>

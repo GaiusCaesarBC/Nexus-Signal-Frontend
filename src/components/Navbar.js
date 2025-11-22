@@ -11,6 +11,8 @@ import {
     Briefcase, BarChart3, Activity, Sparkles, Globe, Calculator, TrendingDown, MessageCircle
 } from 'lucide-react';
 import nexusSignalLogo from '../assets/nexus-signal-logo.png';
+import nexusSignalAnimated from '../assets/nexus-signal-animated.mp4';
+
 
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`
@@ -62,13 +64,14 @@ const NavInner = styled.div`
     }
 `;
 
+
 // ============ LOGO ============
 const Logo = styled(Link)`
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 1rem;
     text-decoration: none;
-    font-size: 1.5rem;
+    font-size: 2rem;  // ⬆️ Increased from 1.5rem
     font-weight: 900;
     background: linear-gradient(135deg, #00adef 0%, #00ff88 100%);
     -webkit-background-clip: text;
@@ -78,34 +81,91 @@ const Logo = styled(Link)`
     transition: all 0.3s ease;
 
     &:hover {
-        transform: translateY(-2px);
+        transform: translateY(-2px) scale(1.02);
         filter: brightness(1.2);
     }
 `;
 
 const LogoIcon = styled.div`
-    width: 40px;
-    height: 40px;
+    width: 150px;
+    height: 150px;
     display: flex;
     align-items: center;
     justify-content: center;
-    filter: drop-shadow(0 2px 8px rgba(0, 173, 237, 0.3));
+    position: relative;
     transition: all 0.3s ease;
 
+    // 🔥 GLOW MATCHING YOUR LOGO'S GRADIENT
+    filter: drop-shadow(0 0 5px rgba(0, 217, 255, 0.7))
+            drop-shadow(0 0 10px rgba(139, 92, 246, 0.6))
+            drop-shadow(0 0 15px rgba(236, 72, 153, 0.5));
+
+    &::before {
+        content: '';
+        position: absolute;
+        inset: 0px;
+        background: radial-gradient(circle, 
+            rgba(0, 217, 255, 0.2) 0%, 
+            rgba(139, 92, 246, 0.15) 40%, 
+            rgba(236, 72, 153, 0.1) 70%,
+            transparent 100%);
+        border-radius: 50%;
+        z-index: -1;
+        opacity: 0.02;
+        animation: ${pulse} 3s ease-in-out infinite;
+    }
+
     &:hover {
-        filter: drop-shadow(0 4px 12px rgba(0, 173, 237, 0.5));
-        transform: translateY(-2px);
+        filter: drop-shadow(0 0 10px rgba(0, 217, 255, 0.9))
+                drop-shadow(0 0 15px rgba(139, 92, 246, 0.8))
+                drop-shadow(0 0 35px rgba(236, 72, 153, 0.7));
+        transform: translateY(-3px) scale(1.08);
+    }
+
+    @media (max-width: 768px) {
+        width: 45px;
+        height: 45px;
     }
 `;
-
 const LogoImage = styled.img`
     width: 100%;
     height: 100%;
     object-fit: contain;
+    position: relative;
+    z-index: 1;
 `;
 
 const LogoText = styled.span`
-    letter-spacing: 1px;
+    letter-spacing: 1.5px;
+    font-size: 1.1em;
+    font-weight: 900;
+    
+    // 🔥 EXACT GRADIENT TO MATCH YOUR LOGO
+    background: linear-gradient(135deg, 
+        #00d9ff 0%,      /* Bright cyan */
+        #8b5cf6 50%,     /* Purple middle */
+        #ec4899 100%     /* Hot pink */
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    
+    // Matching glow effect
+    text-shadow: 0 0 20px rgba(0, 217, 255, 0.6),
+                 0 0 40px rgba(139, 92, 246, 0.5),
+                 0 0 60px rgba(236, 72, 153, 0.4);
+    
+    transition: all 0.3s ease;
+
+    &:hover {
+        text-shadow: 0 0 30px rgba(0, 217, 255, 0.9),
+                     0 0 50px rgba(139, 92, 246, 0.7),
+                     0 0 70px rgba(236, 72, 153, 0.6);
+    }
+
+    @media (max-width: 768px) {
+        display: none;
+    }
 `;
 
 // ============ NAV LINKS ============
