@@ -1,4 +1,4 @@
-// client/src/pages/PortfolioPage.js - LEGENDARY PORTFOLIO WITH DRAG-DROP & ALL FEATURES
+// client/src/pages/PortfolioPage.js - COMPLETE WITH AUTO-REFRESH, HISTORY, AI INSIGHTS
 
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes, css } from 'styled-components';
@@ -15,7 +15,7 @@ import {
 import {
     PieChart as RechartsPie, Pie, Cell, ResponsiveContainer,
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-    AreaChart, Area
+    LineChart, Line
 } from 'recharts';
 
 // ============ ANIMATIONS ============
@@ -52,6 +52,18 @@ const float = keyframes`
 const rotate = keyframes`
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
+`;
+
+const flash = keyframes`
+    0% { background-color: transparent; }
+    50% { background-color: rgba(16, 185, 129, 0.3); }
+    100% { background-color: transparent; }
+`;
+
+const flashRed = keyframes`
+    0% { background-color: transparent; }
+    50% { background-color: rgba(239, 68, 68, 0.3); }
+    100% { background-color: transparent; }
 `;
 
 // ============ STYLED COMPONENTS ============
@@ -189,6 +201,11 @@ const ToolbarButton = styled.button`
         transform: translateY(-2px);
     }
 
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
     ${props => props.$danger && `
         background: rgba(239, 68, 68, 0.1);
         border-color: rgba(239, 68, 68, 0.3);
@@ -279,7 +296,7 @@ const RefreshButton = styled.button`
     }
 
     svg {
-        animation: ${props => props.$refreshing ? rotate : 'none'} 1s linear infinite;
+        animation: ${props => props.$refreshing ? css`${rotate} 1s linear infinite` : 'none'};
     }
 `;
 
@@ -311,6 +328,103 @@ const AddButton = styled.button`
         bottom: 1rem;
         right: 1rem;
     }
+`;
+
+// ============ HISTORY PANEL ============
+const HistoryPanel = styled.div`
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    border: 1px solid rgba(0, 173, 237, 0.2);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 3rem;
+    animation: ${fadeIn} 0.8s ease-out;
+`;
+
+const HistoryHeader = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+`;
+
+const PeriodSelector = styled.div`
+    display: flex;
+    gap: 0.5rem;
+`;
+
+const PeriodButton = styled.button`
+    padding: 0.5rem 1rem;
+    background: ${props => props.$active ? 
+        'linear-gradient(135deg, rgba(0, 173, 237, 0.3) 0%, rgba(0, 173, 237, 0.2) 100%)' : 
+        'rgba(0, 173, 237, 0.05)'
+    };
+    border: 1px solid ${props => props.$active ? 'rgba(0, 173, 237, 0.5)' : 'rgba(0, 173, 237, 0.2)'};
+    border-radius: 8px;
+    color: ${props => props.$active ? '#00adef' : '#94a3b8'};
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+        background: linear-gradient(135deg, rgba(0, 173, 237, 0.2) 0%, rgba(0, 173, 237, 0.1) 100%);
+        border-color: rgba(0, 173, 237, 0.5);
+        color: #00adef;
+    }
+`;
+
+// ============ AI INSIGHTS PANEL ============
+const InsightsPanel = styled.div`
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(59, 130, 246, 0.15) 100%);
+    border: 2px solid rgba(139, 92, 246, 0.3);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 3rem;
+    animation: ${fadeIn} 0.8s ease-out;
+`;
+
+const InsightsHeader = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+`;
+
+const InsightsTitle = styled.h2`
+    font-size: 1.8rem;
+    color: #a78bfa;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+`;
+
+const InsightsBadge = styled.div`
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: ${props => {
+        if (props.$type === 'good') return 'rgba(16, 185, 129, 0.2)';
+        if (props.$type === 'warning') return 'rgba(245, 158, 11, 0.2)';
+        if (props.$type === 'danger') return 'rgba(239, 68, 68, 0.2)';
+        return 'rgba(139, 92, 246, 0.2)';
+    }};
+    border: 1px solid ${props => {
+        if (props.$type === 'good') return 'rgba(16, 185, 129, 0.4)';
+        if (props.$type === 'warning') return 'rgba(245, 158, 11, 0.4)';
+        if (props.$type === 'danger') return 'rgba(239, 68, 68, 0.4)';
+        return 'rgba(139, 92, 246, 0.4)';
+    }};
+    border-radius: 12px;
+    color: ${props => {
+        if (props.$type === 'good') return '#10b981';
+        if (props.$type === 'warning') return '#f59e0b';
+        if (props.$type === 'danger') return '#ef4444';
+        return '#a78bfa';
+    }};
+    font-size: 0.9rem;
+    font-weight: 700;
 `;
 
 // ============ STATS GRID ============
@@ -390,6 +504,14 @@ const StatValue = styled.div`
         return '#00adef';
     }};
     margin-bottom: 0.5rem;
+    
+    ${props => props.$flashing && props.positive && css`
+        animation: ${flash} 0.5s ease-out;
+    `}
+    
+    ${props => props.$flashing && props.negative && css`
+        animation: ${flashRed} 0.5s ease-out;
+    `}
 `;
 
 const StatSubtext = styled.div`
@@ -900,10 +1022,10 @@ const PortfolioPage = () => {
     const toast = useToast();
     
     // Portfolio data
-    const [portfolio, setPortfolio] = useState([]); // ✅ ADD THIS
+    const [portfolio, setPortfolio] = useState([]);
     const [holdings, setHoldings] = useState([]);
     const [filteredPortfolio, setFilteredPortfolio] = useState([]);
-    const [stats, setStats] = useState(null); // ✅ ADD THIS
+    const [stats, setStats] = useState(null);
     const [totalValue, setTotalValue] = useState(0);
     const [totalCost, setTotalCost] = useState(0);
     const [totalGainLoss, setTotalGainLoss] = useState(0);
@@ -918,6 +1040,14 @@ const PortfolioPage = () => {
     const [selectedHoldings, setSelectedHoldings] = useState(new Set());
     const [showComparison, setShowComparison] = useState(false);
     
+    // NEW: Auto-refresh, history, insights
+    const [autoRefresh, setAutoRefresh] = useState(true);
+    const [priceChanges, setPriceChanges] = useState({});
+    const [portfolioHistory, setPortfolioHistory] = useState([]);
+    const [historyPeriod, setHistoryPeriod] = useState(7);
+    const [aiInsights, setAiInsights] = useState(null);
+    const [loadingInsights, setLoadingInsights] = useState(false);
+    
     // Predictions
     const [predictions, setPredictions] = useState({});
     const [loadingPredictions, setLoadingPredictions] = useState({});
@@ -927,8 +1057,8 @@ const PortfolioPage = () => {
     const [sortBy, setSortBy] = useState('symbol');
     const [filterBy, setFilterBy] = useState('all');
     
-    // Form data for adding/editing
-    const [formData, setFormData] = useState({ // ✅ ADD THIS
+    // Form data
+    const [formData, setFormData] = useState({
         symbol: '',
         shares: '',
         averagePrice: ''
@@ -941,49 +1071,149 @@ const PortfolioPage = () => {
         avgPrice: '',
         purchaseDate: new Date().toISOString().split('T')[0]
     });
-    
-    // ... rest of your code
 
     useEffect(() => {
-    fetchPortfolio();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-}, []);
+        fetchPortfolio();
+    }, []);
 
     useEffect(() => {
         filterAndSortPortfolio();
     }, [portfolio, searchQuery, sortBy, filterBy]);
 
-    const fetchPortfolio = async () => {
-    setLoading(true);
-    try {
-        const response = await api.get('/portfolio');
-        console.log('Portfolio response:', response.data); // ✅ DEBUG
+    // Auto-refresh effect
+    useEffect(() => {
+        if (!autoRefresh || portfolio.length === 0) return;
         
-        if (response.data.holdings && response.data.holdings.length > 0) {
-            setPortfolio(response.data.holdings); // ✅ Set portfolio state
-            setHoldings(response.data.holdings);
-            setTotalValue(response.data.totalValue || 0);
-            setTotalCost(response.data.totalCost || 0);
-            setTotalGainLoss(response.data.totalGainLoss || 0);
-            setTotalGainLossPercent(response.data.totalGainLossPercent || 0);
-            
-            // Calculate stats
-            calculateStats(response.data.holdings);
-        } else {
-            console.log('No holdings found');
-            setPortfolio([]);
-            setHoldings([]);
+        const interval = setInterval(() => {
+            console.log('[Auto-Refresh] Refreshing portfolio data...');
+            handleAutoRefresh();
+        }, 30000); // 30 seconds
+        
+        return () => clearInterval(interval);
+    }, [autoRefresh, portfolio.length]);
+
+    // History fetching effect
+    useEffect(() => {
+        if (portfolio.length > 0) {
+            fetchPortfolioHistory(historyPeriod);
         }
+    }, [historyPeriod, portfolio.length]);
+
+    // AI Insights effect
+    useEffect(() => {
+        if (portfolio.length > 0 && stats) {
+            fetchAIInsights();
+        }
+    }, [portfolio.length]);
+
+    const fetchPortfolio = async () => {
+        setLoading(true);
+        try {
+            const response = await api.get('/portfolio');
+            
+            if (response.data.holdings && response.data.holdings.length > 0) {
+                setPortfolio(response.data.holdings);
+                setHoldings(response.data.holdings);
+                setTotalValue(response.data.totalValue || 0);
+                setTotalCost(response.data.totalCost || 0);
+                setTotalGainLoss(response.data.totalGainLoss || 0);
+                setTotalGainLossPercent(response.data.totalGainLossPercent || 0);
+                
+                calculateStats(response.data.holdings);
+            } else {
+                setPortfolio([]);
+                setHoldings([]);
+            }
+            
+            toast.success('Portfolio loaded', 'Success');
+        } catch (error) {
+            console.error('Error fetching portfolio:', error);
+            toast.error('Failed to load portfolio', 'Error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleAutoRefresh = async () => {
+        try {
+            const response = await api.get('/portfolio');
+            
+            if (response.data.holdings && response.data.holdings.length > 0) {
+                // Track price changes for flash animation
+                const changes = {};
+                response.data.holdings.forEach(newHolding => {
+                    const oldHolding = portfolio.find(h => h.symbol === newHolding.symbol);
+                    if (oldHolding) {
+                        const oldPrice = oldHolding.currentPrice || 0;
+                        const newPrice = newHolding.currentPrice || 0;
+                        if (oldPrice !== newPrice) {
+                            changes[newHolding.symbol] = {
+                                increased: newPrice > oldPrice,
+                                amount: newPrice - oldPrice
+                            };
+                        }
+                    }
+                });
+                
+                setPriceChanges(changes);
+                setPortfolio(response.data.holdings);
+                setHoldings(response.data.holdings);
+                setTotalValue(response.data.totalValue || 0);
+                setTotalCost(response.data.totalCost || 0);
+                setTotalGainLoss(response.data.totalGainLoss || 0);
+                setTotalGainLossPercent(response.data.totalGainLossPercent || 0);
+                
+                calculateStats(response.data.holdings);
+                
+                // Save snapshot for history
+                await api.post('/portfolio/snapshot', {
+                    totalValue: response.data.totalValue || 0,
+                    totalGainLoss: response.data.totalGainLoss || 0,
+                    totalGainLossPercent: response.data.totalGainLossPercent || 0
+                });
+                
+                // Clear flash after animation
+                setTimeout(() => setPriceChanges({}), 500);
+            }
+        } catch (error) {
+            console.error('Auto-refresh error:', error);
+        }
+    };
+
+    const fetchPortfolioHistory = async (days = 7) => {
+        try {
+            const response = await api.get(`/portfolio/history/${days}`);
+            setPortfolioHistory(response.data.history || []);
+        } catch (error) {
+            console.error('Error fetching history:', error);
+        }
+    };
+
+    const fetchAIInsights = async () => {
+        if (portfolio.length === 0) return;
         
-        toast.success('Portfolio loaded', 'Success');
-    } catch (error) {
-        console.error('Error fetching portfolio:', error);
-        console.error('Error response:', error.response?.data); // ✅ DEBUG
-        toast.error('Failed to load portfolio', 'Error');
-    } finally {
-        setLoading(false);
-    }
-};
+        setLoadingInsights(true);
+        try {
+            const response = await api.post('/portfolio/insights', {
+                holdings: portfolio,
+                totalValue: stats?.totalValue || 0,
+                totalGainLoss: stats?.totalGain || 0,
+                totalGainLossPercent: stats?.totalGainPercent || 0
+            });
+            
+            setAiInsights(response.data);
+            
+            if (response.data.available) {
+                toast.success('AI insights generated!', 'Analysis Complete');
+            }
+        } catch (error) {
+            console.error('Error fetching AI insights:', error);
+            toast.error('Failed to generate insights', 'Error');
+        } finally {
+            setLoadingInsights(false);
+        }
+    };
+
     const handleRefresh = async () => {
         setRefreshing(true);
         await fetchPortfolio();
@@ -1011,7 +1241,6 @@ const PortfolioPage = () => {
     const filterAndSortPortfolio = () => {
         let filtered = [...portfolio];
 
-        // Search filter
         if (searchQuery) {
             filtered = filtered.filter(holding => {
                 const symbol = (holding.symbol || '').toLowerCase();
@@ -1020,7 +1249,6 @@ const PortfolioPage = () => {
             });
         }
 
-        // Category filter
         if (filterBy === 'gainers') {
             filtered = filtered.filter(h => {
                 const currentPrice = h.currentPrice || h.current_price || h.price || 0;
@@ -1035,7 +1263,6 @@ const PortfolioPage = () => {
             });
         }
 
-        // Sort
         filtered.sort((a, b) => {
             switch (sortBy) {
                 case 'symbol':
@@ -1086,35 +1313,33 @@ const PortfolioPage = () => {
         });
     };
 
-   const addHolding = async (e) => {
-    e.preventDefault();
-    
-    if (!formData.symbol || !formData.shares || !formData.averagePrice) {
-        toast.warning('Please fill in all fields', 'Missing Information');
-        return;
-    }
-
-    try {
-        const response = await api.post('/portfolio/holdings', {
-            symbol: formData.symbol.toUpperCase(),
-            shares: parseFloat(formData.shares),
-            averagePrice: parseFloat(formData.averagePrice), // ✅ Changed from avgPrice
-            purchaseDate: new Date().toISOString().split('T')[0]
-        });
-
-        console.log('Add holding response:', response.data);
-
-        toast.success(`${formData.symbol.toUpperCase()} added to portfolio`, 'Success');
-        setShowAddModal(false);
-        setFormData({ symbol: '', shares: '', averagePrice: '' });
+    const addHolding = async (e) => {
+        e.preventDefault();
         
-        await fetchPortfolio();
-    } catch (error) {
-        console.error('Error adding holding:', error);
-        console.error('Error response:', error.response?.data);
-        toast.error(error.response?.data?.error || 'Failed to add holding', 'Error');
-    }
-};
+        if (!formData.symbol || !formData.shares || !formData.averagePrice) {
+            toast.warning('Please fill in all fields', 'Missing Information');
+            return;
+        }
+
+        try {
+            await api.post('/portfolio/holdings', {
+                symbol: formData.symbol.toUpperCase(),
+                shares: parseFloat(formData.shares),
+                averagePrice: parseFloat(formData.averagePrice),
+                purchaseDate: new Date().toISOString().split('T')[0]
+            });
+
+            toast.success(`${formData.symbol.toUpperCase()} added to portfolio`, 'Success');
+            setShowAddModal(false);
+            setFormData({ symbol: '', shares: '', averagePrice: '' });
+            
+            await fetchPortfolio();
+        } catch (error) {
+            console.error('Error adding holding:', error);
+            toast.error(error.response?.data?.error || 'Failed to add holding', 'Error');
+        }
+    };
+
     const handleEditHolding = (holding) => {
         setSelectedHolding(holding);
         setFormData({
@@ -1153,19 +1378,19 @@ const PortfolioPage = () => {
     };
 
     const deleteHolding = async (holdingId) => {
-    if (!window.confirm('Are you sure you want to remove this holding?')) {
-        return;
-    }
+        if (!window.confirm('Are you sure you want to remove this holding?')) {
+            return;
+        }
 
-    try {
-        await api.delete(`/portfolio/holdings/${holdingId}`);
-        toast.success('Holding removed from portfolio', 'Deleted');
-        fetchPortfolio(); // Reload portfolio
-    } catch (error) {
-        console.error('Error deleting holding:', error);
-        toast.error('Failed to delete holding', 'Error');
-    }
-};
+        try {
+            await api.delete(`/portfolio/holdings/${holdingId}`);
+            toast.success('Holding removed from portfolio', 'Deleted');
+            fetchPortfolio();
+        } catch (error) {
+            console.error('Error deleting holding:', error);
+            toast.error('Failed to delete holding', 'Error');
+        }
+    };
 
     const toggleSelectHolding = (symbol) => {
         setSelectedHoldings(prev => {
@@ -1400,7 +1625,10 @@ const PortfolioPage = () => {
                 <HeaderTop>
                     <HeaderLeft>
                         <Title>My Portfolio</Title>
-                        <Subtitle>AI-powered tracking • {filteredPortfolio.length} of {portfolio.length} holdings</Subtitle>
+                        <Subtitle>
+                            AI-powered tracking • {filteredPortfolio.length} of {portfolio.length} holdings
+                            {autoRefresh && ' • Auto-refresh ON'}
+                        </Subtitle>
                     </HeaderLeft>
                     <HeaderRight>
                         <RefreshButton onClick={handleRefresh} disabled={refreshing} $refreshing={refreshing}>
@@ -1414,7 +1642,6 @@ const PortfolioPage = () => {
                     </HeaderRight>
                 </HeaderTop>
 
-                {/* TOOLBAR */}
                 <Toolbar>
                     <SearchBar>
                         <SearchIcon size={20} />
@@ -1452,7 +1679,6 @@ const PortfolioPage = () => {
                 </Toolbar>
             </Header>
 
-            {/* BATCH ACTIONS */}
             {selectedHoldings.size > 0 && (
                 <BatchActionsBar>
                     <BatchInfo>
@@ -1472,7 +1698,6 @@ const PortfolioPage = () => {
                 </BatchActionsBar>
             )}
 
-            {/* COMPARISON MODE */}
             {showComparison && selectedHoldings.size >= 2 && (
                 <ComparisonPanel>
                     <ComparisonTitle>
@@ -1500,7 +1725,165 @@ const PortfolioPage = () => {
                 </ComparisonPanel>
             )}
 
-            {/* STATS */}
+            {/* PERFORMANCE HISTORY CHART */}
+            {portfolioHistory.length > 0 && (
+                <HistoryPanel>
+                    <HistoryHeader>
+                        <ChartTitle>
+                            <Activity size={24} />
+                            Portfolio Performance
+                        </ChartTitle>
+                        <PeriodSelector>
+                            <PeriodButton 
+                                $active={historyPeriod === 7}
+                                onClick={() => setHistoryPeriod(7)}
+                            >
+                                7D
+                            </PeriodButton>
+                            <PeriodButton 
+                                $active={historyPeriod === 30}
+                                onClick={() => setHistoryPeriod(30)}
+                            >
+                                30D
+                            </PeriodButton>
+                            <PeriodButton 
+                                $active={historyPeriod === 90}
+                                onClick={() => setHistoryPeriod(90)}
+                            >
+                                90D
+                            </PeriodButton>
+                        </PeriodSelector>
+                    </HistoryHeader>
+                    <ResponsiveContainer width="100%" height={300}>
+                        <LineChart data={portfolioHistory}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.1)" />
+                            <XAxis 
+                                dataKey="date" 
+                                stroke="#94a3b8"
+                                tickFormatter={(date) => new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            />
+                            <YAxis 
+                                stroke="#94a3b8"
+                                tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                            />
+                            <Tooltip
+                                formatter={(value) => [`$${value.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, 'Value']}
+                                labelFormatter={(date) => new Date(date).toLocaleDateString()}
+                                contentStyle={{ 
+                                    background: '#1e293b', 
+                                    border: '1px solid rgba(0, 173, 237, 0.3)',
+                                    borderRadius: '8px'
+                                }}
+                            />
+                            <Line 
+                                type="monotone" 
+                                dataKey="totalValue" 
+                                stroke="#00adef" 
+                                strokeWidth={3}
+                                dot={{ fill: '#00adef', r: 4 }}
+                                activeDot={{ r: 6 }}
+                            />
+                        </LineChart>
+                    </ResponsiveContainer>
+                </HistoryPanel>
+            )}
+
+            {/* AI INSIGHTS PANEL - UNAVAILABLE STATE */}
+            {aiInsights && !aiInsights.available && (
+                <InsightsPanel>
+                    <InsightsHeader>
+                        <InsightsTitle>
+                            <Brain size={32} />
+                            AI Portfolio Analysis
+                        </InsightsTitle>
+                        <InsightsBadge $type="warning">
+                            <Zap size={16} />
+                            Unavailable
+                        </InsightsBadge>
+                    </InsightsHeader>
+
+                    <div style={{
+                        padding: '3rem',
+                        textAlign: 'center',
+                        background: 'rgba(245, 158, 11, 0.1)',
+                        borderRadius: '12px',
+                        border: '1px solid rgba(245, 158, 11, 0.3)'
+                    }}>
+                        <div style={{
+                            width: '80px',
+                            height: '80px',
+                            margin: '0 auto 1.5rem',
+                            background: 'rgba(245, 158, 11, 0.2)',
+                            borderRadius: '50%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}>
+                            <Brain size={40} color="#f59e0b" />
+                        </div>
+                        
+                        <h3 style={{ 
+                            color: '#f59e0b', 
+                            fontSize: '1.5rem', 
+                            marginBottom: '1rem' 
+                        }}>
+                            AI Insights Temporarily Unavailable
+                        </h3>
+                        
+                        <p style={{ 
+                            color: '#e0e6ed', 
+                            fontSize: '1.1rem', 
+                            lineHeight: '1.8',
+                            marginBottom: '1.5rem' 
+                        }}>
+                            {aiInsights.message || 'OpenAI API quota has been exceeded'}
+                        </p>
+                        
+                        {aiInsights.reason === 'quota_exceeded' && (
+                            <div style={{
+                                background: 'rgba(139, 92, 246, 0.1)',
+                                border: '1px solid rgba(139, 92, 246, 0.3)',
+                                borderRadius: '12px',
+                                padding: '1.5rem',
+                                marginTop: '1.5rem',
+                                textAlign: 'left'
+                            }}>
+                                <h4 style={{ color: '#a78bfa', marginBottom: '1rem' }}>
+                                    💡 To Enable AI Insights:
+                                </h4>
+                                <ul style={{ 
+                                    color: '#94a3b8', 
+                                    lineHeight: '2',
+                                    paddingLeft: '1.5rem'
+                                }}>
+                                    <li>Visit <a href="https://platform.openai.com/account/billing" target="_blank" rel="noopener noreferrer" style={{ color: '#00adef' }}>platform.openai.com</a></li>
+                                    <li>Add credits to your OpenAI account</li>
+                                    <li>Refresh this page to enable AI analysis</li>
+                                </ul>
+                            </div>
+                        )}
+                        
+                        <ToolbarButton 
+                            onClick={fetchAIInsights} 
+                            disabled={loadingInsights}
+                            style={{ marginTop: '1.5rem' }}
+                        >
+                            {loadingInsights ? (
+                                <>
+                                    <RefreshCw size={18} />
+                                    Checking...
+                                </>
+                            ) : (
+                                <>
+                                    <RefreshCw size={18} />
+                                    Check Again
+                                </>
+                            )}
+                        </ToolbarButton>
+                    </div>
+                </InsightsPanel>
+            )}
+
             {stats && (
                 <StatsGrid>
                     <StatCard>
@@ -1508,7 +1891,7 @@ const PortfolioPage = () => {
                             <DollarSign size={24} />
                         </StatIcon>
                         <StatLabel>Total Value</StatLabel>
-                        <StatValue>
+                        <StatValue $flashing={Object.keys(priceChanges).length > 0}>
                             ${stats.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </StatValue>
                         <StatSubtext>
@@ -1522,7 +1905,11 @@ const PortfolioPage = () => {
                             {stats.totalGain >= 0 ? <TrendingUp size={24} /> : <TrendingDown size={24} />}
                         </StatIcon>
                         <StatLabel>Total Gain/Loss</StatLabel>
-                        <StatValue positive={stats.totalGain >= 0} negative={stats.totalGain < 0}>
+                        <StatValue 
+                            positive={stats.totalGain >= 0} 
+                            negative={stats.totalGain < 0}
+                            $flashing={Object.values(priceChanges).some(c => c.increased === (stats.totalGain >= 0))}
+                        >
                             ${Math.abs(stats.totalGain).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </StatValue>
                         <StatSubtext positive={stats.totalGainPercent >= 0} negative={stats.totalGainPercent < 0}>
@@ -1547,7 +1934,6 @@ const PortfolioPage = () => {
                 </StatsGrid>
             )}
 
-            {/* HOLDINGS WITH DRAG & DROP */}
             <DragDropContext onDragEnd={handleDragEnd}>
                 <Droppable droppableId="portfolio">
                     {(provided) => (
@@ -1604,9 +1990,9 @@ const PortfolioPage = () => {
                                                     <ActionButtons>
                                                         <IconButton
                                                             onClick={(e) => {
-    e.stopPropagation();
-    deleteHolding(holding._id);
-}}
+                                                                e.stopPropagation();
+                                                                handleEditHolding(holding);
+                                                            }}
                                                         >
                                                             <Edit size={18} />
                                                         </IconButton>
@@ -1688,7 +2074,6 @@ const PortfolioPage = () => {
                 </Droppable>
             </DragDropContext>
 
-            {/* CHARTS */}
             <ChartsGrid>
                 <ChartPanel>
                     <ChartTitle>
@@ -1755,7 +2140,6 @@ const PortfolioPage = () => {
                 <Plus size={28} />
             </AddButton>
 
-            {/* ADD HOLDING MODAL */}
             {showAddModal && (
                 <Modal onClick={() => setShowAddModal(false)}>
                     <ModalContent onClick={(e) => e.stopPropagation()}>
@@ -1803,7 +2187,6 @@ const PortfolioPage = () => {
                 </Modal>
             )}
 
-            {/* EDIT HOLDING MODAL */}
             {showEditModal && selectedHolding && (
                 <Modal onClick={() => setShowEditModal(false)}>
                     <ModalContent onClick={(e) => e.stopPropagation()}>
