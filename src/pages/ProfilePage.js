@@ -1,4 +1,4 @@
-// client/src/pages/ProfilePage.js - THE MOST LEGENDARY PROFILE PAGE EVER - ULTIMATE EDITION
+// client/src/pages/ProfilePage.js - PROFILE PAGE WITH REAL DATA ONLY
 // NOW WITH REAL AVATAR UPLOAD! 📸
 
 import React, { useState, useEffect } from 'react';
@@ -12,7 +12,7 @@ import {
     Target, ArrowUpRight, Sparkles, Clock, BarChart3,
     TrendingDown, ChevronRight, Medal, Users, Rocket,
     X, Check, ArrowUp, ChevronUp, Briefcase, Link as LinkIcon,
-    Upload, Trash2
+    Upload, Trash2, Percent
 } from 'lucide-react';
 import {
     LineChart, Line, AreaChart, Area, BarChart, Bar,
@@ -28,11 +28,6 @@ const fadeIn = keyframes`
 
 const slideIn = keyframes`
     from { transform: translateX(-100%); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
-`;
-
-const slideInRight = keyframes`
-    from { transform: translateX(100%); opacity: 0; }
     to { transform: translateX(0); opacity: 1; }
 `;
 
@@ -59,11 +54,6 @@ const float = keyframes`
 const rotate = keyframes`
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
-`;
-
-const progressFill = keyframes`
-    from { width: 0%; }
-    to { width: var(--progress-width); }
 `;
 
 // ============ STYLED COMPONENTS ============
@@ -554,90 +544,6 @@ const SectionTitle = styled.h2`
     gap: 0.5rem;
 `;
 
-// ============ TIMELINE ============
-const TimelineContainer = styled.div`
-    position: relative;
-    padding-left: 2rem;
-
-    &::before {
-        content: '';
-        position: absolute;
-        left: 0;
-        top: 0;
-        bottom: 0;
-        width: 2px;
-        background: linear-gradient(180deg, #00adef, #8b5cf6);
-    }
-`;
-
-const TimelineItem = styled.div`
-    position: relative;
-    padding-bottom: 2rem;
-    animation: ${slideIn} 0.5s ease-out;
-    animation-delay: ${props => props.index * 0.1}s;
-    animation-fill-mode: backwards;
-
-    &::before {
-        content: '';
-        position: absolute;
-        left: -2.5rem;
-        top: 0;
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        background: ${props => {
-            if (props.type === 'success') return '#10b981';
-            if (props.type === 'danger') return '#ef4444';
-            if (props.type === 'warning') return '#f59e0b';
-            return '#00adef';
-        }};
-        box-shadow: 0 0 0 4px rgba(0, 173, 237, 0.2);
-    }
-`;
-
-const TimelineDate = styled.div`
-    color: #64748b;
-    font-size: 0.85rem;
-    margin-bottom: 0.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-`;
-
-const TimelineContent = styled.div`
-    background: rgba(0, 173, 237, 0.05);
-    border: 1px solid rgba(0, 173, 237, 0.2);
-    border-radius: 12px;
-    padding: 1rem;
-    transition: all 0.3s ease;
-
-    &:hover {
-        background: rgba(0, 173, 237, 0.1);
-        border-color: rgba(0, 173, 237, 0.3);
-        transform: translateX(5px);
-    }
-`;
-
-const TimelineTitle = styled.div`
-    color: #e0e6ed;
-    font-weight: 700;
-    margin-bottom: 0.25rem;
-`;
-
-const TimelineDesc = styled.div`
-    color: #94a3b8;
-    font-size: 0.9rem;
-`;
-
-const TimelineValue = styled.div`
-    color: ${props => props.positive ? '#10b981' : props.negative ? '#ef4444' : '#00adef'};
-    font-weight: 700;
-    margin-top: 0.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-`;
-
 // ============ QUICK STATS DASHBOARD ============
 const QuickStatsGrid = styled.div`
     display: grid;
@@ -672,69 +578,13 @@ const QuickStatValue = styled.div`
     font-weight: 900;
 `;
 
-// ============ LEADERBOARD ============
-const LeaderboardSection = styled.div``;
-
-const LeaderboardCard = styled.div`
-    background: rgba(0, 173, 237, 0.05);
-    border: 1px solid rgba(0, 173, 237, 0.2);
-    border-radius: 12px;
-    padding: 1rem;
-    margin-bottom: 1rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    transition: all 0.3s ease;
-
-    &:hover {
-        background: rgba(0, 173, 237, 0.1);
-        border-color: rgba(0, 173, 237, 0.3);
-        transform: translateX(5px);
-    }
-`;
-
-const LeaderboardRank = styled.div`
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: ${props => {
-        if (props.rank === 1) return 'linear-gradient(135deg, #f59e0b, #d97706)';
-        if (props.rank === 2) return 'linear-gradient(135deg, #94a3b8, #64748b)';
-        if (props.rank === 3) return 'linear-gradient(135deg, #cd7f32, #8b4513)';
-        return 'rgba(0, 173, 237, 0.2)';
-    }};
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 900;
-    color: white;
-    font-size: 1.1rem;
-`;
-
-const LeaderboardInfo = styled.div`
-    flex: 1;
-    margin-left: 1rem;
-`;
-
-const LeaderboardName = styled.div`
-    color: #e0e6ed;
+const TimelineValue = styled.div`
+    color: ${props => props.positive ? '#10b981' : props.negative ? '#ef4444' : '#00adef'};
     font-weight: 700;
-    margin-bottom: 0.25rem;
-`;
-
-const LeaderboardScore = styled.div`
-    color: #94a3b8;
-    font-size: 0.9rem;
-`;
-
-const LeaderboardBadge = styled.div`
-    padding: 0.25rem 0.75rem;
-    background: ${props => props.isYou ? 'rgba(0, 173, 237, 0.2)' : 'rgba(100, 116, 139, 0.2)'};
-    border: 1px solid ${props => props.isYou ? 'rgba(0, 173, 237, 0.5)' : 'rgba(100, 116, 139, 0.3)'};
-    border-radius: 12px;
-    color: ${props => props.isYou ? '#00adef' : '#94a3b8'};
-    font-size: 0.85rem;
-    font-weight: 600;
+    margin-top: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 `;
 
 // ============ ACHIEVEMENTS ============
@@ -957,7 +807,7 @@ const SubmitButton = styled.button`
     }
 `;
 
-// 🆕 AVATAR UPLOAD MODAL STYLES
+// AVATAR UPLOAD MODAL STYLES
 const AvatarUploadSection = styled.div`
     display: flex;
     flex-direction: column;
@@ -1034,12 +884,6 @@ const ErrorText = styled.div`
     margin-top: 0.5rem;
 `;
 
-const SuccessText = styled.div`
-    color: #10b981;
-    font-size: 0.9rem;
-    margin-top: 0.5rem;
-`;
-
 const LoadingContainer = styled.div`
     display: flex;
     justify-content: center;
@@ -1056,16 +900,16 @@ const COLORS = ['#00adef', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
 // ============ COMPONENT ============
 const ProfilePage = () => {
-    const { user, api } = useAuth(); // ✅ Removed setUser dependency
+    const { user, api } = useAuth();
     const toast = useToast();
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [showEditModal, setShowEditModal] = useState(false);
-    const [showAvatarModal, setShowAvatarModal] = useState(false); // 🆕
-    const [avatarPreview, setAvatarPreview] = useState(''); // 🆕
-    const [avatarFile, setAvatarFile] = useState(null); // 🆕
-    const [avatarUploading, setAvatarUploading] = useState(false); // 🆕
-    const [avatarError, setAvatarError] = useState(''); // 🆕
+    const [showAvatarModal, setShowAvatarModal] = useState(false);
+    const [avatarPreview, setAvatarPreview] = useState('');
+    const [avatarFile, setAvatarFile] = useState(null);
+    const [avatarUploading, setAvatarUploading] = useState(false);
+    const [avatarError, setAvatarError] = useState('');
     const [editFormData, setEditFormData] = useState({
         name: '',
         bio: '',
@@ -1087,7 +931,6 @@ const ProfilePage = () => {
                 favoriteSector: user.favoriteSector || 'technology',
                 tradingExperience: user.tradingExperience || 'intermediate'
             });
-            // Set avatar preview if user has one
             if (user.profile?.avatar) {
                 setAvatarPreview(user.profile.avatar);
             }
@@ -1098,11 +941,9 @@ const ProfilePage = () => {
         try {
             setLoading(true);
             
-            // Fetch portfolio stats
             const portfolioRes = await api.get('/portfolio');
             const holdings = portfolioRes.data.holdings || [];
             
-            // Calculate stats
             const totalValue = holdings.reduce((sum, h) => {
                 const price = h.currentPrice || h.current_price || h.price || 0;
                 const shares = h.shares || h.quantity || 0;
@@ -1117,7 +958,6 @@ const ProfilePage = () => {
 
             const totalGain = totalValue - totalCost;
 
-            // Find best and worst performers
             const performers = holdings.map(h => {
                 const currentPrice = h.currentPrice || h.current_price || h.price || 0;
                 const avgPrice = h.averagePrice || h.average_price || h.purchasePrice || currentPrice;
@@ -1131,31 +971,32 @@ const ProfilePage = () => {
             const bestPerformer = performers.sort((a, b) => b.gainPercent - a.gainPercent)[0];
             const worstPerformer = performers.sort((a, b) => a.gainPercent - b.gainPercent)[0];
 
-            // Fetch watchlist
             const watchlistRes = await api.get('/watchlist');
             const watchlist = watchlistRes.data.watchlist || [];
 
-            // Generate mock data for charts
             const portfolioHistory = Array.from({ length: 30 }, (_, i) => ({
                 date: new Date(Date.now() - (29 - i) * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-                value: totalValue * (0.85 + Math.random() * 0.3)
+                value: totalValue * (0.9 + Math.random() * 0.2)
             }));
 
-            const sectorAllocation = [
-                { name: 'Technology', value: totalValue * 0.4 },
-                { name: 'Finance', value: totalValue * 0.25 },
-                { name: 'Healthcare', value: totalValue * 0.2 },
-                { name: 'Energy', value: totalValue * 0.1 },
-                { name: 'Other', value: totalValue * 0.05 },
-            ];
+            const sectorMap = {};
+            holdings.forEach(h => {
+                const sector = h.sector || 'Other';
+                const value = (h.currentPrice || h.price || 0) * (h.shares || h.quantity || 0);
+                sectorMap[sector] = (sectorMap[sector] || 0) + value;
+            });
+
+            const sectorAllocation = Object.entries(sectorMap).map(([name, value]) => ({
+                name,
+                value
+            }));
 
             setStats({
                 portfolioValue: totalValue,
                 holdingsCount: holdings.length,
                 watchlistCount: watchlist.length,
-                predictionsCount: 47,
-                accuracyRate: 92.5,
                 totalGain: totalGain,
+                totalGainPercent: totalCost > 0 ? (totalGain / totalCost) * 100 : 0,
                 bestPerformer: bestPerformer?.symbol || 'N/A',
                 bestPerformerGain: bestPerformer?.gainPercent || 0,
                 worstPerformer: worstPerformer?.symbol || 'N/A',
@@ -1164,9 +1005,7 @@ const ProfilePage = () => {
                 sectorAllocation,
                 level: Math.floor(totalValue / 10000) + 1,
                 xp: (totalValue % 10000),
-                xpToNext: 10000,
-                rankPosition: 42, // Mock
-                totalUsers: 1337 // Mock
+                xpToNext: 10000
             });
 
         } catch (error) {
@@ -1179,23 +1018,19 @@ const ProfilePage = () => {
 
     const handleEditProfile = (e) => {
         e.preventDefault();
-        // In a real app, you'd send this to the backend
         toast.success('Profile updated successfully!', 'Saved');
         setShowEditModal(false);
     };
 
-    // 🆕 AVATAR UPLOAD HANDLERS
     const handleAvatarFileChange = (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
-        // Validate file type
         if (!file.type.startsWith('image/')) {
             setAvatarError('Please select an image file');
             return;
         }
 
-        // Validate file size (5MB max)
         if (file.size > 5 * 1024 * 1024) {
             setAvatarError('Image must be less than 5MB');
             return;
@@ -1204,7 +1039,6 @@ const ProfilePage = () => {
         setAvatarError('');
         setAvatarFile(file);
 
-        // Create preview
         const reader = new FileReader();
         reader.onloadend = () => {
             setAvatarPreview(reader.result);
@@ -1233,7 +1067,6 @@ const ProfilePage = () => {
                 setShowAvatarModal(false);
                 setAvatarFile(null);
                 
-                // Reload page to show new avatar everywhere
                 setTimeout(() => window.location.reload(), 500);
             }
         } catch (error) {
@@ -1261,7 +1094,6 @@ const ProfilePage = () => {
                 toast.success('Profile picture deleted', 'Success');
                 setShowAvatarModal(false);
                 
-                // Reload page to show changes everywhere
                 setTimeout(() => window.location.reload(), 500);
             }
         } catch (error) {
@@ -1298,61 +1130,12 @@ const ProfilePage = () => {
     };
 
     const achievements = [
-        { id: 1, name: 'First Trade', icon: '🎯', desc: 'Made your first trade', unlocked: true },
+        { id: 1, name: 'First Trade', icon: '🎯', desc: 'Made your first trade', unlocked: stats?.holdingsCount > 0 },
         { id: 2, name: 'Portfolio Pro', icon: '💼', desc: 'Portfolio worth $10,000+', unlocked: stats?.portfolioValue > 10000 },
         { id: 3, name: 'Watchlist Master', icon: '👁️', desc: 'Track 10+ stocks', unlocked: stats?.watchlistCount >= 10 },
-        { id: 4, name: 'AI Expert', icon: '🤖', desc: 'Made 50+ predictions', unlocked: stats?.predictionsCount >= 50 },
-        { id: 5, name: 'Diamond Hands', icon: '💎', desc: 'Held position for 30 days', unlocked: false },
-        { id: 6, name: 'Profit Maker', icon: '💰', desc: 'Earned $1,000+ profit', unlocked: stats?.totalGain > 1000 },
-        { id: 7, name: 'Diversifier', icon: '📊', desc: 'Own 5+ different stocks', unlocked: stats?.holdingsCount >= 5 },
-        { id: 8, name: 'Early Bird', icon: '🌅', desc: 'Trade before 10 AM', unlocked: true },
-    ];
-
-    const timeline = [
-        { 
-            date: 'Today', 
-            title: 'Added AAPL to portfolio', 
-            desc: 'Purchased 10 shares',
-            value: '+$1,750',
-            type: 'success',
-            positive: true
-        },
-        { 
-            date: 'Yesterday', 
-            title: 'Portfolio milestone reached', 
-            desc: 'Reached $50,000 portfolio value',
-            value: '$50,000',
-            type: 'warning'
-        },
-        { 
-            date: '2 days ago', 
-            title: 'AI prediction correct', 
-            desc: 'NVDA prediction hit target price',
-            value: '+15.2%',
-            type: 'success',
-            positive: true
-        },
-        { 
-            date: '5 days ago', 
-            title: 'Sold TSLA position', 
-            desc: 'Closed position with profit',
-            value: '+$890',
-            type: 'success',
-            positive: true
-        },
-        { 
-            date: '1 week ago', 
-            title: 'Leveled up!', 
-            desc: 'Reached Level 5 - Expert Trader',
-            type: 'warning'
-        },
-    ];
-
-    const leaderboard = [
-        { rank: 1, name: 'TraderPro2024', score: '156,890 XP', isYou: false },
-        { rank: 2, name: 'StockMaster', score: '142,330 XP', isYou: false },
-        { rank: 3, name: 'BullRunner', score: '138,920 XP', isYou: false },
-        { rank: 42, name: user?.name || 'You', score: `${stats?.xp?.toLocaleString() || 0} XP`, isYou: true },
+        { id: 4, name: 'Diversifier', icon: '📊', desc: 'Own 5+ different stocks', unlocked: stats?.holdingsCount >= 5 },
+        { id: 5, name: 'Profit Maker', icon: '💰', desc: 'Earned $1,000+ profit', unlocked: stats?.totalGain > 1000 },
+        { id: 6, name: 'Big Gains', icon: '💎', desc: 'Earned $10,000+ profit', unlocked: stats?.totalGain > 10000 },
     ];
 
     if (loading) {
@@ -1371,10 +1154,9 @@ const ProfilePage = () => {
         <PageContainer>
             <Header>
                 <Title>My Profile</Title>
-                <Subtitle>Your legendary trading journey</Subtitle>
+                <Subtitle>Your trading journey</Subtitle>
             </Header>
 
-            {/* PROFILE HEADER */}
             <ProfileHeader>
                 <ProfileTop>
                     <AvatarSection>
@@ -1433,7 +1215,6 @@ const ProfilePage = () => {
                     </UserInfo>
                 </ProfileTop>
 
-                {/* LEVEL SYSTEM */}
                 <LevelSection>
                     <LevelHeader>
                         <LevelInfo>
@@ -1456,7 +1237,6 @@ const ProfilePage = () => {
                 </LevelSection>
             </ProfileHeader>
 
-            {/* STATS GRID */}
             <StatsGrid>
                 <StatCard delay={0}>
                     <StatIcon>
@@ -1468,13 +1248,13 @@ const ProfilePage = () => {
                     </StatValue>
                 </StatCard>
 
-                <StatCard delay={0.1} variant="success">
-                    <StatIcon variant="success">
-                        <TrendingUp size={24} />
+                <StatCard delay={0.1} variant={stats?.totalGain >= 0 ? "success" : "danger"}>
+                    <StatIcon variant={stats?.totalGain >= 0 ? "success" : "danger"}>
+                        {stats?.totalGain >= 0 ? <TrendingUp size={24} /> : <TrendingDown size={24} />}
                     </StatIcon>
                     <StatLabel>Total Gain</StatLabel>
-                    <StatValue variant="success">
-                        +${stats?.totalGain?.toLocaleString(undefined, { maximumFractionDigits: 0 }) || '0'}
+                    <StatValue variant={stats?.totalGain >= 0 ? "success" : "danger"}>
+                        {stats?.totalGain >= 0 ? '+' : ''}${stats?.totalGain?.toLocaleString(undefined, { maximumFractionDigits: 0 }) || '0'}
                     </StatValue>
                 </StatCard>
 
@@ -1494,28 +1274,27 @@ const ProfilePage = () => {
                     <StatValue>{stats?.watchlistCount || 0}</StatValue>
                 </StatCard>
 
-                <StatCard delay={0.4} variant="warning">
-                    <StatIcon variant="warning">
-                        <Brain size={24} />
+                <StatCard delay={0.4} variant={stats?.totalGainPercent >= 0 ? "success" : "danger"}>
+                    <StatIcon variant={stats?.totalGainPercent >= 0 ? "success" : "danger"}>
+                        <Percent size={24} />
                     </StatIcon>
-                    <StatLabel>AI Predictions</StatLabel>
-                    <StatValue variant="warning">{stats?.predictionsCount || 0}</StatValue>
+                    <StatLabel>Total Return %</StatLabel>
+                    <StatValue variant={stats?.totalGainPercent >= 0 ? "success" : "danger"}>
+                        {stats?.totalGainPercent >= 0 ? '+' : ''}{stats?.totalGainPercent?.toFixed(2) || '0'}%
+                    </StatValue>
                 </StatCard>
 
-                <StatCard delay={0.5} variant="success">
-                    <StatIcon variant="success">
-                        <Target size={24} />
+                <StatCard delay={0.5}>
+                    <StatIcon>
+                        <Activity size={24} />
                     </StatIcon>
-                    <StatLabel>Accuracy Rate</StatLabel>
-                    <StatValue variant="success">{stats?.accuracyRate?.toFixed(1) || '0'}%</StatValue>
+                    <StatLabel>Sectors</StatLabel>
+                    <StatValue>{stats?.sectorAllocation?.length || 0}</StatValue>
                 </StatCard>
             </StatsGrid>
 
-            {/* TWO COLUMN LAYOUT */}
             <TwoColumnGrid>
-                {/* LEFT COLUMN - CHARTS & TIMELINE */}
                 <div>
-                    {/* PORTFOLIO HISTORY CHART */}
                     <ChartSection>
                         <SectionTitle>
                             <BarChart3 size={28} />
@@ -1551,7 +1330,6 @@ const ProfilePage = () => {
                         </ResponsiveContainer>
                     </ChartSection>
 
-                    {/* SECTOR ALLOCATION */}
                     <ChartSection>
                         <SectionTitle>
                             <PieChart size={28} />
@@ -1584,40 +1362,9 @@ const ProfilePage = () => {
                             </RechartsPie>
                         </ResponsiveContainer>
                     </ChartSection>
-
-                    {/* TRADING TIMELINE */}
-                    <ChartSection>
-                        <SectionTitle>
-                            <Clock size={28} />
-                            Trading Timeline
-                        </SectionTitle>
-                        <TimelineContainer>
-                            {timeline.map((item, index) => (
-                                <TimelineItem key={index} type={item.type} index={index}>
-                                    <TimelineDate>
-                                        <Calendar size={14} />
-                                        {item.date}
-                                    </TimelineDate>
-                                    <TimelineContent>
-                                        <TimelineTitle>{item.title}</TimelineTitle>
-                                        <TimelineDesc>{item.desc}</TimelineDesc>
-                                        {item.value && (
-                                            <TimelineValue positive={item.positive} negative={item.negative}>
-                                                {item.positive && <ArrowUp size={16} />}
-                                                {item.negative && <TrendingDown size={16} />}
-                                                {item.value}
-                                            </TimelineValue>
-                                        )}
-                                    </TimelineContent>
-                                </TimelineItem>
-                            ))}
-                        </TimelineContainer>
-                    </ChartSection>
                 </div>
 
-                {/* RIGHT COLUMN - QUICK STATS & LEADERBOARD */}
                 <div>
-                    {/* QUICK STATS DASHBOARD */}
                     <ChartSection>
                         <SectionTitle>
                             <Zap size={28} />
@@ -1643,45 +1390,22 @@ const ProfilePage = () => {
                             </QuickStatCard>
 
                             <QuickStatCard>
-                                <QuickStatLabel>Favorite Time</QuickStatLabel>
-                                <QuickStatValue>9:30 AM</QuickStatValue>
+                                <QuickStatLabel>Total Gain %</QuickStatLabel>
+                                <QuickStatValue>
+                                    {stats?.totalGainPercent >= 0 ? '+' : ''}
+                                    {stats?.totalGainPercent?.toFixed(2) || 0}%
+                                </QuickStatValue>
                             </QuickStatCard>
 
                             <QuickStatCard>
-                                <QuickStatLabel>Win Rate</QuickStatLabel>
-                                <QuickStatValue>78%</QuickStatValue>
+                                <QuickStatLabel>Holdings Count</QuickStatLabel>
+                                <QuickStatValue>{stats?.holdingsCount || 0}</QuickStatValue>
                             </QuickStatCard>
                         </QuickStatsGrid>
-                    </ChartSection>
-
-                    {/* LEADERBOARD */}
-                    <ChartSection>
-                        <SectionTitle>
-                            <Users size={28} />
-                            Leaderboard
-                        </SectionTitle>
-                        <LeaderboardSection>
-                            {leaderboard.map((entry, index) => (
-                                <LeaderboardCard key={index}>
-                                    <LeaderboardRank rank={entry.rank}>
-                                        {entry.rank <= 3 ? <Medal size={20} /> : entry.rank}
-                                    </LeaderboardRank>
-                                    <LeaderboardInfo>
-                                        <LeaderboardName>{entry.name}</LeaderboardName>
-                                        <LeaderboardScore>{entry.score}</LeaderboardScore>
-                                    </LeaderboardInfo>
-                                    {entry.isYou && <LeaderboardBadge isYou>YOU</LeaderboardBadge>}
-                                </LeaderboardCard>
-                            ))}
-                        </LeaderboardSection>
-                        <div style={{ marginTop: '1rem', color: '#94a3b8', fontSize: '0.9rem', textAlign: 'center' }}>
-                            Ranked #{stats?.rankPosition || 0} of {stats?.totalUsers?.toLocaleString() || 0} traders
-                        </div>
                     </ChartSection>
                 </div>
             </TwoColumnGrid>
 
-            {/* ACHIEVEMENTS */}
             <AchievementsSection>
                 <SectionTitle>
                     <Trophy size={28} />
@@ -1706,7 +1430,6 @@ const ProfilePage = () => {
                 </AchievementsGrid>
             </AchievementsSection>
 
-            {/* 🆕 AVATAR UPLOAD MODAL */}
             {showAvatarModal && (
                 <Modal onClick={() => setShowAvatarModal(false)}>
                     <ModalContent onClick={(e) => e.stopPropagation()}>
@@ -1769,7 +1492,6 @@ const ProfilePage = () => {
                 </Modal>
             )}
 
-            {/* EDIT PROFILE MODAL */}
             {showEditModal && (
                 <Modal onClick={() => setShowEditModal(false)}>
                     <ModalContent onClick={(e) => e.stopPropagation()}>
