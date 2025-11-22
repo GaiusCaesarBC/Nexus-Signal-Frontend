@@ -1,6 +1,7 @@
 // client/src/pages/PredictionsPage.js - COMPLETE WORKING VERSION
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
 import styled, { keyframes } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
@@ -928,6 +929,7 @@ const ShareOption = styled.button`
 const PredictionsPage = () => {
     const { api } = useAuth();
     const toast = useToast();
+    const navigate = useNavigate(); 
     const [activeTab, setActiveTab] = useState('predict');
     const [symbol, setSymbol] = useState('');
     const [days, setDays] = useState('7');
@@ -937,12 +939,22 @@ const PredictionsPage = () => {
     const [particles, setParticles] = useState([]);
     const [showShareModal, setShowShareModal] = useState(false);
     const [savedPredictions, setSavedPredictions] = useState([]);
+    const [userStats, setUserStats] = useState(null);
 
     const [platformStats, setPlatformStats] = useState({
         accuracy: 0,
         totalPredictions: 0,
         loading: true
     });
+
+const fetchUserStats = async () => {
+    try {
+        const response = await api.get('/predictions/stats');
+        setUserStats(response.data);
+    } catch (error) {
+        console.error('Error fetching stats:', error);
+    }
+};
 
     useEffect(() => {
         const fetchPlatformStats = async () => {
@@ -1182,35 +1194,34 @@ const PredictionsPage = () => {
             {activeTab === 'predict' && (
                 <>
                     <StatsBanner>
-                        <StatCard delay={0}>
-                            <StatIcon gradient="linear-gradient(135deg, #8b5cf6, #6366f1)">
-                                <Trophy size={32} />
-                            </StatIcon>
-                            <StatValue>
-                                {platformStats.loading ? (
-                                    <RefreshCw size={24} style={{ animation: 'spin 1s linear infinite' }} />
-                                ) : (
-                                    `${platformStats.accuracy.toFixed(1)}%`
-                                )}
-                            </StatValue>
-                            <StatLabel>Accuracy Rate</StatLabel>
-                        </StatCard>
                         
-                        <StatCard delay={0.1}>
-                            <StatIcon gradient="linear-gradient(135deg, #10b981, #059669)">
-                                <ArrowUpDown size={32} />
-                            </StatIcon>
-                            <StatValue>
-                                {platformStats.loading ? (
-                                    <RefreshCw size={24} style={{ animation: 'spin 1s linear infinite' }} />
-                                ) : (
-                                    platformStats.totalPredictions >= 1000
-                                        ? `${(platformStats.totalPredictions / 1000).toFixed(1)}K+`
-                                        : platformStats.totalPredictions
-                                )}
-                            </StatValue>
-                            <StatLabel>Predictions Made</StatLabel>
-                        </StatCard>
+                        <StatCard delay={0}>
+    <StatIcon gradient="linear-gradient(135deg, #8b5cf6, #6d28d9)">
+        <Trophy size={32} />
+    </StatIcon>
+    <StatLabel>ACCURACY RATE</StatLabel>
+    <StatValue>
+        {userStats ? `${userStats.accuracy?.toFixed(1)}%` : '0.0%'}
+    </StatValue>
+    <div style={{ color: '#94a3b8', fontSize: '0.9rem', marginTop: '0.5rem' }}>
+        {userStats 
+            ? `${userStats.correctPredictions} / ${userStats.totalPredictions} correct`
+            : 'No predictions yet'
+        }
+    </div>
+</StatCard>
+                       <StatCard delay={0.1}>
+    <StatIcon gradient="linear-gradient(135deg, #10b981, #059669)">
+        <TrendingUp size={32} />
+    </StatIcon>
+    <StatLabel>PREDICTIONS MADE</StatLabel>
+    <StatValue>
+        {userStats?.totalPredictions || platformStats?.totalPredictions || 0}
+    </StatValue>
+    <div style={{ color: '#94a3b8', fontSize: '0.9rem', marginTop: '0.5rem' }}>
+        Total predictions
+    </div>
+</StatCard>
                         
                         <StatCard delay={0.2}>
                             <StatIcon gradient="linear-gradient(135deg, #f59e0b, #d97706)">
