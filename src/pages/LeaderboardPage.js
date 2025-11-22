@@ -1,8 +1,8 @@
-// client/src/pages/LeaderboardPage.js - EPIC LEADERBOARD & SOCIAL (UPDATED)
+// client/src/pages/LeaderboardPage.js - EPIC LEADERBOARD & SOCIAL (UPDATED WITH AVATARS)
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import styled, { keyframes } from 'styled-components';
+import styled, { keyframes, css } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import {
@@ -261,9 +261,11 @@ const RefreshButton = styled.button`
         cursor: not-allowed;
     }
 
-    svg {
-        animation: ${props => props.$loading ? spin : 'none'} 1s linear infinite;
-    }
+   svg {
+    ${props => props.$loading && css`
+        animation: ${spin} 1s linear infinite;
+    `}
+}
 `;
 
 // ============ LEADERBOARD ============
@@ -314,9 +316,9 @@ const LeaderCard = styled.div`
         }};
     }
 
-    ${props => props.$rank <= 3 && `
-        animation: ${glow} 3s ease-in-out infinite;
-    `}
+    ${props => props.$rank <= 3 && css`
+    animation: ${glow} 3s ease-in-out infinite;
+`}
 
     @media (max-width: 1200px) {
         grid-template-columns: 60px 50px 1fr 120px 100px;
@@ -364,9 +366,9 @@ const RankBadge = styled.div`
     }};
     position: relative;
 
-    ${props => props.$rank === 1 && `
-        animation: ${pulse} 2s ease-in-out infinite;
-    `}
+   ${props => props.$rank === 1 && css`
+    animation: ${pulse} 2s ease-in-out infinite;
+`}
 `;
 
 const RankIcon = styled.div`
@@ -375,14 +377,12 @@ const RankIcon = styled.div`
     right: -5px;
 `;
 
+// ✅ UPDATED Avatar Component
 const Avatar = styled.div`
     width: 50px;
     height: 50px;
     border-radius: 50%;
-    background: ${props => props.$src ? 
-        `url(${props.$src}) center/cover` : 
-        'linear-gradient(135deg, #ffd700, #ffed4e)'
-    };
+    background: ${props => props.$hasImage ? 'transparent' : 'linear-gradient(135deg, #ffd700, #ffed4e)'};
     border: 2px solid rgba(255, 215, 0, 0.5);
     display: flex;
     align-items: center;
@@ -390,6 +390,21 @@ const Avatar = styled.div`
     color: #0a0e27;
     font-weight: 900;
     font-size: 1.2rem;
+    position: relative;
+    overflow: hidden;
+`;
+
+const AvatarImage = styled.img`
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    position: absolute;
+    inset: 0;
+`;
+
+const AvatarInitials = styled.div`
+    position: relative;
+    z-index: 0;
 `;
 
 const UserInfo = styled.div`
@@ -567,26 +582,26 @@ const LeaderboardPage = () => {
     const fetchLeaderboard = async () => {
         setLoading(true);
         try {
-            // ✅ UPDATED: Use new leaderboard endpoint
-            const response = await api.get(`/users/leaderboard?sortBy=${sortBy}&limit=100`);
+            const response = await api.get(`/social/leaderboard?sortBy=${sortBy}&limit=100`);
             console.log('Leaderboard:', response.data);
             
-            // ✅ UPDATED: Map the response to match your UI expectations
-            const mappedData = response.data.map((trader, index) => ({
+            const mappedData = (response.data || []).map((trader, index) => ({
                 rank: index + 1,
-                userId: trader._id,
-                displayName: trader.profile?.displayName || trader.username,
+                userId: trader.userId || trader._id,
+                displayName: trader.displayName || trader.profile?.displayName || trader.username,
                 username: trader.username,
-                avatar: trader.profile?.avatar,
-                badges: trader.profile?.badges || [],
-                totalReturn: trader.stats?.totalReturnPercent || 0,
-                winRate: trader.stats?.winRate || 0,
-                totalTrades: trader.stats?.totalTrades || 0,
+                avatar: trader.avatar || trader.profile?.avatar,
+                badges: trader.badges || trader.profile?.badges || [],
+                totalReturn: trader.totalReturn || trader.stats?.totalReturnPercent || 0,
+                winRate: trader.winRate || trader.stats?.winRate || 0,
+                totalTrades: trader.totalTrades || trader.stats?.totalTrades || 0,
                 followersCount: trader.social?.followersCount || 0,
             }));
             
             setLeaderboard(mappedData);
-            toast.success(`Loaded ${mappedData.length} traders`, 'Leaderboard Updated');
+            if (mappedData.length > 0) {
+                toast.success(`Loaded ${mappedData.length} traders`, 'Leaderboard Updated');
+            }
         } catch (error) {
             console.error('Error fetching leaderboard:', error);
             toast.error('Failed to load leaderboard', 'Error');
@@ -598,8 +613,7 @@ const LeaderboardPage = () => {
 
     const fetchFollowing = async () => {
         try {
-            // ✅ UPDATED: Get current user's full profile
-            const response = await api.get('/users/me/full');
+            const response = await api.get('/auth/me');
             if (response.data.social?.following) {
                 setFollowing(new Set(response.data.social.following.map(id => id.toString())));
             }
@@ -618,15 +632,14 @@ const LeaderboardPage = () => {
         try {
             const isFollowing = following.has(userId);
             
-            // ✅ UPDATED: Use new follow/unfollow endpoints
             if (isFollowing) {
-                await api.delete(`/users/follow/${userId}`);
+                await api.post(`/social/unfollow/${userId}`);
                 const newFollowing = new Set(following);
                 newFollowing.delete(userId);
                 setFollowing(newFollowing);
                 toast.success('Unfollowed user', 'Success');
             } else {
-                await api.post(`/users/follow/${userId}`);
+                await api.post(`/social/follow/${userId}`);
                 const newFollowing = new Set(following);
                 newFollowing.add(userId);
                 setFollowing(newFollowing);
@@ -639,7 +652,6 @@ const LeaderboardPage = () => {
     };
 
     const handleCardClick = (trader) => {
-        // Navigate to trader's profile using username
         navigate(`/trader/${trader.username}`);
     };
 
@@ -648,6 +660,12 @@ const LeaderboardPage = () => {
         if (rank === 2) return <Medal size={24} color="#c0c0c0" />;
         if (rank === 3) return <Award size={24} color="#cd7f32" />;
         return null;
+    };
+
+    // ✅ Helper to get initials
+    const getInitials = (trader) => {
+        const name = trader.displayName || trader.username || 'T';
+        return name.charAt(0).toUpperCase();
     };
 
     const filteredLeaderboard = leaderboard.filter(trader => {
@@ -783,8 +801,17 @@ const LeaderboardPage = () => {
                                     )}
                                 </RankBadge>
 
-                                <Avatar $src={trader.avatar}>
-                                    {!trader.avatar && trader.displayName.charAt(0).toUpperCase()}
+                                {/* ✅ UPDATED Avatar Display */}
+                                <Avatar $hasImage={!!trader.avatar}>
+                                    {trader.avatar ? (
+                                        <AvatarImage 
+                                            src={trader.avatar} 
+                                            alt={trader.displayName}
+                                            onError={(e) => e.target.style.display = 'none'}
+                                        />
+                                    ) : (
+                                        <AvatarInitials>{getInitials(trader)}</AvatarInitials>
+                                    )}
                                 </Avatar>
 
                                 <UserInfo>

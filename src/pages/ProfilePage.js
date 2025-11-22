@@ -1,4 +1,5 @@
 // client/src/pages/ProfilePage.js - THE MOST LEGENDARY PROFILE PAGE EVER - ULTIMATE EDITION
+// NOW WITH REAL AVATAR UPLOAD! 📸
 
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
@@ -10,7 +11,8 @@ import {
     Activity, PieChart, Eye, Brain, Trophy, Flame,
     Target, ArrowUpRight, Sparkles, Clock, BarChart3,
     TrendingDown, ChevronRight, Medal, Users, Rocket,
-    X, Check, ArrowUp, ChevronUp, Briefcase, Link as LinkIcon
+    X, Check, ArrowUp, ChevronUp, Briefcase, Link as LinkIcon,
+    Upload, Trash2
 } from 'lucide-react';
 import {
     LineChart, Line, AreaChart, Area, BarChart, Bar,
@@ -145,7 +147,7 @@ const Avatar = styled.div`
     width: 150px;
     height: 150px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #00adef 0%, #00ff88 100%);
+    background: ${props => props.$hasImage ? 'transparent' : 'linear-gradient(135deg, #00adef 0%, #00ff88 100%)'};
     display: flex;
     align-items: center;
     justify-content: center;
@@ -167,7 +169,22 @@ const Avatar = styled.div`
         background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.2) 50%, transparent 70%);
         background-size: 200% 200%;
         animation: ${shimmer} 3s linear infinite;
+        pointer-events: none;
     }
+`;
+
+const AvatarImage = styled.img`
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+`;
+
+const AvatarInitials = styled.div`
+    position: relative;
+    z-index: 0;
 `;
 
 const EditAvatarButton = styled.button`
@@ -185,6 +202,7 @@ const EditAvatarButton = styled.button`
     align-items: center;
     justify-content: center;
     transition: all 0.3s ease;
+    z-index: 10;
 
     &:hover {
         background: #00adef;
@@ -197,6 +215,7 @@ const BadgeContainer = styled.div`
     top: -10px;
     right: -10px;
     animation: ${float} 3s ease-in-out infinite;
+    z-index: 10;
 `;
 
 const Badge = styled.div`
@@ -737,32 +756,32 @@ const AchievementsGrid = styled.div`
 `;
 
 const AchievementBadge = styled.div`
-    background: ${props => props.unlocked ? 
+    background: ${props => props.$unlocked ? 
         'linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(217, 119, 6, 0.2) 100%)' : 
         'rgba(30, 41, 59, 0.5)'
     };
-    border: 2px solid ${props => props.unlocked ? 'rgba(245, 158, 11, 0.5)' : 'rgba(100, 116, 139, 0.3)'};
+    border: 2px solid ${props => props.$unlocked ? 'rgba(245, 158, 11, 0.5)' : 'rgba(100, 116, 139, 0.3)'};
     border-radius: 12px;
     padding: 1.5rem;
     text-align: center;
     transition: all 0.3s ease;
     cursor: pointer;
-    opacity: ${props => props.unlocked ? 1 : 0.5};
+    opacity: ${props => props.$unlocked ? 1 : 0.5};
 
     &:hover {
-        transform: ${props => props.unlocked ? 'translateY(-5px) scale(1.05)' : 'none'};
-        box-shadow: ${props => props.unlocked ? '0 10px 30px rgba(245, 158, 11, 0.4)' : 'none'};
+        transform: ${props => props.$unlocked ? 'translateY(-5px) scale(1.05)' : 'none'};
+        box-shadow: ${props => props.$unlocked ? '0 10px 30px rgba(245, 158, 11, 0.4)' : 'none'};
     }
 `;
 
 const AchievementIcon = styled.div`
     font-size: 3rem;
     margin-bottom: 0.5rem;
-    animation: ${props => props.unlocked ? pulse : 'none'} 2s ease-in-out infinite;
+    animation: ${props => props.$unlocked ? pulse : 'none'} 2s ease-in-out infinite;
 `;
 
 const AchievementName = styled.div`
-    color: ${props => props.unlocked ? '#f59e0b' : '#64748b'};
+    color: ${props => props.$unlocked ? '#f59e0b' : '#64748b'};
     font-weight: 700;
     margin-bottom: 0.25rem;
 `;
@@ -938,6 +957,89 @@ const SubmitButton = styled.button`
     }
 `;
 
+// 🆕 AVATAR UPLOAD MODAL STYLES
+const AvatarUploadSection = styled.div`
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+`;
+
+const AvatarPreview = styled.div`
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background: ${props => props.$hasImage ? 'transparent' : 'linear-gradient(135deg, #00adef 0%, #00ff88 100%)'};
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 4rem;
+    font-weight: 900;
+    color: white;
+    border: 3px solid rgba(0, 173, 237, 0.5);
+    overflow: hidden;
+    position: relative;
+`;
+
+const AvatarPreviewImage = styled.img`
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+`;
+
+const FileInput = styled.input`
+    display: none;
+`;
+
+const UploadButton = styled.label`
+    padding: 0.75rem 1.5rem;
+    background: linear-gradient(135deg, #00adef 0%, #0088cc 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+
+    &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(0, 173, 237, 0.4);
+    }
+`;
+
+const DeleteAvatarButton = styled.button`
+    padding: 0.75rem 1.5rem;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+
+    &:hover {
+        background: rgba(239, 68, 68, 0.2);
+    }
+`;
+
+const ErrorText = styled.div`
+    color: #ef4444;
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+`;
+
+const SuccessText = styled.div`
+    color: #10b981;
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+`;
+
 const LoadingContainer = styled.div`
     display: flex;
     justify-content: center;
@@ -954,11 +1056,16 @@ const COLORS = ['#00adef', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
 // ============ COMPONENT ============
 const ProfilePage = () => {
-    const { user, api } = useAuth();
+    const { user, api } = useAuth(); // ✅ Removed setUser dependency
     const toast = useToast();
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [showEditModal, setShowEditModal] = useState(false);
+    const [showAvatarModal, setShowAvatarModal] = useState(false); // 🆕
+    const [avatarPreview, setAvatarPreview] = useState(''); // 🆕
+    const [avatarFile, setAvatarFile] = useState(null); // 🆕
+    const [avatarUploading, setAvatarUploading] = useState(false); // 🆕
+    const [avatarError, setAvatarError] = useState(''); // 🆕
     const [editFormData, setEditFormData] = useState({
         name: '',
         bio: '',
@@ -980,6 +1087,10 @@ const ProfilePage = () => {
                 favoriteSector: user.favoriteSector || 'technology',
                 tradingExperience: user.tradingExperience || 'intermediate'
             });
+            // Set avatar preview if user has one
+            if (user.profile?.avatar) {
+                setAvatarPreview(user.profile.avatar);
+            }
         }
     }, [user]);
 
@@ -1071,6 +1182,95 @@ const ProfilePage = () => {
         // In a real app, you'd send this to the backend
         toast.success('Profile updated successfully!', 'Saved');
         setShowEditModal(false);
+    };
+
+    // 🆕 AVATAR UPLOAD HANDLERS
+    const handleAvatarFileChange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            setAvatarError('Please select an image file');
+            return;
+        }
+
+        // Validate file size (5MB max)
+        if (file.size > 5 * 1024 * 1024) {
+            setAvatarError('Image must be less than 5MB');
+            return;
+        }
+
+        setAvatarError('');
+        setAvatarFile(file);
+
+        // Create preview
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setAvatarPreview(reader.result);
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleAvatarUpload = async () => {
+        if (!avatarFile) return;
+
+        setAvatarUploading(true);
+        setAvatarError('');
+
+        try {
+            const formData = new FormData();
+            formData.append('avatar', avatarFile);
+
+            const response = await api.post('/auth/upload-avatar', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+
+            if (response.data.success) {
+                toast.success('Profile picture updated!', 'Success');
+                setShowAvatarModal(false);
+                setAvatarFile(null);
+                
+                // Reload page to show new avatar everywhere
+                setTimeout(() => window.location.reload(), 500);
+            }
+        } catch (error) {
+            console.error('Error uploading avatar:', error);
+            setAvatarError(error.response?.data?.msg || 'Failed to upload avatar');
+            toast.error('Failed to upload avatar', 'Error');
+        } finally {
+            setAvatarUploading(false);
+        }
+    };
+
+    const handleAvatarDelete = async () => {
+        if (!window.confirm('Are you sure you want to delete your profile picture?')) {
+            return;
+        }
+
+        setAvatarUploading(true);
+        setAvatarError('');
+
+        try {
+            const response = await api.delete('/auth/delete-avatar');
+
+            if (response.data.success) {
+                setAvatarPreview('');
+                toast.success('Profile picture deleted', 'Success');
+                setShowAvatarModal(false);
+                
+                // Reload page to show changes everywhere
+                setTimeout(() => window.location.reload(), 500);
+            }
+        } catch (error) {
+            console.error('Error deleting avatar:', error);
+            setAvatarError(error.response?.data?.msg || 'Failed to delete avatar');
+            toast.error('Failed to delete avatar', 'Error');
+        } finally {
+            setAvatarUploading(false);
+        }
     };
 
     const getUserInitials = () => {
@@ -1178,15 +1378,22 @@ const ProfilePage = () => {
             <ProfileHeader>
                 <ProfileTop>
                     <AvatarSection>
-                        <Avatar>
-                            {getUserInitials()}
+                        <Avatar $hasImage={!!user?.profile?.avatar}>
+                            {user?.profile?.avatar ? (
+                                <AvatarImage 
+                                    src={user.profile.avatar} 
+                                    alt={user?.name || 'User avatar'}
+                                />
+                            ) : (
+                                <AvatarInitials>{getUserInitials()}</AvatarInitials>
+                            )}
                         </Avatar>
                         <BadgeContainer>
                             <Badge>
                                 <Crown size={24} color="white" />
                             </Badge>
                         </BadgeContainer>
-                        <EditAvatarButton onClick={() => toast.info('Avatar upload coming soon!', 'Coming Soon')}>
+                        <EditAvatarButton onClick={() => setShowAvatarModal(true)}>
                             <Camera size={20} />
                         </EditAvatarButton>
                     </AvatarSection>
@@ -1484,13 +1691,13 @@ const ProfilePage = () => {
                     {achievements.map(achievement => (
                         <AchievementBadge 
                             key={achievement.id} 
-                            unlocked={achievement.unlocked}
+                            $unlocked={achievement.unlocked}
                             onClick={() => achievement.unlocked && toast.success(`Achievement unlocked: ${achievement.name}!`, 'Congrats! 🎉')}
                         >
-                            <AchievementIcon unlocked={achievement.unlocked}>
+                            <AchievementIcon $unlocked={achievement.unlocked}>
                                 {achievement.icon}
                             </AchievementIcon>
-                            <AchievementName unlocked={achievement.unlocked}>
+                            <AchievementName $unlocked={achievement.unlocked}>
                                 {achievement.name}
                             </AchievementName>
                             <AchievementDesc>{achievement.desc}</AchievementDesc>
@@ -1498,6 +1705,69 @@ const ProfilePage = () => {
                     ))}
                 </AchievementsGrid>
             </AchievementsSection>
+
+            {/* 🆕 AVATAR UPLOAD MODAL */}
+            {showAvatarModal && (
+                <Modal onClick={() => setShowAvatarModal(false)}>
+                    <ModalContent onClick={(e) => e.stopPropagation()}>
+                        <CloseButton onClick={() => setShowAvatarModal(false)}>
+                            <X size={20} />
+                        </CloseButton>
+                        <ModalTitle>Profile Picture</ModalTitle>
+                        
+                        <AvatarUploadSection>
+                            <AvatarPreview $hasImage={!!avatarPreview}>
+                                {avatarPreview ? (
+                                    <AvatarPreviewImage src={avatarPreview} alt="Preview" />
+                                ) : (
+                                    <div>{getUserInitials()}</div>
+                                )}
+                            </AvatarPreview>
+
+                            <FileInput
+                                type="file"
+                                id="avatar-upload"
+                                accept="image/*"
+                                onChange={handleAvatarFileChange}
+                            />
+
+                            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+                                <UploadButton htmlFor="avatar-upload">
+                                    <Upload size={18} />
+                                    {avatarFile ? 'Choose Different' : 'Choose Photo'}
+                                </UploadButton>
+
+                                {avatarFile && (
+                                    <ActionButton 
+                                        onClick={handleAvatarUpload}
+                                        disabled={avatarUploading}
+                                    >
+                                        <Check size={18} />
+                                        {avatarUploading ? 'Uploading...' : 'Upload'}
+                                    </ActionButton>
+                                )}
+
+                                {user?.profile?.avatar && !avatarFile && (
+                                    <DeleteAvatarButton 
+                                        onClick={handleAvatarDelete}
+                                        disabled={avatarUploading}
+                                    >
+                                        <Trash2 size={18} />
+                                        {avatarUploading ? 'Deleting...' : 'Delete'}
+                                    </DeleteAvatarButton>
+                                )}
+                            </div>
+
+                            {avatarError && <ErrorText>{avatarError}</ErrorText>}
+                            
+                            <div style={{ color: '#94a3b8', fontSize: '0.85rem', textAlign: 'center' }}>
+                                Max file size: 5MB<br/>
+                                Accepted formats: JPG, PNG, GIF, WebP
+                            </div>
+                        </AvatarUploadSection>
+                    </ModalContent>
+                </Modal>
+            )}
 
             {/* EDIT PROFILE MODAL */}
             {showEditModal && (
