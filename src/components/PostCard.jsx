@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom'; // ✅ ADD THIS
 import styled, { keyframes } from 'styled-components';
 import { 
   Heart, MessageCircle, TrendingUp, Trophy, Target, 
@@ -73,7 +74,7 @@ const Avatar = styled.div`
   justify-content: center;
   color: #0a0e27;
   font-weight: 900;
-  font-size: 1.2rem;
+  font-size: ${props => props.$src ? '0' : '1.2rem'}; // ✅ Hide text when image exists
   flex-shrink: 0;
   transition: all 0.3s ease;
   cursor: pointer;
@@ -84,16 +85,6 @@ const Avatar = styled.div`
     transform: scale(1.1);
     box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
   }
-
-  /* Show initials only when there's no image */
-  ${props => props.$src && `
-    &::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: url(${props.$src}) center/cover;
-    }
-  `}
 `;
 
 const AvatarImage = styled.img`
@@ -121,6 +112,12 @@ const DisplayName = styled.div`
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  cursor: pointer; // ✅ ADD THIS
+  transition: color 0.2s ease; // ✅ ADD THIS
+
+  &:hover {
+    color: #ffd700; // ✅ ADD THIS
+  }
 `;
 
 const Username = styled.div`
@@ -404,6 +401,7 @@ const CommentAvatar = styled.div`
   justify-content: center;
   color: #0a0e27;
   font-weight: 900;
+  font-size: ${props => props.$src ? '0' : '0.9rem'}; // ✅ Hide text when image exists
   flex-shrink: 0;
   position: relative;
   overflow: hidden;
@@ -426,7 +424,6 @@ const CommentAvatarImage = styled.img`
 const CommentAvatarInitials = styled.div`
   position: relative;
   z-index: 1;
-  font-size: 0.9rem;
 `;
 
 const CommentContent = styled.div`
@@ -442,6 +439,12 @@ const CommentHeader = styled.div`
 const CommentAuthor = styled.span`
   font-weight: 700;
   color: #e0e6ed;
+  cursor: pointer; // ✅ ADD THIS
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: #ffd700;
+  }
 `;
 
 const CommentTime = styled.span`
@@ -506,6 +509,7 @@ const CharCounter = styled.div`
 `;
 
 const PostCard = ({ post, onLike, onComment, onDelete }) => {
+  const navigate = useNavigate(); // ✅ ADD THIS
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [showMenu, setShowMenu] = useState(false);
@@ -530,6 +534,11 @@ const PostCard = ({ post, onLike, onComment, onDelete }) => {
       onComment(post._id, commentText);
       setCommentText('');
     }
+  };
+
+  // ✅ ADD THIS - Navigate to profile
+  const handleProfileClick = (username) => {
+    navigate(`/trader/${username}`);
   };
 
   // Helper to get user initials
@@ -607,13 +616,13 @@ const PostCard = ({ post, onLike, onComment, onDelete }) => {
       <PostHeader>
         <HeaderTop>
           <UserSection>
-            <Avatar>
+            {/* ✅ UPDATED: Clickable Avatar */}
+            <Avatar onClick={() => handleProfileClick(post.user.username)}>
               {post.user.profile?.avatar ? (
                 <AvatarImage 
                   src={post.user.profile.avatar} 
                   alt={post.user.profile?.displayName || post.user.username}
                   onError={(e) => {
-                    // Hide image on error and show initials
                     e.target.style.display = 'none';
                   }}
                 />
@@ -625,7 +634,8 @@ const PostCard = ({ post, onLike, onComment, onDelete }) => {
             </Avatar>
             
             <UserInfo>
-              <DisplayName>
+              {/* ✅ UPDATED: Clickable Display Name */}
+              <DisplayName onClick={() => handleProfileClick(post.user.username)}>
                 {post.user.profile?.displayName || post.user.username}
                 {post.user.stats?.rank === 1 && <Crown size={16} color="#ffd700" />}
               </DisplayName>
@@ -702,7 +712,8 @@ const PostCard = ({ post, onLike, onComment, onDelete }) => {
           <CommentsList>
             {post.comments.map((comment) => (
               <Comment key={comment._id}>
-                <CommentAvatar>
+                {/* ✅ UPDATED: Clickable Comment Avatar */}
+                <CommentAvatar onClick={() => handleProfileClick(comment.user.username)}>
                   {comment.user.profile?.avatar ? (
                     <CommentAvatarImage 
                       src={comment.user.profile.avatar} 
@@ -719,7 +730,8 @@ const PostCard = ({ post, onLike, onComment, onDelete }) => {
                 </CommentAvatar>
                 <CommentContent>
                   <CommentHeader>
-                    <CommentAuthor>
+                    {/* ✅ UPDATED: Clickable Comment Author */}
+                    <CommentAuthor onClick={() => handleProfileClick(comment.user.username)}>
                       {comment.user.profile?.displayName || comment.user.username}
                     </CommentAuthor>
                     <CommentTime>
