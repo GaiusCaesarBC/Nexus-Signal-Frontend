@@ -1,5 +1,5 @@
 // client/src/components/Navbar.js - WITH DYNAMIC THEMES! 🎨
-
+import axios from 'axios';
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
@@ -749,36 +749,62 @@ const Navbar = () => {
     const [notificationsOpen, setNotificationsOpen] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-    // Mock notifications
-    const [notifications, setNotifications] = useState([
-        {
-            id: 1,
-            type: 'success',
-            title: 'AI Prediction Correct!',
-            text: 'Your AAPL prediction hit the target price of $180',
-            time: '5 minutes ago',
-            unread: true,
-            icon: TrendingUpIcon
-        },
-        {
-            id: 2,
-            type: 'info',
-            title: 'Portfolio Update',
-            text: 'Your portfolio value increased by 2.5% today',
-            time: '1 hour ago',
-            unread: true,
-            icon: PieChart
-        },
-        {
-            id: 3,
-            type: 'warning',
-            title: 'Price Alert',
-            text: 'TSLA reached your watchlist target of $250',
-            time: '2 hours ago',
-            unread: true,
-            icon: AlertCircle
-        },
-    ]);
+    // Real notifications from backend
+const [notifications, setNotifications] = useState([]);
+
+// Fetch notifications from backend
+useEffect(() => {
+    fetchNotifications();
+    
+    // Poll every 30 seconds for new notifications
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+}, []);
+
+const fetchNotifications = async () => {
+    try {
+        const token = localStorage.getItem('token');
+        const response = await axios.get('http://localhost:5000/api/notifications', {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        // Map backend notifications to your format
+        const mappedNotifications = response.data.notifications.map(notif => ({
+            id: notif._id,
+            type: notif.type === 'price_alert' ? 'success' : 
+                  notif.type === 'prediction_expiry' ? 'warning' : 'info',
+            title: notif.title,
+            text: notif.message,
+            time: getTimeAgo(notif.createdAt),
+            unread: !notif.read,
+            icon: getIconForType(notif.type)
+        }));
+        
+        setNotifications(mappedNotifications);
+    } catch (error) {
+        console.error('Failed to fetch notifications:', error);
+    }
+};
+
+const getIconForType = (type) => {
+    switch (type) {
+        case 'price_alert': return TrendingUpIcon;
+        case 'prediction_expiry': return Clock;
+        case 'portfolio_milestone': return Trophy;
+        default: return Bell;
+    }
+};
+
+const getTimeAgo = (date) => {
+    const now = new Date();
+    const notifDate = new Date(date);
+    const diffInMinutes = Math.floor((now - notifDate) / 60000);
+    
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
+    return `${Math.floor(diffInMinutes / 1440)}d ago`;
+};
 
     const unreadCount = notifications.filter(n => n.unread).length;
 
@@ -837,11 +863,21 @@ const Navbar = () => {
         setNotificationsOpen(false);
     };
 
-    const handleNotificationClick = (notification) => {
+   const handleNotificationClick = async (notification) => {
+    try {
+        const token = localStorage.getItem('token');
+        await axios.patch(
+            `http://localhost:5000/api/notifications/${notification.id}/read`,
+            {},
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+        
+        // Update local state
         setNotifications(notifications.map(n => 
             n.id === notification.id ? { ...n, unread: false } : n
         ));
 
+        // Navigate based on notification type
         if (notification.type === 'success' && notification.title.includes('Prediction')) {
             navigate('/predict');
         } else if (notification.title.includes('Portfolio')) {
@@ -851,11 +887,25 @@ const Navbar = () => {
         }
 
         setNotificationsOpen(false);
-    };
+    } catch (error) {
+        console.error('Failed to mark as read:', error);
+    }
+};
 
-    const handleMarkAllRead = () => {
+   const handleMarkAllRead = async () => {
+    try {
+        const token = localStorage.getItem('token');
+        await axios.post(
+            'http://localhost:5000/api/notifications/read-all',
+            {},
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+        
         setNotifications(notifications.map(n => ({ ...n, unread: false })));
-    };
+    } catch (error) {
+        console.error('Failed to mark all as read:', error);
+    }
+};
 
     const getUserInitials = () => {
         if (!user?.name) return 'U';

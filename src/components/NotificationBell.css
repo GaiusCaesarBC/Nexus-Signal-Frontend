@@ -1,0 +1,117 @@
+.notification-bell-container {
+  position: relative;
+  display: inline-block;
+}
+
+.notification-bell-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.notification-bell-button:hover {
+  background: rgba(108, 92, 231, 0.1);
+}
+
+.notification-bell-button.has-unread {
+  animation: bellRing 0.5s ease;
+}
+
+.bell-icon {
+  font-size: 24px;
+  color: #fff;
+  line-height: 1;
+}
+
+.notification-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: #ff6b6b;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+  box-shadow: 0 2px 8px rgba(255, 107, 107, 0.4);
+  animation: badgePulse 2s infinite;
+}
+
+.notification-badge.large {
+  font-size: 9px;
+  min-width: 20px;
+  height: 18px;
+}
+
+@keyframes bellRing {
+  0% { transform: rotate(0deg); }
+  10% { transform: rotate(15deg); }
+  20% { transform: rotate(-15deg); }
+  30% { transform: rotate(10deg); }
+  40% { transform: rotate(-10deg); }
+  50% { transform: rotate(5deg); }
+  60% { transform: rotate(-5deg); }
+  70% { transform: rotate(0deg); }
+}
+
+@keyframes badgePulse {
+  0% {
+    box-shadow: 0 2px 8px rgba(255, 107, 107, 0.4);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 4px 16px rgba(255, 107, 107, 0.6);
+    transform: scale(1.05);
+  }
+  100% {
+    box-shadow: 0 2px 8px rgba(255, 107, 107, 0.4);
+    transform: scale(1);
+  }
+}
+
+/* Loading state */
+.notification-bell-button.loading {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.notification-bell-button.loading .bell-icon {
+  animation: bellShake 0.5s infinite;
+}
+
+@keyframes bellShake {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-5deg); }
+  75% { transform: rotate(5deg); }
+}
+
+/* Mobile styles */
+@media (max-width: 768px) {
+  .notification-bell-button {
+    padding: 6px;
+  }
+
+  .bell-icon {
+    font-size: 22px;
+  }
+
+  .notification-badge {
+    font-size: 9px;
+    min-width: 16px;
+    height: 16px;
+    top: 2px;
+    right: 2px;
+  }
+}
