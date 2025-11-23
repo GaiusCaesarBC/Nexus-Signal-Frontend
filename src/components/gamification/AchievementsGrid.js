@@ -1,6 +1,6 @@
 // client/src/components/gamification/AchievementsGrid.js
 import React, { useState, useEffect } from 'react';
-import styled, { keyframes } from 'styled-components';
+import styled, { keyframes, css } from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
 import { Award, Lock, Star, TrendingUp, CheckCircle, Trophy } from 'lucide-react'; // ✅ ADDED Trophy
 
@@ -152,12 +152,12 @@ const AchievementCard = styled.div`
             if (props.$rarity === 'rare') return 'rgba(59, 130, 246, 0.4)';
             return 'rgba(16, 185, 129, 0.4)';
         }};
-        ${props => !props.$unlocked && `
+        ${props => !props.$unlocked && css`
             animation: ${shake} 0.5s ease-in-out;
         `}
     }
 
-    ${props => props.$unlocked && `
+    ${props => props.$unlocked && css`
         &::before {
             content: '';
             position: absolute;
@@ -199,7 +199,7 @@ const IconContainer = styled.div`
     flex-shrink: 0;
     position: relative;
 
-    ${props => props.$unlocked && `
+    ${props => props.$unlocked && css`
         animation: ${pulse} 2s ease-in-out infinite;
     `}
 `;

@@ -1,4 +1,4 @@
-// src/App.js - WITH GAMIFICATION SYSTEM! 🎮
+// src/App.js - WITH GAMIFICATION SYSTEM! 🎮 - THEME FIXED
 
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
@@ -50,85 +50,99 @@ import SentimentPage from './pages/SentimentPage';
 import PaperTradingPage from './pages/PaperTradingPage';
 import DiscoveryPage from './pages/DiscoveryPage';
 import SocialFeed from './components/SocialFeed';
-import AchievementsPage from './pages/AchievementsPage'; // 🎮 NEW!
+import AchievementsPage from './pages/AchievementsPage';
 import AchievementsBrowserPage from './pages/AchievementsBrowserPage';
+import StockComparisonPage from './pages/StockComparisonPage';
+import VaultPage from './pages/VaultPage';
+import EquippedItemsPage from './pages/EquippedItemsPage';
 
-// Wraps content with styled-components theme AND gamification
+// Wraps content with styled-components theme
 function AppContent() {
-    const { theme } = useTheme();
+    const { theme } = useTheme(); // Get the complete theme object
     const { loading } = useAuth();
 
     if (loading) {
         return <LoadingScreen message="Loading your AI-powered trading platform..." />;
     }
 
+    // Ensure theme has the colors property before rendering
+    console.log('🎨 Current theme:', theme);
+    
+    if (!theme || !theme.colors) {
+        console.error('❌ Theme is missing colors!', theme);
+        return <LoadingScreen message="Loading theme..." />;
+    }
+
     return (
         <StyledThemeProvider theme={theme}>
-            <GamificationProvider> {/* 🎮 WRAP WITH GAMIFICATION */}
-                <ScrollToTop />
-                <Navbar />
-                <main style={{ flexGrow: 1, minHeight: 'calc(100vh - 120px)' }}>
-                    <Routes>
-                        {/* Public Routes */}
-                        <Route path="/" element={<LandingPage />} />
-                        <Route path="/login" element={<LoginPage />} />
-                        <Route path="/register" element={<RegisterPage />} />
-                        <Route path="/pricing" element={<PricingPage />} />
-                        <Route path="/about" element={<AboutPage />} />
-                        <Route path="/terms" element={<TermsOfServicePage />} />
-                        <Route path="/privacy" element={<PrivacyPolicyPage />} />
-                        <Route path="/disclaimer" element={<DisclaimerPage />} />
-                        <Route path="/cookie-policy" element={<CookiePolicyPage />} />
+            <ScrollToTop />
+            <Navbar />
+            <main style={{ flexGrow: 1, minHeight: 'calc(100vh - 120px)' }}>
+                <Routes>
+                    {/* Public Routes */}
+                    <Route path="/" element={<LandingPage />} />
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route path="/register" element={<RegisterPage />} />
+                    <Route path="/pricing" element={<PricingPage />} />
+                    <Route path="/about" element={<AboutPage />} />
+                    <Route path="/terms" element={<TermsOfServicePage />} />
+                    <Route path="/privacy" element={<PrivacyPolicyPage />} />
+                    <Route path="/disclaimer" element={<DisclaimerPage />} />
+                    <Route path="/cookie-policy" element={<CookiePolicyPage />} />
 
-                        {/* Protected Routes */}
-                        <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-                        <Route path="/watchlist" element={<ProtectedRoute><WatchlistPage /></ProtectedRoute>} />
-                        <Route path="/portfolio" element={<ProtectedRoute><PortfolioPage /></ProtectedRoute>} />
-                        <Route path="/predict" element={<ProtectedRoute><PredictPage /></ProtectedRoute>} />
-                        <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
-                        <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
-                        <Route path="/screener" element={<ProtectedRoute><ScreenerPage /></ProtectedRoute>} />
-                        <Route path="/news" element={<ProtectedRoute><NewsPage /></ProtectedRoute>} />
-                        <Route path="/heatmap" element={<ProtectedRoute><HeatmapPage /></ProtectedRoute>} />
-                        <Route path="/journal" element={<ProtectedRoute><JournalPage /></ProtectedRoute>} />
-                        <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-                        <Route path="/leaderboard" element={<ProtectedRoute><LeaderboardPage /></ProtectedRoute>} />
-                        <Route path="/trader/:username" element={<ProtectedRoute><PublicProfilePage /></ProtectedRoute>} />
-                        <Route path="/calculators" element={<CalculatorsPage />} />
-                        <Route path="/sentiment" element={<ProtectedRoute><SentimentPage /></ProtectedRoute>} />
-                        <Route path="/paper-trading" element={<ProtectedRoute><PaperTradingPage /></ProtectedRoute>} />
-                        <Route path="/discover" element={<ProtectedRoute><DiscoveryPage /></ProtectedRoute>} />
-                        <Route path="/feed" element={<SocialFeed />} />
-                        <Route path="/achievements/browse" element={<ProtectedRoute><AchievementsBrowserPage /></ProtectedRoute>} />
-                        
-                        {/* 🎮 GAMIFICATION ROUTES */}
-                        <Route path="/achievements" element={<ProtectedRoute><AchievementsPage /></ProtectedRoute>} />
+                    {/* Protected Routes */}
+                    <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+                    <Route path="/watchlist" element={<ProtectedRoute><WatchlistPage /></ProtectedRoute>} />
+                    <Route path="/portfolio" element={<ProtectedRoute><PortfolioPage /></ProtectedRoute>} />
+                    <Route path="/predict" element={<ProtectedRoute><PredictPage /></ProtectedRoute>} />
+                    <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+                    <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+                    <Route path="/screener" element={<ProtectedRoute><ScreenerPage /></ProtectedRoute>} />
+                    <Route path="/news" element={<ProtectedRoute><NewsPage /></ProtectedRoute>} />
+                    <Route path="/heatmap" element={<ProtectedRoute><HeatmapPage /></ProtectedRoute>} />
+                    <Route path="/journal" element={<ProtectedRoute><JournalPage /></ProtectedRoute>} />
+                    <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+                    <Route path="/leaderboard" element={<ProtectedRoute><LeaderboardPage /></ProtectedRoute>} />
+                    <Route path="/trader/:username" element={<ProtectedRoute><PublicProfilePage /></ProtectedRoute>} />
+                    <Route path="/calculators" element={<CalculatorsPage />} />
+                    <Route path="/sentiment" element={<ProtectedRoute><SentimentPage /></ProtectedRoute>} />
+                    <Route path="/paper-trading" element={<ProtectedRoute><PaperTradingPage /></ProtectedRoute>} />
+                    <Route path="/discover" element={<ProtectedRoute><DiscoveryPage /></ProtectedRoute>} />
+                    <Route path="/feed" element={<SocialFeed />} />
+                    <Route path="/achievements/browse" element={<ProtectedRoute><AchievementsBrowserPage /></ProtectedRoute>} />
+                    <Route path="/compare" element={<ProtectedRoute><StockComparisonPage /></ProtectedRoute>} />
+                    <Route path="/vault" element={<ProtectedRoute><VaultPage /></ProtectedRoute>} />
+                    <Route path="/equipped" element={<ProtectedRoute><EquippedItemsPage /></ProtectedRoute>} />
 
-                        {/* Stock Details Page Route */}
-                        <Route path="/stocks/:symbol" element={<ProtectedRoute><StockPage /></ProtectedRoute>} />
+                    {/* 🎮 GAMIFICATION ROUTES */}
+                    <Route path="/achievements" element={<ProtectedRoute><AchievementsPage /></ProtectedRoute>} />
 
-                        {/* Catch-all for 404 Not Found pages */}
-                        <Route path="*" element={<NotFoundPage />} />
-                    </Routes> 
-                </main>
-                <Footer />
-                <AIChatWidget />
-                
-                {/* 🎮 GAMIFICATION GLOBAL COMPONENTS */}
-                <LevelUpCelebration />
-                <AchievementPopup />
-                <XPNotification />
-            </GamificationProvider>
+                    {/* Stock Details Page Route */}
+                    <Route path="/stocks/:symbol" element={<ProtectedRoute><StockPage /></ProtectedRoute>} />
+
+                    {/* Catch-all for 404 Not Found pages */}
+                    <Route path="*" element={<NotFoundPage />} />
+                </Routes> 
+            </main>
+            <Footer />
+            <AIChatWidget />
+            
+            {/* 🎮 GAMIFICATION GLOBAL COMPONENTS */}
+            <LevelUpCelebration />
+            <AchievementPopup />
+            <XPNotification />
         </StyledThemeProvider>
     );
 }
 
-// Main App - Wraps everything in ThemeProvider
+// Main App - CORRECT PROVIDER ORDER! 🎮
 function App() {
     return (
-        <ThemeProvider>
-            <AppContent />
-        </ThemeProvider>
+        <GamificationProvider>
+            <ThemeProvider>
+                <AppContent />
+            </ThemeProvider>
+        </GamificationProvider>
     );
 }
 

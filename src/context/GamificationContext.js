@@ -1,4 +1,4 @@
-// client/src/context/GamificationContext.js
+// client/src/context/GamificationContext.js - FIXED INFINITE LOOP
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
@@ -25,44 +25,53 @@ export const GamificationProvider = ({ children }) => {
     const [showAchievement, setShowAchievement] = useState(false);
     const [currentAchievement, setCurrentAchievement] = useState(null);
 
-    // Fetch gamification data
+    // ✅ FIXED: Removed gamificationData from dependencies to prevent infinite loop
     const fetchGamificationData = useCallback(async () => {
-        if (!isAuthenticated) return;
+        if (!isAuthenticated) {
+            setLoading(false);
+            return;
+        }
         
         try {
-            const response = await api.get('/gamification');
+            console.log('🎮 GamificationContext: Fetching data...');
+            const response = await api.get('/gamification/stats');
             
             if (response.data.success) {
-                const oldLevel = gamificationData?.level || 1;
-                const newLevel = response.data.level;
+                const newData = response.data.data;
+                console.log('🎮 GamificationContext: Data received:', newData);
+                console.log('🎮 GamificationContext: Equipped items:', newData.equippedItems);
                 
-                // Check if user leveled up
-                if (newLevel > oldLevel && gamificationData !== null) {
-                    setLevelUpData({
-                        oldLevel,
-                        newLevel,
-                        rank: response.data.rank,
-                        coinReward: (newLevel - oldLevel) * 100
-                    });
-                    setShowLevelUp(true);
-                    
-                    // Auto-hide after 5 seconds
-                    setTimeout(() => setShowLevelUp(false), 5000);
-                }
-                
-                setGamificationData(response.data);
+                // Check for level up (only if we have previous data)
+                setGamificationData(prevData => {
+                    if (prevData) {
+                        const oldLevel = prevData.level || 1;
+                        const newLevel = newData.level;
+                        
+                        if (newLevel > oldLevel) {
+                            setLevelUpData({
+                                oldLevel,
+                                newLevel,
+                                rank: newData.rank,
+                                coinReward: (newLevel - oldLevel) * 100
+                            });
+                            setShowLevelUp(true);
+                            setTimeout(() => setShowLevelUp(false), 5000);
+                        }
+                    }
+                    return newData;
+                });
             }
         } catch (error) {
-            console.error('Error fetching gamification data:', error);
+            console.error('❌ GamificationContext: Error fetching data:', error);
         } finally {
             setLoading(false);
         }
-    }, [api, isAuthenticated, gamificationData]);
+    }, [api, isAuthenticated]); // ✅ FIXED: Only depend on api and isAuthenticated
 
     // Check in (daily streak)
     const checkIn = async () => {
         try {
-            const response = await api.post('/gamification/check-in');
+            const response = await api.post('/gamification/login-streak');
             
             if (response.data.success) {
                 await fetchGamificationData();
@@ -81,7 +90,7 @@ export const GamificationProvider = ({ children }) => {
         }
     };
 
-    // Award XP manually (for testing or special events)
+    // Award XP manually
     const awardXP = async (amount, reason) => {
         try {
             const response = await api.post('/gamification/award-xp', {
@@ -109,60 +118,44 @@ export const GamificationProvider = ({ children }) => {
     const showAchievementPopup = (achievement) => {
         setCurrentAchievement(achievement);
         setShowAchievement(true);
-        
-        // Auto-hide after 5 seconds
         setTimeout(() => {
             setShowAchievement(false);
             setCurrentAchievement(null);
         }, 5000);
     };
 
-    // Listen for new achievements
-    useEffect(() => {
-        if (gamificationData && gamificationData.achievements) {
-            const previousAchievementIds = newAchievements.map(a => a.id);
-            const currentAchievements = gamificationData.achievements;
-            
-            // Find newly unlocked achievements
-            const newlyUnlocked = currentAchievements.filter(
-                achievement => !previousAchievementIds.includes(achievement.id)
-            );
-            
-            if (newlyUnlocked.length > 0 && newAchievements.length > 0) {
-                // Show popup for each new achievement (with delay)
-                newlyUnlocked.forEach((achievement, index) => {
-                    setTimeout(() => {
-                        showAchievementPopup(achievement);
-                        toast.success(`Achievement Unlocked: ${achievement.name}!`, achievement.icon);
-                    }, index * 3000);
-                });
-            }
-            
-            setNewAchievements(currentAchievements);
-        }
-    }, [gamificationData]);
-
-    // Fetch data on mount and when authenticated
+    // ✅ FIXED: Fetch data on mount only
     useEffect(() => {
         if (isAuthenticated) {
+            console.log('🎮 GamificationContext: User authenticated, fetching data...');
             fetchGamificationData();
+        } else {
+            console.log('🎮 GamificationContext: User not authenticated');
+            setLoading(false);
         }
-    }, [isAuthenticated]);
+    }, [isAuthenticated, fetchGamificationData]);
 
-    // Auto-refresh every 30 seconds
+    // ✅ FIXED: Auto-refresh without dependencies on fetchGamificationData
     useEffect(() => {
         if (!isAuthenticated) return;
         
+        console.log('🎮 GamificationContext: Setting up auto-refresh (every 60 seconds)');
         const interval = setInterval(() => {
+            console.log('🎮 GamificationContext: Auto-refreshing...');
             fetchGamificationData();
-        }, 30000);
+        }, 60000); // ✅ Changed to 60 seconds instead of 30
         
-        return () => clearInterval(interval);
+        return () => {
+            console.log('🎮 GamificationContext: Cleaning up auto-refresh');
+            clearInterval(interval);
+        };
     }, [isAuthenticated, fetchGamificationData]);
 
     const value = {
+        gamification: gamificationData,
         gamificationData,
         loading,
+        refreshGamification: fetchGamificationData,
         fetchGamificationData,
         checkIn,
         awardXP,

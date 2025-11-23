@@ -6,7 +6,6 @@ import reportWebVitals from './reportWebVitals';
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
-import { ThemeProvider } from './context/ThemeContext';
 import { StripeProvider } from './context/StripeContext';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
@@ -16,11 +15,9 @@ root.render(
     <BrowserRouter>
       <ToastProvider>
         <AuthProvider>
-          <ThemeProvider>
-            <StripeProvider>
-              <App />
-            </StripeProvider>
-          </ThemeProvider>
+          <StripeProvider>
+            <App />
+          </StripeProvider>
         </AuthProvider>
       </ToastProvider>
     </BrowserRouter>
