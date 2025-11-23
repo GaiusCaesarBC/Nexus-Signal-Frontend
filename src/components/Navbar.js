@@ -1,10 +1,10 @@
-// client/src/components/Navbar.js - WITH GAMIFICATION! 🎮
+// client/src/components/Navbar.js - WITH DYNAMIC THEMES! 🎨
 
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
-import NavbarGamification from './gamification/NavbarGamification'; // 🎮 ADDED
+import NavbarGamification from './gamification/NavbarGamification';
 
 import {
     Home, TrendingUp, PieChart, Eye, Filter, MapPin, Newspaper, BookOpen, Brain, MessageSquare,
@@ -14,8 +14,6 @@ import {
     Briefcase, BarChart3, Activity, Sparkles, Globe, Calculator, TrendingDown, MessageCircle, Award
 } from 'lucide-react';
 import nexusSignalLogo from '../assets/nexus-signal-logo.png';
-import nexusSignalAnimated from '../assets/nexus-signal-animated.mp4';
-
 
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`
@@ -39,16 +37,16 @@ const shake = keyframes`
     20%, 40%, 60%, 80% { transform: rotate(10deg); }
 `;
 
-// ============ STYLED COMPONENTS ============
+// ============ STYLED COMPONENTS (NOW WITH DYNAMIC THEMES!) ============
 const NavContainer = styled.nav`
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     z-index: 1000;
-    background: rgba(10, 14, 39, 0.95);
+    background: ${props => props.theme.colors.cardBackground || 'rgba(10, 14, 39, 0.95)'};
     backdrop-filter: blur(20px);
-    border-bottom: 1px solid rgba(0, 173, 237, 0.2);
+    border-bottom: 1px solid ${props => `${props.theme.colors.primary}33`};
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
     animation: ${fadeIn} 0.5s ease-out;
 `;
@@ -67,7 +65,6 @@ const NavInner = styled.div`
     }
 `;
 
-
 // ============ LOGO ============
 const Logo = styled(Link)`
     display: flex;
@@ -76,7 +73,7 @@ const Logo = styled(Link)`
     text-decoration: none;
     font-size: 2rem;
     font-weight: 900;
-    background: linear-gradient(135deg, #00adef 0%, #00ff88 100%);
+    background: linear-gradient(135deg, ${props => props.theme.colors.primary} 0%, #00ff88 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -98,8 +95,8 @@ const LogoIcon = styled.div`
     position: relative;
     transition: all 0.3s ease;
 
-    filter: drop-shadow(0 0 5px rgba(0, 217, 255, 0.7))
-            drop-shadow(0 0 10px rgba(139, 92, 246, 0.6))
+    filter: drop-shadow(0 0 5px ${props => `${props.theme.colors.primary}B3`})
+            drop-shadow(0 0 10px ${props => props.theme.colors.accent || 'rgba(139, 92, 246, 0.6)'})
             drop-shadow(0 0 15px rgba(236, 72, 153, 0.5));
 
     &::before {
@@ -107,8 +104,8 @@ const LogoIcon = styled.div`
         position: absolute;
         inset: 0px;
         background: radial-gradient(circle, 
-            rgba(0, 217, 255, 0.2) 0%, 
-            rgba(139, 92, 246, 0.15) 40%, 
+            ${props => `${props.theme.colors.primary}33`} 0%, 
+            ${props => props.theme.colors.accent ? `${props.theme.colors.accent}26` : 'rgba(139, 92, 246, 0.15)'} 40%, 
             rgba(236, 72, 153, 0.1) 70%,
             transparent 100%);
         border-radius: 50%;
@@ -118,8 +115,8 @@ const LogoIcon = styled.div`
     }
 
     &:hover {
-        filter: drop-shadow(0 0 10px rgba(0, 217, 255, 0.9))
-                drop-shadow(0 0 15px rgba(139, 92, 246, 0.8))
+        filter: drop-shadow(0 0 10px ${props => props.theme.colors.primary})
+                drop-shadow(0 0 15px ${props => props.theme.colors.accent || 'rgba(139, 92, 246, 0.8)'})
                 drop-shadow(0 0 35px rgba(236, 72, 153, 0.7));
         transform: translateY(-3px) scale(1.08);
     }
@@ -144,23 +141,23 @@ const LogoText = styled.span`
     font-weight: 900;
     
     background: linear-gradient(135deg, 
-        #00d9ff 0%,
-        #8b5cf6 50%,
+        ${props => props.theme.colors.primary} 0%,
+        ${props => props.theme.colors.accent || '#8b5cf6'} 50%,
         #ec4899 100%
     );
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
     
-    text-shadow: 0 0 20px rgba(0, 217, 255, 0.6),
-                 0 0 40px rgba(139, 92, 246, 0.5),
+    text-shadow: 0 0 20px ${props => `${props.theme.colors.primary}99`},
+                 0 0 40px ${props => props.theme.colors.accent ? `${props.theme.colors.accent}80` : 'rgba(139, 92, 246, 0.5)'},
                  0 0 60px rgba(236, 72, 153, 0.4);
     
     transition: all 0.3s ease;
 
     &:hover {
-        text-shadow: 0 0 30px rgba(0, 217, 255, 0.9),
-                     0 0 50px rgba(139, 92, 246, 0.7),
+        text-shadow: 0 0 30px ${props => props.theme.colors.primary},
+                     0 0 50px ${props => props.theme.colors.accent || 'rgba(139, 92, 246, 0.7)'},
                      0 0 70px rgba(236, 72, 153, 0.6);
     }
 
@@ -189,20 +186,20 @@ const NavLink = styled(Link)`
     align-items: center;
     gap: 0.5rem;
     padding: 0.75rem 1.25rem;
-    color: ${props => props.$active ? '#00adef' : '#94a3b8'};
+    color: ${props => props.$active ? props.theme.colors.primary : (props.theme.colors.text?.secondary || props.theme.colors.textSecondary || '#94a3b8')};
     text-decoration: none;
     font-weight: 600;
     font-size: 0.95rem;
     border-radius: 10px;
     position: relative;
     transition: all 0.3s ease;
-    background: ${props => props.$active ? 'rgba(0, 173, 237, 0.15)' : 'transparent'};
-    border: 1px solid ${props => props.$active ? 'rgba(0, 173, 237, 0.3)' : 'transparent'};
+    background: ${props => props.$active ? `${props.theme.colors.primary}26` : 'transparent'};
+    border: 1px solid ${props => props.$active ? `${props.theme.colors.primary}4D` : 'transparent'};
 
     &:hover {
-        color: #00adef;
-        background: rgba(0, 173, 237, 0.1);
-        border-color: rgba(0, 173, 237, 0.3);
+        color: ${props => props.theme.colors.primary};
+        background: ${props => `${props.theme.colors.primary}1A`};
+        border-color: ${props => `${props.theme.colors.primary}4D`};
         transform: translateY(-2px);
     }
 `;
@@ -212,9 +209,9 @@ const DropdownTrigger = styled.button`
     align-items: center;
     gap: 0.5rem;
     padding: 0.75rem 1.25rem;
-    color: ${props => props.$active ? '#00adef' : '#94a3b8'};
-    background: ${props => props.$active ? 'rgba(0, 173, 237, 0.15)' : 'transparent'};
-    border: 1px solid ${props => props.$active ? 'rgba(0, 173, 237, 0.3)' : 'transparent'};
+    color: ${props => props.$active ? props.theme.colors.primary : (props.theme.colors.text?.secondary || props.theme.colors.textSecondary || '#94a3b8')};
+    background: ${props => props.$active ? `${props.theme.colors.primary}26` : 'transparent'};
+    border: 1px solid ${props => props.$active ? `${props.theme.colors.primary}4D` : 'transparent'};
     border-radius: 10px;
     font-weight: 600;
     font-size: 0.95rem;
@@ -222,9 +219,9 @@ const DropdownTrigger = styled.button`
     transition: all 0.3s ease;
 
     &:hover {
-        color: #00adef;
-        background: rgba(0, 173, 237, 0.1);
-        border-color: rgba(0, 173, 237, 0.3);
+        color: ${props => props.theme.colors.primary};
+        background: ${props => `${props.theme.colors.primary}1A`};
+        border-color: ${props => `${props.theme.colors.primary}4D`};
         transform: translateY(-2px);
     }
 
@@ -238,9 +235,9 @@ const DropdownMenu = styled.div`
     position: absolute;
     top: calc(100% + 10px);
     left: 0;
-    background: rgba(15, 23, 42, 0.98);
+    background: ${props => props.theme.colors.cardBackground || 'rgba(15, 23, 42, 0.98)'};
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(0, 173, 237, 0.3);
+    border: 1px solid ${props => `${props.theme.colors.primary}4D`};
     border-radius: 12px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
     min-width: 220px;
@@ -254,20 +251,20 @@ const DropdownItem = styled(Link)`
     align-items: center;
     gap: 0.75rem;
     padding: 0.875rem 1.25rem;
-    color: ${props => props.$active ? '#00adef' : '#e0e6ed'};
+    color: ${props => props.$active ? props.theme.colors.primary : (props.theme.colors.text?.primary || props.theme.colors.text || '#f8fafc')};
     text-decoration: none;
     font-weight: 500;
     transition: all 0.2s ease;
-    border-bottom: 1px solid rgba(0, 173, 237, 0.1);
-    background: ${props => props.$active ? 'rgba(0, 173, 237, 0.15)' : 'transparent'};
+    border-bottom: 1px solid ${props => `${props.theme.colors.primary}1A`};
+    background: ${props => props.$active ? `${props.theme.colors.primary}26` : 'transparent'};
 
     &:last-child {
         border-bottom: none;
     }
 
     &:hover {
-        background: rgba(0, 173, 237, 0.15);
-        color: #00adef;
+        background: ${props => `${props.theme.colors.primary}26`};
+        color: ${props => props.theme.colors.primary};
         padding-left: 1.5rem;
     }
 `;
@@ -285,9 +282,9 @@ const UserSection = styled.div`
 
 const NotificationButton = styled.button`
     position: relative;
-    background: rgba(0, 173, 237, 0.1);
-    border: 1px solid rgba(0, 173, 237, 0.3);
-    color: #00adef;
+    background: ${props => `${props.theme.colors.primary}1A`};
+    border: 1px solid ${props => `${props.theme.colors.primary}4D`};
+    color: ${props => props.theme.colors.primary};
     width: 40px;
     height: 40px;
     border-radius: 10px;
@@ -298,9 +295,9 @@ const NotificationButton = styled.button`
     transition: all 0.3s ease;
 
     &:hover {
-        background: rgba(0, 173, 237, 0.2);
+        background: ${props => `${props.theme.colors.primary}33`};
         transform: translateY(-2px);
-        box-shadow: 0 4px 15px rgba(0, 173, 237, 0.3);
+        box-shadow: 0 4px 15px ${props => `${props.theme.colors.primary}4D`};
         
         svg {
             animation: ${shake} 0.5s ease-in-out;
@@ -326,7 +323,7 @@ const NotificationBadge = styled.span`
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px solid rgba(10, 14, 39, 0.95);
+    border: 2px solid ${props => props.theme.colors.cardBackground || 'rgba(10, 14, 39, 0.95)'};
     animation: ${pulse} 2s ease-in-out infinite;
 `;
 
@@ -335,9 +332,9 @@ const NotificationPanel = styled.div`
     position: absolute;
     top: calc(100% + 10px);
     right: 0;
-    background: rgba(15, 23, 42, 0.98);
+    background: ${props => props.theme.colors.cardBackground || 'rgba(15, 23, 42, 0.98)'};
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(0, 173, 237, 0.3);
+    border: 1px solid ${props => `${props.theme.colors.primary}4D`};
     border-radius: 12px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
     width: 400px;
@@ -356,14 +353,14 @@ const NotificationPanel = styled.div`
 
 const NotificationHeader = styled.div`
     padding: 1rem 1.25rem;
-    border-bottom: 1px solid rgba(0, 173, 237, 0.2);
+    border-bottom: 1px solid ${props => `${props.theme.colors.primary}33`};
     display: flex;
     justify-content: space-between;
     align-items: center;
 `;
 
 const NotificationTitle = styled.h3`
-    color: #00adef;
+    color: ${props => props.theme.colors.primary};
     font-size: 1.1rem;
     font-weight: 700;
     margin: 0;
@@ -372,14 +369,14 @@ const NotificationTitle = styled.h3`
 const MarkAllRead = styled.button`
     background: transparent;
     border: none;
-    color: #94a3b8;
+    color: ${props => props.theme.colors.text?.secondary || props.theme.colors.textSecondary || '#94a3b8'};
     font-size: 0.85rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
 
     &:hover {
-        color: #00adef;
+        color: ${props => props.theme.colors.primary};
     }
 `;
 
@@ -392,29 +389,29 @@ const NotificationList = styled.div`
     }
 
     &::-webkit-scrollbar-track {
-        background: rgba(0, 173, 237, 0.05);
+        background: ${props => `${props.theme.colors.primary}0D`};
     }
 
     &::-webkit-scrollbar-thumb {
-        background: rgba(0, 173, 237, 0.3);
+        background: ${props => `${props.theme.colors.primary}4D`};
         border-radius: 3px;
 
         &:hover {
-            background: rgba(0, 173, 237, 0.5);
+            background: ${props => `${props.theme.colors.primary}80`};
         }
     }
 `;
 
 const NotificationItem = styled.div`
     padding: 1rem 1.25rem;
-    border-bottom: 1px solid rgba(0, 173, 237, 0.1);
+    border-bottom: 1px solid ${props => `${props.theme.colors.primary}1A`};
     cursor: pointer;
     transition: all 0.2s ease;
-    background: ${props => props.$unread ? 'rgba(0, 173, 237, 0.05)' : 'transparent'};
+    background: ${props => props.$unread ? `${props.theme.colors.primary}0D` : 'transparent'};
     position: relative;
 
     &:hover {
-        background: rgba(0, 173, 237, 0.1);
+        background: ${props => `${props.theme.colors.primary}1A`};
     }
 
     &:last-child {
@@ -441,13 +438,13 @@ const NotificationIcon = styled.div`
         if (props.$type === 'success') return 'rgba(16, 185, 129, 0.2)';
         if (props.$type === 'warning') return 'rgba(245, 158, 11, 0.2)';
         if (props.$type === 'error') return 'rgba(239, 68, 68, 0.2)';
-        return 'rgba(0, 173, 237, 0.2)';
+        return `${props.theme.colors.primary}33`;
     }};
     color: ${props => {
         if (props.$type === 'success') return '#10b981';
         if (props.$type === 'warning') return '#f59e0b';
         if (props.$type === 'error') return '#ef4444';
-        return '#00adef';
+        return props.theme.colors.primary;
     }};
 `;
 
@@ -456,20 +453,20 @@ const NotificationContent = styled.div`
 `;
 
 const NotificationItemTitle = styled.div`
-    color: #e0e6ed;
+    color: ${props => props.theme.colors.text?.primary || props.theme.colors.text || '#f8fafc'};
     font-weight: 600;
     font-size: 0.95rem;
     margin-bottom: 0.25rem;
 `;
 
 const NotificationItemText = styled.div`
-    color: #94a3b8;
+    color: ${props => props.theme.colors.text?.secondary || props.theme.colors.textSecondary || '#94a3b8'};
     font-size: 0.85rem;
     line-height: 1.4;
 `;
 
 const NotificationTime = styled.div`
-    color: #64748b;
+    color: ${props => props.theme.colors.text?.muted || props.theme.colors.textMuted || '#64748b'};
     font-size: 0.75rem;
     margin-top: 0.5rem;
     display: flex;
@@ -481,7 +478,7 @@ const UnreadDot = styled.div`
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: #00adef;
+    background: ${props => props.theme.colors.primary};
     position: absolute;
     top: 1.25rem;
     right: 1.25rem;
@@ -491,7 +488,7 @@ const UnreadDot = styled.div`
 const EmptyState = styled.div`
     padding: 3rem 2rem;
     text-align: center;
-    color: #64748b;
+    color: ${props => props.theme.colors.text?.muted || props.theme.colors.textMuted || '#64748b'};
 `;
 
 const EmptyStateIcon = styled.div`
@@ -499,16 +496,16 @@ const EmptyStateIcon = styled.div`
     height: 64px;
     margin: 0 auto 1rem;
     border-radius: 50%;
-    background: rgba(0, 173, 237, 0.1);
+    background: ${props => `${props.theme.colors.primary}1A`};
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #00adef;
+    color: ${props => props.theme.colors.primary};
 `;
 
 const EmptyStateText = styled.div`
     font-size: 0.95rem;
-    color: #94a3b8;
+    color: ${props => props.theme.colors.text?.secondary || props.theme.colors.textSecondary || '#94a3b8'};
 `;
 
 const UserMenuButton = styled.button`
@@ -516,19 +513,19 @@ const UserMenuButton = styled.button`
     align-items: center;
     gap: 0.75rem;
     padding: 0.5rem 1rem;
-    background: linear-gradient(135deg, rgba(0, 173, 237, 0.15) 0%, rgba(0, 173, 237, 0.05) 100%);
-    border: 1px solid rgba(0, 173, 237, 0.3);
+    background: linear-gradient(135deg, ${props => `${props.theme.colors.primary}26`} 0%, ${props => `${props.theme.colors.primary}0D`} 100%);
+    border: 1px solid ${props => `${props.theme.colors.primary}4D`};
     border-radius: 12px;
-    color: #e0e6ed;
+    color: ${props => props.theme.colors.text?.primary || props.theme.colors.text || '#f8fafc'};
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
     position: relative;
 
     &:hover {
-        background: linear-gradient(135deg, rgba(0, 173, 237, 0.25) 0%, rgba(0, 173, 237, 0.1) 100%);
+        background: linear-gradient(135deg, ${props => `${props.theme.colors.primary}40`} 0%, ${props => `${props.theme.colors.primary}1A`} 100%);
         transform: translateY(-2px);
-        box-shadow: 0 4px 15px rgba(0, 173, 237, 0.3);
+        box-shadow: 0 4px 15px ${props => `${props.theme.colors.primary}4D`};
     }
 
     @media (max-width: 768px) {
@@ -543,7 +540,7 @@ const UserAvatar = styled.div`
     border-radius: 10px;
     background: ${props => props.$src ? 
         `url(${props.$src}) center/cover` : 
-        'linear-gradient(135deg, #00adef 0%, #0088cc 100%)'
+        `linear-gradient(135deg, ${props.theme.colors.primary} 0%, ${props.theme.colors.secondary || props.theme.colors.accent || '#8b5cf6'} 100%)`
     };
     display: flex;
     align-items: center;
@@ -551,7 +548,7 @@ const UserAvatar = styled.div`
     font-weight: 700;
     font-size: ${props => props.$src ? '0' : '1rem'};
     color: white;
-    box-shadow: 0 2px 10px rgba(0, 173, 237, 0.4);
+    box-shadow: 0 2px 10px ${props => `${props.theme.colors.primary}66`};
     position: relative;
     overflow: hidden;
 `;
@@ -589,9 +586,9 @@ const UserDropdownMenu = styled.div`
     position: absolute;
     top: calc(100% + 10px);
     right: 0;
-    background: rgba(15, 23, 42, 0.98);
+    background: ${props => props.theme.colors.cardBackground || 'rgba(15, 23, 42, 0.98)'};
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(0, 173, 237, 0.3);
+    border: 1px solid ${props => `${props.theme.colors.primary}4D`};
     border-radius: 12px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
     min-width: 220px;
@@ -605,7 +602,7 @@ const UserDropdownItem = styled.button`
     padding: 0.75rem 1.25rem;
     background: transparent;
     border: none;
-    color: #e0e6ed;
+    color: ${props => props.theme.colors.text?.primary || props.theme.colors.text || '#f8fafc'};
     text-align: left;
     font-weight: 500;
     cursor: pointer;
@@ -613,15 +610,15 @@ const UserDropdownItem = styled.button`
     align-items: center;
     gap: 0.75rem;
     transition: all 0.2s ease;
-    border-bottom: 1px solid rgba(0, 173, 237, 0.1);
+    border-bottom: 1px solid ${props => `${props.theme.colors.primary}1A`};
 
     &:last-child {
         border-bottom: none;
     }
 
     &:hover {
-        background: rgba(0, 173, 237, 0.15);
-        color: #00adef;
+        background: ${props => `${props.theme.colors.primary}26`};
+        color: ${props => props.theme.colors.primary};
         padding-left: 1.5rem;
     }
 
@@ -637,9 +634,9 @@ const UserDropdownItem = styled.button`
 // ============ MOBILE MENU ============
 const MobileMenuButton = styled.button`
     display: none;
-    background: rgba(0, 173, 237, 0.1);
-    border: 1px solid rgba(0, 173, 237, 0.3);
-    color: #00adef;
+    background: ${props => `${props.theme.colors.primary}1A`};
+    border: 1px solid ${props => `${props.theme.colors.primary}4D`};
+    color: ${props => props.theme.colors.primary};
     width: 40px;
     height: 40px;
     border-radius: 10px;
@@ -649,7 +646,7 @@ const MobileMenuButton = styled.button`
     transition: all 0.3s ease;
 
     &:hover {
-        background: rgba(0, 173, 237, 0.2);
+        background: ${props => `${props.theme.colors.primary}33`};
         transform: translateY(-2px);
     }
 
@@ -665,13 +662,13 @@ const MobileMenu = styled.div`
     right: 0;
     bottom: 0;
     min-height: calc(100vh - 80px);
-    background: #0a0e27;
+    background: ${props => props.theme.colors.background || '#0a0e27'};
     backdrop-filter: blur(20px);
     z-index: 9999;
     animation: ${fadeIn} 0.3s ease-out;
     overflow-y: auto;
     display: ${props => props.$open ? 'block' : 'none'};
-    border-top: 2px solid rgba(0, 173, 237, 0.3);
+    border-top: 2px solid ${props => `${props.theme.colors.primary}4D`};
 
     @media (min-width: 1025px) {
         display: none !important;
@@ -684,7 +681,7 @@ const MobileNavLinks = styled.div`
     flex-direction: column;
     gap: 0.5rem;
     min-height: 100vh;
-    background: #0a0e27;
+    background: ${props => props.theme.colors.background || '#0a0e27'};
 `;
 
 const MobileNavCategory = styled.div`
@@ -692,7 +689,7 @@ const MobileNavCategory = styled.div`
 `;
 
 const MobileCategoryTitle = styled.div`
-    color: #64748b;
+    color: ${props => props.theme.colors.text?.muted || props.theme.colors.textMuted || '#64748b'};
     font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -709,27 +706,27 @@ const MobileNavLink = styled(Link)`
     align-items: center;
     gap: 1rem;
     padding: 1rem 1.5rem;
-    color: ${props => props.$active ? '#00adef' : '#f8fafc'};
+    color: ${props => props.$active ? props.theme.colors.primary : (props.theme.colors.text?.primary || props.theme.colors.text || '#f8fafc')};
     text-decoration: none;
     font-weight: 600;
     font-size: 1rem;
     border-radius: 12px;
-    background: ${props => props.$active ? 'rgba(0, 173, 237, 0.15)' : 'rgba(30, 41, 59, 0.5)'};
-    border: 1px solid ${props => props.$active ? 'rgba(0, 173, 237, 0.3)' : 'rgba(100, 116, 139, 0.3)'};
+    background: ${props => props.$active ? `${props.theme.colors.primary}26` : 'rgba(30, 41, 59, 0.5)'};
+    border: 1px solid ${props => props.$active ? `${props.theme.colors.primary}4D` : 'rgba(100, 116, 139, 0.3)'};
     transition: all 0.2s ease;
     min-height: 56px;
 
     &:hover {
-        color: #00adef;
-        background: rgba(0, 173, 237, 0.1);
-        border-color: rgba(0, 173, 237, 0.3);
+        color: ${props => props.theme.colors.primary};
+        background: ${props => `${props.theme.colors.primary}1A`};
+        border-color: ${props => `${props.theme.colors.primary}4D`};
         transform: translateX(5px);
     }
 `;
 
 const Divider = styled.div`
     height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(0, 173, 237, 0.3), transparent);
+    background: linear-gradient(90deg, transparent, ${props => `${props.theme.colors.primary}4D`}, transparent);
     margin: 1rem 0;
 `;
 
@@ -745,6 +742,7 @@ const Navbar = () => {
         community: false,
         ai: false,
         market: false,
+        vault: false,
     });
     
     const [userDropdownOpen, setUserDropdownOpen] = useState(false);
@@ -788,6 +786,7 @@ const Navbar = () => {
     const navStructure = {
         single: [
             { path: '/dashboard', label: 'Dashboard', icon: Home },
+            { path: '/vault', label: 'The Vault', icon: DollarSign }, 
         ],
         trading: [
             { path: '/portfolio', label: 'Portfolio', icon: Briefcase },
@@ -798,6 +797,7 @@ const Navbar = () => {
             { path: '/screener', label: 'Screener', icon: Filter },
             { path: '/heatmap', label: 'Heatmap', icon: MapPin },
             { path: '/sentiment', label: 'Sentiment', icon: Activity },
+            { path: '/compare', label: 'Stock Comparison', icon: BarChart3 },
         ],
         community: [
             { path: '/leaderboard', label: 'Leaderboard', icon: Trophy },
@@ -881,6 +881,7 @@ const Navbar = () => {
             community: false,
             ai: false,
             market: false,
+            vault: false,
         });
     }, [location]);
 
@@ -925,6 +926,37 @@ const Navbar = () => {
                         <Home size={18} />
                         Dashboard
                     </NavLink>
+
+                    {/* Vault Dropdown */}
+                    <NavItem data-dropdown>
+                        <DropdownTrigger
+                            onClick={() => handleDropdownToggle('vault')}
+                            $open={dropdowns.vault}
+                            $active={location.pathname === '/vault' || location.pathname === '/equipped'}
+                        >
+                            <DollarSign size={18} />
+                            Vault
+                            <ChevronDown size={16} />
+                        </DropdownTrigger>
+                        {dropdowns.vault && (
+                            <DropdownMenu>
+                                <DropdownItem
+                                    to="/vault"
+                                    $active={location.pathname === '/vault'}
+                                >
+                                    <DollarSign size={18} />
+                                    The Vault
+                                </DropdownItem>
+                                <DropdownItem
+                                    to="/equipped"
+                                    $active={location.pathname === '/equipped'}
+                                >
+                                    <Award size={18} />
+                                    Equipped Items
+                                </DropdownItem>
+                            </DropdownMenu>
+                        )}
+                    </NavItem>
 
                     {/* Social Feed */}
                     <NavLink to="/feed" $active={location.pathname === '/feed'}>
@@ -993,42 +1025,41 @@ const Navbar = () => {
                     </NavItem>
 
                     {/* Community Dropdown */}
-<NavItem data-dropdown>
-    <DropdownTrigger
-        onClick={() => handleDropdownToggle('community')}
-        $open={dropdowns.community}
-        $active={isPathActive(navStructure.community)}
-    >
-        <Users size={18} />
-        Community
-        <ChevronDown size={16} />
-    </DropdownTrigger>
-    {dropdowns.community && (
-        <DropdownMenu>
-            {navStructure.community.map(item => {
-                const Icon = item.icon;
-                return (
-                    <DropdownItem
-                        key={item.path}
-                        to={item.path}
-                        $active={location.pathname === item.path}
-                    >
-                        <Icon size={18} />
-                        {item.label}
-                    </DropdownItem>
-                );
-            })}
-            {/* NEW LINK */}
-            <DropdownItem
-                to="/achievements/browse"
-                $active={location.pathname === '/achievements/browse'}
-            >
-                <Award size={18} />
-                Browse Achievements
-            </DropdownItem>
-        </DropdownMenu>  
-    )}
-</NavItem>
+                    <NavItem data-dropdown>
+                        <DropdownTrigger
+                            onClick={() => handleDropdownToggle('community')}
+                            $open={dropdowns.community}
+                            $active={isPathActive(navStructure.community)}
+                        >
+                            <Users size={18} />
+                            Community
+                            <ChevronDown size={16} />
+                        </DropdownTrigger>
+                        {dropdowns.community && (
+                            <DropdownMenu>
+                                {navStructure.community.map(item => {
+                                    const Icon = item.icon;
+                                    return (
+                                        <DropdownItem
+                                            key={item.path}
+                                            to={item.path}
+                                            $active={location.pathname === item.path}
+                                        >
+                                            <Icon size={18} />
+                                            {item.label}
+                                        </DropdownItem>
+                                    );
+                                })}
+                                <DropdownItem
+                                    to="/achievements/browse"
+                                    $active={location.pathname === '/achievements/browse'}
+                                >
+                                    <Award size={18} />
+                                    Browse Achievements
+                                </DropdownItem>
+                            </DropdownMenu>  
+                        )}
+                    </NavItem>
 
                     {/* AI Tools Dropdown */}
                     <NavItem data-dropdown>
@@ -1099,7 +1130,7 @@ const Navbar = () => {
 
                 {/* USER SECTION */}
                 <UserSection>
-                    {/* 🎮 GAMIFICATION NAVBAR COMPONENT */}
+                    {/* Gamification Navbar Component */}
                     <NavbarGamification />
 
                     {/* NOTIFICATION BELL */}
@@ -1232,6 +1263,30 @@ const Navbar = () => {
                         Dashboard
                     </MobileNavLink>
 
+                    {/* Vault Category */}
+                    <MobileNavCategory>
+                        <MobileCategoryTitle>
+                            <DollarSign size={16} />
+                            Vault
+                        </MobileCategoryTitle>
+                        <MobileNavLink 
+                            to="/vault" 
+                            $active={location.pathname === '/vault'}
+                            onClick={() => setMobileMenuOpen(false)}
+                        >
+                            <DollarSign size={22} />
+                            The Vault
+                        </MobileNavLink>
+                        <MobileNavLink 
+                            to="/equipped" 
+                            $active={location.pathname === '/equipped'}
+                            onClick={() => setMobileMenuOpen(false)}
+                        >
+                            <Award size={22} />
+                            Equipped Items
+                        </MobileNavLink>
+                    </MobileNavCategory>
+
                     <MobileNavLink 
                         to="/feed" 
                         $active={location.pathname === '/feed'}
@@ -1260,16 +1315,7 @@ const Navbar = () => {
                                 </MobileNavLink>
                             );
                         })}
-                        {/* 🎯 ADD THIS NEW MOBILE LINK */}
-    <MobileNavLink
-        to="/achievements/browse"
-        $active={location.pathname === '/achievements/browse'}
-        onClick={() => setMobileMenuOpen(false)}
-    >
-        <Award size={22} />
-        Browse Achievements
-    </MobileNavLink>
-</MobileNavCategory>
+                    </MobileNavCategory>
 
                     <MobileNavCategory>
                         <MobileCategoryTitle>
@@ -1311,6 +1357,14 @@ const Navbar = () => {
                                 </MobileNavLink>
                             );
                         })}
+                        <MobileNavLink
+                            to="/achievements/browse"
+                            $active={location.pathname === '/achievements/browse'}
+                            onClick={() => setMobileMenuOpen(false)}
+                        >
+                            <Award size={22} />
+                            Browse Achievements
+                        </MobileNavLink>
                     </MobileNavCategory>
 
                     <MobileNavCategory>
