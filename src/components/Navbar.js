@@ -1,14 +1,17 @@
+// client/src/components/Navbar.js - WITH GAMIFICATION! 🎮
+
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
+import NavbarGamification from './gamification/NavbarGamification'; // 🎮 ADDED
 
 import {
     Home, TrendingUp, PieChart, Eye, Filter, MapPin, Newspaper, BookOpen, Brain, MessageSquare,
     DollarSign, LogOut, User, Menu, X, ChevronDown, Zap, Users,
     Settings, Bell, CheckCircle, AlertCircle, TrendingUp as TrendingUpIcon,
     DollarSign as DollarIcon, Clock, ArrowUpRight, ArrowDownRight, Trophy, Twitter,
-    Briefcase, BarChart3, Activity, Sparkles, Globe, Calculator, TrendingDown, MessageCircle
+    Briefcase, BarChart3, Activity, Sparkles, Globe, Calculator, TrendingDown, MessageCircle, Award
 } from 'lucide-react';
 import nexusSignalLogo from '../assets/nexus-signal-logo.png';
 import nexusSignalAnimated from '../assets/nexus-signal-animated.mp4';
@@ -71,7 +74,7 @@ const Logo = styled(Link)`
     align-items: center;
     gap: 1rem;
     text-decoration: none;
-    font-size: 2rem;  // ⬆️ Increased from 1.5rem
+    font-size: 2rem;
     font-weight: 900;
     background: linear-gradient(135deg, #00adef 0%, #00ff88 100%);
     -webkit-background-clip: text;
@@ -95,7 +98,6 @@ const LogoIcon = styled.div`
     position: relative;
     transition: all 0.3s ease;
 
-    // 🔥 GLOW MATCHING YOUR LOGO'S GRADIENT
     filter: drop-shadow(0 0 5px rgba(0, 217, 255, 0.7))
             drop-shadow(0 0 10px rgba(139, 92, 246, 0.6))
             drop-shadow(0 0 15px rgba(236, 72, 153, 0.5));
@@ -127,6 +129,7 @@ const LogoIcon = styled.div`
         height: 45px;
     }
 `;
+
 const LogoImage = styled.img`
     width: 100%;
     height: 100%;
@@ -140,17 +143,15 @@ const LogoText = styled.span`
     font-size: 1.1em;
     font-weight: 900;
     
-    // 🔥 EXACT GRADIENT TO MATCH YOUR LOGO
     background: linear-gradient(135deg, 
-        #00d9ff 0%,      /* Bright cyan */
-        #8b5cf6 50%,     /* Purple middle */
-        #ec4899 100%     /* Hot pink */
+        #00d9ff 0%,
+        #8b5cf6 50%,
+        #ec4899 100%
     );
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
     
-    // Matching glow effect
     text-shadow: 0 0 20px rgba(0, 217, 255, 0.6),
                  0 0 40px rgba(139, 92, 246, 0.5),
                  0 0 60px rgba(236, 72, 153, 0.4);
@@ -548,7 +549,7 @@ const UserAvatar = styled.div`
     align-items: center;
     justify-content: center;
     font-weight: 700;
-    font-size: ${props => props.$src ? '0' : '1rem'}; // Hide text when image exists
+    font-size: ${props => props.$src ? '0' : '1rem'};
     color: white;
     box-shadow: 0 2px 10px rgba(0, 173, 237, 0.4);
     position: relative;
@@ -992,34 +993,42 @@ const Navbar = () => {
                     </NavItem>
 
                     {/* Community Dropdown */}
-                    <NavItem data-dropdown>
-                        <DropdownTrigger
-                            onClick={() => handleDropdownToggle('community')}
-                            $open={dropdowns.community}
-                            $active={isPathActive(navStructure.community)}
-                        >
-                            <Users size={18} />
-                            Community
-                            <ChevronDown size={16} />
-                        </DropdownTrigger>
-                        {dropdowns.community && (
-                            <DropdownMenu>
-                                {navStructure.community.map(item => {
-                                    const Icon = item.icon;
-                                    return (
-                                        <DropdownItem
-                                            key={item.path}
-                                            to={item.path}
-                                            $active={location.pathname === item.path}
-                                        >
-                                            <Icon size={18} />
-                                            {item.label}
-                                        </DropdownItem>
-                                    );
-                                })}
-                            </DropdownMenu>
-                        )}
-                    </NavItem>
+<NavItem data-dropdown>
+    <DropdownTrigger
+        onClick={() => handleDropdownToggle('community')}
+        $open={dropdowns.community}
+        $active={isPathActive(navStructure.community)}
+    >
+        <Users size={18} />
+        Community
+        <ChevronDown size={16} />
+    </DropdownTrigger>
+    {dropdowns.community && (
+        <DropdownMenu>
+            {navStructure.community.map(item => {
+                const Icon = item.icon;
+                return (
+                    <DropdownItem
+                        key={item.path}
+                        to={item.path}
+                        $active={location.pathname === item.path}
+                    >
+                        <Icon size={18} />
+                        {item.label}
+                    </DropdownItem>
+                );
+            })}
+            {/* NEW LINK */}
+            <DropdownItem
+                to="/achievements/browse"
+                $active={location.pathname === '/achievements/browse'}
+            >
+                <Award size={18} />
+                Browse Achievements
+            </DropdownItem>
+        </DropdownMenu>  
+    )}
+</NavItem>
 
                     {/* AI Tools Dropdown */}
                     <NavItem data-dropdown>
@@ -1090,6 +1099,9 @@ const Navbar = () => {
 
                 {/* USER SECTION */}
                 <UserSection>
+                    {/* 🎮 GAMIFICATION NAVBAR COMPONENT */}
+                    <NavbarGamification />
+
                     {/* NOTIFICATION BELL */}
                     <div style={{ position: 'relative' }}>
                         <NotificationButton 
@@ -1160,20 +1172,20 @@ const Navbar = () => {
                     <div style={{ position: 'relative' }} data-user-menu>
                         <UserMenuButton onClick={() => setUserDropdownOpen(!userDropdownOpen)}>
                             <UserAvatar $src={user?.profile?.avatar}>
-    {user?.profile?.avatar ? (
-        <AvatarImage 
-            src={user.profile.avatar} 
-            alt={user?.name || 'User'}
-            onError={(e) => {
-                e.target.style.display = 'none';
-            }}
-        />
-    ) : (
-        <AvatarInitials>
-            {getUserInitials()}
-        </AvatarInitials>
-    )}
-</UserAvatar>
+                                {user?.profile?.avatar ? (
+                                    <AvatarImage 
+                                        src={user.profile.avatar} 
+                                        alt={user?.name || 'User'}
+                                        onError={(e) => {
+                                            e.target.style.display = 'none';
+                                        }}
+                                    />
+                                ) : (
+                                    <AvatarInitials>
+                                        {getUserInitials()}
+                                    </AvatarInitials>
+                                )}
+                            </UserAvatar>
                             <UserName>{user?.name || 'User'}</UserName>
                             <DropdownIcon size={18} $open={userDropdownOpen} />
                         </UserMenuButton>
@@ -1248,7 +1260,16 @@ const Navbar = () => {
                                 </MobileNavLink>
                             );
                         })}
-                    </MobileNavCategory>
+                        {/* 🎯 ADD THIS NEW MOBILE LINK */}
+    <MobileNavLink
+        to="/achievements/browse"
+        $active={location.pathname === '/achievements/browse'}
+        onClick={() => setMobileMenuOpen(false)}
+    >
+        <Award size={22} />
+        Browse Achievements
+    </MobileNavLink>
+</MobileNavCategory>
 
                     <MobileNavCategory>
                         <MobileCategoryTitle>
