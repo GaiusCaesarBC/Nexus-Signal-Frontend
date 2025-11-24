@@ -1,4 +1,4 @@
-// client/src/pages/PredictionsPage.js - COMPLETE WORKING VERSION
+// client/src/pages/PredictionsPage.js - COMPLETE WITH LIVE UPDATES + SMART STATS POLLING
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -11,7 +11,7 @@ import {
     Star, Award, Sparkles, ChevronRight, BarChart3, LineChart as LineChartIcon,
     Rocket, Trophy, ArrowUpDown, Flame, History, Share2, Download,
     X, Eye, RefreshCw, GitCompare, BookmarkPlus, Bookmark, Twitter,
-    Facebook, Linkedin, Copy
+    Facebook, Linkedin, Copy, Clock
 } from 'lucide-react';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid,
@@ -935,6 +935,7 @@ const PredictionsPage = () => {
     const [days, setDays] = useState('7');
     const [loading, setLoading] = useState(false);
     const [prediction, setPrediction] = useState(null);
+    const [liveData, setLiveData] = useState(null);
     const [showRocket, setShowRocket] = useState(false);
     const [particles, setParticles] = useState([]);
     const [showShareModal, setShowShareModal] = useState(false);
@@ -947,14 +948,44 @@ const PredictionsPage = () => {
         loading: true
     });
 
-const fetchUserStats = async () => {
-    try {
-        const response = await api.get('/predictions/stats');
-        setUserStats(response.data);
-    } catch (error) {
-        console.error('Error fetching stats:', error);
-    }
-};
+    // ✅ FIXED: Fetch and poll user stats with smart frequency
+    const fetchUserStats = async () => {
+        try {
+            const response = await api.get('/predictions/stats');
+            setUserStats(response.data);
+            console.log('📈 User stats updated:', response.data);
+        } catch (error) {
+            console.error('Error fetching stats:', error);
+        }
+    };
+
+    // ✅ NEW: Smart user stats polling based on prediction status
+    useEffect(() => {
+        // Fetch immediately on mount
+        fetchUserStats();
+
+        // Determine polling frequency based on prediction status
+        const hasImminentResolution = liveData?.timeRemaining && liveData.timeRemaining < 900000; // < 15 minutes
+        const hasActivePrediction = prediction !== null;
+
+        let interval;
+        
+        if (hasImminentResolution) {
+            // 🔥 FAST: Update every 30 seconds when prediction about to resolve
+            console.log('⚡ FAST STATS MODE: 30-second updates (prediction resolving soon)');
+            interval = setInterval(fetchUserStats, 30000);
+        } else if (hasActivePrediction) {
+            // 🚀 MEDIUM: Update every 2 minutes with active prediction
+            console.log('🚀 ACTIVE STATS MODE: 2-minute updates');
+            interval = setInterval(fetchUserStats, 120000);
+        } else {
+            // 💤 SLOW: Update every 5 minutes when idle
+            console.log('💤 IDLE STATS MODE: 5-minute updates');
+            interval = setInterval(fetchUserStats, 300000);
+        }
+
+        return () => clearInterval(interval);
+    }, [api, liveData?.timeRemaining, prediction]);
 
     useEffect(() => {
         const fetchPlatformStats = async () => {
@@ -975,7 +1006,7 @@ const fetchUserStats = async () => {
         };
 
         fetchPlatformStats();
-        const interval = setInterval(fetchPlatformStats, 30000);
+        const interval = setInterval(fetchPlatformStats, 10000);
         return () => clearInterval(interval);
     }, [api]);
 
@@ -994,57 +1025,141 @@ const fetchUserStats = async () => {
         setSavedPredictions(saved);
     }, []);
 
-    const fetchPrediction = async (e) => {
-    e.preventDefault();
-    
-    if (!symbol) {
-        toast.warning('Please enter a stock symbol', 'Missing Symbol');
-        return;
-    }
+    // 🚀 AGGRESSIVE POLLING with Pro APIs for live prediction data
+    useEffect(() => {
+        const predId = prediction?._id || prediction?.predictionId;
+        if (!predId) return;
 
-    setLoading(true);
-    setPrediction(null);
-    
-    try {
-        const response = await api.post('/predictions/predict', {
-            symbol: symbol.toUpperCase(),
-            days: parseInt(days)
-        });
-        
-        console.log('Prediction response:', response.data);
-        
-        // ✅ REMOVE THIS LINE - no more mock indicators!
-        // const indicators = generateTechnicalIndicators();
+        let currentInterval = null;
 
-        const chartData = generateChartData(
-            response.data.current_price,
-            response.data.prediction.target_price,
-            parseInt(days)
-        );
-
-        const predictionData = {
-            ...response.data,
-            chartData,
-            // ✅ Use real indicators from API
-            indicators: response.data.indicators,
-            timestamp: new Date().toISOString()
+        const fetchLiveData = async () => {
+            try {
+                console.log('🔍 Fetching live data for:', predId);
+                const response = await api.get(`/predictions/live/${predId}`);
+                const data = response.data.prediction;
+                setLiveData(data);
+                console.log('📊 Live data updated:', data);
+                return data.timeRemaining;
+            } catch (error) {
+                console.error('Error fetching live data:', error);
+                return null;
+            }
         };
 
-        setPrediction(predictionData);
-        
-        toast.success(`Prediction generated for ${symbol.toUpperCase()}`, 'Success');
+        // Fetch immediately
+        fetchLiveData();
 
-        const isGoingUp = response.data.prediction.direction === 'UP';
-        setShowRocket(isGoingUp ? 'up' : 'down');
-        setTimeout(() => setShowRocket(false), 3000);
+        const startPolling = () => {
+            const updateInterval = async () => {
+                const timeRemaining = await fetchLiveData();
+                
+                if (timeRemaining) {
+                    const hoursRemaining = timeRemaining / (1000 * 60 * 60);
+                    
+                    // Clear existing interval
+                    if (currentInterval) {
+                        clearInterval(currentInterval);
+                    }
+                    
+                    // 🔥 FINAL MINUTES: Update every 3 seconds
+                    if (hoursRemaining < 0.25) { // Less than 15 minutes
+                        console.log('⚡ FINAL MINUTES MODE: 3-second updates');
+                        currentInterval = setInterval(fetchLiveData, 3000);
+                    }
+                    // 🏃 LAST HOUR: Update every 5 seconds
+                    else if (hoursRemaining < 1) {
+                        console.log('🏃 LAST HOUR MODE: 5-second updates');
+                        currentInterval = setInterval(fetchLiveData, 5000);
+                    }
+                    // ⚡ LAST 6 HOURS: Update every 10 seconds
+                    else if (hoursRemaining < 6) {
+                        console.log('⚡ ACTIVE MODE: 10-second updates');
+                        currentInterval = setInterval(fetchLiveData, 10000);
+                    }
+                    // 🚀 DEFAULT: Update every 15 seconds (with Pro APIs)
+                    else {
+                        console.log('🚀 NORMAL MODE: 15-second updates');
+                        currentInterval = setInterval(fetchLiveData, 15000);
+                    }
+                }
+            };
+
+            // Start with 15-second updates
+            currentInterval = setInterval(updateInterval, 15000);
+            updateInterval(); // Check immediately
+        };
+
+        startPolling();
+
+        return () => {
+            if (currentInterval) {
+                clearInterval(currentInterval);
+            }
+        };
+    }, [prediction?._id, prediction?.predictionId, api]);
+
+    // Format time remaining helper
+    const formatTimeRemaining = (ms) => {
+        const days = Math.floor(ms / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((ms % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+
+        if (days > 0) return `${days}d ${hours}h`;
+        if (hours > 0) return `${hours}h ${minutes}m`;
+        return `${minutes}m`;
+    };
+
+    const fetchPrediction = async (e) => {
+        e.preventDefault();
         
-    } catch (error) {
-        console.error('Error fetching prediction:', error);
-        toast.error(error.response?.data?.error || 'Failed to generate prediction', 'Error');
-    } finally {
-        setLoading(false);
-    }
-};
+        if (!symbol) {
+            toast.warning('Please enter a stock symbol', 'Missing Symbol');
+            return;
+        }
+
+        setLoading(true);
+        setPrediction(null);
+        setLiveData(null);
+        
+        try {
+            const response = await api.post('/predictions/predict', {
+                symbol: symbol.toUpperCase(),
+                days: parseInt(days)
+            });
+            
+            console.log('Prediction response:', response.data);
+
+            const chartData = generateChartData(
+                response.data.current_price,
+                response.data.prediction.target_price,
+                parseInt(days)
+            );
+
+            const predictionData = {
+                ...response.data,
+                chartData,
+                indicators: response.data.indicators,
+                timestamp: new Date().toISOString()
+            };
+
+            setPrediction(predictionData);
+            
+            // ✅ Refresh stats immediately after making prediction
+            fetchUserStats();
+            
+            toast.success(`Prediction generated for ${symbol.toUpperCase()}`, 'Success');
+
+            const isGoingUp = response.data.prediction.direction === 'UP';
+            setShowRocket(isGoingUp ? 'up' : 'down');
+            setTimeout(() => setShowRocket(false), 3000);
+            
+        } catch (error) {
+            console.error('Error fetching prediction:', error);
+            toast.error(error.response?.data?.error || 'Failed to generate prediction', 'Error');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const generateChartData = (currentPrice, targetPrice, days) => {
         const data = [];
@@ -1194,34 +1309,34 @@ const fetchUserStats = async () => {
             {activeTab === 'predict' && (
                 <>
                     <StatsBanner>
-                        
                         <StatCard delay={0}>
-    <StatIcon gradient="linear-gradient(135deg, #8b5cf6, #6d28d9)">
-        <Trophy size={32} />
-    </StatIcon>
-    <StatLabel>ACCURACY RATE</StatLabel>
-    <StatValue>
-        {userStats ? `${userStats.accuracy?.toFixed(1)}%` : '0.0%'}
-    </StatValue>
-    <div style={{ color: '#94a3b8', fontSize: '0.9rem', marginTop: '0.5rem' }}>
-        {userStats 
-            ? `${userStats.correctPredictions} / ${userStats.totalPredictions} correct`
-            : 'No predictions yet'
-        }
-    </div>
-</StatCard>
-                       <StatCard delay={0.1}>
-    <StatIcon gradient="linear-gradient(135deg, #10b981, #059669)">
-        <TrendingUp size={32} />
-    </StatIcon>
-    <StatLabel>PREDICTIONS MADE</StatLabel>
-    <StatValue>
-        {userStats?.totalPredictions || platformStats?.totalPredictions || 0}
-    </StatValue>
-    <div style={{ color: '#94a3b8', fontSize: '0.9rem', marginTop: '0.5rem' }}>
-        Total predictions
-    </div>
-</StatCard>
+                            <StatIcon gradient="linear-gradient(135deg, #8b5cf6, #6d28d9)">
+                                <Trophy size={32} />
+                            </StatIcon>
+                            <StatLabel>ACCURACY RATE</StatLabel>
+                            <StatValue>
+                                {userStats ? `${userStats.accuracy?.toFixed(1)}%` : '0.0%'}
+                            </StatValue>
+                            <div style={{ color: '#94a3b8', fontSize: '0.9rem', marginTop: '0.5rem' }}>
+                                {userStats 
+                                    ? `${userStats.correctPredictions} / ${userStats.totalPredictions} correct`
+                                    : 'No predictions yet'
+                                }
+                            </div>
+                        </StatCard>
+                        
+                        <StatCard delay={0.1}>
+                            <StatIcon gradient="linear-gradient(135deg, #10b981, #059669)">
+                                <TrendingUp size={32} />
+                            </StatIcon>
+                            <StatLabel>PREDICTIONS MADE</StatLabel>
+                            <StatValue>
+                                {userStats?.totalPredictions || platformStats?.totalPredictions || 0}
+                            </StatValue>
+                            <div style={{ color: '#94a3b8', fontSize: '0.9rem', marginTop: '0.5rem' }}>
+                                Total predictions
+                            </div>
+                        </StatCard>
                         
                         <StatCard delay={0.2}>
                             <StatIcon gradient="linear-gradient(135deg, #f59e0b, #d97706)">
@@ -1337,6 +1452,196 @@ const fetchUserStats = async () => {
                                     </div>
                                 </PredictionHeader>
 
+                                {/* COUNTDOWN TIMER */}
+                                {liveData && liveData.timeRemaining > 0 && (
+                                    <div style={{
+                                        padding: '1.5rem',
+                                        background: 'rgba(139, 92, 246, 0.1)',
+                                        borderRadius: '16px',
+                                        border: '2px solid rgba(139, 92, 246, 0.3)',
+                                        marginBottom: '1.5rem',
+                                        position: 'relative',
+                                        zIndex: 1
+                                    }}>
+                                        <div style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'space-between',
+                                            marginBottom: '0.75rem'
+                                        }}>
+                                            <div style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '0.5rem',
+                                                color: '#a78bfa',
+                                                fontSize: '1.1rem',
+                                                fontWeight: '600'
+                                            }}>
+                                                <Clock size={24} />
+                                                Time Remaining
+                                            </div>
+                                            <div style={{
+                                                fontSize: '2rem',
+                                                fontWeight: '900',
+                                                color: liveData.timeRemaining < 3600000 ? '#ef4444' : 
+                                                       liveData.timeRemaining < 86400000 ? '#f59e0b' : '#10b981'
+                                            }}>
+                                                {formatTimeRemaining(liveData.timeRemaining)}
+                                            </div>
+                                        </div>
+                                        <div style={{
+                                            color: '#94a3b8',
+                                            fontSize: '0.95rem',
+                                            textAlign: 'right'
+                                        }}>
+                                            ⏰ {liveData.daysRemaining} {liveData.daysRemaining === 1 ? 'day' : 'days'} remaining until prediction expires
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* LIVE PRICE */}
+                                {liveData && liveData.livePrice && (
+                                    <div style={{
+                                        padding: '1.5rem',
+                                        background: 'rgba(15, 23, 42, 0.6)',
+                                        borderRadius: '16px',
+                                        border: '2px solid rgba(139, 92, 246, 0.3)',
+                                        marginBottom: '1.5rem',
+                                        position: 'relative',
+                                        zIndex: 1
+                                    }}>
+                                        <div style={{
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
+                                            marginBottom: '1rem'
+                                        }}>
+                                            <div style={{ color: '#94a3b8', fontSize: '1rem', fontWeight: '600' }}>
+                                                💰 Live Price
+                                            </div>
+                                            <div style={{
+                                                fontSize: '2rem',
+                                                fontWeight: '900',
+                                                color: liveData.liveChange >= 0 ? '#10b981' : '#ef4444'
+                                            }}>
+                                                ${liveData.livePrice.toFixed(2)}
+                                            </div>
+                                        </div>
+                                        <div style={{
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center'
+                                        }}>
+                                            <div style={{ color: '#94a3b8', fontSize: '0.95rem' }}>
+                                                Change from Start
+                                            </div>
+                                            <div style={{
+                                                fontSize: '1.3rem',
+                                                fontWeight: '700',
+                                                color: liveData.liveChange >= 0 ? '#10b981' : '#ef4444'
+                                            }}>
+                                                {liveData.liveChange >= 0 ? '+' : ''}
+                                                {liveData.liveChangePercent.toFixed(2)}%
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* LIVE CONFIDENCE UPDATE */}
+                                {liveData && liveData.liveConfidence && (
+                                    <div style={{ marginBottom: '2rem', position: 'relative', zIndex: 1 }}>
+                                        <div style={{
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
+                                            marginBottom: '1rem'
+                                        }}>
+                                            <div style={{
+                                                color: '#a78bfa',
+                                                fontSize: '1.2rem',
+                                                fontWeight: '600',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '0.5rem'
+                                            }}>
+                                                <Zap size={24} />
+                                                Live Confidence
+                                            </div>
+                                            <div style={{
+                                                fontSize: '2rem',
+                                                fontWeight: '900',
+                                                color: liveData.liveConfidence >= 75 ? '#10b981' : 
+                                                       liveData.liveConfidence >= 50 ? '#f59e0b' : '#ef4444',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '0.75rem'
+                                            }}>
+                                                {liveData.liveConfidence.toFixed(1)}%
+                                                {liveData.liveConfidence > prediction.prediction.confidence && (
+                                                    <TrendingUp size={28} color="#10b981" />
+                                                )}
+                                                {liveData.liveConfidence < prediction.prediction.confidence && (
+                                                    <TrendingDown size={28} color="#ef4444" />
+                                                )}
+                                            </div>
+                                        </div>
+                                        
+                                        <div style={{
+                                            width: '100%',
+                                            height: '24px',
+                                            background: 'rgba(139, 92, 246, 0.2)',
+                                            borderRadius: '12px',
+                                            overflow: 'hidden',
+                                            border: '2px solid rgba(139, 92, 246, 0.3)'
+                                        }}>
+                                            <div style={{
+                                                height: '100%',
+                                                width: `${liveData.liveConfidence}%`,
+                                                background: liveData.liveConfidence >= 75 
+                                                    ? 'linear-gradient(90deg, #10b981, #059669)'
+                                                    : liveData.liveConfidence >= 50
+                                                    ? 'linear-gradient(90deg, #f59e0b, #d97706)'
+                                                    : 'linear-gradient(90deg, #ef4444, #dc2626)',
+                                                borderRadius: '12px',
+                                                transition: 'width 0.5s ease',
+                                                boxShadow: '0 0 20px rgba(139, 92, 246, 0.6)'
+                                            }} />
+                                        </div>
+                                        
+                                        {Math.abs(liveData.liveConfidence - prediction.prediction.confidence) > 0.1 && (
+                                            <div style={{
+                                                marginTop: '1rem',
+                                                padding: '0.75rem',
+                                                background: liveData.liveConfidence > prediction.prediction.confidence 
+                                                    ? 'rgba(16, 185, 129, 0.1)' 
+                                                    : 'rgba(239, 68, 68, 0.1)',
+                                                borderRadius: '8px',
+                                                border: liveData.liveConfidence > prediction.prediction.confidence
+                                                    ? '1px solid rgba(16, 185, 129, 0.3)'
+                                                    : '1px solid rgba(239, 68, 68, 0.3)',
+                                                fontSize: '1rem',
+                                                color: liveData.liveConfidence > prediction.prediction.confidence ? '#10b981' : '#ef4444',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '0.5rem',
+                                                fontWeight: '600'
+                                            }}>
+                                                {liveData.liveConfidence > prediction.prediction.confidence ? (
+                                                    <>
+                                                        <TrendingUp size={20} />
+                                                        🚀 Confidence INCREASED by {(liveData.liveConfidence - prediction.prediction.confidence).toFixed(1)}% since prediction!
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <TrendingDown size={20} />
+                                                        ⚠️ Confidence DECREASED by {(prediction.prediction.confidence - liveData.liveConfidence).toFixed(1)}% since prediction
+                                                    </>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
                                 <MetricsGrid>
                                     <MetricCard $index={0}>
                                         <MetricIcon $variant={prediction.prediction.direction === 'UP' ? 'success' : 'danger'}>
@@ -1384,7 +1689,7 @@ const fetchUserStats = async () => {
                                     <ConfidenceLabel>
                                         <ConfidenceText>
                                             <Award size={20} style={{ display: 'inline', marginRight: '0.5rem' }} />
-                                            AI Confidence Level
+                                            Original AI Confidence
                                         </ConfidenceText>
                                         <ConfidenceValue>
                                             {prediction.prediction.confidence?.toFixed(1)}%

@@ -3,7 +3,7 @@ import { MessageCircle, Heart, TrendingUp, Users, Plus, Filter, Sparkles, Flame,
 import styled, { keyframes } from 'styled-components';
 import PostCard from './PostCard';
 import CreatePostModal from './CreatePostModal';
-import { useAuth } from '../context/AuthContext'; // ✅ IMPORT AUTH
+import { useAuth } from '../context/AuthContext';
 
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`
@@ -236,7 +236,7 @@ const EndMessage = styled.div`
 `;
 
 const SocialFeed = () => {
-  const { api, isAuthenticated, user } = useAuth(); // ✅ USE AUTH CONTEXT
+  const { api, isAuthenticated, user } = useAuth();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all'); // all, following, trending
@@ -245,13 +245,21 @@ const SocialFeed = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const observerTarget = useRef(null);
 
-  // ✅ FIXED: Fetch feed using api instance (handles cookies automatically)
+  // ✅ FIXED: Fetch feed using correct backend endpoints
   const fetchFeed = async (filterType = filter, pageNum = 1, append = false) => {
     try {
       setLoading(true);
 
-      // ✅ Use the api instance from context - no need for tokens!
-      const response = await api.get(`/feed?filter=${filterType}&page=${pageNum}&limit=20`);
+      let endpoint = '/feed'; // Default: personalized feed (following)
+      
+      // Map filter to correct endpoint
+      if (filterType === 'trending' || filterType === 'all') {
+        endpoint = '/feed/discover'; // Discover/trending feed
+      } else if (filterType === 'following') {
+        endpoint = '/feed'; // Personalized feed
+      }
+
+      const response = await api.get(`${endpoint}?limit=20&skip=${(pageNum - 1) * 20}`);
       
       const newPosts = response.data.posts || [];
 
@@ -261,7 +269,7 @@ const SocialFeed = () => {
         setPosts(newPosts);
       }
 
-      setHasMore(response.data.hasMore || false);
+      setHasMore(newPosts.length === 20); // If we got 20, there might be more
       setLoading(false);
     } catch (error) {
       console.error('Error fetching feed:', error);
@@ -304,14 +312,35 @@ const SocialFeed = () => {
   // ✅ FIXED: Handle like using api instance
   const handleLike = async (postId) => {
     try {
-      const response = await api.post(`/feed/${postId}/like`);
+      // Check if already liked by looking at current state
+      const post = posts.find(p => p._id === postId);
+      const isCurrentlyLiked = post?.likes?.includes(user?._id);
 
-      // Update post in state
-      setPosts(posts.map(post => 
-        post._id === postId 
-          ? { ...post, isLiked: response.data.liked, likesCount: response.data.likesCount }
-          : post
-      ));
+      if (isCurrentlyLiked) {
+        // Unlike
+        await api.delete(`/feed/${postId}/like`);
+        setPosts(posts.map(p => 
+          p._id === postId 
+            ? { 
+                ...p, 
+                likes: p.likes.filter(id => id !== user._id),
+                likesCount: p.likesCount - 1 
+              }
+            : p
+        ));
+      } else {
+        // Like
+        await api.post(`/feed/${postId}/like`);
+        setPosts(posts.map(p => 
+          p._id === postId 
+            ? { 
+                ...p, 
+                likes: [...(p.likes || []), user._id],
+                likesCount: p.likesCount + 1 
+              }
+            : p
+        ));
+      }
     } catch (error) {
       console.error('Error liking post:', error);
     }
@@ -327,18 +356,23 @@ const SocialFeed = () => {
         post._id === postId 
           ? { 
               ...post, 
-              comments: [...post.comments, response.data.comment],
+              comments: [...(post.comments || []), response.data.comment],
               commentsCount: response.data.commentsCount 
             }
           : post
       ));
+
+      return response.data.comment;
     } catch (error) {
       console.error('Error commenting:', error);
+      throw error;
     }
   };
 
   // ✅ FIXED: Handle delete post using api instance
   const handleDeletePost = async (postId) => {
+    if (!window.confirm('Are you sure you want to delete this post?')) return;
+
     try {
       await api.delete(`/feed/${postId}`);
 
@@ -346,6 +380,7 @@ const SocialFeed = () => {
       setPosts(posts.filter(post => post._id !== postId));
     } catch (error) {
       console.error('Error deleting post:', error);
+      alert('Failed to delete post');
     }
   };
 
@@ -380,7 +415,7 @@ const SocialFeed = () => {
               onClick={() => setFilter('all')}
             >
               <Filter size={18} />
-              All Posts
+              Discover
             </FilterChip>
             <FilterChip
               $active={filter === 'following'}
@@ -408,6 +443,7 @@ const SocialFeed = () => {
             <PostCard
               key={post._id}
               post={post}
+              currentUser={user}
               onLike={handleLike}
               onComment={handleComment}
               onDelete={handleDeletePost}
@@ -416,7 +452,7 @@ const SocialFeed = () => {
         </PostsContainer>
 
         {/* Loading Indicator */}
-        {loading && (
+        {loading && posts.length === 0 && (
           <LoadingContainer>
             <LoadingSpinner />
           </LoadingContainer>
@@ -424,6 +460,13 @@ const SocialFeed = () => {
 
         {/* Infinite Scroll Trigger */}
         <div ref={observerTarget} style={{ height: '20px' }} />
+
+        {/* Loading More */}
+        {loading && posts.length > 0 && (
+          <LoadingContainer>
+            <LoadingSpinner />
+          </LoadingContainer>
+        )}
 
         {/* No More Posts */}
         {!hasMore && posts.length > 0 && (

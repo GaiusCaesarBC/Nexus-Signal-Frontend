@@ -1,4 +1,4 @@
-// client/src/components/gamification/NavbarGamification.js
+// client/src/components/gamification/NavbarGamification.js - FIXED NaN ISSUES
 import React, { useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { useGamification } from '../../context/GamificationContext';
@@ -27,7 +27,7 @@ const Container = styled.div`
     position: relative;
 
     @media (max-width: 968px) {
-        display: none; // Hide on mobile, can add a separate mobile view
+        display: none;
     }
 `;
 
@@ -165,7 +165,7 @@ const XPBar = styled.div`
 
 const XPFill = styled.div`
     height: 100%;
-    width: ${props => props.$progress || 0}%;
+    width: ${props => Math.min(Math.max(props.$progress || 0, 0), 100)}%;
     background: linear-gradient(90deg, #10b981, #00adef);
     border-radius: 2px;
     transition: width 0.3s ease;
@@ -175,32 +175,7 @@ const XPValue = styled.div`
     color: #10b981;
     font-size: 0.75rem;
     font-weight: 700;
-`;
-
-const DropdownToggle = styled.button`
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 0.75rem;
-    background: rgba(139, 92, 246, 0.15);
-    border: 1px solid rgba(139, 92, 246, 0.3);
-    border-radius: 20px;
-    color: #a78bfa;
-    font-weight: 700;
-    font-size: 0.85rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-
-    &:hover {
-        background: rgba(139, 92, 246, 0.25);
-        border-color: rgba(139, 92, 246, 0.5);
-        transform: translateY(-2px);
-    }
-
-    svg {
-        transition: transform 0.2s ease;
-        transform: ${props => props.$open ? 'rotate(180deg)' : 'rotate(0deg)'};
-    }
+    white-space: nowrap;
 `;
 
 const Dropdown = styled.div`
@@ -276,7 +251,7 @@ const ProgressBar = styled.div`
 
 const ProgressFill = styled.div`
     height: 100%;
-    width: ${props => props.$progress || 0}%;
+    width: ${props => Math.min(Math.max(props.$progress || 0, 0), 100)}%;
     background: linear-gradient(90deg, #8b5cf6, #00adef);
     border-radius: 4px;
     transition: width 0.5s ease;
@@ -322,25 +297,35 @@ const NavbarGamification = () => {
         return null;
     }
 
+    // ✅ FIXED: Add fallback values for ALL fields to prevent NaN
     const {
-        level,
-        rank,
-        xp,
-        nexusCoins,
-        loginStreak,
-        progressPercent,
-        xpInCurrentLevel,
-        xpForNextLevel
-    } = gamificationData;
+        level = 1,
+        rank = 'Beginner',
+        xp = 0,
+        nexusCoins = 0,
+        loginStreak = 0,
+        progressPercent = 0,
+        xpInCurrentLevel = 0,
+        xpForNextLevel = 100
+    } = gamificationData || {};
 
-    const xpNeeded = xpForNextLevel - Math.pow(level - 1, 2) * 100;
+    // ✅ FIXED: Safe calculation with fallbacks
+    const safeLevel = level || 1;
+    const safeXpForNextLevel = xpForNextLevel || 100;
+    const safeXpInCurrentLevel = xpInCurrentLevel || 0;
+    
+    // Calculate XP needed for display
+    const xpNeeded = Math.max(safeXpForNextLevel - Math.pow(Math.max(safeLevel - 1, 0), 2) * 100, 100);
+    
+    // Ensure progress percent is valid (0-100)
+    const safeProgress = Math.min(Math.max(progressPercent || 0, 0), 100);
 
     return (
         <Container>
             {/* Level Badge */}
             <LevelBadge onClick={() => navigate('/achievements')}>
-                <LevelIcon>{level}</LevelIcon>
-                <span>Level {level}</span>
+                <LevelIcon>{safeLevel}</LevelIcon>
+                <span>Level {safeLevel}</span>
             </LevelBadge>
 
             {/* XP Progress */}
@@ -349,18 +334,19 @@ const NavbarGamification = () => {
                     <XPInfo>
                         <XPLabel>XP Progress</XPLabel>
                         <XPBar>
-                            <XPFill $progress={progressPercent} />
+                            <XPFill $progress={safeProgress} />
                         </XPBar>
                     </XPInfo>
-                    <XPValue>{Math.floor(xpInCurrentLevel)}/{xpNeeded}</XPValue>
+                    {/* ✅ FIXED: Show clean numbers, no NaN */}
+                    <XPValue>{Math.floor(safeXpInCurrentLevel)}/{xpNeeded}</XPValue>
                 </XPBarWrapper>
 
                 {showDropdown && (
                     <Dropdown onClick={(e) => e.stopPropagation()}>
                         <DropdownHeader>
                             <div>
-                                <DropdownTitle>Level {level}</DropdownTitle>
-                                <RankText>{rank}</RankText>
+                                <DropdownTitle>Level {safeLevel}</DropdownTitle>
+                                <RankText>{rank || 'Beginner'}</RankText>
                             </div>
                             <Star size={24} color="#f59e0b" />
                         </DropdownHeader>
@@ -372,7 +358,7 @@ const NavbarGamification = () => {
                                     Total XP
                                 </StatLabel>
                                 <StatValue $color="#a78bfa">
-                                    {xp?.toLocaleString()}
+                                    {(xp || 0).toLocaleString()}
                                 </StatValue>
                             </DropdownStat>
 
@@ -382,7 +368,7 @@ const NavbarGamification = () => {
                                     Nexus Coins
                                 </StatLabel>
                                 <StatValue $color="#f59e0b">
-                                    {nexusCoins?.toLocaleString()}
+                                    {(nexusCoins || 0).toLocaleString()}
                                 </StatValue>
                             </DropdownStat>
 
@@ -391,17 +377,17 @@ const NavbarGamification = () => {
                                     🔥 Login Streak
                                 </StatLabel>
                                 <StatValue $color="#10b981">
-                                    {loginStreak} days
+                                    {loginStreak || 0} days
                                 </StatValue>
                             </DropdownStat>
                         </DropdownStats>
 
                         <div>
                             <StatLabel style={{ marginBottom: '0.5rem' }}>
-                                Progress to Level {level + 1}
+                                Progress to Level {safeLevel + 1}
                             </StatLabel>
                             <ProgressBar>
-                                <ProgressFill $progress={progressPercent} />
+                                <ProgressFill $progress={safeProgress} />
                             </ProgressBar>
                         </div>
 
@@ -426,20 +412,10 @@ const NavbarGamification = () => {
             </XPBarContainer>
 
             {/* Coins Badge */}
-            <StatBadge $variant="coins" onClick={() => navigate('/achievements')}>
+            <StatBadge $variant="coins" onClick={() => navigate('/vault')}>
                 <Zap size={16} />
-                {nexusCoins?.toLocaleString()}
+                {(nexusCoins || 0).toLocaleString()}
             </StatBadge>
-
-            {/* Dropdown Toggle (Alternative - Comment out XPBarContainer dropdown if using this) */}
-            {/* <DropdownToggle 
-                $open={showDropdown}
-                onClick={() => setShowDropdown(!showDropdown)}
-            >
-                <Trophy size={16} />
-                Stats
-                <ChevronDown size={16} />
-            </DropdownToggle> */}
         </Container>
     );
 };

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom'; // ✅ ADD THIS
+import { useNavigate } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
 import { 
   Heart, MessageCircle, TrendingUp, Trophy, Target, 
@@ -74,7 +74,7 @@ const Avatar = styled.div`
   justify-content: center;
   color: #0a0e27;
   font-weight: 900;
-  font-size: ${props => props.$src ? '0' : '1.2rem'}; // ✅ Hide text when image exists
+  font-size: ${props => props.$src ? '0' : '1.2rem'};
   flex-shrink: 0;
   transition: all 0.3s ease;
   cursor: pointer;
@@ -112,11 +112,11 @@ const DisplayName = styled.div`
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  cursor: pointer; // ✅ ADD THIS
-  transition: color 0.2s ease; // ✅ ADD THIS
+  cursor: pointer;
+  transition: color 0.2s ease;
 
   &:hover {
-    color: #ffd700; // ✅ ADD THIS
+    color: #ffd700;
   }
 `;
 
@@ -206,6 +206,7 @@ const TradeHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin-bottom: ${props => props.$hasText ? '1rem' : '0'};
 `;
 
 const TradeLeft = styled.div`
@@ -315,7 +316,34 @@ const AchievementDescription = styled.div`
 const PostText = styled.p`
   color: #e0e6ed;
   line-height: 1.6;
-  margin-bottom: 1rem;
+  margin-bottom: ${props => props.$hasImages ? '1rem' : '0'};
+  white-space: pre-wrap;
+  word-wrap: break-word;
+`;
+
+const ImagesGrid = styled.div`
+  display: grid;
+  grid-template-columns: ${props => {
+    if (props.$count === 1) return '1fr';
+    if (props.$count === 2) return 'repeat(2, 1fr)';
+    return 'repeat(2, 1fr)';
+  }};
+  gap: 0.5rem;
+  margin-top: ${props => props.$hasText ? '1rem' : '0'};
+  border-radius: 12px;
+  overflow: hidden;
+`;
+
+const PostImage = styled.img`
+  width: 100%;
+  height: ${props => props.$count === 1 ? '400px' : '200px'};
+  object-fit: cover;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+
+  &:hover {
+    transform: scale(1.02);
+  }
 `;
 
 const EngagementBar = styled.div`
@@ -401,7 +429,7 @@ const CommentAvatar = styled.div`
   justify-content: center;
   color: #0a0e27;
   font-weight: 900;
-  font-size: ${props => props.$src ? '0' : '0.9rem'}; // ✅ Hide text when image exists
+  font-size: ${props => props.$src ? '0' : '0.9rem'};
   flex-shrink: 0;
   position: relative;
   overflow: hidden;
@@ -439,7 +467,7 @@ const CommentHeader = styled.div`
 const CommentAuthor = styled.span`
   font-weight: 700;
   color: #e0e6ed;
-  cursor: pointer; // ✅ ADD THIS
+  cursor: pointer;
   transition: color 0.2s ease;
 
   &:hover {
@@ -508,87 +536,109 @@ const CharCounter = styled.div`
   margin-top: 0.5rem;
 `;
 
-const PostCard = ({ post, onLike, onComment, onDelete }) => {
-  const navigate = useNavigate(); // ✅ ADD THIS
+const PostCard = ({ post, currentUser, onLike, onComment, onDelete }) => {
+  const navigate = useNavigate();
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [showMenu, setShowMenu] = useState(false);
 
-  const getCurrentUserId = () => {
-    const token = localStorage.getItem('token');
-    if (!token) return null;
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      return payload.userId;
-    } catch {
-      return null;
-    }
-  };
+  const isOwnPost = currentUser && post.user._id === currentUser._id;
+  const isLiked = currentUser && post.likes?.includes(currentUser._id);
 
-  const currentUserId = getCurrentUserId();
-  const isOwnPost = post.user._id === currentUserId;
-
-  const handleCommentSubmit = (e) => {
+  const handleCommentSubmit = async (e) => {
     e.preventDefault();
     if (commentText.trim()) {
-      onComment(post._id, commentText);
-      setCommentText('');
+      try {
+        await onComment(post._id, commentText);
+        setCommentText('');
+      } catch (error) {
+        console.error('Comment error:', error);
+      }
     }
   };
 
-  // ✅ ADD THIS - Navigate to profile
   const handleProfileClick = (username) => {
     navigate(`/trader/${username}`);
   };
 
-  // Helper to get user initials
   const getInitials = (user) => {
     const displayName = user?.profile?.displayName || user?.username || 'U';
     return displayName.charAt(0).toUpperCase();
   };
 
+  const getTimeAgo = (date) => {
+    const seconds = Math.floor((new Date() - new Date(date)) / 1000);
+    
+    if (seconds < 60) return 'just now';
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h`;
+    if (seconds < 604800) return `${Math.floor(seconds / 86400)}d`;
+    return new Date(date).toLocaleDateString();
+  };
+
   const renderPostContent = () => {
+    const hasText = post.content?.text && post.content.text.trim().length > 0;
+    const hasImages = post.content?.images && post.content.images.length > 0;
+
     switch (post.type) {
       case 'trade':
+        const tradeData = post.content.trade;
         return (
-          <TradeCard>
-            <TradeHeader>
-              <TradeLeft>
-                <ActionIcon $action={post.content.trade.action}>
-                  {post.content.trade.action === 'buy' ? (
-                    <ArrowUpCircle size={28} />
-                  ) : (
-                    <ArrowDownCircle size={28} />
-                  )}
-                </ActionIcon>
-                <TradeInfo>
-                  <TradeAction>
-                    {post.content.trade.action} {post.content.trade.symbol}
-                  </TradeAction>
-                  <TradeDetails>
-                    {post.content.trade.shares} shares @ ${post.content.trade.price.toFixed(2)}
-                  </TradeDetails>
-                </TradeInfo>
-              </TradeLeft>
-              
-              {post.content.trade.profit !== undefined && (
-                <TradeProfit>
-                  <ProfitAmount $positive={post.content.trade.profit >= 0}>
-                    {post.content.trade.profit >= 0 ? '+' : ''}
-                    ${Math.abs(post.content.trade.profit).toFixed(2)}
-                  </ProfitAmount>
-                  <ProfitPercent $positive={post.content.trade.profitPercent >= 0}>
-                    {post.content.trade.profitPercent >= 0 ? '+' : ''}
-                    {post.content.trade.profitPercent.toFixed(2)}%
-                  </ProfitPercent>
-                </TradeProfit>
-              )}
-            </TradeHeader>
-            {post.content.text && <PostText>{post.content.text}</PostText>}
-          </TradeCard>
+          <>
+            <TradeCard>
+              <TradeHeader $hasText={hasText}>
+                <TradeLeft>
+                  <ActionIcon $action={tradeData.action}>
+                    {tradeData.action === 'buy' ? (
+                      <ArrowUpCircle size={28} />
+                    ) : (
+                      <ArrowDownCircle size={28} />
+                    )}
+                  </ActionIcon>
+                  <TradeInfo>
+                    <TradeAction>
+                      {tradeData.action} {tradeData.symbol}
+                    </TradeAction>
+                    <TradeDetails>
+                      {tradeData.shares} shares @ ${tradeData.price?.toFixed(2)}
+                    </TradeDetails>
+                  </TradeInfo>
+                </TradeLeft>
+                
+                {tradeData.profit !== undefined && (
+                  <TradeProfit>
+                    <ProfitAmount $positive={tradeData.profit >= 0}>
+                      {tradeData.profit >= 0 ? '+' : ''}
+                      ${Math.abs(tradeData.profit).toFixed(2)}
+                    </ProfitAmount>
+                    {tradeData.profitPercent !== undefined && (
+                      <ProfitPercent $positive={tradeData.profitPercent >= 0}>
+                        {tradeData.profitPercent >= 0 ? '+' : ''}
+                        {tradeData.profitPercent.toFixed(2)}%
+                      </ProfitPercent>
+                    )}
+                  </TradeProfit>
+                )}
+              </TradeHeader>
+              {hasText && <PostText>{post.content.text}</PostText>}
+            </TradeCard>
+            {hasImages && (
+              <ImagesGrid $count={post.content.images.length} $hasText={false}>
+                {post.content.images.map((img, idx) => (
+                  <PostImage
+                    key={idx}
+                    src={img.url}
+                    alt={`Post image ${idx + 1}`}
+                    $count={post.content.images.length}
+                  />
+                ))}
+              </ImagesGrid>
+            )}
+          </>
         );
 
       case 'achievement':
+        const achievement = post.content.achievement;
         return (
           <AchievementCard>
             <AchievementHeader>
@@ -597,17 +647,37 @@ const PostCard = ({ post, onLike, onComment, onDelete }) => {
               </AchievementIcon>
               <AchievementText>
                 <AchievementTitle>Achievement Unlocked!</AchievementTitle>
-                <AchievementName>{post.content.achievement.name}</AchievementName>
+                <AchievementName>{achievement.title}</AchievementName>
               </AchievementText>
             </AchievementHeader>
             <AchievementDescription>
-              {post.content.achievement.description}
+              {achievement.description}
             </AchievementDescription>
           </AchievementCard>
         );
 
       default:
-        return post.content.text && <PostText>{post.content.text}</PostText>;
+        return (
+          <>
+            {hasText && (
+              <PostText $hasImages={hasImages}>
+                {post.content.text}
+              </PostText>
+            )}
+            {hasImages && (
+              <ImagesGrid $count={post.content.images.length} $hasText={hasText}>
+                {post.content.images.map((img, idx) => (
+                  <PostImage
+                    key={idx}
+                    src={img.url}
+                    alt={`Post image ${idx + 1}`}
+                    $count={post.content.images.length}
+                  />
+                ))}
+              </ImagesGrid>
+            )}
+          </>
+        );
     }
   };
 
@@ -616,15 +686,15 @@ const PostCard = ({ post, onLike, onComment, onDelete }) => {
       <PostHeader>
         <HeaderTop>
           <UserSection>
-            {/* ✅ UPDATED: Clickable Avatar */}
-            <Avatar onClick={() => handleProfileClick(post.user.username)}>
+            <Avatar 
+              $src={post.user.profile?.avatar}
+              onClick={() => handleProfileClick(post.user.username)}
+            >
               {post.user.profile?.avatar ? (
                 <AvatarImage 
                   src={post.user.profile.avatar} 
                   alt={post.user.profile?.displayName || post.user.username}
-                  onError={(e) => {
-                    e.target.style.display = 'none';
-                  }}
+                  onError={(e) => { e.target.style.display = 'none'; }}
                 />
               ) : (
                 <AvatarInitials>
@@ -634,7 +704,6 @@ const PostCard = ({ post, onLike, onComment, onDelete }) => {
             </Avatar>
             
             <UserInfo>
-              {/* ✅ UPDATED: Clickable Display Name */}
               <DisplayName onClick={() => handleProfileClick(post.user.username)}>
                 {post.user.profile?.displayName || post.user.username}
                 {post.user.stats?.rank === 1 && <Crown size={16} color="#ffd700" />}
@@ -642,7 +711,7 @@ const PostCard = ({ post, onLike, onComment, onDelete }) => {
               <Username>
                 <span>@{post.user.username}</span>
                 <span>•</span>
-                <span>{post.timeAgo}</span>
+                <span>{getTimeAgo(post.createdAt)}</span>
                 {post.user.stats?.totalReturnPercent !== undefined && (
                   <>
                     <span>•</span>
@@ -685,12 +754,12 @@ const PostCard = ({ post, onLike, onComment, onDelete }) => {
       <EngagementBar>
         <EngagementButtons>
           <EngagementButton
-            $active={post.isLiked}
+            $active={isLiked}
             $type="like"
             onClick={() => onLike(post._id)}
           >
-            <Heart size={20} fill={post.isLiked ? 'currentColor' : 'none'} />
-            <span>{post.likesCount}</span>
+            <Heart size={20} fill={isLiked ? 'currentColor' : 'none'} />
+            <span>{post.likesCount || 0}</span>
           </EngagementButton>
 
           <EngagementButton
@@ -698,7 +767,7 @@ const PostCard = ({ post, onLike, onComment, onDelete }) => {
             onClick={() => setShowComments(!showComments)}
           >
             <MessageCircle size={20} />
-            <span>{post.commentsCount}</span>
+            <span>{post.commentsCount || 0}</span>
           </EngagementButton>
         </EngagementButtons>
 
@@ -709,43 +778,41 @@ const PostCard = ({ post, onLike, onComment, onDelete }) => {
 
       {showComments && (
         <CommentsSection>
-          <CommentsList>
-            {post.comments.map((comment) => (
-              <Comment key={comment._id}>
-                {/* ✅ UPDATED: Clickable Comment Avatar */}
-                <CommentAvatar onClick={() => handleProfileClick(comment.user.username)}>
-                  {comment.user.profile?.avatar ? (
-                    <CommentAvatarImage 
-                      src={comment.user.profile.avatar} 
-                      alt={comment.user.profile?.displayName || comment.user.username}
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                      }}
-                    />
-                  ) : (
-                    <CommentAvatarInitials>
-                      {getInitials(comment.user)}
-                    </CommentAvatarInitials>
-                  )}
-                </CommentAvatar>
-                <CommentContent>
-                  <CommentHeader>
-                    {/* ✅ UPDATED: Clickable Comment Author */}
-                    <CommentAuthor onClick={() => handleProfileClick(comment.user.username)}>
-                      {comment.user.profile?.displayName || comment.user.username}
-                    </CommentAuthor>
-                    <CommentTime>
-                      {new Date(comment.createdAt).toLocaleTimeString([], { 
-                        hour: '2-digit', 
-                        minute: '2-digit' 
-                      })}
-                    </CommentTime>
-                  </CommentHeader>
-                  <CommentText>{comment.text}</CommentText>
-                </CommentContent>
-              </Comment>
-            ))}
-          </CommentsList>
+          {post.comments && post.comments.length > 0 && (
+            <CommentsList>
+              {post.comments.map((comment) => (
+                <Comment key={comment._id}>
+                  <CommentAvatar 
+                    $src={comment.user?.profile?.avatar}
+                    onClick={() => handleProfileClick(comment.user.username)}
+                  >
+                    {comment.user?.profile?.avatar ? (
+                      <CommentAvatarImage 
+                        src={comment.user.profile.avatar} 
+                        alt={comment.user.profile?.displayName || comment.user.username}
+                        onError={(e) => { e.target.style.display = 'none'; }}
+                      />
+                    ) : (
+                      <CommentAvatarInitials>
+                        {getInitials(comment.user)}
+                      </CommentAvatarInitials>
+                    )}
+                  </CommentAvatar>
+                  <CommentContent>
+                    <CommentHeader>
+                      <CommentAuthor onClick={() => handleProfileClick(comment.user.username)}>
+                        {comment.user?.profile?.displayName || comment.user?.username}
+                      </CommentAuthor>
+                      <CommentTime>
+                        {getTimeAgo(comment.createdAt)}
+                      </CommentTime>
+                    </CommentHeader>
+                    <CommentText>{comment.text}</CommentText>
+                  </CommentContent>
+                </Comment>
+              ))}
+            </CommentsList>
+          )}
 
           <CommentInputSection onSubmit={handleCommentSubmit}>
             <CommentInputWrapper>
@@ -754,13 +821,13 @@ const PostCard = ({ post, onLike, onComment, onDelete }) => {
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
                 placeholder="Write a comment..."
-                maxLength={300}
+                maxLength={500}
               />
               <CommentSubmit type="submit" disabled={!commentText.trim()}>
                 Post
               </CommentSubmit>
             </CommentInputWrapper>
-            <CharCounter>{commentText.length}/300 characters</CharCounter>
+            <CharCounter>{commentText.length}/500 characters</CharCounter>
           </CommentInputSection>
         </CommentsSection>
       )}

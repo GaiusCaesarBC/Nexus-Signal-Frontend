@@ -1,7 +1,7 @@
-// client/src/pages/PricingPage.js - WITH WORKING STRIPE CHECKOUT
+// client/src/pages/PricingPage.js - WITH FREE TIER + STRIPE CHECKOUT
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
-import { Check, Zap, Crown, Star, Rocket, Sparkles, TrendingUp, Shield, Award } from 'lucide-react';
+import { Check, Zap, Crown, Star, Rocket, Sparkles, TrendingUp, Shield, Award, Gift } from 'lucide-react';
 import nexusSignalLogo from '../assets/nexus-signal-logo.png';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -147,14 +147,18 @@ const Subtitle = styled.p`
 
 const PricingCards = styled.div`
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 2rem;
-    max-width: 1600px;
+    max-width: 1800px;
     width: 100%;
     z-index: 2;
     padding: 0 1rem;
 
-    @media (max-width: 1400px) {
+    @media (max-width: 1600px) {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    @media (max-width: 1200px) {
         grid-template-columns: repeat(2, 1fr);
     }
 
@@ -194,6 +198,15 @@ const Card = styled.div`
     &:hover {
         transform: translateY(-15px) scale(1.02);
     }
+
+    ${props => props.planType === 'free' && `
+        border: 2px solid #6366f1;
+        animation-delay: 0s;
+        
+        &:hover {
+            box-shadow: 0 0 40px rgba(99, 102, 241, 0.6), 0 15px 50px rgba(0, 0, 0, 0.6);
+        }
+    `}
 
     ${props => props.planType === 'starter' && `
         border: 2px solid #10b981;
@@ -245,6 +258,7 @@ const PlanIconWrapper = styled.div`
     height: 70px;
     margin: 0 auto 1.5rem;
     background: ${props => {
+        if (props.planType === 'free') return 'linear-gradient(135deg, #6366f1, #4f46e5)';
         if (props.planType === 'starter') return 'linear-gradient(135deg, #10b981, #059669)';
         if (props.planType === 'pro') return 'linear-gradient(135deg, #3b82f6, #2563eb)';
         if (props.planType === 'premium') return 'linear-gradient(135deg, #f97316, #ea580c)';
@@ -256,6 +270,7 @@ const PlanIconWrapper = styled.div`
     justify-content: center;
     animation: ${float} 3s ease-in-out infinite, ${pulse} 2s ease-in-out infinite;
     box-shadow: ${props => {
+        if (props.planType === 'free') return '0 10px 30px rgba(99, 102, 241, 0.4)';
         if (props.planType === 'starter') return '0 10px 30px rgba(16, 185, 129, 0.4)';
         if (props.planType === 'pro') return '0 10px 30px rgba(59, 130, 246, 0.4)';
         if (props.planType === 'premium') return '0 10px 30px rgba(249, 115, 22, 0.4)';
@@ -278,6 +293,11 @@ const PlanTag = styled.span`
     box-shadow: 0 4px 15px rgba(249, 115, 22, 0.5);
 `;
 
+const FreeTag = styled(PlanTag)`
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.5);
+`;
+
 const BestValueTag = styled(PlanTag)`
     background: linear-gradient(135deg, #8b5cf6, #7c3aed);
     box-shadow: 0 4px 15px rgba(139, 92, 246, 0.5);
@@ -286,6 +306,7 @@ const BestValueTag = styled(PlanTag)`
 const PlanName = styled.h2`
     font-size: 2rem;
     color: ${props => {
+        if (props.planType === 'free') return '#6366f1';
         if (props.planType === 'starter') return '#10b981';
         if (props.planType === 'pro') return '#3b82f6';
         if (props.planType === 'premium') return '#f97316';
@@ -316,7 +337,7 @@ const Price = styled.div`
         color: #94a3b8;
     }
     
-    ${props => props.planType === 'starter' && `
+    ${props => (props.planType === 'free' || props.planType === 'starter') && `
         font-size: 2.5rem;
     `}
 `;
@@ -355,6 +376,7 @@ const FeatureItem = styled.li`
 
 const ActionButton = styled.button`
     background: ${props => {
+        if (props.planType === 'free') return 'linear-gradient(135deg, #6366f1, #4f46e5)';
         if (props.planType === 'starter') return 'linear-gradient(135deg, #10b981, #059669)';
         if (props.planType === 'pro') return 'linear-gradient(135deg, #3b82f6, #2563eb)';
         if (props.planType === 'premium') return 'linear-gradient(135deg, #f97316, #ea580c)';
@@ -390,6 +412,7 @@ const ActionButton = styled.button`
     &:hover:not(:disabled) {
         transform: translateY(-3px);
         box-shadow: 0 10px 30px ${props => {
+            if (props.planType === 'free') return 'rgba(99, 102, 241, 0.6)';
             if (props.planType === 'starter') return 'rgba(16, 185, 129, 0.6)';
             if (props.planType === 'pro') return 'rgba(59, 130, 246, 0.6)';
             if (props.planType === 'premium') return 'rgba(249, 115, 22, 0.6)';
@@ -480,6 +503,14 @@ const PricingPage = () => {
         setParticles(newParticles);
     }, []);
 
+    const handleFreeTier = () => {
+        if (!user) {
+            navigate('/signup');
+        } else {
+            navigate('/dashboard');
+        }
+    };
+
     const handleSubscribe = async (plan) => {
         if (!user) {
             toast.warning('Please log in to subscribe', 'Login Required');
@@ -521,11 +552,41 @@ const PricingPage = () => {
 
             <Title>Unlock Your Trading Edge: <strong>Nexus Signal.AI</strong> Pricing!</Title>
             <Subtitle>
-                Gain an unfair advantage with AI-powered insights, real-time analytics, and advanced predictive models. 
-                Choose the plan that elevates your trading strategy to legendary status.
+                Start free with paper trading and social features, then upgrade for AI-powered insights, 
+                real-time analytics, and advanced predictive models.
             </Subtitle>
 
             <PricingCards>
+                {/* FREE TIER */}
+                <Card planType="free">
+                    <PlanHeader>
+                        <FreeTag>Forever Free</FreeTag>
+                        <PlanIconWrapper planType="free">
+                            <Gift size={36} color="white" />
+                        </PlanIconWrapper>
+                        <PlanName planType="free">Free</PlanName>
+                        <PlanDescription>Start Your Journey</PlanDescription>
+                    </PlanHeader>
+                    <Price planType="free">$0<span>/month</span></Price>
+                    <FeatureList>
+                        <FeatureItem><Check size={18} /> Full Paper Trading</FeatureItem>
+                        <FeatureItem><Check size={18} /> $100,000 Virtual Cash</FeatureItem>
+                        <FeatureItem><Check size={18} /> Social Feed Access</FeatureItem>
+                        <FeatureItem><Check size={18} /> Post Trades & Updates</FeatureItem>
+                        <FeatureItem><Check size={18} /> Follow Other Traders</FeatureItem>
+                        <FeatureItem><Check size={18} /> Like & Comment</FeatureItem>
+                        <FeatureItem><Check size={18} /> 3 AI Predictions/day</FeatureItem>
+                        <FeatureItem><Check size={18} /> Basic Portfolio Tracking</FeatureItem>
+                        <FeatureItem><Check size={18} /> Leaderboard Access</FeatureItem>
+                    </FeatureList>
+                    <ActionButton 
+                        planType="free" 
+                        onClick={handleFreeTier}
+                    >
+                        {user ? 'Go to Dashboard' : 'Get Started Free'}
+                    </ActionButton>
+                </Card>
+
                 {/* Starter Tier - $15 */}
                 <Card planType="starter">
                     <PlanHeader>
@@ -533,16 +594,18 @@ const PricingPage = () => {
                             <Star size={36} color="white" />
                         </PlanIconWrapper>
                         <PlanName planType="starter">Starter</PlanName>
-                        <PlanDescription>Begin Your Journey</PlanDescription>
+                        <PlanDescription>Enhanced Features</PlanDescription>
                     </PlanHeader>
                     <Price planType="starter">$15<span>/month</span></Price>
                     <FeatureList>
-                        <FeatureItem><Check size={18} /> 5 Daily AI Signals</FeatureItem>
-                        <FeatureItem><Check size={18} /> 1 Watchlist (10 assets)</FeatureItem>
-                        <FeatureItem><Check size={18} /> Basic Market Overview</FeatureItem>
-                        <FeatureItem><Check size={18} /> 3 Stock Predictions/month</FeatureItem>
+                        <FeatureItem><Check size={18} /> Everything in Free +</FeatureItem>
+                        <FeatureItem><Check size={18} /> 10 AI Predictions/day</FeatureItem>
+                        <FeatureItem><Check size={18} /> 2 Watchlists (20 assets)</FeatureItem>
+                        <FeatureItem><Check size={18} /> Advanced Market Overview</FeatureItem>
+                        <FeatureItem><Check size={18} /> Price Alerts</FeatureItem>
                         <FeatureItem><Check size={18} /> Email Support</FeatureItem>
-                        <FeatureItem><Check size={18} /> Mobile App Access</FeatureItem>
+                        <FeatureItem><Check size={18} /> Trade History Export</FeatureItem>
+                        <FeatureItem><Check size={18} /> Performance Analytics</FeatureItem>
                     </FeatureList>
                     <ActionButton 
                         planType="starter" 
@@ -564,22 +627,22 @@ const PricingPage = () => {
                     </PlanHeader>
                     <Price planType="pro">$25<span>/month</span></Price>
                     <FeatureList>
-                        <FeatureItem><Check size={18} /> 15 Daily AI Signals</FeatureItem>
-                        <FeatureItem><Check size={18} /> 3 Watchlists (30 assets each)</FeatureItem>
+                        <FeatureItem><Check size={18} /> Everything in Starter +</FeatureItem>
+                        <FeatureItem><Check size={18} /> 25 AI Predictions/day</FeatureItem>
+                        <FeatureItem><Check size={18} /> 5 Watchlists (50 assets each)</FeatureItem>
                         <FeatureItem><Check size={18} /> Advanced Market Analysis</FeatureItem>
-                        <FeatureItem><Check size={18} /> 10 Stock Predictions/month</FeatureItem>
                         <FeatureItem><Check size={18} /> Real-Time Price Alerts</FeatureItem>
                         <FeatureItem><Check size={18} /> AI Chat Assistant</FeatureItem>
                         <FeatureItem><Check size={18} /> Technical Indicators</FeatureItem>
                         <FeatureItem><Check size={18} /> Priority Email Support</FeatureItem>
                     </FeatureList>
-                    <ComparisonBadge>2x More Features than Starter</ComparisonBadge>
+                    <ComparisonBadge>3x More AI Predictions</ComparisonBadge>
                     <ActionButton 
                         planType="pro"
                         onClick={() => handleSubscribe('pro')}
                         disabled={loading !== null}
                     >
-                        {loading === 'pro' ? 'Loading...' : 'Get Started'}
+                        {loading === 'pro' ? 'Loading...' : 'Upgrade to Pro'}
                     </ActionButton>
                 </Card>
 
@@ -595,10 +658,10 @@ const PricingPage = () => {
                     </PlanHeader>
                     <Price planType="premium">$50<span>/month</span></Price>
                     <FeatureList>
-                        <FeatureItem><Check size={18} /> Unlimited Daily AI Signals</FeatureItem>
+                        <FeatureItem><Check size={18} /> Everything in Pro +</FeatureItem>
+                        <FeatureItem><Check size={18} /> Unlimited AI Predictions</FeatureItem>
                         <FeatureItem><Check size={18} /> Unlimited Watchlists</FeatureItem>
                         <FeatureItem><Check size={18} /> Live Market Data (Real-Time)</FeatureItem>
-                        <FeatureItem><Check size={18} /> Unlimited Predictions</FeatureItem>
                         <FeatureItem><Check size={18} /> Advanced AI Chat (GPT-4)</FeatureItem>
                         <FeatureItem><Check size={18} /> Algorithmic Pattern Recognition</FeatureItem>
                         <FeatureItem><Check size={18} /> In-Depth Sector Analysis</FeatureItem>
@@ -606,13 +669,13 @@ const PricingPage = () => {
                         <FeatureItem><Check size={18} /> Custom Alerts & Notifications</FeatureItem>
                         <FeatureItem><Check size={18} /> Priority Support (24/7)</FeatureItem>
                     </FeatureList>
-                    <ComparisonBadge>3x More Features than Pro</ComparisonBadge>
+                    <ComparisonBadge>Unlimited Everything</ComparisonBadge>
                     <ActionButton 
                         planType="premium"
                         onClick={() => handleSubscribe('premium')}
                         disabled={loading !== null}
                     >
-                        {loading === 'premium' ? 'Loading...' : 'Get Started'}
+                        {loading === 'premium' ? 'Loading...' : 'Upgrade to Premium'}
                     </ActionButton>
                 </Card>
 
@@ -641,13 +704,13 @@ const PricingPage = () => {
                         <FeatureItem><Check size={18} /> 24/7 Dedicated Account Manager</FeatureItem>
                         <FeatureItem><Check size={18} /> VIP Discord Community Access</FeatureItem>
                     </FeatureList>
-                    <ComparisonBadge>5x More Features than Premium</ComparisonBadge>
+                    <ComparisonBadge>Pro Features + Mentorship</ComparisonBadge>
                     <ActionButton 
                         planType="elite"
                         onClick={() => handleSubscribe('elite')}
                         disabled={loading !== null}
                     >
-                        {loading === 'elite' ? 'Loading...' : 'Get Started'}
+                        {loading === 'elite' ? 'Loading...' : 'Go Elite'}
                     </ActionButton>
                 </Card>
             </PricingCards>
@@ -655,9 +718,14 @@ const PricingPage = () => {
             <FooterHashtags>
                 <span>#NexusSignalAI</span>
                 <span>#AITrading</span>
+                <span>#PaperTrading</span>
                 <span>#MarketPredictions</span>
-                <span>#UnfairAdvantage</span>
+                <span>#TradingCommunity</span>
             </FooterHashtags>
+
+            <Subtitle style={{ marginTop: '3rem', fontSize: '0.9rem', color: '#64748b' }}>
+                📱 Mobile app coming Summer 2026 • 🇺🇸 Made in USA • 💯 Built by real traders
+            </Subtitle>
         </PricingContainer>
     );
 };
