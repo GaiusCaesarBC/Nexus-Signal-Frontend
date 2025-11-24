@@ -1,4 +1,4 @@
-// client/src/pages/PredictionsPage.js - COMPLETE WITH LIVE UPDATES + SMART STATS POLLING
+// client/src/pages/PredictionsPage.js - COMPLETE WITH LIVE UPDATES + PLATFORM-WIDE STATS + SAVED TAB
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -11,7 +11,7 @@ import {
     Star, Award, Sparkles, ChevronRight, BarChart3, LineChart as LineChartIcon,
     Rocket, Trophy, ArrowUpDown, Flame, History, Share2, Download,
     X, Eye, RefreshCw, GitCompare, BookmarkPlus, Bookmark, Twitter,
-    Facebook, Linkedin, Copy, Clock
+    Facebook, Linkedin, Copy, Clock, Globe, Trash2, ExternalLink
 } from 'lucide-react';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid,
@@ -168,7 +168,7 @@ const Title = styled.h1`
     }
 
     @media (max-width: 768px) {
-        font-size: 2.5rem;
+        font-size: 2rem;
     }
 `;
 
@@ -925,6 +925,175 @@ const ShareOption = styled.button`
     }
 `;
 
+// ============ SAVED PREDICTIONS STYLED COMPONENTS ============
+const SavedPredictionsContainer = styled.div`
+    max-width: 1400px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+`;
+
+const SavedPredictionsGrid = styled.div`
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem;
+    animation: ${fadeIn} 0.5s ease-out;
+`;
+
+const SavedPredictionCard = styled.div`
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    border: 2px solid rgba(139, 92, 246, 0.3);
+    border-radius: 16px;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+
+    &:hover {
+        transform: translateY(-5px);
+        border-color: rgba(139, 92, 246, 0.6);
+        box-shadow: 0 15px 40px rgba(139, 92, 246, 0.3);
+    }
+
+    &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: ${props => props.$up ? 
+            'linear-gradient(90deg, #10b981, #059669)' : 
+            'linear-gradient(90deg, #ef4444, #dc2626)'
+        };
+    }
+`;
+
+const SavedCardHeader = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+`;
+
+const SavedSymbol = styled.div`
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: #8b5cf6;
+`;
+
+const SavedDirection = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: ${props => props.$up ? 
+        'rgba(16, 185, 129, 0.2)' : 
+        'rgba(239, 68, 68, 0.2)'
+    };
+    border: 1px solid ${props => props.$up ? 
+        'rgba(16, 185, 129, 0.4)' : 
+        'rgba(239, 68, 68, 0.4)'
+    };
+    border-radius: 8px;
+    color: ${props => props.$up ? '#10b981' : '#ef4444'};
+    font-weight: 700;
+    font-size: 0.9rem;
+`;
+
+const SavedCardBody = styled.div`
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+`;
+
+const SavedMetric = styled.div`
+    background: rgba(139, 92, 246, 0.1);
+    border-radius: 8px;
+    padding: 0.75rem;
+`;
+
+const SavedMetricLabel = styled.div`
+    color: #94a3b8;
+    font-size: 0.8rem;
+    margin-bottom: 0.25rem;
+`;
+
+const SavedMetricValue = styled.div`
+    color: #e0e6ed;
+    font-size: 1.1rem;
+    font-weight: 700;
+`;
+
+const SavedCardFooter = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(139, 92, 246, 0.2);
+`;
+
+const SavedDate = styled.div`
+    color: #64748b;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+`;
+
+const SavedActions = styled.div`
+    display: flex;
+    gap: 0.5rem;
+`;
+
+const SavedActionButton = styled.button`
+    padding: 0.5rem;
+    background: ${props => props.$danger ? 
+        'rgba(239, 68, 68, 0.1)' : 
+        'rgba(139, 92, 246, 0.1)'
+    };
+    border: 1px solid ${props => props.$danger ? 
+        'rgba(239, 68, 68, 0.3)' : 
+        'rgba(139, 92, 246, 0.3)'
+    };
+    border-radius: 8px;
+    color: ${props => props.$danger ? '#ef4444' : '#a78bfa'};
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+
+    &:hover {
+        background: ${props => props.$danger ? 
+            'rgba(239, 68, 68, 0.2)' : 
+            'rgba(139, 92, 246, 0.2)'
+        };
+        transform: scale(1.1);
+    }
+`;
+
+const ClearAllButton = styled.button`
+    padding: 0.75rem 1.5rem;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 10px;
+    color: #ef4444;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+    margin-bottom: 2rem;
+
+    &:hover {
+        background: rgba(239, 68, 68, 0.2);
+        border-color: rgba(239, 68, 68, 0.5);
+    }
+`;
+
 // ============ COMPONENT ============
 const PredictionsPage = () => {
     const { api } = useAuth();
@@ -940,53 +1109,16 @@ const PredictionsPage = () => {
     const [particles, setParticles] = useState([]);
     const [showShareModal, setShowShareModal] = useState(false);
     const [savedPredictions, setSavedPredictions] = useState([]);
-    const [userStats, setUserStats] = useState(null);
 
+    // ✅ PLATFORM-WIDE STATS (not per-user)
     const [platformStats, setPlatformStats] = useState({
         accuracy: 0,
         totalPredictions: 0,
+        correctPredictions: 0,
         loading: true
     });
 
-    // ✅ FIXED: Fetch and poll user stats with smart frequency
-    const fetchUserStats = async () => {
-        try {
-            const response = await api.get('/predictions/stats');
-            setUserStats(response.data);
-            console.log('📈 User stats updated:', response.data);
-        } catch (error) {
-            console.error('Error fetching stats:', error);
-        }
-    };
-
-    // ✅ NEW: Smart user stats polling based on prediction status
-    useEffect(() => {
-        // Fetch immediately on mount
-        fetchUserStats();
-
-        // Determine polling frequency based on prediction status
-        const hasImminentResolution = liveData?.timeRemaining && liveData.timeRemaining < 900000; // < 15 minutes
-        const hasActivePrediction = prediction !== null;
-
-        let interval;
-        
-        if (hasImminentResolution) {
-            // 🔥 FAST: Update every 30 seconds when prediction about to resolve
-            console.log('⚡ FAST STATS MODE: 30-second updates (prediction resolving soon)');
-            interval = setInterval(fetchUserStats, 30000);
-        } else if (hasActivePrediction) {
-            // 🚀 MEDIUM: Update every 2 minutes with active prediction
-            console.log('🚀 ACTIVE STATS MODE: 2-minute updates');
-            interval = setInterval(fetchUserStats, 120000);
-        } else {
-            // 💤 SLOW: Update every 5 minutes when idle
-            console.log('💤 IDLE STATS MODE: 5-minute updates');
-            interval = setInterval(fetchUserStats, 300000);
-        }
-
-        return () => clearInterval(interval);
-    }, [api, liveData?.timeRemaining, prediction]);
-
+    // ✅ Fetch platform-wide stats
     useEffect(() => {
         const fetchPlatformStats = async () => {
             try {
@@ -996,6 +1128,7 @@ const PredictionsPage = () => {
                     setPlatformStats({
                         accuracy: response.data.accuracy || 0,
                         totalPredictions: response.data.totalPredictions || 0,
+                        correctPredictions: response.data.correctPredictions || 0,
                         loading: false
                     });
                 }
@@ -1006,7 +1139,7 @@ const PredictionsPage = () => {
         };
 
         fetchPlatformStats();
-        const interval = setInterval(fetchPlatformStats, 10000);
+        const interval = setInterval(fetchPlatformStats, 30000);
         return () => clearInterval(interval);
     }, [api]);
 
@@ -1021,6 +1154,7 @@ const PredictionsPage = () => {
         }));
         setParticles(newParticles);
 
+        // Load saved predictions from localStorage
         const saved = JSON.parse(localStorage.getItem('savedPredictions') || '[]');
         setSavedPredictions(saved);
     }, []);
@@ -1046,7 +1180,6 @@ const PredictionsPage = () => {
             }
         };
 
-        // Fetch immediately
         fetchLiveData();
 
         const startPolling = () => {
@@ -1056,37 +1189,28 @@ const PredictionsPage = () => {
                 if (timeRemaining) {
                     const hoursRemaining = timeRemaining / (1000 * 60 * 60);
                     
-                    // Clear existing interval
                     if (currentInterval) {
                         clearInterval(currentInterval);
                     }
                     
-                    // 🔥 FINAL MINUTES: Update every 3 seconds
-                    if (hoursRemaining < 0.25) { // Less than 15 minutes
+                    if (hoursRemaining < 0.25) {
                         console.log('⚡ FINAL MINUTES MODE: 3-second updates');
                         currentInterval = setInterval(fetchLiveData, 3000);
-                    }
-                    // 🏃 LAST HOUR: Update every 5 seconds
-                    else if (hoursRemaining < 1) {
+                    } else if (hoursRemaining < 1) {
                         console.log('🏃 LAST HOUR MODE: 5-second updates');
                         currentInterval = setInterval(fetchLiveData, 5000);
-                    }
-                    // ⚡ LAST 6 HOURS: Update every 10 seconds
-                    else if (hoursRemaining < 6) {
+                    } else if (hoursRemaining < 6) {
                         console.log('⚡ ACTIVE MODE: 10-second updates');
                         currentInterval = setInterval(fetchLiveData, 10000);
-                    }
-                    // 🚀 DEFAULT: Update every 15 seconds (with Pro APIs)
-                    else {
+                    } else {
                         console.log('🚀 NORMAL MODE: 15-second updates');
                         currentInterval = setInterval(fetchLiveData, 15000);
                     }
                 }
             };
 
-            // Start with 15-second updates
             currentInterval = setInterval(updateInterval, 15000);
-            updateInterval(); // Check immediately
+            updateInterval();
         };
 
         startPolling();
@@ -1098,7 +1222,6 @@ const PredictionsPage = () => {
         };
     }, [prediction?._id, prediction?.predictionId, api]);
 
-    // Format time remaining helper
     const formatTimeRemaining = (ms) => {
         const days = Math.floor(ms / (1000 * 60 * 60 * 24));
         const hours = Math.floor((ms % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
@@ -1113,7 +1236,7 @@ const PredictionsPage = () => {
         e.preventDefault();
         
         if (!symbol) {
-            toast.warning('Please enter a stock symbol', 'Missing Symbol');
+            toast.warning('Please enter a stock or crypto symbol', 'Missing Symbol');
             return;
         }
 
@@ -1143,10 +1266,6 @@ const PredictionsPage = () => {
             };
 
             setPrediction(predictionData);
-            
-            // ✅ Refresh stats immediately after making prediction
-            fetchUserStats();
-            
             toast.success(`Prediction generated for ${symbol.toUpperCase()}`, 'Success');
 
             const isGoingUp = response.data.prediction.direction === 'UP';
@@ -1183,6 +1302,17 @@ const PredictionsPage = () => {
     const handleSavePrediction = () => {
         if (!prediction) return;
 
+        // Check if already saved
+        const alreadySaved = savedPredictions.some(p => 
+            p.symbol === prediction.symbol && 
+            p.prediction?.target_price === prediction.prediction?.target_price
+        );
+
+        if (alreadySaved) {
+            toast.warning('This prediction is already saved!', 'Already Saved');
+            return;
+        }
+
         const saved = [...savedPredictions, {
             id: Date.now(),
             ...prediction,
@@ -1192,6 +1322,27 @@ const PredictionsPage = () => {
         setSavedPredictions(saved);
         localStorage.setItem('savedPredictions', JSON.stringify(saved));
         toast.success('Prediction saved successfully!', 'Saved');
+    };
+
+    const handleDeleteSavedPrediction = (id) => {
+        const updated = savedPredictions.filter(p => p.id !== id);
+        setSavedPredictions(updated);
+        localStorage.setItem('savedPredictions', JSON.stringify(updated));
+        toast.success('Prediction removed', 'Deleted');
+    };
+
+    const handleClearAllSaved = () => {
+        if (window.confirm('Are you sure you want to clear all saved predictions?')) {
+            setSavedPredictions([]);
+            localStorage.removeItem('savedPredictions');
+            toast.success('All saved predictions cleared', 'Cleared');
+        }
+    };
+
+    const handleViewSavedPrediction = (saved) => {
+        setPrediction(saved);
+        setActiveTab('predict');
+        toast.info(`Viewing saved prediction for ${saved.symbol}`, 'Loaded');
     };
 
     const handleShare = (platform) => {
@@ -1216,6 +1367,8 @@ const PredictionsPage = () => {
                 toast.success('Prediction copied to clipboard!', 'Copied');
                 setShowShareModal(false);
                 return;
+            default:
+                break;
         }
 
         if (shareUrl) {
@@ -1246,6 +1399,17 @@ const PredictionsPage = () => {
         a.click();
 
         toast.success('Prediction exported successfully!', 'Exported');
+    };
+
+    const formatSavedDate = (dateString) => {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
     };
 
     return (
@@ -1280,7 +1444,7 @@ const PredictionsPage = () => {
                     <TitleIcon>
                         <Brain size={56} color="#8b5cf6" />
                     </TitleIcon>
-                    AI Stock Predictor
+                    AI Stock & Crypto Predictor
                 </Title>
                 <Subtitle>Advanced machine learning powered price predictions</Subtitle>
                 <PoweredBy>
@@ -1306,8 +1470,10 @@ const PredictionsPage = () => {
                 </Tab>
             </TabsContainer>
 
+            {/* ============ PREDICT TAB ============ */}
             {activeTab === 'predict' && (
                 <>
+                    {/* PLATFORM-WIDE STATS BANNER */}
                     <StatsBanner>
                         <StatCard delay={0}>
                             <StatIcon gradient="linear-gradient(135deg, #8b5cf6, #6d28d9)">
@@ -1315,12 +1481,12 @@ const PredictionsPage = () => {
                             </StatIcon>
                             <StatLabel>ACCURACY RATE</StatLabel>
                             <StatValue>
-                                {userStats ? `${userStats.accuracy?.toFixed(1)}%` : '0.0%'}
+                                {platformStats.loading ? '...' : `${platformStats.accuracy.toFixed(1)}%`}
                             </StatValue>
-                            <div style={{ color: '#94a3b8', fontSize: '0.9rem', marginTop: '0.5rem' }}>
-                                {userStats 
-                                    ? `${userStats.correctPredictions} / ${userStats.totalPredictions} correct`
-                                    : 'No predictions yet'
+                            <div style={{ color: '#64748b', fontSize: '0.85rem', marginTop: '0.5rem' }}>
+                                {platformStats.loading 
+                                    ? 'Loading...'
+                                    : `${platformStats.correctPredictions} / ${platformStats.totalPredictions} correct`
                                 }
                             </div>
                         </StatCard>
@@ -1331,9 +1497,9 @@ const PredictionsPage = () => {
                             </StatIcon>
                             <StatLabel>PREDICTIONS MADE</StatLabel>
                             <StatValue>
-                                {userStats?.totalPredictions || platformStats?.totalPredictions || 0}
+                                {platformStats.loading ? '...' : platformStats.totalPredictions.toLocaleString()}
                             </StatValue>
-                            <div style={{ color: '#94a3b8', fontSize: '0.9rem', marginTop: '0.5rem' }}>
+                            <div style={{ color: '#64748b', fontSize: '0.85rem', marginTop: '0.5rem' }}>
                                 Total predictions
                             </div>
                         </StatCard>
@@ -1343,7 +1509,7 @@ const PredictionsPage = () => {
                                 <Flame size={32} />
                             </StatIcon>
                             <StatValue>24/7</StatValue>
-                            <StatLabel>Real-Time Analysis</StatLabel>
+                            <StatLabel>REAL-TIME ANALYSIS</StatLabel>
                         </StatCard>
                         
                         <StatCard delay={0.3}>
@@ -1351,7 +1517,7 @@ const PredictionsPage = () => {
                                 <Rocket size={32} />
                             </StatIcon>
                             <StatValue>Lightning</StatValue>
-                            <StatLabel>Fast Results</StatLabel>
+                            <StatLabel>FAST RESULTS</StatLabel>
                         </StatCard>
                     </StatsBanner>
 
@@ -1365,7 +1531,7 @@ const PredictionsPage = () => {
                                     </Label>
                                     <Input
                                         type="text"
-                                        placeholder="e.g., AAPL, TSLA, NVDA"
+                                        placeholder="e.g., AAPL, TSLA, BTC, ETH"
                                         value={symbol}
                                         onChange={(e) => setSymbol(e.target.value.toUpperCase())}
                                         required
@@ -1845,11 +2011,134 @@ const PredictionsPage = () => {
                             </EmptyIcon>
                             <EmptyTitle>Ready to Predict</EmptyTitle>
                             <EmptyText>
-                                Enter a stock symbol above to generate AI-powered predictions
+                                Enter a stock or crypto symbol above to generate AI-powered predictions
                             </EmptyText>
                         </EmptyState>
                     )}
                 </>
+            )}
+
+            {/* ============ SAVED TAB ============ */}
+            {activeTab === 'saved' && (
+                <SavedPredictionsContainer>
+                    {savedPredictions.length > 0 ? (
+                        <>
+                            <div style={{ 
+                                display: 'flex', 
+                                justifyContent: 'space-between', 
+                                alignItems: 'center',
+                                marginBottom: '2rem'
+                            }}>
+                                <h2 style={{ 
+                                    color: '#a78bfa', 
+                                    fontSize: '1.5rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem'
+                                }}>
+                                    <Bookmark size={24} />
+                                    Your Saved Predictions
+                                </h2>
+                                <ClearAllButton onClick={handleClearAllSaved}>
+                                    <Trash2 size={18} />
+                                    Clear All
+                                </ClearAllButton>
+                            </div>
+
+                            <SavedPredictionsGrid>
+                                {savedPredictions.map((saved) => (
+                                    <SavedPredictionCard 
+                                        key={saved.id}
+                                        $up={saved.prediction?.direction === 'UP'}
+                                    >
+                                        <SavedCardHeader>
+                                            <SavedSymbol>{saved.symbol}</SavedSymbol>
+                                            <SavedDirection $up={saved.prediction?.direction === 'UP'}>
+                                                {saved.prediction?.direction === 'UP' ? (
+                                                    <TrendingUp size={16} />
+                                                ) : (
+                                                    <TrendingDown size={16} />
+                                                )}
+                                                {saved.prediction?.direction}
+                                            </SavedDirection>
+                                        </SavedCardHeader>
+
+                                        <SavedCardBody>
+                                            <SavedMetric>
+                                                <SavedMetricLabel>Entry Price</SavedMetricLabel>
+                                                <SavedMetricValue>
+                                                    ${saved.current_price?.toFixed(2)}
+                                                </SavedMetricValue>
+                                            </SavedMetric>
+                                            <SavedMetric>
+                                                <SavedMetricLabel>Target Price</SavedMetricLabel>
+                                                <SavedMetricValue style={{
+                                                    color: saved.prediction?.direction === 'UP' ? '#10b981' : '#ef4444'
+                                                }}>
+                                                    ${saved.prediction?.target_price?.toFixed(2)}
+                                                </SavedMetricValue>
+                                            </SavedMetric>
+                                            <SavedMetric>
+                                                <SavedMetricLabel>Expected Change</SavedMetricLabel>
+                                                <SavedMetricValue style={{
+                                                    color: saved.prediction?.price_change_percent >= 0 ? '#10b981' : '#ef4444'
+                                                }}>
+                                                    {saved.prediction?.price_change_percent >= 0 ? '+' : ''}
+                                                    {saved.prediction?.price_change_percent?.toFixed(2)}%
+                                                </SavedMetricValue>
+                                            </SavedMetric>
+                                            <SavedMetric>
+                                                <SavedMetricLabel>Confidence</SavedMetricLabel>
+                                                <SavedMetricValue style={{ color: '#a78bfa' }}>
+                                                    {saved.prediction?.confidence?.toFixed(1)}%
+                                                </SavedMetricValue>
+                                            </SavedMetric>
+                                        </SavedCardBody>
+
+                                        <SavedCardFooter>
+                                            <SavedDate>
+                                                <Clock size={14} />
+                                                {formatSavedDate(saved.savedAt || saved.timestamp)}
+                                            </SavedDate>
+                                            <SavedActions>
+                                                <SavedActionButton 
+                                                    onClick={() => handleViewSavedPrediction(saved)}
+                                                    title="View Details"
+                                                >
+                                                    <Eye size={16} />
+                                                </SavedActionButton>
+                                                <SavedActionButton 
+                                                    $danger
+                                                    onClick={() => handleDeleteSavedPrediction(saved.id)}
+                                                    title="Delete"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </SavedActionButton>
+                                            </SavedActions>
+                                        </SavedCardFooter>
+                                    </SavedPredictionCard>
+                                ))}
+                            </SavedPredictionsGrid>
+                        </>
+                    ) : (
+                        <EmptyState>
+                            <EmptyIcon>
+                                <Bookmark size={80} color="#8b5cf6" />
+                            </EmptyIcon>
+                            <EmptyTitle>No Saved Predictions</EmptyTitle>
+                            <EmptyText>
+                                Generate a prediction and click the bookmark icon to save it here
+                            </EmptyText>
+                            <PredictButton 
+                                onClick={() => setActiveTab('predict')}
+                                style={{ marginTop: '2rem', maxWidth: '300px', margin: '2rem auto 0' }}
+                            >
+                                <Zap size={20} />
+                                Make a Prediction
+                            </PredictButton>
+                        </EmptyState>
+                    )}
+                </SavedPredictionsContainer>
             )}
 
             {showShareModal && (
