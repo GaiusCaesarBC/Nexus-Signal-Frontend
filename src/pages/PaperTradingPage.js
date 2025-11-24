@@ -1,5 +1,5 @@
-// client/src/pages/PaperTradingPage.js - COMPLETE WORKING VERSION
-// Features: Auto-refresh, Confirmation Modal, Position Details, Price Alerts
+// client/src/pages/PaperTradingPage.js - WITH LONG/SHORT TRADING
+// Features: Long & Short Positions, Auto-refresh, Confirmation Modal, Position Details, Price Alerts
 
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
@@ -10,8 +10,13 @@ import {
     ArrowUpRight, ArrowDownRight, RefreshCw, Search, Plus, Minus,
     Send, Trophy, Flame, Award, Eye, Heart, MessageCircle,
     Share2, BarChart3, PieChart, Percent, Clock, CheckCircle,
-    XCircle, AlertCircle, ThumbsUp, Star, Users, Calendar, Bell
+    XCircle, AlertCircle, ThumbsUp, Star, Users, Calendar, Bell,
+    AlertTriangle, Shield, TrendingDown as ShortIcon
 } from 'lucide-react';
+import {
+    AreaChart, Area, XAxis, YAxis, CartesianGrid,
+    Tooltip, ResponsiveContainer, ReferenceLine
+} from 'recharts';
 
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`
@@ -47,6 +52,17 @@ const float = keyframes`
 const shimmer = keyframes`
     0% { background-position: -200% center; }
     100% { background-position: 200% center; }
+`;
+
+const warningPulse = keyframes`
+    0%, 100% { 
+        box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+        border-color: rgba(239, 68, 68, 0.5);
+    }
+    50% { 
+        box-shadow: 0 0 40px rgba(239, 68, 68, 0.8);
+        border-color: rgba(239, 68, 68, 0.8);
+    }
 `;
 
 // ============ BASE STYLED COMPONENTS ============
@@ -202,6 +218,114 @@ const PanelTitle = styled.h2`
     display: flex;
     align-items: center;
     gap: 0.75rem;
+`;
+
+// ✅ NEW: Position Type Selector
+const PositionTypeSelector = styled.div`
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding: 1rem;
+    background: rgba(0, 173, 237, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(0, 173, 237, 0.2);
+`;
+
+const PositionTypeButton = styled.button`
+    padding: 1.25rem;
+    background: ${props => props.$active ? 
+        props.$short ?
+            'linear-gradient(135deg, rgba(239, 68, 68, 0.3) 0%, rgba(239, 68, 68, 0.15) 100%)' :
+            'linear-gradient(135deg, rgba(16, 185, 129, 0.3) 0%, rgba(16, 185, 129, 0.15) 100%)'
+        :
+        'rgba(30, 41, 59, 0.5)'
+    };
+    border: 2px solid ${props => props.$active ? 
+        props.$short ? 'rgba(239, 68, 68, 0.5)' : 'rgba(16, 185, 129, 0.5)' 
+        : 
+        'rgba(100, 116, 139, 0.3)'
+    };
+    border-radius: 12px;
+    color: ${props => props.$active ? 
+        props.$short ? '#ef4444' : '#10b981' 
+        : 
+        '#94a3b8'
+    };
+    font-weight: 700;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+
+    &:hover {
+        background: ${props => props.$short ?
+            'linear-gradient(135deg, rgba(239, 68, 68, 0.3) 0%, rgba(239, 68, 68, 0.15) 100%)' :
+            'linear-gradient(135deg, rgba(16, 185, 129, 0.3) 0%, rgba(16, 185, 129, 0.15) 100%)'
+        };
+        border-color: ${props => props.$short ? 'rgba(239, 68, 68, 0.5)' : 'rgba(16, 185, 129, 0.5)'};
+        color: ${props => props.$short ? '#ef4444' : '#10b981'};
+        transform: translateY(-2px);
+    }
+`;
+
+const PositionTypeLabel = styled.div`
+    font-size: 1.3rem;
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+`;
+
+const PositionTypeDesc = styled.div`
+    font-size: 0.8rem;
+    font-weight: 500;
+    opacity: 0.8;
+    text-align: center;
+`;
+
+// ✅ NEW: Risk Warning for Shorts
+const RiskWarning = styled.div`
+    padding: 1.25rem;
+    background: rgba(239, 68, 68, 0.1);
+    border: 2px solid rgba(239, 68, 68, 0.4);
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: start;
+    gap: 1rem;
+    animation: ${warningPulse} 2s ease-in-out infinite;
+`;
+
+const RiskWarningIcon = styled.div`
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background: rgba(239, 68, 68, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+`;
+
+const RiskWarningContent = styled.div`
+    flex: 1;
+`;
+
+const RiskWarningTitle = styled.div`
+    color: #ef4444;
+    font-weight: 700;
+    font-size: 1.05rem;
+    margin-bottom: 0.5rem;
+`;
+
+const RiskWarningText = styled.div`
+    color: #fca5a5;
+    font-size: 0.9rem;
+    line-height: 1.5;
 `;
 
 const TabButtons = styled.div`
@@ -371,9 +495,12 @@ const TotalValue = styled.div`
 
 const SubmitButton = styled.button`
     padding: 1.25rem 2rem;
-    background: ${props => props.$variant === 'sell' ?
-        'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' :
-        'linear-gradient(135deg, #10b981 0%, #059669 100%)'
+    background: ${props => 
+        props.$positionType === 'short' ?
+            'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' :
+        props.$variant === 'sell' ?
+            'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' :
+            'linear-gradient(135deg, #10b981 0%, #059669 100%)'
     };
     border: none;
     border-radius: 12px;
@@ -391,9 +518,10 @@ const SubmitButton = styled.button`
 
     &:hover:not(:disabled) {
         transform: translateY(-3px);
-        box-shadow: 0 10px 30px ${props => props.$variant === 'sell' ?
-            'rgba(239, 68, 68, 0.5)' :
-            'rgba(16, 185, 129, 0.5)'
+        box-shadow: 0 10px 30px ${props => 
+            props.$positionType === 'short' || props.$variant === 'sell' ?
+                'rgba(239, 68, 68, 0.5)' :
+                'rgba(16, 185, 129, 0.5)'
         };
     }
 
@@ -451,20 +579,49 @@ const RefreshButton = styled.button`
     }
 `;
 
+// ✅ UPDATED: Position Card with position type support
 const PositionCard = styled.div`
     background: rgba(15, 23, 42, 0.6);
-    border: 1px solid rgba(0, 173, 237, 0.2);
+    border: 1px solid ${props => 
+        props.$positionType === 'short' ? 'rgba(239, 68, 68, 0.3)' : 'rgba(16, 185, 129, 0.3)'
+    };
     border-left: 4px solid ${props => props.$positive ? '#10b981' : '#ef4444'};
     border-radius: 12px;
     padding: 1.5rem;
     margin-bottom: 1rem;
     transition: all 0.2s ease;
     cursor: pointer;
+    position: relative;
 
     &:hover {
         background: rgba(15, 23, 42, 0.8);
         transform: translateX(5px);
     }
+`;
+
+// ✅ NEW: Position Type Badge
+const PositionTypeBadge = styled.div`
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    padding: 0.4rem 0.75rem;
+    background: ${props => props.$short ?
+        'rgba(239, 68, 68, 0.2)' :
+        'rgba(16, 185, 129, 0.2)'
+    };
+    border: 1px solid ${props => props.$short ?
+        'rgba(239, 68, 68, 0.4)' :
+        'rgba(16, 185, 129, 0.4)'
+    };
+    border-radius: 6px;
+    color: ${props => props.$short ? '#ef4444' : '#10b981'};
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
 `;
 
 const PositionHeader = styled.div`
@@ -524,7 +681,10 @@ const SellButton = styled.button`
     width: 100%;
     margin-top: 1rem;
     padding: 0.75rem;
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    background: ${props => props.$cover ?
+        'linear-gradient(135deg, #10b981 0%, #059669 100%)' :
+        'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
+    };
     border: none;
     border-radius: 10px;
     color: white;
@@ -538,7 +698,10 @@ const SellButton = styled.button`
 
     &:hover {
         transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);
+        box-shadow: 0 8px 20px ${props => props.$cover ?
+            'rgba(16, 185, 129, 0.4)' :
+            'rgba(239, 68, 68, 0.4)'
+        };
     }
 `;
 
@@ -927,425 +1090,6 @@ const CloseButton = styled.button`
     }
 `;
 
-// ============ POSITION DETAILS MODAL ============
-const PositionDetailsModal = styled.div`
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.85);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 10000;
-    animation: ${fadeIn} 0.2s ease-out;
-    padding: 2rem;
-`;
-
-const PositionDetailsCard = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.98) 100%);
-    border: 2px solid ${props => props.$positive ? '#10b981' : '#ef4444'};
-    border-radius: 24px;
-    padding: 2.5rem;
-    max-width: 700px;
-    width: 100%;
-    max-height: 90vh;
-    overflow-y: auto;
-    animation: ${slideIn} 0.3s ease-out;
-    position: relative;
-`;
-
-const PositionDetailsHeader = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-    margin-bottom: 2rem;
-    padding-bottom: 1.5rem;
-    border-bottom: 2px solid rgba(0, 173, 237, 0.3);
-`;
-
-const PositionIcon = styled.div`
-    width: 80px;
-    height: 80px;
-    border-radius: 16px;
-    background: ${props => props.$positive ? 
-        'linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.1) 100%)' :
-        'linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0.1) 100%)'
-    };
-    border: 2px solid ${props => props.$positive ? 'rgba(16, 185, 129, 0.4)' : 'rgba(239, 68, 68, 0.4)'};
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 2rem;
-    font-weight: 900;
-    color: ${props => props.$positive ? '#10b981' : '#ef4444'};
-`;
-
-const PositionHeaderInfo = styled.div`
-    flex: 1;
-`;
-
-const PositionTitleLarge = styled.h2`
-    font-size: 2.5rem;
-    font-weight: 900;
-    color: #00adef;
-    margin-bottom: 0.5rem;
-`;
-
-const PositionSubtitle = styled.div`
-    color: #94a3b8;
-    font-size: 1rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-`;
-
-const PositionMainStats = styled.div`
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1.5rem;
-    margin-bottom: 2rem;
-`;
-
-const MainStatCard = styled.div`
-    background: rgba(0, 173, 237, 0.05);
-    border: 1px solid rgba(0, 173, 237, 0.2);
-    border-radius: 16px;
-    padding: 1.5rem;
-`;
-
-const MainStatLabel = styled.div`
-    color: #64748b;
-    font-size: 0.85rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 0.75rem;
-`;
-
-const MainStatValue = styled.div`
-    font-size: 2rem;
-    font-weight: 900;
-    color: ${props => props.$color || '#e0e6ed'};
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-`;
-
-const PositionDetailsGrid = styled.div`
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-    margin-bottom: 2rem;
-`;
-
-const DetailCardSmall = styled.div`
-    background: rgba(15, 23, 42, 0.6);
-    border: 1px solid rgba(0, 173, 237, 0.2);
-    border-radius: 12px;
-    padding: 1.25rem;
-`;
-
-const DetailCardLabel = styled.div`
-    color: #64748b;
-    font-size: 0.8rem;
-    margin-bottom: 0.5rem;
-`;
-
-const DetailCardValue = styled.div`
-    color: #e0e6ed;
-    font-size: 1.3rem;
-    font-weight: 700;
-`;
-
-const PerformanceSection = styled.div`
-    background: linear-gradient(135deg, rgba(0, 173, 237, 0.1) 0%, rgba(0, 173, 237, 0.05) 100%);
-    border: 1px solid rgba(0, 173, 237, 0.3);
-    border-radius: 16px;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-`;
-
-const SectionTitle = styled.h3`
-    color: #00adef;
-    font-size: 1.2rem;
-    font-weight: 700;
-    margin-bottom: 1rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-`;
-
-const PerformanceBar = styled.div`
-    height: 12px;
-    background: rgba(100, 116, 139, 0.2);
-    border-radius: 6px;
-    overflow: hidden;
-    position: relative;
-`;
-
-const PerformanceFill = styled.div`
-    height: 100%;
-    background: ${props => props.$positive ?
-        'linear-gradient(90deg, #10b981 0%, #059669 100%)' :
-        'linear-gradient(90deg, #ef4444 0%, #dc2626 100%)'
-    };
-    width: ${props => Math.min(Math.abs(props.$percentage), 100)}%;
-    transition: width 0.5s ease;
-    position: relative;
-
-    &::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-        animation: ${shimmer} 2s infinite;
-    }
-`;
-
-const ActionButtons = styled.div`
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-    margin-top: 2rem;
-`;
-
-const ActionButton = styled.button`
-    padding: 1.25rem;
-    background: ${props => props.$variant === 'sell' ?
-        'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' :
-        'linear-gradient(135deg, #00adef 0%, #0086b3 100%)'
-    };
-    border: none;
-    border-radius: 12px;
-    color: white;
-    font-size: 1.1rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-
-    &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 20px ${props => props.$variant === 'sell' ?
-            'rgba(239, 68, 68, 0.5)' :
-            'rgba(0, 173, 237, 0.5)'
-        };
-    }
-`;
-
-// ============ PRICE ALERT COMPONENTS ============
-const AlertButtonFloat = styled.button`
-    position: fixed;
-    bottom: 2rem;
-    right: 2rem;
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-    border: none;
-    color: white;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 8px 24px rgba(245, 158, 11, 0.5);
-    transition: all 0.3s ease;
-    z-index: 1000;
-    animation: ${float} 3s ease-in-out infinite;
-
-    &:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 12px 32px rgba(245, 158, 11, 0.7);
-    }
-
-    @media (max-width: 768px) {
-        bottom: 1rem;
-        right: 1rem;
-        width: 50px;
-        height: 50px;
-    }
-`;
-
-const AlertModal = styled.div`
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.85);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 10001;
-    animation: ${fadeIn} 0.2s ease-out;
-    padding: 2rem;
-`;
-
-const AlertCard = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.98) 100%);
-    border: 2px solid rgba(245, 158, 11, 0.5);
-    border-radius: 24px;
-    padding: 2.5rem;
-    max-width: 600px;
-    width: 100%;
-    max-height: 90vh;
-    overflow-y: auto;
-    animation: ${slideIn} 0.3s ease-out;
-    position: relative;
-`;
-
-const AlertTitle = styled.h2`
-    color: #f59e0b;
-    font-size: 2rem;
-    font-weight: 900;
-    margin-bottom: 0.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-`;
-
-const AlertSubtitle = styled.p`
-    color: #94a3b8;
-    margin-bottom: 2rem;
-    font-size: 0.95rem;
-`;
-
-const AlertForm = styled.form`
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-`;
-
-const AlertConditionButtons = styled.div`
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-`;
-
-const ConditionButton = styled.button`
-    padding: 1.25rem;
-    background: ${props => props.$active ?
-        'linear-gradient(135deg, rgba(245, 158, 11, 0.3) 0%, rgba(245, 158, 11, 0.15) 100%)' :
-        'rgba(30, 41, 59, 0.5)'
-    };
-    border: 2px solid ${props => props.$active ? 'rgba(245, 158, 11, 0.5)' : 'rgba(100, 116, 139, 0.3)'};
-    border-radius: 12px;
-    color: ${props => props.$active ? '#f59e0b' : '#94a3b8'};
-    font-weight: 700;
-    font-size: 1.1rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-
-    &:hover {
-        background: linear-gradient(135deg, rgba(245, 158, 11, 0.3) 0%, rgba(245, 158, 11, 0.15) 100%);
-        border-color: rgba(245, 158, 11, 0.5);
-        color: #f59e0b;
-        transform: translateY(-2px);
-    }
-`;
-
-const AlertList = styled.div`
-    margin-top: 2rem;
-    max-height: 300px;
-    overflow-y: auto;
-`;
-
-const AlertItem = styled.div`
-    background: rgba(15, 23, 42, 0.6);
-    border: 1px solid rgba(245, 158, 11, 0.2);
-    border-radius: 12px;
-    padding: 1.25rem;
-    margin-bottom: 1rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    transition: all 0.2s ease;
-
-    &:hover {
-        background: rgba(15, 23, 42, 0.8);
-        border-color: rgba(245, 158, 11, 0.4);
-    }
-`;
-
-const AlertItemInfo = styled.div`
-    flex: 1;
-`;
-
-const AlertItemSymbol = styled.div`
-    font-size: 1.3rem;
-    font-weight: 900;
-    color: #f59e0b;
-    margin-bottom: 0.25rem;
-`;
-
-const AlertItemCondition = styled.div`
-    color: #94a3b8;
-    font-size: 0.9rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-`;
-
-const DeleteAlertButton = styled.button`
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
-    background: rgba(239, 68, 68, 0.2);
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    color: #ef4444;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-
-    &:hover {
-        background: rgba(239, 68, 68, 0.3);
-        border-color: rgba(239, 68, 68, 0.5);
-        transform: scale(1.1);
-    }
-`;
-
-const CreateAlertButton = styled.button`
-    width: 100%;
-    padding: 1.25rem;
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-    border: none;
-    border-radius: 12px;
-    color: white;
-    font-size: 1.2rem;
-    font-weight: 900;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-top: 1rem;
-
-    &:hover:not(:disabled) {
-        transform: translateY(-3px);
-        box-shadow: 0 10px 30px rgba(245, 158, 11, 0.5);
-    }
-
-    &:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-`;
-
 // ============ MAIN COMPONENT ============
 const PaperTradingPage = () => {
     const { api, user } = useAuth();
@@ -1361,8 +1105,9 @@ const PaperTradingPage = () => {
     const [loadingPrice, setLoadingPrice] = useState(false);
     const [showConfirmation, setShowConfirmation] = useState(false);
     const [pendingTrade, setPendingTrade] = useState(null);
-    const [selectedPosition, setSelectedPosition] = useState(null);
-    const [showPositionDetails, setShowPositionDetails] = useState(false);
+   
+    // ✅ NEW: Position Type State
+    const [positionType, setPositionType] = useState('long'); // 'long' or 'short'
    
     // Form state
     const [symbol, setSymbol] = useState('');
@@ -1373,14 +1118,6 @@ const PaperTradingPage = () => {
     // Orders & Leaderboard
     const [orders, setOrders] = useState([]);
     const [leaderboard, setLeaderboard] = useState([]);
-
-    // Alerts state
-    const [alerts, setAlerts] = useState([]);
-    const [showAlertModal, setShowAlertModal] = useState(false);
-    const [alertSymbol, setAlertSymbol] = useState('');
-    const [alertType, setAlertType] = useState('stock');
-    const [alertTargetPrice, setAlertTargetPrice] = useState('');
-    const [alertCondition, setAlertCondition] = useState('above');
 
     // Load data functions
     const loadAccount = async () => {
@@ -1411,15 +1148,6 @@ const PaperTradingPage = () => {
             setLeaderboard(response.data.leaderboard || []);
         } catch (error) {
             console.error('Load leaderboard error:', error);
-        }
-    };
-
-    const loadAlerts = async () => {
-        try {
-            const response = await api.get('/paper-trading/alerts');
-            setAlerts(response.data.alerts || []);
-        } catch (error) {
-            console.error('Load alerts error:', error);
         }
     };
 
@@ -1474,6 +1202,7 @@ const PaperTradingPage = () => {
 
         setPendingTrade({
             action: activeTab,
+            positionType, // ✅ NEW: Include position type
             symbol: symbol.toUpperCase(),
             type,
             quantity: parseFloat(quantity),
@@ -1496,6 +1225,7 @@ const PaperTradingPage = () => {
                 symbol: pendingTrade.symbol,
                 type: pendingTrade.type,
                 quantity: pendingTrade.quantity,
+                positionType: pendingTrade.positionType, // ✅ NEW: Send position type
                 notes: pendingTrade.notes
             });
 
@@ -1531,52 +1261,8 @@ const PaperTradingPage = () => {
         setSymbol(position.symbol);
         setType(position.type);
         setQuantity(position.quantity.toString());
+        setPositionType(position.positionType || 'long'); // ✅ Set position type
         window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
-
-    const createAlert = async (e) => {
-        e.preventDefault();
-
-        if (!alertSymbol || !alertTargetPrice) {
-            toast.warning('Please fill in all fields', 'Missing Fields');
-            return;
-        }
-
-        if (parseFloat(alertTargetPrice) <= 0) {
-            toast.warning('Price must be greater than 0', 'Invalid Price');
-            return;
-        }
-
-        try {
-            const response = await api.post('/paper-trading/alerts', {
-                symbol: alertSymbol.toUpperCase(),
-                type: alertType,
-                targetPrice: parseFloat(alertTargetPrice),
-                condition: alertCondition
-            });
-
-            setAlerts([...alerts, response.data.alert]);
-            toast.success('Alert created!', 'Success');
-
-            setAlertSymbol('');
-            setAlertTargetPrice('');
-            setAlertCondition('above');
-
-        } catch (error) {
-            console.error('Create alert error:', error);
-            toast.error(error.response?.data?.error || 'Failed to create alert', 'Error');
-        }
-    };
-
-    const deleteAlert = async (alertId) => {
-        try {
-            await api.delete(`/paper-trading/alerts/${alertId}`);
-            setAlerts(alerts.filter(a => a._id !== alertId));
-            toast.success('Alert deleted', 'Success');
-        } catch (error) {
-            console.error('Delete alert error:', error);
-            toast.error('Failed to delete alert', 'Error');
-        }
     };
 
     const formatCurrency = (value) => {
@@ -1601,7 +1287,6 @@ const PaperTradingPage = () => {
         loadAccount();
         loadOrders();
         loadLeaderboard();
-        loadAlerts();
 
         const priceRefreshInterval = setInterval(() => {
             handleRefreshPrices();
@@ -1640,7 +1325,7 @@ const PaperTradingPage = () => {
                     >
                         <ConfirmationTitle $variant={pendingTrade.action}>
                             {pendingTrade.action === 'buy' ? <Plus size={32} /> : <Minus size={32} />}
-                            Confirm {pendingTrade.action === 'buy' ? 'Purchase' : 'Sale'}
+                            Confirm {pendingTrade.positionType === 'short' ? 'Short' : pendingTrade.action === 'buy' ? 'Purchase' : 'Sale'}
                         </ConfirmationTitle>
 
                         <ConfirmationDetails>
@@ -1651,6 +1336,15 @@ const PaperTradingPage = () => {
                             <DetailRow>
                                 <DetailLabelModal>Type</DetailLabelModal>
                                 <DetailValueModal style={{ textTransform: 'capitalize' }}>{pendingTrade.type}</DetailValueModal>
+                            </DetailRow>
+                            <DetailRow>
+                                <DetailLabelModal>Position Type</DetailLabelModal>
+                                <DetailValueModal style={{ 
+                                    color: pendingTrade.positionType === 'short' ? '#ef4444' : '#10b981',
+                                    textTransform: 'uppercase'
+                                }}>
+                                    {pendingTrade.positionType}
+                                </DetailValueModal>
                             </DetailRow>
                             <DetailRow>
                                 <DetailLabelModal>Quantity</DetailLabelModal>
@@ -1673,6 +1367,20 @@ const PaperTradingPage = () => {
                                 </DetailValueModal>
                             </DetailRow>
                         </ConfirmationDetails>
+
+                        {pendingTrade.positionType === 'short' && (
+                            <RiskWarning style={{ margin: '1rem 0', animation: 'none' }}>
+                                <RiskWarningIcon>
+                                    <AlertTriangle size={20} />
+                                </RiskWarningIcon>
+                                <RiskWarningContent>
+                                    <RiskWarningTitle>Short Position Risk</RiskWarningTitle>
+                                    <RiskWarningText>
+                                        You're betting the price will go down. Losses can exceed your initial investment.
+                                    </RiskWarningText>
+                                </RiskWarningContent>
+                            </RiskWarning>
+                        )}
 
                         {pendingTrade.notes && (
                             <div style={{ 
@@ -1698,248 +1406,11 @@ const PaperTradingPage = () => {
                                 $variant={pendingTrade.action}
                                 onClick={executeTradeSubmit}
                             >
-                                Confirm {pendingTrade.action === 'buy' ? 'Buy' : 'Sell'}
+                                Confirm {pendingTrade.positionType === 'short' ? 'Short' : pendingTrade.action === 'buy' ? 'Buy' : 'Sell'}
                             </ConfirmButton>
                         </ConfirmationButtons>
                     </ConfirmationCard>
                 </ConfirmationModal>
-            )}
-
-            {showPositionDetails && selectedPosition && (
-                <PositionDetailsModal onClick={() => setShowPositionDetails(false)}>
-                    <PositionDetailsCard 
-                        $positive={selectedPosition.profitLoss >= 0}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <CloseButton onClick={() => setShowPositionDetails(false)}>
-                            <XCircle size={24} />
-                        </CloseButton>
-
-                        <PositionDetailsHeader>
-                            <PositionIcon $positive={selectedPosition.profitLoss >= 0}>
-                                ${selectedPosition.symbol}
-                            </PositionIcon>
-                            <PositionHeaderInfo>
-                                <PositionTitleLarge>${selectedPosition.symbol}</PositionTitleLarge>
-                                <PositionSubtitle>{selectedPosition.type} • {selectedPosition.quantity} shares</PositionSubtitle>
-                            </PositionHeaderInfo>
-                        </PositionDetailsHeader>
-
-                        <PositionMainStats>
-                            <MainStatCard>
-                                <MainStatLabel>Current Value</MainStatLabel>
-                                <MainStatValue $color="#00adef">
-                                    {formatCurrency(selectedPosition.currentPrice * selectedPosition.quantity)}
-                                </MainStatValue>
-                            </MainStatCard>
-
-                            <MainStatCard>
-                                <MainStatLabel>Profit/Loss</MainStatLabel>
-                                <MainStatValue $color={selectedPosition.profitLoss >= 0 ? '#10b981' : '#ef4444'}>
-                                    {selectedPosition.profitLoss >= 0 ? <TrendingUp size={28} /> : <TrendingDown size={28} />}
-                                    {formatCurrency(Math.abs(selectedPosition.profitLoss))}
-                                </MainStatValue>
-                            </MainStatCard>
-                        </PositionMainStats>
-
-                        <PerformanceSection>
-                            <SectionTitle>
-                                <Activity size={20} />
-                                Performance
-                            </SectionTitle>
-                            <PerformanceBar>
-                                <PerformanceFill 
-                                    $positive={selectedPosition.profitLoss >= 0}
-                                    $percentage={Math.abs(selectedPosition.profitLossPercent)}
-                                />
-                            </PerformanceBar>
-                            <div style={{ 
-                                display: 'flex', 
-                                justifyContent: 'space-between', 
-                                marginTop: '0.75rem',
-                                color: selectedPosition.profitLoss >= 0 ? '#10b981' : '#ef4444',
-                                fontWeight: 700,
-                                fontSize: '1.1rem'
-                            }}>
-                                <span>Return</span>
-                                <span>{formatPercent(selectedPosition.profitLossPercent)}</span>
-                            </div>
-                        </PerformanceSection>
-
-                        <PositionDetailsGrid>
-                            <DetailCardSmall>
-                                <DetailCardLabel>Quantity</DetailCardLabel>
-                                <DetailCardValue>{selectedPosition.quantity.toLocaleString()}</DetailCardValue>
-                            </DetailCardSmall>
-
-                            <DetailCardSmall>
-                                <DetailCardLabel>Current Price</DetailCardLabel>
-                                <DetailCardValue>{formatCurrency(selectedPosition.currentPrice)}</DetailCardValue>
-                            </DetailCardSmall>
-
-                            <DetailCardSmall>
-                                <DetailCardLabel>Average Price</DetailCardLabel>
-                                <DetailCardValue>{formatCurrency(selectedPosition.averagePrice)}</DetailCardValue>
-                            </DetailCardSmall>
-
-                            <DetailCardSmall>
-                                <DetailCardLabel>Total Cost</DetailCardLabel>
-                                <DetailCardValue>{formatCurrency(selectedPosition.averagePrice * selectedPosition.quantity)}</DetailCardValue>
-                            </DetailCardSmall>
-
-                            <DetailCardSmall>
-                                <DetailCardLabel>Price Change</DetailCardLabel>
-                                <DetailCardValue style={{ 
-                                    color: selectedPosition.currentPrice >= selectedPosition.averagePrice ? '#10b981' : '#ef4444' 
-                                }}>
-                                    {formatCurrency(selectedPosition.currentPrice - selectedPosition.averagePrice)}
-                                </DetailCardValue>
-                            </DetailCardSmall>
-
-                            <DetailCardSmall>
-                                <DetailCardLabel>Per Share P/L</DetailCardLabel>
-                                <DetailCardValue style={{ 
-                                    color: selectedPosition.profitLoss >= 0 ? '#10b981' : '#ef4444' 
-                                }}>
-                                    {formatCurrency(selectedPosition.profitLoss / selectedPosition.quantity)}
-                                </DetailCardValue>
-                            </DetailCardSmall>
-                        </PositionDetailsGrid>
-
-                        <ActionButtons>
-                            <ActionButton onClick={() => {
-                                setShowPositionDetails(false);
-                            }}>
-                                <Eye size={20} />
-                                View Chart
-                            </ActionButton>
-                            <ActionButton 
-                                $variant="sell"
-                                onClick={() => {
-                                    setShowPositionDetails(false);
-                                    handleQuickSell(selectedPosition);
-                                }}
-                            >
-                                <Minus size={20} />
-                                Sell Position
-                            </ActionButton>
-                        </ActionButtons>
-                    </PositionDetailsCard>
-                </PositionDetailsModal>
-            )}
-
-            {showAlertModal && (
-                <AlertModal onClick={() => setShowAlertModal(false)}>
-                    <AlertCard onClick={(e) => e.stopPropagation()}>
-                        <CloseButton onClick={() => setShowAlertModal(false)}>
-                            <XCircle size={24} />
-                        </CloseButton>
-
-                        <AlertTitle>
-                            <Bell size={32} />
-                            Price Alerts
-                        </AlertTitle>
-                        <AlertSubtitle>
-                            Get notified when a stock or crypto reaches your target price
-                        </AlertSubtitle>
-
-                        <AlertForm onSubmit={createAlert}>
-                            <FormGroup>
-                                <Label>
-                                    <Search size={16} />
-                                    Symbol
-                                </Label>
-                                <Input
-                                    type="text"
-                                    placeholder="e.g., AAPL, BTC"
-                                    value={alertSymbol}
-                                    onChange={(e) => setAlertSymbol(e.target.value.toUpperCase())}
-                                    required
-                                />
-                            </FormGroup>
-
-                            <FormGroup>
-                                <Label>
-                                    <Target size={16} />
-                                    Asset Type
-                                </Label>
-                                <Select value={alertType} onChange={(e) => setAlertType(e.target.value)}>
-                                    <option value="stock">Stock</option>
-                                    <option value="crypto">Cryptocurrency</option>
-                                </Select>
-                            </FormGroup>
-
-                            <FormGroup>
-                                <Label>
-                                    Condition
-                                </Label>
-                                <AlertConditionButtons>
-                                    <ConditionButton
-                                        type="button"
-                                        $active={alertCondition === 'above'}
-                                        onClick={() => setAlertCondition('above')}
-                                    >
-                                        <ArrowUpRight size={20} />
-                                        Goes Above
-                                    </ConditionButton>
-                                    <ConditionButton
-                                        type="button"
-                                        $active={alertCondition === 'below'}
-                                        onClick={() => setAlertCondition('below')}
-                                    >
-                                        <ArrowDownRight size={20} />
-                                        Goes Below
-                                    </ConditionButton>
-                                </AlertConditionButtons>
-                            </FormGroup>
-
-                            <FormGroup>
-                                <Label>
-                                    <DollarSign size={16} />
-                                    Target Price
-                                </Label>
-                                <Input
-                                    type="number"
-                                    step="any"
-                                    placeholder="e.g., 250.00"
-                                    value={alertTargetPrice}
-                                    onChange={(e) => setAlertTargetPrice(e.target.value)}
-                                    required
-                                />
-                            </FormGroup>
-
-                            <CreateAlertButton type="submit">
-                                <Plus size={20} />
-                                Create Alert
-                            </CreateAlertButton>
-                        </AlertForm>
-
-                        {alerts.length > 0 && (
-                            <>
-                                <SectionTitle style={{ marginTop: '2rem', marginBottom: '1rem' }}>
-                                    <Clock size={20} />
-                                    Active Alerts ({alerts.length})
-                                </SectionTitle>
-                                <AlertList>
-                                    {alerts.map((alert) => (
-                                        <AlertItem key={alert._id}>
-                                            <AlertItemInfo>
-                                                <AlertItemSymbol>${alert.symbol}</AlertItemSymbol>
-                                                <AlertItemCondition>
-                                                    {alert.condition === 'above' ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
-                                                    {alert.condition === 'above' ? 'Above' : 'Below'} {formatCurrency(alert.targetPrice)}
-                                                </AlertItemCondition>
-                                            </AlertItemInfo>
-                                            <DeleteAlertButton onClick={() => deleteAlert(alert._id)}>
-                                                <XCircle size={18} />
-                                            </DeleteAlertButton>
-                                        </AlertItem>
-                                    ))}
-                                </AlertList>
-                            </>
-                        )}
-                    </AlertCard>
-                </AlertModal>
             )}
 
             <PageContainer>
@@ -1951,7 +1422,7 @@ const PaperTradingPage = () => {
                     <Subtitle>Practice trading with $100,000 virtual cash - Risk free!</Subtitle>
                     <PoweredBy>
                         <Zap size={18} />
-                        Real-Time Market Prices
+                        Real-Time Market Prices • Long & Short Positions
                         <span style={{
                             marginLeft: '10px',
                             width: '8px',
@@ -1961,9 +1432,6 @@ const PaperTradingPage = () => {
                             display: 'inline-block',
                             animation: 'pulse 2s ease-in-out infinite'
                         }} />
-                        <span style={{ marginLeft: '5px', fontSize: '0.8rem', color: '#10b981' }}>
-                            LIVE
-                        </span>
                     </PoweredBy>
                 </Header>
 
@@ -2030,20 +1498,68 @@ const PaperTradingPage = () => {
                                 Place Order
                             </PanelTitle>
 
+                            {/* ✅ NEW: Position Type Selector */}
+                            <PositionTypeSelector>
+                                <PositionTypeButton
+                                    $active={positionType === 'long'}
+                                    $short={false}
+                                    onClick={() => setPositionType('long')}
+                                >
+                                    <PositionTypeLabel>
+                                        <TrendingUp size={24} />
+                                        LONG
+                                    </PositionTypeLabel>
+                                    <PositionTypeDesc>
+                                        Buy low, sell high
+                                    </PositionTypeDesc>
+                                </PositionTypeButton>
+
+                                <PositionTypeButton
+                                    $active={positionType === 'short'}
+                                    $short={true}
+                                    onClick={() => setPositionType('short')}
+                                >
+                                    <PositionTypeLabel>
+                                        <TrendingDown size={24} />
+                                        SHORT
+                                    </PositionTypeLabel>
+                                    <PositionTypeDesc>
+                                        Sell high, buy low
+                                    </PositionTypeDesc>
+                                </PositionTypeButton>
+                            </PositionTypeSelector>
+
+                            {/* ✅ NEW: Risk Warning for Short Positions */}
+                            {positionType === 'short' && (
+                                <RiskWarning>
+                                    <RiskWarningIcon>
+                                        <AlertTriangle size={24} />
+                                    </RiskWarningIcon>
+                                    <RiskWarningContent>
+                                        <RiskWarningTitle>⚠️ High Risk Warning</RiskWarningTitle>
+                                        <RiskWarningText>
+                                            Short selling has unlimited risk. If the price rises instead of falls, 
+                                            your losses can exceed your initial investment. Only experienced traders 
+                                            should short sell.
+                                        </RiskWarningText>
+                                    </RiskWarningContent>
+                                </RiskWarning>
+                            )}
+
                             <TabButtons>
                                 <TabButton 
                                     $active={activeTab === 'buy'}
                                     onClick={() => setActiveTab('buy')}
                                 >
                                     <Plus size={20} />
-                                    Buy
+                                    {positionType === 'short' ? 'Short' : 'Buy'}
                                 </TabButton>
                                 <TabButton 
                                     $active={activeTab === 'sell'}
                                     onClick={() => setActiveTab('sell')}
                                 >
                                     <Minus size={20} />
-                                    Sell
+                                    {positionType === 'short' ? 'Cover' : 'Sell'}
                                 </TabButton>
                             </TabButtons>
 
@@ -2108,7 +1624,10 @@ const PaperTradingPage = () => {
                                         Notes (Optional)
                                     </Label>
                                     <TextArea
-                                        placeholder="Why are you making this trade?"
+                                        placeholder={positionType === 'short' ? 
+                                            "Why do you think the price will fall?" :
+                                            "Why are you making this trade?"
+                                        }
                                         value={notes}
                                         onChange={(e) => setNotes(e.target.value)}
                                         maxLength={500}
@@ -2126,6 +1645,7 @@ const PaperTradingPage = () => {
                                     type="submit" 
                                     disabled={submitting || !currentPrice || !quantity}
                                     $variant={activeTab}
+                                    $positionType={positionType}
                                 >
                                     {submitting ? (
                                         <>
@@ -2135,7 +1655,10 @@ const PaperTradingPage = () => {
                                     ) : (
                                         <>
                                             {activeTab === 'buy' ? <Plus size={20} /> : <Minus size={20} />}
-                                            {activeTab === 'buy' ? 'Buy' : 'Sell'} {symbol || 'Asset'}
+                                            {positionType === 'short' ? 
+                                                (activeTab === 'buy' ? 'Short' : 'Cover Short') :
+                                                (activeTab === 'buy' ? 'Buy' : 'Sell')
+                                            } {symbol || 'Asset'}
                                         </>
                                     )}
                                 </SubmitButton>
@@ -2162,11 +1685,14 @@ const PaperTradingPage = () => {
                                     <PositionCard 
                                         key={position.symbol} 
                                         $positive={position.profitLoss >= 0}
-                                        onClick={() => {
-                                            setSelectedPosition(position);
-                                            setShowPositionDetails(true);
-                                        }}
+                                        $positionType={position.positionType}
                                     >
+                                        {/* ✅ NEW: Position Type Badge */}
+                                        <PositionTypeBadge $short={position.positionType === 'short'}>
+                                            {position.positionType === 'short' ? <TrendingDown size={12} /> : <TrendingUp size={12} />}
+                                            {position.positionType || 'LONG'}
+                                        </PositionTypeBadge>
+
                                         <PositionHeader>
                                             <div>
                                                 <PositionSymbol>${position.symbol}</PositionSymbol>
@@ -2200,12 +1726,15 @@ const PaperTradingPage = () => {
                                             </PositionDetail>
                                         </PositionDetails>
 
-                                        <SellButton onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleQuickSell(position);
-                                        }}>
-                                            <Minus size={18} />
-                                            Sell Position
+                                        <SellButton 
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleQuickSell(position);
+                                            }}
+                                            $cover={position.positionType === 'short'}
+                                        >
+                                            {position.positionType === 'short' ? <Plus size={18} /> : <Minus size={18} />}
+                                            {position.positionType === 'short' ? 'Cover Short' : 'Sell Position'}
                                         </SellButton>
                                     </PositionCard>
                                 ))}
@@ -2225,6 +1754,7 @@ const PaperTradingPage = () => {
                                             <OrderSide $side={order.side}>
                                                 {order.side === 'buy' ? <Plus size={16} /> : <Minus size={16} />}
                                                 {order.side.toUpperCase()}
+                                                {order.positionType === 'short' && ' SHORT'}
                                             </OrderSide>
                                             <OrderTime>
                                                 {new Date(order.executedAt).toLocaleString()}
@@ -2257,7 +1787,7 @@ const PaperTradingPage = () => {
                                 </EmptyIcon>
                                 <EmptyText>
                                     You haven't made any trades yet.<br />
-                                    Start trading to build your portfolio!
+                                    Start trading long or short to build your portfolio!
                                 </EmptyText>
                             </EmptyState>
                         )}
@@ -2369,10 +1899,6 @@ const PaperTradingPage = () => {
                     </Sidebar>
                 </ContentGrid>
             </PageContainer>
-
-            <AlertButtonFloat onClick={() => setShowAlertModal(true)}>
-                <Bell size={28} />
-            </AlertButtonFloat>
         </>
     );
 };

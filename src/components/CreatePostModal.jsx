@@ -1,20 +1,16 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom'; // ✅ ADD THIS
 import styled, { keyframes } from 'styled-components';
 import { 
-  X, MessageSquare, TrendingUp, Trophy, Target, 
-  BookOpen, Send, Sparkles, Crown, Zap
+  Heart, MessageCircle, TrendingUp, Trophy, Target, 
+  BookOpen, MoreVertical, Trash2, Share2, ArrowUpCircle,
+  ArrowDownCircle, Crown, Flame, Zap
 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext'; // ✅ IMPORT AUTH
 
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`
-  from { opacity: 0; }
-  to { opacity: 1; }
-`;
-
-const slideUp = keyframes`
-  from { transform: translateY(50px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 `;
 
 const pulse = keyframes`
@@ -22,59 +18,137 @@ const pulse = keyframes`
   50% { transform: scale(1.05); }
 `;
 
+const likeAnimation = keyframes`
+  0% { transform: scale(1); }
+  50% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+`;
+
 // ============ STYLED COMPONENTS ============
-const Overlay = styled.div`
-  position: fixed;
-  inset: 0;
-  background: rgba(10, 14, 39, 0.9);
-  backdrop-filter: blur(8px);
+const CardContainer = styled.div`
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 215, 0, 0.2);
+  border-radius: 20px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  animation: ${fadeIn} 0.6s ease-out;
+
+  &:hover {
+    transform: translateY(-4px);
+    border-color: rgba(255, 215, 0, 0.4);
+    box-shadow: 0 12px 40px rgba(255, 215, 0, 0.2);
+  }
+`;
+
+const PostHeader = styled.div`
+  padding: 1.5rem;
+  border-bottom: 1px solid rgba(255, 215, 0, 0.1);
+`;
+
+const HeaderTop = styled.div`
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+`;
+
+const UserSection = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+  min-width: 0;
+`;
+
+const Avatar = styled.div`
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: ${props => props.$src ? 
+    `url(${props.$src}) center/cover` : 
+    'linear-gradient(135deg, #ffd700, #ffed4e)'
+  };
+  border: 2px solid rgba(255, 215, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
-  z-index: 999;
-  animation: ${fadeIn} 0.3s ease-out;
-`;
-
-const Modal = styled.div`
-  background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%);
-  border: 2px solid rgba(255, 215, 0, 0.3);
-  border-radius: 24px;
-  max-width: 700px;
-  width: 100%;
-  max-height: 90vh;
-  overflow-y: auto;
-  animation: ${slideUp} 0.4s ease-out;
-`;
-
-const ModalHeader = styled.div`
-  position: sticky;
-  top: 0;
-  background: linear-gradient(135deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.98) 100%);
-  border-bottom: 2px solid rgba(255, 215, 0, 0.2);
-  padding: 1.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  z-index: 10;
-`;
-
-const ModalTitle = styled.h2`
-  font-size: 1.5rem;
+  color: #0a0e27;
   font-weight: 900;
-  background: linear-gradient(135deg, #ffd700, #ffed4e);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
+  font-size: ${props => props.$src ? '0' : '1.2rem'}; // ✅ Hide text when image exists
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+
+  &:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+  }
 `;
 
-const CloseButton = styled.button`
+const AvatarImage = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  position: absolute;
+  inset: 0;
+`;
+
+const AvatarInitials = styled.div`
+  position: relative;
+  z-index: 1;
+`;
+
+const UserInfo = styled.div`
+  flex: 1;
+  min-width: 0;
+`;
+
+const DisplayName = styled.div`
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #e0e6ed;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer; // ✅ ADD THIS
+  transition: color 0.2s ease; // ✅ ADD THIS
+
+  &:hover {
+    color: #ffd700; // ✅ ADD THIS
+  }
+`;
+
+const Username = styled.div`
+  color: #64748b;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+`;
+
+const ReturnBadge = styled.span`
+  padding: 0.25rem 0.5rem;
+  background: ${props => props.$positive ? 
+    'rgba(16, 185, 129, 0.2)' : 
+    'rgba(239, 68, 68, 0.2)'
+  };
+  border: 1px solid ${props => props.$positive ? 
+    'rgba(16, 185, 129, 0.4)' : 
+    'rgba(239, 68, 68, 0.4)'
+  };
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: ${props => props.$positive ? '#10b981' : '#ef4444'};
+`;
+
+const MenuButton = styled.button`
   background: rgba(255, 215, 0, 0.1);
   border: 1px solid rgba(255, 215, 0, 0.2);
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 0.5rem;
   color: #ffd700;
   cursor: pointer;
@@ -82,493 +156,616 @@ const CloseButton = styled.button`
 
   &:hover {
     background: rgba(255, 215, 0, 0.2);
-    transform: rotate(90deg);
   }
 `;
 
-const ModalBody = styled.form`
-  padding: 2rem;
-`;
-
-const Section = styled.div`
-  margin-bottom: 2rem;
-`;
-
-const SectionLabel = styled.label`
-  display: block;
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #ffd700;
-  margin-bottom: 1rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-`;
-
-const PostTypeGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 1rem;
-`;
-
-const PostTypeButton = styled.button`
-  padding: 1.25rem 1rem;
-  background: ${props => props.$active ? 
-    'linear-gradient(135deg, rgba(255, 215, 0, 0.3), rgba(255, 215, 0, 0.15))' :
-    'rgba(30, 41, 59, 0.5)'
-  };
-  border: 2px solid ${props => props.$active ? 
-    'rgba(255, 215, 0, 0.5)' : 
-    'rgba(100, 116, 139, 0.3)'
-  };
+const Menu = styled.div`
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: 0.5rem;
+  background: rgba(30, 41, 59, 0.98);
+  border: 2px solid rgba(255, 215, 0, 0.3);
   border-radius: 12px;
-  color: ${props => props.$active ? '#ffd700' : '#94a3b8'};
-  cursor: pointer;
-  transition: all 0.3s ease;
+  padding: 0.5rem;
+  min-width: 180px;
+  z-index: 10;
+`;
+
+const MenuItem = styled.button`
+  width: 100%;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: #ef4444;
+  font-weight: 600;
+  cursor: pointer;
 
   &:hover {
-    background: linear-gradient(135deg, rgba(255, 215, 0, 0.3), rgba(255, 215, 0, 0.15));
-    border-color: rgba(255, 215, 0, 0.5);
-    color: #ffd700;
-    transform: translateY(-2px);
-  }
-
-  svg {
-    animation: ${props => props.$active ? pulse : 'none'} 2s ease-in-out infinite;
+    background: rgba(239, 68, 68, 0.1);
   }
 `;
 
-const TypeLabel = styled.div`
-  font-size: 0.85rem;
-  font-weight: 700;
-`;
-
-const TradeFormGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1rem;
-  background: rgba(15, 23, 42, 0.5);
-  border: 1px solid rgba(255, 215, 0, 0.2);
-  border-radius: 12px;
+const PostContent = styled.div`
   padding: 1.5rem;
 `;
 
-const InputGroup = styled.div``;
-
-const InputLabel = styled.label`
-  display: block;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #94a3b8;
-  margin-bottom: 0.5rem;
+const TradeCard = styled.div`
+  background: rgba(15, 23, 42, 0.8);
+  border: 2px solid rgba(255, 215, 0, 0.3);
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
 `;
 
-const Input = styled.input`
-  width: 100%;
-  padding: 0.75rem 1rem;
-  background: rgba(30, 41, 59, 0.8);
-  border: 1px solid rgba(255, 215, 0, 0.2);
-  border-radius: 10px;
-  color: #e0e6ed;
-  font-size: 0.95rem;
-  transition: all 0.3s ease;
-
-  &:focus {
-    outline: none;
-    border-color: rgba(255, 215, 0, 0.5);
-    background: rgba(30, 41, 59, 1);
-  }
-
-  &::placeholder {
-    color: #64748b;
-  }
+const TradeHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 `;
 
-const Select = styled.select`
-  width: 100%;
-  padding: 0.75rem 1rem;
-  background: rgba(30, 41, 59, 0.8);
-  border: 1px solid rgba(255, 215, 0, 0.2);
-  border-radius: 10px;
-  color: #e0e6ed;
-  font-size: 0.95rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-
-  &:focus {
-    outline: none;
-    border-color: rgba(255, 215, 0, 0.5);
-  }
+const TradeLeft = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 `;
 
-const TextArea = styled.textarea`
-  width: 100%;
-  padding: 1rem;
-  background: rgba(30, 41, 59, 0.8);
-  border: 1px solid rgba(255, 215, 0, 0.2);
+const ActionIcon = styled.div`
+  width: 48px;
+  height: 48px;
   border-radius: 12px;
+  background: ${props => props.$action === 'buy' ? 
+    'rgba(16, 185, 129, 0.2)' :
+    'rgba(239, 68, 68, 0.2)'
+  };
+  border: 2px solid ${props => props.$action === 'buy' ? 
+    'rgba(16, 185, 129, 0.4)' : 
+    'rgba(239, 68, 68, 0.4)'
+  };
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: ${props => props.$action === 'buy' ? '#10b981' : '#ef4444'};
+  animation: ${pulse} 2s ease-in-out infinite;
+`;
+
+const TradeInfo = styled.div``;
+
+const TradeAction = styled.div`
+  font-size: 1.3rem;
+  font-weight: 900;
   color: #e0e6ed;
-  font-size: 1rem;
-  line-height: 1.6;
-  resize: vertical;
-  min-height: 120px;
-  transition: all 0.3s ease;
-
-  &:focus {
-    outline: none;
-    border-color: rgba(255, 215, 0, 0.5);
-    background: rgba(30, 41, 59, 1);
-  }
-
-  &::placeholder {
-    color: #64748b;
-  }
+  text-transform: uppercase;
 `;
 
-const CharCounter = styled.div`
-  text-align: right;
-  font-size: 0.8rem;
+const TradeDetails = styled.div`
   color: #64748b;
-  margin-top: 0.5rem;
+  font-size: 0.9rem;
 `;
 
-const VisibilityRow = styled.div`
+const TradeProfit = styled.div`
+  text-align: right;
+`;
+
+const ProfitAmount = styled.div`
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: ${props => props.$positive ? '#10b981' : '#ef4444'};
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+`;
+
+const ProfitPercent = styled.div`
+  font-size: 0.9rem;
+  color: ${props => props.$positive ? '#10b981' : '#ef4444'};
+`;
+
+const AchievementCard = styled.div`
+  background: rgba(255, 215, 0, 0.1);
+  border: 2px solid rgba(255, 215, 0, 0.4);
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+`;
+
+const AchievementHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+`;
+
+const AchievementIcon = styled.div`
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #ffd700, #ffed4e);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0a0e27;
+  animation: ${pulse} 2s ease-in-out infinite;
+`;
+
+const AchievementText = styled.div`
+  flex: 1;
+`;
+
+const AchievementTitle = styled.div`
+  font-size: 1rem;
+  font-weight: 700;
+  color: #ffd700;
+`;
+
+const AchievementName = styled.div`
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: #e0e6ed;
+`;
+
+const AchievementDescription = styled.div`
+  color: #94a3b8;
+`;
+
+const PostText = styled.p`
+  color: #e0e6ed;
+  line-height: 1.6;
+  margin-bottom: 1rem;
+`;
+
+const EngagementBar = styled.div`
+  padding: 1rem 1.5rem;
+  border-top: 1px solid rgba(255, 215, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+`;
+
+const EngagementButtons = styled.div`
+  display: flex;
+  gap: 1rem;
+`;
+
+const EngagementButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  background: ${props => props.$active ? 'rgba(255, 215, 0, 0.2)' : 'transparent'};
+  border: 1px solid ${props => props.$active ? 'rgba(255, 215, 0, 0.4)' : 'rgba(100, 116, 139, 0.3)'};
+  border-radius: 10px;
+  color: ${props => props.$active ? '#ffd700' : '#94a3b8'};
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(255, 215, 0, 0.2);
+    border-color: rgba(255, 215, 0, 0.4);
+    color: #ffd700;
+  }
+
+  svg {
+    animation: ${props => props.$active && props.$type === 'like' ? likeAnimation : 'none'} 0.3s ease;
+  }
+`;
+
+const ShareButton = styled.button`
+  padding: 0.625rem;
+  background: transparent;
+  border: 1px solid rgba(100, 116, 139, 0.3);
+  border-radius: 10px;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(255, 215, 0, 0.1);
+    color: #ffd700;
+  }
+`;
+
+const CommentsSection = styled.div`
+  border-top: 1px solid rgba(255, 215, 0, 0.1);
+  background: rgba(10, 14, 39, 0.4);
+`;
+
+const CommentsList = styled.div`
+  max-height: 400px;
+  overflow-y: auto;
+`;
+
+const Comment = styled.div`
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid rgba(255, 215, 0, 0.05);
   display: flex;
   gap: 0.75rem;
 `;
 
-const VisibilityButton = styled.button`
-  flex: 1;
-  padding: 1rem;
-  background: ${props => props.$active ? 
-    'linear-gradient(135deg, rgba(255, 215, 0, 0.3), rgba(255, 215, 0, 0.15))' :
-    'rgba(30, 41, 59, 0.5)'
+const CommentAvatar = styled.div`
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: ${props => props.$src ? 
+    `url(${props.$src}) center/cover` : 
+    'linear-gradient(135deg, #ffd700, #ffed4e)'
   };
-  border: 2px solid ${props => props.$active ? 
-    'rgba(255, 215, 0, 0.5)' : 
-    'rgba(100, 116, 139, 0.3)'
-  };
-  border-radius: 10px;
-  color: ${props => props.$active ? '#ffd700' : '#94a3b8'};
+  border: 2px solid rgba(255, 215, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0a0e27;
+  font-weight: 900;
+  font-size: ${props => props.$src ? '0' : '0.9rem'}; // ✅ Hide text when image exists
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 
   &:hover {
-    background: linear-gradient(135deg, rgba(255, 215, 0, 0.3), rgba(255, 215, 0, 0.15));
-    border-color: rgba(255, 215, 0, 0.5);
+    transform: scale(1.1);
+  }
+`;
+
+const CommentAvatarImage = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  position: absolute;
+  inset: 0;
+`;
+
+const CommentAvatarInitials = styled.div`
+  position: relative;
+  z-index: 1;
+`;
+
+const CommentContent = styled.div`
+  flex: 1;
+`;
+
+const CommentHeader = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+`;
+
+const CommentAuthor = styled.span`
+  font-weight: 700;
+  color: #e0e6ed;
+  cursor: pointer; // ✅ ADD THIS
+  transition: color 0.2s ease;
+
+  &:hover {
     color: #ffd700;
   }
 `;
 
-const VisibilityTitle = styled.div`
-  font-weight: 700;
-  margin-bottom: 0.25rem;
-`;
-
-const VisibilityDesc = styled.div`
+const CommentTime = styled.span`
   font-size: 0.75rem;
-  opacity: 0.8;
+  color: #64748b;
 `;
 
-const ActionButtons = styled.div`
-  display: flex;
-  gap: 1rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid rgba(255, 215, 0, 0.2);
-`;
-
-const Button = styled.button`
-  flex: 1;
-  padding: 1rem 1.5rem;
-  border-radius: 12px;
-  font-weight: 700;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-`;
-
-const CancelButton = styled(Button)`
-  background: rgba(100, 116, 139, 0.2);
-  border: 1px solid rgba(100, 116, 139, 0.3);
+const CommentText = styled.p`
   color: #94a3b8;
+  font-size: 0.9rem;
+`;
 
-  &:hover {
-    background: rgba(100, 116, 139, 0.3);
+const CommentInputSection = styled.form`
+  padding: 1rem 1.5rem;
+`;
+
+const CommentInputWrapper = styled.div`
+  display: flex;
+  gap: 0.75rem;
+`;
+
+const CommentInput = styled.input`
+  flex: 1;
+  padding: 0.75rem 1rem;
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(255, 215, 0, 0.2);
+  border-radius: 10px;
+  color: #e0e6ed;
+
+  &:focus {
+    outline: none;
+    border-color: rgba(255, 215, 0, 0.5);
+  }
+
+  &::placeholder {
+    color: #64748b;
   }
 `;
 
-const SubmitButton = styled(Button)`
+const CommentSubmit = styled.button`
+  padding: 0.75rem 1.5rem;
   background: linear-gradient(135deg, #ffd700, #ffed4e);
   border: none;
+  border-radius: 10px;
   color: #0a0e27;
-  box-shadow: 0 4px 16px rgba(255, 215, 0, 0.3);
+  font-weight: 700;
+  cursor: pointer;
 
   &:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(255, 215, 0, 0.5);
   }
 
   &:disabled {
     opacity: 0.5;
-    cursor: not-allowed;
   }
 `;
 
-const CreatePostModal = ({ onClose, onPostCreated }) => {
-  const { api, isAuthenticated } = useAuth(); // ✅ USE AUTH CONTEXT
-  const [postType, setPostType] = useState('status');
-  const [text, setText] = useState('');
-  const [visibility, setVisibility] = useState('public');
-  const [loading, setLoading] = useState(false);
+const CharCounter = styled.div`
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-top: 0.5rem;
+`;
 
-  const [tradeData, setTradeData] = useState({
-    symbol: '',
-    action: 'buy',
-    shares: '',
-    price: '',
-    profit: '',
-    profitPercent: ''
-  });
+const PostCard = ({ post, onLike, onComment, onDelete }) => {
+  const navigate = useNavigate(); // ✅ ADD THIS
+  const [showComments, setShowComments] = useState(false);
+  const [commentText, setCommentText] = useState('');
+  const [showMenu, setShowMenu] = useState(false);
 
-  const postTypes = [
-    { id: 'status', icon: MessageSquare, label: 'Status' },
-    { id: 'trade', icon: TrendingUp, label: 'Trade' },
-    { id: 'achievement', icon: Trophy, label: 'Achievement' },
-    { id: 'milestone', icon: Target, label: 'Milestone' },
-    { id: 'journal', icon: BookOpen, label: 'Journal' },
-  ];
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    // ✅ Check authentication
-    if (!isAuthenticated) {
-      alert('You must be logged in to create a post');
-      return;
-    }
-
-    setLoading(true);
-
+  const getCurrentUserId = () => {
+    const token = localStorage.getItem('token');
+    if (!token) return null;
     try {
-      const content = { text: text.trim() };
-
-      if (postType === 'trade') {
-        content.trade = {
-          symbol: tradeData.symbol,
-          action: tradeData.action,
-          shares: parseFloat(tradeData.shares),
-          price: parseFloat(tradeData.price),
-          profit: tradeData.profit ? parseFloat(tradeData.profit) : undefined,
-          profitPercent: tradeData.profitPercent ? parseFloat(tradeData.profitPercent) : undefined,
-        };
-      }
-
-      // ✅ Use api instance from context - no tokens needed!
-      const response = await api.post('/feed/post', {
-        type: postType,
-        content,
-        visibility
-      });
-
-      // Success!
-      onPostCreated(response.data);
-      onClose();
-    } catch (error) {
-      console.error('Error creating post:', error);
-      alert(error.response?.data?.msg || 'Failed to create post');
-    } finally {
-      setLoading(false);
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.userId;
+    } catch {
+      return null;
     }
   };
 
-  const isFormValid = () => {
-    if (postType === 'trade') {
-      return tradeData.symbol && tradeData.shares && tradeData.price;
+  const currentUserId = getCurrentUserId();
+  const isOwnPost = post.user._id === currentUserId;
+
+  const handleCommentSubmit = (e) => {
+    e.preventDefault();
+    if (commentText.trim()) {
+      onComment(post._id, commentText);
+      setCommentText('');
     }
-    return text.trim().length > 0;
+  };
+
+  // ✅ ADD THIS - Navigate to profile
+  const handleProfileClick = (username) => {
+    navigate(`/trader/${username}`);
+  };
+
+  // Helper to get user initials
+  const getInitials = (user) => {
+    const displayName = user?.profile?.displayName || user?.username || 'U';
+    return displayName.charAt(0).toUpperCase();
+  };
+
+  const renderPostContent = () => {
+    switch (post.type) {
+      case 'trade':
+        return (
+          <TradeCard>
+            <TradeHeader>
+              <TradeLeft>
+                <ActionIcon $action={post.content.trade.action}>
+                  {post.content.trade.action === 'buy' ? (
+                    <ArrowUpCircle size={28} />
+                  ) : (
+                    <ArrowDownCircle size={28} />
+                  )}
+                </ActionIcon>
+                <TradeInfo>
+                  <TradeAction>
+                    {post.content.trade.action} {post.content.trade.symbol}
+                  </TradeAction>
+                  <TradeDetails>
+                    {post.content.trade.shares} shares @ ${post.content.trade.price.toFixed(2)}
+                  </TradeDetails>
+                </TradeInfo>
+              </TradeLeft>
+              
+              {post.content.trade.profit !== undefined && (
+                <TradeProfit>
+                  <ProfitAmount $positive={post.content.trade.profit >= 0}>
+                    {post.content.trade.profit >= 0 ? '+' : ''}
+                    ${Math.abs(post.content.trade.profit).toFixed(2)}
+                  </ProfitAmount>
+                  <ProfitPercent $positive={post.content.trade.profitPercent >= 0}>
+                    {post.content.trade.profitPercent >= 0 ? '+' : ''}
+                    {post.content.trade.profitPercent.toFixed(2)}%
+                  </ProfitPercent>
+                </TradeProfit>
+              )}
+            </TradeHeader>
+            {post.content.text && <PostText>{post.content.text}</PostText>}
+          </TradeCard>
+        );
+
+      case 'achievement':
+        return (
+          <AchievementCard>
+            <AchievementHeader>
+              <AchievementIcon>
+                <Trophy size={24} />
+              </AchievementIcon>
+              <AchievementText>
+                <AchievementTitle>Achievement Unlocked!</AchievementTitle>
+                <AchievementName>{post.content.achievement.name}</AchievementName>
+              </AchievementText>
+            </AchievementHeader>
+            <AchievementDescription>
+              {post.content.achievement.description}
+            </AchievementDescription>
+          </AchievementCard>
+        );
+
+      default:
+        return post.content.text && <PostText>{post.content.text}</PostText>;
+    }
   };
 
   return (
-    <Overlay onClick={onClose}>
-      <Modal onClick={(e) => e.stopPropagation()}>
-        <ModalHeader>
-          <ModalTitle>
-            <Sparkles size={28} />
-            Create Post
-          </ModalTitle>
-          <CloseButton onClick={onClose}>
-            <X size={20} />
-          </CloseButton>
-        </ModalHeader>
+    <CardContainer>
+      <PostHeader>
+        <HeaderTop>
+          <UserSection>
+            {/* ✅ UPDATED: Clickable Avatar */}
+            <Avatar onClick={() => handleProfileClick(post.user.username)}>
+              {post.user.profile?.avatar ? (
+                <AvatarImage 
+                  src={post.user.profile.avatar} 
+                  alt={post.user.profile?.displayName || post.user.username}
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                  }}
+                />
+              ) : (
+                <AvatarInitials>
+                  {getInitials(post.user)}
+                </AvatarInitials>
+              )}
+            </Avatar>
+            
+            <UserInfo>
+              {/* ✅ UPDATED: Clickable Display Name */}
+              <DisplayName onClick={() => handleProfileClick(post.user.username)}>
+                {post.user.profile?.displayName || post.user.username}
+                {post.user.stats?.rank === 1 && <Crown size={16} color="#ffd700" />}
+              </DisplayName>
+              <Username>
+                <span>@{post.user.username}</span>
+                <span>•</span>
+                <span>{post.timeAgo}</span>
+                {post.user.stats?.totalReturnPercent !== undefined && (
+                  <>
+                    <span>•</span>
+                    <ReturnBadge $positive={post.user.stats.totalReturnPercent >= 0}>
+                      {post.user.stats.totalReturnPercent >= 0 ? '+' : ''}
+                      {post.user.stats.totalReturnPercent.toFixed(1)}%
+                    </ReturnBadge>
+                  </>
+                )}
+              </Username>
+            </UserInfo>
+          </UserSection>
 
-        <ModalBody onSubmit={handleSubmit}>
-          {/* Post Type Selection */}
-          <Section>
-            <SectionLabel>Post Type</SectionLabel>
-            <PostTypeGrid>
-              {postTypes.map((type) => {
-                const Icon = type.icon;
-                return (
-                  <PostTypeButton
-                    key={type.id}
-                    type="button"
-                    $active={postType === type.id}
-                    onClick={() => setPostType(type.id)}
-                  >
-                    <Icon size={24} />
-                    <TypeLabel>{type.label}</TypeLabel>
-                  </PostTypeButton>
-                );
-              })}
-            </PostTypeGrid>
-          </Section>
-
-          {/* Trade-specific fields */}
-          {postType === 'trade' && (
-            <Section>
-              <SectionLabel>Trade Details</SectionLabel>
-              <TradeFormGrid>
-                <InputGroup>
-                  <InputLabel>Symbol *</InputLabel>
-                  <Input
-                    type="text"
-                    value={tradeData.symbol}
-                    onChange={(e) => setTradeData({...tradeData, symbol: e.target.value.toUpperCase()})}
-                    placeholder="AAPL"
-                  />
-                </InputGroup>
-
-                <InputGroup>
-                  <InputLabel>Action *</InputLabel>
-                  <Select
-                    value={tradeData.action}
-                    onChange={(e) => setTradeData({...tradeData, action: e.target.value})}
-                  >
-                    <option value="buy">Buy</option>
-                    <option value="sell">Sell</option>
-                  </Select>
-                </InputGroup>
-
-                <InputGroup>
-                  <InputLabel>Shares *</InputLabel>
-                  <Input
-                    type="number"
-                    value={tradeData.shares}
-                    onChange={(e) => setTradeData({...tradeData, shares: e.target.value})}
-                    placeholder="100"
-                    min="0"
-                    step="any"
-                  />
-                </InputGroup>
-
-                <InputGroup>
-                  <InputLabel>Price *</InputLabel>
-                  <Input
-                    type="number"
-                    value={tradeData.price}
-                    onChange={(e) => setTradeData({...tradeData, price: e.target.value})}
-                    placeholder="150.00"
-                    min="0"
-                    step="0.01"
-                  />
-                </InputGroup>
-
-                <InputGroup>
-                  <InputLabel>Profit (optional)</InputLabel>
-                  <Input
-                    type="number"
-                    value={tradeData.profit}
-                    onChange={(e) => setTradeData({...tradeData, profit: e.target.value})}
-                    placeholder="500.00"
-                    step="0.01"
-                  />
-                </InputGroup>
-
-                <InputGroup>
-                  <InputLabel>Profit % (optional)</InputLabel>
-                  <Input
-                    type="number"
-                    value={tradeData.profitPercent}
-                    onChange={(e) => setTradeData({...tradeData, profitPercent: e.target.value})}
-                    placeholder="15.5"
-                    step="0.01"
-                  />
-                </InputGroup>
-              </TradeFormGrid>
-            </Section>
+          {isOwnPost && (
+            <div style={{ position: 'relative' }}>
+              <MenuButton onClick={() => setShowMenu(!showMenu)}>
+                <MoreVertical size={20} />
+              </MenuButton>
+              
+              {showMenu && (
+                <Menu>
+                  <MenuItem onClick={() => {
+                    onDelete(post._id);
+                    setShowMenu(false);
+                  }}>
+                    <Trash2 size={16} />
+                    Delete Post
+                  </MenuItem>
+                </Menu>
+              )}
+            </div>
           )}
+        </HeaderTop>
+      </PostHeader>
 
-          {/* Text Content */}
-          <Section>
-            <SectionLabel>
-              {postType === 'trade' ? 'Additional Notes (optional)' : 'What\'s on your mind?'}
-            </SectionLabel>
-            <TextArea
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              placeholder={
-                postType === 'trade' 
-                  ? 'Share your trading strategy or thoughts...'
-                  : 'Share your thoughts with the community...'
-              }
-              maxLength={500}
-            />
-            <CharCounter>{text.length}/500 characters</CharCounter>
-          </Section>
+      <PostContent>
+        {renderPostContent()}
+      </PostContent>
 
-          {/* Visibility */}
-          <Section>
-            <SectionLabel>Who can see this?</SectionLabel>
-            <VisibilityRow>
-              <VisibilityButton
-                type="button"
-                $active={visibility === 'public'}
-                onClick={() => setVisibility('public')}
-              >
-                <VisibilityTitle>Public</VisibilityTitle>
-                <VisibilityDesc>Everyone can see</VisibilityDesc>
-              </VisibilityButton>
-              
-              <VisibilityButton
-                type="button"
-                $active={visibility === 'followers'}
-                onClick={() => setVisibility('followers')}
-              >
-                <VisibilityTitle>Followers</VisibilityTitle>
-                <VisibilityDesc>Only followers</VisibilityDesc>
-              </VisibilityButton>
-              
-              <VisibilityButton
-                type="button"
-                $active={visibility === 'private'}
-                onClick={() => setVisibility('private')}
-              >
-                <VisibilityTitle>Private</VisibilityTitle>
-                <VisibilityDesc>Only you</VisibilityDesc>
-              </VisibilityButton>
-            </VisibilityRow>
-          </Section>
+      <EngagementBar>
+        <EngagementButtons>
+          <EngagementButton
+            $active={post.isLiked}
+            $type="like"
+            onClick={() => onLike(post._id)}
+          >
+            <Heart size={20} fill={post.isLiked ? 'currentColor' : 'none'} />
+            <span>{post.likesCount}</span>
+          </EngagementButton>
 
-          {/* Action Buttons */}
-          <ActionButtons>
-            <CancelButton type="button" onClick={onClose}>
-              Cancel
-            </CancelButton>
-            <SubmitButton type="submit" disabled={!isFormValid() || loading}>
-              {loading ? 'Posting...' : <><Send size={20} /> Post</>}
-            </SubmitButton>
-          </ActionButtons>
-        </ModalBody>
-      </Modal>
-    </Overlay>
+          <EngagementButton
+            $active={showComments}
+            onClick={() => setShowComments(!showComments)}
+          >
+            <MessageCircle size={20} />
+            <span>{post.commentsCount}</span>
+          </EngagementButton>
+        </EngagementButtons>
+
+        <ShareButton>
+          <Share2 size={20} />
+        </ShareButton>
+      </EngagementBar>
+
+      {showComments && (
+        <CommentsSection>
+          <CommentsList>
+            {post.comments.map((comment) => (
+              <Comment key={comment._id}>
+                {/* ✅ UPDATED: Clickable Comment Avatar */}
+                <CommentAvatar onClick={() => handleProfileClick(comment.user.username)}>
+                  {comment.user.profile?.avatar ? (
+                    <CommentAvatarImage 
+                      src={comment.user.profile.avatar} 
+                      alt={comment.user.profile?.displayName || comment.user.username}
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    <CommentAvatarInitials>
+                      {getInitials(comment.user)}
+                    </CommentAvatarInitials>
+                  )}
+                </CommentAvatar>
+                <CommentContent>
+                  <CommentHeader>
+                    {/* ✅ UPDATED: Clickable Comment Author */}
+                    <CommentAuthor onClick={() => handleProfileClick(comment.user.username)}>
+                      {comment.user.profile?.displayName || comment.user.username}
+                    </CommentAuthor>
+                    <CommentTime>
+                      {new Date(comment.createdAt).toLocaleTimeString([], { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                      })}
+                    </CommentTime>
+                  </CommentHeader>
+                  <CommentText>{comment.text}</CommentText>
+                </CommentContent>
+              </Comment>
+            ))}
+          </CommentsList>
+
+          <CommentInputSection onSubmit={handleCommentSubmit}>
+            <CommentInputWrapper>
+              <CommentInput
+                type="text"
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                placeholder="Write a comment..."
+                maxLength={300}
+              />
+              <CommentSubmit type="submit" disabled={!commentText.trim()}>
+                Post
+              </CommentSubmit>
+            </CommentInputWrapper>
+            <CharCounter>{commentText.length}/300 characters</CharCounter>
+          </CommentInputSection>
+        </CommentsSection>
+      )}
+    </CardContainer>
   );
 };
 
-export default CreatePostModal;
+export default PostCard;

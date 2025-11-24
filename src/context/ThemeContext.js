@@ -1,7 +1,6 @@
-// client/src/context/ThemeContext.js - DEBUG VERSION with extensive logging
+// client/src/context/ThemeContext.js - THEME MANAGEMENT
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useGamification } from './GamificationContext';
-import { VAULT_THEMES, getThemeById } from '../data/vaultThemes';
 
 const ThemeContext = createContext();
 
@@ -13,133 +12,112 @@ export const useTheme = () => {
     return context;
 };
 
-// Default theme colors with complete structure
-const defaultThemeColors = {
-    primary: '#00adef',
-    secondary: '#8b5cf6',
-    accent: '#8b5cf6',
-    background: '#0a0e27',
-    cardBackground: 'rgba(10, 14, 39, 0.95)',
-    bg: {
-        primary: '#0a0e27',
-        secondary: 'rgba(10, 14, 39, 0.95)',
-        card: 'rgba(30, 41, 59, 0.9)',
-        hover: 'rgba(0, 173, 237, 0.1)'
+// Theme configuration
+const themes = {
+    dark: {
+        name: 'dark',
+        colors: {
+            bg: {
+                primary: 'linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%)',
+                secondary: 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%)',
+                tertiary: 'rgba(15, 23, 42, 0.6)',
+                overlay: 'rgba(0, 0, 0, 0.8)'
+            },
+            text: {
+                primary: '#e0e6ed',
+                secondary: '#94a3b8',
+                tertiary: '#64748b',
+                accent: '#00adef'
+            },
+            brand: {
+                primary: '#00adef',
+                secondary: '#00ff88',
+                gradient: 'linear-gradient(135deg, #00adef 0%, #00ff88 100%)'
+            },
+            success: '#10b981',
+            warning: '#f59e0b',
+            error: '#ef4444',
+            info: '#3b82f6',
+            border: {
+                primary: 'rgba(0, 173, 237, 0.3)',
+                secondary: 'rgba(0, 173, 237, 0.2)',
+                tertiary: 'rgba(100, 116, 139, 0.3)'
+            }
+        }
     },
-    text: {
-        primary: '#f8fafc',
-        secondary: '#94a3b8',
-        muted: '#64748b'
-    },
-    textSecondary: '#94a3b8',
-    textMuted: '#64748b',
-    border: '#1e293b'
+    light: {
+        name: 'light',
+        colors: {
+            bg: {
+                primary: 'linear-gradient(145deg, #f8fafc 0%, #e2e8f0 50%, #f8fafc 100%)',
+                secondary: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%)',
+                tertiary: 'rgba(248, 250, 252, 0.9)',
+                overlay: 'rgba(0, 0, 0, 0.5)'
+            },
+            text: {
+                primary: '#0f172a',
+                secondary: '#475569',
+                tertiary: '#94a3b8',
+                accent: '#0284c7'
+            },
+            brand: {
+                primary: '#0284c7',
+                secondary: '#10b981',
+                gradient: 'linear-gradient(135deg, #0284c7 0%, #10b981 100%)'
+            },
+            success: '#059669',
+            warning: '#d97706',
+            error: '#dc2626',
+            info: '#2563eb',
+            border: {
+                primary: 'rgba(2, 132, 199, 0.4)',
+                secondary: 'rgba(2, 132, 199, 0.2)',
+                tertiary: 'rgba(148, 163, 184, 0.3)'
+            }
+        }
+    }
 };
 
 export const ThemeProvider = ({ children }) => {
-    console.log('🎨 ThemeProvider: Initializing...');
-    
-    // Initialize with a complete default theme object
-    const [currentTheme, setCurrentTheme] = useState({
-        colors: defaultThemeColors,
-        name: 'Default Theme',
-        id: 'theme-default'
+    // Get initial theme from localStorage or default to dark
+    const [currentTheme, setCurrentTheme] = useState(() => {
+        const savedTheme = localStorage.getItem('nexus-theme');
+        return savedTheme || 'dark';
     });
 
-    const { gamification, loading: gamificationLoading } = useGamification();
-    
-    // DEBUG: Log gamification data whenever it changes
-    useEffect(() => {
-        console.log('🎨 ThemeProvider: Gamification data changed:', {
-            loading: gamificationLoading,
-            hasGamification: !!gamification,
-            gamification: gamification
+    // Get theme object
+    const theme = themes[currentTheme];
+
+    // Toggle between dark and light
+    const toggleTheme = () => {
+        setCurrentTheme(prev => {
+            const newTheme = prev === 'dark' ? 'light' : 'dark';
+            localStorage.setItem('nexus-theme', newTheme);
+            return newTheme;
         });
-        
-        if (gamification) {
-            console.log('🎨 ThemeProvider: Equipped items:', gamification.equippedItems);
-            console.log('🎨 ThemeProvider: Profile theme:', gamification.equippedItems?.profileTheme);
-        }
-    }, [gamification, gamificationLoading]);
-
-    // Update theme when equipped theme changes
-    useEffect(() => {
-        console.log('🎨 ThemeProvider: useEffect triggered');
-        console.log('🎨 ThemeProvider: Loading?', gamificationLoading);
-        console.log('🎨 ThemeProvider: Gamification?', !!gamification);
-        console.log('🎨 ThemeProvider: Full gamification object:', gamification);
-        
-        // Wait for gamification data to load
-        if (gamificationLoading) {
-            console.log('🎨 Waiting for gamification data to load...');
-            return;
-        }
-
-        // Check if user has an equipped theme
-        if (gamification?.equippedItems?.profileTheme) {
-            const equippedThemeId = gamification.equippedItems.profileTheme;
-            console.log('🎨 User has equipped theme:', equippedThemeId);
-            
-            const themeData = getThemeById(equippedThemeId);
-            console.log('🎨 Theme data from vault:', themeData);
-            
-            if (themeData && themeData.colors) {
-                console.log('✅ Applying equipped theme:', themeData.name);
-                console.log('🎨 Theme colors:', themeData.colors);
-                
-                // Deep merge with default colors to ensure all properties exist
-                const mergedTheme = {
-                    colors: {
-                        ...defaultThemeColors,
-                        ...themeData.colors,
-                        bg: {
-                            ...defaultThemeColors.bg,
-                            ...(themeData.colors.bg || {})
-                        },
-                        text: {
-                            ...defaultThemeColors.text,
-                            ...(themeData.colors.text || {})
-                        }
-                    },
-                    name: themeData.name,
-                    id: equippedThemeId
-                };
-                
-                console.log('🎨 Final merged theme:', mergedTheme);
-                setCurrentTheme(mergedTheme);
-            } else {
-                console.log('⚠️ Theme not found or invalid, using default:', equippedThemeId);
-                setCurrentTheme({
-                    colors: defaultThemeColors,
-                    name: 'Default Theme',
-                    id: 'theme-default'
-                });
-            }
-        } else {
-            // No theme equipped or user not logged in, use default
-            console.log('🎨 No equipped theme found');
-            console.log('🎨 Gamification:', gamification);
-            console.log('🎨 Equipped items:', gamification?.equippedItems);
-            console.log('🎨 Using default theme');
-            setCurrentTheme({
-                colors: defaultThemeColors,
-                name: 'Default Theme',
-                id: 'theme-default'
-            });
-        }
-    }, [gamification, gamificationLoading]);
-
-    // Create the value object that will be passed to consumers
-    const value = {
-        // For useTheme() hook
-        theme: currentTheme,
-        setTheme: setCurrentTheme,
-        colors: currentTheme.colors,
-        themeName: currentTheme.name,
-        themeId: currentTheme.id
     };
 
-    console.log('🎨 ThemeProvider: Rendering with theme:', currentTheme.name);
+    // Set specific theme
+    const setTheme = (themeName) => {
+        if (themes[themeName]) {
+            setCurrentTheme(themeName);
+            localStorage.setItem('nexus-theme', themeName);
+        }
+    };
+
+    // Update document theme attribute for CSS
+    useEffect(() => {
+        document.documentElement.setAttribute('data-theme', currentTheme);
+    }, [currentTheme]);
+
+    const value = {
+        theme,
+        currentTheme,
+        toggleTheme,
+        setTheme,
+        isDark: currentTheme === 'dark',
+        isLight: currentTheme === 'light'
+    };
 
     return (
         <ThemeContext.Provider value={value}>

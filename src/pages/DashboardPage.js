@@ -17,6 +17,7 @@ import {
 } from 'recharts';
 import nexusSignalLogo from '../assets/nexus-signal-logo.png';
 import AdvancedChart from '../components/AdvancedChart';
+import PatternDetector from '../components/PatternDetector';
 
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`
@@ -1312,64 +1313,74 @@ const DashboardPage = () => {
                     </TickerTrack>
                 </TickerContainer>
 
-                {/* ADVANCED CHART SECTION */}
-                <ChartSection>
-                    <SearchContainer>
-                        <SearchInput
-                            type="text"
-                            placeholder="Search any stock or crypto (e.g., AAPL, BTC-USD, ETH-USD)..."
-                            value={searchSymbol}
-                            onChange={(e) => setSearchSymbol(e.target.value.toUpperCase())}
-                            onKeyPress={(e) => {
-                                if (e.key === 'Enter') {
-                                    handleSearchSymbol();
-                                }
-                            }}
-                        />
-                        <SearchButton 
-                            onClick={handleSearchSymbol}
-                            disabled={!searchSymbol.trim()}
-                        >
-                            <Eye size={20} />
-                            Load Chart
-                        </SearchButton>
-                    </SearchContainer>
+             
 
-                    <SymbolSelector>
-                        <QuickSelectLabel>Quick Select:</QuickSelectLabel>
-                        {['AAPL', 'TSLA', 'NVDA', 'MSFT', 'GOOGL', 'AMZN', 'META', 'AMD', 'BTC-USD', 'ETH-USD', 'SOL-USD', 'DOGE-USD'].map(sym => (
-                            <SymbolButton
-                                key={sym}
-                                $active={selectedSymbol === sym}
-                                onClick={() => handleSymbolChange(sym)}
-                            >
-                                {sym}
-                            </SymbolButton>
-                        ))}
-                    </SymbolSelector>
-                    
-                    {loadingChart ? (
-                        <LoadingChartPlaceholder>
-                            <LoadingSpinner>
-                                <Activity size={64} color="#00adef" />
-                            </LoadingSpinner>
-                            <p style={{ color: '#94a3b8', marginTop: '1rem', fontSize: '1.2rem' }}>
-                                Loading {selectedSymbol} chart data...
-                            </p>
-                        </LoadingChartPlaceholder>
-                    ) : (
-                        <AdvancedChart
-                            symbol={selectedSymbol}
-                            data={advancedChartData}
-                            height="600px"
-                            timeframe={selectedTimeframe}
-                            onTimeframeChange={handleTimeframeChange}
-                            onChartTypeChange={(type) => {
-                                console.log('Chart type changed:', type);
-                            }}
-                        />
-                    )}
-                </ChartSection>
+{/* ADVANCED CHART SECTION */}
+<ChartSection>
+    <SearchContainer>
+        <SearchInput
+            type="text"
+            placeholder="Search any stock or crypto (e.g., AAPL, BTC-USD, ETH-USD)..."
+            value={searchSymbol}
+            onChange={(e) => setSearchSymbol(e.target.value.toUpperCase())}
+            onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                    handleSearchSymbol();
+                }
+            }}
+        />
+        <SearchButton 
+            onClick={handleSearchSymbol}
+            disabled={!searchSymbol.trim()}
+        >
+            <Eye size={20} />
+            Load Chart
+        </SearchButton>
+    </SearchContainer>
+
+    <SymbolSelector>
+        <QuickSelectLabel>Quick Select:</QuickSelectLabel>
+        {['AAPL', 'TSLA', 'NVDA', 'MSFT', 'GOOGL', 'AMZN', 'META', 'AMD', 'BTC-USD', 'ETH-USD', 'SOL-USD', 'DOGE-USD'].map(sym => (
+            <SymbolButton
+                key={sym}
+                $active={selectedSymbol === sym}
+                onClick={() => handleSymbolChange(sym)}
+            >
+                {sym}
+            </SymbolButton>
+        ))}
+    </SymbolSelector>
+    
+    {loadingChart ? (
+        <LoadingChartPlaceholder>
+            <LoadingSpinner>
+                <Activity size={64} color="#00adef" />
+            </LoadingSpinner>
+            <p style={{ color: '#94a3b8', marginTop: '1rem', fontSize: '1.2rem' }}>
+                Loading {selectedSymbol} chart data...
+            </p>
+        </LoadingChartPlaceholder>
+    ) : (
+        <>
+            <AdvancedChart
+                symbol={selectedSymbol}
+                data={advancedChartData}
+                height="600px"
+                timeframe={selectedTimeframe}
+                onTimeframeChange={handleTimeframeChange}
+                onChartTypeChange={(type) => {
+                    console.log('Chart type changed:', type);
+                }}
+            />
+
+            {/* ✅ ADD THIS - AI PATTERN RECOGNITION */}
+            <PatternDetector 
+                symbol={selectedSymbol}
+                chartData={advancedChartData}
+            />
+        </>
+    )}
+</ChartSection>
 
                 {/* STATS CARDS */}
                 <StatsGrid>

@@ -1,4 +1,4 @@
-// client/src/components/Navbar.js - WITH DYNAMIC THEMES! 🎨
+// client/src/components/Navbar.js - FULLY FIXED VERSION 🎨
 import axios from 'axios';
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -37,16 +37,16 @@ const shake = keyframes`
     20%, 40%, 60%, 80% { transform: rotate(10deg); }
 `;
 
-// ============ STYLED COMPONENTS (NOW WITH DYNAMIC THEMES!) ============
+// ============ STYLED COMPONENTS (FIXED COLORS!) ============
 const NavContainer = styled.nav`
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     z-index: 1000;
-    background: ${props => props.theme.colors.cardBackground || 'rgba(10, 14, 39, 0.95)'};
+    background: rgba(10, 14, 39, 0.95);
     backdrop-filter: blur(20px);
-    border-bottom: 1px solid ${props => `${props.theme.colors.primary}33`};
+    border-bottom: 1px solid rgba(0, 173, 239, 0.2);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
     animation: ${fadeIn} 0.5s ease-out;
 `;
@@ -65,7 +65,7 @@ const NavInner = styled.div`
     }
 `;
 
-// ============ LOGO ============
+// ============ LOGO (FIXED VISIBILITY!) ============
 const Logo = styled(Link)`
     display: flex;
     align-items: center;
@@ -73,10 +73,6 @@ const Logo = styled(Link)`
     text-decoration: none;
     font-size: 2rem;
     font-weight: 900;
-    background: linear-gradient(135deg, ${props => props.theme.colors.primary} 0%, #00ff88 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
     position: relative;
     transition: all 0.3s ease;
 
@@ -95,29 +91,28 @@ const LogoIcon = styled.div`
     position: relative;
     transition: all 0.3s ease;
 
-    filter: drop-shadow(0 0 5px ${props => `${props.theme.colors.primary}B3`})
-            drop-shadow(0 0 10px ${props => props.theme.colors.accent || 'rgba(139, 92, 246, 0.6)'})
-            drop-shadow(0 0 15px rgba(236, 72, 153, 0.5));
+    filter: drop-shadow(0 0 5px rgba(0, 173, 239, 0.7))
+            drop-shadow(0 0 10px rgba(0, 255, 136, 0.5))
+            drop-shadow(0 0 15px rgba(0, 173, 239, 0.3));
 
     &::before {
         content: '';
         position: absolute;
         inset: 0px;
         background: radial-gradient(circle, 
-            ${props => `${props.theme.colors.primary}33`} 0%, 
-            ${props => props.theme.colors.accent ? `${props.theme.colors.accent}26` : 'rgba(139, 92, 246, 0.15)'} 40%, 
-            rgba(236, 72, 153, 0.1) 70%,
-            transparent 100%);
+            rgba(0, 173, 239, 0.2) 0%, 
+            rgba(0, 255, 136, 0.1) 40%, 
+            transparent 70%);
         border-radius: 50%;
         z-index: -1;
-        opacity: 0.02;
+        opacity: 0.5;
         animation: ${pulse} 3s ease-in-out infinite;
     }
 
     &:hover {
-        filter: drop-shadow(0 0 10px ${props => props.theme.colors.primary})
-                drop-shadow(0 0 15px ${props => props.theme.colors.accent || 'rgba(139, 92, 246, 0.8)'})
-                drop-shadow(0 0 35px rgba(236, 72, 153, 0.7));
+        filter: drop-shadow(0 0 10px rgba(0, 173, 239, 0.9))
+                drop-shadow(0 0 20px rgba(0, 255, 136, 0.7))
+                drop-shadow(0 0 35px rgba(0, 173, 239, 0.5));
         transform: translateY(-3px) scale(1.08);
     }
 
@@ -135,30 +130,27 @@ const LogoImage = styled.img`
     z-index: 1;
 `;
 
+// ✅ FIXED: Bright visible gradient for "Nexus Signal" text
 const LogoText = styled.span`
     letter-spacing: 1.5px;
     font-size: 1.1em;
     font-weight: 900;
     
     background: linear-gradient(135deg, 
-        ${props => props.theme.colors.primary} 0%,
-        ${props => props.theme.colors.accent || '#8b5cf6'} 50%,
-        #ec4899 100%
+        #00adef 0%,
+        #00ff88 50%,
+        #00adef 100%
     );
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
     
-    text-shadow: 0 0 20px ${props => `${props.theme.colors.primary}99`},
-                 0 0 40px ${props => props.theme.colors.accent ? `${props.theme.colors.accent}80` : 'rgba(139, 92, 246, 0.5)'},
-                 0 0 60px rgba(236, 72, 153, 0.4);
+    filter: drop-shadow(0 0 10px rgba(0, 173, 239, 0.5));
     
     transition: all 0.3s ease;
 
     &:hover {
-        text-shadow: 0 0 30px ${props => props.theme.colors.primary},
-                     0 0 50px ${props => props.theme.colors.accent || 'rgba(139, 92, 246, 0.7)'},
-                     0 0 70px rgba(236, 72, 153, 0.6);
+        filter: drop-shadow(0 0 15px rgba(0, 173, 239, 0.7));
     }
 
     @media (max-width: 768px) {
@@ -181,37 +173,39 @@ const NavItem = styled.div`
     position: relative;
 `;
 
+// ✅ FIXED: Cyan active color instead of purple
 const NavLink = styled(Link)`
     display: flex;
     align-items: center;
     gap: 0.5rem;
     padding: 0.75rem 1.25rem;
-    color: ${props => props.$active ? props.theme.colors.primary : (props.theme.colors.text?.secondary || props.theme.colors.textSecondary || '#94a3b8')};
+    color: ${props => props.$active ? '#00adef' : '#94a3b8'};
     text-decoration: none;
     font-weight: 600;
     font-size: 0.95rem;
     border-radius: 10px;
     position: relative;
     transition: all 0.3s ease;
-    background: ${props => props.$active ? `${props.theme.colors.primary}26` : 'transparent'};
-    border: 1px solid ${props => props.$active ? `${props.theme.colors.primary}4D` : 'transparent'};
+    background: ${props => props.$active ? 'rgba(0, 173, 239, 0.15)' : 'transparent'};
+    border: 1px solid ${props => props.$active ? 'rgba(0, 173, 239, 0.3)' : 'transparent'};
 
     &:hover {
-        color: ${props => props.theme.colors.primary};
-        background: ${props => `${props.theme.colors.primary}1A`};
-        border-color: ${props => `${props.theme.colors.primary}4D`};
+        color: #00adef;
+        background: rgba(0, 173, 239, 0.1);
+        border-color: rgba(0, 173, 239, 0.3);
         transform: translateY(-2px);
     }
 `;
 
+// ✅ FIXED: Cyan active color instead of purple
 const DropdownTrigger = styled.button`
     display: flex;
     align-items: center;
     gap: 0.5rem;
     padding: 0.75rem 1.25rem;
-    color: ${props => props.$active ? props.theme.colors.primary : (props.theme.colors.text?.secondary || props.theme.colors.textSecondary || '#94a3b8')};
-    background: ${props => props.$active ? `${props.theme.colors.primary}26` : 'transparent'};
-    border: 1px solid ${props => props.$active ? `${props.theme.colors.primary}4D` : 'transparent'};
+    color: ${props => props.$active ? '#00adef' : '#94a3b8'};
+    background: ${props => props.$active ? 'rgba(0, 173, 239, 0.15)' : 'transparent'};
+    border: 1px solid ${props => props.$active ? 'rgba(0, 173, 239, 0.3)' : 'transparent'};
     border-radius: 10px;
     font-weight: 600;
     font-size: 0.95rem;
@@ -219,9 +213,9 @@ const DropdownTrigger = styled.button`
     transition: all 0.3s ease;
 
     &:hover {
-        color: ${props => props.theme.colors.primary};
-        background: ${props => `${props.theme.colors.primary}1A`};
-        border-color: ${props => `${props.theme.colors.primary}4D`};
+        color: #00adef;
+        background: rgba(0, 173, 239, 0.1);
+        border-color: rgba(0, 173, 239, 0.3);
         transform: translateY(-2px);
     }
 
@@ -235,9 +229,9 @@ const DropdownMenu = styled.div`
     position: absolute;
     top: calc(100% + 10px);
     left: 0;
-    background: ${props => props.theme.colors.cardBackground || 'rgba(15, 23, 42, 0.98)'};
+    background: rgba(15, 23, 42, 0.98);
     backdrop-filter: blur(20px);
-    border: 1px solid ${props => `${props.theme.colors.primary}4D`};
+    border: 1px solid rgba(0, 173, 239, 0.3);
     border-radius: 12px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
     min-width: 220px;
@@ -251,20 +245,20 @@ const DropdownItem = styled(Link)`
     align-items: center;
     gap: 0.75rem;
     padding: 0.875rem 1.25rem;
-    color: ${props => props.$active ? props.theme.colors.primary : (props.theme.colors.text?.primary || props.theme.colors.text || '#f8fafc')};
+    color: ${props => props.$active ? '#00adef' : '#f8fafc'};
     text-decoration: none;
     font-weight: 500;
     transition: all 0.2s ease;
-    border-bottom: 1px solid ${props => `${props.theme.colors.primary}1A`};
-    background: ${props => props.$active ? `${props.theme.colors.primary}26` : 'transparent'};
+    border-bottom: 1px solid rgba(0, 173, 239, 0.1);
+    background: ${props => props.$active ? 'rgba(0, 173, 239, 0.15)' : 'transparent'};
 
     &:last-child {
         border-bottom: none;
     }
 
     &:hover {
-        background: ${props => `${props.theme.colors.primary}26`};
-        color: ${props => props.theme.colors.primary};
+        background: rgba(0, 173, 239, 0.15);
+        color: #00adef;
         padding-left: 1.5rem;
     }
 `;
@@ -282,9 +276,9 @@ const UserSection = styled.div`
 
 const NotificationButton = styled.button`
     position: relative;
-    background: ${props => `${props.theme.colors.primary}1A`};
-    border: 1px solid ${props => `${props.theme.colors.primary}4D`};
-    color: ${props => props.theme.colors.primary};
+    background: rgba(0, 173, 239, 0.1);
+    border: 1px solid rgba(0, 173, 239, 0.3);
+    color: #00adef;
     width: 40px;
     height: 40px;
     border-radius: 10px;
@@ -295,9 +289,9 @@ const NotificationButton = styled.button`
     transition: all 0.3s ease;
 
     &:hover {
-        background: ${props => `${props.theme.colors.primary}33`};
+        background: rgba(0, 173, 239, 0.2);
         transform: translateY(-2px);
-        box-shadow: 0 4px 15px ${props => `${props.theme.colors.primary}4D`};
+        box-shadow: 0 4px 15px rgba(0, 173, 239, 0.3);
         
         svg {
             animation: ${shake} 0.5s ease-in-out;
@@ -323,7 +317,7 @@ const NotificationBadge = styled.span`
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px solid ${props => props.theme.colors.cardBackground || 'rgba(10, 14, 39, 0.95)'};
+    border: 2px solid rgba(10, 14, 39, 0.95);
     animation: ${pulse} 2s ease-in-out infinite;
 `;
 
@@ -332,9 +326,9 @@ const NotificationPanel = styled.div`
     position: absolute;
     top: calc(100% + 10px);
     right: 0;
-    background: ${props => props.theme.colors.cardBackground || 'rgba(15, 23, 42, 0.98)'};
+    background: rgba(15, 23, 42, 0.98);
     backdrop-filter: blur(20px);
-    border: 1px solid ${props => `${props.theme.colors.primary}4D`};
+    border: 1px solid rgba(0, 173, 239, 0.3);
     border-radius: 12px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
     width: 400px;
@@ -353,14 +347,14 @@ const NotificationPanel = styled.div`
 
 const NotificationHeader = styled.div`
     padding: 1rem 1.25rem;
-    border-bottom: 1px solid ${props => `${props.theme.colors.primary}33`};
+    border-bottom: 1px solid rgba(0, 173, 239, 0.2);
     display: flex;
     justify-content: space-between;
     align-items: center;
 `;
 
 const NotificationTitle = styled.h3`
-    color: ${props => props.theme.colors.primary};
+    color: #00adef;
     font-size: 1.1rem;
     font-weight: 700;
     margin: 0;
@@ -369,14 +363,14 @@ const NotificationTitle = styled.h3`
 const MarkAllRead = styled.button`
     background: transparent;
     border: none;
-    color: ${props => props.theme.colors.text?.secondary || props.theme.colors.textSecondary || '#94a3b8'};
+    color: #94a3b8;
     font-size: 0.85rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
 
     &:hover {
-        color: ${props => props.theme.colors.primary};
+        color: #00adef;
     }
 `;
 
@@ -389,29 +383,29 @@ const NotificationList = styled.div`
     }
 
     &::-webkit-scrollbar-track {
-        background: ${props => `${props.theme.colors.primary}0D`};
+        background: rgba(0, 173, 239, 0.05);
     }
 
     &::-webkit-scrollbar-thumb {
-        background: ${props => `${props.theme.colors.primary}4D`};
+        background: rgba(0, 173, 239, 0.3);
         border-radius: 3px;
 
         &:hover {
-            background: ${props => `${props.theme.colors.primary}80`};
+            background: rgba(0, 173, 239, 0.5);
         }
     }
 `;
 
 const NotificationItem = styled.div`
     padding: 1rem 1.25rem;
-    border-bottom: 1px solid ${props => `${props.theme.colors.primary}1A`};
+    border-bottom: 1px solid rgba(0, 173, 239, 0.1);
     cursor: pointer;
     transition: all 0.2s ease;
-    background: ${props => props.$unread ? `${props.theme.colors.primary}0D` : 'transparent'};
+    background: ${props => props.$unread ? 'rgba(0, 173, 239, 0.05)' : 'transparent'};
     position: relative;
 
     &:hover {
-        background: ${props => `${props.theme.colors.primary}1A`};
+        background: rgba(0, 173, 239, 0.1);
     }
 
     &:last-child {
@@ -438,13 +432,13 @@ const NotificationIcon = styled.div`
         if (props.$type === 'success') return 'rgba(16, 185, 129, 0.2)';
         if (props.$type === 'warning') return 'rgba(245, 158, 11, 0.2)';
         if (props.$type === 'error') return 'rgba(239, 68, 68, 0.2)';
-        return `${props.theme.colors.primary}33`;
+        return 'rgba(0, 173, 239, 0.2)';
     }};
     color: ${props => {
         if (props.$type === 'success') return '#10b981';
         if (props.$type === 'warning') return '#f59e0b';
         if (props.$type === 'error') return '#ef4444';
-        return props.theme.colors.primary;
+        return '#00adef';
     }};
 `;
 
@@ -453,20 +447,20 @@ const NotificationContent = styled.div`
 `;
 
 const NotificationItemTitle = styled.div`
-    color: ${props => props.theme.colors.text?.primary || props.theme.colors.text || '#f8fafc'};
+    color: #f8fafc;
     font-weight: 600;
     font-size: 0.95rem;
     margin-bottom: 0.25rem;
 `;
 
 const NotificationItemText = styled.div`
-    color: ${props => props.theme.colors.text?.secondary || props.theme.colors.textSecondary || '#94a3b8'};
+    color: #94a3b8;
     font-size: 0.85rem;
     line-height: 1.4;
 `;
 
 const NotificationTime = styled.div`
-    color: ${props => props.theme.colors.text?.muted || props.theme.colors.textMuted || '#64748b'};
+    color: #64748b;
     font-size: 0.75rem;
     margin-top: 0.5rem;
     display: flex;
@@ -478,7 +472,7 @@ const UnreadDot = styled.div`
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: ${props => props.theme.colors.primary};
+    background: #00adef;
     position: absolute;
     top: 1.25rem;
     right: 1.25rem;
@@ -488,7 +482,7 @@ const UnreadDot = styled.div`
 const EmptyState = styled.div`
     padding: 3rem 2rem;
     text-align: center;
-    color: ${props => props.theme.colors.text?.muted || props.theme.colors.textMuted || '#64748b'};
+    color: #64748b;
 `;
 
 const EmptyStateIcon = styled.div`
@@ -496,16 +490,16 @@ const EmptyStateIcon = styled.div`
     height: 64px;
     margin: 0 auto 1rem;
     border-radius: 50%;
-    background: ${props => `${props.theme.colors.primary}1A`};
+    background: rgba(0, 173, 239, 0.1);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: ${props => props.theme.colors.primary};
+    color: #00adef;
 `;
 
 const EmptyStateText = styled.div`
     font-size: 0.95rem;
-    color: ${props => props.theme.colors.text?.secondary || props.theme.colors.textSecondary || '#94a3b8'};
+    color: #94a3b8;
 `;
 
 const UserMenuButton = styled.button`
@@ -513,19 +507,19 @@ const UserMenuButton = styled.button`
     align-items: center;
     gap: 0.75rem;
     padding: 0.5rem 1rem;
-    background: linear-gradient(135deg, ${props => `${props.theme.colors.primary}26`} 0%, ${props => `${props.theme.colors.primary}0D`} 100%);
-    border: 1px solid ${props => `${props.theme.colors.primary}4D`};
+    background: linear-gradient(135deg, rgba(0, 173, 239, 0.15) 0%, rgba(0, 173, 239, 0.05) 100%);
+    border: 1px solid rgba(0, 173, 239, 0.3);
     border-radius: 12px;
-    color: ${props => props.theme.colors.text?.primary || props.theme.colors.text || '#f8fafc'};
+    color: #f8fafc;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
     position: relative;
 
     &:hover {
-        background: linear-gradient(135deg, ${props => `${props.theme.colors.primary}40`} 0%, ${props => `${props.theme.colors.primary}1A`} 100%);
+        background: linear-gradient(135deg, rgba(0, 173, 239, 0.25) 0%, rgba(0, 173, 239, 0.1) 100%);
         transform: translateY(-2px);
-        box-shadow: 0 4px 15px ${props => `${props.theme.colors.primary}4D`};
+        box-shadow: 0 4px 15px rgba(0, 173, 239, 0.3);
     }
 
     @media (max-width: 768px) {
@@ -540,7 +534,7 @@ const UserAvatar = styled.div`
     border-radius: 10px;
     background: ${props => props.$src ? 
         `url(${props.$src}) center/cover` : 
-        `linear-gradient(135deg, ${props.theme.colors.primary} 0%, ${props.theme.colors.secondary || props.theme.colors.accent || '#8b5cf6'} 100%)`
+        'linear-gradient(135deg, #00adef 0%, #00ff88 100%)'
     };
     display: flex;
     align-items: center;
@@ -548,7 +542,7 @@ const UserAvatar = styled.div`
     font-weight: 700;
     font-size: ${props => props.$src ? '0' : '1rem'};
     color: white;
-    box-shadow: 0 2px 10px ${props => `${props.theme.colors.primary}66`};
+    box-shadow: 0 2px 10px rgba(0, 173, 239, 0.4);
     position: relative;
     overflow: hidden;
 `;
@@ -586,9 +580,9 @@ const UserDropdownMenu = styled.div`
     position: absolute;
     top: calc(100% + 10px);
     right: 0;
-    background: ${props => props.theme.colors.cardBackground || 'rgba(15, 23, 42, 0.98)'};
+    background: rgba(15, 23, 42, 0.98);
     backdrop-filter: blur(20px);
-    border: 1px solid ${props => `${props.theme.colors.primary}4D`};
+    border: 1px solid rgba(0, 173, 239, 0.3);
     border-radius: 12px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
     min-width: 220px;
@@ -602,7 +596,7 @@ const UserDropdownItem = styled.button`
     padding: 0.75rem 1.25rem;
     background: transparent;
     border: none;
-    color: ${props => props.theme.colors.text?.primary || props.theme.colors.text || '#f8fafc'};
+    color: #f8fafc;
     text-align: left;
     font-weight: 500;
     cursor: pointer;
@@ -610,15 +604,15 @@ const UserDropdownItem = styled.button`
     align-items: center;
     gap: 0.75rem;
     transition: all 0.2s ease;
-    border-bottom: 1px solid ${props => `${props.theme.colors.primary}1A`};
+    border-bottom: 1px solid rgba(0, 173, 239, 0.1);
 
     &:last-child {
         border-bottom: none;
     }
 
     &:hover {
-        background: ${props => `${props.theme.colors.primary}26`};
-        color: ${props => props.theme.colors.primary};
+        background: rgba(0, 173, 239, 0.15);
+        color: #00adef;
         padding-left: 1.5rem;
     }
 
@@ -634,9 +628,9 @@ const UserDropdownItem = styled.button`
 // ============ MOBILE MENU ============
 const MobileMenuButton = styled.button`
     display: none;
-    background: ${props => `${props.theme.colors.primary}1A`};
-    border: 1px solid ${props => `${props.theme.colors.primary}4D`};
-    color: ${props => props.theme.colors.primary};
+    background: rgba(0, 173, 239, 0.1);
+    border: 1px solid rgba(0, 173, 239, 0.3);
+    color: #00adef;
     width: 40px;
     height: 40px;
     border-radius: 10px;
@@ -646,7 +640,7 @@ const MobileMenuButton = styled.button`
     transition: all 0.3s ease;
 
     &:hover {
-        background: ${props => `${props.theme.colors.primary}33`};
+        background: rgba(0, 173, 239, 0.2);
         transform: translateY(-2px);
     }
 
@@ -662,13 +656,13 @@ const MobileMenu = styled.div`
     right: 0;
     bottom: 0;
     min-height: calc(100vh - 80px);
-    background: ${props => props.theme.colors.background || '#0a0e27'};
+    background: #0a0e27;
     backdrop-filter: blur(20px);
     z-index: 9999;
     animation: ${fadeIn} 0.3s ease-out;
     overflow-y: auto;
     display: ${props => props.$open ? 'block' : 'none'};
-    border-top: 2px solid ${props => `${props.theme.colors.primary}4D`};
+    border-top: 2px solid rgba(0, 173, 239, 0.3);
 
     @media (min-width: 1025px) {
         display: none !important;
@@ -681,7 +675,7 @@ const MobileNavLinks = styled.div`
     flex-direction: column;
     gap: 0.5rem;
     min-height: 100vh;
-    background: ${props => props.theme.colors.background || '#0a0e27'};
+    background: #0a0e27;
 `;
 
 const MobileNavCategory = styled.div`
@@ -689,7 +683,7 @@ const MobileNavCategory = styled.div`
 `;
 
 const MobileCategoryTitle = styled.div`
-    color: ${props => props.theme.colors.text?.muted || props.theme.colors.textMuted || '#64748b'};
+    color: #64748b;
     font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -706,27 +700,27 @@ const MobileNavLink = styled(Link)`
     align-items: center;
     gap: 1rem;
     padding: 1rem 1.5rem;
-    color: ${props => props.$active ? props.theme.colors.primary : (props.theme.colors.text?.primary || props.theme.colors.text || '#f8fafc')};
+    color: ${props => props.$active ? '#00adef' : '#f8fafc'};
     text-decoration: none;
     font-weight: 600;
     font-size: 1rem;
     border-radius: 12px;
-    background: ${props => props.$active ? `${props.theme.colors.primary}26` : 'rgba(30, 41, 59, 0.5)'};
-    border: 1px solid ${props => props.$active ? `${props.theme.colors.primary}4D` : 'rgba(100, 116, 139, 0.3)'};
+    background: ${props => props.$active ? 'rgba(0, 173, 239, 0.15)' : 'rgba(30, 41, 59, 0.5)'};
+    border: 1px solid ${props => props.$active ? 'rgba(0, 173, 239, 0.3)' : 'rgba(100, 116, 139, 0.3)'};
     transition: all 0.2s ease;
     min-height: 56px;
 
     &:hover {
-        color: ${props => props.theme.colors.primary};
-        background: ${props => `${props.theme.colors.primary}1A`};
-        border-color: ${props => `${props.theme.colors.primary}4D`};
+        color: #00adef;
+        background: rgba(0, 173, 239, 0.1);
+        border-color: rgba(0, 173, 239, 0.3);
         transform: translateX(5px);
     }
 `;
 
 const Divider = styled.div`
     height: 1px;
-    background: linear-gradient(90deg, transparent, ${props => `${props.theme.colors.primary}4D`}, transparent);
+    background: linear-gradient(90deg, transparent, rgba(0, 173, 239, 0.3), transparent);
     margin: 1rem 0;
 `;
 
@@ -750,61 +744,63 @@ const Navbar = () => {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     // Real notifications from backend
-const [notifications, setNotifications] = useState([]);
+    const [notifications, setNotifications] = useState([]);
 
-// Fetch notifications from backend
-useEffect(() => {
-    fetchNotifications();
-    
-    // Poll every 30 seconds for new notifications
-    const interval = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(interval);
-}, []);
-
-const fetchNotifications = async () => {
-    try {
-        const token = localStorage.getItem('token');
-        const response = await axios.get('http://localhost:5000/api/notifications', {
-            headers: { Authorization: `Bearer ${token}` }
-        });
+    // Fetch notifications from backend
+    useEffect(() => {
+        fetchNotifications();
         
-        // Map backend notifications to your format
-        const mappedNotifications = response.data.notifications.map(notif => ({
-            id: notif._id,
-            type: notif.type === 'price_alert' ? 'success' : 
-                  notif.type === 'prediction_expiry' ? 'warning' : 'info',
-            title: notif.title,
-            text: notif.message,
-            time: getTimeAgo(notif.createdAt),
-            unread: !notif.read,
-            icon: getIconForType(notif.type)
-        }));
+        // Poll every 30 seconds for new notifications
+        const interval = setInterval(fetchNotifications, 30000);
+        return () => clearInterval(interval);
+    }, []);
+
+    const fetchNotifications = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            
+            const response = await axios.get('http://localhost:5000/api/notifications', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            // Map backend notifications to your format
+            const mappedNotifications = (response.data.notifications || []).map(notif => ({
+                id: notif._id,
+                type: notif.type === 'price_alert' ? 'success' : 
+                      notif.type === 'prediction_expiry' ? 'warning' : 'info',
+                title: notif.title,
+                text: notif.message,
+                time: getTimeAgo(notif.createdAt),
+                unread: !notif.read,
+                icon: getIconForType(notif.type)
+            }));
+            
+            setNotifications(mappedNotifications);
+        } catch (error) {
+            console.error('Failed to fetch notifications:', error);
+        }
+    };
+
+    const getIconForType = (type) => {
+        switch (type) {
+            case 'price_alert': return TrendingUpIcon;
+            case 'prediction_expiry': return Clock;
+            case 'portfolio_milestone': return Trophy;
+            default: return Bell;
+        }
+    };
+
+    const getTimeAgo = (date) => {
+        const now = new Date();
+        const notifDate = new Date(date);
+        const diffInMinutes = Math.floor((now - notifDate) / 60000);
         
-        setNotifications(mappedNotifications);
-    } catch (error) {
-        console.error('Failed to fetch notifications:', error);
-    }
-};
-
-const getIconForType = (type) => {
-    switch (type) {
-        case 'price_alert': return TrendingUpIcon;
-        case 'prediction_expiry': return Clock;
-        case 'portfolio_milestone': return Trophy;
-        default: return Bell;
-    }
-};
-
-const getTimeAgo = (date) => {
-    const now = new Date();
-    const notifDate = new Date(date);
-    const diffInMinutes = Math.floor((now - notifDate) / 60000);
-    
-    if (diffInMinutes < 1) return 'Just now';
-    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
-    return `${Math.floor(diffInMinutes / 1440)}d ago`;
-};
+        if (diffInMinutes < 1) return 'Just now';
+        if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+        if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
+        return `${Math.floor(diffInMinutes / 1440)}d ago`;
+    };
 
     const unreadCount = notifications.filter(n => n.unread).length;
 
@@ -863,49 +859,49 @@ const getTimeAgo = (date) => {
         setNotificationsOpen(false);
     };
 
-   const handleNotificationClick = async (notification) => {
-    try {
-        const token = localStorage.getItem('token');
-        await axios.patch(
-            `http://localhost:5000/api/notifications/${notification.id}/read`,
-            {},
-            { headers: { Authorization: `Bearer ${token}` } }
-        );
-        
-        // Update local state
-        setNotifications(notifications.map(n => 
-            n.id === notification.id ? { ...n, unread: false } : n
-        ));
+    const handleNotificationClick = async (notification) => {
+        try {
+            const token = localStorage.getItem('token');
+            await axios.patch(
+                `http://localhost:5000/api/notifications/${notification.id}/read`,
+                {},
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            
+            // Update local state
+            setNotifications(notifications.map(n => 
+                n.id === notification.id ? { ...n, unread: false } : n
+            ));
 
-        // Navigate based on notification type
-        if (notification.type === 'success' && notification.title.includes('Prediction')) {
-            navigate('/predict');
-        } else if (notification.title.includes('Portfolio')) {
-            navigate('/portfolio');
-        } else if (notification.title.includes('Price Alert')) {
-            navigate('/watchlist');
+            // Navigate based on notification type
+            if (notification.type === 'success' && notification.title.includes('Prediction')) {
+                navigate('/predict');
+            } else if (notification.title.includes('Portfolio')) {
+                navigate('/portfolio');
+            } else if (notification.title.includes('Price Alert')) {
+                navigate('/watchlist');
+            }
+
+            setNotificationsOpen(false);
+        } catch (error) {
+            console.error('Failed to mark as read:', error);
         }
+    };
 
-        setNotificationsOpen(false);
-    } catch (error) {
-        console.error('Failed to mark as read:', error);
-    }
-};
-
-   const handleMarkAllRead = async () => {
-    try {
-        const token = localStorage.getItem('token');
-        await axios.post(
-            'http://localhost:5000/api/notifications/read-all',
-            {},
-            { headers: { Authorization: `Bearer ${token}` } }
-        );
-        
-        setNotifications(notifications.map(n => ({ ...n, unread: false })));
-    } catch (error) {
-        console.error('Failed to mark all as read:', error);
-    }
-};
+    const handleMarkAllRead = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            await axios.post(
+                'http://localhost:5000/api/notifications/read-all',
+                {},
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            
+            setNotifications(notifications.map(n => ({ ...n, unread: false })));
+        } catch (error) {
+            console.error('Failed to mark all as read:', error);
+        }
+    };
 
     const getUserInitials = () => {
         if (!user?.name) return 'U';
