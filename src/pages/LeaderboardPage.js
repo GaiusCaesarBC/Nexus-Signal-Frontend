@@ -1,4 +1,4 @@
-// client/src/pages/LeaderboardPage.js - EPIC LEADERBOARD & SOCIAL (UPDATED WITH AVATARS)
+// client/src/pages/LeaderboardPage.js - ENHANCED LEADERBOARD WITH PODIUM & TIME FILTERS
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -11,7 +11,9 @@ import {
     ChevronUp, ChevronDown, Search, Filter, Share2,
     UserPlus, UserMinus, Check, X, Globe, Lock,
     Zap, Activity, DollarSign, Percent, ArrowUpRight,
-    ArrowDownRight, ExternalLink, RefreshCw, Settings
+    ArrowDownRight, ExternalLink, RefreshCw, Settings,
+    Calendar, Clock, Copy, Sparkles, Shield, Rocket,
+    Brain, TrendingUp as Trending, Gift, Heart
 } from 'lucide-react';
 
 // ============ ANIMATIONS ============
@@ -23,6 +25,11 @@ const fadeIn = keyframes`
 const slideIn = keyframes`
     from { transform: translateX(-100%); opacity: 0; }
     to { transform: translateX(0); opacity: 1; }
+`;
+
+const slideUp = keyframes`
+    from { transform: translateY(100px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
 `;
 
 const pulse = keyframes`
@@ -54,9 +61,25 @@ const float = keyframes`
     50% { transform: translateY(-10px); }
 `;
 
+const bounce = keyframes`
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-20px); }
+`;
+
+const crownFloat = keyframes`
+    0%, 100% { transform: translateY(0) rotate(-5deg); }
+    50% { transform: translateY(-8px) rotate(5deg); }
+`;
+
 const confetti = keyframes`
     0% { transform: translateY(0) rotate(0deg); opacity: 1; }
-    100% { transform: translateY(-100vh) rotate(720deg); opacity: 0; }
+    100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+`;
+
+const rankUp = keyframes`
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
 `;
 
 // ============ STYLED COMPONENTS ============
@@ -74,7 +97,7 @@ const PageContainer = styled.div`
 
 const Header = styled.div`
     max-width: 1400px;
-    margin: 0 auto 3rem;
+    margin: 0 auto 2rem;
     animation: ${fadeIn} 0.8s ease-out;
     text-align: center;
 `;
@@ -92,10 +115,6 @@ const Title = styled.h1`
     justify-content: center;
     gap: 1rem;
     animation: ${glow} 2s ease-in-out infinite;
-    border: none;
-    outline: none;
-    box-shadow: none;
-    padding: 0;
 
     @media (max-width: 768px) {
         font-size: 2.5rem;
@@ -131,26 +150,306 @@ const StatBadge = styled.div`
     font-weight: 600;
 `;
 
-// ============ TABS ============
-const TabsContainer = styled.div`
+// ============ PODIUM SECTION ============
+const PodiumSection = styled.div`
+    max-width: 900px;
+    margin: 0 auto 3rem;
+    animation: ${fadeIn} 1s ease-out;
+`;
+
+const PodiumContainer = styled.div`
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 1rem;
+    padding: 2rem 1rem;
+    position: relative;
+
+    @media (max-width: 768px) {
+        gap: 0.5rem;
+        padding: 1rem 0.5rem;
+    }
+`;
+
+const PodiumPlace = styled.div`
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover {
+        transform: translateY(-10px);
+    }
+`;
+
+const PodiumAvatar = styled.div`
+    width: ${props => props.$place === 1 ? '120px' : '100px'};
+    height: ${props => props.$place === 1 ? '120px' : '100px'};
+    border-radius: 50%;
+    background: ${props => props.$hasImage ? 'transparent' : 
+        props.$place === 1 ? 'linear-gradient(135deg, #ffd700, #ffed4e)' :
+        props.$place === 2 ? 'linear-gradient(135deg, #c0c0c0, #e8e8e8)' :
+        'linear-gradient(135deg, #cd7f32, #e5a55d)'
+    };
+    border: 4px solid ${props => 
+        props.$place === 1 ? '#ffd700' :
+        props.$place === 2 ? '#c0c0c0' :
+        '#cd7f32'
+    };
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 10px 40px ${props => 
+        props.$place === 1 ? 'rgba(255, 215, 0, 0.5)' :
+        props.$place === 2 ? 'rgba(192, 192, 192, 0.5)' :
+        'rgba(205, 127, 50, 0.5)'
+    };
+    animation: ${props => props.$place === 1 ? css`${bounce} 2s ease-in-out infinite` : 'none'};
+    margin-bottom: 1rem;
+
+    @media (max-width: 768px) {
+        width: ${props => props.$place === 1 ? '90px' : '70px'};
+        height: ${props => props.$place === 1 ? '90px' : '70px'};
+    }
+`;
+
+const PodiumAvatarImage = styled.img`
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    position: absolute;
+    inset: 0;
+`;
+
+const PodiumAvatarInitials = styled.div`
+    font-size: ${props => props.$place === 1 ? '2.5rem' : '2rem'};
+    font-weight: 900;
+    color: #0a0e27;
+
+    @media (max-width: 768px) {
+        font-size: ${props => props.$place === 1 ? '1.8rem' : '1.5rem'};
+    }
+`;
+
+const PodiumCrown = styled.div`
+    position: absolute;
+    top: -25px;
+    animation: ${crownFloat} 2s ease-in-out infinite;
+`;
+
+const PodiumName = styled.div`
+    font-size: ${props => props.$place === 1 ? '1.3rem' : '1.1rem'};
+    font-weight: 700;
+    color: #e0e6ed;
+    text-align: center;
+    margin-bottom: 0.5rem;
+    max-width: 150px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    @media (max-width: 768px) {
+        font-size: ${props => props.$place === 1 ? '1rem' : '0.9rem'};
+        max-width: 100px;
+    }
+`;
+
+const PodiumStats = styled.div`
+    font-size: 0.9rem;
+    color: ${props => 
+        props.$place === 1 ? '#ffd700' :
+        props.$place === 2 ? '#c0c0c0' :
+        '#cd7f32'
+    };
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+`;
+
+const PodiumStand = styled.div`
+    width: ${props => props.$place === 1 ? '160px' : '140px'};
+    height: ${props => 
+        props.$place === 1 ? '140px' :
+        props.$place === 2 ? '100px' :
+        '70px'
+    };
+    background: ${props => 
+        props.$place === 1 ? 'linear-gradient(180deg, #ffd700 0%, #b8860b 100%)' :
+        props.$place === 2 ? 'linear-gradient(180deg, #c0c0c0 0%, #808080 100%)' :
+        'linear-gradient(180deg, #cd7f32 0%, #8b4513 100%)'
+    };
+    border-radius: 12px 12px 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    font-weight: 900;
+    color: rgba(0, 0, 0, 0.3);
+    position: relative;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    animation: ${slideUp} 0.8s ease-out;
+    animation-delay: ${props => 
+        props.$place === 1 ? '0.2s' :
+        props.$place === 2 ? '0.4s' :
+        '0.6s'
+    };
+    animation-fill-mode: backwards;
+
+    @media (max-width: 768px) {
+        width: ${props => props.$place === 1 ? '110px' : '90px'};
+        height: ${props => 
+            props.$place === 1 ? '100px' :
+            props.$place === 2 ? '70px' :
+            '50px'
+        };
+        font-size: 2rem;
+    }
+`;
+
+const PodiumRank = styled.div`
+    font-size: 2.5rem;
+    font-weight: 900;
+    color: rgba(255, 255, 255, 0.9);
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+
+    @media (max-width: 768px) {
+        font-size: 1.8rem;
+    }
+`;
+
+// ============ YOUR RANK CARD ============
+const YourRankCard = styled.div`
     max-width: 1400px;
     margin: 0 auto 2rem;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(139, 92, 246, 0.05) 100%);
+    border: 2px solid rgba(139, 92, 246, 0.5);
+    border-radius: 16px;
+    padding: 1.5rem 2rem;
     display: flex;
-    gap: 1rem;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+    animation: ${fadeIn} 0.6s ease-out;
+    flex-wrap: wrap;
+
+    @media (max-width: 768px) {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+    }
+`;
+
+const YourRankLeft = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+`;
+
+const YourRankBadge = styled.div`
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: white;
+    border: 3px solid rgba(139, 92, 246, 0.5);
+    box-shadow: 0 0 30px rgba(139, 92, 246, 0.5);
+`;
+
+const YourRankInfo = styled.div``;
+
+const YourRankLabel = styled.div`
+    color: #a78bfa;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+`;
+
+const YourRankValue = styled.div`
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: #e0e6ed;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+`;
+
+const YourRankChange = styled.span`
+    font-size: 1rem;
+    color: ${props => props.$up ? '#10b981' : '#ef4444'};
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+`;
+
+const YourRankStats = styled.div`
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+    justify-content: center;
+`;
+
+const YourRankStat = styled.div`
+    text-align: center;
+`;
+
+const YourRankStatValue = styled.div`
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #a78bfa;
+`;
+
+const YourRankStatLabel = styled.div`
+    color: #94a3b8;
+    font-size: 0.85rem;
+`;
+
+const ClimbButton = styled.button`
+    padding: 0.75rem 1.5rem;
+    background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+
+    &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 30px rgba(139, 92, 246, 0.5);
+    }
+`;
+
+// ============ CATEGORY TABS ============
+const CategoryTabsContainer = styled.div`
+    max-width: 1400px;
+    margin: 0 auto 1.5rem;
+    display: flex;
+    gap: 0.75rem;
     justify-content: center;
     flex-wrap: wrap;
 `;
 
-const Tab = styled.button`
-    padding: 0.75rem 1.5rem;
+const CategoryTab = styled.button`
+    padding: 0.6rem 1.2rem;
     background: ${props => props.$active ? 
         'linear-gradient(135deg, rgba(255, 215, 0, 0.3) 0%, rgba(255, 215, 0, 0.15) 100%)' :
         'rgba(30, 41, 59, 0.5)'
     };
     border: 1px solid ${props => props.$active ? 'rgba(255, 215, 0, 0.5)' : 'rgba(100, 116, 139, 0.3)'};
-    border-radius: 12px;
+    border-radius: 10px;
     color: ${props => props.$active ? '#ffd700' : '#94a3b8'};
     font-weight: 600;
+    font-size: 0.9rem;
     cursor: pointer;
     transition: all 0.3s ease;
     display: flex;
@@ -166,6 +465,40 @@ const Tab = styled.button`
     }
 `;
 
+// ============ TIME PERIOD TABS ============
+const TimePeriodContainer = styled.div`
+    max-width: 1400px;
+    margin: 0 auto 2rem;
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    flex-wrap: wrap;
+`;
+
+const TimePeriodTab = styled.button`
+    padding: 0.5rem 1rem;
+    background: ${props => props.$active ? 
+        'rgba(255, 215, 0, 0.2)' :
+        'rgba(255, 215, 0, 0.05)'
+    };
+    border: 1px solid ${props => props.$active ? 
+        'rgba(255, 215, 0, 0.5)' :
+        'rgba(255, 215, 0, 0.2)'
+    };
+    border-radius: 8px;
+    color: ${props => props.$active ? '#ffd700' : '#94a3b8'};
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+        background: rgba(255, 215, 0, 0.2);
+        border-color: rgba(255, 215, 0, 0.5);
+        color: #ffd700;
+    }
+`;
+
 // ============ CONTROLS ============
 const ControlsContainer = styled.div`
     max-width: 1400px;
@@ -178,7 +511,7 @@ const ControlsContainer = styled.div`
 
 const SearchBar = styled.div`
     flex: 1;
-    min-width: 300px;
+    min-width: 250px;
     position: relative;
 `;
 
@@ -212,32 +545,6 @@ const SearchIcon = styled(Search)`
     color: #ffd700;
 `;
 
-const FilterButton = styled.button`
-    padding: 0.75rem 1.25rem;
-    background: ${props => props.$active ? 
-        'rgba(255, 215, 0, 0.2)' :
-        'rgba(255, 215, 0, 0.05)'
-    };
-    border: 1px solid ${props => props.$active ? 
-        'rgba(255, 215, 0, 0.5)' :
-        'rgba(255, 215, 0, 0.3)'
-    };
-    border-radius: 12px;
-    color: ${props => props.$active ? '#ffd700' : '#94a3b8'};
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    transition: all 0.2s ease;
-
-    &:hover {
-        background: rgba(255, 215, 0, 0.2);
-        border-color: rgba(255, 215, 0, 0.5);
-        color: #ffd700;
-    }
-`;
-
 const RefreshButton = styled.button`
     padding: 0.75rem 1.25rem;
     background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
@@ -261,11 +568,11 @@ const RefreshButton = styled.button`
         cursor: not-allowed;
     }
 
-   svg {
-    ${props => props.$loading && css`
-        animation: ${spin} 1s linear infinite;
-    `}
-}
+    svg {
+        ${props => props.$loading && css`
+            animation: ${spin} 1s linear infinite;
+        `}
+    }
 `;
 
 // ============ LEADERBOARD ============
@@ -274,77 +581,102 @@ const LeaderboardContainer = styled.div`
     margin: 0 auto;
 `;
 
+const LeaderboardHeader = styled.div`
+    display: grid;
+    grid-template-columns: 80px 60px 1fr 120px 120px 120px 140px;
+    gap: 1.5rem;
+    padding: 1rem 1.5rem;
+    background: rgba(255, 215, 0, 0.1);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    border-radius: 12px;
+    margin-bottom: 1rem;
+    color: #ffd700;
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+
+    @media (max-width: 1200px) {
+        display: none;
+    }
+`;
+
 const LeaderboardList = styled.div`
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.75rem;
 `;
 
 const LeaderCard = styled.div`
     background: ${props => {
-        if (props.$rank === 1) return 'linear-gradient(135deg, rgba(255, 215, 0, 0.2) 0%, rgba(255, 215, 0, 0.05) 100%)';
-        if (props.$rank === 2) return 'linear-gradient(135deg, rgba(192, 192, 192, 0.2) 0%, rgba(192, 192, 192, 0.05) 100%)';
-        if (props.$rank === 3) return 'linear-gradient(135deg, rgba(205, 127, 50, 0.2) 0%, rgba(205, 127, 50, 0.05) 100%)';
+        if (props.$rank === 1) return 'linear-gradient(135deg, rgba(255, 215, 0, 0.15) 0%, rgba(255, 215, 0, 0.05) 100%)';
+        if (props.$rank === 2) return 'linear-gradient(135deg, rgba(192, 192, 192, 0.15) 0%, rgba(192, 192, 192, 0.05) 100%)';
+        if (props.$rank === 3) return 'linear-gradient(135deg, rgba(205, 127, 50, 0.15) 0%, rgba(205, 127, 50, 0.05) 100%)';
+        if (props.$isYou) return 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(139, 92, 246, 0.05) 100%)';
         return 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%)';
     }};
     backdrop-filter: blur(10px);
     border: 2px solid ${props => {
-        if (props.$rank === 1) return 'rgba(255, 215, 0, 0.5)';
-        if (props.$rank === 2) return 'rgba(192, 192, 192, 0.5)';
-        if (props.$rank === 3) return 'rgba(205, 127, 50, 0.5)';
-        return 'rgba(255, 215, 0, 0.2)';
+        if (props.$rank === 1) return 'rgba(255, 215, 0, 0.4)';
+        if (props.$rank === 2) return 'rgba(192, 192, 192, 0.4)';
+        if (props.$rank === 3) return 'rgba(205, 127, 50, 0.4)';
+        if (props.$isYou) return 'rgba(139, 92, 246, 0.4)';
+        return 'rgba(255, 215, 0, 0.15)';
     }};
-    border-radius: 16px;
-    padding: 1.5rem;
+    border-radius: 14px;
+    padding: 1.25rem 1.5rem;
     display: grid;
-    grid-template-columns: 80px 60px 1fr 150px 150px 150px 120px;
+    grid-template-columns: 80px 60px 1fr 120px 120px 120px 140px;
     gap: 1.5rem;
     align-items: center;
     transition: all 0.3s ease;
-    animation: ${fadeIn} 0.6s ease-out;
-    animation-delay: ${props => props.$index * 0.05}s;
+    animation: ${fadeIn} 0.5s ease-out;
+    animation-delay: ${props => props.$index * 0.03}s;
+    animation-fill-mode: backwards;
     cursor: pointer;
 
     &:hover {
-        transform: translateX(10px);
-        border-color: rgba(255, 215, 0, 0.8);
-        box-shadow: 0 10px 40px ${props => {
-            if (props.$rank === 1) return 'rgba(255, 215, 0, 0.4)';
-            if (props.$rank === 2) return 'rgba(192, 192, 192, 0.4)';
-            if (props.$rank === 3) return 'rgba(205, 127, 50, 0.4)';
-            return 'rgba(255, 215, 0, 0.2)';
+        transform: translateX(8px);
+        border-color: ${props => {
+            if (props.$rank === 1) return 'rgba(255, 215, 0, 0.8)';
+            if (props.$rank === 2) return 'rgba(192, 192, 192, 0.8)';
+            if (props.$rank === 3) return 'rgba(205, 127, 50, 0.8)';
+            if (props.$isYou) return 'rgba(139, 92, 246, 0.8)';
+            return 'rgba(255, 215, 0, 0.5)';
+        }};
+        box-shadow: 0 8px 30px ${props => {
+            if (props.$rank === 1) return 'rgba(255, 215, 0, 0.3)';
+            if (props.$rank === 2) return 'rgba(192, 192, 192, 0.3)';
+            if (props.$rank === 3) return 'rgba(205, 127, 50, 0.3)';
+            if (props.$isYou) return 'rgba(139, 92, 246, 0.3)';
+            return 'rgba(255, 215, 0, 0.15)';
         }};
     }
 
-    ${props => props.$rank <= 3 && css`
-    animation: ${glow} 3s ease-in-out infinite;
-`}
-
     @media (max-width: 1200px) {
-        grid-template-columns: 60px 50px 1fr 120px 100px;
+        grid-template-columns: 60px 50px 1fr 100px 100px;
         gap: 1rem;
         
-        & > div:nth-child(5),
         & > div:nth-child(6) {
             display: none;
         }
     }
 
     @media (max-width: 768px) {
-        grid-template-columns: 50px 1fr 80px;
+        grid-template-columns: 50px 45px 1fr 80px;
+        gap: 0.75rem;
+        padding: 1rem;
         
-        & > div:nth-child(3),
         & > div:nth-child(5),
-        & > div:nth-child(6),
-        & > div:nth-child(7) {
+        & > div:nth-child(6) {
             display: none;
         }
     }
 `;
 
 const RankBadge = styled.div`
-    width: 60px;
-    height: 60px;
+    width: 55px;
+    height: 55px;
     border-radius: 50%;
     background: ${props => {
         if (props.$rank === 1) return 'linear-gradient(135deg, #ffd700, #ffed4e)';
@@ -355,7 +687,7 @@ const RankBadge = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.5rem;
+    font-size: 1.3rem;
     font-weight: 900;
     color: ${props => props.$rank <= 3 ? '#0a0e27' : '#ffd700'};
     border: 3px solid ${props => {
@@ -365,19 +697,25 @@ const RankBadge = styled.div`
         return 'rgba(255, 215, 0, 0.3)';
     }};
     position: relative;
+    flex-shrink: 0;
 
-   ${props => props.$rank === 1 && css`
-    animation: ${pulse} 2s ease-in-out infinite;
-`}
+    ${props => props.$rank === 1 && css`
+        animation: ${pulse} 2s ease-in-out infinite;
+    `}
+
+    @media (max-width: 768px) {
+        width: 45px;
+        height: 45px;
+        font-size: 1.1rem;
+    }
 `;
 
 const RankIcon = styled.div`
     position: absolute;
-    top: -5px;
-    right: -5px;
+    top: -8px;
+    right: -8px;
 `;
 
-// ✅ UPDATED Avatar Component
 const Avatar = styled.div`
     width: 50px;
     height: 50px;
@@ -392,6 +730,13 @@ const Avatar = styled.div`
     font-size: 1.2rem;
     position: relative;
     overflow: hidden;
+    flex-shrink: 0;
+
+    @media (max-width: 768px) {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+    }
 `;
 
 const AvatarImage = styled.img`
@@ -410,44 +755,59 @@ const AvatarInitials = styled.div`
 const UserInfo = styled.div`
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 0.3rem;
+    min-width: 0;
 `;
 
 const DisplayName = styled.div`
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     font-weight: 700;
     color: #e0e6ed;
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    flex-wrap: wrap;
+
+    @media (max-width: 768px) {
+        font-size: 1rem;
+    }
 `;
 
-const UserStats = styled.div`
+const LevelBadge = styled.span`
+    padding: 0.15rem 0.5rem;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(139, 92, 246, 0.1));
+    border: 1px solid rgba(139, 92, 246, 0.5);
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #a78bfa;
+`;
+
+const UserMeta = styled.div`
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.75rem;
     color: #94a3b8;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
+    flex-wrap: wrap;
+
+    @media (max-width: 768px) {
+        font-size: 0.8rem;
+        gap: 0.5rem;
+    }
 `;
 
-const Badge = styled.span`
-    padding: 0.25rem 0.5rem;
-    background: ${props => {
-        if (props.$type === 'gold') return 'rgba(255, 215, 0, 0.2)';
-        if (props.$type === 'fire') return 'rgba(239, 68, 68, 0.2)';
-        return 'rgba(0, 173, 237, 0.2)';
-    }};
-    border: 1px solid ${props => {
-        if (props.$type === 'gold') return 'rgba(255, 215, 0, 0.5)';
-        if (props.$type === 'fire') return 'rgba(239, 68, 68, 0.5)';
-        return 'rgba(0, 173, 237, 0.5)';
-    }};
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: 600;
+const StreakBadge = styled.span`
     display: inline-flex;
     align-items: center;
     gap: 0.25rem;
+    padding: 0.15rem 0.5rem;
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    border-radius: 6px;
+    color: #ef4444;
+    font-size: 0.75rem;
+    font-weight: 600;
 `;
 
 const StatColumn = styled.div`
@@ -456,12 +816,13 @@ const StatColumn = styled.div`
 
 const StatLabel = styled.div`
     color: #64748b;
-    font-size: 0.85rem;
-    margin-bottom: 0.25rem;
+    font-size: 0.75rem;
+    margin-bottom: 0.2rem;
+    text-transform: uppercase;
 `;
 
 const StatValue = styled.div`
-    font-size: 1.2rem;
+    font-size: 1.15rem;
     font-weight: 700;
     color: ${props => {
         if (props.$positive) return '#10b981';
@@ -472,10 +833,19 @@ const StatValue = styled.div`
     align-items: center;
     justify-content: center;
     gap: 0.25rem;
+
+    @media (max-width: 768px) {
+        font-size: 1rem;
+    }
+`;
+
+const ActionButtons = styled.div`
+    display: flex;
+    gap: 0.5rem;
 `;
 
 const FollowButton = styled.button`
-    padding: 0.75rem 1.5rem;
+    padding: 0.6rem 1rem;
     background: ${props => props.$following ? 
         'rgba(239, 68, 68, 0.1)' :
         'linear-gradient(135deg, #ffd700 0%, #ffed4e 100%)'
@@ -484,20 +854,21 @@ const FollowButton = styled.button`
         'rgba(239, 68, 68, 0.3)' :
         'transparent'
     };
-    border-radius: 10px;
+    border-radius: 8px;
     color: ${props => props.$following ? '#ef4444' : '#0a0e27'};
     font-weight: 700;
+    font-size: 0.85rem;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
+    gap: 0.4rem;
     transition: all 0.2s ease;
     white-space: nowrap;
 
     &:hover {
         transform: translateY(-2px);
-        box-shadow: 0 8px 20px ${props => props.$following ? 
+        box-shadow: 0 6px 16px ${props => props.$following ? 
             'rgba(239, 68, 68, 0.3)' :
             'rgba(255, 215, 0, 0.4)'
         };
@@ -506,10 +877,38 @@ const FollowButton = styled.button`
     &:disabled {
         opacity: 0.6;
         cursor: not-allowed;
+        transform: none;
+    }
+
+    @media (max-width: 768px) {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8rem;
     }
 `;
 
-// ============ EMPTY STATE ============
+const CopyButton = styled.button`
+    padding: 0.6rem;
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 8px;
+    color: #10b981;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+
+    &:hover {
+        background: rgba(16, 185, 129, 0.2);
+        transform: translateY(-2px);
+    }
+
+    @media (max-width: 768px) {
+        display: none;
+    }
+`;
+
+// ============ EMPTY & LOADING STATES ============
 const EmptyState = styled.div`
     text-align: center;
     padding: 4rem 2rem;
@@ -565,24 +964,37 @@ const LeaderboardPage = () => {
     const toast = useToast();
     const navigate = useNavigate();
     
-    const [activeTab, setActiveTab] = useState('all'); // all, following, myRank
+    const [category, setCategory] = useState('returns'); // returns, accuracy, streak, xp, trades
+    const [timePeriod, setTimePeriod] = useState('all'); // today, week, month, all
     const [leaderboard, setLeaderboard] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-    const [sortBy, setSortBy] = useState('totalReturnPercent'); // Sort field
     const [following, setFollowing] = useState(new Set());
+    const [userRank, setUserRank] = useState(null);
 
     useEffect(() => {
         fetchLeaderboard();
         fetchFollowing();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [sortBy]);
+    }, [category, timePeriod]);
+
+    const getSortField = () => {
+        switch (category) {
+            case 'returns': return 'totalReturnPercent';
+            case 'accuracy': return 'winRate';
+            case 'streak': return 'currentStreak';
+            case 'xp': return 'xp';
+            case 'trades': return 'totalTrades';
+            default: return 'totalReturnPercent';
+        }
+    };
 
     const fetchLeaderboard = async () => {
         setLoading(true);
         try {
-            const response = await api.get(`/social/leaderboard?sortBy=${sortBy}&limit=100`);
+            const sortBy = getSortField();
+            const response = await api.get(`/social/leaderboard?sortBy=${sortBy}&period=${timePeriod}&limit=100`);
             console.log('Leaderboard:', response.data);
             
             const mappedData = (response.data || []).map((trader, index) => ({
@@ -592,13 +1004,25 @@ const LeaderboardPage = () => {
                 username: trader.username,
                 avatar: trader.avatar || trader.profile?.avatar,
                 badges: trader.badges || trader.profile?.badges || [],
+                level: trader.level || trader.gamification?.level || 1,
+                xp: trader.xp || trader.gamification?.xp || 0,
                 totalReturn: trader.totalReturn || trader.stats?.totalReturnPercent || 0,
                 winRate: trader.winRate || trader.stats?.winRate || 0,
                 totalTrades: trader.totalTrades || trader.stats?.totalTrades || 0,
+                currentStreak: trader.currentStreak || trader.stats?.currentStreak || 0,
                 followersCount: trader.social?.followersCount || 0,
             }));
             
             setLeaderboard(mappedData);
+            
+            // Find user's rank
+            if (user) {
+                const userEntry = mappedData.find(t => t.userId === user.id);
+                if (userEntry) {
+                    setUserRank(userEntry);
+                }
+            }
+            
             if (mappedData.length > 0) {
                 toast.success(`Loaded ${mappedData.length} traders`, 'Leaderboard Updated');
             }
@@ -651,36 +1075,58 @@ const LeaderboardPage = () => {
         }
     };
 
+    const handleCopyTrader = async (trader) => {
+        toast.info(`Copy trading for ${trader.displayName} coming soon!`, 'Coming Soon');
+    };
+
     const handleCardClick = (trader) => {
         navigate(`/trader/${trader.username}`);
     };
 
     const getRankIcon = (rank) => {
-        if (rank === 1) return <Crown size={24} color="#ffd700" />;
-        if (rank === 2) return <Medal size={24} color="#c0c0c0" />;
-        if (rank === 3) return <Award size={24} color="#cd7f32" />;
+        if (rank === 1) return <Crown size={20} color="#ffd700" />;
+        if (rank === 2) return <Medal size={20} color="#c0c0c0" />;
+        if (rank === 3) return <Award size={20} color="#cd7f32" />;
         return null;
     };
 
-    // ✅ Helper to get initials
     const getInitials = (trader) => {
         const name = trader.displayName || trader.username || 'T';
         return name.charAt(0).toUpperCase();
     };
 
+    const getMainStatValue = (trader) => {
+        switch (category) {
+            case 'returns':
+                return {
+                    value: `${trader.totalReturn >= 0 ? '+' : ''}${trader.totalReturn?.toFixed(2)}%`,
+                    positive: trader.totalReturn >= 0,
+                    negative: trader.totalReturn < 0
+                };
+            case 'accuracy':
+                return { value: `${trader.winRate?.toFixed(1)}%`, positive: trader.winRate >= 60 };
+            case 'streak':
+                return { value: `${trader.currentStreak} 🔥`, positive: trader.currentStreak > 0 };
+            case 'xp':
+                return { value: trader.xp?.toLocaleString(), positive: true };
+            case 'trades':
+                return { value: trader.totalTrades?.toLocaleString(), positive: true };
+            default:
+                return { value: '-', positive: false };
+        }
+    };
+
     const filteredLeaderboard = leaderboard.filter(trader => {
         if (searchQuery) {
-            return trader.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                   trader.username.toLowerCase().includes(searchQuery.toLowerCase());
-        }
-        if (activeTab === 'following') {
-            return following.has(trader.userId);
-        }
-        if (activeTab === 'myRank') {
-            return trader.userId === user?.id;
+            return trader.displayName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                   trader.username?.toLowerCase().includes(searchQuery.toLowerCase());
         }
         return true;
     });
+
+    // Get top 3 for podium (only show if we have data and not searching)
+    const top3 = !searchQuery && filteredLeaderboard.length >= 3 ? filteredLeaderboard.slice(0, 3) : [];
+    const restOfLeaderboard = searchQuery ? filteredLeaderboard : filteredLeaderboard.slice(3);
 
     if (loading) {
         return (
@@ -719,30 +1165,169 @@ const LeaderboardPage = () => {
                 </StatsBar>
             </Header>
 
-            {/* Tabs */}
-            <TabsContainer>
-                <Tab 
-                    $active={activeTab === 'all'}
-                    onClick={() => setActiveTab('all')}
+            {/* Category Tabs */}
+            <CategoryTabsContainer>
+                <CategoryTab 
+                    $active={category === 'returns'}
+                    onClick={() => setCategory('returns')}
                 >
-                    <Globe size={18} />
-                    All Traders
-                </Tab>
-                <Tab 
-                    $active={activeTab === 'following'}
-                    onClick={() => setActiveTab('following')}
+                    <DollarSign size={16} />
+                    Total Returns
+                </CategoryTab>
+                <CategoryTab 
+                    $active={category === 'accuracy'}
+                    onClick={() => setCategory('accuracy')}
                 >
-                    <Users size={18} />
-                    Following ({following.size})
-                </Tab>
-                <Tab 
-                    $active={activeTab === 'myRank'}
-                    onClick={() => setActiveTab('myRank')}
+                    <Target size={16} />
+                    Accuracy
+                </CategoryTab>
+                <CategoryTab 
+                    $active={category === 'streak'}
+                    onClick={() => setCategory('streak')}
                 >
-                    <Target size={18} />
-                    My Rank
-                </Tab>
-            </TabsContainer>
+                    <Flame size={16} />
+                    Win Streak
+                </CategoryTab>
+                <CategoryTab 
+                    $active={category === 'xp'}
+                    onClick={() => setCategory('xp')}
+                >
+                    <Star size={16} />
+                    XP / Level
+                </CategoryTab>
+                <CategoryTab 
+                    $active={category === 'trades'}
+                    onClick={() => setCategory('trades')}
+                >
+                    <BarChart3 size={16} />
+                    Total Trades
+                </CategoryTab>
+            </CategoryTabsContainer>
+
+            {/* Time Period Tabs */}
+            <TimePeriodContainer>
+                <TimePeriodTab 
+                    $active={timePeriod === 'today'}
+                    onClick={() => setTimePeriod('today')}
+                >
+                    Today
+                </TimePeriodTab>
+                <TimePeriodTab 
+                    $active={timePeriod === 'week'}
+                    onClick={() => setTimePeriod('week')}
+                >
+                    This Week
+                </TimePeriodTab>
+                <TimePeriodTab 
+                    $active={timePeriod === 'month'}
+                    onClick={() => setTimePeriod('month')}
+                >
+                    This Month
+                </TimePeriodTab>
+                <TimePeriodTab 
+                    $active={timePeriod === 'all'}
+                    onClick={() => setTimePeriod('all')}
+                >
+                    All Time
+                </TimePeriodTab>
+            </TimePeriodContainer>
+
+            {/* Top 3 Podium */}
+            {top3.length === 3 && (
+                <PodiumSection>
+                    <PodiumContainer>
+                        {/* 2nd Place */}
+                        <PodiumPlace onClick={() => handleCardClick(top3[1])}>
+                            <PodiumAvatar $place={2} $hasImage={!!top3[1].avatar}>
+                                {top3[1].avatar ? (
+                                    <PodiumAvatarImage src={top3[1].avatar} alt={top3[1].displayName} />
+                                ) : (
+                                    <PodiumAvatarInitials $place={2}>{getInitials(top3[1])}</PodiumAvatarInitials>
+                                )}
+                            </PodiumAvatar>
+                            <PodiumName $place={2}>{top3[1].displayName}</PodiumName>
+                            <PodiumStats $place={2}>{getMainStatValue(top3[1]).value}</PodiumStats>
+                            <PodiumStand $place={2}>
+                                <PodiumRank>2</PodiumRank>
+                            </PodiumStand>
+                        </PodiumPlace>
+
+                        {/* 1st Place */}
+                        <PodiumPlace onClick={() => handleCardClick(top3[0])}>
+                            <PodiumAvatar $place={1} $hasImage={!!top3[0].avatar}>
+                                <PodiumCrown>
+                                    <Crown size={40} color="#ffd700" />
+                                </PodiumCrown>
+                                {top3[0].avatar ? (
+                                    <PodiumAvatarImage src={top3[0].avatar} alt={top3[0].displayName} />
+                                ) : (
+                                    <PodiumAvatarInitials $place={1}>{getInitials(top3[0])}</PodiumAvatarInitials>
+                                )}
+                            </PodiumAvatar>
+                            <PodiumName $place={1}>{top3[0].displayName}</PodiumName>
+                            <PodiumStats $place={1}>{getMainStatValue(top3[0]).value}</PodiumStats>
+                            <PodiumStand $place={1}>
+                                <PodiumRank>1</PodiumRank>
+                            </PodiumStand>
+                        </PodiumPlace>
+
+                        {/* 3rd Place */}
+                        <PodiumPlace onClick={() => handleCardClick(top3[2])}>
+                            <PodiumAvatar $place={3} $hasImage={!!top3[2].avatar}>
+                                {top3[2].avatar ? (
+                                    <PodiumAvatarImage src={top3[2].avatar} alt={top3[2].displayName} />
+                                ) : (
+                                    <PodiumAvatarInitials $place={3}>{getInitials(top3[2])}</PodiumAvatarInitials>
+                                )}
+                            </PodiumAvatar>
+                            <PodiumName $place={3}>{top3[2].displayName}</PodiumName>
+                            <PodiumStats $place={3}>{getMainStatValue(top3[2]).value}</PodiumStats>
+                            <PodiumStand $place={3}>
+                                <PodiumRank>3</PodiumRank>
+                            </PodiumStand>
+                        </PodiumPlace>
+                    </PodiumContainer>
+                </PodiumSection>
+            )}
+
+            {/* Your Rank Card */}
+            {userRank && userRank.rank > 3 && (
+                <YourRankCard>
+                    <YourRankLeft>
+                        <YourRankBadge>#{userRank.rank}</YourRankBadge>
+                        <YourRankInfo>
+                            <YourRankLabel>Your Current Rank</YourRankLabel>
+                            <YourRankValue>
+                                {userRank.displayName}
+                                <LevelBadge>Lv {userRank.level}</LevelBadge>
+                            </YourRankValue>
+                        </YourRankInfo>
+                    </YourRankLeft>
+                    <YourRankStats>
+                        <YourRankStat>
+                            <YourRankStatValue>{getMainStatValue(userRank).value}</YourRankStatValue>
+                            <YourRankStatLabel>
+                                {category === 'returns' ? 'Return' : 
+                                 category === 'accuracy' ? 'Win Rate' :
+                                 category === 'streak' ? 'Streak' :
+                                 category === 'xp' ? 'XP' : 'Trades'}
+                            </YourRankStatLabel>
+                        </YourRankStat>
+                        <YourRankStat>
+                            <YourRankStatValue>{userRank.totalTrades}</YourRankStatValue>
+                            <YourRankStatLabel>Trades</YourRankStatLabel>
+                        </YourRankStat>
+                        <YourRankStat>
+                            <YourRankStatValue>{userRank.rank - 1}</YourRankStatValue>
+                            <YourRankStatLabel>To Top {Math.max(1, userRank.rank - 1)}</YourRankStatLabel>
+                        </YourRankStat>
+                    </YourRankStats>
+                    <ClimbButton onClick={() => navigate('/predictions')}>
+                        <Rocket size={18} />
+                        Climb the Ranks
+                    </ClimbButton>
+                </YourRankCard>
+            )}
 
             {/* Controls */}
             <ControlsContainer>
@@ -756,25 +1341,6 @@ const LeaderboardPage = () => {
                     />
                 </SearchBar>
 
-                <FilterButton
-                    $active={sortBy === 'totalReturnPercent'}
-                    onClick={() => setSortBy('totalReturnPercent')}
-                >
-                    Total Return %
-                </FilterButton>
-                <FilterButton
-                    $active={sortBy === 'winRate'}
-                    onClick={() => setSortBy('winRate')}
-                >
-                    Win Rate
-                </FilterButton>
-                <FilterButton
-                    $active={sortBy === 'totalTrades'}
-                    onClick={() => setSortBy('totalTrades')}
-                >
-                    Total Trades
-                </FilterButton>
-
                 <RefreshButton onClick={handleRefresh} disabled={refreshing} $loading={refreshing}>
                     <RefreshCw size={18} />
                     Refresh
@@ -784,99 +1350,141 @@ const LeaderboardPage = () => {
             {/* Leaderboard */}
             {filteredLeaderboard.length > 0 ? (
                 <LeaderboardContainer>
+                    <LeaderboardHeader>
+                        <div>Rank</div>
+                        <div></div>
+                        <div>Trader</div>
+                        <div style={{ textAlign: 'center' }}>
+                            {category === 'returns' ? 'Return' : 
+                             category === 'accuracy' ? 'Win Rate' :
+                             category === 'streak' ? 'Streak' :
+                             category === 'xp' ? 'XP' : 'Trades'}
+                        </div>
+                        <div style={{ textAlign: 'center' }}>Win Rate</div>
+                        <div style={{ textAlign: 'center' }}>Trades</div>
+                        <div style={{ textAlign: 'center' }}>Actions</div>
+                    </LeaderboardHeader>
+
                     <LeaderboardList>
-                        {filteredLeaderboard.map((trader, index) => (
-                            <LeaderCard 
-                                key={trader.userId}
-                                $rank={trader.rank}
-                                $index={index}
-                                onClick={() => handleCardClick(trader)}
-                            >
-                                <RankBadge $rank={trader.rank}>
-                                    #{trader.rank}
-                                    {trader.rank <= 3 && (
-                                        <RankIcon>
-                                            {getRankIcon(trader.rank)}
-                                        </RankIcon>
-                                    )}
-                                </RankBadge>
-
-                                {/* ✅ UPDATED Avatar Display */}
-                                <Avatar $hasImage={!!trader.avatar}>
-                                    {trader.avatar ? (
-                                        <AvatarImage 
-                                            src={trader.avatar} 
-                                            alt={trader.displayName}
-                                            onError={(e) => e.target.style.display = 'none'}
-                                        />
-                                    ) : (
-                                        <AvatarInitials>{getInitials(trader)}</AvatarInitials>
-                                    )}
-                                </Avatar>
-
-                                <UserInfo>
-                                    <DisplayName>
-                                        {trader.displayName}
-                                        {trader.rank === 1 && <Crown size={18} color="#ffd700" />}
-                                        {trader.badges?.includes('verified') && <Check size={18} color="#10b981" />}
-                                    </DisplayName>
-                                    <UserStats>
-                                        <span>{trader.totalTrades} trades</span>
-                                        <span>•</span>
-                                        <span>{trader.winRate?.toFixed(1)}% win rate</span>
-                                    </UserStats>
-                                </UserInfo>
-
-                                <StatColumn>
-                                    <StatLabel>Total Return</StatLabel>
-                                    <StatValue $positive={trader.totalReturn >= 0} $negative={trader.totalReturn < 0}>
-                                        {trader.totalReturn >= 0 ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
-                                        {trader.totalReturn >= 0 ? '+' : ''}
-                                        {trader.totalReturn?.toFixed(2)}%
-                                    </StatValue>
-                                </StatColumn>
-
-                                <StatColumn>
-                                    <StatLabel>Win Rate</StatLabel>
-                                    <StatValue>
-                                        {trader.winRate?.toFixed(1)}%
-                                    </StatValue>
-                                </StatColumn>
-
-                                <StatColumn>
-                                    <StatLabel>Trades</StatLabel>
-                                    <StatValue>
-                                        {trader.totalTrades}
-                                    </StatValue>
-                                </StatColumn>
-
-                                <FollowButton
-                                    $following={following.has(trader.userId)}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleFollow(trader.userId);
-                                    }}
-                                    disabled={trader.userId === user?.id}
+                        {restOfLeaderboard.map((trader, index) => {
+                            const mainStat = getMainStatValue(trader);
+                            const isYou = trader.userId === user?.id;
+                            
+                            return (
+                                <LeaderCard 
+                                    key={trader.userId}
+                                    $rank={trader.rank}
+                                    $index={index}
+                                    $isYou={isYou}
+                                    onClick={() => handleCardClick(trader)}
                                 >
-                                    {trader.userId === user?.id ? (
-                                        <>
-                                            <Star size={18} />
-                                            You
-                                        </>
-                                    ) : following.has(trader.userId) ? (
-                                        <>
-                                            <UserMinus size={18} />
-                                            Unfollow
-                                        </>
-                                    ) : (
-                                        <>
-                                            <UserPlus size={18} />
-                                            Follow
-                                        </>
-                                    )}
-                                </FollowButton>
-                            </LeaderCard>
-                        ))}
+                                    <RankBadge $rank={trader.rank}>
+                                        #{trader.rank}
+                                        {trader.rank <= 3 && (
+                                            <RankIcon>
+                                                {getRankIcon(trader.rank)}
+                                            </RankIcon>
+                                        )}
+                                    </RankBadge>
+
+                                    <Avatar $hasImage={!!trader.avatar}>
+                                        {trader.avatar ? (
+                                            <AvatarImage 
+                                                src={trader.avatar} 
+                                                alt={trader.displayName}
+                                                onError={(e) => e.target.style.display = 'none'}
+                                            />
+                                        ) : (
+                                            <AvatarInitials>{getInitials(trader)}</AvatarInitials>
+                                        )}
+                                    </Avatar>
+
+                                    <UserInfo>
+                                        <DisplayName>
+                                            {trader.displayName}
+                                            {isYou && <LevelBadge>You</LevelBadge>}
+                                            <LevelBadge>Lv {trader.level}</LevelBadge>
+                                            {trader.badges?.includes('verified') && <Check size={16} color="#10b981" />}
+                                        </DisplayName>
+                                        <UserMeta>
+                                            <span>@{trader.username}</span>
+                                            {trader.currentStreak > 0 && (
+                                                <StreakBadge>
+                                                    <Flame size={12} />
+                                                    {trader.currentStreak}
+                                                </StreakBadge>
+                                            )}
+                                        </UserMeta>
+                                    </UserInfo>
+
+                                    <StatColumn>
+                                        <StatLabel>
+                                            {category === 'returns' ? 'Return' : 
+                                             category === 'accuracy' ? 'Accuracy' :
+                                             category === 'streak' ? 'Streak' :
+                                             category === 'xp' ? 'XP' : 'Trades'}
+                                        </StatLabel>
+                                        <StatValue $positive={mainStat.positive} $negative={mainStat.negative}>
+                                            {category === 'returns' && (mainStat.positive ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />)}
+                                            {mainStat.value}
+                                        </StatValue>
+                                    </StatColumn>
+
+                                    <StatColumn>
+                                        <StatLabel>Win Rate</StatLabel>
+                                        <StatValue $positive={trader.winRate >= 60}>
+                                            {trader.winRate?.toFixed(1)}%
+                                        </StatValue>
+                                    </StatColumn>
+
+                                    <StatColumn>
+                                        <StatLabel>Trades</StatLabel>
+                                        <StatValue>
+                                            {trader.totalTrades}
+                                        </StatValue>
+                                    </StatColumn>
+
+                                    <ActionButtons onClick={(e) => e.stopPropagation()}>
+                                        <FollowButton
+                                            $following={following.has(trader.userId)}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleFollow(trader.userId);
+                                            }}
+                                            disabled={isYou}
+                                        >
+                                            {isYou ? (
+                                                <>
+                                                    <Star size={16} />
+                                                    You
+                                                </>
+                                            ) : following.has(trader.userId) ? (
+                                                <>
+                                                    <UserMinus size={16} />
+                                                    Unfollow
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <UserPlus size={16} />
+                                                    Follow
+                                                </>
+                                            )}
+                                        </FollowButton>
+                                        {!isYou && trader.rank <= 10 && (
+                                            <CopyButton
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleCopyTrader(trader);
+                                                }}
+                                                title="Copy Trader"
+                                            >
+                                                <Copy size={16} />
+                                            </CopyButton>
+                                        )}
+                                    </ActionButtons>
+                                </LeaderCard>
+                            );
+                        })}
                     </LeaderboardList>
                 </LeaderboardContainer>
             ) : (
@@ -888,8 +1496,6 @@ const LeaderboardPage = () => {
                     <EmptyText>
                         {searchQuery ? 
                             'Try adjusting your search' :
-                            activeTab === 'following' ?
-                            'You are not following anyone yet' :
                             'Be the first to join the leaderboard!'
                         }
                     </EmptyText>

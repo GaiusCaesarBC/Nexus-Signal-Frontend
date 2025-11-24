@@ -55,6 +55,7 @@ import AchievementsBrowserPage from './pages/AchievementsBrowserPage';
 import StockComparisonPage from './pages/StockComparisonPage';
 import VaultPage from './pages/VaultPage';
 import EquippedItemsPage from './pages/EquippedItemsPage';
+import PriceServiceTester from './components/dev/PriceServiceTester';
 
 // Wraps content with styled-components theme
 function AppContent() {
@@ -113,7 +114,8 @@ function AppContent() {
                     <Route path="/compare" element={<ProtectedRoute><StockComparisonPage /></ProtectedRoute>} />
                     <Route path="/vault" element={<ProtectedRoute><VaultPage /></ProtectedRoute>} />
                     <Route path="/equipped" element={<ProtectedRoute><EquippedItemsPage /></ProtectedRoute>} />
-
+                    <Route path="/dev/price-test" element={<PriceServiceTester />} />
+                    
                     {/* 🎮 GAMIFICATION ROUTES */}
                     <Route path="/achievements" element={<ProtectedRoute><AchievementsPage /></ProtectedRoute>} />
 
