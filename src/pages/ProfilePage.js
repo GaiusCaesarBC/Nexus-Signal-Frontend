@@ -1,8 +1,9 @@
-// client/src/pages/ProfilePage.js - PROFILE PAGE WITH REAL DATA ONLY
-// NOW WITH REAL AVATAR UPLOAD! 📸
+// client/src/pages/ProfilePage.js - ENHANCED PROFILE WITH SOCIAL FEATURES
+// Supports viewing own profile AND other users' profiles
 
 import React, { useState, useEffect } from 'react';
-import styled, { keyframes } from 'styled-components';
+import { useParams, useNavigate } from 'react-router-dom';
+import styled, { keyframes, css } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import {
@@ -12,7 +13,9 @@ import {
     Target, ArrowUpRight, Sparkles, Clock, BarChart3,
     TrendingDown, ChevronRight, Medal, Users, Rocket,
     X, Check, ArrowUp, ChevronUp, Briefcase, Link as LinkIcon,
-    Upload, Trash2, Percent
+    Upload, Trash2, Percent, UserPlus, UserCheck, MessageCircle,
+    Heart, Share2, MapPin, Globe, Twitter, Copy, ExternalLink,
+    Hash, Bookmark, MoreHorizontal, ChevronDown, RefreshCw
 } from 'lucide-react';
 import {
     LineChart, Line, AreaChart, Area, BarChart, Bar,
@@ -24,6 +27,11 @@ import {
 const fadeIn = keyframes`
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
+`;
+
+const fadeInScale = keyframes`
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
 `;
 
 const slideIn = keyframes`
@@ -66,61 +74,45 @@ const PageContainer = styled.div`
     overflow-x: hidden;
 `;
 
-const Header = styled.div`
-    max-width: 1400px;
-    margin: 0 auto 3rem;
-    animation: ${fadeIn} 0.8s ease-out;
-    text-align: center;
-`;
-
-const Title = styled.h1`
-    font-size: 3rem;
-    background: linear-gradient(135deg, #00adef 0%, #00ff88 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin-bottom: 0.5rem;
-    font-weight: 900;
-
-    @media (max-width: 768px) {
-        font-size: 2.5rem;
-    }
-`;
-
-const Subtitle = styled.p`
-    color: #94a3b8;
-    font-size: 1.2rem;
+const MaxWidthContainer = styled.div`
+    max-width: 1200px;
+    margin: 0 auto;
 `;
 
 // ============ PROFILE HEADER ============
 const ProfileHeader = styled.div`
-    max-width: 1400px;
-    margin: 0 auto 3rem;
     background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(0, 173, 237, 0.3);
     border-radius: 20px;
-    padding: 2.5rem;
+    padding: 2rem;
+    margin-bottom: 2rem;
     animation: ${fadeIn} 0.6s ease-out;
     position: relative;
     overflow: hidden;
+`;
 
-    &::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 4px;
-        background: linear-gradient(90deg, #00adef, #00ff88);
-    }
+const ProfileBanner = styled.div`
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 120px;
+    background: ${props => props.$src ? `url(${props.$src})` : 'linear-gradient(135deg, #00adef 0%, #0088cc 50%, #00ff88 100%)'};
+    background-size: cover;
+    background-position: center;
+    opacity: 0.3;
+`;
+
+const ProfileContent = styled.div`
+    position: relative;
+    z-index: 1;
 `;
 
 const ProfileTop = styled.div`
     display: flex;
-    align-items: start;
     gap: 2rem;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
 
     @media (max-width: 768px) {
         flex-direction: column;
@@ -131,61 +123,52 @@ const ProfileTop = styled.div`
 
 const AvatarSection = styled.div`
     position: relative;
+    flex-shrink: 0;
 `;
 
 const Avatar = styled.div`
-    width: 150px;
-    height: 150px;
+    width: 130px;
+    height: 130px;
     border-radius: 50%;
     background: ${props => props.$hasImage ? 'transparent' : 'linear-gradient(135deg, #00adef 0%, #00ff88 100%)'};
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 4rem;
+    font-size: 3.5rem;
     font-weight: 900;
     color: white;
-    box-shadow: 0 10px 40px rgba(0, 173, 237, 0.5);
-    animation: ${glow} 3s ease-in-out infinite;
+    box-shadow: 0 8px 32px rgba(0, 173, 237, 0.4);
+    border: 4px solid #0a0e27;
     position: relative;
     overflow: hidden;
 
-    &::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
+    img {
         width: 100%;
         height: 100%;
-        background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.2) 50%, transparent 70%);
-        background-size: 200% 200%;
-        animation: ${shimmer} 3s linear infinite;
-        pointer-events: none;
+        object-fit: cover;
     }
 `;
 
-const AvatarImage = styled.img`
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+const OnlineIndicator = styled.div`
     position: absolute;
-    inset: 0;
-    z-index: 1;
-`;
-
-const AvatarInitials = styled.div`
-    position: relative;
-    z-index: 0;
+    bottom: 8px;
+    right: 8px;
+    width: 20px;
+    height: 20px;
+    background: #10b981;
+    border: 3px solid #0a0e27;
+    border-radius: 50%;
 `;
 
 const EditAvatarButton = styled.button`
     position: absolute;
-    bottom: 5px;
-    right: 5px;
-    width: 40px;
-    height: 40px;
+    bottom: 0;
+    right: 0;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     background: rgba(0, 173, 237, 0.9);
-    border: 2px solid white;
+    border: 2px solid #0a0e27;
     color: white;
     cursor: pointer;
     display: flex;
@@ -200,126 +183,174 @@ const EditAvatarButton = styled.button`
     }
 `;
 
-const BadgeContainer = styled.div`
+const RankBadge = styled.div`
     position: absolute;
-    top: -10px;
-    right: -10px;
-    animation: ${float} 3s ease-in-out infinite;
-    z-index: 10;
-`;
-
-const Badge = styled.div`
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    top: -5px;
+    right: -5px;
+    background: ${props => {
+        if (props.$rank === 1) return 'linear-gradient(135deg, #ffd700, #ffed4e)';
+        if (props.$rank === 2) return 'linear-gradient(135deg, #c0c0c0, #e8e8e8)';
+        if (props.$rank === 3) return 'linear-gradient(135deg, #cd7f32, #daa06d)';
+        return 'linear-gradient(135deg, #00adef, #0088cc)';
+    }};
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
-    width: 50px;
-    height: 50px;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.5);
-    animation: ${rotate} 20s linear infinite;
+    font-weight: 900;
+    font-size: 0.9rem;
+    color: ${props => props.$rank <= 3 ? '#000' : '#fff'};
+    border: 2px solid #0a0e27;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 10;
 `;
 
 const UserInfo = styled.div`
     flex: 1;
+    min-width: 0;
 `;
 
-const UserName = styled.h2`
-    font-size: 2.5rem;
-    color: #00adef;
-    margin-bottom: 0.5rem;
-    font-weight: 900;
+const UserNameRow = styled.div`
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.5rem;
 
     @media (max-width: 768px) {
         justify-content: center;
-        font-size: 2rem;
     }
 `;
 
-const EditButton = styled.button`
-    background: rgba(0, 173, 237, 0.1);
-    border: 1px solid rgba(0, 173, 237, 0.3);
-    color: #00adef;
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
-    cursor: pointer;
+const UserName = styled.h1`
+    font-size: 2rem;
+    font-weight: 900;
+    color: #e0e6ed;
+    margin: 0;
+`;
+
+const VerifiedBadge = styled.span`
+    background: linear-gradient(135deg, #00adef, #0088cc);
+    color: white;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 700;
     display: flex;
     align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
+    gap: 0.25rem;
+`;
 
-    &:hover {
-        background: rgba(0, 173, 237, 0.2);
-        transform: scale(1.1);
-    }
+const LevelBadge = styled.span`
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(139, 92, 246, 0.1));
+    border: 1px solid rgba(139, 92, 246, 0.4);
+    color: #a78bfa;
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 700;
+`;
+
+const Username = styled.div`
+    color: #64748b;
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
 `;
 
 const UserBio = styled.p`
     color: #94a3b8;
-    font-size: 1rem;
+    font-size: 0.95rem;
     margin-bottom: 1rem;
-    font-style: italic;
+    line-height: 1.5;
+    max-width: 500px;
 `;
 
-const UserEmail = styled.div`
-    color: #94a3b8;
-    font-size: 1.1rem;
+const UserMeta = styled.div`
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
     margin-bottom: 1rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-
-    @media (max-width: 768px) {
-        justify-content: center;
-    }
-`;
-
-const UserMetaRow = styled.div`
-    display: flex;
-    gap: 2rem;
-    margin-bottom: 1.5rem;
-
-    @media (max-width: 768px) {
-        justify-content: center;
-        flex-wrap: wrap;
-    }
-`;
-
-const MemberSince = styled.div`
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    background: rgba(0, 173, 237, 0.15);
-    border: 1px solid rgba(0, 173, 237, 0.3);
-    border-radius: 20px;
-    color: #00adef;
+    color: #64748b;
     font-size: 0.9rem;
+
+    @media (max-width: 768px) {
+        justify-content: center;
+    }
+`;
+
+const MetaItem = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+
+    svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    a {
+        color: #00adef;
+        text-decoration: none;
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+`;
+
+const SocialStats = styled.div`
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1rem;
+
+    @media (max-width: 768px) {
+        justify-content: center;
+    }
+`;
+
+const SocialStat = styled.button`
+    background: none;
+    border: none;
+    color: #e0e6ed;
+    cursor: pointer;
+    padding: 0;
+    font-size: 0.95rem;
+    transition: color 0.2s ease;
+
+    &:hover {
+        color: #00adef;
+    }
+
+    strong {
+        font-weight: 900;
+        margin-right: 0.3rem;
+    }
+
+    span {
+        color: #64748b;
+    }
 `;
 
 const ActionButtons = styled.div`
     display: flex;
-    gap: 1rem;
-    margin-top: 1.5rem;
+    gap: 0.75rem;
+    flex-wrap: wrap;
 
     @media (max-width: 768px) {
         justify-content: center;
-        flex-wrap: wrap;
     }
 `;
 
-const ActionButton = styled.button`
-    padding: 0.75rem 1.5rem;
-    background: linear-gradient(135deg, #00adef 0%, #0088cc 100%);
-    color: white;
-    border: none;
+const PrimaryButton = styled.button`
+    padding: 0.6rem 1.25rem;
+    background: ${props => props.$following ? 'transparent' : 'linear-gradient(135deg, #00adef 0%, #0088cc 100%)'};
+    border: ${props => props.$following ? '2px solid #00adef' : 'none'};
+    color: ${props => props.$following ? '#00adef' : 'white'};
     border-radius: 10px;
     cursor: pointer;
     font-weight: 700;
+    font-size: 0.9rem;
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -327,17 +358,150 @@ const ActionButton = styled.button`
 
     &:hover {
         transform: translateY(-2px);
-        box-shadow: 0 8px 24px rgba(0, 173, 237, 0.4);
+        box-shadow: 0 6px 20px rgba(0, 173, 237, 0.4);
+    }
+
+    &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
     }
 `;
 
-// ============ LEVEL SYSTEM ============
+const SecondaryButton = styled.button`
+    padding: 0.6rem 1rem;
+    background: rgba(100, 116, 139, 0.1);
+    border: 1px solid rgba(100, 116, 139, 0.3);
+    color: #94a3b8;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+
+    &:hover {
+        background: rgba(100, 116, 139, 0.2);
+        color: #e0e6ed;
+    }
+`;
+
+// ============ TABS ============
+const TabsContainer = styled.div`
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid rgba(100, 116, 139, 0.2);
+    margin-bottom: 2rem;
+    overflow-x: auto;
+
+    &::-webkit-scrollbar {
+        display: none;
+    }
+`;
+
+const Tab = styled.button`
+    padding: 1rem 1.5rem;
+    background: transparent;
+    border: none;
+    color: ${props => props.$active ? '#00adef' : '#64748b'};
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    &:hover {
+        color: ${props => props.$active ? '#00adef' : '#94a3b8'};
+    }
+
+    &::after {
+        content: '';
+        position: absolute;
+        bottom: -1px;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #00adef, #00ff88);
+        border-radius: 3px 3px 0 0;
+        opacity: ${props => props.$active ? 1 : 0};
+        transition: opacity 0.3s ease;
+    }
+`;
+
+const TabBadge = styled.span`
+    background: rgba(0, 173, 237, 0.2);
+    color: #00adef;
+    padding: 0.15rem 0.5rem;
+    border-radius: 10px;
+    font-size: 0.75rem;
+    font-weight: 700;
+`;
+
+// ============ CONTENT SECTIONS ============
+const ContentSection = styled.div`
+    animation: ${fadeInScale} 0.4s ease-out;
+`;
+
+// ============ STATS GRID ============
+const StatsGrid = styled.div`
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+`;
+
+const StatCard = styled.div`
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.8) 100%);
+    border: 1px solid rgba(0, 173, 237, 0.2);
+    border-radius: 12px;
+    padding: 1.25rem;
+    transition: all 0.3s ease;
+
+    &:hover {
+        border-color: rgba(0, 173, 237, 0.4);
+        transform: translateY(-2px);
+    }
+`;
+
+const StatIcon = styled.div`
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.75rem;
+    background: ${props => props.$color || 'rgba(0, 173, 237, 0.15)'};
+    color: ${props => props.$textColor || '#00adef'};
+`;
+
+const StatLabel = styled.div`
+    color: #64748b;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.25rem;
+`;
+
+const StatValue = styled.div`
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: ${props => props.$color || '#00adef'};
+`;
+
+// ============ LEVEL SECTION ============
 const LevelSection = styled.div`
-    margin-top: 2rem;
-    padding: 1.5rem;
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(59, 130, 246, 0.15) 100%);
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
     border: 1px solid rgba(139, 92, 246, 0.3);
     border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
 `;
 
 const LevelHeader = styled.div`
@@ -345,11 +509,8 @@ const LevelHeader = styled.div`
     justify-content: space-between;
     align-items: center;
     margin-bottom: 1rem;
-
-    @media (max-width: 768px) {
-        flex-direction: column;
-        gap: 1rem;
-    }
+    flex-wrap: wrap;
+    gap: 1rem;
 `;
 
 const LevelInfo = styled.div`
@@ -358,324 +519,388 @@ const LevelInfo = styled.div`
     gap: 1rem;
 `;
 
-const LevelBadge = styled.div`
-    width: 60px;
-    height: 60px;
+const LevelCircle = styled.div`
+    width: 56px;
+    height: 56px;
     border-radius: 50%;
     background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.5rem;
+    font-size: 1.4rem;
     font-weight: 900;
     color: white;
-    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.5);
+    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
 `;
 
 const LevelDetails = styled.div``;
 
 const LevelTitle = styled.div`
-    font-size: 1.3rem;
+    font-size: 1.2rem;
     font-weight: 700;
     color: #a78bfa;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
 `;
 
-const LevelName = styled.div`
-    color: #94a3b8;
-    font-size: 0.9rem;
+const LevelSubtitle = styled.div`
+    color: #64748b;
+    font-size: 0.85rem;
 `;
 
 const XPText = styled.div`
     color: #a78bfa;
     font-size: 0.9rem;
     font-weight: 600;
+    text-align: right;
 `;
 
 const ProgressBarContainer = styled.div`
     width: 100%;
-    height: 12px;
-    background: rgba(0, 173, 237, 0.2);
-    border-radius: 6px;
+    height: 10px;
+    background: rgba(139, 92, 246, 0.2);
+    border-radius: 5px;
     overflow: hidden;
-    position: relative;
 `;
 
 const ProgressBar = styled.div`
     height: 100%;
     background: linear-gradient(90deg, #8b5cf6 0%, #a78bfa 100%);
-    border-radius: 6px;
+    border-radius: 5px;
     transition: width 1s ease-out;
-    width: ${props => props.progress}%;
-    position: relative;
-
-    &::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.3) 50%, transparent 70%);
-        background-size: 200% 200%;
-        animation: ${shimmer} 2s linear infinite;
-    }
+    width: ${props => props.$progress}%;
 `;
 
-// ============ STATS GRID ============
-const StatsGrid = styled.div`
-    max-width: 1400px;
-    margin: 0 auto 3rem;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1.5rem;
-`;
-
-const StatCard = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
-    backdrop-filter: blur(10px);
+// ============ CHARTS ============
+const ChartCard = styled.div`
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.8) 100%);
     border: 1px solid rgba(0, 173, 237, 0.2);
     border-radius: 16px;
     padding: 1.5rem;
-    animation: ${fadeIn} 0.6s ease-out;
-    animation-delay: ${props => props.delay}s;
-    animation-fill-mode: backwards;
+    margin-bottom: 1.5rem;
+`;
+
+const ChartTitle = styled.h3`
+    color: #e0e6ed;
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+`;
+
+// ============ POSTS SECTION ============
+const PostsList = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+`;
+
+const PostCard = styled.div`
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.8) 100%);
+    border: 1px solid rgba(100, 116, 139, 0.2);
+    border-radius: 16px;
+    padding: 1.25rem;
     transition: all 0.3s ease;
     cursor: pointer;
-    position: relative;
-    overflow: hidden;
 
     &:hover {
-        transform: translateY(-5px);
-        border-color: rgba(0, 173, 237, 0.5);
-        box-shadow: 0 10px 40px rgba(0, 173, 237, 0.3);
-    }
-
-    &::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 2px;
-        background: ${props => {
-            if (props.variant === 'success') return 'linear-gradient(90deg, #10b981, #059669)';
-            if (props.variant === 'danger') return 'linear-gradient(90deg, #ef4444, #dc2626)';
-            if (props.variant === 'warning') return 'linear-gradient(90deg, #f59e0b, #d97706)';
-            return 'linear-gradient(90deg, #00adef, #0088cc)';
-        }};
+        border-color: rgba(0, 173, 237, 0.3);
     }
 `;
 
-const StatIcon = styled.div`
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
+const PostHeader = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+`;
+
+const PostAvatar = styled.div`
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #00adef, #00ff88);
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 1rem;
-    background: ${props => {
-        if (props.variant === 'success') return 'rgba(16, 185, 129, 0.2)';
-        if (props.variant === 'danger') return 'rgba(239, 68, 68, 0.2)';
-        if (props.variant === 'warning') return 'rgba(245, 158, 11, 0.2)';
-        return 'rgba(0, 173, 237, 0.2)';
-    }};
-    color: ${props => {
-        if (props.variant === 'success') return '#10b981';
-        if (props.variant === 'danger') return '#ef4444';
-        if (props.variant === 'warning') return '#f59e0b';
-        return '#00adef';
-    }};
-    animation: ${pulse} 2s ease-in-out infinite;
-`;
-
-const StatLabel = styled.div`
-    color: #94a3b8;
-    font-size: 0.9rem;
-    margin-bottom: 0.5rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-`;
-
-const StatValue = styled.div`
-    font-size: 2.5rem;
-    font-weight: 900;
-    color: ${props => {
-        if (props.variant === 'success') return '#10b981';
-        if (props.variant === 'danger') return '#ef4444';
-        if (props.variant === 'warning') return '#f59e0b';
-        return '#00adef';
-    }};
-`;
-
-// ============ TWO COLUMN LAYOUT ============
-const TwoColumnGrid = styled.div`
-    max-width: 1400px;
-    margin: 0 auto 3rem;
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 2rem;
-
-    @media (max-width: 1200px) {
-        grid-template-columns: 1fr;
-    }
-`;
-
-// ============ CHARTS & GRAPHS ============
-const ChartSection = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(0, 173, 237, 0.3);
-    border-radius: 16px;
-    padding: 2rem;
-    animation: ${fadeIn} 0.8s ease-out;
-    margin-bottom: 2rem;
-`;
-
-const SectionTitle = styled.h2`
-    font-size: 1.8rem;
-    color: #00adef;
-    margin-bottom: 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-`;
-
-// ============ QUICK STATS DASHBOARD ============
-const QuickStatsGrid = styled.div`
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-    margin-bottom: 2rem;
-`;
-
-const QuickStatCard = styled.div`
-    background: rgba(0, 173, 237, 0.05);
-    border: 1px solid rgba(0, 173, 237, 0.2);
-    border-radius: 12px;
-    padding: 1rem;
-    transition: all 0.3s ease;
-
-    &:hover {
-        background: rgba(0, 173, 237, 0.1);
-        border-color: rgba(0, 173, 237, 0.3);
-        transform: scale(1.02);
-    }
-`;
-
-const QuickStatLabel = styled.div`
-    color: #94a3b8;
-    font-size: 0.85rem;
-    margin-bottom: 0.5rem;
-`;
-
-const QuickStatValue = styled.div`
-    color: #00adef;
-    font-size: 1.3rem;
-    font-weight: 900;
-`;
-
-const TimelineValue = styled.div`
-    color: ${props => props.positive ? '#10b981' : props.negative ? '#ef4444' : '#00adef'};
     font-weight: 700;
-    margin-top: 0.5rem;
+    color: white;
+    font-size: 0.9rem;
+    overflow: hidden;
+
+    img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+`;
+
+const PostMeta = styled.div`
+    flex: 1;
+`;
+
+const PostAuthor = styled.div`
+    font-weight: 700;
+    color: #e0e6ed;
+    font-size: 0.9rem;
+`;
+
+const PostTime = styled.div`
+    color: #64748b;
+    font-size: 0.8rem;
+`;
+
+const PostContent = styled.div`
+    color: #94a3b8;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin-bottom: 0.75rem;
+`;
+
+const PostStats = styled.div`
+    display: flex;
+    gap: 1.5rem;
+    color: #64748b;
+    font-size: 0.85rem;
+`;
+
+const PostStat = styled.div`
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.4rem;
+
+    svg {
+        width: 16px;
+        height: 16px;
+    }
+`;
+
+// ============ TRADES SECTION ============
+const TradesList = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+`;
+
+const TradeCard = styled.div`
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.8) 100%);
+    border: 1px solid rgba(100, 116, 139, 0.2);
+    border-left: 4px solid ${props => props.$positive ? '#10b981' : '#ef4444'};
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+
+    @media (max-width: 600px) {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+`;
+
+const TradeInfo = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+`;
+
+const TradeSymbol = styled.div`
+    background: rgba(0, 173, 237, 0.1);
+    border: 1px solid rgba(0, 173, 237, 0.3);
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    font-weight: 900;
+    color: #00adef;
+    font-size: 0.95rem;
+`;
+
+const TradeDetails = styled.div``;
+
+const TradeType = styled.div`
+    font-weight: 600;
+    color: #e0e6ed;
+    font-size: 0.9rem;
+    margin-bottom: 0.2rem;
+`;
+
+const TradeDate = styled.div`
+    color: #64748b;
+    font-size: 0.8rem;
+`;
+
+const TradePnL = styled.div`
+    text-align: right;
+    font-weight: 900;
+    font-size: 1.1rem;
+    color: ${props => props.$positive ? '#10b981' : '#ef4444'};
+`;
+
+// ============ PREDICTIONS SECTION ============
+const PredictionsList = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+`;
+
+const PredictionCard = styled.div`
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.8) 100%);
+    border: 1px solid rgba(100, 116, 139, 0.2);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+
+    @media (max-width: 600px) {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+`;
+
+const PredictionInfo = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+`;
+
+const PredictionDirection = styled.div`
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: ${props => props.$up ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)'};
+    color: ${props => props.$up ? '#10b981' : '#ef4444'};
+`;
+
+const PredictionDetails = styled.div``;
+
+const PredictionSymbol = styled.div`
+    font-weight: 700;
+    color: #e0e6ed;
+    font-size: 0.95rem;
+`;
+
+const PredictionMeta = styled.div`
+    color: #64748b;
+    font-size: 0.8rem;
+`;
+
+const PredictionStatus = styled.div`
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    background: ${props => {
+        if (props.$status === 'correct') return 'rgba(16, 185, 129, 0.15)';
+        if (props.$status === 'incorrect') return 'rgba(239, 68, 68, 0.15)';
+        return 'rgba(245, 158, 11, 0.15)';
+    }};
+    color: ${props => {
+        if (props.$status === 'correct') return '#10b981';
+        if (props.$status === 'incorrect') return '#ef4444';
+        return '#f59e0b';
+    }};
 `;
 
 // ============ ACHIEVEMENTS ============
-const AchievementsSection = styled.div`
-    max-width: 1400px;
-    margin: 0 auto 3rem;
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(0, 173, 237, 0.3);
-    border-radius: 16px;
-    padding: 2rem;
-    animation: ${fadeIn} 0.8s ease-out;
-`;
-
 const AchievementsGrid = styled.div`
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     gap: 1rem;
 `;
 
-const AchievementBadge = styled.div`
-    background: ${props => props.$unlocked ? 
-        'linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(217, 119, 6, 0.2) 100%)' : 
+const AchievementCard = styled.div`
+    background: ${props => props.$unlocked ?
+        'linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(217, 119, 6, 0.1) 100%)' :
         'rgba(30, 41, 59, 0.5)'
     };
-    border: 2px solid ${props => props.$unlocked ? 'rgba(245, 158, 11, 0.5)' : 'rgba(100, 116, 139, 0.3)'};
+    border: 2px solid ${props => props.$unlocked ? 'rgba(245, 158, 11, 0.4)' : 'rgba(100, 116, 139, 0.2)'};
     border-radius: 12px;
-    padding: 1.5rem;
+    padding: 1.25rem;
     text-align: center;
-    transition: all 0.3s ease;
-    cursor: pointer;
     opacity: ${props => props.$unlocked ? 1 : 0.5};
+    transition: all 0.3s ease;
 
-    &:hover {
-        transform: ${props => props.$unlocked ? 'translateY(-5px) scale(1.05)' : 'none'};
-        box-shadow: ${props => props.$unlocked ? '0 10px 30px rgba(245, 158, 11, 0.4)' : 'none'};
-    }
+    ${props => props.$unlocked && css`
+        &:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(245, 158, 11, 0.3);
+        }
+    `}
 `;
 
 const AchievementIcon = styled.div`
-    font-size: 3rem;
+    font-size: 2.5rem;
     margin-bottom: 0.5rem;
-    animation: ${props => props.$unlocked ? pulse : 'none'} 2s ease-in-out infinite;
 `;
 
 const AchievementName = styled.div`
     color: ${props => props.$unlocked ? '#f59e0b' : '#64748b'};
     font-weight: 700;
+    font-size: 0.9rem;
     margin-bottom: 0.25rem;
 `;
 
 const AchievementDesc = styled.div`
-    color: #94a3b8;
-    font-size: 0.85rem;
+    color: #64748b;
+    font-size: 0.8rem;
 `;
 
-// ============ EDIT MODAL ============
+// ============ EMPTY STATE ============
+const EmptyState = styled.div`
+    text-align: center;
+    padding: 3rem;
+    color: #64748b;
+`;
+
+const EmptyIcon = styled.div`
+    margin-bottom: 1rem;
+    opacity: 0.5;
+`;
+
+const EmptyText = styled.div`
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+`;
+
+const EmptySubtext = styled.div`
+    font-size: 0.9rem;
+    color: #475569;
+`;
+
+// ============ MODAL ============
 const Modal = styled.div`
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    inset: 0;
     background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(8px);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 1000;
-    animation: ${fadeIn} 0.3s ease-out;
     padding: 1rem;
+    animation: ${fadeIn} 0.2s ease-out;
 `;
 
 const ModalContent = styled.div`
     background: linear-gradient(135deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.98) 100%);
-    backdrop-filter: blur(20px);
     border: 1px solid rgba(0, 173, 237, 0.3);
     border-radius: 16px;
     padding: 2rem;
     max-width: 500px;
     width: 100%;
-    position: relative;
-    animation: ${slideIn} 0.3s ease-out;
-    max-height: 90vh;
+    max-height: 80vh;
     overflow-y: auto;
+    position: relative;
 `;
 
 const ModalTitle = styled.h2`
-    color: #00adef;
-    margin-bottom: 2rem;
-    font-size: 1.8rem;
+    color: #e0e6ed;
+    margin-bottom: 1.5rem;
+    font-size: 1.3rem;
 `;
 
 const CloseButton = styled.button`
@@ -685,8 +910,8 @@ const CloseButton = styled.button`
     background: rgba(239, 68, 68, 0.1);
     border: 1px solid rgba(239, 68, 68, 0.3);
     color: #ef4444;
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     border-radius: 8px;
     cursor: pointer;
     display: flex;
@@ -696,194 +921,81 @@ const CloseButton = styled.button`
 
     &:hover {
         background: rgba(239, 68, 68, 0.2);
-        transform: scale(1.1);
     }
 `;
 
-const Form = styled.form`
+const FollowList = styled.div`
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 0.75rem;
 `;
 
-const FormGroup = styled.div`
+const FollowItem = styled.div`
     display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-`;
-
-const Label = styled.label`
-    color: #94a3b8;
-    font-size: 0.9rem;
-    font-weight: 600;
-`;
-
-const Input = styled.input`
-    padding: 0.75rem 1rem;
-    background: rgba(0, 173, 237, 0.05);
-    border: 1px solid rgba(0, 173, 237, 0.3);
-    border-radius: 10px;
-    color: #e0e6ed;
-    font-size: 1rem;
-    transition: all 0.2s ease;
-
-    &:focus {
-        outline: none;
-        border-color: #00adef;
-        background: rgba(0, 173, 237, 0.1);
-        box-shadow: 0 0 0 3px rgba(0, 173, 237, 0.2);
-    }
-
-    &::placeholder {
-        color: #64748b;
-    }
-`;
-
-const TextArea = styled.textarea`
-    padding: 0.75rem 1rem;
-    background: rgba(0, 173, 237, 0.05);
-    border: 1px solid rgba(0, 173, 237, 0.3);
-    border-radius: 10px;
-    color: #e0e6ed;
-    font-size: 1rem;
-    font-family: inherit;
-    resize: vertical;
-    min-height: 100px;
-    transition: all 0.2s ease;
-
-    &:focus {
-        outline: none;
-        border-color: #00adef;
-        background: rgba(0, 173, 237, 0.1);
-        box-shadow: 0 0 0 3px rgba(0, 173, 237, 0.2);
-    }
-
-    &::placeholder {
-        color: #64748b;
-    }
-`;
-
-const Select = styled.select`
-    padding: 0.75rem 1rem;
-    background: rgba(0, 173, 237, 0.05);
-    border: 1px solid rgba(0, 173, 237, 0.3);
-    border-radius: 10px;
-    color: #e0e6ed;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-
-    &:focus {
-        outline: none;
-        border-color: #00adef;
-        background: rgba(0, 173, 237, 0.1);
-    }
-
-    option {
-        background: #1a1f3a;
-        color: #e0e6ed;
-    }
-`;
-
-const SubmitButton = styled.button`
-    padding: 0.75rem 1.5rem;
-    background: linear-gradient(135deg, #00adef 0%, #0088cc 100%);
-    color: white;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    font-weight: 700;
-    font-size: 1rem;
-    transition: all 0.3s ease;
-
-    &:hover:not(:disabled) {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 24px rgba(0, 173, 237, 0.4);
-    }
-
-    &:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-    }
-`;
-
-// AVATAR UPLOAD MODAL STYLES
-const AvatarUploadSection = styled.div`
-    display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 1.5rem;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: rgba(0, 173, 237, 0.05);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+        background: rgba(0, 173, 237, 0.1);
+    }
 `;
 
-const AvatarPreview = styled.div`
-    width: 200px;
-    height: 200px;
+const FollowAvatar = styled.div`
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
-    background: ${props => props.$hasImage ? 'transparent' : 'linear-gradient(135deg, #00adef 0%, #00ff88 100%)'};
+    background: linear-gradient(135deg, #00adef, #00ff88);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 4rem;
-    font-weight: 900;
+    font-weight: 700;
     color: white;
-    border: 3px solid rgba(0, 173, 237, 0.5);
     overflow: hidden;
-    position: relative;
-`;
 
-const AvatarPreviewImage = styled.img`
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-`;
-
-const FileInput = styled.input`
-    display: none;
-`;
-
-const UploadButton = styled.label`
-    padding: 0.75rem 1.5rem;
-    background: linear-gradient(135deg, #00adef 0%, #0088cc 100%);
-    color: white;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    transition: all 0.3s ease;
-
-    &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 24px rgba(0, 173, 237, 0.4);
+    img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
     }
 `;
 
-const DeleteAvatarButton = styled.button`
-    padding: 0.75rem 1.5rem;
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    color: #ef4444;
-    border-radius: 10px;
-    cursor: pointer;
+const FollowInfo = styled.div`
+    flex: 1;
+`;
+
+const FollowName = styled.div`
     font-weight: 700;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    transition: all 0.3s ease;
+    color: #e0e6ed;
+    font-size: 0.95rem;
+`;
+
+const FollowUsername = styled.div`
+    color: #64748b;
+    font-size: 0.85rem;
+`;
+
+const FollowButton = styled.button`
+    padding: 0.4rem 0.8rem;
+    background: ${props => props.$following ? 'transparent' : 'rgba(0, 173, 237, 0.2)'};
+    border: 1px solid rgba(0, 173, 237, 0.4);
+    color: #00adef;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
 
     &:hover {
-        background: rgba(239, 68, 68, 0.2);
+        background: rgba(0, 173, 237, 0.3);
     }
 `;
 
-const ErrorText = styled.div`
-    color: #ef4444;
-    font-size: 0.9rem;
-    margin-top: 0.5rem;
-`;
-
+// ============ LOADING ============
 const LoadingContainer = styled.div`
     display: flex;
     justify-content: center;
@@ -891,59 +1003,92 @@ const LoadingContainer = styled.div`
     min-height: 60vh;
 `;
 
-const LoadingSpinner = styled(Sparkles)`
+const LoadingSpinner = styled.div`
+    width: 48px;
+    height: 48px;
+    border: 3px solid rgba(0, 173, 237, 0.2);
+    border-top-color: #00adef;
+    border-radius: 50%;
     animation: ${rotate} 1s linear infinite;
-    color: #00adef;
 `;
 
 const COLORS = ['#00adef', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
 // ============ COMPONENT ============
 const ProfilePage = () => {
-    const { user, api } = useAuth();
+    const { userId } = useParams(); // For viewing other users
+    const navigate = useNavigate();
+    const { user: currentUser, api, isAuthenticated } = useAuth();
     const toast = useToast();
-    const [stats, setStats] = useState(null);
+
+    // State
+    const [profileUser, setProfileUser] = useState(null);
+    const [isOwnProfile, setIsOwnProfile] = useState(true);
     const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState('overview');
+    const [isFollowing, setIsFollowing] = useState(false);
+    const [followLoading, setFollowLoading] = useState(false);
+
+    // Data states
+    const [stats, setStats] = useState(null);
+    const [posts, setPosts] = useState([]);
+    const [trades, setTrades] = useState([]);
+    const [predictions, setPredictions] = useState([]);
+    const [achievements, setAchievements] = useState([]);
+    const [followers, setFollowers] = useState([]);
+    const [following, setFollowing] = useState([]);
+
+    // Modal states
+    const [showFollowersModal, setShowFollowersModal] = useState(false);
+    const [showFollowingModal, setShowFollowingModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [showAvatarModal, setShowAvatarModal] = useState(false);
+
+    // Avatar upload states
     const [avatarPreview, setAvatarPreview] = useState('');
     const [avatarFile, setAvatarFile] = useState(null);
     const [avatarUploading, setAvatarUploading] = useState(false);
-    const [avatarError, setAvatarError] = useState('');
-    const [editFormData, setEditFormData] = useState({
-        name: '',
-        bio: '',
-        riskTolerance: 'moderate',
-        favoriteSector: 'technology',
-        tradingExperience: 'intermediate'
-    });
 
+    // Determine if viewing own profile or another user's
     useEffect(() => {
-        fetchProfileData();
-    }, []);
-
-    useEffect(() => {
-        if (user) {
-            setEditFormData({
-                name: user.name || '',
-                bio: user.bio || '',
-                riskTolerance: user.riskTolerance || 'moderate',
-                favoriteSector: user.favoriteSector || 'technology',
-                tradingExperience: user.tradingExperience || 'intermediate'
-            });
-            if (user.profile?.avatar) {
-                setAvatarPreview(user.profile.avatar);
-            }
+        if (userId && userId !== currentUser?._id) {
+            setIsOwnProfile(false);
+            fetchUserProfile(userId);
+        } else {
+            setIsOwnProfile(true);
+            setProfileUser(currentUser);
+            fetchOwnProfileData();
         }
-    }, [user]);
+    }, [userId, currentUser]);
 
-    const fetchProfileData = async () => {
+    const fetchUserProfile = async (id) => {
         try {
             setLoading(true);
-            
+            const res = await api.get(`/social/user/${id}`);
+            setProfileUser(res.data.user);
+            setIsFollowing(res.data.isFollowing || false);
+            setStats(res.data.stats);
+            setPosts(res.data.posts || []);
+            setTrades(res.data.trades || []);
+            setPredictions(res.data.predictions || []);
+            setAchievements(res.data.achievements || []);
+        } catch (error) {
+            console.error('Error fetching user profile:', error);
+            toast.error('User not found');
+            navigate('/');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchOwnProfileData = async () => {
+        try {
+            setLoading(true);
+
+            // Fetch portfolio data
             const portfolioRes = await api.get('/portfolio');
             const holdings = portfolioRes.data.holdings || [];
-            
+
             const totalValue = holdings.reduce((sum, h) => {
                 const price = h.currentPrice || h.current_price || h.price || 0;
                 const shares = h.shares || h.quantity || 0;
@@ -958,91 +1103,143 @@ const ProfilePage = () => {
 
             const totalGain = totalValue - totalCost;
 
-            const performers = holdings.map(h => {
-                const currentPrice = h.currentPrice || h.current_price || h.price || 0;
-                const avgPrice = h.averagePrice || h.average_price || h.purchasePrice || currentPrice;
-                const gainPercent = avgPrice > 0 ? ((currentPrice - avgPrice) / avgPrice) * 100 : 0;
-                return {
-                    symbol: h.symbol || h.ticker,
-                    gainPercent
-                };
-            });
-
-            const bestPerformer = performers.sort((a, b) => b.gainPercent - a.gainPercent)[0];
-            const worstPerformer = performers.sort((a, b) => a.gainPercent - b.gainPercent)[0];
-
+            // Fetch watchlist
             const watchlistRes = await api.get('/watchlist');
             const watchlist = watchlistRes.data.watchlist || [];
 
-            const portfolioHistory = Array.from({ length: 30 }, (_, i) => ({
-                date: new Date(Date.now() - (29 - i) * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-                value: totalValue * (0.9 + Math.random() * 0.2)
+            // Fetch predictions
+            try {
+                const predictionsRes = await api.get('/predictions/user');
+                setPredictions(predictionsRes.data.predictions || []);
+            } catch (e) {
+                console.log('No predictions found');
+            }
+
+            // Fetch user posts
+            try {
+                const postsRes = await api.get(`/feed/user/${currentUser._id}?limit=10`);
+                setPosts(postsRes.data.posts || []);
+            } catch (e) {
+                console.log('No posts found');
+            }
+
+            // Fetch fresh gamification data from API
+            let gamification = currentUser?.gamification || {};
+            let userStats = currentUser?.stats || {};
+            
+            try {
+                const gamificationRes = await api.get('/gamification/stats');
+                if (gamificationRes.data) {
+                    gamification = gamificationRes.data;
+                }
+            } catch (e) {
+                console.log('Using cached gamification data');
+            }
+
+            // Fetch user stats
+            try {
+                const statsRes = await api.get('/social/me/stats');
+                if (statsRes.data) {
+                    userStats = statsRes.data;
+                }
+            } catch (e) {
+                console.log('Using cached stats data');
+            }
+
+            const social = currentUser?.social || {};
+
+            // Build achievements list
+            const userAchievements = currentUser?.achievements || [];
+            const allAchievements = [
+                { id: 'welcome_aboard', name: 'Welcome Aboard', icon: '🎉', desc: 'Complete onboarding' },
+                { id: 'first_trade', name: 'First Trade', icon: '🎯', desc: 'Made your first trade' },
+                { id: 'first_prediction', name: 'Oracle', icon: '🔮', desc: 'Made your first prediction' },
+                { id: 'portfolio_1k', name: 'Portfolio Pro', icon: '💼', desc: 'Portfolio worth $1,000+' },
+                { id: 'portfolio_10k', name: 'Big Player', icon: '💰', desc: 'Portfolio worth $10,000+' },
+                { id: 'win_streak_5', name: 'Hot Streak', icon: '🔥', desc: '5 winning predictions in a row' },
+                { id: 'win_streak_10', name: 'On Fire', icon: '💎', desc: '10 winning predictions in a row' },
+                { id: 'level_5', name: 'Rising Star', icon: '⭐', desc: 'Reach Level 5' },
+                { id: 'level_10', name: 'Trading Legend', icon: '👑', desc: 'Reach Level 10' },
+                { id: 'followers_10', name: 'Influencer', icon: '📣', desc: 'Gain 10 followers' },
+            ].map(a => ({
+                ...a,
+                unlocked: userAchievements.some(ua => ua.achievementId === a.id)
             }));
 
-            const sectorMap = {};
-            holdings.forEach(h => {
-                const sector = h.sector || 'Other';
-                const value = (h.currentPrice || h.price || 0) * (h.shares || h.quantity || 0);
-                sectorMap[sector] = (sectorMap[sector] || 0) + value;
-            });
+            setAchievements(allAchievements);
 
-            const sectorAllocation = Object.entries(sectorMap).map(([name, value]) => ({
-                name,
-                value
-            }));
-
+            // Set stats
             setStats({
                 portfolioValue: totalValue,
                 holdingsCount: holdings.length,
                 watchlistCount: watchlist.length,
-                totalGain: totalGain,
+                totalGain,
                 totalGainPercent: totalCost > 0 ? (totalGain / totalCost) * 100 : 0,
-                bestPerformer: bestPerformer?.symbol || 'N/A',
-                bestPerformerGain: bestPerformer?.gainPercent || 0,
-                worstPerformer: worstPerformer?.symbol || 'N/A',
-                worstPerformerGain: worstPerformer?.gainPercent || 0,
-                portfolioHistory,
-                sectorAllocation,
-                level: Math.floor(totalValue / 10000) + 1,
-                xp: (totalValue % 10000),
-                xpToNext: 10000
+                level: gamification.level || 1,
+                title: gamification.title || 'Rookie Trader',
+                xp: gamification.totalXpEarned || gamification.xp || 0,
+                nextLevelXp: gamification.nextLevelXp || 100,
+                rank: userStats.rank || currentUser?.stats?.rank || 0,
+                followersCount: social.followersCount || 0,
+                followingCount: social.followingCount || 0,
+                predictionAccuracy: userStats.predictionAccuracy || currentUser?.stats?.predictionAccuracy || 0,
+                totalPredictions: userStats.totalPredictions || currentUser?.stats?.totalPredictions || 0,
+                currentStreak: userStats.currentStreak || currentUser?.stats?.currentStreak || 0
             });
+
+            // Set followers/following
+            setFollowers(social.followers || []);
+            setFollowing(social.following || []);
+
+            if (currentUser?.profile?.avatar) {
+                setAvatarPreview(currentUser.profile.avatar);
+            }
 
         } catch (error) {
             console.error('Error fetching profile data:', error);
-            toast.error('Failed to load profile data', 'Error');
+            toast.error('Failed to load profile data');
         } finally {
             setLoading(false);
         }
     };
 
-    const handleEditProfile = (e) => {
-        e.preventDefault();
-        toast.success('Profile updated successfully!', 'Saved');
-        setShowEditModal(false);
+    const handleFollow = async () => {
+        if (!isAuthenticated) {
+            toast.error('Please log in to follow users');
+            return;
+        }
+
+        setFollowLoading(true);
+        try {
+            if (isFollowing) {
+                await api.delete(`/social/follow/${profileUser._id}`);
+                setIsFollowing(false);
+                toast.success(`Unfollowed ${profileUser.profile?.displayName || profileUser.username}`);
+            } else {
+                await api.post(`/social/follow/${profileUser._id}`);
+                setIsFollowing(true);
+                toast.success(`Following ${profileUser.profile?.displayName || profileUser.username}`);
+            }
+        } catch (error) {
+            console.error('Follow error:', error);
+            toast.error('Failed to update follow status');
+        } finally {
+            setFollowLoading(false);
+        }
     };
 
-    const handleAvatarFileChange = (e) => {
+    const handleAvatarChange = (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
-        if (!file.type.startsWith('image/')) {
-            setAvatarError('Please select an image file');
-            return;
-        }
-
         if (file.size > 5 * 1024 * 1024) {
-            setAvatarError('Image must be less than 5MB');
+            toast.error('Image must be less than 5MB');
             return;
         }
 
-        setAvatarError('');
         setAvatarFile(file);
-
         const reader = new FileReader();
-        reader.onloadend = () => {
-            setAvatarPreview(reader.result);
-        };
+        reader.onloadend = () => setAvatarPreview(reader.result);
         reader.readAsDataURL(file);
     };
 
@@ -1050,520 +1247,532 @@ const ProfilePage = () => {
         if (!avatarFile) return;
 
         setAvatarUploading(true);
-        setAvatarError('');
-
         try {
             const formData = new FormData();
             formData.append('avatar', avatarFile);
 
-            const response = await api.post('/auth/upload-avatar', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data'
-                }
+            await api.post('/auth/upload-avatar', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
             });
 
-            if (response.data.success) {
-                toast.success('Profile picture updated!', 'Success');
-                setShowAvatarModal(false);
-                setAvatarFile(null);
-                
-                setTimeout(() => window.location.reload(), 500);
-            }
+            toast.success('Profile picture updated!');
+            setShowAvatarModal(false);
+            setAvatarFile(null);
+            window.location.reload();
         } catch (error) {
-            console.error('Error uploading avatar:', error);
-            setAvatarError(error.response?.data?.msg || 'Failed to upload avatar');
-            toast.error('Failed to upload avatar', 'Error');
+            toast.error('Failed to upload avatar');
         } finally {
             setAvatarUploading(false);
         }
     };
 
-    const handleAvatarDelete = async () => {
-        if (!window.confirm('Are you sure you want to delete your profile picture?')) {
-            return;
-        }
-
-        setAvatarUploading(true);
-        setAvatarError('');
-
-        try {
-            const response = await api.delete('/auth/delete-avatar');
-
-            if (response.data.success) {
-                setAvatarPreview('');
-                toast.success('Profile picture deleted', 'Success');
-                setShowAvatarModal(false);
-                
-                setTimeout(() => window.location.reload(), 500);
-            }
-        } catch (error) {
-            console.error('Error deleting avatar:', error);
-            setAvatarError(error.response?.data?.msg || 'Failed to delete avatar');
-            toast.error('Failed to delete avatar', 'Error');
-        } finally {
-            setAvatarUploading(false);
-        }
+    const getInitials = (name) => {
+        if (!name) return 'U';
+        return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
     };
 
-    const getUserInitials = () => {
-        if (!user?.name) return user?.email?.[0]?.toUpperCase() || 'U';
-        return user.name
-            .split(' ')
-            .map(n => n[0])
-            .join('')
-            .toUpperCase()
-            .substring(0, 2);
+    const formatTimeAgo = (date) => {
+        if (!date) return '';
+        const seconds = Math.floor((new Date() - new Date(date)) / 1000);
+        if (seconds < 60) return 'Just now';
+        if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
+        if (seconds < 86400) return `${Math.floor(seconds / 3600)}h`;
+        if (seconds < 604800) return `${Math.floor(seconds / 86400)}d`;
+        return new Date(date).toLocaleDateString();
     };
 
-    const getMemberSince = () => {
-        if (!user?.date) return 'Recently';
-        const date = new Date(user.date);
-        return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-    };
-
-    const getLevelName = (level) => {
-        if (level >= 10) return 'Trading Legend';
-        if (level >= 7) return 'Master Trader';
-        if (level >= 5) return 'Expert Trader';
-        if (level >= 3) return 'Intermediate Trader';
-        return 'Novice Trader';
-    };
-
-    const achievements = [
-        { id: 1, name: 'First Trade', icon: '🎯', desc: 'Made your first trade', unlocked: stats?.holdingsCount > 0 },
-        { id: 2, name: 'Portfolio Pro', icon: '💼', desc: 'Portfolio worth $10,000+', unlocked: stats?.portfolioValue > 10000 },
-        { id: 3, name: 'Watchlist Master', icon: '👁️', desc: 'Track 10+ stocks', unlocked: stats?.watchlistCount >= 10 },
-        { id: 4, name: 'Diversifier', icon: '📊', desc: 'Own 5+ different stocks', unlocked: stats?.holdingsCount >= 5 },
-        { id: 5, name: 'Profit Maker', icon: '💰', desc: 'Earned $1,000+ profit', unlocked: stats?.totalGain > 1000 },
-        { id: 6, name: 'Big Gains', icon: '💎', desc: 'Earned $10,000+ profit', unlocked: stats?.totalGain > 10000 },
-    ];
+    const displayUser = profileUser || currentUser;
 
     if (loading) {
         return (
             <PageContainer>
                 <LoadingContainer>
-                    <LoadingSpinner size={64} />
+                    <LoadingSpinner />
                 </LoadingContainer>
             </PageContainer>
         );
     }
 
-    const xpProgress = stats ? (stats.xp / stats.xpToNext) * 100 : 0;
+    // Calculate XP progress
+    const xpProgress = stats?.nextLevelXp > 0 
+        ? ((stats?.xp % 1000) / (stats?.nextLevelXp || 1000)) * 100 
+        : 0;
 
     return (
         <PageContainer>
-            <Header>
-                <Title>My Profile</Title>
-                <Subtitle>Your trading journey</Subtitle>
-            </Header>
+            <MaxWidthContainer>
+                {/* Profile Header */}
+                <ProfileHeader>
+                    <ProfileBanner $src={displayUser?.profile?.banner} />
+                    <ProfileContent>
+                        <ProfileTop>
+                            <AvatarSection>
+                                <Avatar $hasImage={!!displayUser?.profile?.avatar}>
+                                    {displayUser?.profile?.avatar ? (
+                                        <img src={displayUser.profile.avatar} alt="Avatar" />
+                                    ) : (
+                                        getInitials(displayUser?.profile?.displayName || displayUser?.name)
+                                    )}
+                                </Avatar>
+                                {stats?.rank > 0 && stats?.rank <= 100 && (
+                                    <RankBadge $rank={stats.rank}>#{stats.rank}</RankBadge>
+                                )}
+                                {isOwnProfile && (
+                                    <EditAvatarButton onClick={() => setShowAvatarModal(true)}>
+                                        <Camera size={16} />
+                                    </EditAvatarButton>
+                                )}
+                            </AvatarSection>
 
-            <ProfileHeader>
-                <ProfileTop>
-                    <AvatarSection>
-                        <Avatar $hasImage={!!user?.profile?.avatar}>
-                            {user?.profile?.avatar ? (
-                                <AvatarImage 
-                                    src={user.profile.avatar} 
-                                    alt={user?.name || 'User avatar'}
-                                />
-                            ) : (
-                                <AvatarInitials>{getUserInitials()}</AvatarInitials>
-                            )}
-                        </Avatar>
-                        <BadgeContainer>
-                            <Badge>
-                                <Crown size={24} color="white" />
-                            </Badge>
-                        </BadgeContainer>
-                        <EditAvatarButton onClick={() => setShowAvatarModal(true)}>
-                            <Camera size={20} />
-                        </EditAvatarButton>
-                    </AvatarSection>
+                            <UserInfo>
+                                <UserNameRow>
+                                    <UserName>
+                                        {displayUser?.profile?.displayName || displayUser?.name || 'Trader'}
+                                    </UserName>
+                                    {displayUser?.profile?.verified && (
+                                        <VerifiedBadge><Check size={12} /> Verified</VerifiedBadge>
+                                    )}
+                                    <LevelBadge>Lv. {stats?.level || 1} {stats?.title}</LevelBadge>
+                                </UserNameRow>
 
-                    <UserInfo>
-                        <UserName>
-                            {user?.name || 'Trader'}
-                            <EditButton onClick={() => setShowEditModal(true)}>
-                                <Edit size={18} />
-                            </EditButton>
-                        </UserName>
-                        {user?.bio && <UserBio>"{user.bio}"</UserBio>}
-                        <UserEmail>
-                            <Mail size={18} />
-                            {user?.email}
-                        </UserEmail>
-                        <UserMetaRow>
-                            <MemberSince>
-                                <Calendar size={16} />
-                                Member since {getMemberSince()}
-                            </MemberSince>
-                            <MemberSince>
-                                <Briefcase size={16} />
-                                {user?.tradingExperience || 'Intermediate'} Trader
-                            </MemberSince>
-                        </UserMetaRow>
-                        <ActionButtons>
-                            <ActionButton onClick={() => window.location.href = '/settings'}>
-                                <Settings size={18} />
-                                Settings
-                            </ActionButton>
-                            <ActionButton onClick={() => toast.info('Share profile coming soon!', 'Coming Soon')}>
-                                <Sparkles size={18} />
-                                Share Profile
-                            </ActionButton>
-                        </ActionButtons>
-                    </UserInfo>
-                </ProfileTop>
+                                <Username>@{displayUser?.username}</Username>
 
-                <LevelSection>
-                    <LevelHeader>
-                        <LevelInfo>
-                            <LevelBadge>{stats?.level || 1}</LevelBadge>
-                            <LevelDetails>
-                                <LevelTitle>
-                                    Level {stats?.level || 1}
-                                    <Rocket size={20} />
-                                </LevelTitle>
-                                <LevelName>{getLevelName(stats?.level || 1)}</LevelName>
-                            </LevelDetails>
-                        </LevelInfo>
-                        <XPText>
-                            {stats?.xp?.toLocaleString() || 0} / {stats?.xpToNext?.toLocaleString() || 0} XP
-                        </XPText>
-                    </LevelHeader>
-                    <ProgressBarContainer>
-                        <ProgressBar progress={xpProgress} />
-                    </ProgressBarContainer>
-                </LevelSection>
-            </ProfileHeader>
+                                {displayUser?.bio && (
+                                    <UserBio>{displayUser.bio}</UserBio>
+                                )}
 
-            <StatsGrid>
-                <StatCard delay={0}>
-                    <StatIcon>
-                        <DollarSign size={24} />
-                    </StatIcon>
-                    <StatLabel>Portfolio Value</StatLabel>
-                    <StatValue>
-                        ${stats?.portfolioValue?.toLocaleString(undefined, { maximumFractionDigits: 0 }) || '0'}
-                    </StatValue>
-                </StatCard>
+                                <UserMeta>
+                                    {displayUser?.profile?.location && (
+                                        <MetaItem><MapPin /> {displayUser.profile.location}</MetaItem>
+                                    )}
+                                    {displayUser?.profile?.website && (
+                                        <MetaItem>
+                                            <Globe />
+                                            <a href={displayUser.profile.website} target="_blank" rel="noopener noreferrer">
+                                                {displayUser.profile.website.replace(/^https?:\/\//, '')}
+                                            </a>
+                                        </MetaItem>
+                                    )}
+                                    <MetaItem>
+                                        <Calendar />
+                                        Joined {new Date(displayUser?.date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                                    </MetaItem>
+                                </UserMeta>
 
-                <StatCard delay={0.1} variant={stats?.totalGain >= 0 ? "success" : "danger"}>
-                    <StatIcon variant={stats?.totalGain >= 0 ? "success" : "danger"}>
-                        {stats?.totalGain >= 0 ? <TrendingUp size={24} /> : <TrendingDown size={24} />}
-                    </StatIcon>
-                    <StatLabel>Total Gain</StatLabel>
-                    <StatValue variant={stats?.totalGain >= 0 ? "success" : "danger"}>
-                        {stats?.totalGain >= 0 ? '+' : ''}${stats?.totalGain?.toLocaleString(undefined, { maximumFractionDigits: 0 }) || '0'}
-                    </StatValue>
-                </StatCard>
+                                <SocialStats>
+                                    <SocialStat onClick={() => setShowFollowersModal(true)}>
+                                        <strong>{stats?.followersCount || 0}</strong>
+                                        <span>Followers</span>
+                                    </SocialStat>
+                                    <SocialStat onClick={() => setShowFollowingModal(true)}>
+                                        <strong>{stats?.followingCount || 0}</strong>
+                                        <span>Following</span>
+                                    </SocialStat>
+                                </SocialStats>
 
-                <StatCard delay={0.2}>
-                    <StatIcon>
-                        <PieChart size={24} />
-                    </StatIcon>
-                    <StatLabel>Holdings</StatLabel>
-                    <StatValue>{stats?.holdingsCount || 0}</StatValue>
-                </StatCard>
+                                <ActionButtons>
+                                    {isOwnProfile ? (
+                                        <>
+                                            <PrimaryButton onClick={() => setShowEditModal(true)}>
+                                                <Edit size={16} /> Edit Profile
+                                            </PrimaryButton>
+                                            <SecondaryButton onClick={() => navigate('/settings')}>
+                                                <Settings size={16} /> Settings
+                                            </SecondaryButton>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <PrimaryButton
+                                                $following={isFollowing}
+                                                onClick={handleFollow}
+                                                disabled={followLoading}
+                                            >
+                                                {isFollowing ? (
+                                                    <><UserCheck size={16} /> Following</>
+                                                ) : (
+                                                    <><UserPlus size={16} /> Follow</>
+                                                )}
+                                            </PrimaryButton>
+                                            <SecondaryButton>
+                                                <MessageCircle size={16} /> Message
+                                            </SecondaryButton>
+                                        </>
+                                    )}
+                                    <SecondaryButton onClick={() => {
+                                        navigator.clipboard.writeText(window.location.href);
+                                        toast.success('Profile link copied!');
+                                    }}>
+                                        <Share2 size={16} />
+                                    </SecondaryButton>
+                                </ActionButtons>
+                            </UserInfo>
+                        </ProfileTop>
+                    </ProfileContent>
+                </ProfileHeader>
 
-                <StatCard delay={0.3}>
-                    <StatIcon>
-                        <Eye size={24} />
-                    </StatIcon>
-                    <StatLabel>Watchlist</StatLabel>
-                    <StatValue>{stats?.watchlistCount || 0}</StatValue>
-                </StatCard>
+                {/* Tabs */}
+                <TabsContainer>
+                    <Tab $active={activeTab === 'overview'} onClick={() => setActiveTab('overview')}>
+                        <BarChart3 size={18} /> Overview
+                    </Tab>
+                    <Tab $active={activeTab === 'posts'} onClick={() => setActiveTab('posts')}>
+                        <MessageCircle size={18} /> Posts
+                        {posts.length > 0 && <TabBadge>{posts.length}</TabBadge>}
+                    </Tab>
+                    <Tab $active={activeTab === 'trades'} onClick={() => setActiveTab('trades')}>
+                        <TrendingUp size={18} /> Trades
+                    </Tab>
+                    <Tab $active={activeTab === 'predictions'} onClick={() => setActiveTab('predictions')}>
+                        <Target size={18} /> Predictions
+                        {predictions.length > 0 && <TabBadge>{predictions.length}</TabBadge>}
+                    </Tab>
+                    <Tab $active={activeTab === 'achievements'} onClick={() => setActiveTab('achievements')}>
+                        <Trophy size={18} /> Achievements
+                    </Tab>
+                </TabsContainer>
 
-                <StatCard delay={0.4} variant={stats?.totalGainPercent >= 0 ? "success" : "danger"}>
-                    <StatIcon variant={stats?.totalGainPercent >= 0 ? "success" : "danger"}>
-                        <Percent size={24} />
-                    </StatIcon>
-                    <StatLabel>Total Return %</StatLabel>
-                    <StatValue variant={stats?.totalGainPercent >= 0 ? "success" : "danger"}>
-                        {stats?.totalGainPercent >= 0 ? '+' : ''}{stats?.totalGainPercent?.toFixed(2) || '0'}%
-                    </StatValue>
-                </StatCard>
+                {/* Tab Content */}
+                {activeTab === 'overview' && (
+                    <ContentSection>
+                        {/* Level Progress */}
+                        <LevelSection>
+                            <LevelHeader>
+                                <LevelInfo>
+                                    <LevelCircle>{stats?.level || 1}</LevelCircle>
+                                    <LevelDetails>
+                                        <LevelTitle>Level {stats?.level || 1}</LevelTitle>
+                                        <LevelSubtitle>{stats?.title || 'Rookie Trader'}</LevelSubtitle>
+                                    </LevelDetails>
+                                </LevelInfo>
+                                <XPText>{stats?.xp?.toLocaleString() || 0} XP Total</XPText>
+                            </LevelHeader>
+                            <ProgressBarContainer>
+                                <ProgressBar $progress={xpProgress} />
+                            </ProgressBarContainer>
+                        </LevelSection>
 
-                <StatCard delay={0.5}>
-                    <StatIcon>
-                        <Activity size={24} />
-                    </StatIcon>
-                    <StatLabel>Sectors</StatLabel>
-                    <StatValue>{stats?.sectorAllocation?.length || 0}</StatValue>
-                </StatCard>
-            </StatsGrid>
+                        {/* Stats Grid */}
+                        <StatsGrid>
+                            <StatCard>
+                                <StatIcon $color="rgba(0, 173, 237, 0.15)" $textColor="#00adef">
+                                    <DollarSign size={20} />
+                                </StatIcon>
+                                <StatLabel>Portfolio Value</StatLabel>
+                                <StatValue>${stats?.portfolioValue?.toLocaleString(undefined, { maximumFractionDigits: 0 }) || '0'}</StatValue>
+                            </StatCard>
 
-            <TwoColumnGrid>
-                <div>
-                    <ChartSection>
-                        <SectionTitle>
-                            <BarChart3 size={28} />
-                            Portfolio Performance (30 Days)
-                        </SectionTitle>
-                        <ResponsiveContainer width="100%" height={300}>
-                            <AreaChart data={stats?.portfolioHistory || []}>
-                                <defs>
-                                    <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#00adef" stopOpacity={0.8}/>
-                                        <stop offset="95%" stopColor="#00adef" stopOpacity={0}/>
-                                    </linearGradient>
-                                </defs>
-                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.1)" />
-                                <XAxis dataKey="date" stroke="#94a3b8" />
-                                <YAxis stroke="#94a3b8" />
-                                <Tooltip 
-                                    contentStyle={{ 
-                                        background: '#1e293b', 
-                                        border: '1px solid rgba(0, 173, 237, 0.3)',
-                                        borderRadius: '8px'
-                                    }}
-                                    formatter={(value) => `$${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
-                                />
-                                <Area 
-                                    type="monotone" 
-                                    dataKey="value" 
-                                    stroke="#00adef" 
-                                    fillOpacity={1} 
-                                    fill="url(#colorValue)" 
-                                />
-                            </AreaChart>
-                        </ResponsiveContainer>
-                    </ChartSection>
-
-                    <ChartSection>
-                        <SectionTitle>
-                            <PieChart size={28} />
-                            Sector Allocation
-                        </SectionTitle>
-                        <ResponsiveContainer width="100%" height={300}>
-                            <RechartsPie>
-                                <Pie
-                                    data={stats?.sectorAllocation || []}
-                                    cx="50%"
-                                    cy="50%"
-                                    labelLine={false}
-                                    label={(entry) => `${entry.name} ${((entry.value / stats?.portfolioValue) * 100).toFixed(1)}%`}
-                                    outerRadius={100}
-                                    fill="#8884d8"
-                                    dataKey="value"
+                            <StatCard>
+                                <StatIcon
+                                    $color={stats?.totalGain >= 0 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)'}
+                                    $textColor={stats?.totalGain >= 0 ? '#10b981' : '#ef4444'}
                                 >
-                                    {(stats?.sectorAllocation || []).map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                    {stats?.totalGain >= 0 ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
+                                </StatIcon>
+                                <StatLabel>Total Return</StatLabel>
+                                <StatValue $color={stats?.totalGain >= 0 ? '#10b981' : '#ef4444'}>
+                                    {stats?.totalGainPercent >= 0 ? '+' : ''}{stats?.totalGainPercent?.toFixed(1) || 0}%
+                                </StatValue>
+                            </StatCard>
+
+                            <StatCard>
+                                <StatIcon $color="rgba(245, 158, 11, 0.15)" $textColor="#f59e0b">
+                                    <Target size={20} />
+                                </StatIcon>
+                                <StatLabel>Prediction Accuracy</StatLabel>
+                                <StatValue $color="#f59e0b">{stats?.predictionAccuracy?.toFixed(0) || 0}%</StatValue>
+                            </StatCard>
+
+                            <StatCard>
+                                <StatIcon $color="rgba(139, 92, 246, 0.15)" $textColor="#a78bfa">
+                                    <Flame size={20} />
+                                </StatIcon>
+                                <StatLabel>Current Streak</StatLabel>
+                                <StatValue $color="#a78bfa">{stats?.currentStreak || 0}</StatValue>
+                            </StatCard>
+
+                            <StatCard>
+                                <StatIcon $color="rgba(16, 185, 129, 0.15)" $textColor="#10b981">
+                                    <PieChart size={20} />
+                                </StatIcon>
+                                <StatLabel>Holdings</StatLabel>
+                                <StatValue $color="#10b981">{stats?.holdingsCount || 0}</StatValue>
+                            </StatCard>
+
+                            <StatCard>
+                                <StatIcon $color="rgba(236, 72, 153, 0.15)" $textColor="#ec4899">
+                                    <Eye size={20} />
+                                </StatIcon>
+                                <StatLabel>Watchlist</StatLabel>
+                                <StatValue $color="#ec4899">{stats?.watchlistCount || 0}</StatValue>
+                            </StatCard>
+                        </StatsGrid>
+
+                        {/* Recent Activity */}
+                        {posts.length > 0 && (
+                            <ChartCard>
+                                <ChartTitle><MessageCircle size={20} /> Recent Posts</ChartTitle>
+                                <PostsList>
+                                    {posts.slice(0, 3).map(post => (
+                                        <PostCard key={post._id} onClick={() => navigate(`/post/${post._id}`)}>
+                                            <PostContent>
+                                                {typeof post.content === 'string' 
+                                                    ? post.content.substring(0, 150) 
+                                                    : (post.content?.text?.substring(0, 150) || '')}
+                                                {((typeof post.content === 'string' ? post.content : post.content?.text) || '').length > 150 && '...'}
+                                            </PostContent>
+                                            <PostStats>
+                                                <PostStat><Heart size={14} /> {post.likesCount || 0}</PostStat>
+                                                <PostStat><MessageCircle size={14} /> {post.commentsCount || 0}</PostStat>
+                                                <PostStat><Clock size={14} /> {formatTimeAgo(post.createdAt)}</PostStat>
+                                            </PostStats>
+                                        </PostCard>
                                     ))}
-                                </Pie>
-                                <Tooltip 
-                                    formatter={(value) => `$${value.toLocaleString()}`}
-                                    contentStyle={{ 
-                                        background: '#1e293b', 
-                                        border: '1px solid rgba(0, 173, 237, 0.3)',
-                                        borderRadius: '8px'
-                                    }}
-                                />
-                            </RechartsPie>
-                        </ResponsiveContainer>
-                    </ChartSection>
-                </div>
+                                </PostsList>
+                            </ChartCard>
+                        )}
+                    </ContentSection>
+                )}
 
-                <div>
-                    <ChartSection>
-                        <SectionTitle>
-                            <Zap size={28} />
-                            Quick Stats
-                        </SectionTitle>
-                        <QuickStatsGrid>
-                            <QuickStatCard>
-                                <QuickStatLabel>Best Performer</QuickStatLabel>
-                                <QuickStatValue>{stats?.bestPerformer || 'N/A'}</QuickStatValue>
-                                <TimelineValue positive style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>
-                                    <ArrowUp size={14} />
-                                    +{stats?.bestPerformerGain?.toFixed(2) || 0}%
-                                </TimelineValue>
-                            </QuickStatCard>
+                {activeTab === 'posts' && (
+                    <ContentSection>
+                        {posts.length > 0 ? (
+                            <PostsList>
+                                {posts.map(post => (
+                                    <PostCard key={post._id} onClick={() => navigate(`/post/${post._id}`)}>
+                                        <PostHeader>
+                                            <PostAvatar>
+                                                {displayUser?.profile?.avatar ? (
+                                                    <img src={displayUser.profile.avatar} alt="" />
+                                                ) : (
+                                                    getInitials(displayUser?.profile?.displayName || displayUser?.name)
+                                                )}
+                                            </PostAvatar>
+                                            <PostMeta>
+                                                <PostAuthor>{displayUser?.profile?.displayName || displayUser?.username}</PostAuthor>
+                                                <PostTime>{formatTimeAgo(post.createdAt)}</PostTime>
+                                            </PostMeta>
+                                        </PostHeader>
+                                        <PostContent>
+                                            {typeof post.content === 'string' ? post.content : (post.content?.text || '')}
+                                        </PostContent>
+                                        <PostStats>
+                                            <PostStat><Heart size={14} /> {post.likesCount || 0}</PostStat>
+                                            <PostStat><MessageCircle size={14} /> {post.commentsCount || 0}</PostStat>
+                                            <PostStat><Share2 size={14} /> {post.sharesCount || 0}</PostStat>
+                                        </PostStats>
+                                    </PostCard>
+                                ))}
+                            </PostsList>
+                        ) : (
+                            <EmptyState>
+                                <EmptyIcon><MessageCircle size={48} /></EmptyIcon>
+                                <EmptyText>No posts yet</EmptyText>
+                                <EmptySubtext>
+                                    {isOwnProfile ? 'Share your first trading insight!' : 'This user hasn\'t posted yet.'}
+                                </EmptySubtext>
+                            </EmptyState>
+                        )}
+                    </ContentSection>
+                )}
 
-                            <QuickStatCard>
-                                <QuickStatLabel>Worst Performer</QuickStatLabel>
-                                <QuickStatValue>{stats?.worstPerformer || 'N/A'}</QuickStatValue>
-                                <TimelineValue negative style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>
-                                    <TrendingDown size={14} />
-                                    {stats?.worstPerformerGain?.toFixed(2) || 0}%
-                                </TimelineValue>
-                            </QuickStatCard>
+                {activeTab === 'trades' && (
+                    <ContentSection>
+                        {stats?.holdingsCount > 0 ? (
+                            <TradesList>
+                                {trades.length > 0 ? trades.map((trade, index) => (
+                                    <TradeCard key={index} $positive={trade.pnl >= 0}>
+                                        <TradeInfo>
+                                            <TradeSymbol>{trade.symbol}</TradeSymbol>
+                                            <TradeDetails>
+                                                <TradeType>{trade.type} • {trade.shares} shares</TradeType>
+                                                <TradeDate>{formatTimeAgo(trade.date)}</TradeDate>
+                                            </TradeDetails>
+                                        </TradeInfo>
+                                        <TradePnL $positive={trade.pnl >= 0}>
+                                            {trade.pnl >= 0 ? '+' : ''}{trade.pnlPercent?.toFixed(2)}%
+                                        </TradePnL>
+                                    </TradeCard>
+                                )) : (
+                                    <EmptyState>
+                                        <EmptyText>Trade history coming soon</EmptyText>
+                                    </EmptyState>
+                                )}
+                            </TradesList>
+                        ) : (
+                            <EmptyState>
+                                <EmptyIcon><TrendingUp size={48} /></EmptyIcon>
+                                <EmptyText>No trades yet</EmptyText>
+                                <EmptySubtext>
+                                    {isOwnProfile ? 'Start paper trading to build your history!' : 'This user hasn\'t made any trades yet.'}
+                                </EmptySubtext>
+                            </EmptyState>
+                        )}
+                    </ContentSection>
+                )}
 
-                            <QuickStatCard>
-                                <QuickStatLabel>Total Gain %</QuickStatLabel>
-                                <QuickStatValue>
-                                    {stats?.totalGainPercent >= 0 ? '+' : ''}
-                                    {stats?.totalGainPercent?.toFixed(2) || 0}%
-                                </QuickStatValue>
-                            </QuickStatCard>
+                {activeTab === 'predictions' && (
+                    <ContentSection>
+                        {predictions.length > 0 ? (
+                            <PredictionsList>
+                                {predictions.map(pred => (
+                                    <PredictionCard key={pred._id}>
+                                        <PredictionInfo>
+                                            <PredictionDirection $up={pred.direction === 'UP'}>
+                                                {pred.direction === 'UP' ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
+                                            </PredictionDirection>
+                                            <PredictionDetails>
+                                                <PredictionSymbol>${pred.symbol}</PredictionSymbol>
+                                                <PredictionMeta>
+                                                    {pred.direction} • {formatTimeAgo(pred.createdAt)}
+                                                </PredictionMeta>
+                                            </PredictionDetails>
+                                        </PredictionInfo>
+                                        <PredictionStatus $status={pred.status === 'expired' ? (pred.wasCorrect ? 'correct' : 'incorrect') : 'pending'}>
+                                            {pred.status === 'expired' ? (pred.wasCorrect ? '✓ Correct' : '✗ Incorrect') : '⏳ Pending'}
+                                        </PredictionStatus>
+                                    </PredictionCard>
+                                ))}
+                            </PredictionsList>
+                        ) : (
+                            <EmptyState>
+                                <EmptyIcon><Target size={48} /></EmptyIcon>
+                                <EmptyText>No predictions yet</EmptyText>
+                                <EmptySubtext>
+                                    {isOwnProfile ? 'Make your first market prediction!' : 'This user hasn\'t made any predictions yet.'}
+                                </EmptySubtext>
+                            </EmptyState>
+                        )}
+                    </ContentSection>
+                )}
 
-                            <QuickStatCard>
-                                <QuickStatLabel>Holdings Count</QuickStatLabel>
-                                <QuickStatValue>{stats?.holdingsCount || 0}</QuickStatValue>
-                            </QuickStatCard>
-                        </QuickStatsGrid>
-                    </ChartSection>
-                </div>
-            </TwoColumnGrid>
+                {activeTab === 'achievements' && (
+                    <ContentSection>
+                        <AchievementsGrid>
+                            {achievements.map(achievement => (
+                                <AchievementCard key={achievement.id} $unlocked={achievement.unlocked}>
+                                    <AchievementIcon>{achievement.icon}</AchievementIcon>
+                                    <AchievementName $unlocked={achievement.unlocked}>{achievement.name}</AchievementName>
+                                    <AchievementDesc>{achievement.desc}</AchievementDesc>
+                                </AchievementCard>
+                            ))}
+                        </AchievementsGrid>
+                    </ContentSection>
+                )}
+            </MaxWidthContainer>
 
-            <AchievementsSection>
-                <SectionTitle>
-                    <Trophy size={28} />
-                    Achievements ({achievements.filter(a => a.unlocked).length}/{achievements.length})
-                </SectionTitle>
-                <AchievementsGrid>
-                    {achievements.map(achievement => (
-                        <AchievementBadge 
-                            key={achievement.id} 
-                            $unlocked={achievement.unlocked}
-                            onClick={() => achievement.unlocked && toast.success(`Achievement unlocked: ${achievement.name}!`, 'Congrats! 🎉')}
-                        >
-                            <AchievementIcon $unlocked={achievement.unlocked}>
-                                {achievement.icon}
-                            </AchievementIcon>
-                            <AchievementName $unlocked={achievement.unlocked}>
-                                {achievement.name}
-                            </AchievementName>
-                            <AchievementDesc>{achievement.desc}</AchievementDesc>
-                        </AchievementBadge>
-                    ))}
-                </AchievementsGrid>
-            </AchievementsSection>
-
-            {showAvatarModal && (
-                <Modal onClick={() => setShowAvatarModal(false)}>
-                    <ModalContent onClick={(e) => e.stopPropagation()}>
-                        <CloseButton onClick={() => setShowAvatarModal(false)}>
-                            <X size={20} />
+            {/* Followers Modal */}
+            {showFollowersModal && (
+                <Modal onClick={() => setShowFollowersModal(false)}>
+                    <ModalContent onClick={e => e.stopPropagation()}>
+                        <CloseButton onClick={() => setShowFollowersModal(false)}>
+                            <X size={18} />
                         </CloseButton>
-                        <ModalTitle>Profile Picture</ModalTitle>
-                        
-                        <AvatarUploadSection>
-                            <AvatarPreview $hasImage={!!avatarPreview}>
-                                {avatarPreview ? (
-                                    <AvatarPreviewImage src={avatarPreview} alt="Preview" />
-                                ) : (
-                                    <div>{getUserInitials()}</div>
-                                )}
-                            </AvatarPreview>
-
-                            <FileInput
-                                type="file"
-                                id="avatar-upload"
-                                accept="image/*"
-                                onChange={handleAvatarFileChange}
-                            />
-
-                            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
-                                <UploadButton htmlFor="avatar-upload">
-                                    <Upload size={18} />
-                                    {avatarFile ? 'Choose Different' : 'Choose Photo'}
-                                </UploadButton>
-
-                                {avatarFile && (
-                                    <ActionButton 
-                                        onClick={handleAvatarUpload}
-                                        disabled={avatarUploading}
-                                    >
-                                        <Check size={18} />
-                                        {avatarUploading ? 'Uploading...' : 'Upload'}
-                                    </ActionButton>
-                                )}
-
-                                {user?.profile?.avatar && !avatarFile && (
-                                    <DeleteAvatarButton 
-                                        onClick={handleAvatarDelete}
-                                        disabled={avatarUploading}
-                                    >
-                                        <Trash2 size={18} />
-                                        {avatarUploading ? 'Deleting...' : 'Delete'}
-                                    </DeleteAvatarButton>
-                                )}
-                            </div>
-
-                            {avatarError && <ErrorText>{avatarError}</ErrorText>}
-                            
-                            <div style={{ color: '#94a3b8', fontSize: '0.85rem', textAlign: 'center' }}>
-                                Max file size: 5MB<br/>
-                                Accepted formats: JPG, PNG, GIF, WebP
-                            </div>
-                        </AvatarUploadSection>
+                        <ModalTitle>Followers ({stats?.followersCount || 0})</ModalTitle>
+                        <FollowList>
+                            {followers.length > 0 ? followers.map(follower => (
+                                <FollowItem key={follower._id} onClick={() => {
+                                    setShowFollowersModal(false);
+                                    navigate(`/profile/${follower._id}`);
+                                }}>
+                                    <FollowAvatar>
+                                        {follower.profile?.avatar ? (
+                                            <img src={follower.profile.avatar} alt="" />
+                                        ) : (
+                                            getInitials(follower.profile?.displayName || follower.username)
+                                        )}
+                                    </FollowAvatar>
+                                    <FollowInfo>
+                                        <FollowName>{follower.profile?.displayName || follower.username}</FollowName>
+                                        <FollowUsername>@{follower.username}</FollowUsername>
+                                    </FollowInfo>
+                                </FollowItem>
+                            )) : (
+                                <EmptyState>
+                                    <EmptyText>No followers yet</EmptyText>
+                                </EmptyState>
+                            )}
+                        </FollowList>
                     </ModalContent>
                 </Modal>
             )}
 
-            {showEditModal && (
-                <Modal onClick={() => setShowEditModal(false)}>
-                    <ModalContent onClick={(e) => e.stopPropagation()}>
-                        <CloseButton onClick={() => setShowEditModal(false)}>
-                            <X size={20} />
+            {/* Following Modal */}
+            {showFollowingModal && (
+                <Modal onClick={() => setShowFollowingModal(false)}>
+                    <ModalContent onClick={e => e.stopPropagation()}>
+                        <CloseButton onClick={() => setShowFollowingModal(false)}>
+                            <X size={18} />
                         </CloseButton>
-                        <ModalTitle>Edit Profile</ModalTitle>
-                        <Form onSubmit={handleEditProfile}>
-                            <FormGroup>
-                                <Label>Name</Label>
-                                <Input
-                                    type="text"
-                                    placeholder="Your name"
-                                    value={editFormData.name}
-                                    onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
-                                    autoFocus
-                                />
-                            </FormGroup>
+                        <ModalTitle>Following ({stats?.followingCount || 0})</ModalTitle>
+                        <FollowList>
+                            {following.length > 0 ? following.map(user => (
+                                <FollowItem key={user._id} onClick={() => {
+                                    setShowFollowingModal(false);
+                                    navigate(`/profile/${user._id}`);
+                                }}>
+                                    <FollowAvatar>
+                                        {user.profile?.avatar ? (
+                                            <img src={user.profile.avatar} alt="" />
+                                        ) : (
+                                            getInitials(user.profile?.displayName || user.username)
+                                        )}
+                                    </FollowAvatar>
+                                    <FollowInfo>
+                                        <FollowName>{user.profile?.displayName || user.username}</FollowName>
+                                        <FollowUsername>@{user.username}</FollowUsername>
+                                    </FollowInfo>
+                                </FollowItem>
+                            )) : (
+                                <EmptyState>
+                                    <EmptyText>Not following anyone yet</EmptyText>
+                                </EmptyState>
+                            )}
+                        </FollowList>
+                    </ModalContent>
+                </Modal>
+            )}
 
-                            <FormGroup>
-                                <Label>Bio</Label>
-                                <TextArea
-                                    placeholder="Tell us about yourself..."
-                                    value={editFormData.bio}
-                                    onChange={(e) => setEditFormData({ ...editFormData, bio: e.target.value })}
-                                />
-                            </FormGroup>
+            {/* Avatar Upload Modal */}
+            {showAvatarModal && (
+                <Modal onClick={() => setShowAvatarModal(false)}>
+                    <ModalContent onClick={e => e.stopPropagation()}>
+                        <CloseButton onClick={() => setShowAvatarModal(false)}>
+                            <X size={18} />
+                        </CloseButton>
+                        <ModalTitle>Update Profile Picture</ModalTitle>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' }}>
+                            <Avatar $hasImage={!!avatarPreview} style={{ width: 150, height: 150 }}>
+                                {avatarPreview ? (
+                                    <img src={avatarPreview} alt="Preview" />
+                                ) : (
+                                    getInitials(displayUser?.profile?.displayName || displayUser?.name)
+                                )}
+                            </Avatar>
 
-                            <FormGroup>
-                                <Label>Risk Tolerance</Label>
-                                <Select
-                                    value={editFormData.riskTolerance}
-                                    onChange={(e) => setEditFormData({ ...editFormData, riskTolerance: e.target.value })}
-                                >
-                                    <option value="conservative">Conservative</option>
-                                    <option value="moderate">Moderate</option>
-                                    <option value="aggressive">Aggressive</option>
-                                </Select>
-                            </FormGroup>
+                            <input
+                                type="file"
+                                id="avatar-upload"
+                                accept="image/*"
+                                onChange={handleAvatarChange}
+                                style={{ display: 'none' }}
+                            />
 
-                            <FormGroup>
-                                <Label>Favorite Sector</Label>
-                                <Select
-                                    value={editFormData.favoriteSector}
-                                    onChange={(e) => setEditFormData({ ...editFormData, favoriteSector: e.target.value })}
-                                >
-                                    <option value="technology">Technology</option>
-                                    <option value="finance">Finance</option>
-                                    <option value="healthcare">Healthcare</option>
-                                    <option value="energy">Energy</option>
-                                    <option value="consumer">Consumer Goods</option>
-                                </Select>
-                            </FormGroup>
+                            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+                                <SecondaryButton as="label" htmlFor="avatar-upload" style={{ cursor: 'pointer' }}>
+                                    <Upload size={16} /> {avatarFile ? 'Choose Different' : 'Choose Photo'}
+                                </SecondaryButton>
 
-                            <FormGroup>
-                                <Label>Trading Experience</Label>
-                                <Select
-                                    value={editFormData.tradingExperience}
-                                    onChange={(e) => setEditFormData({ ...editFormData, tradingExperience: e.target.value })}
-                                >
-                                    <option value="beginner">Beginner</option>
-                                    <option value="intermediate">Intermediate</option>
-                                    <option value="advanced">Advanced</option>
-                                    <option value="expert">Expert</option>
-                                </Select>
-                            </FormGroup>
+                                {avatarFile && (
+                                    <PrimaryButton onClick={handleAvatarUpload} disabled={avatarUploading}>
+                                        <Check size={16} /> {avatarUploading ? 'Uploading...' : 'Save'}
+                                    </PrimaryButton>
+                                )}
+                            </div>
 
-                            <SubmitButton type="submit">
-                                <Check size={18} />
-                                Save Changes
-                            </SubmitButton>
-                        </Form>
+                            <div style={{ color: '#64748b', fontSize: '0.85rem', textAlign: 'center' }}>
+                                Max file size: 5MB • JPG, PNG, GIF, WebP
+                            </div>
+                        </div>
                     </ModalContent>
                 </Modal>
             )}

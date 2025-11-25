@@ -1900,7 +1900,7 @@ const PaperTradingPage = () => {
                 </ContentGrid>
             </PageContainer>
         </>
-    );
+    ); 
 };
 
 export default PaperTradingPage;

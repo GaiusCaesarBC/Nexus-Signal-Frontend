@@ -839,11 +839,20 @@ const Navbar = () => {
         ],
     };
 
+    // ✅ FIXED: Close other dropdowns when opening a new one
     const handleDropdownToggle = (dropdown) => {
-        setDropdowns(prev => ({
-            ...prev,
-            [dropdown]: !prev[dropdown]
-        }));
+        setDropdowns({
+            trading: false,
+            analysis: false,
+            community: false,
+            ai: false,
+            market: false,
+            vault: false,
+            [dropdown]: !dropdowns[dropdown]
+        });
+        // Also close user dropdown and notifications when opening nav dropdown
+        setUserDropdownOpen(false);
+        setNotificationsOpen(false);
     };
 
     const handleLogout = () => {
@@ -946,6 +955,7 @@ const Navbar = () => {
                     community: false,
                     ai: false,
                     market: false,
+                    vault: false,
                 });
             }
         };
@@ -1182,7 +1192,18 @@ const Navbar = () => {
                     {/* NOTIFICATION BELL */}
                     <div style={{ position: 'relative' }}>
                         <NotificationButton 
-                            onClick={() => setNotificationsOpen(!notificationsOpen)}
+                            onClick={() => {
+                                setNotificationsOpen(!notificationsOpen);
+                                setUserDropdownOpen(false);
+                                setDropdowns({
+                                    trading: false,
+                                    analysis: false,
+                                    community: false,
+                                    ai: false,
+                                    market: false,
+                                    vault: false,
+                                });
+                            }}
                             data-notification-button
                         >
                             <Bell size={20} />
@@ -1247,7 +1268,18 @@ const Navbar = () => {
 
                     {/* USER MENU */}
                     <div style={{ position: 'relative' }} data-user-menu>
-                        <UserMenuButton onClick={() => setUserDropdownOpen(!userDropdownOpen)}>
+                        <UserMenuButton onClick={() => {
+                            setUserDropdownOpen(!userDropdownOpen);
+                            setNotificationsOpen(false);
+                            setDropdowns({
+                                trading: false,
+                                analysis: false,
+                                community: false,
+                                ai: false,
+                                market: false,
+                                vault: false,
+                            });
+                        }}>
                             <UserAvatar $src={user?.profile?.avatar}>
                                 {user?.profile?.avatar ? (
                                     <AvatarImage 
