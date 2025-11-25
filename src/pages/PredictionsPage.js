@@ -925,6 +925,32 @@ const ShareOption = styled.button`
     }
 `;
 
+// ============ WATCHLIST STAR ============
+const WatchlistStar = styled.button`
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    border-radius: 50%;
+    
+    &:hover {
+        transform: scale(1.2);
+        filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.8));
+    }
+
+    &:active {
+        transform: scale(0.9);
+    }
+
+    svg {
+        transition: all 0.3s ease;
+    }
+`;
+
 // ============ SAVED PREDICTIONS STYLED COMPONENTS ============
 const SavedPredictionsContainer = styled.div`
     max-width: 1400px;
@@ -1109,6 +1135,7 @@ const PredictionsPage = () => {
     const [particles, setParticles] = useState([]);
     const [showShareModal, setShowShareModal] = useState(false);
     const [savedPredictions, setSavedPredictions] = useState([]);
+    const [watchlist, setWatchlist] = useState([]);
 
     // ✅ PLATFORM-WIDE STATS (not per-user)
     const [platformStats, setPlatformStats] = useState({
@@ -1157,7 +1184,22 @@ const PredictionsPage = () => {
         // Load saved predictions from localStorage
         const saved = JSON.parse(localStorage.getItem('savedPredictions') || '[]');
         setSavedPredictions(saved);
-    }, []);
+
+        // Fetch user's watchlist
+        const fetchWatchlist = async () => {
+            try {
+                const response = await api.get('/watchlist');
+                if (response.data && Array.isArray(response.data)) {
+                    setWatchlist(response.data.map(item => 
+                        typeof item === 'string' ? item : item.symbol
+                    ));
+                }
+            } catch (error) {
+                console.error('Error fetching watchlist:', error);
+            }
+        };
+        fetchWatchlist();
+    }, [api]);
 
     // 🚀 AGGRESSIVE POLLING with Pro APIs for live prediction data
     useEffect(() => {
@@ -1297,6 +1339,31 @@ const PredictionsPage = () => {
         }
         
         return data;
+    };
+
+    // ⭐ WATCHLIST TOGGLE HANDLER
+    const handleWatchlistToggle = async (symbolToToggle) => {
+        if (!symbolToToggle) return;
+        
+        const symbol = symbolToToggle.toUpperCase();
+        const isInWatchlist = watchlist.includes(symbol);
+
+        try {
+            if (isInWatchlist) {
+                // Remove from watchlist
+                await api.delete(`/watchlist/${symbol}`);
+                setWatchlist(prev => prev.filter(s => s !== symbol));
+                toast.success(`${symbol} removed from watchlist`, 'Removed');
+            } else {
+                // Add to watchlist
+                await api.post('/watchlist', { symbol });
+                setWatchlist(prev => [...prev, symbol]);
+                toast.success(`${symbol} added to watchlist!`, 'Added to Watchlist');
+            }
+        } catch (error) {
+            console.error('Error toggling watchlist:', error);
+            toast.error(error.response?.data?.error || 'Failed to update watchlist', 'Error');
+        }
     };
 
     const handleSavePrediction = () => {
@@ -1580,7 +1647,22 @@ const PredictionsPage = () => {
                                     <StockInfo>
                                         <StockSymbol>
                                             {prediction.symbol}
-                                            <Star size={36} color="#f59e0b" />
+                                            <WatchlistStar
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleWatchlistToggle(prediction.symbol);
+                                                }}
+                                                title={watchlist.includes(prediction.symbol?.toUpperCase()) 
+                                                    ? 'Remove from Watchlist' 
+                                                    : 'Add to Watchlist'
+                                                }
+                                            >
+                                                <Star 
+                                                    size={36} 
+                                                    color="#f59e0b" 
+                                                    fill={watchlist.includes(prediction.symbol?.toUpperCase()) ? '#f59e0b' : 'none'}
+                                                />
+                                            </WatchlistStar>
                                         </StockSymbol>
                                         <CurrentPriceSection>
                                             <CurrentPriceLabel>Current Price:</CurrentPriceLabel>
