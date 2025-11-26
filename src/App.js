@@ -13,6 +13,7 @@ import AIChatWidget from './components/AIChatWidget';
 import LoadingScreen from './components/LoadingScreen'; 
 import SettingsPage from './components/SettingsPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import WhaleNotification from './components/WhaleNotification';
 
 // 🎮 Gamification imports
 import { GamificationProvider } from './context/GamificationContext';
@@ -59,6 +60,8 @@ import PriceServiceTester from './components/dev/PriceServiceTester';
 import OnboardingFlow from './pages/OnboardingFlow';
 import PredictionsShowcase from './pages/PredictionsShowcase';
 import CryptoPage from './pages/CryptoPage';
+import WhaleAlertsPage from './pages/WhaleAlertsPage'
+
 
 // Wraps content with styled-components theme
 function AppContent() {
@@ -121,7 +124,8 @@ function AppContent() {
                     <Route path="/onboarding" element={<OnboardingFlow />} />
                     <Route path="/predictions-showcase" element={<PredictionsShowcase />} />
                     <Route path="/crypto/:symbol" element={<ProtectedRoute><CryptoPage /></ProtectedRoute>} />
-                    
+                    <Route path="/whale-alerts" element={<ProtectedRoute><WhaleAlertsPage /></ProtectedRoute>} />
+
                     {/* 🎮 GAMIFICATION ROUTES */}
                     <Route path="/achievements" element={<ProtectedRoute><AchievementsPage /></ProtectedRoute>} />
 
@@ -139,6 +143,9 @@ function AppContent() {
             <LevelUpCelebration />
             <AchievementPopup />
             <XPNotification />
+
+            {/* 🐋 WHALE NOTIFICATIONS */}
+<WhaleNotification />
         </StyledThemeProvider>
     );
 }

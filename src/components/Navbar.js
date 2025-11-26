@@ -11,7 +11,7 @@ import {
     DollarSign, LogOut, User, Menu, X, ChevronDown, Zap, Users,
     Settings, Bell, CheckCircle, AlertCircle, TrendingUp as TrendingUpIcon,
     DollarSign as DollarIcon, Clock, ArrowUpRight, ArrowDownRight, Trophy, Twitter,
-    Briefcase, BarChart3, Activity, Sparkles, Globe, Calculator, TrendingDown, MessageCircle, Award
+    Briefcase, BarChart3, Activity, Sparkles, Globe, Calculator, TrendingDown, MessageCircle, Award, Waves
 } from 'lucide-react';
 import nexusSignalLogo from '../assets/nexus-signal-logo.png';
 
@@ -815,12 +815,13 @@ const Navbar = () => {
             { path: '/watchlist', label: 'Watchlist', icon: Eye },
             { path: '/paper-trading', label: 'Paper Trading', icon: TrendingUp },
         ],
-        analysis: [
-            { path: '/screener', label: 'Screener', icon: Filter },
-            { path: '/heatmap', label: 'Heatmap', icon: MapPin },
-            { path: '/sentiment', label: 'Sentiment', icon: Activity },
-            { path: '/compare', label: 'Stock Comparison', icon: BarChart3 },
-        ],
+       analysis: [
+    { path: '/screener', label: 'Screener', icon: Filter },
+    { path: '/heatmap', label: 'Heatmap', icon: MapPin },
+    { path: '/sentiment', label: 'Sentiment', icon: Activity },
+    { path: '/compare', label: 'Stock Comparison', icon: BarChart3 },
+    { path: '/whale-alerts', label: 'Whale Alerts', icon: Waves },
+],
         community: [
             { path: '/leaderboard', label: 'Leaderboard', icon: Trophy },
             { path: '/discover', label: 'Discover', icon: Sparkles },

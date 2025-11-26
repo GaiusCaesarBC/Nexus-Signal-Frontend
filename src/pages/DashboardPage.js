@@ -22,9 +22,8 @@ import {
 import nexusSignalLogo from '../assets/nexus-signal-logo.png';
 import AdvancedChart from '../components/AdvancedChart';
 import PatternDetector from '../components/PatternDetector';
-import TickerLink, { TickerText } from '../components/TickerLink';
-
-
+ import TickerLink, { TickerText } from '../components/TickerLink';
+ import WhaleAlertWidget from '../components/WhaleAlertWidget';
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`
     from { opacity: 0; transform: translateY(20px); }
@@ -1809,13 +1808,16 @@ const DashboardPage = () => {
                 <TickerContainer>
                     <TickerTrack>
                        {[...tickerData, ...tickerData].map((stock, index) => (
-    <TickerItem key={index}>
-        <TickerLink symbol={stock.symbol} bold>
-            {stock.symbol}
-        </TickerLink>
-        <TickerPrice>${stock.price?.toFixed(2)}</TickerPrice>
-        ...
-    </TickerItem>
+   <TickerItem key={index}>
+    <TickerLink symbol={stock.symbol} bold>
+        {stock.symbol}
+    </TickerLink>
+    <TickerPrice>${stock.price?.toFixed(2)}</TickerPrice>
+    <TickerChange $positive={stock.change >= 0}>
+        {stock.change >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
+        {stock.change >= 0 ? '+' : ''}{stock.change?.toFixed(2)}%
+    </TickerChange>
+</TickerItem>
 ))}
                     </TickerTrack>
                 </TickerContainer>
@@ -1912,7 +1914,7 @@ const DashboardPage = () => {
                         </LeaderboardList>
                         <ViewAllButton onClick={() => navigate('/leaderboard')}>View Full Leaderboard<ChevronRight size={18} /></ViewAllButton>
                     </LeaderboardWidget>
-
+                   <WhaleAlertWidget />
                     <SocialFeedWidget>
                         <SocialFeedHeader>
                             <SocialFeedTitle><MessageSquare size={24} />Social Feed</SocialFeedTitle>
@@ -2033,14 +2035,20 @@ const DashboardPage = () => {
                             </PanelHeader>
                             <MoversList>
                                 {marketMovers.map((mover, index) => (
-                                  <MoverItem key={index}>
+                                 <MoverItem key={index}>
     <MoverInfo>
         <TickerLink symbol={mover.symbol} bold style={{ fontSize: '1.2rem', minWidth: '60px' }}>
             {mover.symbol}
         </TickerLink>
         <MoverName>{mover.name}</MoverName>
     </MoverInfo>
-    ...
+    <MoverPrice>
+        <MoverPriceValue>${mover.price?.toFixed(2)}</MoverPriceValue>
+        <MoverChange $positive={mover.change >= 0}>
+            {mover.change >= 0 ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
+            {mover.change >= 0 ? '+' : ''}{mover.change?.toFixed(2)}%
+        </MoverChange>
+    </MoverPrice>
 </MoverItem>
                                 ))}
                             </MoversList>
@@ -2056,11 +2064,14 @@ const DashboardPage = () => {
                             {predictions.length > 0 ? (
                                 predictions.map((pred, index) => (
                                     <PredictionCard key={pred._id || index}>
-                                        <PredictionHeader>
+                                       <PredictionHeader>
     <TickerLink symbol={pred.symbol} bold style={{ fontSize: '1.3rem', color: '#a78bfa' }}>
         {pred.symbol}
     </TickerLink>
-    <PredictionDirection $up={pred.direction === 'UP'}>...</PredictionDirection>
+    <PredictionDirection $up={pred.direction === 'UP'}>
+        {pred.direction === 'UP' ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
+        {pred.direction}
+    </PredictionDirection>
 </PredictionHeader>
                                         <PredictionDetails>
                                             <PredictionDetail><DetailLabel>Target Price</DetailLabel><DetailValue>${pred.targetPrice?.toFixed(2)}</DetailValue></PredictionDetail>
