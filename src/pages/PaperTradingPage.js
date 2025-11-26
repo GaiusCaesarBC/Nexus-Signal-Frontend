@@ -1,5 +1,5 @@
 // client/src/pages/PaperTradingPage.js - WITH LONG/SHORT TRADING
-// Features: Long & Short Positions, Auto-refresh, Confirmation Modal, Position Details, Price Alerts
+// Features: Long & Short Positions, Auto-refresh, Confirmation Modal, Position Details, Price Alerts, Expandable Cards
 
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
@@ -11,7 +11,7 @@ import {
     Send, Trophy, Flame, Award, Eye, Heart, MessageCircle,
     Share2, BarChart3, PieChart, Percent, Clock, CheckCircle,
     XCircle, AlertCircle, ThumbsUp, Star, Users, Calendar, Bell,
-    AlertTriangle, Shield, TrendingDown as ShortIcon
+    AlertTriangle, Shield, ChevronDown
 } from 'lucide-react';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid,
@@ -220,7 +220,7 @@ const PanelTitle = styled.h2`
     gap: 0.75rem;
 `;
 
-// ✅ NEW: Position Type Selector
+// ✅ Position Type Selector
 const PositionTypeSelector = styled.div`
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -287,7 +287,7 @@ const PositionTypeDesc = styled.div`
     text-align: center;
 `;
 
-// ✅ NEW: Risk Warning for Shorts
+// ✅ Risk Warning for Shorts
 const RiskWarning = styled.div`
     padding: 1.25rem;
     background: rgba(239, 68, 68, 0.1);
@@ -579,7 +579,7 @@ const RefreshButton = styled.button`
     }
 `;
 
-// ✅ UPDATED: Position Card with position type support
+// ✅ Position Card with position type support
 const PositionCard = styled.div`
     background: rgba(15, 23, 42, 0.6);
     border: 1px solid ${props => 
@@ -599,12 +599,12 @@ const PositionCard = styled.div`
     }
 `;
 
-// ✅ NEW: Position Type Badge
+// ✅ Position Type Badge - Inline version
 const PositionTypeBadge = styled.div`
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    padding: 0.4rem 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.6rem;
     background: ${props => props.$short ?
         'rgba(239, 68, 68, 0.2)' :
         'rgba(16, 185, 129, 0.2)'
@@ -615,13 +615,86 @@ const PositionTypeBadge = styled.div`
     };
     border-radius: 6px;
     color: ${props => props.$short ? '#ef4444' : '#10b981'};
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+`;
+
+// ✅ Expand Icon
+const ExpandIcon = styled.div`
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    color: #64748b;
+    transition: transform 0.3s ease;
+    transform: ${props => props.$expanded ? 'rotate(180deg)' : 'rotate(0deg)'};
+`;
+
+// ✅ Expanded Details Section
+const ExpandedDetails = styled.div`
+    max-height: ${props => props.$expanded ? '500px' : '0'};
+    overflow: hidden;
+    transition: all 0.3s ease-in-out;
+    opacity: ${props => props.$expanded ? '1' : '0'};
+`;
+
+const ExpandedContent = styled.div`
+    padding-top: 1rem;
+    margin-top: 1rem;
+    border-top: 1px dashed rgba(0, 173, 237, 0.3);
+`;
+
+const ExpandedGrid = styled.div`
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin-bottom: 1rem;
+`;
+
+const ExpandedItem = styled.div`
+    padding: 1rem;
+    background: rgba(0, 173, 237, 0.05);
+    border-radius: 10px;
+    border: 1px solid rgba(0, 173, 237, 0.1);
+`;
+
+const ExpandedLabel = styled.div`
+    color: #64748b;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+`;
+
+const ExpandedValue = styled.div`
+    color: ${props => props.$color || '#e0e6ed'};
+    font-size: 1.1rem;
+    font-weight: 700;
+`;
+
+const PositionNotes = styled.div`
+    padding: 1rem;
+    background: rgba(0, 173, 237, 0.05);
+    border-radius: 10px;
+    border-left: 3px solid #00adef;
+    margin-bottom: 1rem;
+`;
+
+const NotesLabel = styled.div`
+    color: #00adef;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
     display: flex;
     align-items: center;
-    gap: 0.35rem;
+    gap: 0.5rem;
+`;
+
+const NotesText = styled.div`
+    color: #94a3b8;
+    font-size: 0.9rem;
+    line-height: 1.5;
 `;
 
 const PositionHeader = styled.div`
@@ -696,12 +769,17 @@ const SellButton = styled.button`
     justify-content: center;
     gap: 0.5rem;
 
-    &:hover {
+    &:hover:not(:disabled) {
         transform: translateY(-2px);
         box-shadow: 0 8px 20px ${props => props.$cover ?
             'rgba(16, 185, 129, 0.4)' :
             'rgba(239, 68, 68, 0.4)'
         };
+    }
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
     }
 `;
 
@@ -757,12 +835,17 @@ const OrderSide = styled.div`
     align-items: center;
     gap: 0.5rem;
     padding: 0.4rem 0.75rem;
-    background: ${props => props.$side === 'buy' ?
-        'rgba(16, 185, 129, 0.2)' :
-        'rgba(239, 68, 68, 0.2)'
-    };
+    background: ${props => {
+        if (props.$side === 'buy') return 'rgba(16, 185, 129, 0.2)';
+        if (props.$side === 'cover') return 'rgba(0, 173, 237, 0.2)';
+        return 'rgba(239, 68, 68, 0.2)';
+    }};
     border-radius: 8px;
-    color: ${props => props.$side === 'buy' ? '#10b981' : '#ef4444'};
+    color: ${props => {
+        if (props.$side === 'buy') return '#10b981';
+        if (props.$side === 'cover') return '#00adef';
+        return '#ef4444';
+    }};
     font-weight: 700;
     font-size: 0.9rem;
 `;
@@ -1066,30 +1149,6 @@ const ConfirmButton = styled.button`
     }
 `;
 
-const CloseButton = styled.button`
-    position: absolute;
-    top: 1.5rem;
-    right: 1.5rem;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: rgba(100, 116, 139, 0.2);
-    border: 2px solid rgba(100, 116, 139, 0.4);
-    color: #94a3b8;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-
-    &:hover {
-        background: rgba(239, 68, 68, 0.3);
-        border-color: rgba(239, 68, 68, 0.6);
-        color: #ef4444;
-        transform: rotate(90deg);
-    }
-`;
-
 // ============ MAIN COMPONENT ============
 const PaperTradingPage = () => {
     const { api, user } = useAuth();
@@ -1105,9 +1164,10 @@ const PaperTradingPage = () => {
     const [loadingPrice, setLoadingPrice] = useState(false);
     const [showConfirmation, setShowConfirmation] = useState(false);
     const [pendingTrade, setPendingTrade] = useState(null);
+    const [expandedPositions, setExpandedPositions] = useState({});
    
-    // ✅ NEW: Position Type State
-    const [positionType, setPositionType] = useState('long'); // 'long' or 'short'
+    // Position Type State
+    const [positionType, setPositionType] = useState('long');
    
     // Form state
     const [symbol, setSymbol] = useState('');
@@ -1118,6 +1178,14 @@ const PaperTradingPage = () => {
     // Orders & Leaderboard
     const [orders, setOrders] = useState([]);
     const [leaderboard, setLeaderboard] = useState([]);
+
+    // Toggle expanded position
+    const togglePositionExpand = (positionKey) => {
+        setExpandedPositions(prev => ({
+            ...prev,
+            [positionKey]: !prev[positionKey]
+        }));
+    };
 
     // Load data functions
     const loadAccount = async () => {
@@ -1202,7 +1270,7 @@ const PaperTradingPage = () => {
 
         setPendingTrade({
             action: activeTab,
-            positionType, // ✅ NEW: Include position type
+            positionType,
             symbol: symbol.toUpperCase(),
             type,
             quantity: parseFloat(quantity),
@@ -1220,19 +1288,26 @@ const PaperTradingPage = () => {
         setSubmitting(true);
 
         try {
-            const endpoint = pendingTrade.action === 'buy' ? '/paper-trading/buy' : '/paper-trading/sell';
+            // Determine correct endpoint
+            let endpoint;
+            if (pendingTrade.positionType === 'short' && pendingTrade.action === 'sell') {
+                endpoint = '/paper-trading/cover';
+            } else {
+                endpoint = pendingTrade.action === 'buy' ? '/paper-trading/buy' : '/paper-trading/sell';
+            }
+
             const response = await api.post(endpoint, {
                 symbol: pendingTrade.symbol,
                 type: pendingTrade.type,
                 quantity: pendingTrade.quantity,
-                positionType: pendingTrade.positionType, // ✅ NEW: Send position type
+                positionType: pendingTrade.positionType,
                 notes: pendingTrade.notes
             });
 
             setAccount(response.data.account);
             toast.success(response.data.message, 'Success');
 
-            if (pendingTrade.action === 'sell' && response.data.profitLoss) {
+            if ((pendingTrade.action === 'sell' || endpoint === '/paper-trading/cover') && response.data.profitLoss !== undefined) {
                 const pl = response.data.profitLoss;
                 const plPercent = response.data.profitLossPercent;
                 const message = pl >= 0 ?
@@ -1261,8 +1336,43 @@ const PaperTradingPage = () => {
         setSymbol(position.symbol);
         setType(position.type);
         setQuantity(position.quantity.toString());
-        setPositionType(position.positionType || 'long'); // ✅ Set position type
+        setPositionType(position.positionType || 'long');
         window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    // Direct cover function for short positions
+    const handleCoverShort = async (position) => {
+        if (!position || position.positionType !== 'short') return;
+        
+        setSubmitting(true);
+        
+        try {
+            const response = await api.post('/paper-trading/cover', {
+                symbol: position.symbol,
+                type: position.type,
+                quantity: position.quantity
+            });
+
+            setAccount(response.data.account);
+            toast.success(response.data.message, '✅ Short Covered!');
+
+            if (response.data.profitLoss !== undefined) {
+                const pl = response.data.profitLoss;
+                const plPercent = response.data.profitLossPercent;
+                const message = pl >= 0 ?
+                    `Profit: $${pl.toFixed(2)} (+${plPercent.toFixed(2)}%)` :
+                    `Loss: $${Math.abs(pl).toFixed(2)} (${plPercent.toFixed(2)}%)`;
+                toast.info(message, pl >= 0 ? '💰 Nice Trade!' : '📉 Position Closed');
+            }
+
+            loadOrders();
+
+        } catch (error) {
+            console.error('Cover error:', error);
+            toast.error(error.response?.data?.error || 'Failed to cover short', 'Error');
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     const formatCurrency = (value) => {
@@ -1325,7 +1435,10 @@ const PaperTradingPage = () => {
                     >
                         <ConfirmationTitle $variant={pendingTrade.action}>
                             {pendingTrade.action === 'buy' ? <Plus size={32} /> : <Minus size={32} />}
-                            Confirm {pendingTrade.positionType === 'short' ? 'Short' : pendingTrade.action === 'buy' ? 'Purchase' : 'Sale'}
+                            Confirm {pendingTrade.positionType === 'short' 
+                                ? (pendingTrade.action === 'sell' ? 'Cover' : 'Short')
+                                : (pendingTrade.action === 'buy' ? 'Purchase' : 'Sale')
+                            }
                         </ConfirmationTitle>
 
                         <ConfirmationDetails>
@@ -1368,7 +1481,7 @@ const PaperTradingPage = () => {
                             </DetailRow>
                         </ConfirmationDetails>
 
-                        {pendingTrade.positionType === 'short' && (
+                        {pendingTrade.positionType === 'short' && pendingTrade.action === 'buy' && (
                             <RiskWarning style={{ margin: '1rem 0', animation: 'none' }}>
                                 <RiskWarningIcon>
                                     <AlertTriangle size={20} />
@@ -1406,7 +1519,10 @@ const PaperTradingPage = () => {
                                 $variant={pendingTrade.action}
                                 onClick={executeTradeSubmit}
                             >
-                                Confirm {pendingTrade.positionType === 'short' ? 'Short' : pendingTrade.action === 'buy' ? 'Buy' : 'Sell'}
+                                Confirm {pendingTrade.positionType === 'short' 
+                                    ? (pendingTrade.action === 'sell' ? 'Cover' : 'Short')
+                                    : (pendingTrade.action === 'buy' ? 'Buy' : 'Sell')
+                                }
                             </ConfirmButton>
                         </ConfirmationButtons>
                     </ConfirmationCard>
@@ -1498,7 +1614,7 @@ const PaperTradingPage = () => {
                                 Place Order
                             </PanelTitle>
 
-                            {/* ✅ NEW: Position Type Selector */}
+                            {/* Position Type Selector */}
                             <PositionTypeSelector>
                                 <PositionTypeButton
                                     $active={positionType === 'long'}
@@ -1529,7 +1645,7 @@ const PaperTradingPage = () => {
                                 </PositionTypeButton>
                             </PositionTypeSelector>
 
-                            {/* ✅ NEW: Risk Warning for Short Positions */}
+                            {/* Risk Warning for Short Positions */}
                             {positionType === 'short' && (
                                 <RiskWarning>
                                     <RiskWarningIcon>
@@ -1681,63 +1797,157 @@ const PaperTradingPage = () => {
                                     </RefreshButton>
                                 </PositionsHeader>
 
-                                {account.positions.map((position) => (
-                                    <PositionCard 
-                                        key={position.symbol} 
-                                        $positive={position.profitLoss >= 0}
-                                        $positionType={position.positionType}
-                                    >
-                                        {/* ✅ NEW: Position Type Badge */}
-                                        <PositionTypeBadge $short={position.positionType === 'short'}>
-                                            {position.positionType === 'short' ? <TrendingDown size={12} /> : <TrendingUp size={12} />}
-                                            {position.positionType || 'LONG'}
-                                        </PositionTypeBadge>
+                                {account.positions.map((position) => {
+                                    const positionKey = `${position.symbol}-${position.positionType}`;
+                                    const isExpanded = expandedPositions[positionKey];
+                                    const totalValue = position.currentPrice * position.quantity;
+                                    const costBasis = position.averagePrice * position.quantity;
 
-                                        <PositionHeader>
-                                            <div>
-                                                <PositionSymbol>${position.symbol}</PositionSymbol>
-                                                <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.25rem' }}>
-                                                    {position.type}
-                                                </div>
-                                            </div>
-                                            <PositionPL>
-                                                <PLValue $positive={position.profitLoss >= 0}>
-                                                    {position.profitLoss >= 0 ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
-                                                    {formatCurrency(Math.abs(position.profitLoss))}
-                                                </PLValue>
-                                                <PLPercent $positive={position.profitLoss >= 0}>
-                                                    {formatPercent(position.profitLossPercent)}
-                                                </PLPercent>
-                                            </PositionPL>
-                                        </PositionHeader>
-
-                                        <PositionDetails>
-                                            <PositionDetail>
-                                                <DetailLabel>Quantity</DetailLabel>
-                                                <DetailValue>{position.quantity}</DetailValue>
-                                            </PositionDetail>
-                                            <PositionDetail>
-                                                <DetailLabel>Avg Price</DetailLabel>
-                                                <DetailValue>{formatCurrency(position.averagePrice)}</DetailValue>
-                                            </PositionDetail>
-                                            <PositionDetail>
-                                                <DetailLabel>Current Price</DetailLabel>
-                                                <DetailValue>{formatCurrency(position.currentPrice)}</DetailValue>
-                                            </PositionDetail>
-                                        </PositionDetails>
-
-                                        <SellButton 
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleQuickSell(position);
-                                            }}
-                                            $cover={position.positionType === 'short'}
+                                    return (
+                                        <PositionCard 
+                                            key={positionKey} 
+                                            $positive={position.profitLoss >= 0}
+                                            $positionType={position.positionType}
+                                            onClick={() => togglePositionExpand(positionKey)}
                                         >
-                                            {position.positionType === 'short' ? <Plus size={18} /> : <Minus size={18} />}
-                                            {position.positionType === 'short' ? 'Cover Short' : 'Sell Position'}
-                                        </SellButton>
-                                    </PositionCard>
-                                ))}
+                                            {/* Expand Icon */}
+                                            <ExpandIcon $expanded={isExpanded}>
+                                                <ChevronDown size={16} />
+                                            </ExpandIcon>
+
+                                            <PositionHeader>
+                                                <div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                        <PositionSymbol>${position.symbol}</PositionSymbol>
+                                                        <PositionTypeBadge $short={position.positionType === 'short'}>
+                                                            {position.positionType === 'short' ? <TrendingDown size={12} /> : <TrendingUp size={12} />}
+                                                            {position.positionType?.toUpperCase() || 'LONG'}
+                                                        </PositionTypeBadge>
+                                                    </div>
+                                                    <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.25rem' }}>
+                                                        {position.type}
+                                                    </div>
+                                                </div>
+                                                <PositionPL>
+                                                    <PLValue $positive={position.profitLoss >= 0}>
+                                                        {position.profitLoss >= 0 ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
+                                                        {formatCurrency(Math.abs(position.profitLoss || 0))}
+                                                    </PLValue>
+                                                    <PLPercent $positive={position.profitLoss >= 0}>
+                                                        {formatPercent(position.profitLossPercent || 0)}
+                                                    </PLPercent>
+                                                </PositionPL>
+                                            </PositionHeader>
+
+                                            <PositionDetails>
+                                                <PositionDetail>
+                                                    <DetailLabel>Quantity</DetailLabel>
+                                                    <DetailValue>{position.quantity.toLocaleString()}</DetailValue>
+                                                </PositionDetail>
+                                                <PositionDetail>
+                                                    <DetailLabel>Avg Price</DetailLabel>
+                                                    <DetailValue>{formatCurrency(position.averagePrice)}</DetailValue>
+                                                </PositionDetail>
+                                                <PositionDetail>
+                                                    <DetailLabel>Current Price</DetailLabel>
+                                                    <DetailValue>{formatCurrency(position.currentPrice)}</DetailValue>
+                                                </PositionDetail>
+                                            </PositionDetails>
+
+                                            {/* Expanded Section */}
+                                            <ExpandedDetails $expanded={isExpanded}>
+                                                <ExpandedContent>
+                                                    <ExpandedGrid>
+                                                        <ExpandedItem>
+                                                            <ExpandedLabel>Total Value</ExpandedLabel>
+                                                            <ExpandedValue $color="#00adef">
+                                                                {formatCurrency(totalValue)}
+                                                            </ExpandedValue>
+                                                        </ExpandedItem>
+                                                        <ExpandedItem>
+                                                            <ExpandedLabel>Cost Basis</ExpandedLabel>
+                                                            <ExpandedValue>
+                                                                {formatCurrency(costBasis)}
+                                                            </ExpandedValue>
+                                                        </ExpandedItem>
+                                                        <ExpandedItem>
+                                                            <ExpandedLabel>
+                                                                {position.positionType === 'short' ? 'Short P/L' : 'Unrealized P/L'}
+                                                            </ExpandedLabel>
+                                                            <ExpandedValue $color={position.profitLoss >= 0 ? '#10b981' : '#ef4444'}>
+                                                                {position.profitLoss >= 0 ? '+' : ''}{formatCurrency(position.profitLoss || 0)}
+                                                            </ExpandedValue>
+                                                        </ExpandedItem>
+                                                        <ExpandedItem>
+                                                            <ExpandedLabel>Return %</ExpandedLabel>
+                                                            <ExpandedValue $color={position.profitLossPercent >= 0 ? '#10b981' : '#ef4444'}>
+                                                                {formatPercent(position.profitLossPercent || 0)}
+                                                            </ExpandedValue>
+                                                        </ExpandedItem>
+                                                    </ExpandedGrid>
+
+                                                    {/* Position Strategy Info */}
+                                                    <PositionNotes>
+                                                        <NotesLabel>
+                                                            {position.positionType === 'short' ? <TrendingDown size={14} /> : <TrendingUp size={14} />}
+                                                            Position Strategy
+                                                        </NotesLabel>
+                                                        <NotesText>
+                                                            {position.positionType === 'short' ? (
+                                                                <>
+                                                                    <strong>Short Position:</strong> You borrowed and sold at {formatCurrency(position.averagePrice)}. 
+                                                                    To close, you'll buy back at current price ({formatCurrency(position.currentPrice)}). 
+                                                                    {position.profitLoss >= 0 
+                                                                        ? ` Price dropped = You profit ${formatCurrency(Math.abs(position.profitLoss))}! 🎉`
+                                                                        : ` Price rose = You'd lose ${formatCurrency(Math.abs(position.profitLoss))} if you cover now.`
+                                                                    }
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <strong>Long Position:</strong> You bought at {formatCurrency(position.averagePrice)}. 
+                                                                    Current value is {formatCurrency(position.currentPrice)} per share.
+                                                                    {position.profitLoss >= 0 
+                                                                        ? ` Price rose = You're up ${formatCurrency(Math.abs(position.profitLoss))}! 🎉`
+                                                                        : ` Price dropped = You're down ${formatCurrency(Math.abs(position.profitLoss))}.`
+                                                                    }
+                                                                </>
+                                                            )}
+                                                        </NotesText>
+                                                    </PositionNotes>
+
+                                                    {/* Last Updated */}
+                                                    <div style={{ 
+                                                        display: 'flex', 
+                                                        alignItems: 'center', 
+                                                        gap: '0.5rem',
+                                                        color: '#64748b',
+                                                        fontSize: '0.8rem',
+                                                        marginBottom: '1rem'
+                                                    }}>
+                                                        <Clock size={14} />
+                                                        Last updated: {position.lastUpdated ? new Date(position.lastUpdated).toLocaleString() : 'Just now'}
+                                                    </div>
+                                                </ExpandedContent>
+                                            </ExpandedDetails>
+
+                                            <SellButton 
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (position.positionType === 'short') {
+                                                        handleCoverShort(position);
+                                                    } else {
+                                                        handleQuickSell(position);
+                                                    }
+                                                }}
+                                                $cover={position.positionType === 'short'}
+                                                disabled={submitting}
+                                            >
+                                                {position.positionType === 'short' ? <Plus size={18} /> : <Minus size={18} />}
+                                                {position.positionType === 'short' ? (submitting ? 'Covering...' : 'Cover Short') : 'Sell Position'}
+                                            </SellButton>
+                                        </PositionCard>
+                                    );
+                                })}
                             </PositionsList>
                         )}
 
@@ -1752,9 +1962,9 @@ const PaperTradingPage = () => {
                                     <OrderCard key={order._id}>
                                         <OrderHeader>
                                             <OrderSide $side={order.side}>
-                                                {order.side === 'buy' ? <Plus size={16} /> : <Minus size={16} />}
+                                                {order.side === 'buy' ? <Plus size={16} /> : order.side === 'cover' ? <RefreshCw size={16} /> : <Minus size={16} />}
                                                 {order.side.toUpperCase()}
-                                                {order.positionType === 'short' && ' SHORT'}
+                                                {order.positionType === 'short' && order.side !== 'cover' && ' SHORT'}
                                             </OrderSide>
                                             <OrderTime>
                                                 {new Date(order.executedAt).toLocaleString()}
