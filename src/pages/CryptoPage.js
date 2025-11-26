@@ -8,10 +8,11 @@ import {
   Tooltip, ResponsiveContainer
 } from 'recharts';
 import {
-  ArrowLeft, TrendingUp, TrendingDown, Brain, Target, Activity,
+  ArrowLeft, TrendingUp, TrendingDown, Brain, Activity,
   DollarSign, BarChart3, Clock, MessageSquare,
   Star, StarOff, Loader2, Zap, PieChart,
-  Minus, Plus, ShoppingCart, Wallet, Share2, Bell, BellOff
+  Minus, Plus, ShoppingCart, Share2, Bell, BellOff,
+  Globe, Coins, ArrowUpRight, ArrowDownRight
 } from 'lucide-react';
 
 // ============ ANIMATIONS ============
@@ -23,6 +24,11 @@ const fadeIn = keyframes`
 const spin = keyframes`
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+`;
+
+const pulse = keyframes`
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
 `;
 
 // ============ STYLED COMPONENTS ============
@@ -97,53 +103,58 @@ const Card = styled.div`
   animation-fill-mode: backwards;
 `;
 
-const StockHeader = styled(Card)`
+const CryptoHeader = styled(Card)`
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   flex-wrap: wrap;
   gap: 20px;
+  background: linear-gradient(135deg, rgba(247, 147, 26, 0.05) 0%, rgba(255, 193, 7, 0.05) 100%);
+  border-color: rgba(247, 147, 26, 0.2);
 `;
 
-const StockInfo = styled.div`
+const CryptoInfo = styled.div`
   display: flex;
   align-items: center;
   gap: 16px;
 `;
 
-const StockLogo = styled.div`
+const CryptoLogo = styled.div`
   width: 64px;
   height: 64px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 50%;
+  background: ${props => props.$gradient || 'linear-gradient(135deg, #f7931a 0%, #ffcd00 100%)'};
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 24px;
   font-weight: 700;
   color: white;
+  box-shadow: 0 4px 20px rgba(247, 147, 26, 0.3);
 `;
 
-const StockDetails = styled.div`
+const CryptoDetails = styled.div`
   h1 {
     font-size: 28px;
     font-weight: 700;
     margin: 0 0 4px 0;
   }
 
-  .company-name {
+  .crypto-name {
     color: #a0a0a0;
     font-size: 14px;
     margin-bottom: 8px;
   }
 
-  .exchange {
-    display: inline-block;
-    background: rgba(255, 255, 255, 0.1);
+  .crypto-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(247, 147, 26, 0.15);
     padding: 4px 10px;
     border-radius: 6px;
     font-size: 12px;
-    color: #a0a0a0;
+    color: #f7931a;
   }
 `;
 
@@ -184,7 +195,7 @@ const ActionButtons = styled.div`
 const IconButton = styled.button`
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  color: ${props => props.$active ? '#00ff88' : '#a0a0a0'};
+  color: ${props => props.$active ? '#f7931a' : '#a0a0a0'};
   width: 44px;
   height: 44px;
   border-radius: 10px;
@@ -235,9 +246,9 @@ const TimeframeButtons = styled.div`
 `;
 
 const TimeframeBtn = styled.button`
-  background: ${props => props.$active ? 'rgba(102, 126, 234, 0.3)' : 'transparent'};
+  background: ${props => props.$active ? 'rgba(247, 147, 26, 0.3)' : 'transparent'};
   border: none;
-  color: ${props => props.$active ? '#667eea' : '#a0a0a0'};
+  color: ${props => props.$active ? '#f7931a' : '#a0a0a0'};
   padding: 8px 12px;
   border-radius: 8px;
   font-size: 13px;
@@ -290,6 +301,70 @@ const ChartError = styled.div`
   }
 `;
 
+// Indicators Grid
+const IndicatorsCard = styled(Card)`
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+`;
+
+const IndicatorsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+
+  @media (max-width: 900px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+`;
+
+const IndicatorCard = styled.div`
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 14px;
+  
+  .label {
+    color: #a0a0a0;
+    font-size: 11px;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .value {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .signal {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    
+    &.BUY {
+      background: rgba(0, 255, 136, 0.15);
+      color: #00ff88;
+    }
+    
+    &.SELL {
+      background: rgba(255, 71, 87, 0.15);
+      color: #ff4757;
+    }
+    
+    &.HOLD, &.HIGH, &.LOW {
+      background: rgba(255, 170, 0, 0.15);
+      color: #ffaa00;
+    }
+    
+    &.NA {
+      background: rgba(255, 255, 255, 0.1);
+      color: #a0a0a0;
+    }
+  }
+`;
+
 // Stats Grid
 const StatsGrid = styled.div`
   display: grid;
@@ -330,8 +405,8 @@ const StatCard = styled.div`
 
 // Trading Panel
 const TradingPanel = styled(Card)`
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-  border-color: rgba(102, 126, 234, 0.3);
+  background: linear-gradient(135deg, rgba(247, 147, 26, 0.1) 0%, rgba(255, 193, 7, 0.1) 100%);
+  border-color: rgba(247, 147, 26, 0.3);
 `;
 
 const TradingTitle = styled.h3`
@@ -493,7 +568,7 @@ const TradeButton = styled.button`
 
 // AI Predictions
 const PredictionCard = styled(Card)`
-  background: linear-gradient(135deg, rgba(0, 255, 136, 0.05) 0%, rgba(102, 126, 234, 0.05) 100%);
+  background: linear-gradient(135deg, rgba(0, 255, 136, 0.05) 0%, rgba(247, 147, 26, 0.05) 100%);
 `;
 
 const PredictionHeader = styled.div`
@@ -506,7 +581,7 @@ const PredictionHeader = styled.div`
     width: 44px;
     height: 44px;
     border-radius: 12px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #f7931a 0%, #ffcd00 100%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -519,8 +594,8 @@ const PredictionHeader = styled.div`
   }
 
   .badge {
-    background: rgba(102, 126, 234, 0.2);
-    color: #667eea;
+    background: rgba(247, 147, 26, 0.2);
+    color: #f7931a;
     padding: 4px 10px;
     border-radius: 20px;
     font-size: 11px;
@@ -543,13 +618,12 @@ const PredictionSignal = styled.div`
   }
 
   .signal-value {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     font-size: 20px;
     font-weight: 700;
-    color: ${props => {
-      if (props.$signal === 'STRONG_BUY' || props.$signal === 'BUY') return '#00ff88';
-      if (props.$signal === 'STRONG_SELL' || props.$signal === 'SELL') return '#ff4757';
-      return '#ffaa00';
-    }};
+    color: ${props => props.$direction === 'Up' ? '#00ff88' : '#ff4757'};
   }
 `;
 
@@ -572,7 +646,7 @@ const ConfidenceBar = styled.div`
 
   .bar-fill {
     height: 100%;
-    background: linear-gradient(90deg, #667eea 0%, #00ff88 100%);
+    background: linear-gradient(90deg, #f7931a 0%, #00ff88 100%);
     border-radius: 4px;
     width: ${props => props.$value}%;
     transition: width 0.5s ease;
@@ -600,13 +674,23 @@ const TargetBox = styled.div`
   .value {
     font-size: 18px;
     font-weight: 600;
-    color: ${props => props.$type === 'high' ? '#00ff88' : '#ff4757'};
+    color: ${props => props.$type === 'predicted' ? '#00ff88' : '#f7931a'};
   }
 
   .change {
     font-size: 11px;
-    color: ${props => props.$type === 'high' ? '#00ff88' : '#ff4757'};
+    color: ${props => props.$positive ? '#00ff88' : '#ff4757'};
   }
+`;
+
+const PredictionMessage = styled.div`
+  margin-top: 16px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+  font-size: 13px;
+  color: #a0a0a0;
+  line-height: 1.5;
 `;
 
 // Social Feed
@@ -661,7 +745,7 @@ const PostHeader = styled.div`
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #f7931a 0%, #ffcd00 100%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -728,13 +812,24 @@ const LoadingContainer = styled.div`
 `;
 
 // ============ HELPER FUNCTIONS ============
-const formatCurrency = (value) => {
+const formatCurrency = (value, decimals = 2) => {
   if (value === null || value === undefined || isNaN(value)) return '$0.00';
+  
+  // For very small values (like some altcoins), show more decimals
+  if (value < 0.01 && value > 0) {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 6,
+      maximumFractionDigits: 6
+    }).format(value);
+  }
+  
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals
   }).format(value);
 };
 
@@ -744,7 +839,7 @@ const formatLargeNumber = (num) => {
   if (num >= 1e9) return (num / 1e9).toFixed(2) + 'B';
   if (num >= 1e6) return (num / 1e6).toFixed(2) + 'M';
   if (num >= 1e3) return (num / 1e3).toFixed(2) + 'K';
-  return num.toString();
+  return num.toFixed(2);
 };
 
 const formatPercent = (value) => {
@@ -766,65 +861,56 @@ const getTimeAgo = (timestamp) => {
   return `${diffDays}d ago`;
 };
 
-// Company name lookup
-const getCompanyName = (sym) => {
-  const names = {
-    'AAPL': 'Apple Inc.',
-    'GOOGL': 'Alphabet Inc.',
-    'GOOG': 'Alphabet Inc.',
-    'MSFT': 'Microsoft Corporation',
-    'AMZN': 'Amazon.com Inc.',
-    'TSLA': 'Tesla Inc.',
-    'NVDA': 'NVIDIA Corporation',
-    'META': 'Meta Platforms Inc.',
-    'NFLX': 'Netflix Inc.',
-    'AMD': 'Advanced Micro Devices',
-    'INTC': 'Intel Corporation',
-    'CRM': 'Salesforce Inc.',
-    'ORCL': 'Oracle Corporation',
-    'ADBE': 'Adobe Inc.',
-    'PYPL': 'PayPal Holdings Inc.',
-    'DIS': 'The Walt Disney Company',
-    'COIN': 'Coinbase Global Inc.',
-    'SQ': 'Block Inc.',
-    'SHOP': 'Shopify Inc.',
-    'UBER': 'Uber Technologies Inc.',
-    'LYFT': 'Lyft Inc.',
-    'SNAP': 'Snap Inc.',
-    'PINS': 'Pinterest Inc.',
-    'ZM': 'Zoom Video Communications',
-    'ROKU': 'Roku Inc.',
-    'SPOT': 'Spotify Technology',
-    'BA': 'Boeing Company',
-    'JPM': 'JPMorgan Chase & Co.',
-    'V': 'Visa Inc.',
-    'MA': 'Mastercard Inc.',
-    'JNJ': 'Johnson & Johnson',
-    'PG': 'Procter & Gamble',
-    'KO': 'Coca-Cola Company',
-    'PEP': 'PepsiCo Inc.',
-    'WMT': 'Walmart Inc.',
-    'HD': 'Home Depot Inc.',
-    'NKE': 'Nike Inc.',
-    'MCD': 'McDonald\'s Corporation',
-    'SBUX': 'Starbucks Corporation'
+// Crypto name and logo mapping
+const cryptoInfo = {
+  'BTC': { name: 'Bitcoin', gradient: 'linear-gradient(135deg, #f7931a 0%, #ffcd00 100%)' },
+  'ETH': { name: 'Ethereum', gradient: 'linear-gradient(135deg, #627eea 0%, #a0b3f8 100%)' },
+  'XRP': { name: 'Ripple', gradient: 'linear-gradient(135deg, #23292f 0%, #4a5568 100%)' },
+  'LTC': { name: 'Litecoin', gradient: 'linear-gradient(135deg, #345d9d 0%, #5a8fd8 100%)' },
+  'ADA': { name: 'Cardano', gradient: 'linear-gradient(135deg, #0033ad 0%, #3366ff 100%)' },
+  'SOL': { name: 'Solana', gradient: 'linear-gradient(135deg, #9945ff 0%, #14f195 100%)' },
+  'DOGE': { name: 'Dogecoin', gradient: 'linear-gradient(135deg, #c3a634 0%, #e8d54a 100%)' },
+  'DOT': { name: 'Polkadot', gradient: 'linear-gradient(135deg, #e6007a 0%, #ff4d94 100%)' },
+  'BNB': { name: 'BNB', gradient: 'linear-gradient(135deg, #f3ba2f 0%, #ffd454 100%)' },
+  'LINK': { name: 'Chainlink', gradient: 'linear-gradient(135deg, #2a5ada 0%, #5a8af8 100%)' },
+  'UNI': { name: 'Uniswap', gradient: 'linear-gradient(135deg, #ff007a 0%, #ff4da6 100%)' },
+  'MATIC': { name: 'Polygon', gradient: 'linear-gradient(135deg, #8247e5 0%, #a879f8 100%)' },
+  'SHIB': { name: 'Shiba Inu', gradient: 'linear-gradient(135deg, #ffa409 0%, #ffcc00 100%)' },
+  'TRX': { name: 'Tron', gradient: 'linear-gradient(135deg, #ef0027 0%, #ff4d6a 100%)' },
+  'AVAX': { name: 'Avalanche', gradient: 'linear-gradient(135deg, #e84142 0%, #ff6b6b 100%)' },
+  'ATOM': { name: 'Cosmos', gradient: 'linear-gradient(135deg, #2e3148 0%, #5a5f7a 100%)' },
+  'XMR': { name: 'Monero', gradient: 'linear-gradient(135deg, #ff6600 0%, #ff9933 100%)' },
+};
+
+const getCryptoInfo = (symbol) => {
+  const upperSymbol = symbol?.toUpperCase();
+  return cryptoInfo[upperSymbol] || { 
+    name: `${upperSymbol} Coin`, 
+    gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' 
   };
-  return names[sym?.toUpperCase()] || `${sym?.toUpperCase() || 'Unknown'} Inc.`;
 };
 
 // ============ CUSTOM TOOLTIP ============
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
+    const date = new Date(label);
+    const formattedDate = date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    
     return (
       <div style={{
         background: 'rgba(20, 20, 30, 0.95)',
-        border: '1px solid rgba(255, 255, 255, 0.1)',
+        border: '1px solid rgba(247, 147, 26, 0.3)',
         borderRadius: '8px',
         padding: '12px 16px',
         boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)'
       }}>
-        <p style={{ margin: '0 0 4px', color: '#a0a0a0', fontSize: '12px' }}>{label}</p>
-        <p style={{ margin: 0, fontWeight: 600, fontSize: '16px' }}>
+        <p style={{ margin: '0 0 4px', color: '#a0a0a0', fontSize: '12px' }}>{formattedDate}</p>
+        <p style={{ margin: 0, fontWeight: 600, fontSize: '16px', color: '#f7931a' }}>
           {formatCurrency(payload[0].value)}
         </p>
       </div>
@@ -834,77 +920,67 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 // ============ MAIN COMPONENT ============
-const StockPage = () => {
- const { symbol } = useParams();
-const navigate = useNavigate();
-const { api } = useAuth();
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+const CryptoPage = () => {
+  const { symbol } = useParams();
+  const { api } = useAuth();
+  const navigate = useNavigate();
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
-  // Chart data state (from your StockDataDisplay)
+  // Chart data state
   const [chartData, setChartData] = useState([]);
   const [selectedRange, setSelectedRange] = useState('1M');
   const [chartLoading, setChartLoading] = useState(false);
   const [chartError, setChartError] = useState(null);
   const fetchController = useRef(null);
 
-  // Other state
-  const [stockInfo, setStockInfo] = useState(null);
+  // Prediction state
   const [prediction, setPrediction] = useState(null);
-  const [posts, setPosts] = useState([]);
-  const [infoLoading, setInfoLoading] = useState(true);
+  const [predictionLoading, setPredictionLoading] = useState(false);
 
+  // Other state
+  const [posts, setPosts] = useState([]);
   const [tradeType, setTradeType] = useState('buy');
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState(0.1);
   const [isWatchlisted, setIsWatchlisted] = useState(false);
   const [hasAlerts, setHasAlerts] = useState(false);
 
   const timeframes = ['1D', '5D', '1M', '3M', '6M', '1Y', '5Y', 'MAX'];
 
-  // Get current price from chart data or stock info
-  const currentPrice = stockInfo?.price || stockInfo?.regularMarketPrice || 
-    (chartData.length > 0 ? chartData[chartData.length - 1].price : 0);
-  
-  const previousClose = stockInfo?.previousClose || 
-    (chartData.length > 1 ? chartData[0].price : currentPrice);
-  
-  const priceChange = currentPrice - previousClose;
-  const changePercent = previousClose ? ((priceChange / previousClose) * 100) : 0;
+  // Get current price from chart data
+  const currentPrice = chartData.length > 0 ? chartData[chartData.length - 1].close : 0;
+  const firstPrice = chartData.length > 1 ? chartData[0].close : currentPrice;
+  const priceChange = currentPrice - firstPrice;
+  const changePercent = firstPrice ? ((priceChange / firstPrice) * 100) : 0;
   const isPositive = priceChange >= 0;
 
-  // Generate mock data for fallback
-  const generateMockPrediction = () => ({
-    signal: ['STRONG_BUY', 'BUY', 'HOLD', 'SELL'][Math.floor(Math.random() * 4)],
-    confidence: 70 + Math.random() * 25,
-    targetHigh: currentPrice * 1.15,
-    targetLow: currentPrice * 0.90,
-    timeframe: '30 days'
-  });
+  const cryptoDetails = getCryptoInfo(symbol);
 
+  // Generate mock posts
   const generateMockPosts = () => [
     {
       id: 1,
-      username: 'TradingPro',
-      content: `$${symbol?.toUpperCase()} looking strong here. Technical indicators showing bullish momentum.`,
+      username: 'CryptoKing',
+      content: `$${symbol?.toUpperCase()} showing strong momentum after breaking key resistance. Accumulating here.`,
       sentiment: 'bullish',
       createdAt: new Date(Date.now() - 3600000).toISOString()
     },
     {
       id: 2,
-      username: 'MarketWatch',
-      content: `Watching $${symbol?.toUpperCase()} closely for a breakout above resistance.`,
+      username: 'BlockchainDev',
+      content: `Interesting on-chain metrics for $${symbol?.toUpperCase()}. Whale activity increasing.`,
       sentiment: 'neutral',
       createdAt: new Date(Date.now() - 7200000).toISOString()
     },
     {
       id: 3,
-      username: 'BullRunner',
-      content: `Added to my $${symbol?.toUpperCase()} position on this dip. Long term bullish.`,
+      username: 'HODLer',
+      content: `$${symbol?.toUpperCase()} to the moon! 🚀 Diamond hands only.`,
       sentiment: 'bullish',
       createdAt: new Date(Date.now() - 14400000).toISOString()
     }
   ];
 
-  // Fetch chart data (from your StockDataDisplay logic)
+  // Fetch chart data
   useEffect(() => {
     if (!symbol) return;
 
@@ -919,28 +995,20 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
       setChartError(null);
 
       try {
-        // Determine interval based on range (your existing logic)
-        let intervalParam = '1d';
-        if (selectedRange === '1D') intervalParam = '5m';
-        else if (selectedRange === '5D') intervalParam = '1h';
-
         const response = await axios.get(
-          `${API_URL}/api/stocks/historical/${symbol}`,
+          `${API_URL}/api/crypto/historical/${symbol}`,
           {
-            params: {
-              range: selectedRange,
-              interval: intervalParam,
-            },
+            params: { range: selectedRange },
             signal: signal,
           }
         );
 
-        const fetchedData = response.data.historicalData || response.data;
+        const fetchedData = response.data.historicalData || [];
         
         // Transform data for Recharts
-        const transformedData = fetchedData.map((item, index) => ({
-          time: item.date || item.datetime || item.timestamp || `Point ${index}`,
-          price: item.close || item.price || item.value,
+        const transformedData = fetchedData.map((item) => ({
+          time: item.time,
+          close: item.close,
           open: item.open,
           high: item.high,
           low: item.low,
@@ -957,14 +1025,16 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
           console.log('Fetch aborted');
           return;
         }
-        console.error('Error fetching chart data:', err);
+        console.error('Error fetching crypto data:', err);
 
-        if (err.response?.data?.msg) {
+        if (err.response?.status === 429) {
+          setChartError('Rate limit exceeded. Please wait a moment.');
+        } else if (err.response?.status === 404) {
+          setChartError(`Crypto "${symbol}" not found.`);
+        } else if (err.response?.data?.msg) {
           setChartError(err.response.data.msg);
-        } else if (err.message) {
-          setChartError(`Error: ${err.message}`);
         } else {
-          setChartError('Failed to fetch chart data');
+          setChartError('Failed to fetch crypto data');
         }
       } finally {
         setChartLoading(false);
@@ -981,82 +1051,51 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
     };
   }, [symbol, selectedRange, API_URL]);
 
-  // Fetch stock info, predictions, and posts
+  // Fetch prediction
   useEffect(() => {
     if (!symbol) return;
 
-    const fetchAdditionalData = async () => {
-      setInfoLoading(true);
+    const fetchPrediction = async () => {
+      setPredictionLoading(true);
 
       try {
-        // Fetch quote data
-        const quoteRes = await axios.get(`${API_URL}/api/stocks/quote/${symbol}`).catch(() => null);
-        
-        // Fetch predictions
-        const predRes = await axios.get(`${API_URL}/api/predictions/recent`, {
-          params: { symbol: symbol.toUpperCase() }
-        }).catch(() => null);
+        const response = await axios.get(
+          `${API_URL}/api/crypto/prediction/${symbol}`,
+          { params: { range: '6M' } }
+        );
 
-        // Fetch posts
-        const postsRes = await axios.get(`${API_URL}/api/posts`, {
-          params: { symbol: symbol.toUpperCase(), limit: 5 }
-        }).catch(() => null);
-
-        // Set stock info
-        if (quoteRes?.data) {
-          setStockInfo(quoteRes.data);
-        } else {
-          setStockInfo(null);
-        }
-
-        // Set predictions
-        if (predRes?.data) {
-          const predData = Array.isArray(predRes.data) 
-            ? predRes.data.find(p => p.symbol?.toUpperCase() === symbol.toUpperCase())
-            : predRes.data;
-          setPrediction(predData || generateMockPrediction());
-        } else {
-          setPrediction(generateMockPrediction());
-        }
-
-        // Set posts
-        if (postsRes?.data) {
-          const postsData = Array.isArray(postsRes.data) ? postsRes.data : postsRes.data.posts || [];
-          setPosts(postsData.length > 0 ? postsData : generateMockPosts());
-        } else {
-          setPosts(generateMockPosts());
-        }
-
+        setPrediction(response.data);
       } catch (err) {
-        console.error('Error fetching additional data:', err);
-        setPrediction(generateMockPrediction());
-        setPosts(generateMockPosts());
+        console.error('Error fetching prediction:', err);
+        setPrediction(null);
       } finally {
-        setInfoLoading(false);
+        setPredictionLoading(false);
       }
     };
 
-    fetchAdditionalData();
+    fetchPrediction();
+    setPosts(generateMockPosts());
   }, [symbol, API_URL]);
 
   // Trade handlers
   const handleQuantityChange = (delta) => {
-    setQuantity(prev => Math.max(1, prev + delta));
+    setQuantity(prev => Math.max(0.001, parseFloat((prev + delta).toFixed(4))));
   };
-const handleTrade = async () => {
+
+ const handleTrade = async () => {
   try {
     const endpoint = tradeType === 'buy' ? '/paper-trading/buy' : '/paper-trading/sell';
     
     const response = await api.post(endpoint, {
       symbol: symbol.toUpperCase(),
-      type: 'stock',
+      type: 'crypto',
       quantity: quantity,
       positionType: 'long'
     });
 
     if (response.data.success) {
       alert(`✅ ${tradeType.toUpperCase()} order placed!\n${response.data.message}`);
-      setQuantity(1);
+      setQuantity(0.1);
     } else {
       alert(response.data.error || 'Trade failed');
     }
@@ -1067,17 +1106,7 @@ const handleTrade = async () => {
 };
 
   const handleWatchlist = async () => {
-    try {
-      if (isWatchlisted) {
-        await axios.delete(`${API_URL}/api/watchlist/${symbol}`);
-      } else {
-        await axios.post(`${API_URL}/api/watchlist`, { symbol: symbol.toUpperCase() });
-      }
-      setIsWatchlisted(!isWatchlisted);
-    } catch (err) {
-      console.error('Watchlist error:', err);
-      setIsWatchlisted(!isWatchlisted); // Toggle anyway for demo
-    }
+    setIsWatchlisted(!isWatchlisted);
   };
 
   // No symbol provided
@@ -1089,7 +1118,7 @@ const handleTrade = async () => {
           Back
         </BackButton>
         <LoadingContainer>
-          <p style={{ color: '#ff4757' }}>No stock symbol provided in URL.</p>
+          <p style={{ color: '#ff4757' }}>No crypto symbol provided in URL.</p>
         </LoadingContainer>
       </PageContainer>
     );
@@ -1104,16 +1133,21 @@ const handleTrade = async () => {
         Back to Dashboard
       </BackButton>
 
-      {/* Stock Header */}
-      <StockHeader $delay="0.1s">
-        <StockInfo>
-          <StockLogo>{symbol?.slice(0, 2).toUpperCase()}</StockLogo>
-          <StockDetails>
+      {/* Crypto Header */}
+      <CryptoHeader $delay="0.1s">
+        <CryptoInfo>
+          <CryptoLogo $gradient={cryptoDetails.gradient}>
+            {symbol?.slice(0, 2).toUpperCase()}
+          </CryptoLogo>
+          <CryptoDetails>
             <h1>{symbol?.toUpperCase()}</h1>
-            <div className="company-name">{getCompanyName(symbol)}</div>
-            <span className="exchange">{stockInfo?.exchange || 'NASDAQ'}</span>
-          </StockDetails>
-        </StockInfo>
+            <div className="crypto-name">{cryptoDetails.name}</div>
+            <span className="crypto-badge">
+              <Coins size={12} />
+              Cryptocurrency
+            </span>
+          </CryptoDetails>
+        </CryptoInfo>
         
         <PriceSection>
           <CurrentPrice>{formatCurrency(currentPrice)}</CurrentPrice>
@@ -1141,7 +1175,7 @@ const handleTrade = async () => {
             </IconButton>
           </ActionButtons>
         </PriceSection>
-      </StockHeader>
+      </CryptoHeader>
 
       <MainGrid>
         <LeftColumn>
@@ -1184,7 +1218,7 @@ const handleTrade = async () => {
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={chartData}>
                     <defs>
-                      <linearGradient id="priceGradient" x1="0" y1="0" x2="0" y2="1">
+                      <linearGradient id="cryptoGradient" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor={isPositive ? '#00ff88' : '#ff4757'} stopOpacity={0.3} />
                         <stop offset="100%" stopColor={isPositive ? '#00ff88' : '#ff4757'} stopOpacity={0} />
                       </linearGradient>
@@ -1195,6 +1229,10 @@ const handleTrade = async () => {
                       axisLine={false}
                       tickLine={false}
                       tick={{ fill: '#666', fontSize: 11 }}
+                      tickFormatter={(val) => {
+                        const date = new Date(val);
+                        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                      }}
                       interval="preserveStartEnd"
                     />
                     <YAxis
@@ -1202,16 +1240,16 @@ const handleTrade = async () => {
                       axisLine={false}
                       tickLine={false}
                       tick={{ fill: '#666', fontSize: 11 }}
-                      tickFormatter={(val) => `$${val.toFixed(0)}`}
-                      width={60}
+                      tickFormatter={(val) => `$${val.toLocaleString()}`}
+                      width={80}
                     />
                     <Tooltip content={<CustomTooltip />} />
                     <Area
                       type="monotone"
-                      dataKey="price"
+                      dataKey="close"
                       stroke={isPositive ? '#00ff88' : '#ff4757'}
                       strokeWidth={2}
-                      fill="url(#priceGradient)"
+                      fill="url(#cryptoGradient)"
                     />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -1225,59 +1263,84 @@ const handleTrade = async () => {
             </ChartContainer>
           </ChartCard>
 
+          {/* Technical Indicators */}
+          {prediction?.indicators && (
+            <IndicatorsCard $delay="0.3s">
+              <h3 style={{ margin: '0 0 20px', fontSize: 16, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <BarChart3 size={18} />
+                Technical Indicators
+              </h3>
+              <IndicatorsGrid>
+                {Object.entries(prediction.indicators).map(([key, data]) => (
+                  <IndicatorCard key={key}>
+                    <div className="label">{key}</div>
+                    <div className="value">{data.value}</div>
+                    <span className={`signal ${data.signal === 'N/A' ? 'NA' : data.signal}`}>
+                      {data.signal}
+                    </span>
+                  </IndicatorCard>
+                ))}
+              </IndicatorsGrid>
+            </IndicatorsCard>
+          )}
+
           {/* Key Statistics */}
-          <Card $delay="0.3s">
+          <Card $delay="0.4s">
             <h3 style={{ margin: '0 0 20px', fontSize: 16, fontWeight: 600 }}>
               Key Statistics
             </h3>
             <StatsGrid>
               <StatCard>
                 <div className="label">
-                  <PieChart size={14} /> Market Cap
+                  <DollarSign size={14} /> Current Price
                 </div>
-                <div className="value">{formatLargeNumber(stockInfo?.marketCap)}</div>
+                <div className="value">{formatCurrency(currentPrice)}</div>
               </StatCard>
               <StatCard>
                 <div className="label">
-                  <BarChart3 size={14} /> Volume
-                </div>
-                <div className="value">{formatLargeNumber(stockInfo?.volume)}</div>
-                <div className="sub">Avg: {formatLargeNumber(stockInfo?.avgVolume)}</div>
-              </StatCard>
-              <StatCard>
-                <div className="label">
-                  <TrendingUp size={14} /> 52W High
+                  <TrendingUp size={14} /> Period High
                 </div>
                 <div className="value" style={{ color: '#00ff88' }}>
-                  {formatCurrency(stockInfo?.fiftyTwoWeekHigh || stockInfo?.high52)}
+                  {formatCurrency(Math.max(...chartData.map(d => d.high || d.close)))}
                 </div>
               </StatCard>
               <StatCard>
                 <div className="label">
-                  <TrendingDown size={14} /> 52W Low
+                  <TrendingDown size={14} /> Period Low
                 </div>
                 <div className="value" style={{ color: '#ff4757' }}>
-                  {formatCurrency(stockInfo?.fiftyTwoWeekLow || stockInfo?.low52)}
+                  {formatCurrency(Math.min(...chartData.map(d => d.low || d.close)))}
                 </div>
               </StatCard>
               <StatCard>
                 <div className="label">
-                  <Target size={14} /> P/E Ratio
+                  <PieChart size={14} /> Change
                 </div>
-                <div className="value">{stockInfo?.pe?.toFixed(2) || 'N/A'}</div>
+                <div className="value" style={{ color: isPositive ? '#00ff88' : '#ff4757' }}>
+                  {formatPercent(changePercent)}
+                </div>
               </StatCard>
               <StatCard>
                 <div className="label">
-                  <DollarSign size={14} /> EPS
+                  <BarChart3 size={14} /> Avg Volume
                 </div>
-                <div className="value">{stockInfo?.eps ? formatCurrency(stockInfo.eps) : 'N/A'}</div>
+                <div className="value">
+                  {formatLargeNumber(chartData.reduce((acc, d) => acc + (d.volume || 0), 0) / chartData.length)}
+                </div>
               </StatCard>
               <StatCard>
                 <div className="label">
-                  <Wallet size={14} /> Dividend
+                  <Globe size={14} /> Network
                 </div>
-                <div className="value">{stockInfo?.dividend ? formatCurrency(stockInfo.dividend) : 'N/A'}</div>
-                <div className="sub">Yield: {stockInfo?.dividendYield?.toFixed(2) || '0.00'}%</div>
+                <div className="value" style={{ fontSize: 14 }}>{cryptoDetails.name}</div>
+              </StatCard>
+              <StatCard>
+                <div className="label">
+                  <Zap size={14} /> Volatility
+                </div>
+                <div className="value" style={{ fontSize: 14 }}>
+                  {Math.abs(changePercent) > 10 ? 'High' : Math.abs(changePercent) > 5 ? 'Medium' : 'Low'}
+                </div>
               </StatCard>
               <StatCard>
                 <div className="label">
@@ -1289,7 +1352,7 @@ const handleTrade = async () => {
           </Card>
 
           {/* Community Posts */}
-          <SocialCard $delay="0.4s">
+          <SocialCard $delay="0.5s">
             <SocialHeader>
               <h3>
                 <MessageSquare size={18} />
@@ -1298,14 +1361,14 @@ const handleTrade = async () => {
               <span className="count">{posts.length} posts</span>
             </SocialHeader>
             {posts.length > 0 ? posts.map(post => (
-              <PostCard key={post.id || post._id}>
+              <PostCard key={post.id}>
                 <PostHeader>
                   <div className="avatar">
-                    {(post.username || post.user?.username || 'U').slice(0, 2).toUpperCase()}
+                    {(post.username || 'U').slice(0, 2).toUpperCase()}
                   </div>
                   <div className="user-info">
-                    <div className="username">{post.username || post.user?.username || 'Anonymous'}</div>
-                    <div className="time">{getTimeAgo(post.createdAt || post.timestamp)}</div>
+                    <div className="username">{post.username || 'Anonymous'}</div>
+                    <div className="time">{getTimeAgo(post.createdAt)}</div>
                   </div>
                   {post.sentiment && (
                     <span className={`sentiment ${post.sentiment}`}>
@@ -1313,7 +1376,7 @@ const handleTrade = async () => {
                     </span>
                   )}
                 </PostHeader>
-                <PostContent>{post.content || post.text || post.body}</PostContent>
+                <PostContent>{post.content}</PostContent>
               </PostCard>
             )) : (
               <p style={{ textAlign: 'center', color: '#a0a0a0' }}>
@@ -1330,14 +1393,14 @@ const handleTrade = async () => {
               <ShoppingCart size={20} />
               Paper Trade
               <span style={{ 
-                background: 'rgba(0, 255, 136, 0.2)', 
-                color: '#00ff88',
+                background: 'rgba(247, 147, 26, 0.2)', 
+                color: '#f7931a',
                 padding: '4px 10px',
                 borderRadius: '20px',
                 fontSize: '11px',
                 fontWeight: 600
               }}>
-                PAPER
+                CRYPTO
               </span>
             </TradingTitle>
 
@@ -1359,18 +1422,19 @@ const handleTrade = async () => {
             </TradeTypeToggle>
 
             <InputGroup>
-              <label>Quantity (Shares)</label>
+              <label>Quantity ({symbol?.toUpperCase()})</label>
               <QuantityInput>
-                <button onClick={() => handleQuantityChange(-1)}>
+                <button onClick={() => handleQuantityChange(-0.1)}>
                   <Minus size={18} />
                 </button>
                 <input
                   type="number"
                   value={quantity}
-                  onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                  min="1"
+                  onChange={(e) => setQuantity(Math.max(0.001, parseFloat(e.target.value) || 0.001))}
+                  min="0.001"
+                  step="0.01"
                 />
-                <button onClick={() => handleQuantityChange(1)}>
+                <button onClick={() => handleQuantityChange(0.1)}>
                   <Plus size={18} />
                 </button>
               </QuantityInput>
@@ -1383,7 +1447,7 @@ const handleTrade = async () => {
               </div>
               <div className="row">
                 <span className="label">Quantity</span>
-                <span>{quantity} shares</span>
+                <span>{quantity} {symbol?.toUpperCase()}</span>
               </div>
               <div className="row">
                 <span className="label">Estimated {tradeType === 'buy' ? 'Cost' : 'Credit'}</span>
@@ -1409,77 +1473,81 @@ const handleTrade = async () => {
               <div>
                 <h3>AI Prediction</h3>
               </div>
-              <span className="badge">ML Powered</span>
+              <span className="badge">Technical Analysis</span>
             </PredictionHeader>
 
-            <PredictionSignal $signal={prediction?.signal}>
-              <span className="signal-label">Signal</span>
-              <span className="signal-value">
-                {prediction?.signal?.replace('_', ' ') || 'ANALYZING'}
-              </span>
-            </PredictionSignal>
+            {predictionLoading ? (
+              <ChartLoading style={{ height: 150 }}>
+                <Loader2 size={24} />
+                <span>Analyzing...</span>
+              </ChartLoading>
+            ) : prediction ? (
+              <>
+                <PredictionSignal $direction={prediction.predictedDirection}>
+                  <span className="signal-label">Prediction</span>
+                  <span className="signal-value">
+                    {prediction.predictedDirection === 'Up' ? (
+                      <ArrowUpRight size={20} />
+                    ) : (
+                      <ArrowDownRight size={20} />
+                    )}
+                    {prediction.predictedDirection}
+                  </span>
+                </PredictionSignal>
 
-            <ConfidenceBar $value={prediction?.confidence || 0}>
-              <div className="header">
-                <span style={{ color: '#a0a0a0' }}>Confidence</span>
-                <span style={{ fontWeight: 600 }}>{(prediction?.confidence || 0).toFixed(1)}%</span>
-              </div>
-              <div className="bar-bg">
-                <div className="bar-fill" />
-              </div>
-            </ConfidenceBar>
+                <ConfidenceBar $value={prediction.confidence || 0}>
+                  <div className="header">
+                    <span style={{ color: '#a0a0a0' }}>Confidence</span>
+                    <span style={{ fontWeight: 600 }}>{(prediction.confidence || 0).toFixed(1)}%</span>
+                  </div>
+                  <div className="bar-bg">
+                    <div className="bar-fill" />
+                  </div>
+                </ConfidenceBar>
 
-            <PredictionTargets>
-              <TargetBox $type="high">
-                <div className="label">Target High</div>
-                <div className="value">{formatCurrency(prediction?.targetHigh || currentPrice * 1.1)}</div>
-                <div className="change">
-                  +{(((prediction?.targetHigh || currentPrice * 1.1) - currentPrice) / (currentPrice || 1) * 100).toFixed(1)}%
-                </div>
-              </TargetBox>
-              <TargetBox $type="low">
-                <div className="label">Target Low</div>
-                <div className="value">{formatCurrency(prediction?.targetLow || currentPrice * 0.9)}</div>
-                <div className="change">
-                  {(((prediction?.targetLow || currentPrice * 0.9) - currentPrice) / (currentPrice || 1) * 100).toFixed(1)}%
-                </div>
-              </TargetBox>
-            </PredictionTargets>
+                <PredictionTargets>
+                  <TargetBox $type="current">
+                    <div className="label">Current</div>
+                    <div className="value">{formatCurrency(prediction.currentPrice)}</div>
+                  </TargetBox>
+                  <TargetBox $type="predicted" $positive={prediction.percentageChange >= 0}>
+                    <div className="label">Predicted</div>
+                    <div className="value">{formatCurrency(prediction.predictedPrice)}</div>
+                    <div className="change">{formatPercent(prediction.percentageChange)}</div>
+                  </TargetBox>
+                </PredictionTargets>
 
-            <div style={{ 
-              marginTop: 16, 
-              padding: '12px', 
-              background: 'rgba(0,0,0,0.2)', 
-              borderRadius: '10px',
-              fontSize: '12px',
-              color: '#a0a0a0',
-              textAlign: 'center'
-            }}>
-              <Clock size={14} style={{ marginRight: 6, verticalAlign: 'middle' }} />
-              Prediction timeframe: {prediction?.timeframe || '30 days'}
-            </div>
+                {prediction.message && (
+                  <PredictionMessage>
+                    <strong>Analysis:</strong> {prediction.message}
+                  </PredictionMessage>
+                )}
+              </>
+            ) : (
+              <p style={{ textAlign: 'center', color: '#a0a0a0', padding: '20px' }}>
+                Unable to generate prediction. Try refreshing.
+              </p>
+            )}
           </PredictionCard>
 
           {/* Quick Stats */}
           <Card $delay="0.4s">
             <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
               <Zap size={18} />
-              Quick Stats
+              Quick Info
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', background: 'rgba(0,0,0,0.2)', borderRadius: '10px' }}>
-                <span style={{ color: '#a0a0a0', fontSize: 14 }}>Day Range</span>
-                <span style={{ fontWeight: 600, fontSize: 14 }}>
-                  {formatCurrency(stockInfo?.dayLow || currentPrice * 0.98)} - {formatCurrency(stockInfo?.dayHigh || currentPrice * 1.02)}
-                </span>
+                <span style={{ color: '#a0a0a0', fontSize: 14 }}>Asset Type</span>
+                <span style={{ fontWeight: 600, fontSize: 14, color: '#f7931a' }}>Cryptocurrency</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', background: 'rgba(0,0,0,0.2)', borderRadius: '10px' }}>
-                <span style={{ color: '#a0a0a0', fontSize: 14 }}>Open</span>
-                <span style={{ fontWeight: 600, fontSize: 14 }}>{formatCurrency(stockInfo?.open || currentPrice)}</span>
+                <span style={{ color: '#a0a0a0', fontSize: 14 }}>Trading</span>
+                <span style={{ fontWeight: 600, fontSize: 14 }}>24/7</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', background: 'rgba(0,0,0,0.2)', borderRadius: '10px' }}>
-                <span style={{ color: '#a0a0a0', fontSize: 14 }}>Previous Close</span>
-                <span style={{ fontWeight: 600, fontSize: 14 }}>{formatCurrency(previousClose)}</span>
+                <span style={{ color: '#a0a0a0', fontSize: 14 }}>Data Source</span>
+                <span style={{ fontWeight: 600, fontSize: 14 }}>CoinGecko Pro</span>
               </div>
             </div>
           </Card>
@@ -1489,4 +1557,4 @@ const handleTrade = async () => {
   );
 };
 
-export default StockPage;
+export default CryptoPage;

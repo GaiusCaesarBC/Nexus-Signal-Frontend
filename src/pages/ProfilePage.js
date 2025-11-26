@@ -1129,9 +1129,9 @@ const ProfilePage = () => {
             
             try {
                 const gamificationRes = await api.get('/gamification/stats');
-                if (gamificationRes.data) {
-                    gamification = gamificationRes.data;
-                }
+                if (gamificationRes.data?.data) {
+    gamification = gamificationRes.data.data;  // ✅ Access nested data
+}
             } catch (e) {
                 console.log('Using cached gamification data');
             }
@@ -1168,24 +1168,23 @@ const ProfilePage = () => {
 
             setAchievements(allAchievements);
 
-            // Set stats
-            setStats({
-                portfolioValue: totalValue,
-                holdingsCount: holdings.length,
-                watchlistCount: watchlist.length,
-                totalGain,
-                totalGainPercent: totalCost > 0 ? (totalGain / totalCost) * 100 : 0,
-                level: gamification.level || 1,
-                title: gamification.title || 'Rookie Trader',
-                xp: gamification.totalXpEarned || gamification.xp || 0,
-                nextLevelXp: gamification.nextLevelXp || 100,
-                rank: userStats.rank || currentUser?.stats?.rank || 0,
-                followersCount: social.followersCount || 0,
-                followingCount: social.followingCount || 0,
-                predictionAccuracy: userStats.predictionAccuracy || currentUser?.stats?.predictionAccuracy || 0,
-                totalPredictions: userStats.totalPredictions || currentUser?.stats?.totalPredictions || 0,
-                currentStreak: userStats.currentStreak || currentUser?.stats?.currentStreak || 0
-            });
+           setStats({
+    portfolioValue: totalValue,
+    holdingsCount: holdings.length,
+    watchlistCount: watchlist.length,
+    totalGain,
+    totalGainPercent: gamification.stats?.totalReturnPercent || (totalCost > 0 ? (totalGain / totalCost) * 100 : 0),  // ✅ Use real stats
+    level: gamification.level || 1,
+    title: gamification.rank || 'Rookie Trader',
+    xp: gamification.xp || 0,
+    nextLevelXp: gamification.xpForNextLevel || 1000,
+    rank: gamification.stats?.rank || 0,
+    followersCount: social.followersCount || 0,
+    followingCount: social.followingCount || 0,
+    predictionAccuracy: gamification.stats?.predictionAccuracy || 0,  // ✅ Use real stats
+    totalPredictions: gamification.stats?.predictionsCreated || 0,
+    currentStreak: userStats.currentStreak || currentUser?.stats?.currentStreak || 0
+});
 
             // Set followers/following
             setFollowers(social.followers || []);

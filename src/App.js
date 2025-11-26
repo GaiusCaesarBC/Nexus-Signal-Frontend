@@ -58,6 +58,7 @@ import EquippedItemsPage from './pages/EquippedItemsPage';
 import PriceServiceTester from './components/dev/PriceServiceTester';
 import OnboardingFlow from './pages/OnboardingFlow';
 import PredictionsShowcase from './pages/PredictionsShowcase';
+import CryptoPage from './pages/CryptoPage';
 
 // Wraps content with styled-components theme
 function AppContent() {
@@ -119,7 +120,8 @@ function AppContent() {
                     <Route path="/dev/price-test" element={<PriceServiceTester />} />
                     <Route path="/onboarding" element={<OnboardingFlow />} />
                     <Route path="/predictions-showcase" element={<PredictionsShowcase />} />
-
+                    <Route path="/crypto/:symbol" element={<ProtectedRoute><CryptoPage /></ProtectedRoute>} />
+                    
                     {/* 🎮 GAMIFICATION ROUTES */}
                     <Route path="/achievements" element={<ProtectedRoute><AchievementsPage /></ProtectedRoute>} />
 
