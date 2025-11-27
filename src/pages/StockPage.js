@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
-import axios from 'axios';
+import axios from 'axios'; // Keep for axios.isCancel()
 import { useAuth } from '../context/AuthContext';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
@@ -934,7 +934,6 @@ const StockPage = () => {
   const { symbol } = useParams();
   const navigate = useNavigate();
   const { api } = useAuth();
-  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
   // Chart data state
   const [chartData, setChartData] = useState([]);
@@ -986,8 +985,9 @@ const StockPage = () => {
         if (selectedRange === '1D') intervalParam = '5m';
         else if (selectedRange === '5D') intervalParam = '1h';
 
-        const response = await axios.get(
-          `${API_URL}/api/stocks/historical/${symbol}`,
+        // ✅ FIXED: Use api instance instead of axios + API_URL
+        const response = await api.get(
+          `/stocks/historical/${symbol}`,
           {
             params: {
               range: selectedRange,
@@ -1056,7 +1056,7 @@ const StockPage = () => {
         fetchController.current.abort();
       }
     };
-  }, [symbol, selectedRange, API_URL]);
+  }, [symbol, selectedRange, api]);
 
   // Fetch stock info, predictions, and posts
   useEffect(() => {
@@ -1066,16 +1066,17 @@ const StockPage = () => {
       setInfoLoading(true);
 
       try {
+        // ✅ FIXED: Use api instance instead of axios + API_URL
         // Fetch quote data
-        const quoteRes = await axios.get(`${API_URL}/api/stocks/quote/${symbol}`).catch(() => null);
+        const quoteRes = await api.get(`/stocks/quote/${symbol}`).catch(() => null);
         
         // Fetch predictions
-        const predRes = await axios.get(`${API_URL}/api/predictions/recent`, {
+        const predRes = await api.get(`/predictions/recent`, {
           params: { symbol: symbol.toUpperCase() }
         }).catch(() => null);
 
         // Fetch posts - ✅ Only show real posts, no mock data
-        const postsRes = await axios.get(`${API_URL}/api/posts`, {
+        const postsRes = await api.get(`/posts`, {
           params: { symbol: symbol.toUpperCase(), limit: 5 }
         }).catch(() => null);
 
@@ -1114,7 +1115,7 @@ const StockPage = () => {
     };
 
     fetchAdditionalData();
-  }, [symbol, API_URL]);
+  }, [symbol, api]);
 
   // Trade handlers
   const handleQuantityChange = (delta) => {
@@ -1146,10 +1147,11 @@ const StockPage = () => {
 
   const handleWatchlist = async () => {
     try {
+      // ✅ FIXED: Use api instance instead of axios + API_URL
       if (isWatchlisted) {
-        await axios.delete(`${API_URL}/api/watchlist/${symbol}`);
+        await api.delete(`/watchlist/${symbol}`);
       } else {
-        await axios.post(`${API_URL}/api/watchlist`, { symbol: symbol.toUpperCase() });
+        await api.post(`/watchlist`, { symbol: symbol.toUpperCase() });
       }
       setIsWatchlisted(!isWatchlisted);
     } catch (err) {
