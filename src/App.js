@@ -5,6 +5,7 @@ import { Routes, Route } from 'react-router-dom';
 import { ThemeProvider as StyledThemeProvider } from 'styled-components';
 import { useAuth } from './context/AuthContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
+import { Analytics } from '@vercel/analytics/react';
 
 // Component imports
 import Navbar from './components/Navbar';
@@ -146,6 +147,8 @@ function AppContent() {
 
             {/* 🐋 WHALE NOTIFICATIONS */}
 <WhaleNotification />
+{/* 📊 VERCEL ANALYTICS */}
+            <Analytics />
         </StyledThemeProvider>
     );
 }

@@ -1,6 +1,6 @@
-// client/src/pages/LeaderboardPage.js - ENHANCED LEADERBOARD WITH PODIUM & TIME FILTERS
+// client/src/pages/LeaderboardPage.js - ENHANCED LEADERBOARD WITH BETTER REFRESH/UPDATES
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled, { keyframes, css } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
@@ -13,7 +13,7 @@ import {
     Zap, Activity, DollarSign, Percent, ArrowUpRight,
     ArrowDownRight, ExternalLink, RefreshCw, Settings,
     Calendar, Clock, Copy, Sparkles, Shield, Rocket,
-    Brain, TrendingUp as Trending, Gift, Heart
+    Brain, TrendingUp as Trending, Gift, Heart, Wifi, WifiOff
 } from 'lucide-react';
 
 // ============ ANIMATIONS ============
@@ -82,6 +82,11 @@ const rankUp = keyframes`
     100% { transform: scale(1); }
 `;
 
+const blink = keyframes`
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+`;
+
 // ============ STYLED COMPONENTS ============
 const PageContainer = styled.div`
     min-height: 100vh;
@@ -148,6 +153,38 @@ const StatBadge = styled.div`
     border-radius: 20px;
     color: #ffd700;
     font-weight: 600;
+`;
+
+const LiveIndicator = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: ${props => props.$connected ? 
+        'linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.1) 100%)' :
+        'linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0.1) 100%)'
+    };
+    border: 1px solid ${props => props.$connected ? 
+        'rgba(16, 185, 129, 0.4)' :
+        'rgba(239, 68, 68, 0.4)'
+    };
+    border-radius: 20px;
+    color: ${props => props.$connected ? '#10b981' : '#ef4444'};
+    font-weight: 600;
+`;
+
+const LiveDot = styled.div`
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: ${props => props.$connected ? '#10b981' : '#ef4444'};
+    animation: ${props => props.$connected ? css`${blink} 1.5s ease-in-out infinite` : 'none'};
+`;
+
+const LastUpdated = styled.span`
+    font-size: 0.85rem;
+    color: #64748b;
+    margin-left: 0.5rem;
 `;
 
 // ============ PODIUM SECTION ============
@@ -575,6 +612,33 @@ const RefreshButton = styled.button`
     }
 `;
 
+const AutoRefreshToggle = styled.button`
+    padding: 0.75rem 1rem;
+    background: ${props => props.$active ? 
+        'rgba(16, 185, 129, 0.2)' : 
+        'rgba(100, 116, 139, 0.2)'
+    };
+    border: 1px solid ${props => props.$active ? 
+        'rgba(16, 185, 129, 0.5)' : 
+        'rgba(100, 116, 139, 0.3)'
+    };
+    border-radius: 12px;
+    color: ${props => props.$active ? '#10b981' : '#94a3b8'};
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+
+    &:hover {
+        background: rgba(16, 185, 129, 0.3);
+        border-color: rgba(16, 185, 129, 0.5);
+        color: #10b981;
+    }
+`;
+
 // ============ LEADERBOARD ============
 const LeaderboardContainer = styled.div`
     max-width: 1400px;
@@ -865,6 +929,7 @@ const FollowButton = styled.button`
     gap: 0.4rem;
     transition: all 0.2s ease;
     white-space: nowrap;
+    opacity: ${props => props.$loading ? 0.7 : 1};
 
     &:hover {
         transform: translateY(-2px);
@@ -958,28 +1023,117 @@ const LoadingText = styled.div`
     font-size: 1.1rem;
 `;
 
+const SkeletonCard = styled.div`
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    border: 2px solid rgba(255, 215, 0, 0.15);
+    border-radius: 14px;
+    padding: 1.25rem 1.5rem;
+    display: grid;
+    grid-template-columns: 80px 60px 1fr 120px 120px 120px 140px;
+    gap: 1.5rem;
+    align-items: center;
+    animation: ${shimmer} 1.5s ease-in-out infinite;
+    background-size: 200% 100%;
+    background-image: linear-gradient(
+        90deg,
+        rgba(30, 41, 59, 0.9) 0%,
+        rgba(50, 61, 79, 0.9) 50%,
+        rgba(30, 41, 59, 0.9) 100%
+    );
+
+    @media (max-width: 1200px) {
+        grid-template-columns: 60px 50px 1fr 100px 100px;
+    }
+
+    @media (max-width: 768px) {
+        grid-template-columns: 50px 45px 1fr 80px;
+    }
+`;
+
+const SkeletonCircle = styled.div`
+    width: ${props => props.$size || '50px'};
+    height: ${props => props.$size || '50px'};
+    border-radius: 50%;
+    background: rgba(100, 116, 139, 0.3);
+`;
+
+const SkeletonLine = styled.div`
+    height: ${props => props.$height || '16px'};
+    width: ${props => props.$width || '100%'};
+    border-radius: 4px;
+    background: rgba(100, 116, 139, 0.3);
+`;
+
+// ============ CONSTANTS ============
+const REFRESH_INTERVAL = 30000; // 30 seconds for auto-refresh
+const DEBOUNCE_DELAY = 300; // 300ms debounce for search
+
 // ============ COMPONENT ============
 const LeaderboardPage = () => {
     const { api, user } = useAuth();
     const toast = useToast();
     const navigate = useNavigate();
     
-    const [category, setCategory] = useState('returns'); // returns, accuracy, streak, xp, trades
-    const [timePeriod, setTimePeriod] = useState('all'); // today, week, month, all
+    const [category, setCategory] = useState('returns');
+    const [timePeriod, setTimePeriod] = useState('all');
     const [leaderboard, setLeaderboard] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
     const [following, setFollowing] = useState(new Set());
+    const [followingLoading, setFollowingLoading] = useState(new Set());
     const [userRank, setUserRank] = useState(null);
+    const [autoRefresh, setAutoRefresh] = useState(true);
+    const [lastUpdated, setLastUpdated] = useState(null);
+    const [isOnline, setIsOnline] = useState(navigator.onLine);
+    const [error, setError] = useState(null);
+    
+    // Refs for cleanup
+    const refreshIntervalRef = useRef(null);
+    const searchTimeoutRef = useRef(null);
+    const isMountedRef = useRef(true);
 
+    // Online/offline detection
     useEffect(() => {
-        fetchLeaderboard();
-        fetchFollowing();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [category, timePeriod]);
+        const handleOnline = () => setIsOnline(true);
+        const handleOffline = () => setIsOnline(false);
+        
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+        
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
+    }, []);
 
-    const getSortField = () => {
+    // Debounced search
+    useEffect(() => {
+        if (searchTimeoutRef.current) {
+            clearTimeout(searchTimeoutRef.current);
+        }
+        
+        searchTimeoutRef.current = setTimeout(() => {
+            setDebouncedSearch(searchQuery);
+        }, DEBOUNCE_DELAY);
+        
+        return () => {
+            if (searchTimeoutRef.current) {
+                clearTimeout(searchTimeoutRef.current);
+            }
+        };
+    }, [searchQuery]);
+
+    // Cleanup on unmount
+    useEffect(() => {
+        isMountedRef.current = true;
+        return () => {
+            isMountedRef.current = false;
+        };
+    }, []);
+
+    const getSortField = useCallback(() => {
         switch (category) {
             case 'returns': return 'totalReturnPercent';
             case 'accuracy': return 'winRate';
@@ -988,90 +1142,174 @@ const LeaderboardPage = () => {
             case 'trades': return 'totalTrades';
             default: return 'totalReturnPercent';
         }
-    };
+    }, [category]);
 
-    const fetchLeaderboard = async () => {
-        setLoading(true);
+    const mapTraderData = useCallback((traders) => {
+        return (traders || []).map((trader, index) => ({
+            rank: index + 1,
+            userId: trader.userId || trader._id,
+            displayName: trader.displayName || trader.profile?.displayName || trader.username,
+            username: trader.username,
+            avatar: trader.avatar || trader.profile?.avatar,
+            badges: trader.badges || trader.profile?.badges || [],
+            level: trader.level || trader.gamification?.level || 1,
+            xp: trader.xp || trader.gamification?.xp || 0,
+            totalReturn: trader.totalReturn || trader.stats?.totalReturnPercent || 0,
+            winRate: trader.winRate || trader.stats?.winRate || 0,
+            totalTrades: trader.totalTrades || trader.stats?.totalTrades || 0,
+            currentStreak: trader.currentStreak || trader.stats?.currentStreak || 0,
+            followersCount: trader.social?.followersCount || 0,
+        }));
+    }, []);
+
+    const fetchLeaderboard = useCallback(async (showToast = false) => {
+        if (!isMountedRef.current) return;
+        
         try {
+            setError(null);
             const sortBy = getSortField();
             const response = await api.get(`/social/leaderboard?sortBy=${sortBy}&period=${timePeriod}&limit=100`);
-            console.log('Leaderboard:', response.data);
             
-            const mappedData = (response.data || []).map((trader, index) => ({
-                rank: index + 1,
-                userId: trader.userId || trader._id,
-                displayName: trader.displayName || trader.profile?.displayName || trader.username,
-                username: trader.username,
-                avatar: trader.avatar || trader.profile?.avatar,
-                badges: trader.badges || trader.profile?.badges || [],
-                level: trader.level || trader.gamification?.level || 1,
-                xp: trader.xp || trader.gamification?.xp || 0,
-                totalReturn: trader.totalReturn || trader.stats?.totalReturnPercent || 0,
-                winRate: trader.winRate || trader.stats?.winRate || 0,
-                totalTrades: trader.totalTrades || trader.stats?.totalTrades || 0,
-                currentStreak: trader.currentStreak || trader.stats?.currentStreak || 0,
-                followersCount: trader.social?.followersCount || 0,
-            }));
+            if (!isMountedRef.current) return;
+            
+            const mappedData = mapTraderData(response.data);
             
             setLeaderboard(mappedData);
+            setLastUpdated(new Date());
             
             // Find user's rank
             if (user) {
                 const userEntry = mappedData.find(t => t.userId === user.id);
-                if (userEntry) {
-                    setUserRank(userEntry);
-                }
+                setUserRank(userEntry || null);
             }
             
-            if (mappedData.length > 0) {
+            if (showToast && mappedData.length > 0) {
                 toast.success(`Loaded ${mappedData.length} traders`, 'Leaderboard Updated');
             }
-        } catch (error) {
-            console.error('Error fetching leaderboard:', error);
-            toast.error('Failed to load leaderboard', 'Error');
-            setLeaderboard([]);
-        } finally {
-            setLoading(false);
+        } catch (err) {
+            console.error('Error fetching leaderboard:', err);
+            if (isMountedRef.current) {
+                setError('Failed to load leaderboard');
+                if (showToast) {
+                    toast.error('Failed to load leaderboard', 'Error');
+                }
+            }
         }
-    };
+    }, [api, getSortField, mapTraderData, timePeriod, toast, user]);
 
-    const fetchFollowing = async () => {
+    const fetchFollowing = useCallback(async () => {
         try {
             const response = await api.get('/auth/me');
-            if (response.data.social?.following) {
+            if (isMountedRef.current && response.data.social?.following) {
                 setFollowing(new Set(response.data.social.following.map(id => id.toString())));
             }
-        } catch (error) {
-            console.error('Error fetching following:', error);
+        } catch (err) {
+            console.error('Error fetching following:', err);
         }
-    };
+    }, [api]);
+
+    // Initial load
+    useEffect(() => {
+        const loadData = async () => {
+            setLoading(true);
+            await Promise.all([
+                fetchLeaderboard(false),
+                fetchFollowing()
+            ]);
+            if (isMountedRef.current) {
+                setLoading(false);
+            }
+        };
+        
+        loadData();
+    }, [fetchLeaderboard, fetchFollowing]);
+
+    // Refetch when category or time period changes
+    useEffect(() => {
+        if (!loading) {
+            fetchLeaderboard(true);
+        }
+    }, [category, timePeriod]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Auto-refresh interval
+    useEffect(() => {
+        if (autoRefresh && isOnline && !loading) {
+            refreshIntervalRef.current = setInterval(() => {
+                fetchLeaderboard(false);
+            }, REFRESH_INTERVAL);
+        }
+        
+        return () => {
+            if (refreshIntervalRef.current) {
+                clearInterval(refreshIntervalRef.current);
+            }
+        };
+    }, [autoRefresh, isOnline, loading, fetchLeaderboard]);
+
+    // Refetch when coming back online
+    useEffect(() => {
+        if (isOnline && !loading) {
+            fetchLeaderboard(false);
+        }
+    }, [isOnline]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const handleRefresh = async () => {
         setRefreshing(true);
-        await fetchLeaderboard();
+        await fetchLeaderboard(true);
         setTimeout(() => setRefreshing(false), 500);
     };
 
     const handleFollow = async (userId) => {
+        if (followingLoading.has(userId)) return;
+        
+        // Optimistic update
+        const isCurrentlyFollowing = following.has(userId);
+        const newFollowing = new Set(following);
+        
+        if (isCurrentlyFollowing) {
+            newFollowing.delete(userId);
+        } else {
+            newFollowing.add(userId);
+        }
+        
+        setFollowing(newFollowing);
+        setFollowingLoading(prev => new Set(prev).add(userId));
+        
         try {
-            const isFollowing = following.has(userId);
-            
-            if (isFollowing) {
+            if (isCurrentlyFollowing) {
                 await api.post(`/social/unfollow/${userId}`);
-                const newFollowing = new Set(following);
-                newFollowing.delete(userId);
-                setFollowing(newFollowing);
                 toast.success('Unfollowed user', 'Success');
             } else {
                 await api.post(`/social/follow/${userId}`);
-                const newFollowing = new Set(following);
-                newFollowing.add(userId);
-                setFollowing(newFollowing);
                 toast.success('Following user!', 'Success');
             }
-        } catch (error) {
-            console.error('Error following/unfollowing:', error);
-            toast.error(error.response?.data?.msg || 'Failed to follow user', 'Error');
+            
+            // Update follower count in leaderboard
+            setLeaderboard(prev => prev.map(trader => {
+                if (trader.userId === userId) {
+                    return {
+                        ...trader,
+                        followersCount: trader.followersCount + (isCurrentlyFollowing ? -1 : 1)
+                    };
+                }
+                return trader;
+            }));
+        } catch (err) {
+            console.error('Error following/unfollowing:', err);
+            // Revert optimistic update
+            if (isCurrentlyFollowing) {
+                newFollowing.add(userId);
+            } else {
+                newFollowing.delete(userId);
+            }
+            setFollowing(newFollowing);
+            toast.error(err.response?.data?.msg || 'Failed to follow user', 'Error');
+        } finally {
+            setFollowingLoading(prev => {
+                const next = new Set(prev);
+                next.delete(userId);
+                return next;
+            });
         }
     };
 
@@ -1116,25 +1354,66 @@ const LeaderboardPage = () => {
         }
     };
 
+    const formatLastUpdated = () => {
+        if (!lastUpdated) return '';
+        const seconds = Math.floor((new Date() - lastUpdated) / 1000);
+        if (seconds < 60) return 'just now';
+        const minutes = Math.floor(seconds / 60);
+        if (minutes < 60) return `${minutes}m ago`;
+        const hours = Math.floor(minutes / 60);
+        return `${hours}h ago`;
+    };
+
+    // Filter leaderboard based on search
     const filteredLeaderboard = leaderboard.filter(trader => {
-        if (searchQuery) {
-            return trader.displayName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                   trader.username?.toLowerCase().includes(searchQuery.toLowerCase());
+        if (debouncedSearch) {
+            return trader.displayName?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+                   trader.username?.toLowerCase().includes(debouncedSearch.toLowerCase());
         }
         return true;
     });
 
     // Get top 3 for podium (only show if we have data and not searching)
-    const top3 = !searchQuery && filteredLeaderboard.length >= 3 ? filteredLeaderboard.slice(0, 3) : [];
-    const restOfLeaderboard = searchQuery ? filteredLeaderboard : filteredLeaderboard.slice(3);
+    const top3 = !debouncedSearch && filteredLeaderboard.length >= 3 ? filteredLeaderboard.slice(0, 3) : [];
+    const restOfLeaderboard = debouncedSearch ? filteredLeaderboard : filteredLeaderboard.slice(3);
+
+    // Render skeleton loading
+    const renderSkeleton = () => (
+        <>
+            {[...Array(10)].map((_, i) => (
+                <SkeletonCard key={i}>
+                    <SkeletonCircle $size="55px" />
+                    <SkeletonCircle $size="50px" />
+                    <div>
+                        <SkeletonLine $width="60%" $height="18px" style={{ marginBottom: '8px' }} />
+                        <SkeletonLine $width="40%" $height="14px" />
+                    </div>
+                    <SkeletonLine $width="80%" $height="20px" />
+                    <SkeletonLine $width="60%" $height="20px" />
+                    <SkeletonLine $width="50%" $height="20px" />
+                    <SkeletonLine $width="100px" $height="36px" />
+                </SkeletonCard>
+            ))}
+        </>
+    );
 
     if (loading) {
         return (
             <PageContainer>
-                <LoadingContainer>
-                    <LoadingSpinner size={64} />
-                    <LoadingText>Loading leaderboard...</LoadingText>
-                </LoadingContainer>
+                <Header>
+                    <Title>
+                        <TitleIcon>
+                            <Trophy size={56} color="#ffd700" />
+                        </TitleIcon>
+                        Global Leaderboard
+                    </Title>
+                    <Subtitle>Compete with the best traders worldwide</Subtitle>
+                </Header>
+                <LeaderboardContainer>
+                    <LeaderboardList>
+                        {renderSkeleton()}
+                    </LeaderboardList>
+                </LeaderboardContainer>
             </PageContainer>
         );
     }
@@ -1154,13 +1433,14 @@ const LeaderboardPage = () => {
                         <Users size={18} />
                         {leaderboard.length.toLocaleString()} Active Traders
                     </StatBadge>
-                    <StatBadge>
-                        <Flame size={18} />
-                        Live Rankings
-                    </StatBadge>
+                    <LiveIndicator $connected={isOnline && autoRefresh}>
+                        <LiveDot $connected={isOnline && autoRefresh} />
+                        {isOnline ? (autoRefresh ? 'Live' : 'Paused') : 'Offline'}
+                        {lastUpdated && <LastUpdated>• {formatLastUpdated()}</LastUpdated>}
+                    </LiveIndicator>
                     <StatBadge>
                         <Zap size={18} />
-                        Updated Real-Time
+                        {autoRefresh ? 'Auto-Refresh On' : 'Manual Refresh'}
                     </StatBadge>
                 </StatsBar>
             </Header>
@@ -1290,7 +1570,7 @@ const LeaderboardPage = () => {
                 </PodiumSection>
             )}
 
-            {/* Your Rank Card */}
+            {/* Your Rank Card - persists even during search */}
             {userRank && userRank.rank > 3 && (
                 <YourRankCard>
                     <YourRankLeft>
@@ -1341,14 +1621,49 @@ const LeaderboardPage = () => {
                     />
                 </SearchBar>
 
-                <RefreshButton onClick={handleRefresh} disabled={refreshing} $loading={refreshing}>
+                <AutoRefreshToggle 
+                    $active={autoRefresh}
+                    onClick={() => setAutoRefresh(!autoRefresh)}
+                    title={autoRefresh ? 'Disable auto-refresh' : 'Enable auto-refresh'}
+                >
+                    {autoRefresh ? <Wifi size={16} /> : <WifiOff size={16} />}
+                    Auto
+                </AutoRefreshToggle>
+
+                <RefreshButton 
+                    onClick={handleRefresh} 
+                    disabled={refreshing || !isOnline} 
+                    $loading={refreshing}
+                >
                     <RefreshCw size={18} />
-                    Refresh
+                    {refreshing ? 'Refreshing...' : 'Refresh'}
                 </RefreshButton>
             </ControlsContainer>
 
+            {/* Error State */}
+            {error && (
+                <EmptyState>
+                    <EmptyIcon>
+                        <WifiOff size={80} color="#ef4444" />
+                    </EmptyIcon>
+                    <EmptyTitle style={{ color: '#ef4444' }}>{error}</EmptyTitle>
+                    <EmptyText>
+                        {isOnline ? 'Please try again' : 'Check your internet connection'}
+                    </EmptyText>
+                    <RefreshButton 
+                        onClick={handleRefresh}
+                        disabled={refreshing || !isOnline}
+                        $loading={refreshing}
+                        style={{ margin: '1rem auto' }}
+                    >
+                        <RefreshCw size={18} />
+                        Retry
+                    </RefreshButton>
+                </EmptyState>
+            )}
+
             {/* Leaderboard */}
-            {filteredLeaderboard.length > 0 ? (
+            {!error && filteredLeaderboard.length > 0 ? (
                 <LeaderboardContainer>
                     <LeaderboardHeader>
                         <div>Rank</div>
@@ -1369,6 +1684,7 @@ const LeaderboardPage = () => {
                         {restOfLeaderboard.map((trader, index) => {
                             const mainStat = getMainStatValue(trader);
                             const isYou = trader.userId === user?.id;
+                            const isFollowLoading = followingLoading.has(trader.userId);
                             
                             return (
                                 <LeaderCard 
@@ -1447,17 +1763,20 @@ const LeaderboardPage = () => {
                                     <ActionButtons onClick={(e) => e.stopPropagation()}>
                                         <FollowButton
                                             $following={following.has(trader.userId)}
+                                            $loading={isFollowLoading}
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 handleFollow(trader.userId);
                                             }}
-                                            disabled={isYou}
+                                            disabled={isYou || isFollowLoading}
                                         >
                                             {isYou ? (
                                                 <>
                                                     <Star size={16} />
                                                     You
                                                 </>
+                                            ) : isFollowLoading ? (
+                                                <RefreshCw size={16} className="spinning" />
                                             ) : following.has(trader.userId) ? (
                                                 <>
                                                     <UserMinus size={16} />
@@ -1487,14 +1806,14 @@ const LeaderboardPage = () => {
                         })}
                     </LeaderboardList>
                 </LeaderboardContainer>
-            ) : (
+            ) : !error && (
                 <EmptyState>
                     <EmptyIcon>
                         <Trophy size={80} color="#ffd700" />
                     </EmptyIcon>
                     <EmptyTitle>No Traders Found</EmptyTitle>
                     <EmptyText>
-                        {searchQuery ? 
+                        {debouncedSearch ? 
                             'Try adjusting your search' :
                             'Be the first to join the leaderboard!'
                         }
