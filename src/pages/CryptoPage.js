@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
-import axios from 'axios';
+import axios from 'axios'; // Keep for axios.isCancel()
 import { useAuth } from '../context/AuthContext';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
@@ -977,7 +977,6 @@ const CryptoPage = () => {
   const { symbol } = useParams();
   const { api } = useAuth();
   const navigate = useNavigate();
-  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
   // Chart data state
   const [chartData, setChartData] = useState([]);
@@ -1024,8 +1023,9 @@ const CryptoPage = () => {
       setChartError(null);
 
       try {
-        const response = await axios.get(
-          `${API_URL}/api/crypto/historical/${symbol}`,
+        // ✅ FIXED: Use api instance instead of axios + API_URL
+        const response = await api.get(
+          `/crypto/historical/${symbol}`,
           {
             params: { range: selectedRange },
             signal: signal,
@@ -1078,7 +1078,7 @@ const CryptoPage = () => {
         fetchController.current.abort();
       }
     };
-  }, [symbol, selectedRange, API_URL]);
+  }, [symbol, selectedRange, api]);
 
   // Fetch prediction and posts
   useEffect(() => {
@@ -1088,8 +1088,9 @@ const CryptoPage = () => {
       setPredictionLoading(true);
 
       try {
-        const response = await axios.get(
-          `${API_URL}/api/crypto/prediction/${symbol}`,
+        // ✅ FIXED: Use api instance instead of axios + API_URL
+        const response = await api.get(
+          `/crypto/prediction/${symbol}`,
           { params: { range: '6M' } }
         );
 
@@ -1105,8 +1106,9 @@ const CryptoPage = () => {
     const fetchPosts = async () => {
       setPostsLoading(true);
       try {
+        // ✅ FIXED: Use api instance instead of axios + API_URL
         // Fetch real posts from social feed API
-        const response = await axios.get(`${API_URL}/api/social/feed`, {
+        const response = await api.get(`/social/feed`, {
           params: { 
             symbol: symbol.toUpperCase(),
             limit: 10 
@@ -1133,35 +1135,35 @@ const CryptoPage = () => {
 
     fetchPrediction();
     fetchPosts();
-  }, [symbol, API_URL]);
+  }, [symbol, api]);
 
   // Trade handlers
   const handleQuantityChange = (delta) => {
     setQuantity(prev => Math.max(0.001, parseFloat((prev + delta).toFixed(4))));
   };
 
- const handleTrade = async () => {
-  try {
-    const endpoint = tradeType === 'buy' ? '/paper-trading/buy' : '/paper-trading/sell';
-    
-    const response = await api.post(endpoint, {
-      symbol: symbol.toUpperCase(),
-      type: 'crypto',
-      quantity: quantity,
-      positionType: 'long'
-    });
+  const handleTrade = async () => {
+    try {
+      const endpoint = tradeType === 'buy' ? '/paper-trading/buy' : '/paper-trading/sell';
+      
+      const response = await api.post(endpoint, {
+        symbol: symbol.toUpperCase(),
+        type: 'crypto',
+        quantity: quantity,
+        positionType: 'long'
+      });
 
-    if (response.data.success) {
-      alert(`✅ ${tradeType.toUpperCase()} order placed!\n${response.data.message}`);
-      setQuantity(0.1);
-    } else {
-      alert(response.data.error || 'Trade failed');
+      if (response.data.success) {
+        alert(`✅ ${tradeType.toUpperCase()} order placed!\n${response.data.message}`);
+        setQuantity(0.1);
+      } else {
+        alert(response.data.error || 'Trade failed');
+      }
+    } catch (err) {
+      console.error('Trade error:', err);
+      alert(err.response?.data?.error || 'Failed to execute trade');
     }
-  } catch (err) {
-    console.error('Trade error:', err);
-    alert(err.response?.data?.error || 'Failed to execute trade');
-  }
-};
+  };
 
   const handleWatchlist = async () => {
     setIsWatchlisted(!isWatchlisted);
