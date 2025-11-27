@@ -6,6 +6,7 @@ import { ThemeProvider as StyledThemeProvider } from 'styled-components';
 import { useAuth } from './context/AuthContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 // Component imports
 import Navbar from './components/Navbar';
@@ -149,6 +150,7 @@ function AppContent() {
 <WhaleNotification />
 {/* 📊 VERCEL ANALYTICS */}
             <Analytics />
+            <SpeedInsights />
         </StyledThemeProvider>
     );
 }
