@@ -1,7 +1,7 @@
-// client/src/pages/ProfilePage.js - ENHANCED PROFILE WITH SOCIAL FEATURES
+// client/src/pages/ProfilePage.js - ENHANCED PROFILE WITH BETTER REFRESH/UPDATES
 // Supports viewing own profile AND other users' profiles
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import styled, { keyframes, css } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
@@ -15,7 +15,8 @@ import {
     X, Check, ArrowUp, ChevronUp, Briefcase, Link as LinkIcon,
     Upload, Trash2, Percent, UserPlus, UserCheck, MessageCircle,
     Heart, Share2, MapPin, Globe, Twitter, Copy, ExternalLink,
-    Hash, Bookmark, MoreHorizontal, ChevronDown, RefreshCw
+    Hash, Bookmark, MoreHorizontal, ChevronDown, RefreshCw,
+    Wifi, WifiOff, AlertCircle
 } from 'lucide-react';
 import {
     LineChart, Line, AreaChart, Area, BarChart, Bar,
@@ -64,6 +65,11 @@ const rotate = keyframes`
     to { transform: rotate(360deg); }
 `;
 
+const blink = keyframes`
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+`;
+
 // ============ STYLED COMPONENTS ============
 const PageContainer = styled.div`
     min-height: 100vh;
@@ -77,6 +83,66 @@ const PageContainer = styled.div`
 const MaxWidthContainer = styled.div`
     max-width: 1200px;
     margin: 0 auto;
+`;
+
+// ============ REFRESH BAR ============
+const RefreshBar = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding: 0.75rem 1rem;
+    background: rgba(30, 41, 59, 0.5);
+    border: 1px solid rgba(100, 116, 139, 0.2);
+    border-radius: 12px;
+    animation: ${fadeIn} 0.3s ease-out;
+`;
+
+const RefreshInfo = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: #94a3b8;
+    font-size: 0.85rem;
+`;
+
+const LiveDot = styled.div`
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: ${props => props.$online ? '#10b981' : '#ef4444'};
+    animation: ${props => props.$online ? css`${blink} 1.5s ease-in-out infinite` : 'none'};
+`;
+
+const RefreshButton = styled.button`
+    padding: 0.5rem 1rem;
+    background: linear-gradient(135deg, #00adef 0%, #0088cc 100%);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+
+    &:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 173, 237, 0.4);
+    }
+
+    &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    svg {
+        ${props => props.$loading && css`
+            animation: ${rotate} 1s linear infinite;
+        `}
+    }
 `;
 
 // ============ PROFILE HEADER ============
@@ -355,6 +421,7 @@ const PrimaryButton = styled.button`
     align-items: center;
     gap: 0.5rem;
     transition: all 0.3s ease;
+    opacity: ${props => props.$loading ? 0.7 : 1};
 
     &:hover {
         transform: translateY(-2px);
@@ -871,6 +938,34 @@ const EmptySubtext = styled.div`
     color: #475569;
 `;
 
+// ============ ERROR STATE ============
+const ErrorState = styled.div`
+    text-align: center;
+    padding: 3rem;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 16px;
+    margin-bottom: 2rem;
+`;
+
+const ErrorIcon = styled.div`
+    margin-bottom: 1rem;
+    color: #ef4444;
+`;
+
+const ErrorText = styled.div`
+    color: #ef4444;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+`;
+
+const ErrorSubtext = styled.div`
+    color: #94a3b8;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+`;
+
 // ============ MODAL ============
 const Modal = styled.div`
     position: fixed;
@@ -979,7 +1074,7 @@ const FollowUsername = styled.div`
     font-size: 0.85rem;
 `;
 
-const FollowButton = styled.button`
+const FollowButtonSmall = styled.button`
     padding: 0.4rem 0.8rem;
     background: ${props => props.$following ? 'transparent' : 'rgba(0, 173, 237, 0.2)'};
     border: 1px solid rgba(0, 173, 237, 0.4);
@@ -1012,22 +1107,60 @@ const LoadingSpinner = styled.div`
     animation: ${rotate} 1s linear infinite;
 `;
 
+// ============ SKELETON ============
+const SkeletonPulse = styled.div`
+    background: linear-gradient(
+        90deg,
+        rgba(100, 116, 139, 0.1) 0%,
+        rgba(100, 116, 139, 0.2) 50%,
+        rgba(100, 116, 139, 0.1) 100%
+    );
+    background-size: 200% 100%;
+    animation: ${shimmer} 1.5s ease-in-out infinite;
+    border-radius: ${props => props.$radius || '8px'};
+`;
+
+const SkeletonAvatar = styled(SkeletonPulse)`
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+`;
+
+const SkeletonLine = styled(SkeletonPulse)`
+    height: ${props => props.$height || '20px'};
+    width: ${props => props.$width || '100%'};
+    margin-bottom: ${props => props.$mb || '0'};
+`;
+
+const SkeletonCard = styled(SkeletonPulse)`
+    height: ${props => props.$height || '100px'};
+    width: 100%;
+`;
+
 const COLORS = ['#00adef', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+
+// ============ CONSTANTS ============
+const REFRESH_INTERVAL = 60000; // 60 seconds for auto-refresh
+const CACHE_DURATION = 30000; // 30 seconds cache validity
 
 // ============ COMPONENT ============
 const ProfilePage = () => {
-    const { userId } = useParams(); // For viewing other users
+    const { userId } = useParams();
     const navigate = useNavigate();
-    const { user: currentUser, api, isAuthenticated } = useAuth();
+    const { user: currentUser, api, isAuthenticated, refreshUser } = useAuth();
     const toast = useToast();
 
-    // State
+    // Core state
     const [profileUser, setProfileUser] = useState(null);
     const [isOwnProfile, setIsOwnProfile] = useState(true);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+    const [error, setError] = useState(null);
     const [activeTab, setActiveTab] = useState('overview');
     const [isFollowing, setIsFollowing] = useState(false);
     const [followLoading, setFollowLoading] = useState(false);
+    const [lastUpdated, setLastUpdated] = useState(null);
+    const [isOnline, setIsOnline] = useState(navigator.onLine);
 
     // Data states
     const [stats, setStats] = useState(null);
@@ -1036,7 +1169,7 @@ const ProfilePage = () => {
     const [predictions, setPredictions] = useState([]);
     const [achievements, setAchievements] = useState([]);
     const [followers, setFollowers] = useState([]);
-    const [following, setFollowing] = useState([]);
+    const [followingList, setFollowingList] = useState([]);
 
     // Modal states
     const [showFollowersModal, setShowFollowersModal] = useState(false);
@@ -1049,22 +1182,56 @@ const ProfilePage = () => {
     const [avatarFile, setAvatarFile] = useState(null);
     const [avatarUploading, setAvatarUploading] = useState(false);
 
-    // Determine if viewing own profile or another user's
-    useEffect(() => {
-        if (userId && userId !== currentUser?._id) {
-            setIsOwnProfile(false);
-            fetchUserProfile(userId);
-        } else {
-            setIsOwnProfile(true);
-            setProfileUser(currentUser);
-            fetchOwnProfileData();
-        }
-    }, [userId, currentUser]);
+    // Refs
+    const isMountedRef = useRef(true);
+    const refreshIntervalRef = useRef(null);
+    const abortControllerRef = useRef(null);
 
-    const fetchUserProfile = async (id) => {
+    // Online/offline detection
+    useEffect(() => {
+        const handleOnline = () => setIsOnline(true);
+        const handleOffline = () => setIsOnline(false);
+        
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+        
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
+    }, []);
+
+    // Cleanup on unmount
+    useEffect(() => {
+        isMountedRef.current = true;
+        return () => {
+            isMountedRef.current = false;
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
+            if (refreshIntervalRef.current) {
+                clearInterval(refreshIntervalRef.current);
+            }
+        };
+    }, []);
+
+    // Fetch other user's profile
+    const fetchUserProfile = useCallback(async (id, showLoading = true) => {
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
+        abortControllerRef.current = new AbortController();
+
         try {
-            setLoading(true);
-            const res = await api.get(`/social/user/${id}`);
+            if (showLoading) setLoading(true);
+            setError(null);
+
+            const res = await api.get(`/social/user/${id}`, {
+                signal: abortControllerRef.current.signal
+            });
+
+            if (!isMountedRef.current) return;
+
             setProfileUser(res.data.user);
             setIsFollowing(res.data.isFollowing || false);
             setStats(res.data.stats);
@@ -1072,155 +1239,264 @@ const ProfilePage = () => {
             setTrades(res.data.trades || []);
             setPredictions(res.data.predictions || []);
             setAchievements(res.data.achievements || []);
-        } catch (error) {
-            console.error('Error fetching user profile:', error);
-            toast.error('User not found');
-            navigate('/');
+            setFollowers(res.data.user?.social?.followers || []);
+            setFollowingList(res.data.user?.social?.following || []);
+            setLastUpdated(new Date());
+        } catch (err) {
+            if (err.name === 'AbortError') return;
+            
+            console.error('Error fetching user profile:', err);
+            if (isMountedRef.current) {
+                setError('Failed to load profile');
+                if (showLoading) {
+                    toast.error('User not found');
+                }
+            }
         } finally {
-            setLoading(false);
+            if (isMountedRef.current && showLoading) {
+                setLoading(false);
+            }
         }
-    };
+    }, [api, toast]);
 
-    const fetchOwnProfileData = async () => {
+    // Fetch own profile data
+    const fetchOwnProfileData = useCallback(async (showLoading = true) => {
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
+        abortControllerRef.current = new AbortController();
+
         try {
-            setLoading(true);
+            if (showLoading) setLoading(true);
+            setError(null);
 
-            // Fetch portfolio data
-            const portfolioRes = await api.get('/portfolio');
-            const holdings = portfolioRes.data.holdings || [];
+            const signal = abortControllerRef.current.signal;
 
-            const totalValue = holdings.reduce((sum, h) => {
-                const price = h.currentPrice || h.current_price || h.price || 0;
-                const shares = h.shares || h.quantity || 0;
-                return sum + (price * shares);
-            }, 0);
+            // Parallel fetch for better performance
+            const [portfolioRes, watchlistRes, gamificationRes, socialStatsRes] = await Promise.allSettled([
+                api.get('/portfolio', { signal }),
+                api.get('/watchlist', { signal }),
+                api.get('/gamification/stats', { signal }),
+                api.get('/social/me/stats', { signal })
+            ]);
 
-            const totalCost = holdings.reduce((sum, h) => {
-                const avgPrice = h.averagePrice || h.average_price || h.purchasePrice || h.price || 0;
-                const shares = h.shares || h.quantity || 0;
-                return sum + (avgPrice * shares);
-            }, 0);
+            if (!isMountedRef.current) return;
 
-            const totalGain = totalValue - totalCost;
+            // Process portfolio data
+            let holdings = [];
+            let totalValue = 0;
+            let totalCost = 0;
+            let totalGain = 0;
 
-            // Fetch watchlist
-            const watchlistRes = await api.get('/watchlist');
-            const watchlist = watchlistRes.data.watchlist || [];
+            if (portfolioRes.status === 'fulfilled') {
+                holdings = portfolioRes.value.data.holdings || [];
+                totalValue = holdings.reduce((sum, h) => {
+                    const price = h.currentPrice || h.current_price || h.price || 0;
+                    const shares = h.shares || h.quantity || 0;
+                    return sum + (price * shares);
+                }, 0);
+                totalCost = holdings.reduce((sum, h) => {
+                    const avgPrice = h.averagePrice || h.average_price || h.purchasePrice || h.price || 0;
+                    const shares = h.shares || h.quantity || 0;
+                    return sum + (avgPrice * shares);
+                }, 0);
+                totalGain = totalValue - totalCost;
+            }
 
-            // Fetch predictions
+            // Process watchlist
+            let watchlist = [];
+            if (watchlistRes.status === 'fulfilled') {
+                watchlist = watchlistRes.value.data.watchlist || [];
+            }
+
+            // Process gamification data
+            let gamification = currentUser?.gamification || {};
+            if (gamificationRes.status === 'fulfilled' && gamificationRes.value.data?.data) {
+                gamification = gamificationRes.value.data.data;
+            }
+
+            // Process social stats
+            let userStats = currentUser?.stats || {};
+            if (socialStatsRes.status === 'fulfilled' && socialStatsRes.value.data) {
+                userStats = socialStatsRes.value.data;
+            }
+
+            // Fetch predictions separately
+            let predictionsData = [];
             try {
-                const predictionsRes = await api.get('/predictions/user');
-                setPredictions(predictionsRes.data.predictions || []);
+                const predictionsRes = await api.get('/predictions/user', { signal });
+                predictionsData = predictionsRes.data.predictions || [];
             } catch (e) {
                 console.log('No predictions found');
             }
 
-            // Fetch user posts
+            // Fetch posts separately
+            let postsData = [];
             try {
-                const postsRes = await api.get(`/feed/user/${currentUser._id}?limit=10`);
-                setPosts(postsRes.data.posts || []);
+                const postsRes = await api.get(`/feed/user/${currentUser._id}?limit=10`, { signal });
+                postsData = postsRes.value?.data?.posts || postsRes.data?.posts || [];
             } catch (e) {
                 console.log('No posts found');
             }
 
-            // Fetch fresh gamification data from API
-            let gamification = currentUser?.gamification || {};
-            let userStats = currentUser?.stats || {};
-            
-            try {
-                const gamificationRes = await api.get('/gamification/stats');
-                if (gamificationRes.data?.data) {
-    gamification = gamificationRes.data.data;  // ✅ Access nested data
-}
-            } catch (e) {
-                console.log('Using cached gamification data');
-            }
+            if (!isMountedRef.current) return;
 
-            // Fetch user stats
-            try {
-                const statsRes = await api.get('/social/me/stats');
-                if (statsRes.data) {
-                    userStats = statsRes.data;
-                }
-            } catch (e) {
-                console.log('Using cached stats data');
-            }
+            setPredictions(predictionsData);
+            setPosts(postsData);
 
             const social = currentUser?.social || {};
 
-            // Build achievements list
-            const userAchievements = currentUser?.achievements || [];
-            const allAchievements = [
-                { id: 'welcome_aboard', name: 'Welcome Aboard', icon: '🎉', desc: 'Complete onboarding' },
-                { id: 'first_trade', name: 'First Trade', icon: '🎯', desc: 'Made your first trade' },
-                { id: 'first_prediction', name: 'Oracle', icon: '🔮', desc: 'Made your first prediction' },
-                { id: 'portfolio_1k', name: 'Portfolio Pro', icon: '💼', desc: 'Portfolio worth $1,000+' },
-                { id: 'portfolio_10k', name: 'Big Player', icon: '💰', desc: 'Portfolio worth $10,000+' },
-                { id: 'win_streak_5', name: 'Hot Streak', icon: '🔥', desc: '5 winning predictions in a row' },
-                { id: 'win_streak_10', name: 'On Fire', icon: '💎', desc: '10 winning predictions in a row' },
-                { id: 'level_5', name: 'Rising Star', icon: '⭐', desc: 'Reach Level 5' },
-                { id: 'level_10', name: 'Trading Legend', icon: '👑', desc: 'Reach Level 10' },
-                { id: 'followers_10', name: 'Influencer', icon: '📣', desc: 'Gain 10 followers' },
-            ].map(a => ({
-                ...a,
-                unlocked: userAchievements.some(ua => ua.achievementId === a.id)
-            }));
+         // Fetch real achievements from API
+let achievementsData = [];
+try {
+    const achievementsRes = await api.get('/gamification/achievements', { signal });
+    if (achievementsRes.data?.achievements) {
+        achievementsData = achievementsRes.data.achievements.map(a => ({
+            id: a.id,
+            name: a.name,
+            icon: a.icon,
+            desc: a.description,
+            rarity: a.rarity,
+            points: a.points,
+            unlocked: a.unlocked,
+            unlockedAt: a.unlockedAt
+        }));
+    }
+} catch (e) {
+    console.log('Failed to fetch achievements:', e.message);
+}
 
-            setAchievements(allAchievements);
+setAchievements(achievementsData);
 
-           setStats({
-    portfolioValue: totalValue,
-    holdingsCount: holdings.length,
-    watchlistCount: watchlist.length,
-    totalGain,
-    totalGainPercent: gamification.stats?.totalReturnPercent || (totalCost > 0 ? (totalGain / totalCost) * 100 : 0),  // ✅ Use real stats
-    level: gamification.level || 1,
-    title: gamification.rank || 'Rookie Trader',
-    xp: gamification.xp || 0,
-    nextLevelXp: gamification.xpForNextLevel || 1000,
-    rank: gamification.stats?.rank || 0,
-    followersCount: social.followersCount || 0,
-    followingCount: social.followingCount || 0,
-    predictionAccuracy: gamification.stats?.predictionAccuracy || 0,  // ✅ Use real stats
-    totalPredictions: gamification.stats?.predictionsCreated || 0,
-    currentStreak: userStats.currentStreak || currentUser?.stats?.currentStreak || 0
-});
+            setStats({
+                portfolioValue: totalValue,
+                holdingsCount: holdings.length,
+                watchlistCount: watchlist.length,
+                totalGain,
+                totalGainPercent: gamification.stats?.totalReturnPercent || (totalCost > 0 ? (totalGain / totalCost) * 100 : 0),
+                level: gamification.level || 1,
+                title: gamification.rank || 'Rookie Trader',
+                xp: gamification.xp || 0,
+                nextLevelXp: gamification.xpForNextLevel || 1000,
+                rank: gamification.stats?.rank || 0,
+                followersCount: social.followersCount || 0,
+                followingCount: social.followingCount || 0,
+                predictionAccuracy: gamification.stats?.predictionAccuracy || 0,
+                totalPredictions: gamification.stats?.predictionsCreated || 0,
+                currentStreak: userStats.currentStreak || currentUser?.stats?.currentStreak || 0
+            });
 
-            // Set followers/following
             setFollowers(social.followers || []);
-            setFollowing(social.following || []);
+            setFollowingList(social.following || []);
 
             if (currentUser?.profile?.avatar) {
                 setAvatarPreview(currentUser.profile.avatar);
             }
 
-        } catch (error) {
-            console.error('Error fetching profile data:', error);
-            toast.error('Failed to load profile data');
+            setLastUpdated(new Date());
+
+        } catch (err) {
+            if (err.name === 'AbortError') return;
+            
+            console.error('Error fetching profile data:', err);
+            if (isMountedRef.current) {
+                setError('Failed to load profile data');
+                toast.error('Failed to load profile data');
+            }
         } finally {
-            setLoading(false);
+            if (isMountedRef.current && showLoading) {
+                setLoading(false);
+            }
+        }
+    }, [api, currentUser, toast]);
+
+    // Initial load and profile type determination
+    useEffect(() => {
+        if (userId && userId !== currentUser?._id) {
+            setIsOwnProfile(false);
+            setProfileUser(null);
+            fetchUserProfile(userId);
+        } else {
+            setIsOwnProfile(true);
+            setProfileUser(currentUser);
+            fetchOwnProfileData();
+        }
+    }, [userId, currentUser?._id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Auto-refresh interval
+    useEffect(() => {
+        if (isOnline && !loading) {
+            refreshIntervalRef.current = setInterval(() => {
+                if (isOwnProfile) {
+                    fetchOwnProfileData(false);
+                } else if (userId) {
+                    fetchUserProfile(userId, false);
+                }
+            }, REFRESH_INTERVAL);
+        }
+
+        return () => {
+            if (refreshIntervalRef.current) {
+                clearInterval(refreshIntervalRef.current);
+            }
+        };
+    }, [isOnline, loading, isOwnProfile, userId, fetchOwnProfileData, fetchUserProfile]);
+
+    // Manual refresh handler
+    const handleRefresh = async () => {
+        setRefreshing(true);
+        try {
+            if (isOwnProfile) {
+                await fetchOwnProfileData(false);
+                // Also refresh the user context
+                if (refreshUser) {
+                    await refreshUser();
+                }
+            } else if (userId) {
+                await fetchUserProfile(userId, false);
+            }
+            toast.success('Profile refreshed');
+        } catch (err) {
+            toast.error('Failed to refresh');
+        } finally {
+            setRefreshing(false);
         }
     };
 
+    // Follow/unfollow with optimistic updates
     const handleFollow = async () => {
         if (!isAuthenticated) {
             toast.error('Please log in to follow users');
             return;
         }
 
+        const wasFollowing = isFollowing;
+        
+        // Optimistic update
+        setIsFollowing(!wasFollowing);
+        setStats(prev => ({
+            ...prev,
+            followersCount: (prev?.followersCount || 0) + (wasFollowing ? -1 : 1)
+        }));
+        
         setFollowLoading(true);
+        
         try {
-            if (isFollowing) {
+            if (wasFollowing) {
                 await api.delete(`/social/follow/${profileUser._id}`);
-                setIsFollowing(false);
                 toast.success(`Unfollowed ${profileUser.profile?.displayName || profileUser.username}`);
             } else {
                 await api.post(`/social/follow/${profileUser._id}`);
-                setIsFollowing(true);
                 toast.success(`Following ${profileUser.profile?.displayName || profileUser.username}`);
             }
-        } catch (error) {
-            console.error('Follow error:', error);
+        } catch (err) {
+            // Revert optimistic update on error
+            setIsFollowing(wasFollowing);
+            setStats(prev => ({
+                ...prev,
+                followersCount: (prev?.followersCount || 0) + (wasFollowing ? 1 : -1)
+            }));
+            console.error('Follow error:', err);
             toast.error('Failed to update follow status');
         } finally {
             setFollowLoading(false);
@@ -1250,15 +1526,31 @@ const ProfilePage = () => {
             const formData = new FormData();
             formData.append('avatar', avatarFile);
 
-            await api.post('/auth/upload-avatar', formData, {
+            const response = await api.post('/auth/upload-avatar', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
+
+            // Update local state instead of reloading
+            if (response.data.avatar) {
+                setAvatarPreview(response.data.avatar);
+                setProfileUser(prev => ({
+                    ...prev,
+                    profile: {
+                        ...prev?.profile,
+                        avatar: response.data.avatar
+                    }
+                }));
+            }
+
+            // Refresh user context if available
+            if (refreshUser) {
+                await refreshUser();
+            }
 
             toast.success('Profile picture updated!');
             setShowAvatarModal(false);
             setAvatarFile(null);
-            window.location.reload();
-        } catch (error) {
+        } catch (err) {
             toast.error('Failed to upload avatar');
         } finally {
             setAvatarUploading(false);
@@ -1280,14 +1572,72 @@ const ProfilePage = () => {
         return new Date(date).toLocaleDateString();
     };
 
+    const formatLastUpdated = () => {
+        if (!lastUpdated) return '';
+        const seconds = Math.floor((new Date() - lastUpdated) / 1000);
+        if (seconds < 60) return 'just now';
+        const minutes = Math.floor(seconds / 60);
+        if (minutes < 60) return `${minutes}m ago`;
+        const hours = Math.floor(minutes / 60);
+        return `${hours}h ago`;
+    };
+
     const displayUser = profileUser || currentUser;
 
+    // Loading skeleton
     if (loading) {
         return (
             <PageContainer>
-                <LoadingContainer>
-                    <LoadingSpinner />
-                </LoadingContainer>
+                <MaxWidthContainer>
+                    <ProfileHeader>
+                        <ProfileBanner />
+                        <ProfileContent>
+                            <ProfileTop>
+                                <AvatarSection>
+                                    <SkeletonAvatar />
+                                </AvatarSection>
+                                <UserInfo>
+                                    <SkeletonLine $width="200px" $height="32px" $mb="0.5rem" />
+                                    <SkeletonLine $width="120px" $height="20px" $mb="0.5rem" />
+                                    <SkeletonLine $width="300px" $height="16px" $mb="1rem" />
+                                    <SkeletonLine $width="250px" $height="16px" $mb="1rem" />
+                                    <div style={{ display: 'flex', gap: '1rem' }}>
+                                        <SkeletonLine $width="100px" $height="36px" />
+                                        <SkeletonLine $width="100px" $height="36px" />
+                                    </div>
+                                </UserInfo>
+                            </ProfileTop>
+                        </ProfileContent>
+                    </ProfileHeader>
+                    <StatsGrid>
+                        {[1, 2, 3, 4, 5, 6].map(i => (
+                            <SkeletonCard key={i} $height="120px" />
+                        ))}
+                    </StatsGrid>
+                </MaxWidthContainer>
+            </PageContainer>
+        );
+    }
+
+    // Error state
+    if (error && !displayUser) {
+        return (
+            <PageContainer>
+                <MaxWidthContainer>
+                    <ErrorState>
+                        <ErrorIcon>
+                            <AlertCircle size={48} />
+                        </ErrorIcon>
+                        <ErrorText>{error}</ErrorText>
+                        <ErrorSubtext>
+                            {isOnline ? 'Please try again' : 'Check your internet connection'}
+                        </ErrorSubtext>
+                        <RefreshButton onClick={handleRefresh} disabled={refreshing} $loading={refreshing}>
+                            <RefreshCw size={18} />
+                            {refreshing ? 'Retrying...' : 'Try Again'}
+                        </RefreshButton>
+                    </ErrorState>
+                </MaxWidthContainer>
             </PageContainer>
         );
     }
@@ -1300,15 +1650,34 @@ const ProfilePage = () => {
     return (
         <PageContainer>
             <MaxWidthContainer>
+                {/* Refresh Bar */}
+                <RefreshBar>
+                    <RefreshInfo>
+                        <LiveDot $online={isOnline} />
+                        <span>
+                            {isOnline ? 'Connected' : 'Offline'}
+                            {lastUpdated && ` • Updated ${formatLastUpdated()}`}
+                        </span>
+                    </RefreshInfo>
+                    <RefreshButton 
+                        onClick={handleRefresh} 
+                        disabled={refreshing || !isOnline}
+                        $loading={refreshing}
+                    >
+                        <RefreshCw size={16} />
+                        {refreshing ? 'Refreshing...' : 'Refresh'}
+                    </RefreshButton>
+                </RefreshBar>
+
                 {/* Profile Header */}
                 <ProfileHeader>
                     <ProfileBanner $src={displayUser?.profile?.banner} />
                     <ProfileContent>
                         <ProfileTop>
                             <AvatarSection>
-                                <Avatar $hasImage={!!displayUser?.profile?.avatar}>
-                                    {displayUser?.profile?.avatar ? (
-                                        <img src={displayUser.profile.avatar} alt="Avatar" />
+                                <Avatar $hasImage={!!displayUser?.profile?.avatar || !!avatarPreview}>
+                                    {(avatarPreview || displayUser?.profile?.avatar) ? (
+                                        <img src={avatarPreview || displayUser.profile.avatar} alt="Avatar" />
                                     ) : (
                                         getInitials(displayUser?.profile?.displayName || displayUser?.name)
                                     )}
@@ -1383,10 +1752,13 @@ const ProfilePage = () => {
                                         <>
                                             <PrimaryButton
                                                 $following={isFollowing}
+                                                $loading={followLoading}
                                                 onClick={handleFollow}
                                                 disabled={followLoading}
                                             >
-                                                {isFollowing ? (
+                                                {followLoading ? (
+                                                    <RefreshCw size={16} className="spinning" />
+                                                ) : isFollowing ? (
                                                     <><UserCheck size={16} /> Following</>
                                                 ) : (
                                                     <><UserPlus size={16} /> Follow</>
@@ -1540,8 +1912,8 @@ const ProfilePage = () => {
                                     <PostCard key={post._id} onClick={() => navigate(`/post/${post._id}`)}>
                                         <PostHeader>
                                             <PostAvatar>
-                                                {displayUser?.profile?.avatar ? (
-                                                    <img src={displayUser.profile.avatar} alt="" />
+                                                {(avatarPreview || displayUser?.profile?.avatar) ? (
+                                                    <img src={avatarPreview || displayUser.profile.avatar} alt="" />
                                                 ) : (
                                                     getInitials(displayUser?.profile?.displayName || displayUser?.name)
                                                 )}
@@ -1704,7 +2076,7 @@ const ProfilePage = () => {
                         </CloseButton>
                         <ModalTitle>Following ({stats?.followingCount || 0})</ModalTitle>
                         <FollowList>
-                            {following.length > 0 ? following.map(user => (
+                            {followingList.length > 0 ? followingList.map(user => (
                                 <FollowItem key={user._id} onClick={() => {
                                     setShowFollowingModal(false);
                                     navigate(`/profile/${user._id}`);

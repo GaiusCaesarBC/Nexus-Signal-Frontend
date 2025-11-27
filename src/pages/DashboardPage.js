@@ -22,8 +22,9 @@ import {
 import nexusSignalLogo from '../assets/nexus-signal-logo.png';
 import AdvancedChart from '../components/AdvancedChart';
 import PatternDetector from '../components/PatternDetector';
- import TickerLink, { TickerText } from '../components/TickerLink';
- import WhaleAlertWidget from '../components/WhaleAlertWidget';
+import TickerLink, { TickerText } from '../components/TickerLink';
+import WhaleAlertWidget from '../components/WhaleAlertWidget';
+
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`
     from { opacity: 0; transform: translateY(20px); }
@@ -74,6 +75,11 @@ const rankGlow = keyframes`
         box-shadow: 0 0 40px rgba(251, 191, 36, 0.8);
         transform: scale(1.05);
     }
+`;
+
+const glowPulse = keyframes`
+    0%, 100% { box-shadow: 0 0 10px rgba(139, 92, 246, 0.3); }
+    50% { box-shadow: 0 0 25px rgba(139, 92, 246, 0.6); }
 `;
 
 // ============ STYLED COMPONENTS ============
@@ -779,6 +785,8 @@ const AchievementsHeader = styled.div`
     justify-content: space-between;
     align-items: center;
     margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
 `;
 
 const AchievementsTitle = styled.h3`
@@ -796,68 +804,96 @@ const AchievementsProgress = styled.div`
 `;
 
 const ProgressBar = styled.div`
-    width: 150px;
-    height: 8px;
+    width: 200px;
+    height: 10px;
     background: rgba(139, 92, 246, 0.2);
-    border-radius: 4px;
+    border-radius: 5px;
     overflow: hidden;
+
+    @media (max-width: 768px) {
+        width: 120px;
+    }
 `;
 
 const ProgressFill = styled.div`
     height: 100%;
     width: ${props => props.$progress}%;
-    background: linear-gradient(90deg, #8b5cf6, #a78bfa);
-    border-radius: 4px;
+    background: linear-gradient(90deg, #8b5cf6, #a78bfa, #c4b5fd);
+    border-radius: 5px;
     transition: width 1s ease-out;
+    position: relative;
+
+    &::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        animation: ${shimmer} 2s linear infinite;
+    }
 `;
 
 const ProgressText = styled.span`
     color: #a78bfa;
     font-weight: 700;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
+    white-space: nowrap;
 `;
 
 const AchievementsGrid = styled.div`
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
     gap: 1rem;
 `;
 
 const AchievementBadge = styled.div`
-    background: ${props => props.$unlocked ? 'rgba(139, 92, 246, 0.2)' : 'rgba(100, 116, 139, 0.1)'};
-    border: 1px solid ${props => {
+    background: ${props => props.$unlocked ? 
+        props.$rarity === 'legendary' ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.25) 0%, rgba(217, 119, 6, 0.15) 100%)' :
+        props.$rarity === 'epic' ? 'linear-gradient(135deg, rgba(139, 92, 246, 0.25) 0%, rgba(124, 58, 237, 0.15) 100%)' :
+        props.$rarity === 'rare' ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.25) 0%, rgba(37, 99, 235, 0.15) 100%)' :
+        'linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, rgba(5, 150, 105, 0.15) 100%)'
+        : 'rgba(100, 116, 139, 0.1)'
+    };
+    border: 2px solid ${props => {
         if (!props.$unlocked) return 'rgba(100, 116, 139, 0.2)';
-        if (props.$rarity === 'legendary') return 'rgba(245, 158, 11, 0.5)';
-        if (props.$rarity === 'epic') return 'rgba(139, 92, 246, 0.5)';
-        if (props.$rarity === 'rare') return 'rgba(59, 130, 246, 0.5)';
-        return 'rgba(16, 185, 129, 0.5)';
+        if (props.$rarity === 'legendary') return 'rgba(245, 158, 11, 0.6)';
+        if (props.$rarity === 'epic') return 'rgba(139, 92, 246, 0.6)';
+        if (props.$rarity === 'rare') return 'rgba(59, 130, 246, 0.6)';
+        return 'rgba(16, 185, 129, 0.6)';
     }};
     border-radius: 12px;
-    padding: 1.25rem 1rem;
+    padding: 1.25rem 0.75rem;
     text-align: center;
     transition: all 0.3s ease;
     cursor: pointer;
     position: relative;
-    opacity: ${props => props.$unlocked ? 1 : 0.6};
+    opacity: ${props => props.$unlocked ? 1 : 0.5};
+
+    ${props => props.$unlocked && css`
+        animation: ${glowPulse} 3s ease-in-out infinite;
+        animation-delay: ${() => Math.random() * 2}s;
+    `}
 
     &:hover {
-        transform: ${props => props.$unlocked ? 'translateY(-5px)' : 'none'};
-        background: ${props => props.$unlocked ? 'rgba(139, 92, 246, 0.3)' : 'rgba(100, 116, 139, 0.15)'};
-        box-shadow: ${props => props.$unlocked ? '0 10px 30px rgba(139, 92, 246, 0.3)' : 'none'};
+        transform: ${props => props.$unlocked ? 'translateY(-5px) scale(1.02)' : 'none'};
+        box-shadow: ${props => props.$unlocked ? '0 10px 30px rgba(139, 92, 246, 0.4)' : 'none'};
     }
 `;
 
 const BadgeIcon = styled.div`
-    font-size: 2.5rem;
+    font-size: 2.2rem;
     margin-bottom: 0.5rem;
     animation: ${props => props.$unlocked ? css`${bounce} 2s ease-in-out infinite` : 'none'};
     filter: ${props => props.$unlocked ? 'none' : 'grayscale(100%)'};
 `;
 
 const BadgeLabel = styled.div`
-    font-size: 0.85rem;
-    color: ${props => props.$unlocked ? '#a78bfa' : '#64748b'};
+    font-size: 0.8rem;
+    color: ${props => props.$unlocked ? '#e0e6ed' : '#64748b'};
     font-weight: 600;
+    line-height: 1.2;
 `;
 
 const BadgeLock = styled.div`
@@ -865,21 +901,50 @@ const BadgeLock = styled.div`
     top: 0.5rem;
     right: 0.5rem;
     color: #64748b;
+    opacity: 0.7;
 `;
 
 const RarityDot = styled.div`
     position: absolute;
     top: 0.5rem;
     left: 0.5rem;
-    width: 8px;
-    height: 8px;
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
     background: ${props => {
-        if (props.$rarity === 'legendary') return '#f59e0b';
-        if (props.$rarity === 'epic') return '#8b5cf6';
-        if (props.$rarity === 'rare') return '#3b82f6';
-        return '#10b981';
+        if (props.$rarity === 'legendary') return 'linear-gradient(135deg, #fbbf24, #f59e0b)';
+        if (props.$rarity === 'epic') return 'linear-gradient(135deg, #a78bfa, #8b5cf6)';
+        if (props.$rarity === 'rare') return 'linear-gradient(135deg, #60a5fa, #3b82f6)';
+        return 'linear-gradient(135deg, #34d399, #10b981)';
     }};
+    box-shadow: 0 0 8px ${props => {
+        if (props.$rarity === 'legendary') return 'rgba(251, 191, 36, 0.6)';
+        if (props.$rarity === 'epic') return 'rgba(139, 92, 246, 0.6)';
+        if (props.$rarity === 'rare') return 'rgba(59, 130, 246, 0.6)';
+        return 'rgba(16, 185, 129, 0.6)';
+    }};
+`;
+
+const ViewAchievementsButton = styled.button`
+    width: 100%;
+    padding: 1rem;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(139, 92, 246, 0.1) 100%);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 10px;
+    color: #a78bfa;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-top: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+
+    &:hover {
+        background: linear-gradient(135deg, rgba(139, 92, 246, 0.3) 0%, rgba(139, 92, 246, 0.2) 100%);
+        transform: translateY(-2px);
+    }
 `;
 
 // ============ CHART SECTION ============
@@ -1403,8 +1468,10 @@ const DashboardPage = () => {
     // Social Feed States (REAL from /api/posts)
     const [socialFeed, setSocialFeed] = useState([]);
     
-    // Achievements States (REAL from /api/gamification/achievements)
+    // Achievements States - NOW WITH PROPER TOTALS
     const [achievements, setAchievements] = useState([]);
+    const [totalAchievements, setTotalAchievements] = useState(0);
+    const [unlockedAchievements, setUnlockedAchievements] = useState(0);
     
     // Advanced Chart States
     const [advancedChartData, setAdvancedChartData] = useState([]);
@@ -1485,7 +1552,7 @@ const DashboardPage = () => {
         }
     };
 
-    // ✅ FIXED: Fetch portfolio data from /api/portfolio
+    // Fetch portfolio data from /api/portfolio
     const fetchPortfolioData = async () => {
         try {
             const response = await api.get('/portfolio');
@@ -1619,11 +1686,10 @@ const DashboardPage = () => {
         }
     };
 
-    // ✅ FIXED: Fetch social feed from /api/posts
+    // Fetch social feed from /api/posts
     const fetchSocialFeed = async () => {
         try {
             const response = await api.get('/posts?limit=5');
-            console.log('Social feed response:', response.data);
             if (response.data && Array.isArray(response.data) && response.data.length > 0) {
                 setSocialFeed(response.data.slice(0, 4));
             } else if (response.data?.posts && Array.isArray(response.data.posts)) {
@@ -1637,27 +1703,51 @@ const DashboardPage = () => {
         }
     };
 
-    // ✅ FIXED: Fetch achievements from /api/gamification/achievements
+    // ✅ FIXED: Fetch ALL achievements and track totals properly
     const fetchAchievements = async () => {
         try {
             const response = await api.get('/gamification/achievements');
             console.log('Achievements response:', response.data);
+            
             if (response.data.success && response.data.achievements) {
-                setAchievements(response.data.achievements.slice(0, 12));
+                const allAchievements = response.data.achievements;
+                
+                // Get total counts from API response or calculate
+                const total = response.data.total || allAchievements.length;
+                const unlocked = response.data.unlocked || allAchievements.filter(a => a.unlocked).length;
+                
+                setTotalAchievements(total);
+                setUnlockedAchievements(unlocked);
+                
+                // Sort: unlocked first, then by rarity (legendary > epic > rare > common)
+                const rarityOrder = { legendary: 0, epic: 1, rare: 2, common: 3 };
+                const sortedAchievements = [...allAchievements].sort((a, b) => {
+                    // Unlocked first
+                    if (a.unlocked && !b.unlocked) return -1;
+                    if (!a.unlocked && b.unlocked) return 1;
+                    // Then by rarity
+                    return (rarityOrder[a.rarity] || 4) - (rarityOrder[b.rarity] || 4);
+                });
+                
+                // Show first 12 for the dashboard (mix of unlocked and some locked)
+                setAchievements(sortedAchievements.slice(0, 12));
             } else {
                 setAchievements([]);
+                setTotalAchievements(0);
+                setUnlockedAchievements(0);
             }
         } catch (error) {
             console.error('Error fetching achievements:', error);
             setAchievements([]);
+            setTotalAchievements(0);
+            setUnlockedAchievements(0);
         }
     };
 
-    // ✅ FIXED: Fetch REAL predictions from /api/predictions/recent
+    // Fetch REAL predictions from /api/predictions/recent
     const fetchPredictions = async () => {
         try {
             const response = await api.get('/predictions/recent?limit=3');
-            console.log('Predictions response:', response.data);
             if (Array.isArray(response.data) && response.data.length > 0) {
                 setPredictions(response.data.slice(0, 2).map(pred => ({
                     _id: pred._id,
@@ -1750,8 +1840,8 @@ const DashboardPage = () => {
         return `${Math.floor(seconds / 86400)}d ago`;
     };
 
-    const unlockedCount = achievements.filter(a => a.unlocked).length;
-    const achievementProgress = achievements.length > 0 ? (unlockedCount / achievements.length) * 100 : 0;
+    // Calculate progress using REAL totals
+    const achievementProgress = totalAchievements > 0 ? (unlockedAchievements / totalAchievements) * 100 : 0;
 
     if (loading) {
         return (
@@ -1807,18 +1897,18 @@ const DashboardPage = () => {
 
                 <TickerContainer>
                     <TickerTrack>
-                       {[...tickerData, ...tickerData].map((stock, index) => (
-   <TickerItem key={index}>
-    <TickerLink symbol={stock.symbol} bold>
-        {stock.symbol}
-    </TickerLink>
-    <TickerPrice>${stock.price?.toFixed(2)}</TickerPrice>
-    <TickerChange $positive={stock.change >= 0}>
-        {stock.change >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
-        {stock.change >= 0 ? '+' : ''}{stock.change?.toFixed(2)}%
-    </TickerChange>
-</TickerItem>
-))}
+                        {[...tickerData, ...tickerData].map((stock, index) => (
+                            <TickerItem key={index}>
+                                <TickerLink symbol={stock.symbol} bold>
+                                    {stock.symbol}
+                                </TickerLink>
+                                <TickerPrice>${stock.price?.toFixed(2)}</TickerPrice>
+                                <TickerChange $positive={stock.change >= 0}>
+                                    {stock.change >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
+                                    {stock.change >= 0 ? '+' : ''}{stock.change?.toFixed(2)}%
+                                </TickerChange>
+                            </TickerItem>
+                        ))}
                     </TickerTrack>
                 </TickerContainer>
 
@@ -1872,27 +1962,60 @@ const DashboardPage = () => {
                     <ActionButton onClick={() => navigate('/achievements')}><ActionIcon><Award size={32} /></ActionIcon><ActionLabel>Achievements</ActionLabel></ActionButton>
                 </QuickActionsGrid>
 
-                {achievements.length > 0 && (
-                    <AchievementsSection>
-                        <AchievementsHeader>
-                            <AchievementsTitle><Award size={24} />Your Achievements</AchievementsTitle>
-                            <AchievementsProgress>
-                                <ProgressBar><ProgressFill $progress={achievementProgress} /></ProgressBar>
-                                <ProgressText>{unlockedCount}/{achievements.length} Unlocked</ProgressText>
-                            </AchievementsProgress>
-                        </AchievementsHeader>
-                        <AchievementsGrid>
-                            {achievements.map((achievement) => (
-                                <AchievementBadge key={achievement.id} $unlocked={achievement.unlocked} $rarity={achievement.rarity} onClick={() => navigate('/achievements')}>
-                                    {!achievement.unlocked && <BadgeLock><Lock size={14} /></BadgeLock>}
-                                    {achievement.unlocked && achievement.rarity && <RarityDot $rarity={achievement.rarity} />}
-                                    <BadgeIcon $unlocked={achievement.unlocked}>{achievement.icon}</BadgeIcon>
-                                    <BadgeLabel $unlocked={achievement.unlocked}>{achievement.name}</BadgeLabel>
-                                </AchievementBadge>
-                            ))}
-                        </AchievementsGrid>
-                    </AchievementsSection>
-                )}
+                {/* ✅ FIXED ACHIEVEMENTS SECTION - Now shows correct totals */}
+                <AchievementsSection>
+                    <AchievementsHeader>
+                        <AchievementsTitle>
+                            <Award size={24} />
+                            Your Achievements
+                        </AchievementsTitle>
+                        <AchievementsProgress>
+                            <ProgressBar>
+                                <ProgressFill $progress={achievementProgress} />
+                            </ProgressBar>
+                            <ProgressText>
+                                {unlockedAchievements}/{totalAchievements} Unlocked
+                            </ProgressText>
+                        </AchievementsProgress>
+                    </AchievementsHeader>
+                    
+                    {achievements.length > 0 ? (
+                        <>
+                            <AchievementsGrid>
+                                {achievements.map((achievement) => (
+                                    <AchievementBadge 
+                                        key={achievement.id} 
+                                        $unlocked={achievement.unlocked} 
+                                        $rarity={achievement.rarity} 
+                                        onClick={() => navigate('/achievements')}
+                                    >
+                                        {!achievement.unlocked && (
+                                            <BadgeLock><Lock size={14} /></BadgeLock>
+                                        )}
+                                        {achievement.unlocked && achievement.rarity && (
+                                            <RarityDot $rarity={achievement.rarity} />
+                                        )}
+                                        <BadgeIcon $unlocked={achievement.unlocked}>
+                                            {achievement.icon}
+                                        </BadgeIcon>
+                                        <BadgeLabel $unlocked={achievement.unlocked}>
+                                            {achievement.name}
+                                        </BadgeLabel>
+                                    </AchievementBadge>
+                                ))}
+                            </AchievementsGrid>
+                            <ViewAchievementsButton onClick={() => navigate('/achievements')}>
+                                View All {totalAchievements} Achievements
+                                <ChevronRight size={18} />
+                            </ViewAchievementsButton>
+                        </>
+                    ) : (
+                        <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
+                            <Award size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
+                            <p>Start trading to unlock achievements!</p>
+                        </div>
+                    )}
+                </AchievementsSection>
 
                 <WidgetsGrid>
                     <LeaderboardWidget>
@@ -1914,7 +2037,9 @@ const DashboardPage = () => {
                         </LeaderboardList>
                         <ViewAllButton onClick={() => navigate('/leaderboard')}>View Full Leaderboard<ChevronRight size={18} /></ViewAllButton>
                     </LeaderboardWidget>
-                   <WhaleAlertWidget />
+
+                    <WhaleAlertWidget />
+
                     <SocialFeedWidget>
                         <SocialFeedHeader>
                             <SocialFeedTitle><MessageSquare size={24} />Social Feed</SocialFeedTitle>
@@ -1931,9 +2056,9 @@ const DashboardPage = () => {
                                                 <PostTime>{formatTimeAgo(post.createdAt)}</PostTime>
                                             </PostUserInfo>
                                         </PostHeader>
-                                       <PostContent>
-    <TickerText text={post.content || post.text || ''} />
-</PostContent>
+                                        <PostContent>
+                                            <TickerText text={post.content || post.text || ''} />
+                                        </PostContent>
                                         <PostActions>
                                             <PostAction $color="#ef4444"><ThumbsUp size={16} /> {post.likes?.length || post.likesCount || 0}</PostAction>
                                             <PostAction><MessageSquare size={16} /> {post.comments?.length || post.commentsCount || 0}</PostAction>
@@ -1956,8 +2081,16 @@ const DashboardPage = () => {
 
                 <ChartSection>
                     <SearchContainer>
-                        <SearchInput type="text" placeholder="Search any stock or crypto (e.g., AAPL, BTC-USD)..." value={searchSymbol} onChange={(e) => setSearchSymbol(e.target.value.toUpperCase())} onKeyPress={(e) => { if (e.key === 'Enter') handleSearchSymbol(); }} />
-                        <SearchButton onClick={handleSearchSymbol} disabled={!searchSymbol.trim()}><Eye size={20} />Load Chart</SearchButton>
+                        <SearchInput 
+                            type="text" 
+                            placeholder="Search any stock or crypto (e.g., AAPL, BTC-USD)..." 
+                            value={searchSymbol} 
+                            onChange={(e) => setSearchSymbol(e.target.value.toUpperCase())} 
+                            onKeyPress={(e) => { if (e.key === 'Enter') handleSearchSymbol(); }} 
+                        />
+                        <SearchButton onClick={handleSearchSymbol} disabled={!searchSymbol.trim()}>
+                            <Eye size={20} />Load Chart
+                        </SearchButton>
                     </SearchContainer>
                     <SymbolSelector>
                         <QuickSelectLabel>Quick Select:</QuickSelectLabel>
@@ -1986,10 +2119,17 @@ const DashboardPage = () => {
                         <StatSubtext><Eye size={16} />{portfolioData?.holdingsCount || 0} Holdings</StatSubtext>
                     </StatCard>
                     <StatCard $variant={portfolioData?.totalChange >= 0 ? 'success' : 'danger'}>
-                        <StatIcon $variant={portfolioData?.totalChange >= 0 ? 'success' : 'danger'}>{portfolioData?.totalChange >= 0 ? <TrendingUp size={24} /> : <TrendingDown size={24} />}</StatIcon>
+                        <StatIcon $variant={portfolioData?.totalChange >= 0 ? 'success' : 'danger'}>
+                            {portfolioData?.totalChange >= 0 ? <TrendingUp size={24} /> : <TrendingDown size={24} />}
+                        </StatIcon>
                         <StatLabel>Total Gain/Loss</StatLabel>
-                        <StatValue $positive={portfolioData?.totalChange >= 0} $negative={portfolioData?.totalChange < 0}>{formatCurrency(Math.abs(portfolioData?.totalChange || 0))}</StatValue>
-                        <StatSubtext $positive={portfolioData?.totalChangePercent >= 0} $negative={portfolioData?.totalChangePercent < 0}>{portfolioData?.totalChangePercent >= 0 ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}{formatPercent(portfolioData?.totalChangePercent || 0)}</StatSubtext>
+                        <StatValue $positive={portfolioData?.totalChange >= 0} $negative={portfolioData?.totalChange < 0}>
+                            {formatCurrency(Math.abs(portfolioData?.totalChange || 0))}
+                        </StatValue>
+                        <StatSubtext $positive={portfolioData?.totalChangePercent >= 0} $negative={portfolioData?.totalChangePercent < 0}>
+                            {portfolioData?.totalChangePercent >= 0 ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
+                            {formatPercent(portfolioData?.totalChangePercent || 0)}
+                        </StatSubtext>
                     </StatCard>
                     <StatCard $variant="warning">
                         <StatIcon $variant="warning"><Flame size={24} /></StatIcon>
@@ -2018,11 +2158,19 @@ const DashboardPage = () => {
                             </PanelHeader>
                             <ResponsiveContainer width="100%" height={300}>
                                 <AreaChart data={performanceChartData}>
-                                    <defs><linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#00adef" stopOpacity={0.8}/><stop offset="95%" stopColor="#00adef" stopOpacity={0}/></linearGradient></defs>
+                                    <defs>
+                                        <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#00adef" stopOpacity={0.8}/>
+                                            <stop offset="95%" stopColor="#00adef" stopOpacity={0}/>
+                                        </linearGradient>
+                                    </defs>
                                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.1)" />
                                     <XAxis dataKey="date" stroke="#94a3b8" />
                                     <YAxis stroke="#94a3b8" />
-                                    <Tooltip contentStyle={{ background: '#1e293b', border: '1px solid rgba(0, 173, 237, 0.3)', borderRadius: '8px' }} formatter={(value) => [formatCurrency(value), 'Value']} />
+                                    <Tooltip 
+                                        contentStyle={{ background: '#1e293b', border: '1px solid rgba(0, 173, 237, 0.3)', borderRadius: '8px' }} 
+                                        formatter={(value) => [formatCurrency(value), 'Value']} 
+                                    />
                                     <Area type="monotone" dataKey="value" stroke="#00adef" fillOpacity={1} fill="url(#colorValue)" />
                                 </AreaChart>
                             </ResponsiveContainer>
@@ -2035,21 +2183,21 @@ const DashboardPage = () => {
                             </PanelHeader>
                             <MoversList>
                                 {marketMovers.map((mover, index) => (
-                                 <MoverItem key={index}>
-    <MoverInfo>
-        <TickerLink symbol={mover.symbol} bold style={{ fontSize: '1.2rem', minWidth: '60px' }}>
-            {mover.symbol}
-        </TickerLink>
-        <MoverName>{mover.name}</MoverName>
-    </MoverInfo>
-    <MoverPrice>
-        <MoverPriceValue>${mover.price?.toFixed(2)}</MoverPriceValue>
-        <MoverChange $positive={mover.change >= 0}>
-            {mover.change >= 0 ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
-            {mover.change >= 0 ? '+' : ''}{mover.change?.toFixed(2)}%
-        </MoverChange>
-    </MoverPrice>
-</MoverItem>
+                                    <MoverItem key={index}>
+                                        <MoverInfo>
+                                            <TickerLink symbol={mover.symbol} bold style={{ fontSize: '1.2rem', minWidth: '60px' }}>
+                                                {mover.symbol}
+                                            </TickerLink>
+                                            <MoverName>{mover.name}</MoverName>
+                                        </MoverInfo>
+                                        <MoverPrice>
+                                            <MoverPriceValue>${mover.price?.toFixed(2)}</MoverPriceValue>
+                                            <MoverChange $positive={mover.change >= 0}>
+                                                {mover.change >= 0 ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
+                                                {mover.change >= 0 ? '+' : ''}{mover.change?.toFixed(2)}%
+                                            </MoverChange>
+                                        </MoverPrice>
+                                    </MoverItem>
                                 ))}
                             </MoversList>
                         </Panel>
@@ -2064,23 +2212,31 @@ const DashboardPage = () => {
                             {predictions.length > 0 ? (
                                 predictions.map((pred, index) => (
                                     <PredictionCard key={pred._id || index}>
-                                       <PredictionHeader>
-    <TickerLink symbol={pred.symbol} bold style={{ fontSize: '1.3rem', color: '#a78bfa' }}>
-        {pred.symbol}
-    </TickerLink>
-    <PredictionDirection $up={pred.direction === 'UP'}>
-        {pred.direction === 'UP' ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
-        {pred.direction}
-    </PredictionDirection>
-</PredictionHeader>
+                                        <PredictionHeader>
+                                            <TickerLink symbol={pred.symbol} bold style={{ fontSize: '1.3rem', color: '#a78bfa' }}>
+                                                {pred.symbol}
+                                            </TickerLink>
+                                            <PredictionDirection $up={pred.direction === 'UP'}>
+                                                {pred.direction === 'UP' ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
+                                                {pred.direction}
+                                            </PredictionDirection>
+                                        </PredictionHeader>
                                         <PredictionDetails>
-                                            <PredictionDetail><DetailLabel>Target Price</DetailLabel><DetailValue>${pred.targetPrice?.toFixed(2)}</DetailValue></PredictionDetail>
-                                            <PredictionDetail><DetailLabel>Timeframe</DetailLabel><DetailValue>{pred.timeframe}</DetailValue></PredictionDetail>
+                                            <PredictionDetail>
+                                                <DetailLabel>Target Price</DetailLabel>
+                                                <DetailValue>${pred.targetPrice?.toFixed(2)}</DetailValue>
+                                            </PredictionDetail>
+                                            <PredictionDetail>
+                                                <DetailLabel>Timeframe</DetailLabel>
+                                                <DetailValue>{pred.timeframe}</DetailValue>
+                                            </PredictionDetail>
                                         </PredictionDetails>
                                         <div style={{ marginTop: '1rem', position: 'relative', zIndex: 1 }}>
                                             <DetailLabel>Confidence Level</DetailLabel>
                                             <ConfidenceBar><ConfidenceFill $value={pred.confidence} /></ConfidenceBar>
-                                            <div style={{ textAlign: 'right', marginTop: '0.5rem', color: '#10b981', fontWeight: 600 }}>{pred.confidence?.toFixed(1)}%</div>
+                                            <div style={{ textAlign: 'right', marginTop: '0.5rem', color: '#10b981', fontWeight: 600 }}>
+                                                {pred.confidence?.toFixed(1)}%
+                                            </div>
                                         </div>
                                     </PredictionCard>
                                 ))
@@ -2089,7 +2245,12 @@ const DashboardPage = () => {
                                     <Brain size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
                                     <p>No predictions yet.</p>
                                     <p style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>Go to AI Predict to create your first prediction!</p>
-                                    <ViewAllButton onClick={() => navigate('/predict')} style={{ marginTop: '1rem', borderColor: 'rgba(139, 92, 246, 0.3)', color: '#a78bfa' }}>Create Prediction<ChevronRight size={18} /></ViewAllButton>
+                                    <ViewAllButton 
+                                        onClick={() => navigate('/predict')} 
+                                        style={{ marginTop: '1rem', borderColor: 'rgba(139, 92, 246, 0.3)', color: '#a78bfa' }}
+                                    >
+                                        Create Prediction<ChevronRight size={18} />
+                                    </ViewAllButton>
                                 </NoPredictions>
                             )}
                         </Panel>

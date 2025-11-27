@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import styled, { keyframes } from 'styled-components';
+import styled, { keyframes, css } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import {
     Waves, Users, BarChart3, Landmark, X,
@@ -80,7 +80,7 @@ const Notification = styled.div`
     position: relative;
     overflow: hidden;
 
-    ${props => props.$significance === 'massive' && `
+    ${props => props.$significance === 'massive' && css`
         animation: ${slideIn} 0.3s ease-out, ${glow} 2s ease-in-out infinite;
     `}
 
@@ -412,11 +412,8 @@ const WhaleNotification = () => {
             isMounted = false;
             clearInterval(pollInterval);
         };
-    }, [isAuthenticated, addNotification]); // Only depends on isAuthenticated and addNotification
+    }, [isAuthenticated, addNotification]);
 
-    // ... rest of component stays the same
-
-    
     // Handle click on notification
     const handleNotificationClick = (alert) => {
         // Navigate to the appropriate page based on alert type

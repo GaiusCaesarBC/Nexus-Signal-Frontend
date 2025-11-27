@@ -51,17 +51,18 @@ const NavContainer = styled.nav`
     animation: ${fadeIn} 0.5s ease-out;
 `;
 
+// ✅ FIXED: Nav starts from left edge, no centering
 const NavInner = styled.div`
-    max-width: 1600px;
-    margin: 0 auto;
-    padding: 0 2rem;
+    width: 100%;
+    padding: 0 1.5rem;
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    height: 80px;
+    gap: 0.25rem;
+    height: 70px;
 
     @media (max-width: 768px) {
         padding: 0 1rem;
+        justify-content: space-between;
     }
 `;
 
@@ -69,12 +70,14 @@ const NavInner = styled.div`
 const Logo = styled(Link)`
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.5rem;
     text-decoration: none;
-    font-size: 2rem;
+    font-size: 1.5rem;
     font-weight: 900;
     position: relative;
     transition: all 0.3s ease;
+    flex-shrink: 0;
+    margin-right: 1rem;
 
     &:hover {
         transform: translateY(-2px) scale(1.02);
@@ -83,8 +86,8 @@ const Logo = styled(Link)`
 `;
 
 const LogoIcon = styled.div`
-    width: 150px;
-    height: 150px;
+    width: 50px;
+    height: 50px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -117,8 +120,8 @@ const LogoIcon = styled.div`
     }
 
     @media (max-width: 768px) {
-        width: 45px;
-        height: 45px;
+        width: 40px;
+        height: 40px;
     }
 `;
 
@@ -132,9 +135,9 @@ const LogoImage = styled.img`
 
 // ✅ FIXED: Bright visible gradient for "Nexus Signal" text
 const LogoText = styled.span`
-    letter-spacing: 1.5px;
-    font-size: 1.1em;
-    font-weight: 900;
+    letter-spacing: 1px;
+    font-size: 1rem;
+    font-weight: 800;
     
     background: linear-gradient(135deg, 
         #00adef 0%,
@@ -162,7 +165,7 @@ const LogoText = styled.span`
 const NavLinks = styled.div`
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.25rem;
 
     @media (max-width: 1024px) {
         display: none;
@@ -177,17 +180,18 @@ const NavItem = styled.div`
 const NavLink = styled(Link)`
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.25rem;
+    gap: 0.4rem;
+    padding: 0.6rem 0.75rem;
     color: ${props => props.$active ? '#00adef' : '#94a3b8'};
     text-decoration: none;
     font-weight: 600;
-    font-size: 0.95rem;
-    border-radius: 10px;
+    font-size: 0.85rem;
+    border-radius: 8px;
     position: relative;
     transition: all 0.3s ease;
     background: ${props => props.$active ? 'rgba(0, 173, 239, 0.15)' : 'transparent'};
     border: 1px solid ${props => props.$active ? 'rgba(0, 173, 239, 0.3)' : 'transparent'};
+    white-space: nowrap;
 
     &:hover {
         color: #00adef;
@@ -201,16 +205,17 @@ const NavLink = styled(Link)`
 const DropdownTrigger = styled.button`
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.25rem;
+    gap: 0.4rem;
+    padding: 0.6rem 0.75rem;
     color: ${props => props.$active ? '#00adef' : '#94a3b8'};
     background: ${props => props.$active ? 'rgba(0, 173, 239, 0.15)' : 'transparent'};
     border: 1px solid ${props => props.$active ? 'rgba(0, 173, 239, 0.3)' : 'transparent'};
-    border-radius: 10px;
+    border-radius: 8px;
     font-weight: 600;
-    font-size: 0.95rem;
+    font-size: 0.85rem;
     cursor: pointer;
     transition: all 0.3s ease;
+    white-space: nowrap;
 
     &:hover {
         color: #00adef;
@@ -264,13 +269,17 @@ const DropdownItem = styled(Link)`
 `;
 
 // ============ USER SECTION ============
+// ✅ FIXED: Added margin-left: auto to push user section to the right
 const UserSection = styled.div`
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.75rem;
+    margin-left: auto;
+    flex-shrink: 0;
 
     @media (max-width: 768px) {
         gap: 0.5rem;
+        margin-left: 0;
     }
 `;
 
@@ -279,9 +288,9 @@ const NotificationButton = styled.button`
     background: rgba(0, 173, 239, 0.1);
     border: 1px solid rgba(0, 173, 239, 0.3);
     color: #00adef;
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -505,13 +514,14 @@ const EmptyStateText = styled.div`
 const UserMenuButton = styled.button`
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    padding: 0.5rem 1rem;
+    gap: 0.5rem;
+    padding: 0.4rem 0.75rem;
     background: linear-gradient(135deg, rgba(0, 173, 239, 0.15) 0%, rgba(0, 173, 239, 0.05) 100%);
     border: 1px solid rgba(0, 173, 239, 0.3);
-    border-radius: 12px;
+    border-radius: 10px;
     color: #f8fafc;
     font-weight: 600;
+    font-size: 0.85rem;
     cursor: pointer;
     transition: all 0.3s ease;
     position: relative;
@@ -523,15 +533,15 @@ const UserMenuButton = styled.button`
     }
 
     @media (max-width: 768px) {
-        padding: 0.5rem;
+        padding: 0.4rem;
         gap: 0;
     }
 `;
 
 const UserAvatar = styled.div`
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
     background: ${props => props.$src ? 
         `url(${props.$src}) center/cover` : 
         'linear-gradient(135deg, #00adef 0%, #00ff88 100%)'
@@ -540,7 +550,7 @@ const UserAvatar = styled.div`
     align-items: center;
     justify-content: center;
     font-weight: 700;
-    font-size: ${props => props.$src ? '0' : '1rem'};
+    font-size: ${props => props.$src ? '0' : '0.85rem'};
     color: white;
     box-shadow: 0 2px 10px rgba(0, 173, 239, 0.4);
     position: relative;
@@ -631,9 +641,9 @@ const MobileMenuButton = styled.button`
     background: rgba(0, 173, 239, 0.1);
     border: 1px solid rgba(0, 173, 239, 0.3);
     color: #00adef;
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
     align-items: center;
     justify-content: center;
     cursor: pointer;
@@ -651,11 +661,11 @@ const MobileMenuButton = styled.button`
 
 const MobileMenu = styled.div`
     position: fixed;
-    top: 80px;
+    top: 70px;
     left: 0;
     right: 0;
     bottom: 0;
-    min-height: calc(100vh - 80px);
+    min-height: calc(100vh - 70px);
     background: #0a0e27;
     backdrop-filter: blur(20px);
     z-index: 9999;
@@ -726,7 +736,7 @@ const Divider = styled.div`
 
 // ============ COMPONENT ============
 const Navbar = () => {
-    const { user, logout } = useAuth();
+    const { user, logout, isAuthenticated, api } = useAuth();
     const location = useLocation();
     const navigate = useNavigate();
     
@@ -742,46 +752,11 @@ const Navbar = () => {
     const [userDropdownOpen, setUserDropdownOpen] = useState(false);
     const [notificationsOpen, setNotificationsOpen] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-    // Real notifications from backend
+    
+    // ✅ FIXED: Added missing useState for notifications
     const [notifications, setNotifications] = useState([]);
 
-    // Fetch notifications from backend
-    useEffect(() => {
-        fetchNotifications();
-        
-        // Poll every 30 seconds for new notifications
-        const interval = setInterval(fetchNotifications, 30000);
-        return () => clearInterval(interval);
-    }, []);
-
-    const fetchNotifications = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            if (!token) return;
-            
-            const response = await axios.get('http://localhost:5000/api/notifications', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            
-            // Map backend notifications to your format
-            const mappedNotifications = (response.data.notifications || []).map(notif => ({
-                id: notif._id,
-                type: notif.type === 'price_alert' ? 'success' : 
-                      notif.type === 'prediction_expiry' ? 'warning' : 'info',
-                title: notif.title,
-                text: notif.message,
-                time: getTimeAgo(notif.createdAt),
-                unread: !notif.read,
-                icon: getIconForType(notif.type)
-            }));
-            
-            setNotifications(mappedNotifications);
-        } catch (error) {
-            console.error('Failed to fetch notifications:', error);
-        }
-    };
-
+    // Helper functions
     const getIconForType = (type) => {
         switch (type) {
             case 'price_alert': return TrendingUpIcon;
@@ -802,6 +777,45 @@ const Navbar = () => {
         return `${Math.floor(diffInMinutes / 1440)}d ago`;
     };
 
+    // ✅ FIXED: Single, complete fetchNotifications function
+    const fetchNotifications = async () => {
+        // Don't fetch if not authenticated
+        if (!isAuthenticated || !user) return;
+        
+        try {
+            const response = await api.get('/notifications');
+            
+            // Map backend notifications to your format
+            const mappedNotifications = (response.data.notifications || response.data || []).map(notif => ({
+                id: notif._id,
+                type: notif.type === 'price_alert' ? 'success' : 
+                      notif.type === 'prediction_expiry' ? 'warning' : 'info',
+                title: notif.title,
+                text: notif.message,
+                time: getTimeAgo(notif.createdAt),
+                unread: !notif.read,
+                icon: getIconForType(notif.type)
+            }));
+            
+            setNotifications(mappedNotifications);
+        } catch (error) {
+            // Silently fail for 401 errors (user not logged in)
+            if (error.response?.status !== 401) {
+                console.error('Failed to fetch notifications:', error);
+            }
+        }
+    };
+
+    // ✅ FIXED: useEffect with proper dependencies
+    useEffect(() => {
+        if (!isAuthenticated || !user) return;
+        
+        fetchNotifications();
+        const interval = setInterval(fetchNotifications, 30000);
+        
+        return () => clearInterval(interval);
+    }, [isAuthenticated, user]);
+
     const unreadCount = notifications.filter(n => n.unread).length;
 
     // Navigation structure
@@ -815,13 +829,13 @@ const Navbar = () => {
             { path: '/watchlist', label: 'Watchlist', icon: Eye },
             { path: '/paper-trading', label: 'Paper Trading', icon: TrendingUp },
         ],
-       analysis: [
-    { path: '/screener', label: 'Screener', icon: Filter },
-    { path: '/heatmap', label: 'Heatmap', icon: MapPin },
-    { path: '/sentiment', label: 'Sentiment', icon: Activity },
-    { path: '/compare', label: 'Stock Comparison', icon: BarChart3 },
-    { path: '/whale-alerts', label: 'Whale Alerts', icon: Waves },
-],
+        analysis: [
+            { path: '/screener', label: 'Screener', icon: Filter },
+            { path: '/heatmap', label: 'Heatmap', icon: MapPin },
+            { path: '/sentiment', label: 'Sentiment', icon: Activity },
+            { path: '/compare', label: 'Stock Comparison', icon: BarChart3 },
+            { path: '/whale-alerts', label: 'Whale Alerts', icon: Waves },
+        ],
         community: [
             { path: '/leaderboard', label: 'Leaderboard', icon: Trophy },
             { path: '/discover', label: 'Discover', icon: Sparkles },
@@ -870,49 +884,49 @@ const Navbar = () => {
     };
 
     const handleNotificationClick = async (notification) => {
-        try {
-            const token = localStorage.getItem('token');
-            await axios.patch(
-                `http://localhost:5000/api/notifications/${notification.id}/read`,
-                {},
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            
-            // Update local state
-            setNotifications(notifications.map(n => 
-                n.id === notification.id ? { ...n, unread: false } : n
-            ));
+    try {
+        await api.put(`/notifications/${notification.id}/read`);
+        
+        // Update local state
+        setNotifications(notifications.map(n => 
+            n.id === notification.id ? { ...n, unread: false } : n
+        ));
 
-            // Navigate based on notification type
-            if (notification.type === 'success' && notification.title.includes('Prediction')) {
-                navigate('/predict');
-            } else if (notification.title.includes('Portfolio')) {
-                navigate('/portfolio');
-            } else if (notification.title.includes('Price Alert')) {
-                navigate('/watchlist');
-            }
-
-            setNotificationsOpen(false);
-        } catch (error) {
-            console.error('Failed to mark as read:', error);
+        // Navigate based on notification type
+        if (notification.type === 'success' || notification.type === 'price_alert') {
+            navigate('/watchlist');
+        } else if (notification.type === 'warning' || notification.type === 'prediction_expiry') {
+            navigate('/predict');
+        } else if (notification.type === 'achievement') {
+            navigate('/achievements/browse');
+        } else if (notification.type === 'level_up') {
+            navigate('/profile');
+        } else if (notification.type === 'follow') {
+            navigate('/profile');
+        } else if (notification.type === 'portfolio_milestone') {
+            navigate('/portfolio');
+        } else {
+            // Default: go to dashboard
+            navigate('/dashboard');
         }
-    };
 
-    const handleMarkAllRead = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            await axios.post(
-                'http://localhost:5000/api/notifications/read-all',
-                {},
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            
-            setNotifications(notifications.map(n => ({ ...n, unread: false })));
-        } catch (error) {
-            console.error('Failed to mark all as read:', error);
-        }
-    };
+        setNotificationsOpen(false);
+    } catch (error) {
+        console.error('Failed to mark as read:', error);
+        // Still navigate and close even if marking as read fails
+        setNotificationsOpen(false);
+    }
+};
 
+const handleMarkAllRead = async () => {
+    try {
+        await api.post('/notifications/mark-all-read');
+        
+        setNotifications(notifications.map(n => ({ ...n, unread: false })));
+    } catch (error) {
+        console.error('Failed to mark all as read:', error);
+    }
+};
     const getUserInitials = () => {
         if (!user?.name) return 'U';
         return user.name
@@ -980,7 +994,7 @@ const Navbar = () => {
                 <NavLinks>
                     {/* Dashboard */}
                     <NavLink to="/dashboard" $active={location.pathname === '/dashboard'}>
-                        <Home size={18} />
+                        <Home size={16} />
                         Dashboard
                     </NavLink>
 
@@ -991,9 +1005,9 @@ const Navbar = () => {
                             $open={dropdowns.vault}
                             $active={location.pathname === '/vault' || location.pathname === '/equipped'}
                         >
-                            <DollarSign size={18} />
+                            <DollarSign size={16} />
                             Vault
-                            <ChevronDown size={16} />
+                            <ChevronDown size={14} />
                         </DropdownTrigger>
                         {dropdowns.vault && (
                             <DropdownMenu>
@@ -1001,14 +1015,14 @@ const Navbar = () => {
                                     to="/vault"
                                     $active={location.pathname === '/vault'}
                                 >
-                                    <DollarSign size={18} />
+                                    <DollarSign size={16} />
                                     The Vault
                                 </DropdownItem>
                                 <DropdownItem
                                     to="/equipped"
                                     $active={location.pathname === '/equipped'}
                                 >
-                                    <Award size={18} />
+                                    <Award size={16} />
                                     Equipped Items
                                 </DropdownItem>
                             </DropdownMenu>
@@ -1017,8 +1031,8 @@ const Navbar = () => {
 
                     {/* Social Feed */}
                     <NavLink to="/feed" $active={location.pathname === '/feed'}>
-                        <MessageCircle size={18} />
-                        Social Feed
+                        <MessageCircle size={16} />
+                        Feed
                     </NavLink>
 
                     {/* Trading Dropdown */}
@@ -1028,9 +1042,9 @@ const Navbar = () => {
                             $open={dropdowns.trading}
                             $active={isPathActive(navStructure.trading)}
                         >
-                            <Briefcase size={18} />
+                            <Briefcase size={16} />
                             Trading
-                            <ChevronDown size={16} />
+                            <ChevronDown size={14} />
                         </DropdownTrigger>
                         {dropdowns.trading && (
                             <DropdownMenu>
@@ -1042,7 +1056,7 @@ const Navbar = () => {
                                             to={item.path}
                                             $active={location.pathname === item.path}
                                         >
-                                            <Icon size={18} />
+                                            <Icon size={16} />
                                             {item.label}
                                         </DropdownItem>
                                     );
@@ -1058,9 +1072,9 @@ const Navbar = () => {
                             $open={dropdowns.analysis}
                             $active={isPathActive(navStructure.analysis)}
                         >
-                            <BarChart3 size={18} />
+                            <BarChart3 size={16} />
                             Analysis
-                            <ChevronDown size={16} />
+                            <ChevronDown size={14} />
                         </DropdownTrigger>
                         {dropdowns.analysis && (
                             <DropdownMenu>
@@ -1072,7 +1086,7 @@ const Navbar = () => {
                                             to={item.path}
                                             $active={location.pathname === item.path}
                                         >
-                                            <Icon size={18} />
+                                            <Icon size={16} />
                                             {item.label}
                                         </DropdownItem>
                                     );
@@ -1088,9 +1102,9 @@ const Navbar = () => {
                             $open={dropdowns.community}
                             $active={isPathActive(navStructure.community)}
                         >
-                            <Users size={18} />
+                            <Users size={16} />
                             Community
-                            <ChevronDown size={16} />
+                            <ChevronDown size={14} />
                         </DropdownTrigger>
                         {dropdowns.community && (
                             <DropdownMenu>
@@ -1102,7 +1116,7 @@ const Navbar = () => {
                                             to={item.path}
                                             $active={location.pathname === item.path}
                                         >
-                                            <Icon size={18} />
+                                            <Icon size={16} />
                                             {item.label}
                                         </DropdownItem>
                                     );
@@ -1111,7 +1125,7 @@ const Navbar = () => {
                                     to="/achievements/browse"
                                     $active={location.pathname === '/achievements/browse'}
                                 >
-                                    <Award size={18} />
+                                    <Award size={16} />
                                     Browse Achievements
                                 </DropdownItem>
                             </DropdownMenu>  
@@ -1125,9 +1139,9 @@ const Navbar = () => {
                             $open={dropdowns.ai}
                             $active={isPathActive(navStructure.ai)}
                         >
-                            <Zap size={18} />
+                            <Zap size={16} />
                             AI Tools
-                            <ChevronDown size={16} />
+                            <ChevronDown size={14} />
                         </DropdownTrigger>
                         {dropdowns.ai && (
                             <DropdownMenu>
@@ -1139,7 +1153,7 @@ const Navbar = () => {
                                             to={item.path}
                                             $active={location.pathname === item.path}
                                         >
-                                            <Icon size={18} />
+                                            <Icon size={16} />
                                             {item.label}
                                         </DropdownItem>
                                     );
@@ -1155,9 +1169,9 @@ const Navbar = () => {
                             $open={dropdowns.market}
                             $active={isPathActive(navStructure.market)}
                         >
-                            <Globe size={18} />
+                            <Globe size={16} />
                             Market
-                            <ChevronDown size={16} />
+                            <ChevronDown size={14} />
                         </DropdownTrigger>
                         {dropdowns.market && (
                             <DropdownMenu>
@@ -1169,7 +1183,7 @@ const Navbar = () => {
                                             to={item.path}
                                             $active={location.pathname === item.path}
                                         >
-                                            <Icon size={18} />
+                                            <Icon size={16} />
                                             {item.label}
                                         </DropdownItem>
                                     );
@@ -1180,7 +1194,7 @@ const Navbar = () => {
 
                     {/* Pricing */}
                     <NavLink to="/pricing" $active={location.pathname === '/pricing'}>
-                        <DollarSign size={18} />
+                        <DollarSign size={16} />
                         Pricing
                     </NavLink>
                 </NavLinks>

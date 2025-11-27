@@ -1,26 +1,51 @@
-// client/src/pages/PricingPage.js - WITH FREE TIER + STRIPE CHECKOUT
-import React, { useState, useEffect } from 'react';
-import styled, { keyframes } from 'styled-components';
-import { Check, Zap, Crown, Star, Rocket, Sparkles, TrendingUp, Shield, Award, Gift } from 'lucide-react';
+// client/src/pages/PricingPage.js - LEGENDARY EDITION 🚀
+import React, { useState, useEffect, useRef } from 'react';
+import styled, { keyframes, css } from 'styled-components';
+import { 
+    Check, Zap, Crown, Star, Rocket, Sparkles, TrendingUp, Shield, Award, Gift,
+    Waves, Brain, Lock, Users, Infinity, Clock, Headphones, BarChart3, Target,
+    Gem, ChevronRight, ArrowRight, X
+} from 'lucide-react';
 import nexusSignalLogo from '../assets/nexus-signal-logo.png';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useNavigate } from 'react-router-dom';
 
-// ============ ANIMATIONS ============
-const fadeIn = keyframes`
-    from { opacity: 0; transform: translateY(20px); }
+// ============ EPIC ANIMATIONS ============
+const fadeInUp = keyframes`
+    from { opacity: 0; transform: translateY(40px); }
+    to { opacity: 1; transform: translateY(0); }
+`;
+
+const fadeInDown = keyframes`
+    from { opacity: 0; transform: translateY(-40px); }
     to { opacity: 1; transform: translateY(0); }
 `;
 
 const float = keyframes`
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-15px); }
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    25% { transform: translateY(-10px) rotate(1deg); }
+    75% { transform: translateY(-5px) rotate(-1deg); }
 `;
 
-const glow = keyframes`
-    0%, 100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.4); }
-    50% { box-shadow: 0 0 40px rgba(59, 130, 246, 0.8); }
+const floatDelayed = keyframes`
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+`;
+
+const megaGlow = keyframes`
+    0%, 100% { 
+        box-shadow: 
+            0 0 20px rgba(59, 130, 246, 0.3),
+            0 0 40px rgba(139, 92, 246, 0.2),
+            0 0 60px rgba(249, 115, 22, 0.1);
+    }
+    50% { 
+        box-shadow: 
+            0 0 40px rgba(59, 130, 246, 0.5),
+            0 0 80px rgba(139, 92, 246, 0.3),
+            0 0 120px rgba(249, 115, 22, 0.2);
+    }
 `;
 
 const shimmer = keyframes`
@@ -28,28 +53,114 @@ const shimmer = keyframes`
     100% { background-position: 200% center; }
 `;
 
-const particles = keyframes`
-    0% { transform: translateY(0) translateX(0) scale(1); opacity: 1; }
-    100% { transform: translateY(-100vh) translateX(50px) scale(0); opacity: 0; }
+const rotate = keyframes`
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 `;
 
 const pulse = keyframes`
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.05); opacity: 0.9; }
 `;
 
-const neonGlow = keyframes`
+const pulseGlow = keyframes`
+    0%, 100% { 
+        box-shadow: 0 0 20px currentColor;
+        opacity: 0.8;
+    }
+    50% { 
+        box-shadow: 0 0 40px currentColor, 0 0 60px currentColor;
+        opacity: 1;
+    }
+`;
+
+const gradientShift = keyframes`
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+`;
+
+const twinkle = keyframes`
+    0%, 100% { opacity: 0.3; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1.2); }
+`;
+
+const shootingStar = keyframes`
+    0% { transform: translateX(0) translateY(0); opacity: 1; }
+    70% { opacity: 1; }
+    100% { transform: translateX(300px) translateY(300px); opacity: 0; }
+`;
+
+const aurora = keyframes`
+    0% { 
+        transform: translateX(-50%) rotate(0deg);
+        opacity: 0.3;
+    }
+    50% { 
+        opacity: 0.5;
+    }
+    100% { 
+        transform: translateX(-50%) rotate(360deg);
+        opacity: 0.3;
+    }
+`;
+
+const borderRotate = keyframes`
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+`;
+
+const ripple = keyframes`
+    0% { transform: scale(0); opacity: 0.6; }
+    100% { transform: scale(4); opacity: 0; }
+`;
+
+const checkmarkDraw = keyframes`
+    0% { stroke-dashoffset: 24; }
+    100% { stroke-dashoffset: 0; }
+`;
+
+const textGlow = keyframes`
     0%, 100% {
         text-shadow: 
-            0 0 10px rgba(59, 130, 246, 0.8),
-            0 0 20px rgba(59, 130, 246, 0.6),
-            0 0 30px rgba(59, 130, 246, 0.4);
+            0 0 10px rgba(255, 255, 255, 0.5),
+            0 0 20px rgba(59, 130, 246, 0.5),
+            0 0 30px rgba(139, 92, 246, 0.3);
     }
     50% {
         text-shadow: 
-            0 0 20px rgba(59, 130, 246, 1),
+            0 0 20px rgba(255, 255, 255, 0.8),
             0 0 40px rgba(59, 130, 246, 0.8),
-            0 0 60px rgba(59, 130, 246, 0.6);
+            0 0 60px rgba(139, 92, 246, 0.5);
+    }
+`;
+
+const countUp = keyframes`
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+`;
+
+const energyWave = keyframes`
+    0% { transform: scale(1); opacity: 0.5; }
+    100% { transform: scale(2.5); opacity: 0; }
+`;
+
+const floatingOrb = keyframes`
+    0%, 100% { 
+        transform: translate(0, 0) scale(1);
+        opacity: 0.6;
+    }
+    25% { 
+        transform: translate(20px, -30px) scale(1.1);
+        opacity: 0.8;
+    }
+    50% { 
+        transform: translate(-10px, -50px) scale(0.9);
+        opacity: 0.5;
+    }
+    75% { 
+        transform: translate(-30px, -20px) scale(1.05);
+        opacity: 0.7;
     }
 `;
 
@@ -59,17 +170,18 @@ const PricingContainer = styled.div`
     flex-direction: column;
     align-items: center;
     min-height: 100vh;
-    padding-top: 80px;
-    background: linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
+    padding-top: 100px;
+    background: #030712;
     color: #f8fafc;
     padding-left: 1.5rem;
     padding-right: 1.5rem;
-    padding-bottom: 4rem;
+    padding-bottom: 6rem;
     position: relative;
     overflow: hidden;
 `;
 
-const ParticleContainer = styled.div`
+// Cosmic Background
+const CosmicBackground = styled.div`
     position: fixed;
     top: 0;
     left: 0;
@@ -78,346 +190,751 @@ const ParticleContainer = styled.div`
     pointer-events: none;
     z-index: 0;
     overflow: hidden;
+    background: 
+        radial-gradient(ellipse at 20% 20%, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, rgba(249, 115, 22, 0.05) 0%, transparent 70%),
+        linear-gradient(180deg, #030712 0%, #0f172a 50%, #030712 100%);
 `;
 
-const Particle = styled.div`
+const StarField = styled.div`
     position: absolute;
-    width: ${props => props.size}px;
-    height: ${props => props.size}px;
-    background: ${props => props.color};
+    width: 100%;
+    height: 100%;
+`;
+
+const StarLayer = styled.div`
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-image: ${props => props.$stars};
+    background-size: ${props => props.$size}px ${props => props.$size}px;
+    animation: ${props => css`
+        ${keyframes`
+            from { transform: translateY(0); }
+            to { transform: translateY(${props.$size}px); }
+        `}
+    `} ${props => props.$duration}s linear infinite;
+    opacity: ${props => props.$opacity};
+`;
+
+const AuroraEffect = styled.div`
+    position: absolute;
+    top: -50%;
+    left: 50%;
+    width: 200%;
+    height: 200%;
+    background: conic-gradient(
+        from 0deg,
+        transparent 0deg,
+        rgba(59, 130, 246, 0.1) 60deg,
+        rgba(139, 92, 246, 0.1) 120deg,
+        transparent 180deg,
+        rgba(249, 115, 22, 0.05) 240deg,
+        rgba(16, 185, 129, 0.05) 300deg,
+        transparent 360deg
+    );
+    animation: ${aurora} 60s linear infinite;
+    filter: blur(60px);
+`;
+
+const GridOverlay = styled.div`
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: 
+        linear-gradient(rgba(59, 130, 246, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(59, 130, 246, 0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    mask-image: radial-gradient(ellipse at center, black 0%, transparent 70%);
+`;
+
+const FloatingOrb = styled.div`
+    position: absolute;
+    width: ${props => props.$size}px;
+    height: ${props => props.$size}px;
+    background: radial-gradient(circle, ${props => props.$color} 0%, transparent 70%);
     border-radius: 50%;
-    animation: ${particles} ${props => props.duration}s linear infinite;
-    animation-delay: ${props => props.delay}s;
-    left: ${props => props.left}%;
+    filter: blur(${props => props.$blur}px);
+    animation: ${floatingOrb} ${props => props.$duration}s ease-in-out infinite;
+    animation-delay: ${props => props.$delay}s;
+    top: ${props => props.$top}%;
+    left: ${props => props.$left}%;
     opacity: 0.6;
-    filter: blur(1px);
+`;
+
+const ShootingStar = styled.div`
+    position: absolute;
+    width: 100px;
+    height: 2px;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.8), transparent);
+    animation: ${shootingStar} ${props => props.$duration}s linear infinite;
+    animation-delay: ${props => props.$delay}s;
+    top: ${props => props.$top}%;
+    left: ${props => props.$left}%;
+    transform-origin: left center;
+    opacity: 0;
+`;
+
+// Header Section
+const HeaderSection = styled.div`
+    text-align: center;
+    z-index: 2;
+    max-width: 1000px;
+    margin-bottom: 3rem;
+`;
+
+const LogoContainer = styled.div`
+    position: relative;
+    display: inline-block;
+    margin-bottom: 2rem;
 `;
 
 const HeaderLogo = styled.img`
-    width: 80px;
-    height: 80px;
-    margin-bottom: 2rem;
-    animation: ${float} 3s ease-in-out infinite;
-    filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.8));
+    width: 100px;
+    height: 100px;
+    animation: ${float} 4s ease-in-out infinite;
+    filter: drop-shadow(0 0 30px rgba(59, 130, 246, 0.8));
     cursor: pointer;
-    transition: transform 0.3s ease;
-    z-index: 1;
+    transition: all 0.4s ease;
+    position: relative;
+    z-index: 2;
 
     &:hover {
-        transform: scale(1.1) rotate(5deg);
+        transform: scale(1.15) rotate(10deg);
+        filter: drop-shadow(0 0 50px rgba(59, 130, 246, 1));
+    }
+`;
+
+const LogoRing = styled.div`
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 140px;
+    height: 140px;
+    border: 2px solid rgba(59, 130, 246, 0.3);
+    border-radius: 50%;
+    animation: ${pulseGlow} 3s ease-in-out infinite;
+    color: rgba(59, 130, 246, 0.3);
+
+    &::before {
+        content: '';
+        position: absolute;
+        top: -10px;
+        left: -10px;
+        right: -10px;
+        bottom: -10px;
+        border: 1px solid rgba(139, 92, 246, 0.2);
+        border-radius: 50%;
+        animation: ${rotate} 20s linear infinite reverse;
     }
 `;
 
 const Title = styled.h1`
-    font-size: 3.5rem;
+    font-size: 4rem;
     margin-bottom: 1.5rem;
     color: #f8fafc;
-    text-align: center;
-    line-height: 1.2;
-    animation: ${fadeIn} 1s ease-out 0.2s backwards, ${neonGlow} 3s ease-in-out infinite;
-    z-index: 1;
+    line-height: 1.1;
+    animation: ${fadeInDown} 1s ease-out;
+    font-weight: 800;
+    letter-spacing: -0.02em;
     
-    strong {
-        background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #f97316 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-
     @media (max-width: 768px) {
         font-size: 2.5rem;
     }
 `;
 
+const GradientText = styled.span`
+    background: linear-gradient(
+        135deg, 
+        #3b82f6 0%, 
+        #8b5cf6 25%, 
+        #f97316 50%, 
+        #3b82f6 75%, 
+        #8b5cf6 100%
+    );
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: ${gradientShift} 5s ease infinite;
+`;
+
 const Subtitle = styled.p`
-    font-size: 1.3rem;
+    font-size: 1.4rem;
     color: #94a3b8;
-    margin-bottom: 3.5rem;
-    max-width: 900px;
-    text-align: center;
-    line-height: 1.6;
-    animation: ${fadeIn} 1.2s ease-out 0.4s backwards;
-    z-index: 1;
+    max-width: 800px;
+    margin: 0 auto 2rem;
+    line-height: 1.7;
+    animation: ${fadeInUp} 1s ease-out 0.2s backwards;
 
     @media (max-width: 768px) {
         font-size: 1.1rem;
-        margin-bottom: 2.5rem;
     }
 `;
 
-const PricingCards = styled.div`
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
+// Billing Toggle
+const BillingToggleContainer = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 3rem;
+    animation: ${fadeInUp} 1s ease-out 0.4s backwards;
+    z-index: 2;
+`;
+
+const BillingLabel = styled.span`
+    font-size: 1rem;
+    color: ${props => props.$active ? '#f8fafc' : '#64748b'};
+    font-weight: ${props => props.$active ? '600' : '400'};
+    transition: all 0.3s ease;
+`;
+
+const ToggleSwitch = styled.div`
+    width: 70px;
+    height: 36px;
+    background: ${props => props.$yearly 
+        ? 'linear-gradient(135deg, #10b981, #059669)' 
+        : 'linear-gradient(135deg, #3b82f6, #2563eb)'};
+    border-radius: 18px;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.4s ease;
+    box-shadow: 0 4px 15px ${props => props.$yearly 
+        ? 'rgba(16, 185, 129, 0.4)' 
+        : 'rgba(59, 130, 246, 0.4)'};
+
+    &::after {
+        content: '';
+        position: absolute;
+        width: 28px;
+        height: 28px;
+        background: white;
+        border-radius: 50%;
+        top: 4px;
+        left: ${props => props.$yearly ? '38px' : '4px'};
+        transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    &:hover {
+        transform: scale(1.05);
+    }
+`;
+
+const SaveBadge = styled.span`
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    animation: ${pulse} 2s ease-in-out infinite;
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+`;
+
+// Trust Badges
+const TrustBadges = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: center;
     gap: 2rem;
-    max-width: 1800px;
+    margin-bottom: 3rem;
+    animation: ${fadeInUp} 1s ease-out 0.6s backwards;
+    z-index: 2;
+    flex-wrap: wrap;
+
+    @media (max-width: 768px) {
+        gap: 1rem;
+    }
+`;
+
+const TrustBadge = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #64748b;
+    font-size: 0.9rem;
+    padding: 0.5rem 1rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+
+    svg {
+        color: #3b82f6;
+    }
+
+    &:hover {
+        background: rgba(59, 130, 246, 0.1);
+        border-color: rgba(59, 130, 246, 0.3);
+        color: #f8fafc;
+        transform: translateY(-2px);
+    }
+`;
+
+// Pricing Grid
+const PricingGrid = styled.div`
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 1.25rem;
+    max-width: 1600px;
     width: 100%;
     z-index: 2;
     padding: 0 1rem;
+    perspective: 1000px;
+    align-items: stretch;
 
-    @media (max-width: 1600px) {
-        grid-template-columns: repeat(3, 1fr);
+    @media (max-width: 1500px) {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        max-width: 1100px;
     }
 
-    @media (max-width: 1200px) {
-        grid-template-columns: repeat(2, 1fr);
+    @media (max-width: 900px) {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    @media (max-width: 768px) {
+    @media (max-width: 600px) {
         grid-template-columns: 1fr;
+        max-width: 400px;
+    }
+`;
+
+// Card Wrapper for 3D effects
+const CardWrapper = styled.div`
+    position: relative;
+    animation: ${fadeInUp} 0.8s ease-out ${props => props.$delay}s backwards;
+    transform-style: preserve-3d;
+    transition: transform 0.3s ease;
+    height: 100%;
+
+    &:hover {
+        transform: translateY(-10px);
+    }
+`;
+
+// Animated Border
+const AnimatedBorder = styled.div`
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    border-radius: 22px;
+    background: ${props => props.$gradient};
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+
+    ${CardWrapper}:hover & {
+        opacity: 1;
+    }
+
+    &::before {
+        content: '';
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        right: 2px;
+        bottom: 2px;
+        background: #0f172a;
+        border-radius: 20px;
     }
 `;
 
 const Card = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
-    backdrop-filter: blur(10px);
-    border-radius: 16px;
-    padding: 2.5rem;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    background: linear-gradient(
+        135deg, 
+        rgba(15, 23, 42, 0.95) 0%, 
+        rgba(30, 41, 59, 0.9) 50%,
+        rgba(15, 23, 42, 0.95) 100%
+    );
+    backdrop-filter: blur(20px);
+    border-radius: 20px;
+    padding: 1.75rem;
     text-align: center;
-    transition: all 0.4s ease;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    min-height: 600px;
-    animation: ${fadeIn} 1s ease-out forwards;
+    height: 100%;
     position: relative;
     overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.4s ease;
 
-    &::before {
+    ${props => props.$featured && css`
+        border: 2px solid transparent;
+        background: linear-gradient(
+            135deg, 
+            rgba(15, 23, 42, 0.98) 0%, 
+            rgba(30, 41, 59, 0.95) 50%,
+            rgba(15, 23, 42, 0.98) 100%
+        );
+        
+        &::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: 20px;
+            padding: 2px;
+            background: ${props.$borderGradient};
+            -webkit-mask: 
+                linear-gradient(#fff 0 0) content-box, 
+                linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+        }
+    `}
+
+    &::after {
         content: '';
         position: absolute;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
-        background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.05) 50%, transparent 70%);
-        background-size: 200% 200%;
-        animation: ${shimmer} 4s linear infinite;
+        background: linear-gradient(
+            135deg,
+            transparent 0%,
+            rgba(255, 255, 255, 0.02) 50%,
+            transparent 100%
+        );
+        pointer-events: none;
     }
-
-    &:hover {
-        transform: translateY(-15px) scale(1.02);
-    }
-
-    ${props => props.planType === 'free' && `
-        border: 2px solid #6366f1;
-        animation-delay: 0s;
-        
-        &:hover {
-            box-shadow: 0 0 40px rgba(99, 102, 241, 0.6), 0 15px 50px rgba(0, 0, 0, 0.6);
-        }
-    `}
-
-    ${props => props.planType === 'starter' && `
-        border: 2px solid #10b981;
-        animation-delay: 0.2s;
-        
-        &:hover {
-            box-shadow: 0 0 40px rgba(16, 185, 129, 0.6), 0 15px 50px rgba(0, 0, 0, 0.6);
-        }
-    `}
-
-    ${props => props.planType === 'pro' && `
-        border: 2px solid #3b82f6;
-        animation-delay: 0.4s;
-        
-        &:hover {
-            box-shadow: 0 0 40px rgba(59, 130, 246, 0.6), 0 15px 50px rgba(0, 0, 0, 0.6);
-        }
-    `}
-
-    ${props => props.planType === 'premium' && `
-        border: 2px solid #f97316;
-        animation-delay: 0.6s;
-        box-shadow: 0 0 30px rgba(249, 115, 22, 0.5), 0 10px 40px rgba(0, 0, 0, 0.5);
-        
-        &:hover {
-            box-shadow: 0 0 50px rgba(249, 115, 22, 0.8), 0 20px 60px rgba(0, 0, 0, 0.7);
-        }
-    `}
-
-    ${props => props.planType === 'elite' && `
-        border: 2px solid #8b5cf6;
-        animation-delay: 0.8s;
-        box-shadow: 0 0 30px rgba(139, 92, 246, 0.5), 0 10px 40px rgba(0, 0, 0, 0.5);
-        
-        &:hover {
-            box-shadow: 0 0 50px rgba(139, 92, 246, 0.8), 0 20px 60px rgba(0, 0, 0, 0.7);
-        }
-    `}
 `;
 
+const CardGlow = styled.div`
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(
+        circle at center,
+        ${props => props.$color}15 0%,
+        transparent 50%
+    );
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+
+    ${CardWrapper}:hover & {
+        opacity: 1;
+    }
+`;
+
+const CardShimmer = styled.div`
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.03),
+        transparent
+    );
+    transition: left 0.6s ease;
+
+    ${CardWrapper}:hover & {
+        left: 150%;
+    }
+`;
+
+// Plan Header
 const PlanHeader = styled.div`
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
     position: relative;
     z-index: 1;
 `;
 
-const PlanIconWrapper = styled.div`
-    width: 70px;
-    height: 70px;
-    margin: 0 auto 1.5rem;
-    background: ${props => {
-        if (props.planType === 'free') return 'linear-gradient(135deg, #6366f1, #4f46e5)';
-        if (props.planType === 'starter') return 'linear-gradient(135deg, #10b981, #059669)';
-        if (props.planType === 'pro') return 'linear-gradient(135deg, #3b82f6, #2563eb)';
-        if (props.planType === 'premium') return 'linear-gradient(135deg, #f97316, #ea580c)';
-        return 'linear-gradient(135deg, #8b5cf6, #7c3aed)';
-    }};
+const PlanTag = styled.div`
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.3rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.75rem;
+    animation: ${megaGlow} 3s ease-in-out infinite;
+    
+    ${props => props.$type === 'free' && css`
+        background: linear-gradient(135deg, #6366f1, #4f46e5);
+        box-shadow: 0 4px 20px rgba(99, 102, 241, 0.5);
+    `}
+    
+    ${props => props.$type === 'popular' && css`
+        background: linear-gradient(135deg, #f97316, #ea580c);
+        box-shadow: 0 4px 20px rgba(249, 115, 22, 0.5);
+    `}
+    
+    ${props => props.$type === 'value' && css`
+        background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+        box-shadow: 0 4px 20px rgba(139, 92, 246, 0.5);
+    `}
+`;
+
+const IconWrapper = styled.div`
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 1rem;
+    background: ${props => props.$gradient};
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    animation: ${float} 3s ease-in-out infinite, ${pulse} 2s ease-in-out infinite;
-    box-shadow: ${props => {
-        if (props.planType === 'free') return '0 10px 30px rgba(99, 102, 241, 0.4)';
-        if (props.planType === 'starter') return '0 10px 30px rgba(16, 185, 129, 0.4)';
-        if (props.planType === 'pro') return '0 10px 30px rgba(59, 130, 246, 0.4)';
-        if (props.planType === 'premium') return '0 10px 30px rgba(249, 115, 22, 0.4)';
-        return '0 10px 30px rgba(139, 92, 246, 0.4)';
-    }};
-`;
+    position: relative;
+    animation: ${float} 4s ease-in-out infinite;
+    animation-delay: ${props => props.$delay || 0}s;
+    box-shadow: 0 10px 40px ${props => props.$shadow};
 
-const PlanTag = styled.span`
-    background: linear-gradient(135deg, #f97316, #ea580c);
-    color: white;
-    padding: 0.4rem 1rem;
-    border-radius: 9999px;
-    font-size: 0.75rem;
-    font-weight: bold;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 1rem;
-    display: inline-block;
-    animation: ${glow} 2s ease-in-out infinite;
-    box-shadow: 0 4px 15px rgba(249, 115, 22, 0.5);
-`;
+    &::before {
+        content: '';
+        position: absolute;
+        inset: -4px;
+        border-radius: 50%;
+        background: ${props => props.$gradient};
+        z-index: -1;
+        opacity: 0.3;
+        filter: blur(10px);
+    }
 
-const FreeTag = styled(PlanTag)`
-    background: linear-gradient(135deg, #6366f1, #4f46e5);
-    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.5);
-`;
-
-const BestValueTag = styled(PlanTag)`
-    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.5);
+    &::after {
+        content: '';
+        position: absolute;
+        inset: -8px;
+        border-radius: 50%;
+        border: 1px dashed ${props => props.$borderColor || 'rgba(255,255,255,0.2)'};
+        animation: ${rotate} 30s linear infinite;
+    }
 `;
 
 const PlanName = styled.h2`
-    font-size: 2rem;
-    color: ${props => {
-        if (props.planType === 'free') return '#6366f1';
-        if (props.planType === 'starter') return '#10b981';
-        if (props.planType === 'pro') return '#3b82f6';
-        if (props.planType === 'premium') return '#f97316';
-        return '#8b5cf6';
-    }};
-    margin-bottom: 0.5rem;
-    font-weight: 900;
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin-bottom: 0.3rem;
+    background: ${props => props.$gradient};
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 `;
 
 const PlanDescription = styled.p`
-    font-size: 1rem;
+    font-size: 0.85rem;
     color: #94a3b8;
-    margin-bottom: 1rem;
     font-weight: 500;
 `;
 
-const Price = styled.div`
-    font-size: 3.5rem;
-    font-weight: 900;
-    color: #f8fafc;
-    margin-bottom: 1.5rem;
+// Price Display
+const PriceContainer = styled.div`
+    margin: 1rem 0;
     position: relative;
     z-index: 1;
+`;
+
+const OriginalPrice = styled.div`
+    font-size: 1.2rem;
+    color: #64748b;
+    text-decoration: line-through;
+    margin-bottom: 0.3rem;
+    opacity: ${props => props.$show ? 1 : 0};
+    height: ${props => props.$show ? 'auto' : '0'};
+    transition: all 0.3s ease;
+`;
+
+const Price = styled.div`
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 0.3rem;
+`;
+
+const Currency = styled.span`
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #94a3b8;
+`;
+
+const Amount = styled.span`
+    font-size: 3rem;
+    font-weight: 900;
+    background: ${props => props.$gradient || 'linear-gradient(135deg, #f8fafc, #cbd5e1)'};
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+    animation: ${countUp} 0.5s ease-out;
+`;
+
+const Period = styled.span`
+    font-size: 1rem;
+    color: #64748b;
+`;
+
+// Features
+const FeatureSection = styled.div`
+    flex: 1;
+    text-align: left;
+    margin: 1rem 0;
+    position: relative;
+    z-index: 1;
+    overflow-y: auto;
+    max-height: 320px;
     
-    span {
-        font-size: 1.3rem;
-        font-weight: normal;
-        color: #94a3b8;
+    &::-webkit-scrollbar {
+        width: 4px;
     }
     
-    ${props => (props.planType === 'free' || props.planType === 'starter') && `
-        font-size: 2.5rem;
-    `}
+    &::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 2px;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 2px;
+    }
+`;
+
+const FeatureCategory = styled.div`
+    margin-bottom: 0.75rem;
+`;
+
+const CategoryLabel = styled.div`
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: ${props => props.$color || '#64748b'};
+    margin-bottom: 0.4rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    
+    &::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: linear-gradient(90deg, ${props => props.$color || '#64748b'}40, transparent);
+    }
 `;
 
 const FeatureList = styled.ul`
     list-style: none;
     padding: 0;
-    margin: 1.5rem 0;
-    flex-grow: 1;
-    text-align: left;
-    position: relative;
-    z-index: 1;
+    margin: 0;
 `;
 
 const FeatureItem = styled.li`
     display: flex;
-    align-items: center;
-    font-size: 0.95rem;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: 0.8rem;
     color: #cbd5e1;
-    margin-bottom: 0.9rem;
-    gap: 0.8rem;
+    margin-bottom: 0.5rem;
     transition: all 0.3s ease;
+    padding: 0.2rem 0;
 
     &:hover {
         color: #f8fafc;
-        transform: translateX(5px);
+        transform: translateX(3px);
     }
 
     svg {
-        color: #22c55e;
-        min-width: 18px;
-        height: 18px;
         flex-shrink: 0;
+        margin-top: 2px;
     }
 `;
 
-const ActionButton = styled.button`
-    background: ${props => {
-        if (props.planType === 'free') return 'linear-gradient(135deg, #6366f1, #4f46e5)';
-        if (props.planType === 'starter') return 'linear-gradient(135deg, #10b981, #059669)';
-        if (props.planType === 'pro') return 'linear-gradient(135deg, #3b82f6, #2563eb)';
-        if (props.planType === 'premium') return 'linear-gradient(135deg, #f97316, #ea580c)';
-        return 'linear-gradient(135deg, #8b5cf6, #7c3aed)';
-    }};
+const CheckIcon = styled.div`
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: ${props => props.$gradient};
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+
+    svg {
+        width: 9px;
+        height: 9px;
+        color: white;
+    }
+`;
+
+const HighlightFeature = styled(FeatureItem)`
+    background: ${props => props.$bg || 'rgba(59, 130, 246, 0.1)'};
+    border: 1px solid ${props => props.$border || 'rgba(59, 130, 246, 0.2)'};
+    border-radius: 6px;
+    padding: 0.4rem 0.5rem;
+    margin-bottom: 0.5rem;
+
+    &:hover {
+        background: ${props => props.$bgHover || 'rgba(59, 130, 246, 0.15)'};
+    }
+`;
+
+// CTA Button
+const CTAButton = styled.button`
+    width: 100%;
+    padding: 0.85rem 1.5rem;
     border: none;
     border-radius: 10px;
-    color: white;
-    padding: 1rem 2rem;
-    font-size: 1.1rem;
+    font-size: 0.95rem;
     font-weight: 700;
     cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
-    width: 100%;
-    margin-top: 2rem;
     position: relative;
     overflow: hidden;
+    transition: all 0.4s ease;
     z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: auto;
+    background: ${props => props.$gradient};
+    color: white;
+    box-shadow: 0 8px 30px ${props => props.$shadow};
 
     &::before {
         content: '';
         position: absolute;
         top: 0;
-        left: 0;
+        left: -100%;
         width: 100%;
         height: 100%;
-        background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.3) 50%, transparent 70%);
-        background-size: 200% 200%;
-        animation: ${shimmer} 3s linear infinite;
+        background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.3),
+            transparent
+        );
+        transition: left 0.5s ease;
     }
 
     &:hover:not(:disabled) {
         transform: translateY(-3px);
-        box-shadow: 0 10px 30px ${props => {
-            if (props.planType === 'free') return 'rgba(99, 102, 241, 0.6)';
-            if (props.planType === 'starter') return 'rgba(16, 185, 129, 0.6)';
-            if (props.planType === 'pro') return 'rgba(59, 130, 246, 0.6)';
-            if (props.planType === 'premium') return 'rgba(249, 115, 22, 0.6)';
-            return 'rgba(139, 92, 246, 0.6)';
-        }};
+        box-shadow: 0 15px 40px ${props => props.$shadowHover};
+
+        &::before {
+            left: 100%;
+        }
+
+        svg {
+            transform: translateX(5px);
+        }
     }
 
     &:active:not(:disabled) {
@@ -425,53 +942,158 @@ const ActionButton = styled.button`
     }
 
     &:disabled {
-        background: linear-gradient(135deg, #64748b, #475569);
+        opacity: 0.6;
         cursor: not-allowed;
-        opacity: 0.7;
         transform: none;
-        box-shadow: none;
+    }
+
+    svg {
+        transition: transform 0.3s ease;
     }
 `;
 
-const ComparisonBadge = styled.div`
-    background: rgba(16, 185, 129, 0.1);
-    border: 1px solid rgba(16, 185, 129, 0.3);
-    border-radius: 8px;
-    padding: 0.5rem 1rem;
-    margin-top: 1rem;
-    font-size: 0.85rem;
-    color: #10b981;
-    font-weight: 600;
+const RippleEffect = styled.span`
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.4);
+    animation: ${ripple} 0.6s linear;
+    pointer-events: none;
 `;
 
-const FooterHashtags = styled.div`
+// Comparison Badge
+const ComparisonBadge = styled.div`
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: ${props => props.$bg || 'rgba(16, 185, 129, 0.1)'};
+    border: 1px solid ${props => props.$border || 'rgba(16, 185, 129, 0.3)'};
+    border-radius: 6px;
+    padding: 0.4rem 0.75rem;
+    margin-top: 0.75rem;
+    font-size: 0.75rem;
+    color: ${props => props.$color || '#10b981'};
+    font-weight: 600;
+
+    svg {
+        width: 14px;
+        height: 14px;
+    }
+`;
+
+// Stats Section
+const StatsSection = styled.div`
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2rem;
+    max-width: 1200px;
+    width: 100%;
+    margin: 5rem 0;
     z-index: 2;
-    margin-top: 5rem;
-    font-size: 1.1rem;
-    color: #64748b;
-    animation: ${fadeIn} 1.5s ease-out 1s backwards;
+    animation: ${fadeInUp} 1s ease-out 1s backwards;
+
+    @media (max-width: 768px) {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.5rem;
+    }
+`;
+
+const StatCard = styled.div`
+    text-align: center;
+    padding: 2rem;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    transition: all 0.3s ease;
+
+    &:hover {
+        background: rgba(59, 130, 246, 0.05);
+        border-color: rgba(59, 130, 246, 0.2);
+        transform: translateY(-5px);
+    }
+`;
+
+const StatNumber = styled.div`
+    font-size: 3rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.5rem;
+`;
+
+const StatLabel = styled.div`
+    font-size: 1rem;
+    color: #94a3b8;
+`;
+
+// Footer
+const FooterSection = styled.div`
+    text-align: center;
+    z-index: 2;
+    margin-top: 4rem;
+    animation: ${fadeInUp} 1s ease-out 1.2s backwards;
+`;
+
+const Hashtags = styled.div`
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+`;
+
+const Hashtag = styled.span`
+    padding: 0.5rem 1rem;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    border-radius: 20px;
+    font-size: 0.9rem;
+    color: #94a3b8;
+    transition: all 0.3s ease;
+    cursor: pointer;
+
+    &:hover {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(139, 92, 246, 0.2));
+        border-color: rgba(59, 130, 246, 0.4);
+        color: #f8fafc;
+        transform: translateY(-3px);
+        box-shadow: 0 5px 20px rgba(59, 130, 246, 0.2);
+    }
+`;
+
+const FooterText = styled.p`
+    font-size: 1rem;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     gap: 1rem;
+    flex-wrap: wrap;
 
     span {
-        padding: 0.5rem 1rem;
-        background: rgba(59, 130, 246, 0.1);
-        border: 1px solid rgba(59, 130, 246, 0.3);
-        border-radius: 20px;
-        transition: all 0.3s ease;
-        cursor: pointer;
-
-        &:hover {
-            background: rgba(59, 130, 246, 0.2);
-            transform: translateY(-3px);
-            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
-        }
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
     }
+`;
 
-    @media (max-width: 768px) {
-        font-size: 0.9rem;
+const Guarantee = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding: 1rem 2rem;
+    background: rgba(16, 185, 129, 0.05);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    border-radius: 12px;
+    color: #10b981;
+    font-weight: 600;
+    
+    svg {
+        width: 24px;
+        height: 24px;
     }
 `;
 
@@ -480,28 +1102,44 @@ const PricingPage = () => {
     const { api, user } = useAuth();
     const toast = useToast();
     const navigate = useNavigate();
-    const [particles, setParticles] = useState([]);
+    const [yearly, setYearly] = useState(false);
     const [loading, setLoading] = useState(null);
+    const [ripples, setRipples] = useState({});
 
-    // Price IDs
     const PRICE_IDS = {
-        starter: 'price_1SV9d8CtdTItnGjydNZsbXl3',
-        pro: 'price_1SV9dTCtdTItnGjycfSxQtAg',
-        premium: 'price_1SV9doCtdTItnGjyYb8yG97j',
-        elite: 'price_1SV9eACtdTItnGjyzSNaNYhP'
+        starter: yearly ? 'price_starter_yearly' : 'price_1SV9d8CtdTItnGjydNZsbXl3',
+        pro: yearly ? 'price_pro_yearly' : 'price_1SV9dTCtdTItnGjycfSxQtAg',
+        premium: yearly ? 'price_premium_yearly' : 'price_1SV9doCtdTItnGjyYb8yG97j',
+        elite: yearly ? 'price_elite_yearly' : 'price_1SV9eACtdTItnGjyzSNaNYhP'
     };
 
-    useEffect(() => {
-        const newParticles = Array.from({ length: 30 }, (_, i) => ({
-            id: i,
-            size: Math.random() * 4 + 2,
-            left: Math.random() * 100,
-            duration: Math.random() * 10 + 10,
-            delay: Math.random() * 5,
-            color: ['#3b82f6', '#8b5cf6', '#f97316', '#10b981'][Math.floor(Math.random() * 4)]
+    const prices = {
+        starter: { monthly: 15, yearly: 144 },
+        pro: { monthly: 25, yearly: 240 },
+        premium: { monthly: 50, yearly: 480 },
+        elite: { monthly: 125, yearly: 1200 }
+    };
+
+    const createRipple = (e, planId) => {
+        const button = e.currentTarget;
+        const rect = button.getBoundingClientRect();
+        const size = Math.max(rect.width, rect.height);
+        const x = e.clientX - rect.left - size / 2;
+        const y = e.clientY - rect.top - size / 2;
+
+        setRipples(prev => ({
+            ...prev,
+            [planId]: { x, y, size }
         }));
-        setParticles(newParticles);
-    }, []);
+
+        setTimeout(() => {
+            setRipples(prev => {
+                const newRipples = { ...prev };
+                delete newRipples[planId];
+                return newRipples;
+            });
+        }, 600);
+    };
 
     const handleFreeTier = () => {
         if (!user) {
@@ -511,7 +1149,9 @@ const PricingPage = () => {
         }
     };
 
-    const handleSubscribe = async (plan) => {
+    const handleSubscribe = async (plan, e) => {
+        createRipple(e, plan);
+
         if (!user) {
             toast.warning('Please log in to subscribe', 'Login Required');
             navigate('/login');
@@ -523,8 +1163,6 @@ const PricingPage = () => {
         try {
             const priceId = PRICE_IDS[plan];
             const response = await api.post('/stripe/create-checkout-session', { priceId });
-
-            // Redirect to Stripe Checkout
             window.location.href = response.data.url;
         } catch (error) {
             console.error('Checkout error:', error);
@@ -533,199 +1171,399 @@ const PricingPage = () => {
         }
     };
 
+    // Plan configurations
+    const plans = [
+        {
+            id: 'free',
+            name: 'Free',
+            description: 'Start Your Journey',
+            icon: Gift,
+            tag: { text: 'Forever Free', type: 'free', icon: Sparkles },
+            price: { monthly: 0, yearly: 0 },
+            gradient: 'linear-gradient(135deg, #6366f1, #4f46e5)',
+            shadow: 'rgba(99, 102, 241, 0.4)',
+            borderGradient: 'linear-gradient(135deg, #6366f1, #4f46e5, #6366f1)',
+            features: [
+                { category: 'Trading', color: '#6366f1', items: [
+                    'Full Paper Trading Platform',
+                    '$100,000 Virtual Cash',
+                    'Real Market Simulation',
+                ]},
+                { category: 'Social', color: '#8b5cf6', items: [
+                    'Complete Social Feed Access',
+                    'Post Trades & Updates',
+                    'Follow Top Traders',
+                    'Like & Comment',
+                ]},
+                { category: 'AI & Analytics', color: '#3b82f6', items: [
+                    '3 AI Predictions/day',
+                    'Basic Portfolio View',
+                    'Leaderboard Access',
+                ]}
+            ],
+            cta: user ? 'Go to Dashboard' : 'Get Started Free',
+            ctaAction: handleFreeTier
+        },
+        {
+            id: 'starter',
+            name: 'Starter',
+            description: 'Enhanced Analytics',
+            icon: Star,
+            price: prices.starter,
+            gradient: 'linear-gradient(135deg, #10b981, #059669)',
+            shadow: 'rgba(16, 185, 129, 0.4)',
+            borderGradient: 'linear-gradient(135deg, #10b981, #059669, #10b981)',
+            features: [
+                { category: 'Everything in Free +', color: '#10b981', items: [
+                    '10 AI Predictions/day',
+                    '2 Watchlists (20 assets each)',
+                    'Advanced Market Overview',
+                    'Price Alerts',
+                    'Trade History Export',
+                    'Performance Analytics',
+                    'Email Support',
+                ]}
+            ],
+            comparison: '3x More AI Power',
+            cta: 'Get Started'
+        },
+        {
+            id: 'pro',
+            name: 'Pro',
+            description: 'Accelerate Success',
+            icon: Rocket,
+            price: prices.pro,
+            gradient: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+            shadow: 'rgba(59, 130, 246, 0.4)',
+            borderGradient: 'linear-gradient(135deg, #3b82f6, #2563eb, #3b82f6)',
+            features: [
+                { category: 'Everything in Starter +', color: '#3b82f6', items: [
+                    '25 AI Predictions/day',
+                    '5 Watchlists (50 assets each)',
+                    'Advanced Market Analysis',
+                    'Real-Time Price Alerts',
+                    'AI Chat Assistant',
+                    'Technical Indicators',
+                    'Priority Email Support',
+                ]}
+            ],
+            comparison: '8x More AI Power',
+            cta: 'Upgrade to Pro'
+        },
+        {
+            id: 'premium',
+            name: 'Premium',
+            description: 'Master The Markets',
+            icon: TrendingUp,
+            tag: { text: 'Most Popular', type: 'popular', icon: Zap },
+            featured: true,
+            price: prices.premium,
+            gradient: 'linear-gradient(135deg, #f97316, #ea580c)',
+            shadow: 'rgba(249, 115, 22, 0.4)',
+            borderGradient: 'linear-gradient(135deg, #f97316, #ea580c, #f97316)',
+            features: [
+                { category: 'Everything in Pro +', color: '#f97316', items: [
+                    { text: 'Unlimited AI Predictions', highlight: true },
+                    { text: 'Unlimited Watchlists', highlight: true },
+                    'Live Market Data (Real-Time)',
+                    'Advanced AI Chat (GPT-4)',
+                    'Algorithmic Pattern Recognition',
+                    'In-Depth Sector Analysis',
+                    'Portfolio Optimization',
+                    'Custom Alerts & Notifications',
+                ]},
+                { category: 'Exclusive Features', color: '#f59e0b', items: [
+                    { text: '🐋 Whale & Insider Alerts', highlight: true, special: true },
+                    'Dark Pool Flow Tracking',
+                    'SEC Filing Monitor',
+                    '24/7 Priority Support',
+                ]}
+            ],
+            comparison: 'Unlimited Everything',
+            cta: 'Go Premium'
+        },
+        {
+            id: 'elite',
+            name: 'Elite',
+            description: 'Ultimate Market Edge',
+            icon: Crown,
+            tag: { text: 'Best Value', type: 'value', icon: Gem },
+            featured: true,
+            price: prices.elite,
+            gradient: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+            shadow: 'rgba(139, 92, 246, 0.4)',
+            borderGradient: 'linear-gradient(135deg, #8b5cf6, #7c3aed, #8b5cf6)',
+            features: [
+                { category: 'All Premium Features +', color: '#8b5cf6', items: [
+                    { text: 'Ultra-Low Latency Data', highlight: true },
+                    { text: 'Full API Access', highlight: true },
+                    'Unlimited AI Research Reports',
+                    'Custom Research & Insights',
+                    'Advanced Backtesting Tools',
+                    'Institutional-Grade Analytics',
+                    'Multi-Account Management',
+                ]},
+                { category: 'VIP Perks', color: '#a78bfa', items: [
+                    { text: '🐋 Whale Alert Webhooks & API', highlight: true, special: true },
+                    { text: '1-on-1 Mentorship', highlight: true },
+                    'White-Label Options',
+                    'Dedicated Account Manager',
+                    'VIP Discord Community',
+                ]}
+            ],
+            comparison: 'Institutional Power',
+            cta: 'Go Elite'
+        }
+    ];
+
     return (
         <PricingContainer>
-            <ParticleContainer>
-                {particles.map(particle => (
-                    <Particle
-                        key={particle.id}
-                        size={particle.size}
-                        left={particle.left}
-                        duration={particle.duration}
-                        delay={particle.delay}
-                        color={particle.color}
+            {/* Cosmic Background */}
+            <CosmicBackground>
+                <StarField>
+                    <StarLayer 
+                        $stars="radial-gradient(1px 1px at 20px 30px, white, transparent), radial-gradient(1px 1px at 40px 70px, rgba(255,255,255,0.8), transparent), radial-gradient(1px 1px at 50px 160px, white, transparent), radial-gradient(1px 1px at 90px 40px, rgba(255,255,255,0.9), transparent), radial-gradient(1px 1px at 130px 80px, white, transparent), radial-gradient(1px 1px at 160px 120px, rgba(255,255,255,0.7), transparent)"
+                        $size={200}
+                        $duration={100}
+                        $opacity={0.5}
                     />
+                    <StarLayer 
+                        $stars="radial-gradient(1.5px 1.5px at 100px 50px, white, transparent), radial-gradient(1.5px 1.5px at 200px 150px, rgba(255,255,255,0.9), transparent), radial-gradient(1.5px 1.5px at 300px 250px, white, transparent), radial-gradient(1.5px 1.5px at 400px 100px, rgba(255,255,255,0.8), transparent)"
+                        $size={400}
+                        $duration={150}
+                        $opacity={0.4}
+                    />
+                </StarField>
+                <AuroraEffect />
+                <GridOverlay />
+                
+                {/* Floating Orbs */}
+                <FloatingOrb $size={300} $color="#3b82f6" $blur={80} $duration={25} $delay={0} $top={10} $left={10} />
+                <FloatingOrb $size={250} $color="#8b5cf6" $blur={60} $duration={30} $delay={5} $top={60} $left={80} />
+                <FloatingOrb $size={200} $color="#f97316" $blur={70} $duration={20} $delay={10} $top={80} $left={20} />
+                
+                {/* Shooting Stars */}
+                <ShootingStar $duration={3} $delay={0} $top={10} $left={20} />
+                <ShootingStar $duration={4} $delay={2} $top={30} $left={60} />
+                <ShootingStar $duration={3.5} $delay={5} $top={50} $left={10} />
+                <ShootingStar $duration={4.5} $delay={8} $top={15} $left={80} />
+            </CosmicBackground>
+
+            {/* Header */}
+            <HeaderSection>
+                <LogoContainer onClick={() => navigate('/')}>
+                    <LogoRing />
+                    <HeaderLogo src={nexusSignalLogo} alt="Nexus Signal AI" />
+                </LogoContainer>
+                
+                <Title>
+                    Unlock Your <GradientText>Trading Edge</GradientText>
+                </Title>
+                
+                <Subtitle>
+                    Join thousands of traders using AI-powered insights to dominate the markets. 
+                    Start free, scale when ready.
+                </Subtitle>
+            </HeaderSection>
+
+            {/* Billing Toggle */}
+            <BillingToggleContainer>
+                <BillingLabel $active={!yearly}>Monthly</BillingLabel>
+                <ToggleSwitch $yearly={yearly} onClick={() => setYearly(!yearly)} />
+                <BillingLabel $active={yearly}>Yearly</BillingLabel>
+                {yearly && <SaveBadge>Save 20%</SaveBadge>}
+            </BillingToggleContainer>
+
+            {/* Trust Badges */}
+            <TrustBadges>
+                <TrustBadge>
+                    <Shield size={18} />
+                    256-bit Encryption
+                </TrustBadge>
+                <TrustBadge>
+                    <Lock size={18} />
+                    SOC 2 Compliant
+                </TrustBadge>
+                <TrustBadge>
+                    <Users size={18} />
+                    50,000+ Traders
+                </TrustBadge>
+                <TrustBadge>
+                    <Award size={18} />
+                    #1 AI Trading Platform
+                </TrustBadge>
+            </TrustBadges>
+
+            {/* Pricing Cards */}
+            <PricingGrid>
+                {plans.map((plan, index) => (
+                    <CardWrapper key={plan.id} $delay={index * 0.1}>
+                        <AnimatedBorder $gradient={plan.borderGradient} />
+                        <Card $featured={plan.featured} $borderGradient={plan.borderGradient}>
+                            <CardGlow $color={plan.gradient.match(/#[a-fA-F0-9]{6}/)?.[0] || '#3b82f6'} />
+                            <CardShimmer />
+                            
+                            <PlanHeader>
+                                {plan.tag && (
+                                    <PlanTag $type={plan.tag.type}>
+                                        <plan.tag.icon size={14} />
+                                        {plan.tag.text}
+                                    </PlanTag>
+                                )}
+                                
+                                <IconWrapper 
+                                    $gradient={plan.gradient} 
+                                    $shadow={plan.shadow}
+                                    $delay={index * 0.2}
+                                    $borderColor={plan.gradient.match(/#[a-fA-F0-9]{6}/)?.[0]}
+                                >
+                                    <plan.icon size={28} color="white" />
+                                </IconWrapper>
+                                
+                                <PlanName $gradient={plan.gradient}>{plan.name}</PlanName>
+                                <PlanDescription>{plan.description}</PlanDescription>
+                            </PlanHeader>
+
+                            <PriceContainer>
+                                <OriginalPrice $show={yearly && plan.price.monthly > 0}>
+                                    ${plan.price.monthly * 12}/year
+                                </OriginalPrice>
+                                <Price>
+                                    <Currency>$</Currency>
+                                    <Amount $gradient={plan.gradient}>
+                                        {yearly ? Math.round(plan.price.yearly / 12) : plan.price.monthly}
+                                    </Amount>
+                                    <Period>/mo</Period>
+                                </Price>
+                                {yearly && plan.price.monthly > 0 && (
+                                    <Period style={{ marginTop: '0.5rem', fontSize: '0.85rem' }}>
+                                        Billed ${plan.price.yearly}/year
+                                    </Period>
+                                )}
+                            </PriceContainer>
+
+                            <FeatureSection>
+                                {plan.features.map((category, catIndex) => (
+                                    <FeatureCategory key={catIndex}>
+                                        <CategoryLabel $color={category.color}>
+                                            {category.category}
+                                        </CategoryLabel>
+                                        <FeatureList>
+                                            {category.items.map((item, itemIndex) => {
+                                                const isObject = typeof item === 'object';
+                                                const text = isObject ? item.text : item;
+                                                const highlight = isObject && item.highlight;
+                                                const special = isObject && item.special;
+
+                                                if (highlight) {
+                                                    return (
+                                                        <HighlightFeature 
+                                                            key={itemIndex}
+                                                            $bg={special ? 'rgba(249, 115, 22, 0.1)' : `${category.color}15`}
+                                                            $border={special ? 'rgba(249, 115, 22, 0.3)' : `${category.color}30`}
+                                                            $bgHover={special ? 'rgba(249, 115, 22, 0.2)' : `${category.color}25`}
+                                                        >
+                                                            <CheckIcon $gradient={special ? 'linear-gradient(135deg, #f97316, #ea580c)' : plan.gradient}>
+                                                                <Check />
+                                                            </CheckIcon>
+                                                            <span style={{ fontWeight: 600 }}>{text}</span>
+                                                        </HighlightFeature>
+                                                    );
+                                                }
+
+                                                return (
+                                                    <FeatureItem key={itemIndex}>
+                                                        <CheckIcon $gradient={plan.gradient}>
+                                                            <Check />
+                                                        </CheckIcon>
+                                                        {text}
+                                                    </FeatureItem>
+                                                );
+                                            })}
+                                        </FeatureList>
+                                    </FeatureCategory>
+                                ))}
+                            </FeatureSection>
+
+                            {plan.comparison && (
+                                <ComparisonBadge
+                                    $bg={`${plan.gradient.match(/#[a-fA-F0-9]{6}/)?.[0]}15`}
+                                    $border={`${plan.gradient.match(/#[a-fA-F0-9]{6}/)?.[0]}40`}
+                                    $color={plan.gradient.match(/#[a-fA-F0-9]{6}/)?.[0]}
+                                >
+                                    <Infinity size={14} />
+                                    {plan.comparison}
+                                </ComparisonBadge>
+                            )}
+
+                            <CTAButton
+                                $gradient={plan.gradient}
+                                $shadow={plan.shadow}
+                                $shadowHover={plan.shadow.replace('0.4', '0.6')}
+                                onClick={(e) => plan.ctaAction ? plan.ctaAction() : handleSubscribe(plan.id, e)}
+                                disabled={loading !== null}
+                            >
+                                {ripples[plan.id] && (
+                                    <RippleEffect 
+                                        style={{
+                                            left: ripples[plan.id].x,
+                                            top: ripples[plan.id].y,
+                                            width: ripples[plan.id].size,
+                                            height: ripples[plan.id].size
+                                        }}
+                                    />
+                                )}
+                                {loading === plan.id ? 'Processing...' : plan.cta}
+                                <ArrowRight size={16} />
+                            </CTAButton>
+                        </Card>
+                    </CardWrapper>
                 ))}
-            </ParticleContainer>
+            </PricingGrid>
 
-            <HeaderLogo src={nexusSignalLogo} alt="Nexus Signal AI Logo" />
+            {/* Stats Section */}
+            <StatsSection>
+                <StatCard>
+                    <StatNumber>$2.5B+</StatNumber>
+                    <StatLabel>Volume Tracked</StatLabel>
+                </StatCard>
+                <StatCard>
+                    <StatNumber>24/7</StatNumber>
+                    <StatLabel>Market Coverage</StatLabel>
+                </StatCard>
+                <StatCard>
+                    <StatNumber>150+</StatNumber>
+                    <StatLabel>Data Sources</StatLabel>
+                </StatCard>
+                <StatCard>
+                    <StatNumber>&lt;50ms</StatNumber>
+                    <StatLabel>Data Latency</StatLabel>
+                </StatCard>
+            </StatsSection>
 
-            <Title>Unlock Your Trading Edge: <strong>Nexus Signal.AI</strong> Pricing!</Title>
-            <Subtitle>
-                Start free with paper trading and social features, then upgrade for AI-powered insights, 
-                real-time analytics, and advanced predictive models.
-            </Subtitle>
+            {/* Footer */}
+            <FooterSection>
+                <Hashtags>
+                    <Hashtag>#NexusSignalAI</Hashtag>
+                    <Hashtag>#AITrading</Hashtag>
+                    <Hashtag>#WhaleAlerts</Hashtag>
+                    <Hashtag>#SmartMoney</Hashtag>
+                    <Hashtag>#TradingCommunity</Hashtag>
+                </Hashtags>
 
-            <PricingCards>
-                {/* FREE TIER */}
-                <Card planType="free">
-                    <PlanHeader>
-                        <FreeTag>Forever Free</FreeTag>
-                        <PlanIconWrapper planType="free">
-                            <Gift size={36} color="white" />
-                        </PlanIconWrapper>
-                        <PlanName planType="free">Free</PlanName>
-                        <PlanDescription>Start Your Journey</PlanDescription>
-                    </PlanHeader>
-                    <Price planType="free">$0<span>/month</span></Price>
-                    <FeatureList>
-                        <FeatureItem><Check size={18} /> Full Paper Trading</FeatureItem>
-                        <FeatureItem><Check size={18} /> $100,000 Virtual Cash</FeatureItem>
-                        <FeatureItem><Check size={18} /> Social Feed Access</FeatureItem>
-                        <FeatureItem><Check size={18} /> Post Trades & Updates</FeatureItem>
-                        <FeatureItem><Check size={18} /> Follow Other Traders</FeatureItem>
-                        <FeatureItem><Check size={18} /> Like & Comment</FeatureItem>
-                        <FeatureItem><Check size={18} /> 3 AI Predictions/day</FeatureItem>
-                        <FeatureItem><Check size={18} /> Basic Portfolio Tracking</FeatureItem>
-                        <FeatureItem><Check size={18} /> Leaderboard Access</FeatureItem>
-                    </FeatureList>
-                    <ActionButton 
-                        planType="free" 
-                        onClick={handleFreeTier}
-                    >
-                        {user ? 'Go to Dashboard' : 'Get Started Free'}
-                    </ActionButton>
-                </Card>
+                <Guarantee>
+                    <Shield />
+                    30-Day Money-Back Guarantee • No Questions Asked
+                </Guarantee>
 
-                {/* Starter Tier - $15 */}
-                <Card planType="starter">
-                    <PlanHeader>
-                        <PlanIconWrapper planType="starter">
-                            <Star size={36} color="white" />
-                        </PlanIconWrapper>
-                        <PlanName planType="starter">Starter</PlanName>
-                        <PlanDescription>Enhanced Features</PlanDescription>
-                    </PlanHeader>
-                    <Price planType="starter">$15<span>/month</span></Price>
-                    <FeatureList>
-                        <FeatureItem><Check size={18} /> Everything in Free +</FeatureItem>
-                        <FeatureItem><Check size={18} /> 10 AI Predictions/day</FeatureItem>
-                        <FeatureItem><Check size={18} /> 2 Watchlists (20 assets)</FeatureItem>
-                        <FeatureItem><Check size={18} /> Advanced Market Overview</FeatureItem>
-                        <FeatureItem><Check size={18} /> Price Alerts</FeatureItem>
-                        <FeatureItem><Check size={18} /> Email Support</FeatureItem>
-                        <FeatureItem><Check size={18} /> Trade History Export</FeatureItem>
-                        <FeatureItem><Check size={18} /> Performance Analytics</FeatureItem>
-                    </FeatureList>
-                    <ActionButton 
-                        planType="starter" 
-                        onClick={() => handleSubscribe('starter')}
-                        disabled={loading !== null}
-                    >
-                        {loading === 'starter' ? 'Loading...' : 'Get Started'}
-                    </ActionButton>
-                </Card>
-
-                {/* Pro Tier - $25 */}
-                <Card planType="pro">
-                    <PlanHeader>
-                        <PlanIconWrapper planType="pro">
-                            <Rocket size={36} color="white" />
-                        </PlanIconWrapper>
-                        <PlanName planType="pro">Pro</PlanName>
-                        <PlanDescription>Accelerate Your Success</PlanDescription>
-                    </PlanHeader>
-                    <Price planType="pro">$25<span>/month</span></Price>
-                    <FeatureList>
-                        <FeatureItem><Check size={18} /> Everything in Starter +</FeatureItem>
-                        <FeatureItem><Check size={18} /> 25 AI Predictions/day</FeatureItem>
-                        <FeatureItem><Check size={18} /> 5 Watchlists (50 assets each)</FeatureItem>
-                        <FeatureItem><Check size={18} /> Advanced Market Analysis</FeatureItem>
-                        <FeatureItem><Check size={18} /> Real-Time Price Alerts</FeatureItem>
-                        <FeatureItem><Check size={18} /> AI Chat Assistant</FeatureItem>
-                        <FeatureItem><Check size={18} /> Technical Indicators</FeatureItem>
-                        <FeatureItem><Check size={18} /> Priority Email Support</FeatureItem>
-                    </FeatureList>
-                    <ComparisonBadge>3x More AI Predictions</ComparisonBadge>
-                    <ActionButton 
-                        planType="pro"
-                        onClick={() => handleSubscribe('pro')}
-                        disabled={loading !== null}
-                    >
-                        {loading === 'pro' ? 'Loading...' : 'Upgrade to Pro'}
-                    </ActionButton>
-                </Card>
-
-                {/* Premium Tier - $50 */}
-                <Card planType="premium">
-                    <PlanHeader>
-                        <PlanTag>Most Popular</PlanTag>
-                        <PlanIconWrapper planType="premium">
-                            <TrendingUp size={36} color="white" />
-                        </PlanIconWrapper>
-                        <PlanName planType="premium">Premium</PlanName>
-                        <PlanDescription>Master Your Trades</PlanDescription>
-                    </PlanHeader>
-                    <Price planType="premium">$50<span>/month</span></Price>
-                    <FeatureList>
-                        <FeatureItem><Check size={18} /> Everything in Pro +</FeatureItem>
-                        <FeatureItem><Check size={18} /> Unlimited AI Predictions</FeatureItem>
-                        <FeatureItem><Check size={18} /> Unlimited Watchlists</FeatureItem>
-                        <FeatureItem><Check size={18} /> Live Market Data (Real-Time)</FeatureItem>
-                        <FeatureItem><Check size={18} /> Advanced AI Chat (GPT-4)</FeatureItem>
-                        <FeatureItem><Check size={18} /> Algorithmic Pattern Recognition</FeatureItem>
-                        <FeatureItem><Check size={18} /> In-Depth Sector Analysis</FeatureItem>
-                        <FeatureItem><Check size={18} /> Portfolio Tracking</FeatureItem>
-                        <FeatureItem><Check size={18} /> Custom Alerts & Notifications</FeatureItem>
-                        <FeatureItem><Check size={18} /> Priority Support (24/7)</FeatureItem>
-                    </FeatureList>
-                    <ComparisonBadge>Unlimited Everything</ComparisonBadge>
-                    <ActionButton 
-                        planType="premium"
-                        onClick={() => handleSubscribe('premium')}
-                        disabled={loading !== null}
-                    >
-                        {loading === 'premium' ? 'Loading...' : 'Upgrade to Premium'}
-                    </ActionButton>
-                </Card>
-
-                {/* Elite Tier - $125 */}
-                <Card planType="elite">
-                    <PlanHeader>
-                        <BestValueTag>Best Value</BestValueTag>
-                        <PlanIconWrapper planType="elite">
-                            <Crown size={36} color="white" />
-                        </PlanIconWrapper>
-                        <PlanName planType="elite">Elite</PlanName>
-                        <PlanDescription>The Ultimate Market Edge</PlanDescription>
-                    </PlanHeader>
-                    <Price planType="elite">$125<span>/month</span></Price>
-                    <FeatureList>
-                        <FeatureItem><Check size={18} /> All Premium Features +</FeatureItem>
-                        <FeatureItem><Check size={18} /> Ultra-Low Latency Data Feed</FeatureItem>
-                        <FeatureItem><Check size={18} /> Full API Access</FeatureItem>
-                        <FeatureItem><Check size={18} /> Unlimited AI Research Reports</FeatureItem>
-                        <FeatureItem><Check size={18} /> Custom Research & Insights</FeatureItem>
-                        <FeatureItem><Check size={18} /> Advanced Backtesting Tools</FeatureItem>
-                        <FeatureItem><Check size={18} /> Institutional-Grade Analytics</FeatureItem>
-                        <FeatureItem><Check size={18} /> Multi-Account Management</FeatureItem>
-                        <FeatureItem><Check size={18} /> Personalized 1-on-1 Mentorship</FeatureItem>
-                        <FeatureItem><Check size={18} /> White-Label Options</FeatureItem>
-                        <FeatureItem><Check size={18} /> 24/7 Dedicated Account Manager</FeatureItem>
-                        <FeatureItem><Check size={18} /> VIP Discord Community Access</FeatureItem>
-                    </FeatureList>
-                    <ComparisonBadge>Pro Features + Mentorship</ComparisonBadge>
-                    <ActionButton 
-                        planType="elite"
-                        onClick={() => handleSubscribe('elite')}
-                        disabled={loading !== null}
-                    >
-                        {loading === 'elite' ? 'Loading...' : 'Go Elite'}
-                    </ActionButton>
-                </Card>
-            </PricingCards>
-
-            <FooterHashtags>
-                <span>#NexusSignalAI</span>
-                <span>#AITrading</span>
-                <span>#PaperTrading</span>
-                <span>#MarketPredictions</span>
-                <span>#TradingCommunity</span>
-            </FooterHashtags>
-
-            <Subtitle style={{ marginTop: '3rem', fontSize: '0.9rem', color: '#64748b' }}>
-                📱 Mobile app coming Summer 2026 • 🇺🇸 Made in USA • 💯 Built by real traders
-            </Subtitle>
+                <FooterText style={{ marginTop: '2rem' }}>
+                    <span>📱 Mobile App Coming Summer 2026</span>
+                    <span>•</span>
+                    <span>🇺🇸 Made in USA</span>
+                    <span>•</span>
+                    <span>💯 Built by Real Traders</span>
+                </FooterText>
+            </FooterSection>
         </PricingContainer>
     );
 };

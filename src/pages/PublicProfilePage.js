@@ -1,6 +1,6 @@
-// client/src/pages/PublicProfilePage.js - PUBLIC TRADER PROFILE PAGE (FIXED)
+// client/src/pages/PublicProfilePage.js - PUBLIC TRADER PROFILE PAGE (MINIMAL ENHANCEMENTS)
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import styled, { keyframes, css } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
@@ -11,7 +11,7 @@ import {
     UserPlus, UserMinus, Settings, Share2, Flag, Check,
     Star, Flame, Crown, Zap, Activity, ArrowUpRight,
     ArrowDownRight, Lock, Globe, MessageSquare, AlertCircle,
-    Briefcase, Clock, Medal, ChevronLeft
+    Briefcase, Clock, Medal, ChevronLeft, RefreshCw
 } from 'lucide-react';
 import {
     LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid,
@@ -66,9 +66,17 @@ const PageContainer = styled.div`
     padding-bottom: 2rem;
 `;
 
-const BackButton = styled.button`
+const TopBar = styled.div`
     max-width: 1400px;
     margin: 0 auto 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+`;
+
+const BackButton = styled.button`
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -84,6 +92,37 @@ const BackButton = styled.button`
     &:hover {
         background: rgba(0, 173, 237, 0.2);
         transform: translateX(-5px);
+    }
+`;
+
+const RefreshButton = styled.button`
+    padding: 0.5rem 1rem;
+    background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+    border: none;
+    border-radius: 8px;
+    color: #0a0e27;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+
+    &:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4);
+    }
+
+    &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    svg {
+        ${props => props.$loading && css`
+            animation: ${spin} 1s linear infinite;
+        `}
     }
 `;
 
@@ -149,7 +188,7 @@ const AvatarLarge = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: ${props => props.$src ? '0' : '3rem'};  // ✅ ADD THIS LINE
+    font-size: ${props => props.$src ? '0' : '3rem'};
     font-weight: 900;
     color: #0a0e27;
     box-shadow: 0 10px 40px rgba(255, 215, 0, 0.4);
@@ -585,17 +624,16 @@ const PublicProfilePage = () => {
     
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [activeTab, setActiveTab] = useState('overview');
     const [isFollowing, setIsFollowing] = useState(false);
     const [followLoading, setFollowLoading] = useState(false);
 
-    useEffect(() => {
-        fetchProfile();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [username]);
-
-    const fetchProfile = async () => {
-        setLoading(true);
+    // Keep original fetch logic exactly as it was
+    const fetchProfile = useCallback(async (isRefresh = false) => {
+        if (!isRefresh) {
+            setLoading(true);
+        }
         try {
             const response = await api.get(`/social/profile/username/${username}`);
             setProfile(response.data);
@@ -615,44 +653,62 @@ const PublicProfilePage = () => {
             } else if (error.response?.status === 404) {
                 setProfile(null);
             } else {
-                toast.error('Failed to load profile', 'Error');
+                if (!isRefresh) {
+                    toast.error('Failed to load profile', 'Error');
+                }
             }
         } finally {
             setLoading(false);
+            setRefreshing(false);
         }
+    }, [api, username, currentUser, toast]);
+
+    useEffect(() => {
+        fetchProfile();
+    }, [fetchProfile]);
+
+    // Manual refresh handler
+    const handleRefresh = () => {
+        setRefreshing(true);
+        fetchProfile(true);
     };
 
+    // Optimistic follow/unfollow
     const handleFollow = async () => {
         if (!profile?.userId && !profile?._id) return;
         
         const profileId = profile.userId || profile._id;
+        const wasFollowing = isFollowing;
+        
+        // Optimistic update
+        setIsFollowing(!wasFollowing);
+        setProfile(prev => ({
+            ...prev,
+            social: {
+                ...prev.social,
+                followersCount: Math.max(0, (prev.social?.followersCount || 0) + (wasFollowing ? -1 : 1))
+            }
+        }));
         
         setFollowLoading(true);
         try {
-            if (isFollowing) {
+            if (wasFollowing) {
                 await api.post(`/social/unfollow/${profileId}`);
-                setIsFollowing(false);
                 toast.success('Unfollowed user', 'Success');
-                setProfile(prev => ({
-                    ...prev,
-                    social: {
-                        ...prev.social,
-                        followersCount: Math.max(0, (prev.social?.followersCount || 0) - 1)
-                    }
-                }));
             } else {
                 await api.post(`/social/follow/${profileId}`);
-                setIsFollowing(true);
                 toast.success('Following user!', 'Success');
-                setProfile(prev => ({
-                    ...prev,
-                    social: {
-                        ...prev.social,
-                        followersCount: (prev.social?.followersCount || 0) + 1
-                    }
-                }));
             }
         } catch (error) {
+            // Revert on error
+            setIsFollowing(wasFollowing);
+            setProfile(prev => ({
+                ...prev,
+                social: {
+                    ...prev.social,
+                    followersCount: Math.max(0, (prev.social?.followersCount || 0) + (wasFollowing ? 1 : -1))
+                }
+            }));
             console.error('Error following/unfollowing:', error);
             toast.error(error.response?.data?.error || 'Failed to follow user', 'Error');
         } finally {
@@ -711,10 +767,12 @@ const PublicProfilePage = () => {
     if (profile?.private) {
         return (
             <PageContainer>
-                <BackButton onClick={() => navigate('/leaderboard')}>
-                    <ChevronLeft size={20} />
-                    Back to Leaderboard
-                </BackButton>
+                <TopBar>
+                    <BackButton onClick={() => navigate('/leaderboard')}>
+                        <ChevronLeft size={20} />
+                        Back to Leaderboard
+                    </BackButton>
+                </TopBar>
                 <PrivateMessage>
                     <PrivateIcon>
                         <Lock size={40} />
@@ -731,10 +789,12 @@ const PublicProfilePage = () => {
     if (!profile) {
         return (
             <PageContainer>
-                <BackButton onClick={() => navigate('/leaderboard')}>
-                    <ChevronLeft size={20} />
-                    Back to Leaderboard
-                </BackButton>
+                <TopBar>
+                    <BackButton onClick={() => navigate('/leaderboard')}>
+                        <ChevronLeft size={20} />
+                        Back to Leaderboard
+                    </BackButton>
+                </TopBar>
                 <EmptyState>
                     <Trophy size={64} color="#ffd700" style={{ margin: '0 auto 1rem' }} />
                     <h2 style={{ color: '#ffd700', marginBottom: '0.5rem' }}>Profile Not Found</h2>
@@ -748,22 +808,32 @@ const PublicProfilePage = () => {
 
     return (
         <PageContainer>
-            <BackButton onClick={() => navigate('/leaderboard')}>
-                <ChevronLeft size={20} />
-                Back to Leaderboard
-            </BackButton>
+            <TopBar>
+                <BackButton onClick={() => navigate('/leaderboard')}>
+                    <ChevronLeft size={20} />
+                    Back to Leaderboard
+                </BackButton>
+                <RefreshButton 
+                    onClick={handleRefresh} 
+                    disabled={refreshing}
+                    $loading={refreshing}
+                >
+                    <RefreshCw size={16} />
+                    {refreshing ? 'Refreshing...' : 'Refresh'}
+                </RefreshButton>
+            </TopBar>
 
             <ProfileHeader>
                 <HeaderTop>
                     <UserInfoSection>
                         <AvatarLarge $src={profile.profile?.avatar} $rank={profile.stats?.rank}>
-    {!profile.profile?.avatar && (profile.profile?.displayName?.charAt(0) || profile.username?.charAt(0) || 'T')}
-    {profile.stats?.rank && (
-        <RankBadge $rank={profile.stats.rank}>
-            #{profile.stats.rank}
-        </RankBadge>
-    )}
-</AvatarLarge>
+                            {!profile.profile?.avatar && (profile.profile?.displayName?.charAt(0) || profile.username?.charAt(0) || 'T')}
+                            {profile.stats?.rank && (
+                                <RankBadge $rank={profile.stats.rank}>
+                                    #{profile.stats.rank}
+                                </RankBadge>
+                            )}
+                        </AvatarLarge>
 
                         <UserDetails>
                             <DisplayName>

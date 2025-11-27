@@ -1,10 +1,13 @@
-// client/src/pages/PaperTradingPage.js - WITH LONG/SHORT TRADING
-// Features: Long & Short Positions, Auto-refresh, Confirmation Modal, Position Details, Price Alerts, Expandable Cards
+// client/src/pages/PaperTradingPage.js - WITH LONG/SHORT TRADING + LEVERAGE
+// Features: Long & Short Positions, Leverage Trading, Auto-refresh, Confirmation Modal, Position Details, Price Alerts, Expandable Cards
 
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import RefillAccountButton from '../components/RefillAccountButton';
+import LeverageSelector from '../components/LeverageSelector';
+
 import {
     TrendingUp, TrendingDown, DollarSign, Activity, Target, Zap,
     ArrowUpRight, ArrowDownRight, RefreshCw, Search, Plus, Minus,
@@ -17,6 +20,26 @@ import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid,
     Tooltip, ResponsiveContainer, ReferenceLine
 } from 'recharts';
+
+
+// ============ REFILL TIERS CONFIG ============
+const REFILL_TIERS = [
+    { coins: 100, amount: 10000, label: '$10,000' },
+    { coins: 250, amount: 25000, label: '$25,000' },
+    { coins: 500, amount: 50000, label: '$50,000' },
+    { coins: 750, amount: 75000, label: '$75,000' },
+    { coins: 1000, amount: 100000, label: '$100,000 (Full Refill)' }
+];
+
+const MAX_BALANCE = 100000; // Maximum balance cap
+
+const LEVERAGE_OPTIONS = [1, 2, 3, 5, 7, 10, 20]; 
+
+// Helper function to safely parse numbers
+function safeNumber(value, defaultValue = 0) {
+    const num = parseFloat(value);
+    return isNaN(num) ? defaultValue : num;
+}
 
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`
@@ -621,6 +644,35 @@ const PositionTypeBadge = styled.div`
     letter-spacing: 0.5px;
 `;
 
+// ✅ Leverage Badge
+const LeverageBadge = styled.span`
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    background: ${props => {
+        if (props.$leverage >= 20) return 'rgba(220, 38, 38, 0.2)';
+        if (props.$leverage >= 7) return 'rgba(239, 68, 68, 0.2)';
+        if (props.$leverage >= 5) return 'rgba(245, 158, 11, 0.2)';
+        return 'rgba(16, 185, 129, 0.2)';
+    }};
+    color: ${props => {
+        if (props.$leverage >= 20) return '#dc2626';
+        if (props.$leverage >= 7) return '#ef4444';
+        if (props.$leverage >= 5) return '#f59e0b';
+        return '#10b981';
+    }};
+    border: 1px solid ${props => {
+        if (props.$leverage >= 20) return 'rgba(220, 38, 38, 0.4)';
+        if (props.$leverage >= 7) return 'rgba(239, 68, 68, 0.4)';
+        if (props.$leverage >= 5) return 'rgba(245, 158, 11, 0.4)';
+        return 'rgba(16, 185, 129, 0.4)';
+    }};
+`;
+
 // ✅ Expand Icon
 const ExpandIcon = styled.div`
     position: absolute;
@@ -708,6 +760,9 @@ const PositionSymbol = styled.div`
     font-size: 1.3rem;
     font-weight: 900;
     color: #00adef;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 `;
 
 const PositionPL = styled.div`
@@ -1165,7 +1220,8 @@ const PaperTradingPage = () => {
     const [showConfirmation, setShowConfirmation] = useState(false);
     const [pendingTrade, setPendingTrade] = useState(null);
     const [expandedPositions, setExpandedPositions] = useState({});
-   
+    const [leverage, setLeverage] = useState(1);
+
     // Position Type State
     const [positionType, setPositionType] = useState('long');
    
@@ -1268,6 +1324,8 @@ const PaperTradingPage = () => {
             return;
         }
 
+        const tradeAmount = currentPrice * parseFloat(quantity);
+
         setPendingTrade({
             action: activeTab,
             positionType,
@@ -1275,8 +1333,10 @@ const PaperTradingPage = () => {
             type,
             quantity: parseFloat(quantity),
             price: currentPrice,
-            total: currentPrice * parseFloat(quantity),
-            notes
+            total: tradeAmount,
+            notes,
+            leverage,
+            leveragedValue: tradeAmount * leverage
         });
         setShowConfirmation(true);
     };
@@ -1301,7 +1361,8 @@ const PaperTradingPage = () => {
                 type: pendingTrade.type,
                 quantity: pendingTrade.quantity,
                 positionType: pendingTrade.positionType,
-                notes: pendingTrade.notes
+                notes: pendingTrade.notes,
+                leverage: pendingTrade.leverage
             });
 
             setAccount(response.data.account);
@@ -1316,11 +1377,13 @@ const PaperTradingPage = () => {
                 toast.info(message, pl >= 0 ? '💰 Nice Trade!' : '📉 Trade Closed');
             }
 
+            // Reset form
             setSymbol('');
             setQuantity('');
             setNotes('');
             setCurrentPrice(null);
             setPendingTrade(null);
+            setLeverage(1); // Reset leverage after trade
             loadOrders();
 
         } catch (error) {
@@ -1415,6 +1478,11 @@ const PaperTradingPage = () => {
         }
     }, [symbol, type]);
 
+    // Reset leverage when changing position type or tab
+    useEffect(() => {
+        setLeverage(1);
+    }, [positionType, activeTab]);
+
     if (loading) {
         return (
             <PageContainer>
@@ -1467,13 +1535,36 @@ const PaperTradingPage = () => {
                                 <DetailLabelModal>Price per Share</DetailLabelModal>
                                 <DetailValueModal>{formatCurrency(pendingTrade.price)}</DetailValueModal>
                             </DetailRow>
+                            {pendingTrade.leverage > 1 && (
+                                <>
+                                    <DetailRow>
+                                        <DetailLabelModal>Leverage</DetailLabelModal>
+                                        <DetailValueModal style={{ 
+                                            color: pendingTrade.leverage >= 10 ? '#ef4444' : 
+                                                   pendingTrade.leverage >= 5 ? '#f59e0b' : '#10b981'
+                                        }}>
+                                            {pendingTrade.leverage}x
+                                        </DetailValueModal>
+                                    </DetailRow>
+                                    <DetailRow>
+                                        <DetailLabelModal>Margin (Your Cost)</DetailLabelModal>
+                                        <DetailValueModal>{formatCurrency(pendingTrade.total)}</DetailValueModal>
+                                    </DetailRow>
+                                    <DetailRow>
+                                        <DetailLabelModal>Position Size</DetailLabelModal>
+                                        <DetailValueModal style={{ color: '#00adef' }}>
+                                            {formatCurrency(pendingTrade.leveragedValue)}
+                                        </DetailValueModal>
+                                    </DetailRow>
+                                </>
+                            )}
                             <DetailRow style={{ 
                                 borderTop: '2px solid rgba(0, 173, 237, 0.3)',
                                 paddingTop: '1rem',
                                 marginTop: '0.5rem'
                             }}>
                                 <DetailLabelModal style={{ fontSize: '1.1rem', color: '#00adef' }}>
-                                    Total {pendingTrade.action === 'buy' ? 'Cost' : 'Revenue'}
+                                    {pendingTrade.leverage > 1 ? 'Margin Required' : `Total ${pendingTrade.action === 'buy' ? 'Cost' : 'Revenue'}`}
                                 </DetailLabelModal>
                                 <DetailValueModal style={{ fontSize: '1.5rem', color: '#00ff88' }}>
                                     {formatCurrency(pendingTrade.total)}
@@ -1481,7 +1572,23 @@ const PaperTradingPage = () => {
                             </DetailRow>
                         </ConfirmationDetails>
 
-                        {pendingTrade.positionType === 'short' && pendingTrade.action === 'buy' && (
+                        {pendingTrade.leverage > 1 && (
+                            <RiskWarning style={{ margin: '1rem 0', animation: 'none' }}>
+                                <RiskWarningIcon>
+                                    <AlertTriangle size={20} />
+                                </RiskWarningIcon>
+                                <RiskWarningContent>
+                                    <RiskWarningTitle>⚡ {pendingTrade.leverage}x Leveraged Position</RiskWarningTitle>
+                                    <RiskWarningText>
+                                        Your {formatCurrency(pendingTrade.total)} margin controls a {formatCurrency(pendingTrade.leveragedValue)} position. 
+                                        Gains AND losses are multiplied by {pendingTrade.leverage}x. 
+                                        A {(90 / pendingTrade.leverage).toFixed(1)}% adverse move triggers liquidation.
+                                    </RiskWarningText>
+                                </RiskWarningContent>
+                            </RiskWarning>
+                        )}
+
+                        {pendingTrade.positionType === 'short' && pendingTrade.action === 'buy' && pendingTrade.leverage === 1 && (
                             <RiskWarning style={{ margin: '1rem 0', animation: 'none' }}>
                                 <RiskWarningIcon>
                                     <AlertTriangle size={20} />
@@ -1538,7 +1645,7 @@ const PaperTradingPage = () => {
                     <Subtitle>Practice trading with $100,000 virtual cash - Risk free!</Subtitle>
                     <PoweredBy>
                         <Zap size={18} />
-                        Real-Time Market Prices • Long & Short Positions
+                        Real-Time Market Prices • Long & Short Positions • Up to 20x Leverage
                         <span style={{
                             marginLeft: '10px',
                             width: '8px',
@@ -1734,6 +1841,16 @@ const PaperTradingPage = () => {
                                     />
                                 </FormGroup>
 
+                                {/* Leverage Selector - Only show on Buy tab */}
+                                {activeTab === 'buy' && (
+                                    <LeverageSelector
+                                        value={leverage}
+                                        onChange={setLeverage}
+                                        tradeAmount={currentPrice && quantity ? currentPrice * parseFloat(quantity) : 0}
+                                        disabled={!currentPrice || !quantity}
+                                    />
+                                )}
+
                                 <FormGroup>
                                     <Label>
                                         <MessageCircle size={16} />
@@ -1752,8 +1869,17 @@ const PaperTradingPage = () => {
 
                                 {currentPrice && quantity && (
                                     <TotalDisplay>
-                                        <TotalLabel>Total {activeTab === 'buy' ? 'Cost' : 'Revenue'}</TotalLabel>
-                                        <TotalValue>{formatCurrency(calculateTotal())}</TotalValue>
+                                        <TotalLabel>
+                                            {leverage > 1 ? 'Margin Required' : `Total ${activeTab === 'buy' ? 'Cost' : 'Revenue'}`}
+                                        </TotalLabel>
+                                        <div style={{ textAlign: 'right' }}>
+                                            <TotalValue>{formatCurrency(calculateTotal())}</TotalValue>
+                                            {leverage > 1 && (
+                                                <div style={{ fontSize: '0.85rem', color: '#00adef', marginTop: '0.25rem' }}>
+                                                    Position Size: {formatCurrency(calculateTotal() * leverage)}
+                                                </div>
+                                            )}
+                                        </div>
                                     </TotalDisplay>
                                 )}
 
@@ -1775,6 +1901,7 @@ const PaperTradingPage = () => {
                                                 (activeTab === 'buy' ? 'Short' : 'Cover Short') :
                                                 (activeTab === 'buy' ? 'Buy' : 'Sell')
                                             } {symbol || 'Asset'}
+                                            {leverage > 1 && ` (${leverage}x)`}
                                         </>
                                     )}
                                 </SubmitButton>
@@ -1788,13 +1915,23 @@ const PaperTradingPage = () => {
                                         <PieChart size={20} />
                                         Your Positions ({account.positions.length})
                                     </PositionsTitle>
-                                    <RefreshButton 
-                                        onClick={handleRefreshPrices}
-                                        disabled={refreshingPrices}
-                                    >
-                                        {refreshingPrices ? <LoadingSpinner size={16} /> : <RefreshCw size={16} />}
-                                        Refresh
-                                    </RefreshButton>
+                                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                                        <RefillAccountButton 
+                                            variant="compact"
+                                            currentCashBalance={account?.cashBalance || 0}
+                                            onRefillSuccess={(data) => {
+                                                setAccount(data.account);
+                                                loadOrders();
+                                            }}
+                                        />
+                                        <RefreshButton 
+                                            onClick={handleRefreshPrices}
+                                            disabled={refreshingPrices}
+                                        >
+                                            {refreshingPrices ? <LoadingSpinner size={16} /> : <RefreshCw size={16} />}
+                                            Refresh
+                                        </RefreshButton>
+                                    </div>
                                 </PositionsHeader>
 
                                 {account.positions.map((position) => {
@@ -1802,6 +1939,7 @@ const PaperTradingPage = () => {
                                     const isExpanded = expandedPositions[positionKey];
                                     const totalValue = position.currentPrice * position.quantity;
                                     const costBasis = position.averagePrice * position.quantity;
+                                    const isLeveraged = position.leverage && position.leverage > 1;
 
                                     return (
                                         <PositionCard 
@@ -1816,24 +1954,25 @@ const PaperTradingPage = () => {
                                             </ExpandIcon>
 
                                             <PositionHeader>
-                                                <div>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                                        <PositionSymbol>${position.symbol}</PositionSymbol>
-                                                        <PositionTypeBadge $short={position.positionType === 'short'}>
-                                                            {position.positionType === 'short' ? <TrendingDown size={12} /> : <TrendingUp size={12} />}
-                                                            {position.positionType?.toUpperCase() || 'LONG'}
-                                                        </PositionTypeBadge>
-                                                    </div>
-                                                    <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.25rem' }}>
-                                                        {position.type}
-                                                    </div>
-                                                </div>
+                                                <PositionSymbol>
+                                                    {position.symbol}
+                                                    <PositionTypeBadge $short={position.positionType === 'short'}>
+                                                        {position.positionType === 'short' ? <TrendingDown size={12} /> : <TrendingUp size={12} />}
+                                                        {position.positionType}
+                                                    </PositionTypeBadge>
+                                                    {isLeveraged && (
+                                                        <LeverageBadge $leverage={position.leverage}>
+                                                            <Zap size={10} />
+                                                            {position.leverage}x
+                                                        </LeverageBadge>
+                                                    )}
+                                                </PositionSymbol>
                                                 <PositionPL>
                                                     <PLValue $positive={position.profitLoss >= 0}>
-                                                        {position.profitLoss >= 0 ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
+                                                        {position.profitLoss >= 0 ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
                                                         {formatCurrency(Math.abs(position.profitLoss || 0))}
                                                     </PLValue>
-                                                    <PLPercent $positive={position.profitLoss >= 0}>
+                                                    <PLPercent $positive={position.profitLossPercent >= 0}>
                                                         {formatPercent(position.profitLossPercent || 0)}
                                                     </PLPercent>
                                                 </PositionPL>
@@ -1859,13 +1998,17 @@ const PaperTradingPage = () => {
                                                 <ExpandedContent>
                                                     <ExpandedGrid>
                                                         <ExpandedItem>
-                                                            <ExpandedLabel>Total Value</ExpandedLabel>
+                                                            <ExpandedLabel>
+                                                                {isLeveraged ? 'Position Value' : 'Total Value'}
+                                                            </ExpandedLabel>
                                                             <ExpandedValue $color="#00adef">
-                                                                {formatCurrency(totalValue)}
+                                                                {formatCurrency(isLeveraged ? position.leveragedValue : totalValue)}
                                                             </ExpandedValue>
                                                         </ExpandedItem>
                                                         <ExpandedItem>
-                                                            <ExpandedLabel>Cost Basis</ExpandedLabel>
+                                                            <ExpandedLabel>
+                                                                {isLeveraged ? 'Margin Used' : 'Cost Basis'}
+                                                            </ExpandedLabel>
                                                             <ExpandedValue>
                                                                 {formatCurrency(costBasis)}
                                                             </ExpandedValue>
@@ -1885,6 +2028,24 @@ const PaperTradingPage = () => {
                                                             </ExpandedValue>
                                                         </ExpandedItem>
                                                     </ExpandedGrid>
+
+                                                    {/* Leverage Info */}
+                                                    {isLeveraged && (
+                                                        <PositionNotes style={{ borderLeftColor: position.leverage >= 10 ? '#ef4444' : '#f59e0b' }}>
+                                                            <NotesLabel style={{ color: position.leverage >= 10 ? '#ef4444' : '#f59e0b' }}>
+                                                                <Zap size={14} />
+                                                                Leveraged Position ({position.leverage}x)
+                                                            </NotesLabel>
+                                                            <NotesText>
+                                                                Margin: {formatCurrency(costBasis)} → Position Size: {formatCurrency(position.leveragedValue || costBasis * position.leverage)}
+                                                                {position.liquidationPrice && (
+                                                                    <span style={{ color: '#ef4444', display: 'block', marginTop: '0.5rem' }}>
+                                                                        ⚠️ Liquidation Price: {formatCurrency(position.liquidationPrice)}
+                                                                    </span>
+                                                                )}
+                                                            </NotesText>
+                                                        </PositionNotes>
+                                                    )}
 
                                                     {/* Position Strategy Info */}
                                                     <PositionNotes>
@@ -1961,11 +2122,18 @@ const PaperTradingPage = () => {
                                 {orders.map((order) => (
                                     <OrderCard key={order._id}>
                                         <OrderHeader>
-                                            <OrderSide $side={order.side}>
-                                                {order.side === 'buy' ? <Plus size={16} /> : order.side === 'cover' ? <RefreshCw size={16} /> : <Minus size={16} />}
-                                                {order.side.toUpperCase()}
-                                                {order.positionType === 'short' && order.side !== 'cover' && ' SHORT'}
-                                            </OrderSide>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                <OrderSide $side={order.side}>
+                                                    {order.side === 'buy' ? <Plus size={16} /> : order.side === 'cover' ? <RefreshCw size={16} /> : <Minus size={16} />}
+                                                    {order.side.toUpperCase()}
+                                                    {order.positionType === 'short' && order.side !== 'cover' && ' SHORT'}
+                                                </OrderSide>
+                                                {order.leverage > 1 && (
+                                                    <LeverageBadge $leverage={order.leverage}>
+                                                        {order.leverage}x
+                                                    </LeverageBadge>
+                                                )}
+                                            </div>
                                             <OrderTime>
                                                 {new Date(order.executedAt).toLocaleString()}
                                             </OrderTime>
@@ -2005,10 +2173,20 @@ const PaperTradingPage = () => {
 
                     <Sidebar>
                         <StatsPanel>
-                            <PanelTitle>
-                                <Award size={20} />
-                                Your Stats
-                            </PanelTitle>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                                <PanelTitle style={{ marginBottom: 0 }}>
+                                    <Award size={20} />
+                                    Your Stats
+                                </PanelTitle>
+                                <RefillAccountButton 
+                                    variant="compact"
+                                    currentCashBalance={account?.cashBalance || 0}
+                                    onRefillSuccess={(data) => {
+                                        setAccount(data.account);
+                                        loadOrders();
+                                    }}
+                                />
+                            </div>
 
                             <StatRow>
                                 <StatRowLabel>
@@ -2040,6 +2218,14 @@ const PaperTradingPage = () => {
                                     Biggest Win
                                 </StatRowLabel>
                                 <StatRowValue $color="#10b981">{formatCurrency(account?.biggestWin || 0)}</StatRowValue>
+                            </StatRow>
+
+                            <StatRow>
+                                <StatRowLabel>
+                                    <RefreshCw size={16} />
+                                    Times Refilled
+                                </StatRowLabel>
+                                <StatRowValue $color="#00adef">{account?.refillCount || 0}</StatRowValue>
                             </StatRow>
 
                             {account?.biggestLoss < 0 && (
