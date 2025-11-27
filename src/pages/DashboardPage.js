@@ -1840,6 +1840,12 @@ const DashboardPage = () => {
         return `${Math.floor(seconds / 86400)}d ago`;
     };
 
+    // Get display name for leaderboard (checks multiple fields)
+    const getDisplayName = (trader) => {
+        if (!trader.user) return 'Anonymous';
+        return trader.user.profile?.displayName || trader.user.username || trader.user.name || 'Anonymous';
+    };
+
     // Calculate progress using REAL totals
     const achievementProgress = totalAchievements > 0 ? (unlockedAchievements / totalAchievements) * 100 : 0;
 
@@ -2028,7 +2034,7 @@ const DashboardPage = () => {
                                 <LeaderboardItem key={trader.user?._id || index} $isUser={trader.user?._id === user?._id}>
                                     <LeaderboardRank $rank={trader.rank}>{trader.rank}</LeaderboardRank>
                                     <LeaderboardInfo>
-                                        <LeaderboardName>{trader.user?.name || 'Anonymous'}{trader.user?._id === user?._id && ' (You)'}</LeaderboardName>
+                                        <LeaderboardName>{getDisplayName(trader)}{trader.user?._id === user?._id && ' (You)'}</LeaderboardName>
                                         <LeaderboardStats>{trader.totalTrades} trades • {(trader.winRate || 0).toFixed(0)}% win rate</LeaderboardStats>
                                     </LeaderboardInfo>
                                     <LeaderboardReturn $positive={trader.profitLossPercent >= 0}>{formatPercent(trader.profitLossPercent)}</LeaderboardReturn>

@@ -1,5 +1,6 @@
-// client/src/pages/PaperTradingPage.js - WITH LONG/SHORT TRADING + LEVERAGE
-// Features: Long & Short Positions, Leverage Trading, Auto-refresh, Confirmation Modal, Position Details, Price Alerts, Expandable Cards
+// client/src/pages/PaperTradingPage.js - WITH LONG/SHORT TRADING + LEVERAGE + TP/SL
+// Features: Long & Short Positions, Leverage Trading, Take Profit, Stop Loss, Trailing Stop,
+// Auto-refresh, Confirmation Modal, Position Details, Price Alerts, Expandable Cards
 
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
@@ -14,7 +15,7 @@ import {
     Send, Trophy, Flame, Award, Eye, Heart, MessageCircle,
     Share2, BarChart3, PieChart, Percent, Clock, CheckCircle,
     XCircle, AlertCircle, ThumbsUp, Star, Users, Calendar, Bell,
-    AlertTriangle, Shield, ChevronDown
+    AlertTriangle, Shield, ChevronDown, Crosshair, ShieldAlert, TrendingUp as TrendUp
 } from 'lucide-react';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid,
@@ -685,7 +686,7 @@ const ExpandIcon = styled.div`
 
 // ✅ Expanded Details Section
 const ExpandedDetails = styled.div`
-    max-height: ${props => props.$expanded ? '500px' : '0'};
+    max-height: ${props => props.$expanded ? '600px' : '0'};
     overflow: hidden;
     transition: all 0.3s ease-in-out;
     opacity: ${props => props.$expanded ? '1' : '0'};
@@ -1111,6 +1112,8 @@ const ConfirmationCard = styled.div`
     padding: 2.5rem;
     max-width: 500px;
     width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
     animation: ${slideIn} 0.3s ease-out;
 `;
 
@@ -1204,6 +1207,134 @@ const ConfirmButton = styled.button`
     }
 `;
 
+// ============ TP/SL STYLED COMPONENTS ============
+const TPSLSection = styled.div`
+    padding: 1.25rem;
+    background: rgba(139, 92, 246, 0.05);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 12px;
+    margin-top: 0.5rem;
+`;
+
+const TPSLHeader = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    cursor: pointer;
+`;
+
+const TPSLTitle = styled.div`
+    color: #a78bfa;
+    font-size: 0.95rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+`;
+
+const TPSLToggle = styled.div`
+    color: #64748b;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    transition: color 0.2s;
+    
+    &:hover {
+        color: #a78bfa;
+    }
+`;
+
+const TPSLContent = styled.div`
+    display: ${props => props.$expanded ? 'block' : 'none'};
+`;
+
+const TPSLGrid = styled.div`
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+`;
+
+const TPSLInputGroup = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+`;
+
+const TPSLLabel = styled.label`
+    color: ${props => props.$tp ? '#10b981' : props.$sl ? '#ef4444' : '#f59e0b'};
+    font-size: 0.8rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+`;
+
+const TPSLInput = styled.input`
+    padding: 0.75rem 1rem;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid ${props => props.$tp ? 'rgba(16, 185, 129, 0.3)' : props.$sl ? 'rgba(239, 68, 68, 0.3)' : 'rgba(245, 158, 11, 0.3)'};
+    border-radius: 8px;
+    color: #e0e6ed;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+
+    &:focus {
+        outline: none;
+        border-color: ${props => props.$tp ? '#10b981' : props.$sl ? '#ef4444' : '#f59e0b'};
+        box-shadow: 0 0 10px ${props => props.$tp ? 'rgba(16, 185, 129, 0.3)' : props.$sl ? 'rgba(239, 68, 68, 0.3)' : 'rgba(245, 158, 11, 0.3)'};
+    }
+
+    &::placeholder {
+        color: #64748b;
+    }
+`;
+
+const TPSLHint = styled.div`
+    color: #64748b;
+    font-size: 0.75rem;
+    margin-top: 0.5rem;
+    padding: 0.75rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    line-height: 1.4;
+`;
+
+const TrailingStopSection = styled.div`
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px dashed rgba(139, 92, 246, 0.3);
+`;
+
+// TP/SL Badges for position cards
+const TPSLBadge = styled.div`
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    background: ${props => props.$type === 'tp' ? 'rgba(16, 185, 129, 0.2)' : 
+                          props.$type === 'sl' ? 'rgba(239, 68, 68, 0.2)' : 
+                          'rgba(245, 158, 11, 0.2)'};
+    color: ${props => props.$type === 'tp' ? '#10b981' : 
+                      props.$type === 'sl' ? '#ef4444' : 
+                      '#f59e0b'};
+    border: 1px solid ${props => props.$type === 'tp' ? 'rgba(16, 185, 129, 0.4)' : 
+                                 props.$type === 'sl' ? 'rgba(239, 68, 68, 0.4)' : 
+                                 'rgba(245, 158, 11, 0.4)'};
+`;
+
+const TPSLBadgeContainer = styled.div`
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+`;
+
 // ============ MAIN COMPONENT ============
 const PaperTradingPage = () => {
     const { api, user } = useAuth();
@@ -1230,6 +1361,12 @@ const PaperTradingPage = () => {
     const [type, setType] = useState('stock');
     const [quantity, setQuantity] = useState('');
     const [notes, setNotes] = useState('');
+
+    // TP/SL State
+    const [showTPSL, setShowTPSL] = useState(false);
+    const [takeProfit, setTakeProfit] = useState('');
+    const [stopLoss, setStopLoss] = useState('');
+    const [trailingStopPercent, setTrailingStopPercent] = useState('');
 
     // Orders & Leaderboard
     const [orders, setOrders] = useState([]);
@@ -1297,13 +1434,72 @@ const PaperTradingPage = () => {
         try {
             const response = await api.post('/paper-trading/refresh-prices');
             setAccount(response.data.account);
-            toast.success('Prices updated', 'Success');
+            
+            // Check if any triggers were hit
+            if (response.data.triggered && response.data.triggered.length > 0) {
+                response.data.triggered.forEach(trigger => {
+                    const triggerLabel = trigger.type === 'take_profit' ? '🎯 Take Profit' :
+                                        trigger.type === 'stop_loss' ? '🛑 Stop Loss' :
+                                        trigger.type === 'trailing_stop' ? '📉 Trailing Stop' :
+                                        trigger.type === 'liquidation' ? '💀 Liquidated' : 'Auto-Closed';
+                    
+                    const message = `${trigger.symbol}: ${trigger.profitLoss >= 0 ? '+' : ''}$${trigger.profitLoss.toFixed(2)} (${trigger.profitLossPercent >= 0 ? '+' : ''}${trigger.profitLossPercent.toFixed(2)}%)`;
+                    
+                    if (trigger.type === 'liquidation') {
+                        toast.error(message, triggerLabel);
+                    } else if (trigger.profitLoss >= 0) {
+                        toast.success(message, triggerLabel);
+                    } else {
+                        toast.warning(message, triggerLabel);
+                    }
+                });
+            } else {
+                toast.success('Prices updated', 'Success');
+            }
         } catch (error) {
             console.error('Refresh prices error:', error);
             toast.error('Failed to refresh prices', 'Error');
         } finally {
             setRefreshingPrices(false);
         }
+    };
+
+    // Validate TP/SL values
+    const validateTPSL = () => {
+        if (!currentPrice) return { valid: true };
+        
+        const tp = takeProfit ? parseFloat(takeProfit) : null;
+        const sl = stopLoss ? parseFloat(stopLoss) : null;
+        const trailing = trailingStopPercent ? parseFloat(trailingStopPercent) : null;
+        
+        const errors = [];
+        
+        if (positionType === 'long') {
+            // Long: TP must be ABOVE current price, SL must be BELOW
+            if (tp && tp <= currentPrice) {
+                errors.push('Take Profit must be above current price for long positions');
+            }
+            if (sl && sl >= currentPrice) {
+                errors.push('Stop Loss must be below current price for long positions');
+            }
+        } else {
+            // Short: TP must be BELOW current price, SL must be ABOVE
+            if (tp && tp >= currentPrice) {
+                errors.push('Take Profit must be below current price for short positions');
+            }
+            if (sl && sl <= currentPrice) {
+                errors.push('Stop Loss must be above current price for short positions');
+            }
+        }
+        
+        if (trailing && (trailing <= 0 || trailing > 50)) {
+            errors.push('Trailing Stop must be between 0.1% and 50%');
+        }
+        
+        return {
+            valid: errors.length === 0,
+            errors
+        };
     };
 
     const handleSubmit = async (e) => {
@@ -1324,6 +1520,13 @@ const PaperTradingPage = () => {
             return;
         }
 
+        // Validate TP/SL
+        const tpslValidation = validateTPSL();
+        if (!tpslValidation.valid) {
+            tpslValidation.errors.forEach(err => toast.error(err, 'Invalid TP/SL'));
+            return;
+        }
+
         const tradeAmount = currentPrice * parseFloat(quantity);
 
         setPendingTrade({
@@ -1336,7 +1539,10 @@ const PaperTradingPage = () => {
             total: tradeAmount,
             notes,
             leverage,
-            leveragedValue: tradeAmount * leverage
+            leveragedValue: tradeAmount * leverage,
+            takeProfit: takeProfit ? parseFloat(takeProfit) : null,
+            stopLoss: stopLoss ? parseFloat(stopLoss) : null,
+            trailingStopPercent: trailingStopPercent ? parseFloat(trailingStopPercent) : null
         });
         setShowConfirmation(true);
     };
@@ -1356,14 +1562,23 @@ const PaperTradingPage = () => {
                 endpoint = pendingTrade.action === 'buy' ? '/paper-trading/buy' : '/paper-trading/sell';
             }
 
-            const response = await api.post(endpoint, {
+            const requestBody = {
                 symbol: pendingTrade.symbol,
                 type: pendingTrade.type,
                 quantity: pendingTrade.quantity,
                 positionType: pendingTrade.positionType,
                 notes: pendingTrade.notes,
                 leverage: pendingTrade.leverage
-            });
+            };
+
+            // Add TP/SL if set (only for buy/open trades)
+            if (pendingTrade.action === 'buy') {
+                if (pendingTrade.takeProfit) requestBody.takeProfit = pendingTrade.takeProfit;
+                if (pendingTrade.stopLoss) requestBody.stopLoss = pendingTrade.stopLoss;
+                if (pendingTrade.trailingStopPercent) requestBody.trailingStopPercent = pendingTrade.trailingStopPercent;
+            }
+
+            const response = await api.post(endpoint, requestBody);
 
             setAccount(response.data.account);
             toast.success(response.data.message, 'Success');
@@ -1383,7 +1598,11 @@ const PaperTradingPage = () => {
             setNotes('');
             setCurrentPrice(null);
             setPendingTrade(null);
-            setLeverage(1); // Reset leverage after trade
+            setLeverage(1);
+            setTakeProfit('');
+            setStopLoss('');
+            setTrailingStopPercent('');
+            setShowTPSL(false);
             loadOrders();
 
         } catch (error) {
@@ -1455,6 +1674,12 @@ const PaperTradingPage = () => {
         return currentPrice * parseFloat(quantity);
     };
 
+    // Get display name for leaderboard
+    const getDisplayName = (trader) => {
+        if (!trader.user) return 'Anonymous';
+        return trader.user.profile?.displayName || trader.user.username || trader.user.name || 'Anonymous';
+    };
+
     // Effects
     useEffect(() => {
         loadAccount();
@@ -1478,9 +1703,12 @@ const PaperTradingPage = () => {
         }
     }, [symbol, type]);
 
-    // Reset leverage when changing position type or tab
+    // Reset leverage and TP/SL when changing position type or tab
     useEffect(() => {
         setLeverage(1);
+        setTakeProfit('');
+        setStopLoss('');
+        setTrailingStopPercent('');
     }, [positionType, activeTab]);
 
     if (loading) {
@@ -1558,6 +1786,41 @@ const PaperTradingPage = () => {
                                     </DetailRow>
                                 </>
                             )}
+                            
+                            {/* TP/SL in confirmation */}
+                            {(pendingTrade.takeProfit || pendingTrade.stopLoss || pendingTrade.trailingStopPercent) && (
+                                <>
+                                    <DetailRow style={{ borderTop: '1px dashed rgba(139, 92, 246, 0.3)', marginTop: '0.5rem', paddingTop: '1rem' }}>
+                                        <DetailLabelModal style={{ color: '#a78bfa' }}>🎯 Risk Management</DetailLabelModal>
+                                        <DetailValueModal></DetailValueModal>
+                                    </DetailRow>
+                                    {pendingTrade.takeProfit && (
+                                        <DetailRow>
+                                            <DetailLabelModal>Take Profit</DetailLabelModal>
+                                            <DetailValueModal style={{ color: '#10b981' }}>
+                                                {formatCurrency(pendingTrade.takeProfit)}
+                                            </DetailValueModal>
+                                        </DetailRow>
+                                    )}
+                                    {pendingTrade.stopLoss && (
+                                        <DetailRow>
+                                            <DetailLabelModal>Stop Loss</DetailLabelModal>
+                                            <DetailValueModal style={{ color: '#ef4444' }}>
+                                                {formatCurrency(pendingTrade.stopLoss)}
+                                            </DetailValueModal>
+                                        </DetailRow>
+                                    )}
+                                    {pendingTrade.trailingStopPercent && (
+                                        <DetailRow>
+                                            <DetailLabelModal>Trailing Stop</DetailLabelModal>
+                                            <DetailValueModal style={{ color: '#f59e0b' }}>
+                                                {pendingTrade.trailingStopPercent}%
+                                            </DetailValueModal>
+                                        </DetailRow>
+                                    )}
+                                </>
+                            )}
+
                             <DetailRow style={{ 
                                 borderTop: '2px solid rgba(0, 173, 237, 0.3)',
                                 paddingTop: '1rem',
@@ -1645,7 +1908,7 @@ const PaperTradingPage = () => {
                     <Subtitle>Practice trading with $100,000 virtual cash - Risk free!</Subtitle>
                     <PoweredBy>
                         <Zap size={18} />
-                        Real-Time Market Prices • Long & Short Positions • Up to 20x Leverage
+                        Real-Time Prices • Long & Short • Up to 20x Leverage • TP/SL Orders
                         <span style={{
                             marginLeft: '10px',
                             width: '8px',
@@ -1851,6 +2114,90 @@ const PaperTradingPage = () => {
                                     />
                                 )}
 
+                                {/* TP/SL Section - Only show on Buy tab */}
+                                {activeTab === 'buy' && currentPrice && (
+                                    <TPSLSection>
+                                        <TPSLHeader onClick={() => setShowTPSL(!showTPSL)}>
+                                            <TPSLTitle>
+                                                <Crosshair size={18} />
+                                                Take Profit / Stop Loss
+                                            </TPSLTitle>
+                                            <TPSLToggle>
+                                                {showTPSL ? 'Hide' : 'Show'}
+                                                <ChevronDown 
+                                                    size={16} 
+                                                    style={{ 
+                                                        transform: showTPSL ? 'rotate(180deg)' : 'rotate(0deg)',
+                                                        transition: 'transform 0.2s'
+                                                    }} 
+                                                />
+                                            </TPSLToggle>
+                                        </TPSLHeader>
+                                        
+                                        <TPSLContent $expanded={showTPSL}>
+                                            <TPSLGrid>
+                                                <TPSLInputGroup>
+                                                    <TPSLLabel $tp>
+                                                        <Target size={14} />
+                                                        Take Profit
+                                                    </TPSLLabel>
+                                                    <TPSLInput
+                                                        $tp
+                                                        type="number"
+                                                        step="any"
+                                                        placeholder={positionType === 'long' ? `Above ${formatCurrency(currentPrice)}` : `Below ${formatCurrency(currentPrice)}`}
+                                                        value={takeProfit}
+                                                        onChange={(e) => setTakeProfit(e.target.value)}
+                                                    />
+                                                </TPSLInputGroup>
+                                                
+                                                <TPSLInputGroup>
+                                                    <TPSLLabel $sl>
+                                                        <ShieldAlert size={14} />
+                                                        Stop Loss
+                                                    </TPSLLabel>
+                                                    <TPSLInput
+                                                        $sl
+                                                        type="number"
+                                                        step="any"
+                                                        placeholder={positionType === 'long' ? `Below ${formatCurrency(currentPrice)}` : `Above ${formatCurrency(currentPrice)}`}
+                                                        value={stopLoss}
+                                                        onChange={(e) => setStopLoss(e.target.value)}
+                                                    />
+                                                </TPSLInputGroup>
+                                            </TPSLGrid>
+                                            
+                                            <TrailingStopSection>
+                                                <TPSLInputGroup>
+                                                    <TPSLLabel>
+                                                        <TrendUp size={14} />
+                                                        Trailing Stop (%)
+                                                    </TPSLLabel>
+                                                    <TPSLInput
+                                                        type="number"
+                                                        step="0.1"
+                                                        min="0.1"
+                                                        max="50"
+                                                        placeholder="e.g., 5 for 5%"
+                                                        value={trailingStopPercent}
+                                                        onChange={(e) => setTrailingStopPercent(e.target.value)}
+                                                    />
+                                                </TPSLInputGroup>
+                                            </TrailingStopSection>
+                                            
+                                            <TPSLHint>
+                                                💡 <strong>{positionType === 'long' ? 'Long' : 'Short'} Position:</strong>{' '}
+                                                {positionType === 'long' ? (
+                                                    <>Take Profit triggers when price rises above target. Stop Loss triggers when price falls below target.</>
+                                                ) : (
+                                                    <>Take Profit triggers when price falls below target. Stop Loss triggers when price rises above target.</>
+                                                )}
+                                                {' '}Trailing Stop follows the price and locks in profits.
+                                            </TPSLHint>
+                                        </TPSLContent>
+                                    </TPSLSection>
+                                )}
+
                                 <FormGroup>
                                     <Label>
                                         <MessageCircle size={16} />
@@ -1940,6 +2287,7 @@ const PaperTradingPage = () => {
                                     const totalValue = position.currentPrice * position.quantity;
                                     const costBasis = position.averagePrice * position.quantity;
                                     const isLeveraged = position.leverage && position.leverage > 1;
+                                    const hasTPSL = position.takeProfit || position.stopLoss || position.trailingStopPercent;
 
                                     return (
                                         <PositionCard 
@@ -1977,6 +2325,31 @@ const PaperTradingPage = () => {
                                                     </PLPercent>
                                                 </PositionPL>
                                             </PositionHeader>
+
+                                            {/* TP/SL Badges */}
+                                            {hasTPSL && (
+                                                <TPSLBadgeContainer>
+                                                    {position.takeProfit && (
+                                                        <TPSLBadge $type="tp">
+                                                            <Target size={10} />
+                                                            TP: {formatCurrency(position.takeProfit)}
+                                                        </TPSLBadge>
+                                                    )}
+                                                    {position.stopLoss && (
+                                                        <TPSLBadge $type="sl">
+                                                            <ShieldAlert size={10} />
+                                                            SL: {formatCurrency(position.stopLoss)}
+                                                        </TPSLBadge>
+                                                    )}
+                                                    {position.trailingStopPercent && (
+                                                        <TPSLBadge $type="trailing">
+                                                            <TrendUp size={10} />
+                                                            Trail: {position.trailingStopPercent}%
+                                                            {position.trailingStopPrice && ` (${formatCurrency(position.trailingStopPrice)})`}
+                                                        </TPSLBadge>
+                                                    )}
+                                                </TPSLBadgeContainer>
+                                            )}
 
                                             <PositionDetails>
                                                 <PositionDetail>
@@ -2028,6 +2401,42 @@ const PaperTradingPage = () => {
                                                             </ExpandedValue>
                                                         </ExpandedItem>
                                                     </ExpandedGrid>
+
+                                                    {/* TP/SL Details */}
+                                                    {hasTPSL && (
+                                                        <PositionNotes style={{ borderLeftColor: '#a78bfa' }}>
+                                                            <NotesLabel style={{ color: '#a78bfa' }}>
+                                                                <Crosshair size={14} />
+                                                                Risk Management Orders
+                                                            </NotesLabel>
+                                                            <NotesText>
+                                                                {position.takeProfit && (
+                                                                    <div style={{ marginBottom: '0.5rem' }}>
+                                                                        <span style={{ color: '#10b981' }}>🎯 Take Profit:</span> {formatCurrency(position.takeProfit)}
+                                                                        {position.positionType === 'long' 
+                                                                            ? ` (${((position.takeProfit - position.currentPrice) / position.currentPrice * 100).toFixed(1)}% above current)`
+                                                                            : ` (${((position.currentPrice - position.takeProfit) / position.currentPrice * 100).toFixed(1)}% below current)`
+                                                                        }
+                                                                    </div>
+                                                                )}
+                                                                {position.stopLoss && (
+                                                                    <div style={{ marginBottom: '0.5rem' }}>
+                                                                        <span style={{ color: '#ef4444' }}>🛑 Stop Loss:</span> {formatCurrency(position.stopLoss)}
+                                                                        {position.positionType === 'long'
+                                                                            ? ` (${((position.currentPrice - position.stopLoss) / position.currentPrice * 100).toFixed(1)}% below current)`
+                                                                            : ` (${((position.stopLoss - position.currentPrice) / position.currentPrice * 100).toFixed(1)}% above current)`
+                                                                        }
+                                                                    </div>
+                                                                )}
+                                                                {position.trailingStopPercent && (
+                                                                    <div>
+                                                                        <span style={{ color: '#f59e0b' }}>📉 Trailing Stop:</span> {position.trailingStopPercent}%
+                                                                        {position.trailingStopPrice && ` → Current trigger: ${formatCurrency(position.trailingStopPrice)}`}
+                                                                    </div>
+                                                                )}
+                                                            </NotesText>
+                                                        </PositionNotes>
+                                                    )}
 
                                                     {/* Leverage Info */}
                                                     {isLeveraged && (
@@ -2133,6 +2542,14 @@ const PaperTradingPage = () => {
                                                         {order.leverage}x
                                                     </LeverageBadge>
                                                 )}
+                                                {order.triggerType && order.triggerType !== 'manual' && (
+                                                    <TPSLBadge $type={order.triggerType === 'take_profit' ? 'tp' : order.triggerType === 'stop_loss' ? 'sl' : 'trailing'}>
+                                                        {order.triggerType === 'take_profit' ? '🎯 TP' : 
+                                                         order.triggerType === 'stop_loss' ? '🛑 SL' :
+                                                         order.triggerType === 'trailing_stop' ? '📉 Trail' :
+                                                         order.triggerType === 'liquidation' ? '💀 Liq' : 'Auto'}
+                                                    </TPSLBadge>
+                                                )}
                                             </div>
                                             <OrderTime>
                                                 {new Date(order.executedAt).toLocaleString()}
@@ -2228,6 +2645,35 @@ const PaperTradingPage = () => {
                                 <StatRowValue $color="#00adef">{account?.refillCount || 0}</StatRowValue>
                             </StatRow>
 
+                            {/* TP/SL Stats */}
+                            {(account?.takeProfitHits > 0 || account?.stopLossHits > 0 || account?.trailingStopHits > 0) && (
+                                <>
+                                    <StatRow>
+                                        <StatRowLabel>
+                                            <Target size={16} />
+                                            Take Profits Hit
+                                        </StatRowLabel>
+                                        <StatRowValue $color="#10b981">{account?.takeProfitHits || 0}</StatRowValue>
+                                    </StatRow>
+                                    <StatRow>
+                                        <StatRowLabel>
+                                            <ShieldAlert size={16} />
+                                            Stop Losses Hit
+                                        </StatRowLabel>
+                                        <StatRowValue $color="#ef4444">{account?.stopLossHits || 0}</StatRowValue>
+                                    </StatRow>
+                                    {account?.trailingStopHits > 0 && (
+                                        <StatRow>
+                                            <StatRowLabel>
+                                                <TrendUp size={16} />
+                                                Trailing Stops Hit
+                                            </StatRowLabel>
+                                            <StatRowValue $color="#f59e0b">{account?.trailingStopHits || 0}</StatRowValue>
+                                        </StatRow>
+                                    )}
+                                </>
+                            )}
+
                             {account?.biggestLoss < 0 && (
                                 <StatRow>
                                     <StatRowLabel>
@@ -2279,7 +2725,7 @@ const PaperTradingPage = () => {
                                     <LeaderboardItem key={trader.user?._id || index}>
                                         <Rank $rank={trader.rank}>{trader.rank}</Rank>
                                         <TraderInfo>
-                                            <TraderName>{trader.user?.name || 'Anonymous'}</TraderName>
+                                            <TraderName>{getDisplayName(trader)}</TraderName>
                                             <TraderReturn $positive={trader.profitLossPercent >= 0}>
                                                 {formatPercent(trader.profitLossPercent)}
                                             </TraderReturn>

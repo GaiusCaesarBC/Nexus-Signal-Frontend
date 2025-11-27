@@ -5,6 +5,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import NavbarGamification from './gamification/NavbarGamification';
+import { useGamification } from '../context/GamificationContext';
 
 import {
     Home, TrendingUp, PieChart, Eye, Filter, MapPin, Newspaper, BookOpen, Brain, MessageSquare,
@@ -739,6 +740,7 @@ const Navbar = () => {
     const { user, logout, isAuthenticated, api } = useAuth();
     const location = useLocation();
     const navigate = useNavigate();
+    const { vault } = useGamification();
     
     const [dropdowns, setDropdowns] = useState({
         trading: false,

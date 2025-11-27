@@ -31,9 +31,11 @@ const PageContainer = styled.div`
   background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0a0a0f 100%);
   color: #ffffff;
   padding: 24px;
+  padding-top: 100px;
 
   @media (max-width: 768px) {
     padding: 16px;
+    padding-top: 80px;
   }
 `;
 
@@ -713,6 +715,24 @@ const PostContent = styled.p`
   margin: 0;
 `;
 
+// Empty State
+const EmptyState = styled.div`
+  text-align: center;
+  padding: 40px 20px;
+  color: #a0a0a0;
+
+  .icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+  }
+
+  p {
+    margin: 0;
+    font-size: 14px;
+  }
+`;
+
 // Loading State
 const LoadingContainer = styled.div`
   display: flex;
@@ -729,7 +749,7 @@ const LoadingContainer = styled.div`
 
 // ============ HELPER FUNCTIONS ============
 const formatCurrency = (value) => {
-  if (value === null || value === undefined || isNaN(value)) return '$0.00';
+  if (value === null || value === undefined || isNaN(value)) return 'N/A';
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
@@ -739,7 +759,7 @@ const formatCurrency = (value) => {
 };
 
 const formatLargeNumber = (num) => {
-  if (!num) return 'N/A';
+  if (!num || isNaN(num)) return 'N/A';
   if (num >= 1e12) return (num / 1e12).toFixed(2) + 'T';
   if (num >= 1e9) return (num / 1e9).toFixed(2) + 'B';
   if (num >= 1e6) return (num / 1e6).toFixed(2) + 'M';
@@ -754,6 +774,7 @@ const formatPercent = (value) => {
 };
 
 const getTimeAgo = (timestamp) => {
+  if (!timestamp) return '';
   const now = new Date();
   const past = new Date(timestamp);
   const diffMs = now - past;
@@ -764,6 +785,39 @@ const getTimeAgo = (timestamp) => {
   if (diffMins < 60) return `${diffMins}m ago`;
   if (diffHours < 24) return `${diffHours}h ago`;
   return `${diffDays}d ago`;
+};
+
+// ✅ Format chart date based on timeframe
+const formatChartDate = (dateInput, timeframe) => {
+  if (!dateInput) return '';
+  
+  try {
+    // Handle both string dates and timestamps
+    let date;
+    if (typeof dateInput === 'number') {
+      date = new Date(dateInput);
+    } else if (typeof dateInput === 'string') {
+      // Handle ISO strings and date-only strings
+      date = new Date(dateInput);
+    } else {
+      return '';
+    }
+    
+    if (isNaN(date.getTime())) return '';
+    
+    if (timeframe === '1D') {
+      return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    } else if (timeframe === '5D') {
+      return date.toLocaleDateString('en-US', { weekday: 'short', hour: '2-digit', minute: '2-digit' });
+    } else if (timeframe === '1M' || timeframe === '3M') {
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    } else {
+      return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+    }
+  } catch (e) {
+    console.warn('Date formatting error:', e);
+    return '';
+  }
 };
 
 // Company name lookup
@@ -812,6 +866,48 @@ const getCompanyName = (sym) => {
   return names[sym?.toUpperCase()] || `${sym?.toUpperCase() || 'Unknown'} Inc.`;
 };
 
+// ✅ Extract stock info with multiple field name fallbacks (Alpha Vantage + Yahoo Finance compatibility)
+const extractStockInfo = (data) => {
+  if (!data) return null;
+  
+  // Handle nested quote response or flat response
+  const quote = data.quote || data.quoteResponse?.result?.[0] || data;
+  
+  return {
+    // Price info - try Alpha Vantage fields first, then Yahoo fallbacks
+    price: quote.price || quote.regularMarketPrice || quote.currentPrice || 0,
+    previousClose: quote.previousClose || quote.regularMarketPreviousClose || 0,
+    open: quote.open || quote.regularMarketOpen || 0,
+    dayHigh: quote.dayHigh || quote.regularMarketDayHigh || quote.high || 0,
+    dayLow: quote.dayLow || quote.regularMarketDayLow || quote.low || 0,
+    change: quote.change || quote.regularMarketChange || 0,
+    changePercent: quote.changePercent || quote.regularMarketChangePercent || 0,
+    
+    // Volume
+    volume: quote.volume || quote.regularMarketVolume || 0,
+    avgVolume: quote.avgVolume || quote.averageDailyVolume10Day || quote.averageVolume || 0,
+    
+    // Fundamentals - Alpha Vantage uses simpler field names
+    marketCap: quote.marketCap || quote.MarketCapitalization || 0,
+    pe: quote.pe || quote.trailingPE || quote.forwardPE || quote.peRatio || 0,
+    eps: quote.eps || quote.epsTrailingTwelveMonths || 0,
+    
+    // 52-week range
+    high52: quote.high52 || quote.fiftyTwoWeekHigh || quote.yearHigh || 0,
+    low52: quote.low52 || quote.fiftyTwoWeekLow || quote.yearLow || 0,
+    
+    // Dividend
+    dividend: quote.dividend || quote.trailingAnnualDividendRate || quote.dividendRate || 0,
+    dividendYield: quote.dividendYield || quote.trailingAnnualDividendYield || 0,
+    
+    // Other
+    exchange: quote.exchange || quote.exchangeName || 'NASDAQ',
+    name: quote.name || quote.shortName || quote.longName || '',
+    sector: quote.sector || '',
+    industry: quote.industry || ''
+  };
+};
+
 // ============ CUSTOM TOOLTIP ============
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
@@ -835,12 +931,12 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 // ============ MAIN COMPONENT ============
 const StockPage = () => {
- const { symbol } = useParams();
-const navigate = useNavigate();
-const { api } = useAuth();
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+  const { symbol } = useParams();
+  const navigate = useNavigate();
+  const { api } = useAuth();
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
-  // Chart data state (from your StockDataDisplay)
+  // Chart data state
   const [chartData, setChartData] = useState([]);
   const [selectedRange, setSelectedRange] = useState('1M');
   const [chartLoading, setChartLoading] = useState(false);
@@ -860,51 +956,18 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
   const timeframes = ['1D', '5D', '1M', '3M', '6M', '1Y', '5Y', 'MAX'];
 
-  // Get current price from chart data or stock info
-  const currentPrice = stockInfo?.price || stockInfo?.regularMarketPrice || 
+  // Get current price from stock info or chart data
+  const currentPrice = stockInfo?.price || 
     (chartData.length > 0 ? chartData[chartData.length - 1].price : 0);
   
   const previousClose = stockInfo?.previousClose || 
     (chartData.length > 1 ? chartData[0].price : currentPrice);
   
-  const priceChange = currentPrice - previousClose;
-  const changePercent = previousClose ? ((priceChange / previousClose) * 100) : 0;
+  const priceChange = stockInfo?.change || (currentPrice - previousClose);
+  const changePercent = stockInfo?.changePercent || (previousClose ? ((priceChange / previousClose) * 100) : 0);
   const isPositive = priceChange >= 0;
 
-  // Generate mock data for fallback
-  const generateMockPrediction = () => ({
-    signal: ['STRONG_BUY', 'BUY', 'HOLD', 'SELL'][Math.floor(Math.random() * 4)],
-    confidence: 70 + Math.random() * 25,
-    targetHigh: currentPrice * 1.15,
-    targetLow: currentPrice * 0.90,
-    timeframe: '30 days'
-  });
-
-  const generateMockPosts = () => [
-    {
-      id: 1,
-      username: 'TradingPro',
-      content: `$${symbol?.toUpperCase()} looking strong here. Technical indicators showing bullish momentum.`,
-      sentiment: 'bullish',
-      createdAt: new Date(Date.now() - 3600000).toISOString()
-    },
-    {
-      id: 2,
-      username: 'MarketWatch',
-      content: `Watching $${symbol?.toUpperCase()} closely for a breakout above resistance.`,
-      sentiment: 'neutral',
-      createdAt: new Date(Date.now() - 7200000).toISOString()
-    },
-    {
-      id: 3,
-      username: 'BullRunner',
-      content: `Added to my $${symbol?.toUpperCase()} position on this dip. Long term bullish.`,
-      sentiment: 'bullish',
-      createdAt: new Date(Date.now() - 14400000).toISOString()
-    }
-  ];
-
-  // Fetch chart data (from your StockDataDisplay logic)
+  // Fetch chart data
   useEffect(() => {
     if (!symbol) return;
 
@@ -919,7 +982,6 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
       setChartError(null);
 
       try {
-        // Determine interval based on range (your existing logic)
         let intervalParam = '1d';
         if (selectedRange === '1D') intervalParam = '5m';
         else if (selectedRange === '5D') intervalParam = '1h';
@@ -937,15 +999,28 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
         const fetchedData = response.data.historicalData || response.data;
         
-        // Transform data for Recharts
-        const transformedData = fetchedData.map((item, index) => ({
-          time: item.date || item.datetime || item.timestamp || `Point ${index}`,
-          price: item.close || item.price || item.value,
-          open: item.open,
-          high: item.high,
-          low: item.low,
-          volume: item.volume
-        }));
+        // ✅ Transform data with proper date formatting
+        const transformedData = fetchedData.map((item) => {
+          // Try multiple date field names - prioritize date string over timestamp
+          let rawDate = item.date || item.datetime;
+          
+          // If we have a timestamp number, convert it to date string
+          if (!rawDate && (item.time || item.timestamp || item.t)) {
+            const ts = item.time || item.timestamp || item.t;
+            rawDate = new Date(ts).toISOString();
+          }
+          
+          const formattedDate = formatChartDate(rawDate, selectedRange);
+          
+          return {
+            time: formattedDate || 'N/A',
+            price: item.close || item.price || item.value || item.c || 0,
+            open: item.open || item.o,
+            high: item.high || item.h,
+            low: item.low || item.l,
+            volume: item.volume || item.v
+          };
+        }).filter(item => item.price > 0 && item.time !== 'N/A'); // Filter out invalid data points
 
         setChartData(transformedData);
 
@@ -961,6 +1036,8 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
         if (err.response?.data?.msg) {
           setChartError(err.response.data.msg);
+        } else if (err.response?.data?.error) {
+          setChartError(err.response.data.error);
         } else if (err.message) {
           setChartError(`Error: ${err.message}`);
         } else {
@@ -997,40 +1074,40 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
           params: { symbol: symbol.toUpperCase() }
         }).catch(() => null);
 
-        // Fetch posts
+        // Fetch posts - ✅ Only show real posts, no mock data
         const postsRes = await axios.get(`${API_URL}/api/posts`, {
           params: { symbol: symbol.toUpperCase(), limit: 5 }
         }).catch(() => null);
 
-        // Set stock info
+        // ✅ Set stock info with proper field extraction
         if (quoteRes?.data) {
-          setStockInfo(quoteRes.data);
+          setStockInfo(extractStockInfo(quoteRes.data));
         } else {
           setStockInfo(null);
         }
 
-        // Set predictions
+        // ✅ Set predictions - only if real data exists
         if (predRes?.data) {
           const predData = Array.isArray(predRes.data) 
             ? predRes.data.find(p => p.symbol?.toUpperCase() === symbol.toUpperCase())
             : predRes.data;
-          setPrediction(predData || generateMockPrediction());
+          setPrediction(predData || null);
         } else {
-          setPrediction(generateMockPrediction());
+          setPrediction(null);
         }
 
-        // Set posts
+        // ✅ Set posts - only real posts, no mock fallback
         if (postsRes?.data) {
           const postsData = Array.isArray(postsRes.data) ? postsRes.data : postsRes.data.posts || [];
-          setPosts(postsData.length > 0 ? postsData : generateMockPosts());
+          setPosts(postsData);
         } else {
-          setPosts(generateMockPosts());
+          setPosts([]);
         }
 
       } catch (err) {
         console.error('Error fetching additional data:', err);
-        setPrediction(generateMockPrediction());
-        setPosts(generateMockPosts());
+        setPrediction(null);
+        setPosts([]);
       } finally {
         setInfoLoading(false);
       }
@@ -1043,28 +1120,29 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
   const handleQuantityChange = (delta) => {
     setQuantity(prev => Math.max(1, prev + delta));
   };
-const handleTrade = async () => {
-  try {
-    const endpoint = tradeType === 'buy' ? '/paper-trading/buy' : '/paper-trading/sell';
-    
-    const response = await api.post(endpoint, {
-      symbol: symbol.toUpperCase(),
-      type: 'stock',
-      quantity: quantity,
-      positionType: 'long'
-    });
 
-    if (response.data.success) {
-      alert(`✅ ${tradeType.toUpperCase()} order placed!\n${response.data.message}`);
-      setQuantity(1);
-    } else {
-      alert(response.data.error || 'Trade failed');
+  const handleTrade = async () => {
+    try {
+      const endpoint = tradeType === 'buy' ? '/paper-trading/buy' : '/paper-trading/sell';
+      
+      const response = await api.post(endpoint, {
+        symbol: symbol.toUpperCase(),
+        type: 'stock',
+        quantity: quantity,
+        positionType: 'long'
+      });
+
+      if (response.data.success) {
+        alert(`✅ ${tradeType.toUpperCase()} order placed!\n${response.data.message}`);
+        setQuantity(1);
+      } else {
+        alert(response.data.error || 'Trade failed');
+      }
+    } catch (err) {
+      console.error('Trade error:', err);
+      alert(err.response?.data?.error || 'Failed to execute trade');
     }
-  } catch (err) {
-    console.error('Trade error:', err);
-    alert(err.response?.data?.error || 'Failed to execute trade');
-  }
-};
+  };
 
   const handleWatchlist = async () => {
     try {
@@ -1076,7 +1154,6 @@ const handleTrade = async () => {
       setIsWatchlisted(!isWatchlisted);
     } catch (err) {
       console.error('Watchlist error:', err);
-      setIsWatchlisted(!isWatchlisted); // Toggle anyway for demo
     }
   };
 
@@ -1248,23 +1325,23 @@ const handleTrade = async () => {
                 <div className="label">
                   <TrendingUp size={14} /> 52W High
                 </div>
-                <div className="value" style={{ color: '#00ff88' }}>
-                  {formatCurrency(stockInfo?.fiftyTwoWeekHigh || stockInfo?.high52)}
+                <div className="value" style={{ color: stockInfo?.high52 ? '#00ff88' : undefined }}>
+                  {formatCurrency(stockInfo?.high52)}
                 </div>
               </StatCard>
               <StatCard>
                 <div className="label">
                   <TrendingDown size={14} /> 52W Low
                 </div>
-                <div className="value" style={{ color: '#ff4757' }}>
-                  {formatCurrency(stockInfo?.fiftyTwoWeekLow || stockInfo?.low52)}
+                <div className="value" style={{ color: stockInfo?.low52 ? '#ff4757' : undefined }}>
+                  {formatCurrency(stockInfo?.low52)}
                 </div>
               </StatCard>
               <StatCard>
                 <div className="label">
                   <Target size={14} /> P/E Ratio
                 </div>
-                <div className="value">{stockInfo?.pe?.toFixed(2) || 'N/A'}</div>
+                <div className="value">{stockInfo?.pe ? stockInfo.pe.toFixed(2) : 'N/A'}</div>
               </StatCard>
               <StatCard>
                 <div className="label">
@@ -1283,12 +1360,14 @@ const handleTrade = async () => {
                 <div className="label">
                   <Clock size={14} /> Updated
                 </div>
-                <div className="value" style={{ fontSize: 14 }}>Real-time</div>
+                <div className="value" style={{ fontSize: 14 }}>
+                  {infoLoading ? 'Loading...' : (stockInfo ? 'Real-time' : 'N/A')}
+                </div>
               </StatCard>
             </StatsGrid>
           </Card>
 
-          {/* Community Posts */}
+          {/* Community Posts - ✅ NO MOCK DATA */}
           <SocialCard $delay="0.4s">
             <SocialHeader>
               <h3>
@@ -1297,14 +1376,15 @@ const handleTrade = async () => {
               </h3>
               <span className="count">{posts.length} posts</span>
             </SocialHeader>
+            
             {posts.length > 0 ? posts.map(post => (
               <PostCard key={post.id || post._id}>
                 <PostHeader>
                   <div className="avatar">
-                    {(post.username || post.user?.username || 'U').slice(0, 2).toUpperCase()}
+                    {(post.username || post.user?.username || post.user?.name || 'U').slice(0, 2).toUpperCase()}
                   </div>
                   <div className="user-info">
-                    <div className="username">{post.username || post.user?.username || 'Anonymous'}</div>
+                    <div className="username">{post.username || post.user?.username || post.user?.name || 'Anonymous'}</div>
                     <div className="time">{getTimeAgo(post.createdAt || post.timestamp)}</div>
                   </div>
                   {post.sentiment && (
@@ -1316,9 +1396,10 @@ const handleTrade = async () => {
                 <PostContent>{post.content || post.text || post.body}</PostContent>
               </PostCard>
             )) : (
-              <p style={{ textAlign: 'center', color: '#a0a0a0' }}>
-                No posts yet for {symbol.toUpperCase()}. Be the first to share!
-              </p>
+              <EmptyState>
+                <div className="icon">💬</div>
+                <p>No posts yet for ${symbol?.toUpperCase()}. Be the first to share your thoughts!</p>
+              </EmptyState>
             )}
           </SocialCard>
         </LeftColumn>
@@ -1400,7 +1481,7 @@ const handleTrade = async () => {
             </TradeButton>
           </TradingPanel>
 
-          {/* AI Prediction Panel */}
+          {/* AI Prediction Panel - ✅ Shows "No prediction" if no data */}
           <PredictionCard $delay="0.3s">
             <PredictionHeader>
               <div className="icon-wrapper">
@@ -1412,52 +1493,65 @@ const handleTrade = async () => {
               <span className="badge">ML Powered</span>
             </PredictionHeader>
 
-            <PredictionSignal $signal={prediction?.signal}>
-              <span className="signal-label">Signal</span>
-              <span className="signal-value">
-                {prediction?.signal?.replace('_', ' ') || 'ANALYZING'}
-              </span>
-            </PredictionSignal>
+            {prediction ? (
+              <>
+                <PredictionSignal $signal={prediction?.signal}>
+                  <span className="signal-label">Signal</span>
+                  <span className="signal-value">
+                    {prediction?.signal?.replace('_', ' ') || 'HOLD'}
+                  </span>
+                </PredictionSignal>
 
-            <ConfidenceBar $value={prediction?.confidence || 0}>
-              <div className="header">
-                <span style={{ color: '#a0a0a0' }}>Confidence</span>
-                <span style={{ fontWeight: 600 }}>{(prediction?.confidence || 0).toFixed(1)}%</span>
-              </div>
-              <div className="bar-bg">
-                <div className="bar-fill" />
-              </div>
-            </ConfidenceBar>
+                <ConfidenceBar $value={prediction?.confidence || 0}>
+                  <div className="header">
+                    <span style={{ color: '#a0a0a0' }}>Confidence</span>
+                    <span style={{ fontWeight: 600 }}>{(prediction?.confidence || 0).toFixed(1)}%</span>
+                  </div>
+                  <div className="bar-bg">
+                    <div className="bar-fill" />
+                  </div>
+                </ConfidenceBar>
 
-            <PredictionTargets>
-              <TargetBox $type="high">
-                <div className="label">Target High</div>
-                <div className="value">{formatCurrency(prediction?.targetHigh || currentPrice * 1.1)}</div>
-                <div className="change">
-                  +{(((prediction?.targetHigh || currentPrice * 1.1) - currentPrice) / (currentPrice || 1) * 100).toFixed(1)}%
+                <PredictionTargets>
+                  <TargetBox $type="high">
+                    <div className="label">Target High</div>
+                    <div className="value">{formatCurrency(prediction?.targetHigh || prediction?.targetPrice)}</div>
+                    {prediction?.targetHigh && currentPrice > 0 && (
+                      <div className="change">
+                        +{(((prediction.targetHigh - currentPrice) / currentPrice) * 100).toFixed(1)}%
+                      </div>
+                    )}
+                  </TargetBox>
+                  <TargetBox $type="low">
+                    <div className="label">Target Low</div>
+                    <div className="value">{formatCurrency(prediction?.targetLow)}</div>
+                    {prediction?.targetLow && currentPrice > 0 && (
+                      <div className="change">
+                        {(((prediction.targetLow - currentPrice) / currentPrice) * 100).toFixed(1)}%
+                      </div>
+                    )}
+                  </TargetBox>
+                </PredictionTargets>
+
+                <div style={{ 
+                  marginTop: 16, 
+                  padding: '12px', 
+                  background: 'rgba(0,0,0,0.2)', 
+                  borderRadius: '10px',
+                  fontSize: '12px',
+                  color: '#a0a0a0',
+                  textAlign: 'center'
+                }}>
+                  <Clock size={14} style={{ marginRight: 6, verticalAlign: 'middle' }} />
+                  Prediction timeframe: {prediction?.timeframe || '30 days'}
                 </div>
-              </TargetBox>
-              <TargetBox $type="low">
-                <div className="label">Target Low</div>
-                <div className="value">{formatCurrency(prediction?.targetLow || currentPrice * 0.9)}</div>
-                <div className="change">
-                  {(((prediction?.targetLow || currentPrice * 0.9) - currentPrice) / (currentPrice || 1) * 100).toFixed(1)}%
-                </div>
-              </TargetBox>
-            </PredictionTargets>
-
-            <div style={{ 
-              marginTop: 16, 
-              padding: '12px', 
-              background: 'rgba(0,0,0,0.2)', 
-              borderRadius: '10px',
-              fontSize: '12px',
-              color: '#a0a0a0',
-              textAlign: 'center'
-            }}>
-              <Clock size={14} style={{ marginRight: 6, verticalAlign: 'middle' }} />
-              Prediction timeframe: {prediction?.timeframe || '30 days'}
-            </div>
+              </>
+            ) : (
+              <EmptyState>
+                <div className="icon">🤖</div>
+                <p>No AI prediction available for {symbol?.toUpperCase()} yet.</p>
+              </EmptyState>
+            )}
           </PredictionCard>
 
           {/* Quick Stats */}
@@ -1470,16 +1564,19 @@ const handleTrade = async () => {
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', background: 'rgba(0,0,0,0.2)', borderRadius: '10px' }}>
                 <span style={{ color: '#a0a0a0', fontSize: 14 }}>Day Range</span>
                 <span style={{ fontWeight: 600, fontSize: 14 }}>
-                  {formatCurrency(stockInfo?.dayLow || currentPrice * 0.98)} - {formatCurrency(stockInfo?.dayHigh || currentPrice * 1.02)}
+                  {stockInfo?.dayLow && stockInfo?.dayHigh 
+                    ? `${formatCurrency(stockInfo.dayLow)} - ${formatCurrency(stockInfo.dayHigh)}`
+                    : 'N/A'
+                  }
                 </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', background: 'rgba(0,0,0,0.2)', borderRadius: '10px' }}>
                 <span style={{ color: '#a0a0a0', fontSize: 14 }}>Open</span>
-                <span style={{ fontWeight: 600, fontSize: 14 }}>{formatCurrency(stockInfo?.open || currentPrice)}</span>
+                <span style={{ fontWeight: 600, fontSize: 14 }}>{formatCurrency(stockInfo?.open)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', background: 'rgba(0,0,0,0.2)', borderRadius: '10px' }}>
                 <span style={{ color: '#a0a0a0', fontSize: 14 }}>Previous Close</span>
-                <span style={{ fontWeight: 600, fontSize: 14 }}>{formatCurrency(previousClose)}</span>
+                <span style={{ fontWeight: 600, fontSize: 14 }}>{formatCurrency(stockInfo?.previousClose || previousClose)}</span>
               </div>
             </div>
           </Card>

@@ -1,91 +1,107 @@
-// client/src/pages/VaultPage.js
-import React, { useState, useEffect } from 'react';
-import styled, { keyframes } from 'styled-components';
-import { 
-    Lock, Unlock, Zap, Star, Crown, Shield, Sparkles, 
-    ShoppingCart, Check, X, TrendingUp, Award, Eye, 
-    Bell, Briefcase, Brain, Download, Headphones, Save,
-    Palette, Frame, FastForward, BarChart3
-} from 'lucide-react';
-import { useGamification } from '../context/GamificationContext';
-import axios from 'axios';
+// client/src/pages/VaultPage.js - NEXUS VAULT SHOP
+// Browse, Purchase, and Equip: Avatar Borders, Profile Themes, Badges, and Perks
 
-// Animations
+import React, { useState, useEffect } from 'react';
+import styled, { keyframes, css } from 'styled-components';
+import { useAuth } from '../context/AuthContext';
+import { useGamification } from '../context/GamificationContext';
+import { useToast } from '../context/ToastContext';
+import {
+    Store, Sparkles, Crown, Shield, Palette, Award, Zap,
+    Lock, Check, ChevronRight, Star, Diamond, Gem,
+    ShoppingCart, Package, Gift, TrendingUp, Coins,
+    CircleDollarSign, BadgeCheck, Frame, Paintbrush,
+    Flame, Target, Brain, Wallet, X, Eye, Info
+} from 'lucide-react';
+
+// ============ ANIMATIONS ============
 const fadeIn = keyframes`
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
 `;
 
 const shimmer = keyframes`
-    0% { background-position: -1000px 0; }
-    100% { background-position: 1000px 0; }
+    0% { background-position: -200% center; }
+    100% { background-position: 200% center; }
 `;
 
 const pulse = keyframes`
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.05); opacity: 0.8; }
 `;
 
 const float = keyframes`
-    0%, 100% { transform: translateY(0); }
+    0%, 100% { transform: translateY(0px); }
     50% { transform: translateY(-10px); }
 `;
 
-// Styled Components
-const PageContainer = styled.div`
-    min-height: 100vh;
-    padding: 6rem 2rem 2rem;
-    background: linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
-    position: relative;
+const glow = keyframes`
+    0%, 100% { box-shadow: 0 0 20px rgba(0, 173, 237, 0.4); }
+    50% { box-shadow: 0 0 40px rgba(0, 173, 237, 0.8); }
+`;
 
-    &::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 400px;
-        background: radial-gradient(circle at 50% 0%, rgba(245, 158, 11, 0.15) 0%, transparent 70%);
-        pointer-events: none;
+const spin = keyframes`
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+`;
+
+const rainbow = keyframes`
+    0% { filter: hue-rotate(0deg); }
+    100% { filter: hue-rotate(360deg); }
+`;
+
+const legendaryGlow = keyframes`
+    0%, 100% { 
+        box-shadow: 0 0 20px rgba(251, 191, 36, 0.5), 0 0 40px rgba(245, 158, 11, 0.3);
+    }
+    50% { 
+        box-shadow: 0 0 40px rgba(251, 191, 36, 0.8), 0 0 60px rgba(245, 158, 11, 0.5);
     }
 `;
 
+const epicGlow = keyframes`
+    0%, 100% { 
+        box-shadow: 0 0 15px rgba(139, 92, 246, 0.4);
+    }
+    50% { 
+        box-shadow: 0 0 30px rgba(139, 92, 246, 0.7);
+    }
+`;
+
+// ============ STYLED COMPONENTS ============
+const PageContainer = styled.div`
+    min-height: 100vh;
+    background: linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
+    color: #e0e6ed;
+    padding: 2rem;
+    padding-top: 100px;
+`;
+
 const ContentWrapper = styled.div`
-    max-width: 1400px;
+    max-width: 1600px;
     margin: 0 auto;
-    position: relative;
-    z-index: 1;
 `;
 
 const Header = styled.div`
     text-align: center;
     margin-bottom: 3rem;
-    animation: ${fadeIn} 0.6s ease-out;
+    animation: ${fadeIn} 0.8s ease-out;
 `;
 
-const VaultIcon = styled.div`
-    width: 120px;
-    height: 120px;
-    margin: 0 auto 2rem;
-    border-radius: 50%;
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.3), rgba(245, 158, 11, 0.1));
-    border: 3px solid rgba(245, 158, 11, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #f59e0b;
-    animation: ${float} 3s ease-in-out infinite;
-    box-shadow: 0 0 60px rgba(245, 158, 11, 0.4);
-`;
-
-const PageTitle = styled.h1`
+const Title = styled.h1`
     font-size: 3.5rem;
-    background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #fbbf24 100%);
+    background-size: 200% auto;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    margin: 0 0 1rem 0;
+    animation: ${shimmer} 3s linear infinite;
+    margin-bottom: 0.5rem;
     font-weight: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
 
     @media (max-width: 768px) {
         font-size: 2.5rem;
@@ -95,170 +111,332 @@ const PageTitle = styled.h1`
 const Subtitle = styled.p`
     color: #94a3b8;
     font-size: 1.2rem;
-    margin: 0 0 2rem 0;
+    margin-bottom: 1.5rem;
 `;
 
-const CoinsDisplay = styled.div`
+const CoinBalance = styled.div`
     display: inline-flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.75rem;
     padding: 1rem 2rem;
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(245, 158, 11, 0.05));
-    border: 2px solid rgba(245, 158, 11, 0.4);
-    border-radius: 16px;
-    animation: ${pulse} 2s ease-in-out infinite;
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.2) 0%, rgba(245, 158, 11, 0.1) 100%);
+    border: 2px solid rgba(251, 191, 36, 0.5);
+    border-radius: 50px;
+    animation: ${glow} 3s ease-in-out infinite;
 `;
 
-const CoinsAmount = styled.div`
-    font-size: 2rem;
+const CoinIcon = styled.div`
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: ${float} 2s ease-in-out infinite;
+`;
+
+const CoinAmount = styled.div`
+    font-size: 1.8rem;
     font-weight: 900;
-    background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: #fbbf24;
 `;
 
-const CoinsLabel = styled.div`
-    font-size: 0.9rem;
-    color: #64748b;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+const CoinLabel = styled.div`
+    font-size: 0.85rem;
+    color: #94a3b8;
+    font-weight: 600;
 `;
 
-const FilterSection = styled.div`
+// Category Tabs
+const CategoryTabs = styled.div`
     display: flex;
     justify-content: center;
     gap: 1rem;
-    margin-bottom: 3rem;
+    margin-bottom: 2rem;
     flex-wrap: wrap;
-    animation: ${fadeIn} 0.8s ease-out;
+    animation: ${fadeIn} 0.8s ease-out 0.2s backwards;
+`;
+
+const CategoryTab = styled.button`
+    padding: 1rem 2rem;
+    background: ${props => props.$active 
+        ? 'linear-gradient(135deg, rgba(0, 173, 237, 0.3) 0%, rgba(139, 92, 246, 0.2) 100%)'
+        : 'rgba(30, 41, 59, 0.5)'
+    };
+    border: 2px solid ${props => props.$active ? 'rgba(0, 173, 237, 0.6)' : 'rgba(100, 116, 139, 0.3)'};
+    border-radius: 12px;
+    color: ${props => props.$active ? '#00adef' : '#94a3b8'};
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    &:hover {
+        background: linear-gradient(135deg, rgba(0, 173, 237, 0.2) 0%, rgba(139, 92, 246, 0.15) 100%);
+        border-color: rgba(0, 173, 237, 0.5);
+        color: #00adef;
+        transform: translateY(-3px);
+    }
+
+    ${props => props.$active && css`
+        box-shadow: 0 5px 20px rgba(0, 173, 237, 0.3);
+    `}
+`;
+
+const TabCount = styled.span`
+    background: ${props => props.$active ? 'rgba(0, 173, 237, 0.3)' : 'rgba(100, 116, 139, 0.2)'};
+    padding: 0.2rem 0.5rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
+`;
+
+// Filter Bar
+const FilterBar = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding: 1rem 1.5rem;
+    background: rgba(30, 41, 59, 0.5);
+    border: 1px solid rgba(0, 173, 237, 0.2);
+    border-radius: 12px;
+    flex-wrap: wrap;
+    gap: 1rem;
+`;
+
+const FilterGroup = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+`;
+
+const FilterLabel = styled.span`
+    color: #94a3b8;
+    font-size: 0.9rem;
+    font-weight: 600;
 `;
 
 const FilterButton = styled.button`
-    padding: 0.75rem 1.5rem;
-    background: ${props => props.$active ? 
-        'linear-gradient(135deg, rgba(245, 158, 11, 0.3), rgba(245, 158, 11, 0.1))' : 
-        'rgba(30, 41, 59, 0.5)'
-    };
-    border: 1px solid ${props => props.$active ? 'rgba(245, 158, 11, 0.5)' : 'rgba(100, 116, 139, 0.3)'};
-    border-radius: 12px;
-    color: ${props => props.$active ? '#f59e0b' : '#94a3b8'};
+    padding: 0.5rem 1rem;
+    background: ${props => props.$active ? 'rgba(0, 173, 237, 0.2)' : 'transparent'};
+    border: 1px solid ${props => props.$active ? 'rgba(0, 173, 237, 0.5)' : 'rgba(100, 116, 139, 0.3)'};
+    border-radius: 8px;
+    color: ${props => props.$active ? '#00adef' : '#94a3b8'};
+    font-size: 0.85rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.3s ease;
-    text-transform: uppercase;
-    font-size: 0.85rem;
-    letter-spacing: 0.5px;
+    transition: all 0.2s ease;
 
     &:hover {
-        background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(245, 158, 11, 0.05));
-        border-color: rgba(245, 158, 11, 0.5);
-        color: #f59e0b;
-        transform: translateY(-2px);
+        background: rgba(0, 173, 237, 0.15);
+        border-color: rgba(0, 173, 237, 0.4);
+        color: #00adef;
     }
 `;
 
+// Items Grid
 const ItemsGrid = styled.div`
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 2rem;
-    animation: ${fadeIn} 1s ease-out;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+    animation: ${fadeIn} 0.8s ease-out;
 `;
 
+// Item Card
 const ItemCard = styled.div`
-    background: rgba(30, 41, 59, 0.8);
-    backdrop-filter: blur(10px);
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
     border: 2px solid ${props => {
-        if (props.$rarity === 'legendary') return 'rgba(245, 158, 11, 0.5)';
+        if (props.$equipped) return 'rgba(16, 185, 129, 0.6)';
+        if (props.$rarity === 'legendary') return 'rgba(251, 191, 36, 0.5)';
         if (props.$rarity === 'epic') return 'rgba(139, 92, 246, 0.5)';
         if (props.$rarity === 'rare') return 'rgba(59, 130, 246, 0.5)';
         return 'rgba(100, 116, 139, 0.3)';
     }};
     border-radius: 16px;
-    padding: 1.5rem;
+    overflow: hidden;
     transition: all 0.3s ease;
     position: relative;
-    overflow: hidden;
+    opacity: ${props => props.$locked ? 0.6 : 1};
 
-    &::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-        animation: ${shimmer} 3s infinite;
-    }
+    ${props => props.$rarity === 'legendary' && !props.$locked && css`
+        animation: ${legendaryGlow} 3s ease-in-out infinite;
+    `}
+
+    ${props => props.$rarity === 'epic' && !props.$locked && css`
+        animation: ${epicGlow} 3s ease-in-out infinite;
+    `}
 
     &:hover {
-        transform: translateY(-8px);
-        box-shadow: 0 15px 50px ${props => {
-            if (props.$rarity === 'legendary') return 'rgba(245, 158, 11, 0.3)';
-            if (props.$rarity === 'epic') return 'rgba(139, 92, 246, 0.3)';
-            if (props.$rarity === 'rare') return 'rgba(59, 130, 246, 0.3)';
-            return 'rgba(0, 173, 237, 0.3)';
-        }};
-        border-color: ${props => {
-            if (props.$rarity === 'legendary') return 'rgba(245, 158, 11, 0.8)';
-            if (props.$rarity === 'epic') return 'rgba(139, 92, 246, 0.8)';
-            if (props.$rarity === 'rare') return 'rgba(59, 130, 246, 0.8)';
-            return 'rgba(0, 173, 237, 0.5)';
-        }};
+        transform: ${props => props.$locked ? 'none' : 'translateY(-8px)'};
+        box-shadow: ${props => props.$locked ? 'none' : '0 20px 40px rgba(0, 0, 0, 0.3)'};
     }
+`;
+
+const ItemRarityBanner = styled.div`
+    height: 4px;
+    background: ${props => {
+        if (props.$rarity === 'legendary') return 'linear-gradient(90deg, #fbbf24, #f59e0b, #fbbf24)';
+        if (props.$rarity === 'epic') return 'linear-gradient(90deg, #8b5cf6, #a78bfa, #8b5cf6)';
+        if (props.$rarity === 'rare') return 'linear-gradient(90deg, #3b82f6, #60a5fa, #3b82f6)';
+        return 'linear-gradient(90deg, #64748b, #94a3b8, #64748b)';
+    }};
+    background-size: 200% 100%;
+    animation: ${shimmer} 2s linear infinite;
+`;
+
+const ItemPreview = styled.div`
+    height: 140px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    background: ${props => props.$background || 'rgba(0, 173, 237, 0.05)'};
+    overflow: hidden;
+`;
+
+const BorderPreview = styled.div`
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: ${props => props.$gradient || 'linear-gradient(135deg, #00adef, #0088cc)'};
+    padding: 4px;
+    box-shadow: 0 0 20px ${props => props.$glowColor || 'rgba(0, 173, 237, 0.5)'};
+    
+    ${props => props.$animation === 'shimmer' && css`
+        animation: ${shimmer} 2s linear infinite;
+        background-size: 200% 200%;
+    `}
+    
+    ${props => props.$animation === 'pulse-glow' && css`
+        animation: ${pulse} 2s ease-in-out infinite;
+    `}
+`;
+
+const BorderInner = styled.div`
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #1a1f3a 0%, #0a0e27 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+`;
+
+const ThemePreview = styled.div`
+    width: 90%;
+    height: 90%;
+    border-radius: 12px;
+    background: ${props => props.$background};
+    border: 2px solid ${props => props.$primary};
+    display: flex;
+    flex-direction: column;
+    padding: 0.75rem;
+    gap: 0.5rem;
+`;
+
+const ThemeBar = styled.div`
+    height: 8px;
+    border-radius: 4px;
+    background: ${props => props.$color};
+    width: ${props => props.$width || '100%'};
+`;
+
+const BadgePreview = styled.div`
+    font-size: 4rem;
+    animation: ${float} 3s ease-in-out infinite;
+    filter: ${props => props.$locked ? 'grayscale(100%)' : 'none'};
+`;
+
+const PerkPreview = styled.div`
+    font-size: 3.5rem;
+    animation: ${pulse} 2s ease-in-out infinite;
+    filter: ${props => props.$locked ? 'grayscale(100%)' : 'none'};
+`;
+
+const ItemContent = styled.div`
+    padding: 1.25rem;
 `;
 
 const ItemHeader = styled.div`
     display: flex;
     justify-content: space-between;
     align-items: start;
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
 `;
 
-const ItemIconWrapper = styled.div`
-    width: 60px;
-    height: 60px;
-    border-radius: 12px;
-    background: ${props => props.$color || 'rgba(0, 173, 237, 0.2)'};
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: ${props => props.$iconColor || '#00adef'};
-    box-shadow: 0 8px 20px ${props => props.$color || 'rgba(0, 173, 237, 0.3)'};
-    font-size: 1.8rem;
+const ItemName = styled.h3`
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #e0e6ed;
+    margin: 0;
 `;
 
-const RarityBadge = styled.div`
-    padding: 0.25rem 0.75rem;
-    border-radius: 8px;
-    font-size: 0.75rem;
+const RarityBadge = styled.span`
+    padding: 0.25rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.7rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     background: ${props => {
-        if (props.$rarity === 'legendary') return 'linear-gradient(135deg, #f59e0b, #fbbf24)';
-        if (props.$rarity === 'epic') return 'linear-gradient(135deg, #8b5cf6, #a78bfa)';
-        if (props.$rarity === 'rare') return 'linear-gradient(135deg, #3b82f6, #60a5fa)';
-        return 'linear-gradient(135deg, #64748b, #94a3b8)';
+        if (props.$rarity === 'legendary') return 'rgba(251, 191, 36, 0.2)';
+        if (props.$rarity === 'epic') return 'rgba(139, 92, 246, 0.2)';
+        if (props.$rarity === 'rare') return 'rgba(59, 130, 246, 0.2)';
+        return 'rgba(100, 116, 139, 0.2)';
     }};
-    color: white;
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-`;
-
-const ItemName = styled.h3`
-    font-size: 1.3rem;
-    color: #e0e6ed;
-    margin: 0 0 0.5rem 0;
-    font-weight: 700;
+    color: ${props => {
+        if (props.$rarity === 'legendary') return '#fbbf24';
+        if (props.$rarity === 'epic') return '#a78bfa';
+        if (props.$rarity === 'rare') return '#60a5fa';
+        return '#94a3b8';
+    }};
+    border: 1px solid ${props => {
+        if (props.$rarity === 'legendary') return 'rgba(251, 191, 36, 0.4)';
+        if (props.$rarity === 'epic') return 'rgba(139, 92, 246, 0.4)';
+        if (props.$rarity === 'rare') return 'rgba(59, 130, 246, 0.4)';
+        return 'rgba(100, 116, 139, 0.3)';
+    }};
 `;
 
 const ItemDescription = styled.p`
     color: #94a3b8;
-    font-size: 0.95rem;
-    line-height: 1.5;
-    margin: 0 0 1.5rem 0;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+    line-height: 1.4;
+    min-height: 40px;
+`;
+
+const ItemEffect = styled.div`
+    padding: 0.75rem;
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #10b981;
+    font-size: 0.85rem;
+    font-weight: 600;
+`;
+
+const ItemRequirement = styled.div`
+    padding: 0.6rem;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #f87171;
+    font-size: 0.8rem;
+    font-weight: 600;
 `;
 
 const ItemFooter = styled.div`
@@ -266,40 +444,94 @@ const ItemFooter = styled.div`
     justify-content: space-between;
     align-items: center;
     padding-top: 1rem;
-    border-top: 1px solid rgba(100, 116, 139, 0.2);
+    border-top: 1px solid rgba(0, 173, 237, 0.2);
 `;
 
-const PriceTag = styled.div`
+const ItemPrice = styled.div`
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 1.3rem;
+`;
+
+const PriceIcon = styled.div`
+    width: 24px;
+    height: 24px;
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+`;
+
+const PriceValue = styled.span`
+    font-size: 1.2rem;
     font-weight: 900;
-    color: #f59e0b;
+    color: ${props => props.$canAfford ? '#fbbf24' : '#ef4444'};
 `;
 
-const PurchaseButton = styled.button`
-    padding: 0.75rem 1.5rem;
-    background: ${props => props.$owned ? 
-        'linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(16, 185, 129, 0.1))' :
-        'linear-gradient(135deg, #f59e0b, #fbbf24)'
-    };
-    border: 1px solid ${props => props.$owned ? 'rgba(16, 185, 129, 0.5)' : 'transparent'};
-    border-radius: 10px;
-    color: white;
+const PriceFree = styled.span`
+    font-size: 1rem;
     font-weight: 700;
-    cursor: ${props => props.$owned ? 'default' : 'pointer'};
-    transition: all 0.3s ease;
+    color: #10b981;
+`;
+
+const ActionButton = styled.button`
+    padding: 0.6rem 1.25rem;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.4rem;
 
-    &:hover {
-        ${props => !props.$owned && `
+    ${props => props.$variant === 'purchase' && css`
+        background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+        border: none;
+        color: #0a0e27;
+
+        &:hover:not(:disabled) {
             transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(245, 158, 11, 0.4);
-        `}
-    }
+            box-shadow: 0 5px 20px rgba(251, 191, 36, 0.4);
+        }
+    `}
+
+    ${props => props.$variant === 'equip' && css`
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        border: none;
+        color: white;
+
+        &:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(16, 185, 129, 0.4);
+        }
+    `}
+
+    ${props => props.$variant === 'equipped' && css`
+        background: rgba(16, 185, 129, 0.2);
+        border: 2px solid rgba(16, 185, 129, 0.5);
+        color: #10b981;
+        cursor: default;
+    `}
+
+    ${props => props.$variant === 'unequip' && css`
+        background: rgba(239, 68, 68, 0.2);
+        border: 2px solid rgba(239, 68, 68, 0.4);
+        color: #f87171;
+
+        &:hover:not(:disabled) {
+            background: rgba(239, 68, 68, 0.3);
+        }
+    `}
+
+    ${props => props.$variant === 'locked' && css`
+        background: rgba(100, 116, 139, 0.2);
+        border: 2px solid rgba(100, 116, 139, 0.3);
+        color: #64748b;
+        cursor: not-allowed;
+    `}
 
     &:disabled {
         opacity: 0.5;
@@ -307,252 +539,955 @@ const PurchaseButton = styled.button`
     }
 `;
 
-const LevelRequirement = styled.div`
+const EquippedBadge = styled.div`
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    padding: 0.4rem 0.75rem;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    border-radius: 20px;
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 700;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    background: rgba(139, 92, 246, 0.2);
-    border: 1px solid rgba(139, 92, 246, 0.3);
-    border-radius: 8px;
-    color: #a78bfa;
-    font-size: 0.85rem;
-    font-weight: 600;
-    margin-bottom: 1rem;
+    gap: 0.3rem;
+    z-index: 10;
 `;
 
+const OwnedBadge = styled.div`
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    padding: 0.4rem 0.75rem;
+    background: rgba(0, 173, 237, 0.2);
+    border: 1px solid rgba(0, 173, 237, 0.4);
+    border-radius: 20px;
+    color: #00adef;
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    z-index: 10;
+`;
+
+const LockedOverlay = styled.div`
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+`;
+
+const LockIcon = styled.div`
+    width: 60px;
+    height: 60px;
+    background: rgba(100, 116, 139, 0.3);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748b;
+`;
+
+// Modal
+const ModalOverlay = styled.div`
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    animation: ${fadeIn} 0.2s ease-out;
+`;
+
+const ModalContent = styled.div`
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.98) 100%);
+    border: 2px solid ${props => {
+        if (props.$rarity === 'legendary') return 'rgba(251, 191, 36, 0.5)';
+        if (props.$rarity === 'epic') return 'rgba(139, 92, 246, 0.5)';
+        if (props.$rarity === 'rare') return 'rgba(59, 130, 246, 0.5)';
+        return 'rgba(0, 173, 237, 0.5)';
+    }};
+    border-radius: 20px;
+    padding: 2rem;
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: ${fadeIn} 0.3s ease-out;
+`;
+
+const ModalHeader = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+`;
+
+const ModalTitle = styled.h2`
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: #e0e6ed;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+`;
+
+const CloseButton = styled.button`
+    width: 40px;
+    height: 40px;
+    background: rgba(239, 68, 68, 0.2);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    border-radius: 10px;
+    color: #f87171;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+
+    &:hover {
+        background: rgba(239, 68, 68, 0.3);
+        transform: scale(1.05);
+    }
+`;
+
+const ModalPreview = styled.div`
+    height: 180px;
+    background: rgba(0, 173, 237, 0.05);
+    border: 1px solid rgba(0, 173, 237, 0.2);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+`;
+
+const ModalDescription = styled.p`
+    color: #94a3b8;
+    font-size: 1rem;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+`;
+
+const ModalDetails = styled.div`
+    background: rgba(0, 173, 237, 0.05);
+    border: 1px solid rgba(0, 173, 237, 0.2);
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+`;
+
+const DetailRow = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(0, 173, 237, 0.1);
+
+    &:last-child {
+        border-bottom: none;
+    }
+`;
+
+const DetailLabel = styled.span`
+    color: #64748b;
+    font-size: 0.9rem;
+`;
+
+const DetailValue = styled.span`
+    color: #e0e6ed;
+    font-weight: 600;
+`;
+
+const ModalActions = styled.div`
+    display: flex;
+    gap: 1rem;
+`;
+
+const ModalButton = styled.button`
+    flex: 1;
+    padding: 1rem;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+
+    ${props => props.$primary && css`
+        background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+        border: none;
+        color: #0a0e27;
+
+        &:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(251, 191, 36, 0.4);
+        }
+    `}
+
+    ${props => props.$secondary && css`
+        background: rgba(100, 116, 139, 0.2);
+        border: 2px solid rgba(100, 116, 139, 0.4);
+        color: #94a3b8;
+
+        &:hover {
+            background: rgba(100, 116, 139, 0.3);
+        }
+    `}
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+`;
+
+// Empty State
 const EmptyState = styled.div`
     text-align: center;
-    padding: 5rem 2rem;
+    padding: 4rem 2rem;
     color: #64748b;
 `;
 
 const EmptyIcon = styled.div`
-    width: 120px;
-    height: 120px;
-    margin: 0 auto 2rem;
+    width: 100px;
+    height: 100px;
+    margin: 0 auto 1.5rem;
+    background: rgba(0, 173, 237, 0.1);
     border-radius: 50%;
-    background: rgba(245, 158, 11, 0.1);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #f59e0b;
+    animation: ${float} 3s ease-in-out infinite;
 `;
 
-const EmptyText = styled.div`
+// Loading Spinner
+const LoadingContainer = styled.div`
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    gap: 1rem;
+`;
+
+const Spinner = styled.div`
+    animation: ${spin} 1s linear infinite;
+`;
+
+// Stats Bar
+const StatsBar = styled.div`
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+    animation: ${fadeIn} 0.8s ease-out 0.1s backwards;
+`;
+
+const StatCard = styled.div`
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    border: 1px solid rgba(0, 173, 237, 0.2);
+    border-radius: 12px;
+    padding: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+`;
+
+const StatIcon = styled.div`
+    width: 50px;
+    height: 50px;
+    background: ${props => props.$bg || 'rgba(0, 173, 237, 0.2)'};
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: ${props => props.$color || '#00adef'};
+`;
+
+const StatInfo = styled.div``;
+
+const StatValue = styled.div`
     font-size: 1.5rem;
-    color: #94a3b8;
-    margin-bottom: 0.5rem;
-    font-weight: 700;
+    font-weight: 900;
+    color: #e0e6ed;
 `;
 
-// Component
+const StatLabel = styled.div`
+    font-size: 0.85rem;
+    color: #64748b;
+`;
+
+// ============ MAIN COMPONENT ============
 const VaultPage = () => {
-    const { gamification, refreshGamification } = useGamification();
-    const [items, setItems] = useState([]);
+    const { api, user } = useAuth();
+    const { gamificationData, refreshGamification } = useGamification();
+    const toast = useToast();
+
+    // State
     const [loading, setLoading] = useState(true);
-    const [filter, setFilter] = useState('all');
-    const [purchasing, setPurchasing] = useState(null);
+    const [items, setItems] = useState({
+        avatarBorders: [],
+        perks: [],
+        profileThemes: [],
+        badges: []
+    });
+    const [userCoins, setUserCoins] = useState(0);
+    const [userLevel, setUserLevel] = useState(1);
+    const [equipped, setEquipped] = useState({});
+    const [activeCategory, setActiveCategory] = useState('avatarBorders');
+    const [filter, setFilter] = useState('all'); // all, owned, locked
+    const [rarityFilter, setRarityFilter] = useState('all');
+    const [selectedItem, setSelectedItem] = useState(null);
+    const [purchasing, setPurchasing] = useState(false);
 
+    // ✅ SYNC with GamificationContext (same source as navbar)
     useEffect(() => {
-        fetchItems();
-    }, []);
-
-    const fetchItems = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:5000/api/vault/items', {
-                headers: { 'x-auth-token': token }
+        if (gamificationData) {
+            setUserCoins(gamificationData.nexusCoins || 0);
+            setUserLevel(gamificationData.level || 1);
+            console.log('[VaultPage] Synced from GamificationContext:', {
+                coins: gamificationData.nexusCoins,
+                level: gamificationData.level
             });
-            
-            // ✅ FIX: Access response.data.items
-            setItems(response.data.items || []);
-            setLoading(false);
-        } catch (error) {
-            console.error('Error fetching vault items:', error);
-            setLoading(false);
         }
-    };
+    }, [gamificationData]);
 
-    const handlePurchase = async (itemId) => {
-        if (purchasing) return;
+    // Categories config
+    const categories = [
+        { id: 'avatarBorders', label: 'Borders', icon: Frame },
+        { id: 'profileThemes', label: 'Themes', icon: Palette },
+        { id: 'badges', label: 'Badges', icon: Award },
+        { id: 'perks', label: 'Perks', icon: Zap }
+    ];
 
+    // Load vault data
+    useEffect(() => {
+        if (user) {
+            fetchVaultData();
+        }
+    }, [user]);
+
+    const fetchVaultData = async () => {
         try {
-            setPurchasing(itemId);
-            const token = localStorage.getItem('token');
-            const response = await axios.post(
-                `http://localhost:5000/api/vault/purchase/${itemId}`,
-                {},
-                { headers: { 'x-auth-token': token } }
-            );
-
-            alert(response.data.message);
+            setLoading(true);
+            console.log('[VaultPage] Fetching vault items...');
             
-            // Refresh data
-            await fetchItems();
-            await refreshGamification();
+            const response = await api.get('/vault/items');
+            console.log('[VaultPage] API Response:', response.data);
+            
+            if (response.data.success) {
+                // Set items with fallback to empty arrays
+                setItems({
+                    avatarBorders: response.data.items?.avatarBorders || [],
+                    perks: response.data.items?.perks || [],
+                    profileThemes: response.data.items?.profileThemes || [],
+                    badges: response.data.items?.badges || []
+                });
+                
+                // Set equipped items from API
+                setEquipped(response.data.vault || {
+                    equippedBorder: 'border-bronze',
+                    equippedTheme: 'theme-default',
+                    equippedBadges: [],
+                    activePerks: []
+                });
+                
+                // ✅ Use GamificationContext for coins/level (same as navbar)
+                // These are already set by the useEffect above
+                console.log('[VaultPage] Items loaded successfully');
+            } else {
+                console.error('[VaultPage] API returned success: false');
+                toast.error('Failed to load vault data', 'Error');
+            }
         } catch (error) {
-            console.error('Error purchasing item:', error);
-            alert(error.response?.data?.message || 'Failed to purchase item');
+            console.error('[VaultPage] Error fetching vault:', error);
+            console.error('[VaultPage] Error details:', error.response?.data);
+            toast.error(error.response?.data?.error || 'Failed to load vault', 'Error');
         } finally {
-            setPurchasing(null);
+            setLoading(false);
         }
     };
 
-    // ✅ FIX: Updated filtering logic
-    const filteredItems = filter === 'all' 
-        ? items 
-        : items.filter(item => {
-            if (filter === 'feature') return item.type === 'perk';
-            if (filter === 'boost') return item.type === 'perk';
-            if (filter === 'cosmetic') return item.type === 'avatar-border' || item.type === 'profile-theme' || item.type === 'badge';
-            if (filter === 'utility') return item.type === 'perk';
-            return true;
-        });
+    const handlePurchase = async (item) => {
+        if (purchasing) return;
+        
+        setPurchasing(true);
+        try {
+            const response = await api.post(`/vault/purchase/${item.id}`);
+            
+            if (response.data.success) {
+                toast.success(response.data.message, '🎉 Purchased!');
+                
+                // Update item in state
+                setItems(prev => {
+                    const category = Object.keys(prev).find(cat => 
+                        prev[cat].some(i => i.id === item.id)
+                    );
+                    if (!category) return prev;
+                    
+                    return {
+                        ...prev,
+                        [category]: prev[category].map(i => 
+                            i.id === item.id ? { ...i, owned: true, canAfford: true } : i
+                        )
+                    };
+                });
+                
+                // ✅ Refresh gamification data to update navbar coins
+                if (refreshGamification) {
+                    await refreshGamification();
+                }
+                
+                setSelectedItem(null);
+            }
+        } catch (error) {
+            console.error('Purchase error:', error);
+            toast.error(error.response?.data?.error || 'Purchase failed', 'Error');
+        } finally {
+            setPurchasing(false);
+        }
+    };
 
-    const getRarityIcon = (rarity) => {
-        if (rarity === 'legendary') return <Crown size={14} />;
-        if (rarity === 'epic') return <Star size={14} />;
-        if (rarity === 'rare') return <Sparkles size={14} />;
-        return <Shield size={14} />;
+    const handleEquip = async (item) => {
+        try {
+            const response = await api.post(`/vault/equip/${item.id}`);
+            
+            if (response.data.success) {
+                toast.success(response.data.message, '✅ Equipped!');
+                setEquipped(response.data.equipped);
+                
+                // Update items state
+                fetchVaultData();
+            }
+        } catch (error) {
+            console.error('Equip error:', error);
+            toast.error(error.response?.data?.error || 'Failed to equip', 'Error');
+        }
+    };
+
+    const handleUnequip = async (item) => {
+        try {
+            const response = await api.post(`/vault/unequip/${item.id}`);
+            
+            if (response.data.success) {
+                toast.success(response.data.message, 'Unequipped');
+                setEquipped(response.data.equipped);
+                fetchVaultData();
+            }
+        } catch (error) {
+            console.error('Unequip error:', error);
+            toast.error(error.response?.data?.error || 'Failed to unequip', 'Error');
+        }
+    };
+
+    const formatNumber = (num) => {
+        return new Intl.NumberFormat('en-US').format(num);
+    };
+
+    const getFilteredItems = () => {
+        let filtered = items[activeCategory] || [];
+        
+        // Status filter
+        if (filter === 'owned') {
+            filtered = filtered.filter(item => item.owned);
+        } else if (filter === 'locked') {
+            filtered = filtered.filter(item => !item.canUnlock);
+        }
+        
+        // Rarity filter
+        if (rarityFilter !== 'all') {
+            filtered = filtered.filter(item => item.rarity === rarityFilter);
+        }
+        
+        return filtered;
+    };
+
+    const getOwnedCount = (category) => {
+        return (items[category] || []).filter(item => item.owned).length;
+    };
+
+    const getTotalCount = (category) => {
+        return (items[category] || []).length;
+    };
+
+    const isItemEquipped = (item) => {
+        if (item.type === 'avatar-border') return equipped.equippedBorder === item.id;
+        if (item.type === 'profile-theme') return equipped.equippedTheme === item.id;
+        if (item.type === 'badge') return (equipped.equippedBadges || []).includes(item.id);
+        if (item.type === 'perk') return (equipped.activePerks || []).includes(item.id);
+        return false;
+    };
+
+    const renderItemPreview = (item, large = false) => {
+        const size = large ? '120px' : '80px';
+        const fontSize = large ? '5rem' : '3.5rem';
+        
+        switch (item.type) {
+            case 'avatar-border':
+                return (
+                    <BorderPreview 
+                        $gradient={item.gradient} 
+                        $glowColor={item.glowColor}
+                        $animation={item.animation}
+                        style={{ width: size, height: size }}
+                    >
+                        <BorderInner>
+                            <Crown size={large ? 40 : 28} color="#fbbf24" />
+                        </BorderInner>
+                    </BorderPreview>
+                );
+            case 'profile-theme':
+                return (
+                    <ThemePreview 
+                        $background={item.colors?.background}
+                        $primary={item.colors?.primary}
+                        style={{ maxWidth: large ? '200px' : '150px' }}
+                    >
+                        <ThemeBar $color={item.colors?.primary} $width="70%" />
+                        <ThemeBar $color={item.colors?.secondary} $width="50%" />
+                        <ThemeBar $color={item.colors?.accent} $width="85%" />
+                    </ThemePreview>
+                );
+            case 'badge':
+                return (
+                    <BadgePreview 
+                        $locked={!item.canUnlock && !item.owned}
+                        style={{ fontSize }}
+                    >
+                        {item.icon}
+                    </BadgePreview>
+                );
+            case 'perk':
+                return (
+                    <PerkPreview 
+                        $locked={!item.canUnlock && !item.owned}
+                        style={{ fontSize }}
+                    >
+                        {item.icon}
+                    </PerkPreview>
+                );
+            default:
+                return <Diamond size={40} />;
+        }
+    };
+
+    const renderActionButton = (item) => {
+        const isEquipped = isItemEquipped(item);
+        
+        // If locked (doesn't meet requirements and not owned)
+        if (!item.canUnlock && !item.owned) {
+            return (
+                <ActionButton $variant="locked" disabled>
+                    <Lock size={16} />
+                    Locked
+                </ActionButton>
+            );
+        }
+        
+        // If not owned yet
+        if (!item.owned) {
+            if (item.cost === 0) {
+                return (
+                    <ActionButton $variant="equip" onClick={() => handleEquip(item)}>
+                        <Check size={16} />
+                        Claim Free
+                    </ActionButton>
+                );
+            }
+            return (
+                <ActionButton 
+                    $variant="purchase" 
+                    onClick={() => setSelectedItem(item)}
+                    disabled={!item.canAfford}
+                >
+                    <ShoppingCart size={16} />
+                    Buy
+                </ActionButton>
+            );
+        }
+        
+        // If owned and equipped
+        if (isEquipped) {
+            if (item.type === 'badge' || item.type === 'perk') {
+                return (
+                    <ActionButton $variant="unequip" onClick={() => handleUnequip(item)}>
+                        <X size={16} />
+                        Unequip
+                    </ActionButton>
+                );
+            }
+            return (
+                <ActionButton $variant="equipped">
+                    <Check size={16} />
+                    Equipped
+                </ActionButton>
+            );
+        }
+        
+        // Owned but not equipped
+        return (
+            <ActionButton $variant="equip" onClick={() => handleEquip(item)}>
+                <Check size={16} />
+                Equip
+            </ActionButton>
+        );
+    };
+
+    const getRequirementText = (req) => {
+        if (!req) return null;
+        
+        switch (req.type) {
+            case 'level':
+                return `Requires Level ${req.value}`;
+            case 'stats':
+                return `Requires ${req.stat}: ${formatNumber(req.value)}`;
+            case 'special':
+                return `Special: ${req.value}`;
+            default:
+                return 'Special requirement';
+        }
     };
 
     if (loading) {
         return (
             <PageContainer>
-                <ContentWrapper>
-                    <EmptyState>
-                        <EmptyText>Loading The Vault...</EmptyText>
-                    </EmptyState>
-                </ContentWrapper>
+                <LoadingContainer>
+                    <Spinner>
+                        <Store size={64} color="#fbbf24" />
+                    </Spinner>
+                    <h2 style={{ color: '#fbbf24' }}>Loading Vault...</h2>
+                </LoadingContainer>
             </PageContainer>
         );
     }
+
+    const filteredItems = getFilteredItems();
+    const totalOwned = Object.values(items).flat().filter(i => i.owned).length;
+    const totalItems = Object.values(items).flat().length;
 
     return (
         <PageContainer>
             <ContentWrapper>
                 <Header>
-                    <VaultIcon>
-                        <Lock size={60} />
-                    </VaultIcon>
-                    <PageTitle>The Vault</PageTitle>
-                    <Subtitle>Unlock premium features, power-ups, and exclusive items</Subtitle>
-                    <CoinsDisplay>
-                        <Zap size={32} color="#f59e0b" />
+                    <Title>
+                        <Store size={56} />
+                        Nexus Vault
+                    </Title>
+                    <Subtitle>
+                        Customize your profile with exclusive borders, themes, badges, and perks
+                    </Subtitle>
+                    <CoinBalance>
+                        <CoinIcon>
+                            <Coins size={20} color="#0a0e27" />
+                        </CoinIcon>
                         <div>
-                            <CoinsAmount>{gamification?.nexusCoins?.toLocaleString() || 0}</CoinsAmount>
-                            <CoinsLabel>Nexus Coins</CoinsLabel>
+                            <CoinAmount>{formatNumber(userCoins)}</CoinAmount>
+                            <CoinLabel>Nexus Coins</CoinLabel>
                         </div>
-                    </CoinsDisplay>
+                    </CoinBalance>
                 </Header>
 
-                <FilterSection>
-                    <FilterButton 
-                        $active={filter === 'all'} 
-                        onClick={() => setFilter('all')}
-                    >
-                        All Items
-                    </FilterButton>
-                    <FilterButton 
-                        $active={filter === 'feature'} 
-                        onClick={() => setFilter('feature')}
-                    >
-                        🔓 Features
-                    </FilterButton>
-                    <FilterButton 
-                        $active={filter === 'boost'} 
-                        onClick={() => setFilter('boost')}
-                    >
-                        ⚡ Boosts
-                    </FilterButton>
-                    <FilterButton 
-                        $active={filter === 'cosmetic'} 
-                        onClick={() => setFilter('cosmetic')}
-                    >
-                        🎨 Cosmetics
-                    </FilterButton>
-                    <FilterButton 
-                        $active={filter === 'utility'} 
-                        onClick={() => setFilter('utility')}
-                    >
-                        🛠️ Utility
-                    </FilterButton>
-                </FilterSection>
+                <StatsBar>
+                    <StatCard>
+                        <StatIcon $bg="rgba(251, 191, 36, 0.2)" $color="#fbbf24">
+                            <Package size={24} />
+                        </StatIcon>
+                        <StatInfo>
+                            <StatValue>{totalOwned}/{totalItems}</StatValue>
+                            <StatLabel>Items Owned</StatLabel>
+                        </StatInfo>
+                    </StatCard>
+                    <StatCard>
+                        <StatIcon $bg="rgba(139, 92, 246, 0.2)" $color="#a78bfa">
+                            <TrendingUp size={24} />
+                        </StatIcon>
+                        <StatInfo>
+                            <StatValue>Level {userLevel}</StatValue>
+                            <StatLabel>Your Level</StatLabel>
+                        </StatInfo>
+                    </StatCard>
+                    <StatCard>
+                        <StatIcon $bg="rgba(16, 185, 129, 0.2)" $color="#10b981">
+                            <BadgeCheck size={24} />
+                        </StatIcon>
+                        <StatInfo>
+                            <StatValue>{((totalOwned / totalItems) * 100).toFixed(0)}%</StatValue>
+                            <StatLabel>Collection</StatLabel>
+                        </StatInfo>
+                    </StatCard>
+                    <StatCard>
+                        <StatIcon $bg="rgba(239, 68, 68, 0.2)" $color="#f87171">
+                            <Gem size={24} />
+                        </StatIcon>
+                        <StatInfo>
+                            <StatValue>
+                                {Object.values(items).flat().filter(i => i.rarity === 'legendary' && i.owned).length}
+                            </StatValue>
+                            <StatLabel>Legendaries</StatLabel>
+                        </StatInfo>
+                    </StatCard>
+                </StatsBar>
 
-                {filteredItems.length === 0 ? (
-                    <EmptyState>
-                        <EmptyIcon>
-                            <Lock size={60} />
-                        </EmptyIcon>
-                        <EmptyText>No items found</EmptyText>
-                    </EmptyState>
-                ) : (
+                <CategoryTabs>
+                    {categories.map(cat => {
+                        const Icon = cat.icon;
+                        return (
+                            <CategoryTab
+                                key={cat.id}
+                                $active={activeCategory === cat.id}
+                                onClick={() => setActiveCategory(cat.id)}
+                            >
+                                <Icon size={20} />
+                                {cat.label}
+                                <TabCount $active={activeCategory === cat.id}>
+                                    {getOwnedCount(cat.id)}/{getTotalCount(cat.id)}
+                                </TabCount>
+                            </CategoryTab>
+                        );
+                    })}
+                </CategoryTabs>
+
+                <FilterBar>
+                    <FilterGroup>
+                        <FilterLabel>Status:</FilterLabel>
+                        <FilterButton $active={filter === 'all'} onClick={() => setFilter('all')}>
+                            All
+                        </FilterButton>
+                        <FilterButton $active={filter === 'owned'} onClick={() => setFilter('owned')}>
+                            Owned
+                        </FilterButton>
+                        <FilterButton $active={filter === 'locked'} onClick={() => setFilter('locked')}>
+                            Locked
+                        </FilterButton>
+                    </FilterGroup>
+                    <FilterGroup>
+                        <FilterLabel>Rarity:</FilterLabel>
+                        <FilterButton $active={rarityFilter === 'all'} onClick={() => setRarityFilter('all')}>
+                            All
+                        </FilterButton>
+                        <FilterButton $active={rarityFilter === 'common'} onClick={() => setRarityFilter('common')}>
+                            Common
+                        </FilterButton>
+                        <FilterButton $active={rarityFilter === 'rare'} onClick={() => setRarityFilter('rare')}>
+                            Rare
+                        </FilterButton>
+                        <FilterButton $active={rarityFilter === 'epic'} onClick={() => setRarityFilter('epic')}>
+                            Epic
+                        </FilterButton>
+                        <FilterButton $active={rarityFilter === 'legendary'} onClick={() => setRarityFilter('legendary')}>
+                            Legendary
+                        </FilterButton>
+                    </FilterGroup>
+                </FilterBar>
+
+                {filteredItems.length > 0 ? (
                     <ItemsGrid>
                         {filteredItems.map(item => {
-                            // ✅ FIX: Use item.cost and item.canUnlock
-                            const canAfford = gamification?.nexusCoins >= item.cost;
-                            const meetsLevel = !item.unlockRequirement || item.canUnlock;
-                            const canPurchase = canAfford && meetsLevel && !item.owned;
-
+                            const isLocked = !item.canUnlock && !item.owned;
+                            const isEquipped = isItemEquipped(item);
+                            
                             return (
-                                <ItemCard key={item.id} $rarity={item.rarity}>
-                                    <ItemHeader>
-                                        <ItemIconWrapper $color={item.glowColor || item.color}>
-                                            {item.icon || '⭐'}
-                                        </ItemIconWrapper>
-                                        <RarityBadge $rarity={item.rarity}>
-                                            {getRarityIcon(item.rarity)}
-                                            {item.rarity}
-                                        </RarityBadge>
-                                    </ItemHeader>
-
-                                    {item.unlockRequirement && item.unlockRequirement.type === 'level' && (
-                                        <LevelRequirement>
-                                            <Shield size={16} />
-                                            Level {item.unlockRequirement.value} Required
-                                        </LevelRequirement>
+                                <ItemCard 
+                                    key={item.id} 
+                                    $rarity={item.rarity}
+                                    $locked={isLocked}
+                                    $equipped={isEquipped}
+                                >
+                                    <ItemRarityBanner $rarity={item.rarity} />
+                                    
+                                    {isEquipped && (
+                                        <EquippedBadge>
+                                            <Check size={12} />
+                                            Equipped
+                                        </EquippedBadge>
                                     )}
-
-                                    <ItemName>{item.name}</ItemName>
-                                    <ItemDescription>{item.description}</ItemDescription>
-
-                                    <ItemFooter>
-                                        <PriceTag>
-                                            <Zap size={24} />
-                                            {item.cost === 0 ? 'FREE' : item.cost.toLocaleString()}
-                                        </PriceTag>
-                                        <PurchaseButton
-                                            $owned={item.owned}
-                                            onClick={() => !item.owned && handlePurchase(item.id)}
-                                            disabled={!canPurchase || purchasing === item.id}
-                                        >
-                                            {item.owned ? (
-                                                <>
-                                                    <Check size={18} />
-                                                    Owned
-                                                </>
-                                            ) : purchasing === item.id ? (
-                                                'Purchasing...'
-                                            ) : !meetsLevel ? (
-                                                <>
-                                                    <Lock size={18} />
-                                                    Locked
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <ShoppingCart size={18} />
-                                                    {item.cost === 0 ? 'Claim' : 'Purchase'}
-                                                </>
-                                            )}
-                                        </PurchaseButton>
-                                    </ItemFooter>
+                                    
+                                    {item.owned && !isEquipped && (
+                                        <OwnedBadge>
+                                            <Package size={12} />
+                                            Owned
+                                        </OwnedBadge>
+                                    )}
+                                    
+                                    <ItemPreview $background={item.colors?.background}>
+                                        {isLocked && (
+                                            <LockedOverlay>
+                                                <LockIcon>
+                                                    <Lock size={30} />
+                                                </LockIcon>
+                                            </LockedOverlay>
+                                        )}
+                                        {renderItemPreview(item)}
+                                    </ItemPreview>
+                                    
+                                    <ItemContent>
+                                        <ItemHeader>
+                                            <ItemName>{item.name}</ItemName>
+                                            <RarityBadge $rarity={item.rarity}>
+                                                {item.rarity}
+                                            </RarityBadge>
+                                        </ItemHeader>
+                                        
+                                        <ItemDescription>{item.description}</ItemDescription>
+                                        
+                                        {item.effect && (
+                                            <ItemEffect>
+                                                <Zap size={14} />
+                                                {item.effect.type === 'xp_bonus' && `+${item.effect.value * 100}% XP`}
+                                                {item.effect.type === 'coin_bonus' && `+${item.effect.value * 100}% Coins`}
+                                                {item.effect.type === 'profit_bonus' && `+${item.effect.value * 100}% Profits`}
+                                                {item.effect.type === 'streak_protection' && `${item.effect.value} day grace`}
+                                                {item.effect.type === 'extra_daily' && `+${item.effect.value} daily challenge`}
+                                            </ItemEffect>
+                                        )}
+                                        
+                                        {isLocked && item.unlockRequirement && (
+                                            <ItemRequirement>
+                                                <Lock size={14} />
+                                                {getRequirementText(item.unlockRequirement)}
+                                            </ItemRequirement>
+                                        )}
+                                        
+                                        <ItemFooter>
+                                            <ItemPrice>
+                                                {item.cost === 0 ? (
+                                                    <PriceFree>FREE</PriceFree>
+                                                ) : (
+                                                    <>
+                                                        <PriceIcon>
+                                                            <Coins size={12} color="#0a0e27" />
+                                                        </PriceIcon>
+                                                        <PriceValue $canAfford={item.canAfford || item.owned}>
+                                                            {formatNumber(item.cost)}
+                                                        </PriceValue>
+                                                    </>
+                                                )}
+                                            </ItemPrice>
+                                            {renderActionButton(item)}
+                                        </ItemFooter>
+                                    </ItemContent>
                                 </ItemCard>
                             );
                         })}
                     </ItemsGrid>
+                ) : (
+                    <EmptyState>
+                        <EmptyIcon>
+                            <Package size={50} color="#64748b" />
+                        </EmptyIcon>
+                        <h3 style={{ color: '#94a3b8', marginBottom: '0.5rem' }}>No items found</h3>
+                        <p>Try adjusting your filters</p>
+                    </EmptyState>
                 )}
             </ContentWrapper>
+
+            {/* Purchase Confirmation Modal */}
+            {selectedItem && (
+                <ModalOverlay onClick={() => setSelectedItem(null)}>
+                    <ModalContent 
+                        $rarity={selectedItem.rarity}
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <ModalHeader>
+                            <ModalTitle>
+                                <ShoppingCart size={24} />
+                                Confirm Purchase
+                            </ModalTitle>
+                            <CloseButton onClick={() => setSelectedItem(null)}>
+                                <X size={20} />
+                            </CloseButton>
+                        </ModalHeader>
+                        
+                        <ModalPreview>
+                            {renderItemPreview(selectedItem, true)}
+                        </ModalPreview>
+                        
+                        <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+                            <h3 style={{ color: '#e0e6ed', marginBottom: '0.5rem' }}>
+                                {selectedItem.name}
+                            </h3>
+                            <RarityBadge $rarity={selectedItem.rarity} style={{ display: 'inline-block' }}>
+                                {selectedItem.rarity}
+                            </RarityBadge>
+                        </div>
+                        
+                        <ModalDescription>{selectedItem.description}</ModalDescription>
+                        
+                        {selectedItem.effect && (
+                            <ItemEffect style={{ marginBottom: '1.5rem' }}>
+                                <Zap size={16} />
+                                Effect: {selectedItem.effect.type === 'xp_bonus' && `+${selectedItem.effect.value * 100}% XP from all sources`}
+                                {selectedItem.effect.type === 'coin_bonus' && `+${selectedItem.effect.value * 100}% Nexus Coins from activities`}
+                                {selectedItem.effect.type === 'profit_bonus' && `+${selectedItem.effect.value * 100}% on profitable trades`}
+                                {selectedItem.effect.type === 'streak_protection' && `${selectedItem.effect.value} day login streak protection`}
+                                {selectedItem.effect.type === 'extra_daily' && `Complete ${selectedItem.effect.value} extra daily challenge`}
+                            </ItemEffect>
+                        )}
+                        
+                        <ModalDetails>
+                            <DetailRow>
+                                <DetailLabel>Item Cost</DetailLabel>
+                                <DetailValue style={{ color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <Coins size={16} />
+                                    {formatNumber(selectedItem.cost)}
+                                </DetailValue>
+                            </DetailRow>
+                            <DetailRow>
+                                <DetailLabel>Your Balance</DetailLabel>
+                                <DetailValue style={{ color: userCoins >= selectedItem.cost ? '#10b981' : '#ef4444' }}>
+                                    {formatNumber(userCoins)} coins
+                                </DetailValue>
+                            </DetailRow>
+                            <DetailRow>
+                                <DetailLabel>After Purchase</DetailLabel>
+                                <DetailValue>
+                                    {formatNumber(Math.max(0, userCoins - selectedItem.cost))} coins
+                                </DetailValue>
+                            </DetailRow>
+                        </ModalDetails>
+                        
+                        <ModalActions>
+                            <ModalButton $secondary onClick={() => setSelectedItem(null)}>
+                                Cancel
+                            </ModalButton>
+                            <ModalButton 
+                                $primary 
+                                onClick={() => handlePurchase(selectedItem)}
+                                disabled={purchasing || userCoins < selectedItem.cost}
+                            >
+                                {purchasing ? (
+                                    <>
+                                        <Spinner style={{ width: 20, height: 20 }}>
+                                            <Store size={16} />
+                                        </Spinner>
+                                        Processing...
+                                    </>
+                                ) : (
+                                    <>
+                                        <ShoppingCart size={18} />
+                                        Purchase for {formatNumber(selectedItem.cost)}
+                                    </>
+                                )}
+                            </ModalButton>
+                        </ModalActions>
+                    </ModalContent>
+                </ModalOverlay>
+            )}
         </PageContainer>
     );
 };

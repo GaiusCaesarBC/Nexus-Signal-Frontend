@@ -37,9 +37,11 @@ const PageContainer = styled.div`
   background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0a0a0f 100%);
   color: #ffffff;
   padding: 24px;
+  padding-top: 100px;
 
   @media (max-width: 768px) {
     padding: 16px;
+    padding-top: 90px;
   }
 `;
 
@@ -797,6 +799,23 @@ const PostContent = styled.p`
   margin: 0;
 `;
 
+const EmptyState = styled.div`
+  text-align: center;
+  padding: 40px 20px;
+  color: #a0a0a0;
+
+  .icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+  }
+
+  p {
+    margin: 0;
+    font-size: 14px;
+  }
+`;
+
 // Loading State
 const LoadingContainer = styled.div`
   display: flex;
@@ -834,7 +853,7 @@ const formatCurrency = (value, decimals = 2) => {
 };
 
 const formatLargeNumber = (num) => {
-  if (!num) return 'N/A';
+  if (!num || isNaN(num)) return 'N/A';
   if (num >= 1e12) return (num / 1e12).toFixed(2) + 'T';
   if (num >= 1e9) return (num / 1e9).toFixed(2) + 'B';
   if (num >= 1e6) return (num / 1e6).toFixed(2) + 'M';
@@ -890,6 +909,40 @@ const getCryptoInfo = (symbol) => {
   };
 };
 
+// Format chart X-axis based on timeframe
+const formatChartDate = (timestamp, range) => {
+  if (!timestamp) return '';
+  
+  let date;
+  if (typeof timestamp === 'string') {
+    date = new Date(timestamp);
+  } else if (typeof timestamp === 'number') {
+    date = new Date(timestamp);
+  } else {
+    return '';
+  }
+  
+  if (isNaN(date.getTime())) return '';
+  
+  switch (range) {
+    case '1D':
+      return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    case '5D':
+      return date.toLocaleDateString('en-US', { weekday: 'short', hour: 'numeric' });
+    case '1M':
+    case '3M':
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    case '6M':
+    case '1Y':
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    case '5Y':
+    case 'MAX':
+      return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+    default:
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+};
+
 // ============ CUSTOM TOOLTIP ============
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
@@ -939,6 +992,7 @@ const CryptoPage = () => {
 
   // Other state
   const [posts, setPosts] = useState([]);
+  const [postsLoading, setPostsLoading] = useState(false);
   const [tradeType, setTradeType] = useState('buy');
   const [quantity, setQuantity] = useState(0.1);
   const [isWatchlisted, setIsWatchlisted] = useState(false);
@@ -954,31 +1008,6 @@ const CryptoPage = () => {
   const isPositive = priceChange >= 0;
 
   const cryptoDetails = getCryptoInfo(symbol);
-
-  // Generate mock posts
-  const generateMockPosts = () => [
-    {
-      id: 1,
-      username: 'CryptoKing',
-      content: `$${symbol?.toUpperCase()} showing strong momentum after breaking key resistance. Accumulating here.`,
-      sentiment: 'bullish',
-      createdAt: new Date(Date.now() - 3600000).toISOString()
-    },
-    {
-      id: 2,
-      username: 'BlockchainDev',
-      content: `Interesting on-chain metrics for $${symbol?.toUpperCase()}. Whale activity increasing.`,
-      sentiment: 'neutral',
-      createdAt: new Date(Date.now() - 7200000).toISOString()
-    },
-    {
-      id: 3,
-      username: 'HODLer',
-      content: `$${symbol?.toUpperCase()} to the moon! 🚀 Diamond hands only.`,
-      sentiment: 'bullish',
-      createdAt: new Date(Date.now() - 14400000).toISOString()
-    }
-  ];
 
   // Fetch chart data
   useEffect(() => {
@@ -1007,13 +1036,13 @@ const CryptoPage = () => {
         
         // Transform data for Recharts
         const transformedData = fetchedData.map((item) => ({
-          time: item.time,
+          time: item.time || item.date,
           close: item.close,
           open: item.open,
           high: item.high,
           low: item.low,
           volume: item.volume
-        }));
+        })).filter(item => item.close && !isNaN(item.close));
 
         setChartData(transformedData);
 
@@ -1051,7 +1080,7 @@ const CryptoPage = () => {
     };
   }, [symbol, selectedRange, API_URL]);
 
-  // Fetch prediction
+  // Fetch prediction and posts
   useEffect(() => {
     if (!symbol) return;
 
@@ -1073,8 +1102,37 @@ const CryptoPage = () => {
       }
     };
 
+    const fetchPosts = async () => {
+      setPostsLoading(true);
+      try {
+        // Fetch real posts from social feed API
+        const response = await axios.get(`${API_URL}/api/social/feed`, {
+          params: { 
+            symbol: symbol.toUpperCase(),
+            limit: 10 
+          }
+        });
+        
+        // Filter posts that mention this crypto
+        const relevantPosts = (response.data.posts || response.data || []).filter(post => {
+          const content = (post.content || '').toUpperCase();
+          const tags = (post.tags || []).map(t => t.toUpperCase());
+          return content.includes(`$${symbol.toUpperCase()}`) || 
+                 content.includes(symbol.toUpperCase()) ||
+                 tags.includes(symbol.toUpperCase());
+        });
+        
+        setPosts(relevantPosts);
+      } catch (err) {
+        console.error('Error fetching posts:', err);
+        setPosts([]);
+      } finally {
+        setPostsLoading(false);
+      }
+    };
+
     fetchPrediction();
-    setPosts(generateMockPosts());
+    fetchPosts();
   }, [symbol, API_URL]);
 
   // Trade handlers
@@ -1229,10 +1287,7 @@ const CryptoPage = () => {
                       axisLine={false}
                       tickLine={false}
                       tick={{ fill: '#666', fontSize: 11 }}
-                      tickFormatter={(val) => {
-                        const date = new Date(val);
-                        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                      }}
+                      tickFormatter={(val) => formatChartDate(val, selectedRange)}
                       interval="preserveStartEnd"
                     />
                     <YAxis
@@ -1301,7 +1356,10 @@ const CryptoPage = () => {
                   <TrendingUp size={14} /> Period High
                 </div>
                 <div className="value" style={{ color: '#00ff88' }}>
-                  {formatCurrency(Math.max(...chartData.map(d => d.high || d.close)))}
+                  {chartData.length > 0 
+                    ? formatCurrency(Math.max(...chartData.map(d => d.high || d.close)))
+                    : 'N/A'
+                  }
                 </div>
               </StatCard>
               <StatCard>
@@ -1309,7 +1367,10 @@ const CryptoPage = () => {
                   <TrendingDown size={14} /> Period Low
                 </div>
                 <div className="value" style={{ color: '#ff4757' }}>
-                  {formatCurrency(Math.min(...chartData.map(d => d.low || d.close)))}
+                  {chartData.length > 0 
+                    ? formatCurrency(Math.min(...chartData.map(d => d.low || d.close)))
+                    : 'N/A'
+                  }
                 </div>
               </StatCard>
               <StatCard>
@@ -1325,7 +1386,10 @@ const CryptoPage = () => {
                   <BarChart3 size={14} /> Avg Volume
                 </div>
                 <div className="value">
-                  {formatLargeNumber(chartData.reduce((acc, d) => acc + (d.volume || 0), 0) / chartData.length)}
+                  {chartData.length > 0 
+                    ? formatLargeNumber(chartData.reduce((acc, d) => acc + (d.volume || 0), 0) / chartData.length)
+                    : 'N/A'
+                  }
                 </div>
               </StatCard>
               <StatCard>
@@ -1360,28 +1424,37 @@ const CryptoPage = () => {
               </h3>
               <span className="count">{posts.length} posts</span>
             </SocialHeader>
-            {posts.length > 0 ? posts.map(post => (
-              <PostCard key={post.id}>
-                <PostHeader>
-                  <div className="avatar">
-                    {(post.username || 'U').slice(0, 2).toUpperCase()}
-                  </div>
-                  <div className="user-info">
-                    <div className="username">{post.username || 'Anonymous'}</div>
-                    <div className="time">{getTimeAgo(post.createdAt)}</div>
-                  </div>
-                  {post.sentiment && (
-                    <span className={`sentiment ${post.sentiment}`}>
-                      {post.sentiment}
-                    </span>
-                  )}
-                </PostHeader>
-                <PostContent>{post.content}</PostContent>
-              </PostCard>
-            )) : (
-              <p style={{ textAlign: 'center', color: '#a0a0a0' }}>
-                No posts yet for {symbol.toUpperCase()}. Be the first to share!
-              </p>
+            
+            {postsLoading ? (
+              <ChartLoading style={{ height: 150 }}>
+                <Loader2 size={24} />
+                <span>Loading posts...</span>
+              </ChartLoading>
+            ) : posts.length > 0 ? (
+              posts.map(post => (
+                <PostCard key={post._id || post.id}>
+                  <PostHeader>
+                    <div className="avatar">
+                      {(post.user?.username || post.username || 'U').slice(0, 2).toUpperCase()}
+                    </div>
+                    <div className="user-info">
+                      <div className="username">{post.user?.username || post.username || 'Anonymous'}</div>
+                      <div className="time">{getTimeAgo(post.createdAt)}</div>
+                    </div>
+                    {post.sentiment && (
+                      <span className={`sentiment ${post.sentiment}`}>
+                        {post.sentiment}
+                      </span>
+                    )}
+                  </PostHeader>
+                  <PostContent>{post.content}</PostContent>
+                </PostCard>
+              ))
+            ) : (
+              <EmptyState>
+                <div className="icon">💬</div>
+                <p>No posts yet for ${symbol?.toUpperCase()}. Be the first to share your thoughts!</p>
+              </EmptyState>
             )}
           </SocialCard>
         </LeftColumn>
@@ -1524,9 +1597,10 @@ const CryptoPage = () => {
                 )}
               </>
             ) : (
-              <p style={{ textAlign: 'center', color: '#a0a0a0', padding: '20px' }}>
-                Unable to generate prediction. Try refreshing.
-              </p>
+              <EmptyState>
+                <div className="icon">🔮</div>
+                <p>No AI prediction available for {symbol?.toUpperCase()} yet.</p>
+              </EmptyState>
             )}
           </PredictionCard>
 
