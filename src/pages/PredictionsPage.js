@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
 import styled, { keyframes } from 'styled-components';
+import { getAssetName } from '../utils/stockNames';
 import { useAuth } from '../context/AuthContext';
 import {
     Brain, TrendingUp, TrendingDown, Target, Zap, Activity,
@@ -514,6 +515,13 @@ const StockSymbol = styled.h2`
     align-items: center;
     gap: 1rem;
     animation: ${neonGlow} 2s ease-in-out infinite;
+`;
+
+const CompanyName = styled.div`
+    color: #94a3b8;
+    font-size: 1rem;
+    margin-top: 0.25rem;
+    font-weight: 500;
 `;
 
 const CurrentPriceSection = styled.div`
@@ -1664,6 +1672,7 @@ const PredictionsPage = () => {
                                                 />
                                             </WatchlistStar>
                                         </StockSymbol>
+                                         <CompanyName>{getAssetName(prediction.symbol)}</CompanyName>
                                         <CurrentPriceSection>
                                             <CurrentPriceLabel>Current Price:</CurrentPriceLabel>
                                             <CurrentPriceValue>
@@ -2133,8 +2142,12 @@ const PredictionsPage = () => {
                                         key={saved.id}
                                         $up={saved.prediction?.direction === 'UP'}
                                     >
-                                        <SavedCardHeader>
-                                            <SavedSymbol>{saved.symbol}</SavedSymbol>
+                                        <SavedCardHeader><div>
+    <SavedSymbol>{saved.symbol}</SavedSymbol>
+    <div style={{ color: '#94a3b8', fontSize: '0.85rem', marginTop: '0.25rem' }}>
+        {getAssetName(saved.symbol)}
+    </div>
+</div>
                                             <SavedDirection $up={saved.prediction?.direction === 'UP'}>
                                                 {saved.prediction?.direction === 'UP' ? (
                                                     <TrendingUp size={16} />
