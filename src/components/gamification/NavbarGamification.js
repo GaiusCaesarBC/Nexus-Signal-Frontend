@@ -1,18 +1,36 @@
-// client/src/components/gamification/NavbarGamification.js - FIXED NaN ISSUES
-import React, { useState } from 'react';
-import styled, { keyframes } from 'styled-components';
-import { useGamification } from '../../context/GamificationContext';
-import { Star, Zap, TrendingUp, Trophy, ChevronDown } from 'lucide-react';
+// client/src/components/gamification/NavbarGamification.js
+// Shows gamification stats with dropdown panel
+
+import React, { useState, useRef, useEffect } from 'react';
+import styled, { keyframes, css } from 'styled-components';
 import { useNavigate } from 'react-router-dom';
+import { 
+    Coins, Flame, ChevronDown, Trophy, TrendingUp, 
+    Award, ArrowRight, DollarSign, BarChart2
+} from 'lucide-react';
+import { useGamification } from '../../context/GamificationContext';
+import { useAuth } from '../../context/AuthContext';
 
-const pulse = keyframes`
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-`;
+// ============ BORDER COLORS ============
+const BORDER_COLORS = {
+    'border-bronze': { gradient: 'linear-gradient(135deg, #cd7f32 0%, #8b4513 50%, #cd7f32 100%)', glow: 'rgba(205, 127, 50, 0.5)' },
+    'border-silver': { gradient: 'linear-gradient(135deg, #c0c0c0 0%, #808080 50%, #c0c0c0 100%)', glow: 'rgba(192, 192, 192, 0.5)' },
+    'border-gold': { gradient: 'linear-gradient(135deg, #ffd700 0%, #b8860b 50%, #ffd700 100%)', glow: 'rgba(255, 215, 0, 0.6)' },
+    'border-emerald': { gradient: 'linear-gradient(135deg, #50c878 0%, #2e8b57 50%, #50c878 100%)', glow: 'rgba(80, 200, 120, 0.5)' },
+    'border-ruby': { gradient: 'linear-gradient(135deg, #e0115f 0%, #9b111e 50%, #e0115f 100%)', glow: 'rgba(224, 17, 95, 0.5)' },
+    'border-platinum': { gradient: 'linear-gradient(135deg, #e5e4e2 0%, #a0a0a0 50%, #e5e4e2 100%)', glow: 'rgba(229, 228, 226, 0.6)' },
+    'border-sapphire': { gradient: 'linear-gradient(135deg, #0f52ba 0%, #082567 50%, #0f52ba 100%)', glow: 'rgba(15, 82, 186, 0.5)' },
+    'border-amethyst': { gradient: 'linear-gradient(135deg, #9966cc 0%, #663399 50%, #9966cc 100%)', glow: 'rgba(153, 102, 204, 0.5)' },
+    'border-diamond': { gradient: 'linear-gradient(135deg, #b9f2ff 0%, #e6e6fa 25%, #ffffff 50%, #e6e6fa 75%, #b9f2ff 100%)', glow: 'rgba(185, 242, 255, 0.7)', animated: true },
+    'border-rainbow': { gradient: 'linear-gradient(135deg, #ff0000 0%, #ff7f00 14%, #ffff00 28%, #00ff00 42%, #0000ff 57%, #4b0082 71%, #9400d3 85%, #ff0000 100%)', glow: 'rgba(255, 255, 255, 0.5)', animated: true },
+    'border-nexus': { gradient: 'linear-gradient(135deg, #00adef 0%, #00ff88 25%, #8b5cf6 50%, #00ff88 75%, #00adef 100%)', glow: 'rgba(0, 173, 239, 0.7)', animated: true }
+};
 
+// ============ ANIMATIONS ============
 const shimmer = keyframes`
-    0% { background-position: -200% center; }
-    100% { background-position: 200% center; }
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
 `;
 
 const slideDown = keyframes`
@@ -20,403 +38,612 @@ const slideDown = keyframes`
     to { opacity: 1; transform: translateY(0); }
 `;
 
-const Container = styled.div`
+const coinGlow = keyframes`
+    0%, 100% { filter: drop-shadow(0 0 3px rgba(245, 158, 11, 0.5)); }
+    50% { filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.8)); }
+`;
+
+// ============ STYLED COMPONENTS ============
+const Wrapper = styled.div`
+    position: relative;
+`;
+
+const Container = styled.button`
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    position: relative;
+    padding: 0.5rem 0.75rem;
+    background: ${props => props.$open 
+        ? 'rgba(0, 173, 239, 0.15)' 
+        : 'rgba(15, 23, 42, 0.6)'};
+    border: 1px solid ${props => props.$open 
+        ? 'rgba(0, 173, 239, 0.4)' 
+        : 'rgba(0, 173, 239, 0.2)'};
+    border-radius: 50px;
+    backdrop-filter: blur(10px);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: inherit;
+    font-family: inherit;
 
-    @media (max-width: 968px) {
+    &:hover {
+        background: rgba(0, 173, 239, 0.15);
+        border-color: rgba(0, 173, 239, 0.4);
+        transform: translateY(-1px);
+    }
+
+    @media (max-width: 768px) {
+        padding: 0.4rem 0.5rem;
+        gap: 0.5rem;
+    }
+`;
+
+// Avatar Components
+const AvatarWrapper = styled.div`
+    position: relative;
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+`;
+
+const AvatarBorder = styled.div`
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    background: ${props => props.$gradient};
+    background-size: 200% 200%;
+    box-shadow: 0 0 6px ${props => props.$glow};
+    
+    ${props => props.$animated && css`
+        animation: ${shimmer} 3s ease-in-out infinite;
+    `}
+`;
+
+const AvatarInner = styled.div`
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+`;
+
+const AvatarImg = styled.img`
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+`;
+
+const AvatarInitials = styled.div`
+    font-size: 14px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #00adef 0%, #00ff88 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+`;
+
+// Stats in button
+const QuickStats = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+
+    @media (max-width: 480px) {
+        gap: 0.5rem;
+    }
+`;
+
+const StatChip = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    color: ${props => props.$color || '#94a3b8'};
+    font-size: 0.8rem;
+    font-weight: 600;
+
+    svg {
+        color: ${props => props.$iconColor || props.$color || '#94a3b8'};
+    }
+`;
+
+const CoinChip = styled(StatChip)`
+    color: #fbbf24;
+    
+    svg {
+        color: #f59e0b;
+        animation: ${coinGlow} 2s ease-in-out infinite;
+    }
+`;
+
+const LevelChip = styled.div`
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.3) 0%, rgba(59, 130, 246, 0.3) 100%);
+    border: 1px solid rgba(139, 92, 246, 0.5);
+    color: #a78bfa;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.15rem 0.5rem;
+    border-radius: 10px;
+`;
+
+const DropdownIcon = styled(ChevronDown)`
+    color: #64748b;
+    transition: transform 0.3s ease;
+    transform: ${props => props.$open ? 'rotate(180deg)' : 'rotate(0)'};
+
+    @media (max-width: 480px) {
         display: none;
     }
 `;
 
-const StatBadge = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 0.75rem;
-    background: ${props => props.$variant === 'coins' 
-        ? 'rgba(245, 158, 11, 0.15)' 
-        : 'rgba(139, 92, 246, 0.15)'
-    };
-    border: 1px solid ${props => props.$variant === 'coins' 
-        ? 'rgba(245, 158, 11, 0.3)' 
-        : 'rgba(139, 92, 246, 0.3)'
-    };
-    border-radius: 20px;
-    color: ${props => props.$variant === 'coins' ? '#f59e0b' : '#a78bfa'};
-    font-weight: 700;
-    font-size: 0.85rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    position: relative;
+// ============ DROPDOWN PANEL ============
+const DropdownPanel = styled.div`
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    width: 340px;
+    background: rgba(15, 23, 42, 0.98);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(0, 173, 239, 0.3);
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+    animation: ${slideDown} 0.3s ease-out;
+    z-index: 1001;
     overflow: hidden;
 
-    &::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
-        background-size: 200% 200%;
-        animation: ${shimmer} 3s linear infinite;
-    }
-
-    &:hover {
-        background: ${props => props.$variant === 'coins' 
-            ? 'rgba(245, 158, 11, 0.25)' 
-            : 'rgba(139, 92, 246, 0.25)'
-        };
-        border-color: ${props => props.$variant === 'coins' 
-            ? 'rgba(245, 158, 11, 0.5)' 
-            : 'rgba(139, 92, 246, 0.5)'
-        };
-        transform: translateY(-2px);
+    @media (max-width: 400px) {
+        width: 300px;
+        right: -50px;
     }
 `;
 
-const LevelBadge = styled.div`
+const PanelHeader = styled.div`
+    padding: 1.25rem;
+    background: linear-gradient(135deg, rgba(0, 173, 239, 0.15) 0%, rgba(139, 92, 246, 0.1) 100%);
+    border-bottom: 1px solid rgba(0, 173, 239, 0.2);
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 0.75rem;
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%);
-    border: 1px solid rgba(139, 92, 246, 0.4);
-    border-radius: 20px;
-    color: #a78bfa;
-    font-weight: 700;
-    font-size: 0.85rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    position: relative;
-
-    &:hover {
-        background: linear-gradient(135deg, rgba(139, 92, 246, 0.3) 0%, rgba(59, 130, 246, 0.3) 100%);
-        border-color: rgba(139, 92, 246, 0.6);
-        transform: translateY(-2px);
-    }
+    gap: 1rem;
 `;
 
-const LevelIcon = styled.div`
-    width: 24px;
-    height: 24px;
+const HeaderAvatar = styled.div`
+    position: relative;
+    width: 56px;
+    height: 56px;
+`;
+
+const HeaderAvatarBorder = styled.div`
+    position: absolute;
+    inset: -4px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+    background: ${props => props.$gradient};
+    background-size: 200% 200%;
+    box-shadow: 0 0 10px ${props => props.$glow};
+    
+    ${props => props.$animated && css`
+        animation: ${shimmer} 3s ease-in-out infinite;
+    `}
+`;
+
+const HeaderAvatarInner = styled.div`
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
-    font-weight: 900;
-    font-size: 0.7rem;
-    animation: ${pulse} 2s ease-in-out infinite;
-`;
-
-const XPBarContainer = styled.div`
-    position: relative;
-    cursor: pointer;
-    transition: all 0.2s ease;
-
-    &:hover {
-        transform: translateY(-2px);
-    }
-`;
-
-const XPBarWrapper = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 0.75rem;
-    background: rgba(16, 185, 129, 0.15);
-    border: 1px solid rgba(16, 185, 129, 0.3);
-    border-radius: 20px;
-    min-width: 150px;
-
-    &:hover {
-        background: rgba(16, 185, 129, 0.25);
-        border-color: rgba(16, 185, 129, 0.5);
-    }
-`;
-
-const XPInfo = styled.div`
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    flex: 1;
-`;
-
-const XPLabel = styled.div`
-    color: #94a3b8;
-    font-size: 0.65rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-`;
-
-const XPBar = styled.div`
-    width: 100%;
-    height: 4px;
-    background: rgba(16, 185, 129, 0.2);
-    border-radius: 2px;
     overflow: hidden;
 `;
 
-const XPFill = styled.div`
-    height: 100%;
-    width: ${props => Math.min(Math.max(props.$progress || 0, 0), 100)}%;
-    background: linear-gradient(90deg, #10b981, #00adef);
-    border-radius: 2px;
-    transition: width 0.3s ease;
+const HeaderInfo = styled.div`
+    flex: 1;
 `;
 
-const XPValue = styled.div`
-    color: #10b981;
-    font-size: 0.75rem;
+const HeaderName = styled.div`
+    font-size: 1.1rem;
     font-weight: 700;
-    white-space: nowrap;
+    color: #f8fafc;
+    margin-bottom: 0.25rem;
 `;
 
-const Dropdown = styled.div`
-    position: absolute;
-    top: calc(100% + 0.5rem);
-    right: 0;
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.98) 100%);
-    backdrop-filter: blur(10px);
-    border: 2px solid rgba(139, 92, 246, 0.4);
-    border-radius: 16px;
-    padding: 1rem;
-    min-width: 280px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-    animation: ${slideDown} 0.3s ease-out;
-    z-index: 10000;
-`;
-
-const DropdownHeader = styled.div`
+const HeaderRank = styled.div`
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    margin-bottom: 1rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+    gap: 0.5rem;
 `;
 
-const DropdownTitle = styled.div`
-    color: #a78bfa;
+const RankBadge = styled.span`
+    background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+    color: white;
+    font-size: 0.7rem;
     font-weight: 700;
-    font-size: 0.9rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 8px;
 `;
 
-const RankText = styled.div`
+const RankTitle = styled.span`
     color: #94a3b8;
     font-size: 0.8rem;
 `;
 
-const DropdownStats = styled.div`
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    margin-bottom: 1rem;
+// XP Progress Section
+const XPSection = styled.div`
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid rgba(0, 173, 239, 0.1);
 `;
 
-const DropdownStat = styled.div`
+const XPHeader = styled.div`
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-bottom: 0.5rem;
 `;
 
-const StatLabel = styled.div`
+const XPLabel = styled.span`
     color: #94a3b8;
-    font-size: 0.85rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+    font-size: 0.8rem;
+    font-weight: 600;
 `;
 
-const StatValue = styled.div`
-    color: ${props => props.$color || '#e0e6ed'};
+const XPValue = styled.span`
+    color: #a78bfa;
+    font-size: 0.8rem;
     font-weight: 700;
-    font-size: 0.9rem;
 `;
 
-const ProgressBar = styled.div`
-    width: 100%;
+const XPBarTrack = styled.div`
     height: 8px;
-    background: rgba(139, 92, 246, 0.2);
+    background: rgba(100, 116, 139, 0.3);
     border-radius: 4px;
     overflow: hidden;
-    margin-top: 0.5rem;
 `;
 
-const ProgressFill = styled.div`
+const XPBarFill = styled.div`
     height: 100%;
-    width: ${props => Math.min(Math.max(props.$progress || 0, 0), 100)}%;
-    background: linear-gradient(90deg, #8b5cf6, #00adef);
+    width: ${props => props.$percent || 0}%;
+    background: linear-gradient(90deg, #8b5cf6 0%, #06b6d4 100%);
     border-radius: 4px;
     transition: width 0.5s ease;
+    position: relative;
+
+    &::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        animation: ${shimmer} 2s ease-in-out infinite;
+    }
 `;
 
-const DropdownActions = styled.div`
+// Stats Grid
+const StatsGrid = styled.div`
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid rgba(0, 173, 239, 0.1);
+`;
+
+const StatCard = styled.div`
+    background: rgba(30, 41, 59, 0.5);
+    border: 1px solid rgba(100, 116, 139, 0.2);
+    border-radius: 12px;
+    padding: 0.75rem;
     display: flex;
-    gap: 0.5rem;
-    margin-top: 1rem;
-    padding-top: 0.75rem;
-    border-top: 1px solid rgba(139, 92, 246, 0.2);
+    align-items: center;
+    gap: 0.75rem;
 `;
 
-const ActionButton = styled.button`
-    flex: 1;
-    padding: 0.5rem 0.75rem;
-    background: rgba(139, 92, 246, 0.2);
-    border: 1px solid rgba(139, 92, 246, 0.4);
-    border-radius: 8px;
-    color: #a78bfa;
-    font-weight: 600;
-    font-size: 0.85rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
+const StatIcon = styled.div`
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: ${props => props.$bg || 'rgba(0, 173, 239, 0.15)'};
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
+    color: ${props => props.$color || '#00adef'};
+`;
+
+const StatInfo = styled.div``;
+
+const StatValue = styled.div`
+    font-size: 1rem;
+    font-weight: 700;
+    color: #f8fafc;
+`;
+
+const StatLabel = styled.div`
+    font-size: 0.7rem;
+    color: #64748b;
+`;
+
+// Quick Links
+const QuickLinks = styled.div`
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+`;
+
+const QuickLink = styled.button`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: transparent;
+    border: none;
+    border-radius: 10px;
+    color: #f8fafc;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
 
     &:hover {
-        background: rgba(139, 92, 246, 0.3);
-        border-color: rgba(139, 92, 246, 0.6);
-        transform: translateY(-2px);
+        background: rgba(0, 173, 239, 0.1);
+        color: #00adef;
+        padding-left: 1.25rem;
     }
 `;
 
+const QuickLinkLeft = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+`;
+
+const QuickLinkIcon = styled.div`
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: ${props => props.$bg || 'rgba(0, 173, 239, 0.15)'};
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: ${props => props.$color || '#00adef'};
+`;
+
+// ============ COMPONENT ============
 const NavbarGamification = () => {
-    const { gamificationData, loading } = useGamification();
-    const [showDropdown, setShowDropdown] = useState(false);
     const navigate = useNavigate();
+    const { user } = useAuth();
+    const { gamificationData, loading, vault } = useGamification();
+    const [isOpen, setIsOpen] = useState(false);
+    const wrapperRef = useRef(null);
 
-    if (loading || !gamificationData) {
-        return null;
-    }
+    // Close on click outside
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
-    // ✅ FIXED: Add fallback values for ALL fields to prevent NaN
+    // Extract data with defaults
     const {
         level = 1,
-        rank = 'Beginner',
+        rank = 'Rookie Trader',
         xp = 0,
         nexusCoins = 0,
         loginStreak = 0,
-        progressPercent = 0,
-        xpInCurrentLevel = 0,
-        xpForNextLevel = 100
+        xpForCurrentLevel = 0,
+        xpForNextLevel = 1000,
+        stats = {},
+        achievements = []
     } = gamificationData || {};
 
-    // ✅ FIXED: Safe calculation with fallbacks
-    const safeLevel = level || 1;
-    const safeXpForNextLevel = xpForNextLevel || 100;
-    const safeXpInCurrentLevel = xpInCurrentLevel || 0;
-    
-    // Calculate XP needed for display
-    const xpNeeded = Math.max(safeXpForNextLevel - Math.pow(Math.max(safeLevel - 1, 0), 2) * 100, 100);
-    
-    // Ensure progress percent is valid (0-100)
-    const safeProgress = Math.min(Math.max(progressPercent || 0, 0), 100);
+    // Calculate XP progress
+    const xpInLevel = xp - xpForCurrentLevel;
+    const xpNeeded = xpForNextLevel - xpForCurrentLevel;
+    const xpProgress = xpNeeded > 0 ? (xpInLevel / xpNeeded) * 100 : 0;
+
+    // Get border style
+    const borderId = vault?.equippedBorder || 'border-bronze';
+    const borderStyle = BORDER_COLORS[borderId] || BORDER_COLORS['border-bronze'];
+
+    // Get initials
+    const getInitials = () => {
+        const name = user?.name || user?.displayName;
+        if (name) {
+            return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+        }
+        return user?.username?.substring(0, 2).toUpperCase() || 'U';
+    };
+
+    const handleNavigate = (path) => {
+        navigate(path);
+        setIsOpen(false);
+    };
+
+    if (loading) {
+        return (
+            <Container style={{ opacity: 0.5 }}>
+                <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(100,116,139,0.3)' }} />
+            </Container>
+        );
+    }
 
     return (
-        <Container>
-            {/* Level Badge */}
-            <LevelBadge onClick={() => navigate('/achievements')}>
-                <LevelIcon>{safeLevel}</LevelIcon>
-                <span>Level {safeLevel}</span>
-            </LevelBadge>
+        <Wrapper ref={wrapperRef}>
+            <Container onClick={() => setIsOpen(!isOpen)} $open={isOpen}>
+                {/* Avatar with Border */}
+                <AvatarWrapper>
+                    <AvatarBorder 
+                        $gradient={borderStyle.gradient} 
+                        $glow={borderStyle.glow}
+                        $animated={borderStyle.animated}
+                    />
+                    <AvatarInner>
+                        {user?.profile?.avatar ? (
+                            <AvatarImg 
+                                src={user.profile.avatar} 
+                                alt={user?.name || 'User'}
+                                onError={(e) => { e.target.style.display = 'none'; }}
+                            />
+                        ) : (
+                            <AvatarInitials>{getInitials()}</AvatarInitials>
+                        )}
+                    </AvatarInner>
+                </AvatarWrapper>
 
-            {/* XP Progress */}
-            <XPBarContainer onClick={() => setShowDropdown(!showDropdown)}>
-                <XPBarWrapper>
-                    <XPInfo>
-                        <XPLabel>XP Progress</XPLabel>
-                        <XPBar>
-                            <XPFill $progress={safeProgress} />
-                        </XPBar>
-                    </XPInfo>
-                    {/* ✅ FIXED: Show clean numbers, no NaN */}
-                    <XPValue>{Math.floor(safeXpInCurrentLevel)}/{xpNeeded}</XPValue>
-                </XPBarWrapper>
+                {/* Quick Stats */}
+                <QuickStats>
+                    <LevelChip>Lv.{level}</LevelChip>
+                    <CoinChip>
+                        <Coins size={14} />
+                        <span>{nexusCoins.toLocaleString()}</span>
+                    </CoinChip>
+                    <StatChip $color={loginStreak > 0 ? '#f97316' : '#64748b'}>
+                        <Flame size={14} />
+                        <span>{loginStreak}</span>
+                    </StatChip>
+                </QuickStats>
 
-                {showDropdown && (
-                    <Dropdown onClick={(e) => e.stopPropagation()}>
-                        <DropdownHeader>
-                            <div>
-                                <DropdownTitle>Level {safeLevel}</DropdownTitle>
-                                <RankText>{rank || 'Beginner'}</RankText>
-                            </div>
-                            <Star size={24} color="#f59e0b" />
-                        </DropdownHeader>
+                <DropdownIcon size={16} $open={isOpen} />
+            </Container>
 
-                        <DropdownStats>
-                            <DropdownStat>
-                                <StatLabel>
-                                    <TrendingUp size={16} />
-                                    Total XP
-                                </StatLabel>
-                                <StatValue $color="#a78bfa">
-                                    {(xp || 0).toLocaleString()}
-                                </StatValue>
-                            </DropdownStat>
+            {/* Dropdown Panel */}
+            {isOpen && (
+                <DropdownPanel>
+                    {/* Header */}
+                    <PanelHeader>
+                        <HeaderAvatar>
+                            <HeaderAvatarBorder 
+                                $gradient={borderStyle.gradient} 
+                                $glow={borderStyle.glow}
+                                $animated={borderStyle.animated}
+                            />
+                            <HeaderAvatarInner>
+                                {user?.profile?.avatar ? (
+                                    <AvatarImg 
+                                        src={user.profile.avatar} 
+                                        alt={user?.name || 'User'}
+                                    />
+                                ) : (
+                                    <AvatarInitials style={{ fontSize: '20px' }}>{getInitials()}</AvatarInitials>
+                                )}
+                            </HeaderAvatarInner>
+                        </HeaderAvatar>
+                        <HeaderInfo>
+                            <HeaderName>{user?.name || 'Trader'}</HeaderName>
+                            <HeaderRank>
+                                <RankBadge>Level {level}</RankBadge>
+                                <RankTitle>{rank}</RankTitle>
+                            </HeaderRank>
+                        </HeaderInfo>
+                    </PanelHeader>
 
-                            <DropdownStat>
-                                <StatLabel>
-                                    <Zap size={16} />
-                                    Nexus Coins
-                                </StatLabel>
-                                <StatValue $color="#f59e0b">
-                                    {(nexusCoins || 0).toLocaleString()}
-                                </StatValue>
-                            </DropdownStat>
+                    {/* XP Progress */}
+                    <XPSection>
+                        <XPHeader>
+                            <XPLabel>Experience Progress</XPLabel>
+                            <XPValue>{Math.floor(xpInLevel).toLocaleString()} / {xpNeeded.toLocaleString()} XP</XPValue>
+                        </XPHeader>
+                        <XPBarTrack>
+                            <XPBarFill $percent={Math.min(100, xpProgress)} />
+                        </XPBarTrack>
+                    </XPSection>
 
-                            <DropdownStat>
-                                <StatLabel>
-                                    🔥 Login Streak
-                                </StatLabel>
-                                <StatValue $color="#10b981">
-                                    {loginStreak || 0} days
-                                </StatValue>
-                            </DropdownStat>
-                        </DropdownStats>
+                    {/* Stats Grid */}
+                    <StatsGrid>
+                        <StatCard>
+                            <StatIcon $bg="rgba(245, 158, 11, 0.15)" $color="#f59e0b">
+                                <Coins size={18} />
+                            </StatIcon>
+                            <StatInfo>
+                                <StatValue>{nexusCoins.toLocaleString()}</StatValue>
+                                <StatLabel>Nexus Coins</StatLabel>
+                            </StatInfo>
+                        </StatCard>
 
-                        <div>
-                            <StatLabel style={{ marginBottom: '0.5rem' }}>
-                                Progress to Level {safeLevel + 1}
-                            </StatLabel>
-                            <ProgressBar>
-                                <ProgressFill $progress={safeProgress} />
-                            </ProgressBar>
-                        </div>
+                        <StatCard>
+                            <StatIcon $bg="rgba(249, 115, 22, 0.15)" $color="#f97316">
+                                <Flame size={18} />
+                            </StatIcon>
+                            <StatInfo>
+                                <StatValue>{loginStreak} days</StatValue>
+                                <StatLabel>Login Streak</StatLabel>
+                            </StatInfo>
+                        </StatCard>
 
-                        <DropdownActions>
-                            <ActionButton onClick={() => {
-                                navigate('/achievements');
-                                setShowDropdown(false);
-                            }}>
-                                <Trophy size={16} />
-                                Achievements
-                            </ActionButton>
-                            <ActionButton onClick={() => {
-                                navigate('/leaderboard');
-                                setShowDropdown(false);
-                            }}>
-                                <Trophy size={16} />
-                                Leaderboard
-                            </ActionButton>
-                        </DropdownActions>
-                    </Dropdown>
-                )}
-            </XPBarContainer>
+                        <StatCard>
+                            <StatIcon $bg="rgba(139, 92, 246, 0.15)" $color="#8b5cf6">
+                                <Trophy size={18} />
+                            </StatIcon>
+                            <StatInfo>
+                                <StatValue>{achievements?.length || 0}</StatValue>
+                                <StatLabel>Achievements</StatLabel>
+                            </StatInfo>
+                        </StatCard>
 
-            {/* Coins Badge */}
-            <StatBadge $variant="coins" onClick={() => navigate('/vault')}>
-                <Zap size={16} />
-                {(nexusCoins || 0).toLocaleString()}
-            </StatBadge>
-        </Container>
+                        <StatCard>
+                            <StatIcon $bg="rgba(16, 185, 129, 0.15)" $color="#10b981">
+                                <TrendingUp size={18} />
+                            </StatIcon>
+                            <StatInfo>
+                                <StatValue>{stats?.totalTrades || 0}</StatValue>
+                                <StatLabel>Total Trades</StatLabel>
+                            </StatInfo>
+                        </StatCard>
+                    </StatsGrid>
+
+                    {/* Quick Links */}
+                    <QuickLinks>
+                        <QuickLink onClick={() => handleNavigate('/dashboard')}>
+                            <QuickLinkLeft>
+                                <QuickLinkIcon $bg="rgba(0, 173, 239, 0.15)" $color="#00adef">
+                                    <BarChart2 size={16} />
+                                </QuickLinkIcon>
+                                <span>Dashboard</span>
+                            </QuickLinkLeft>
+                            <ArrowRight size={16} />
+                        </QuickLink>
+
+                        <QuickLink onClick={() => handleNavigate('/vault')}>
+                            <QuickLinkLeft>
+                                <QuickLinkIcon $bg="rgba(245, 158, 11, 0.15)" $color="#f59e0b">
+                                    <DollarSign size={16} />
+                                </QuickLinkIcon>
+                                <span>The Vault</span>
+                            </QuickLinkLeft>
+                            <ArrowRight size={16} />
+                        </QuickLink>
+
+                        <QuickLink onClick={() => handleNavigate('/achievements/browse')}>
+                            <QuickLinkLeft>
+                                <QuickLinkIcon $bg="rgba(139, 92, 246, 0.15)" $color="#8b5cf6">
+                                    <Award size={16} />
+                                </QuickLinkIcon>
+                                <span>Achievements</span>
+                            </QuickLinkLeft>
+                            <ArrowRight size={16} />
+                        </QuickLink>
+
+                        <QuickLink onClick={() => handleNavigate('/leaderboard')}>
+                            <QuickLinkLeft>
+                                <QuickLinkIcon $bg="rgba(16, 185, 129, 0.15)" $color="#10b981">
+                                    <Trophy size={16} />
+                                </QuickLinkIcon>
+                                <span>Leaderboard</span>
+                            </QuickLinkLeft>
+                            <ArrowRight size={16} />
+                        </QuickLink>
+                    </QuickLinks>
+                </DropdownPanel>
+            )}
+        </Wrapper>
     );
 };
 

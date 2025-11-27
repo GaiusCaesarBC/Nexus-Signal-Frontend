@@ -6,7 +6,8 @@ import {
     Check, Lock, ChevronRight, Sparkles, Crown
 } from 'lucide-react';
 import { useGamification } from '../context/GamificationContext';
-import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 // Animations
 const fadeIn = keyframes`
@@ -165,6 +166,7 @@ const StatValue = styled.div`
     display: flex;
     align-items: center;
     gap: 0.75rem;
+    flex-wrap: wrap;
 `;
 
 const BadgeDisplay = styled.div`
@@ -336,8 +338,11 @@ const EmptyState = styled.div`
 // Component
 const EquippedItemsPage = () => {
     const { gamification, refreshGamification } = useGamification();
-    const [items, setItems] = useState([]);
-    const [equippedItems, setEquippedItems] = useState({});
+    const { api } = useAuth();
+    const toast = useToast();
+    
+    const [allItems, setAllItems] = useState([]);
+    const [vault, setVault] = useState({});
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(null);
 
@@ -347,16 +352,25 @@ const EquippedItemsPage = () => {
 
     const fetchItems = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:5000/api/vault/items', {
-                headers: { 'x-auth-token': token }
-            });
+            const response = await api.get('/vault/items');
             
-            setItems(response.data.items || []);
-            setEquippedItems(response.data.equippedItems || {});
+            if (response.data.success) {
+                // Flatten items from categories and add type field
+                const items = response.data.items || {};
+                const flatItems = [
+                    ...(items.avatarBorders || []).map(i => ({ ...i, type: 'avatar-border' })),
+                    ...(items.perks || []).map(i => ({ ...i, type: 'perk' })),
+                    ...(items.profileThemes || []).map(i => ({ ...i, type: 'profile-theme' })),
+                    ...(items.badges || []).map(i => ({ ...i, type: 'badge' }))
+                ];
+                
+                setAllItems(flatItems);
+                setVault(response.data.vault || {});
+            }
             setLoading(false);
         } catch (error) {
             console.error('Error fetching items:', error);
+            toast.error('Failed to load items', 'Error');
             setLoading(false);
         }
     };
@@ -364,18 +378,16 @@ const EquippedItemsPage = () => {
     const handleEquip = async (itemId) => {
         try {
             setActionLoading(itemId);
-            const token = localStorage.getItem('token');
-            await axios.post(
-                `http://localhost:5000/api/vault/equip/${itemId}`,
-                {},
-                { headers: { 'x-auth-token': token } }
-            );
+            const response = await api.post(`/vault/equip/${itemId}`);
             
-            await fetchItems();
-            await refreshGamification();
+            if (response.data.success) {
+                toast.success(response.data.message, '✅ Equipped!');
+                await fetchItems();
+                if (refreshGamification) await refreshGamification();
+            }
         } catch (error) {
             console.error('Error equipping item:', error);
-            alert(error.response?.data?.message || 'Failed to equip item');
+            toast.error(error.response?.data?.error || 'Failed to equip item', 'Error');
         } finally {
             setActionLoading(null);
         }
@@ -384,36 +396,41 @@ const EquippedItemsPage = () => {
     const handleUnequip = async (itemId) => {
         try {
             setActionLoading(itemId);
-            const token = localStorage.getItem('token');
-            await axios.post(
-                `http://localhost:5000/api/vault/unequip/${itemId}`,
-                {},
-                { headers: { 'x-auth-token': token } }
-            );
+            const response = await api.post(`/vault/unequip/${itemId}`);
             
-            await fetchItems();
-            await refreshGamification();
+            if (response.data.success) {
+                toast.success(response.data.message, '✅ Unequipped!');
+                await fetchItems();
+                if (refreshGamification) await refreshGamification();
+            }
         } catch (error) {
             console.error('Error unequipping item:', error);
-            alert(error.response?.data?.message || 'Failed to unequip item');
+            toast.error(error.response?.data?.error || 'Failed to unequip item', 'Error');
         } finally {
             setActionLoading(null);
         }
     };
 
+    // Check if item is equipped based on vault data
+    const isItemEquipped = (item) => {
+        if (item.type === 'avatar-border') return vault.equippedBorder === item.id;
+        if (item.type === 'profile-theme') return vault.equippedTheme === item.id;
+        if (item.type === 'badge') return vault.equippedBadges?.includes(item.id);
+        if (item.type === 'perk') return vault.activePerks?.includes(item.id);
+        return false;
+    };
+
     // Filter owned items by type
-    const ownedBorders = items.filter(item => item.type === 'avatar-border' && item.owned);
-    const ownedPerks = items.filter(item => item.type === 'perk' && item.owned);
-    const ownedThemes = items.filter(item => item.type === 'profile-theme' && item.owned);
-    const ownedBadges = items.filter(item => item.type === 'badge' && item.owned);
+    const ownedBorders = allItems.filter(item => item.type === 'avatar-border' && item.owned);
+    const ownedPerks = allItems.filter(item => item.type === 'perk' && item.owned);
+    const ownedThemes = allItems.filter(item => item.type === 'profile-theme' && item.owned);
+    const ownedBadges = allItems.filter(item => item.type === 'badge' && item.owned);
 
     // Get equipped items
-    const equippedBorder = items.find(item => item.id === equippedItems.avatarBorder);
-    const equippedPerk = items.find(item => item.id === equippedItems.activePerk);
-    const equippedTheme = items.find(item => item.id === equippedItems.profileTheme);
-    const equippedBadgesList = items.filter(item => 
-        equippedItems.badges && equippedItems.badges.includes(item.id)
-    );
+    const equippedBorder = allItems.find(item => item.id === vault.equippedBorder);
+    const equippedTheme = allItems.find(item => item.id === vault.equippedTheme);
+    const equippedBadgesList = allItems.filter(item => vault.equippedBadges?.includes(item.id));
+    const equippedPerksList = allItems.filter(item => vault.activePerks?.includes(item.id));
 
     if (loading) {
         return (
@@ -465,16 +482,17 @@ const EquippedItemsPage = () => {
                             <StatCard>
                                 <StatLabel>
                                     <Zap size={16} />
-                                    Active Perk
+                                    Active Perks ({equippedPerksList.length}/3)
                                 </StatLabel>
                                 <StatValue>
-                                    {equippedPerk ? (
-                                        <>
-                                            <span>{equippedPerk.icon}</span>
-                                            {equippedPerk.name}
-                                        </>
+                                    {equippedPerksList.length > 0 ? (
+                                        equippedPerksList.map(perk => (
+                                            <span key={perk.id} style={{ marginRight: '0.5rem' }}>
+                                                {perk.icon} {perk.name}
+                                            </span>
+                                        ))
                                     ) : (
-                                        <span style={{ color: '#64748b' }}>No perk equipped</span>
+                                        <span style={{ color: '#64748b' }}>No perks activated</span>
                                     )}
                                 </StatValue>
                             </StatCard>
@@ -492,7 +510,7 @@ const EquippedItemsPage = () => {
                             <StatCard>
                                 <StatLabel>
                                     <Award size={16} />
-                                    Equipped Badges ({equippedBadgesList.length}/3)
+                                    Equipped Badges ({equippedBadgesList.length}/5)
                                 </StatLabel>
                                 <BadgeDisplay>
                                     {equippedBadgesList.length > 0 ? (
@@ -526,39 +544,42 @@ const EquippedItemsPage = () => {
                         </EmptyState>
                     ) : (
                         <ItemsGrid>
-                            {ownedBorders.map(item => (
-                                <ItemCard key={item.id} $equipped={item.equipped}>
-                                    <ItemHeader>
-                                        <ItemIconWrapper $color={item.glowColor}>
-                                            🖼️
-                                        </ItemIconWrapper>
-                                        <RarityBadge $rarity={item.rarity}>
-                                            {item.rarity}
-                                        </RarityBadge>
-                                    </ItemHeader>
-                                    <ItemName>{item.name}</ItemName>
-                                    <ItemDescription>{item.description}</ItemDescription>
-                                    <EquipButton
-                                        $equipped={item.equipped}
-                                        onClick={() => item.equipped ? handleUnequip(item.id) : handleEquip(item.id)}
-                                        disabled={actionLoading === item.id}
-                                    >
-                                        {actionLoading === item.id ? (
-                                            'Loading...'
-                                        ) : item.equipped ? (
-                                            <>
-                                                <Check size={18} />
-                                                Unequip
-                                            </>
-                                        ) : (
-                                            <>
-                                                <ChevronRight size={18} />
-                                                Equip
-                                            </>
-                                        )}
-                                    </EquipButton>
-                                </ItemCard>
-                            ))}
+                            {ownedBorders.map(item => {
+                                const equipped = isItemEquipped(item);
+                                return (
+                                    <ItemCard key={item.id} $equipped={equipped}>
+                                        <ItemHeader>
+                                            <ItemIconWrapper $color={item.glowColor}>
+                                                🖼️
+                                            </ItemIconWrapper>
+                                            <RarityBadge $rarity={item.rarity}>
+                                                {item.rarity}
+                                            </RarityBadge>
+                                        </ItemHeader>
+                                        <ItemName>{item.name}</ItemName>
+                                        <ItemDescription>{item.description}</ItemDescription>
+                                        <EquipButton
+                                            $equipped={equipped}
+                                            onClick={() => equipped ? handleUnequip(item.id) : handleEquip(item.id)}
+                                            disabled={actionLoading === item.id}
+                                        >
+                                            {actionLoading === item.id ? (
+                                                'Loading...'
+                                            ) : equipped ? (
+                                                <>
+                                                    <Check size={18} />
+                                                    Equipped
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <ChevronRight size={18} />
+                                                    Equip
+                                                </>
+                                            )}
+                                        </EquipButton>
+                                    </ItemCard>
+                                );
+                            })}
                         </ItemsGrid>
                     )}
                 </Section>
@@ -579,39 +600,47 @@ const EquippedItemsPage = () => {
                         </EmptyState>
                     ) : (
                         <ItemsGrid>
-                            {ownedPerks.map(item => (
-                                <ItemCard key={item.id} $equipped={item.equipped}>
-                                    <ItemHeader>
-                                        <ItemIconWrapper $color="rgba(139, 92, 246, 0.3)">
-                                            {item.icon}
-                                        </ItemIconWrapper>
-                                        <RarityBadge $rarity={item.rarity}>
-                                            {item.rarity}
-                                        </RarityBadge>
-                                    </ItemHeader>
-                                    <ItemName>{item.name}</ItemName>
-                                    <ItemDescription>{item.description}</ItemDescription>
-                                    <EquipButton
-                                        $equipped={item.equipped}
-                                        onClick={() => item.equipped ? handleUnequip(item.id) : handleEquip(item.id)}
-                                        disabled={actionLoading === item.id}
-                                    >
-                                        {actionLoading === item.id ? (
-                                            'Loading...'
-                                        ) : item.equipped ? (
-                                            <>
-                                                <Check size={18} />
-                                                Deactivate
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Zap size={18} />
-                                                Activate
-                                            </>
-                                        )}
-                                    </EquipButton>
-                                </ItemCard>
-                            ))}
+                            {ownedPerks.map(item => {
+                                const equipped = isItemEquipped(item);
+                                return (
+                                    <ItemCard key={item.id} $equipped={equipped}>
+                                        <ItemHeader>
+                                            <ItemIconWrapper $color="rgba(139, 92, 246, 0.3)">
+                                                {item.icon}
+                                            </ItemIconWrapper>
+                                            <RarityBadge $rarity={item.rarity}>
+                                                {item.rarity}
+                                            </RarityBadge>
+                                        </ItemHeader>
+                                        <ItemName>{item.name}</ItemName>
+                                        <ItemDescription>{item.description}</ItemDescription>
+                                        <EquipButton
+                                            $equipped={equipped}
+                                            onClick={() => equipped ? handleUnequip(item.id) : handleEquip(item.id)}
+                                            disabled={actionLoading === item.id || (!equipped && equippedPerksList.length >= 3)}
+                                        >
+                                            {actionLoading === item.id ? (
+                                                'Loading...'
+                                            ) : equipped ? (
+                                                <>
+                                                    <Check size={18} />
+                                                    Deactivate
+                                                </>
+                                            ) : equippedPerksList.length >= 3 ? (
+                                                <>
+                                                    <Lock size={18} />
+                                                    Max 3 Perks
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Zap size={18} />
+                                                    Activate
+                                                </>
+                                            )}
+                                        </EquipButton>
+                                    </ItemCard>
+                                );
+                            })}
                         </ItemsGrid>
                     )}
                 </Section>
@@ -632,41 +661,44 @@ const EquippedItemsPage = () => {
                         </EmptyState>
                     ) : (
                         <ItemsGrid>
-                            {ownedThemes.map(item => (
-                                <ItemCard key={item.id} $equipped={item.equipped}>
-                                    <ItemHeader>
-                                        <ItemIconWrapper 
-                                            $color={item.colors?.background || 'rgba(0, 173, 237, 0.2)'}
+                            {ownedThemes.map(item => {
+                                const equipped = isItemEquipped(item);
+                                return (
+                                    <ItemCard key={item.id} $equipped={equipped}>
+                                        <ItemHeader>
+                                            <ItemIconWrapper 
+                                                $color={item.colors?.background || 'rgba(0, 173, 237, 0.2)'}
+                                            >
+                                                🎨
+                                            </ItemIconWrapper>
+                                            <RarityBadge $rarity={item.rarity}>
+                                                {item.rarity}
+                                            </RarityBadge>
+                                        </ItemHeader>
+                                        <ItemName>{item.name}</ItemName>
+                                        <ItemDescription>{item.description}</ItemDescription>
+                                        <EquipButton
+                                            $equipped={equipped}
+                                            onClick={() => equipped ? null : handleEquip(item.id)}
+                                            disabled={actionLoading === item.id || equipped}
                                         >
-                                            🎨
-                                        </ItemIconWrapper>
-                                        <RarityBadge $rarity={item.rarity}>
-                                            {item.rarity}
-                                        </RarityBadge>
-                                    </ItemHeader>
-                                    <ItemName>{item.name}</ItemName>
-                                    <ItemDescription>{item.description}</ItemDescription>
-                                    <EquipButton
-                                        $equipped={item.equipped}
-                                        onClick={() => item.equipped ? handleUnequip(item.id) : handleEquip(item.id)}
-                                        disabled={actionLoading === item.id}
-                                    >
-                                        {actionLoading === item.id ? (
-                                            'Loading...'
-                                        ) : item.equipped ? (
-                                            <>
-                                                <Check size={18} />
-                                                Active
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Palette size={18} />
-                                                Apply Theme
-                                            </>
-                                        )}
-                                    </EquipButton>
-                                </ItemCard>
-                            ))}
+                                            {actionLoading === item.id ? (
+                                                'Loading...'
+                                            ) : equipped ? (
+                                                <>
+                                                    <Check size={18} />
+                                                    Active
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Palette size={18} />
+                                                    Apply Theme
+                                                </>
+                                            )}
+                                        </EquipButton>
+                                    </ItemCard>
+                                );
+                            })}
                         </ItemsGrid>
                     )}
                 </Section>
@@ -687,44 +719,47 @@ const EquippedItemsPage = () => {
                         </EmptyState>
                     ) : (
                         <ItemsGrid>
-                            {ownedBadges.map(item => (
-                                <ItemCard key={item.id} $equipped={item.equipped}>
-                                    <ItemHeader>
-                                        <ItemIconWrapper $color={item.color}>
-                                            {item.icon}
-                                        </ItemIconWrapper>
-                                        <RarityBadge $rarity={item.rarity}>
-                                            {item.rarity}
-                                        </RarityBadge>
-                                    </ItemHeader>
-                                    <ItemName>{item.name}</ItemName>
-                                    <ItemDescription>{item.description}</ItemDescription>
-                                    <EquipButton
-                                        $equipped={item.equipped}
-                                        onClick={() => item.equipped ? handleUnequip(item.id) : handleEquip(item.id)}
-                                        disabled={actionLoading === item.id || (!item.equipped && equippedBadgesList.length >= 3)}
-                                    >
-                                        {actionLoading === item.id ? (
-                                            'Loading...'
-                                        ) : item.equipped ? (
-                                            <>
-                                                <Check size={18} />
-                                                Remove
-                                            </>
-                                        ) : equippedBadgesList.length >= 3 ? (
-                                            <>
-                                                <Lock size={18} />
-                                                Max 3 Badges
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Award size={18} />
-                                                Display Badge
-                                            </>
-                                        )}
-                                    </EquipButton>
-                                </ItemCard>
-                            ))}
+                            {ownedBadges.map(item => {
+                                const equipped = isItemEquipped(item);
+                                return (
+                                    <ItemCard key={item.id} $equipped={equipped}>
+                                        <ItemHeader>
+                                            <ItemIconWrapper $color={item.color}>
+                                                {item.icon}
+                                            </ItemIconWrapper>
+                                            <RarityBadge $rarity={item.rarity}>
+                                                {item.rarity}
+                                            </RarityBadge>
+                                        </ItemHeader>
+                                        <ItemName>{item.name}</ItemName>
+                                        <ItemDescription>{item.description}</ItemDescription>
+                                        <EquipButton
+                                            $equipped={equipped}
+                                            onClick={() => equipped ? handleUnequip(item.id) : handleEquip(item.id)}
+                                            disabled={actionLoading === item.id || (!equipped && equippedBadgesList.length >= 5)}
+                                        >
+                                            {actionLoading === item.id ? (
+                                                'Loading...'
+                                            ) : equipped ? (
+                                                <>
+                                                    <Check size={18} />
+                                                    Remove
+                                                </>
+                                            ) : equippedBadgesList.length >= 5 ? (
+                                                <>
+                                                    <Lock size={18} />
+                                                    Max 5 Badges
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Award size={18} />
+                                                    Display Badge
+                                                </>
+                                            )}
+                                        </EquipButton>
+                                    </ItemCard>
+                                );
+                            })}
                         </ItemsGrid>
                     )}
                 </Section>

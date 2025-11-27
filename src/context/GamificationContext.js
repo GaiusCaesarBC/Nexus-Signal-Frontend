@@ -1,170 +1,289 @@
-// client/src/context/GamificationContext.js - FIXED INFINITE LOOP
+// client/src/context/GamificationContext.js
+// UPDATED - Includes vault data (equippedBorder, equippedTheme, equippedBadges)
+
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
-import { useToast } from './ToastContext';
 
 const GamificationContext = createContext();
 
 export const useGamification = () => {
     const context = useContext(GamificationContext);
     if (!context) {
-        throw new Error('useGamification must be used within GamificationProvider');
+        throw new Error('useGamification must be used within a GamificationProvider');
     }
     return context;
 };
 
 export const GamificationProvider = ({ children }) => {
-    const { api, isAuthenticated } = useAuth();
-    const toast = useToast();
-    
+    const { api, isAuthenticated, user } = useAuth();
     const [gamificationData, setGamificationData] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [showLevelUp, setShowLevelUp] = useState(false);
-    const [levelUpData, setLevelUpData] = useState(null);
-    const [newAchievements, setNewAchievements] = useState([]);
-    const [showAchievement, setShowAchievement] = useState(false);
-    const [currentAchievement, setCurrentAchievement] = useState(null);
+    const [error, setError] = useState(null);
 
-    // ✅ FIXED: Removed gamificationData from dependencies to prevent infinite loop
     const fetchGamificationData = useCallback(async () => {
         if (!isAuthenticated) {
+            setGamificationData(null);
             setLoading(false);
             return;
         }
-        
+
         try {
-            console.log('🎮 GamificationContext: Fetching data...');
+            setLoading(true);
             const response = await api.get('/gamification/stats');
             
-            if (response.data.success) {
-                const newData = response.data.data;
-                console.log('🎮 GamificationContext: Data received:', newData);
-                console.log('🎮 GamificationContext: Equipped items:', newData.equippedItems);
+            if (response.data) {
+                // Handle both response structures:
+                // response.data.data.* (nested) or response.data.* (flat)
+                const rawData = response.data.data || response.data;
                 
-                // Check for level up (only if we have previous data)
-                setGamificationData(prevData => {
-                    if (prevData) {
-                        const oldLevel = prevData.level || 1;
-                        const newLevel = newData.level;
-                        
-                        if (newLevel > oldLevel) {
-                            setLevelUpData({
-                                oldLevel,
-                                newLevel,
-                                rank: newData.rank,
-                                coinReward: (newLevel - oldLevel) * 100
-                            });
-                            setShowLevelUp(true);
-                            setTimeout(() => setShowLevelUp(false), 5000);
-                        }
+                // Get vault data - check multiple locations
+                const vaultData = response.data.vault || 
+                                 rawData.vault || 
+                                 rawData.equippedItems || 
+                                 {};
+                
+                const data = {
+                    // Core gamification fields
+                    level: rawData.level || 1,
+                    xp: rawData.xp || 0,
+                    rank: rawData.rank || 'Rookie Trader',
+                    nexusCoins: rawData.nexusCoins || response.data.nexusCoins || 0,
+                    loginStreak: rawData.loginStreak || 0,
+                    maxLoginStreak: rawData.maxLoginStreak || 0,
+                    totalEarned: rawData.totalEarned || 0,
+                    profitStreak: rawData.profitStreak || 0,
+                    maxProfitStreak: rawData.maxProfitStreak || 0,
+                    
+                    // XP progress
+                    xpForCurrentLevel: rawData.xpForCurrentLevel || 0,
+                    xpForNextLevel: rawData.xpForNextLevel || 1000,
+                    progressPercent: rawData.xpForNextLevel ? 
+                        Math.min(100, ((rawData.xp - rawData.xpForCurrentLevel) / (rawData.xpForNextLevel - rawData.xpForCurrentLevel)) * 100) : 0,
+                    
+                    // Stats
+                    stats: rawData.stats || {},
+                    
+                    // Achievements
+                    achievements: rawData.achievements || [],
+                    
+                    // Daily challenge
+                    dailyChallenge: rawData.dailyChallenge || null,
+                    
+                    // VAULT DATA - For borders, themes, badges across the app
+                    vault: {
+                        equippedBorder: vaultData.equippedBorder || 
+                                       vaultData.avatarBorder || 
+                                       'border-bronze',
+                        equippedTheme: vaultData.equippedTheme || 
+                                      vaultData.profileTheme || 
+                                      'theme-default',
+                        equippedBadges: vaultData.equippedBadges || 
+                                       vaultData.badges || 
+                                       [],
+                        activePerks: vaultData.activePerks || 
+                                    (vaultData.activePerk ? [vaultData.activePerk] : []),
+                        ownedItems: vaultData.ownedItems || 
+                                   ['border-bronze', 'theme-default']
+                    },
+                    
+                    // Legacy support
+                    equippedItems: rawData.equippedItems || {
+                        avatarBorder: vaultData.equippedBorder || 'border-bronze',
+                        profileTheme: vaultData.equippedTheme || 'theme-default',
+                        activePerk: vaultData.activePerks?.[0] || null,
+                        badges: vaultData.equippedBadges || []
                     }
-                    return newData;
+                };
+                
+                setGamificationData(data);
+                console.log('[GamificationContext] Data loaded:', {
+                    level: data.level,
+                    coins: data.nexusCoins,
+                    border: data.vault.equippedBorder,
+                    theme: data.vault.equippedTheme,
+                    badges: data.vault.equippedBadges?.length || 0
                 });
             }
-        } catch (error) {
-            console.error('❌ GamificationContext: Error fetching data:', error);
+            setError(null);
+        } catch (err) {
+            console.error('[GamificationContext] Error fetching data:', err);
+            setError(err.message);
+            
+            // Set defaults on error
+            setGamificationData({
+                level: 1,
+                xp: 0,
+                rank: 'Rookie Trader',
+                nexusCoins: 0,
+                loginStreak: 0,
+                stats: {},
+                vault: {
+                    equippedBorder: 'border-bronze',
+                    equippedTheme: 'theme-default',
+                    equippedBadges: [],
+                    activePerks: []
+                }
+            });
         } finally {
             setLoading(false);
         }
-    }, [api, isAuthenticated]); // ✅ FIXED: Only depend on api and isAuthenticated
+    }, [api, isAuthenticated]);
 
-    // Check in (daily streak)
-    const checkIn = async () => {
-        try {
-            const response = await api.post('/gamification/login-streak');
-            
-            if (response.data.success) {
-                await fetchGamificationData();
-                
-                if (response.data.broken) {
-                    toast.warning('Your streak was broken!', 'Streak Reset');
-                } else if (response.data.isNew) {
-                    toast.success(`${response.data.streak} day streak! 🔥`, 'Daily Check-in');
-                }
-                
-                return response.data;
-            }
-        } catch (error) {
-            console.error('Error checking in:', error);
-            toast.error('Failed to check in', 'Error');
-        }
-    };
-
-    // Award XP manually
-    const awardXP = async (amount, reason) => {
-        try {
-            const response = await api.post('/gamification/award-xp', {
-                amount,
-                reason
-            });
-            
-            if (response.data.success) {
-                await fetchGamificationData();
-                
-                if (response.data.leveledUp) {
-                    toast.success(`Level Up! You're now level ${response.data.newLevel}!`, 'Congratulations! 🎉');
-                } else {
-                    toast.success(`+${amount} XP`, reason);
-                }
-                
-                return response.data;
-            }
-        } catch (error) {
-            console.error('Error awarding XP:', error);
-        }
-    };
-
-    // Show achievement popup
-    const showAchievementPopup = (achievement) => {
-        setCurrentAchievement(achievement);
-        setShowAchievement(true);
-        setTimeout(() => {
-            setShowAchievement(false);
-            setCurrentAchievement(null);
-        }, 5000);
-    };
-
-    // ✅ FIXED: Fetch data on mount only
+    // Fetch on mount and when auth changes
     useEffect(() => {
-        if (isAuthenticated) {
-            console.log('🎮 GamificationContext: User authenticated, fetching data...');
-            fetchGamificationData();
-        } else {
-            console.log('🎮 GamificationContext: User not authenticated');
-            setLoading(false);
-        }
-    }, [isAuthenticated, fetchGamificationData]);
+        fetchGamificationData();
+    }, [fetchGamificationData]);
 
-    // ✅ FIXED: Auto-refresh without dependencies on fetchGamificationData
-    useEffect(() => {
-        if (!isAuthenticated) return;
-        
-        console.log('🎮 GamificationContext: Setting up auto-refresh (every 60 seconds)');
-        const interval = setInterval(() => {
-            console.log('🎮 GamificationContext: Auto-refreshing...');
-            fetchGamificationData();
-        }, 60000); // ✅ Changed to 60 seconds instead of 30
-        
-        return () => {
-            console.log('🎮 GamificationContext: Cleaning up auto-refresh');
-            clearInterval(interval);
-        };
-    }, [isAuthenticated, fetchGamificationData]);
+    // Refresh function - call after purchases, equipping items, etc.
+    const refreshGamification = useCallback(async () => {
+        console.log('[GamificationContext] Refreshing...');
+        await fetchGamificationData();
+    }, [fetchGamificationData]);
+
+    // Add XP locally (optimistic update)
+    const addXP = useCallback((amount) => {
+        setGamificationData(prev => {
+            if (!prev) return prev;
+            
+            const newXP = prev.xp + amount;
+            const xpForNext = prev.xpForNextLevel || 1000;
+            
+            // Check for level up
+            if (newXP >= xpForNext) {
+                // Level up! Refresh to get accurate data
+                refreshGamification();
+            }
+            
+            return {
+                ...prev,
+                xp: newXP,
+                progressPercent: Math.min(100, ((newXP - prev.xpForCurrentLevel) / (xpForNext - prev.xpForCurrentLevel)) * 100)
+            };
+        });
+    }, [refreshGamification]);
+
+    // Update coins locally (optimistic update)
+    const updateCoins = useCallback((newAmount) => {
+        setGamificationData(prev => {
+            if (!prev) return prev;
+            return {
+                ...prev,
+                nexusCoins: newAmount
+            };
+        });
+    }, []);
+
+    // Update equipped border locally (optimistic update)
+    const updateEquippedBorder = useCallback((borderId) => {
+        setGamificationData(prev => {
+            if (!prev) return prev;
+            return {
+                ...prev,
+                vault: {
+                    ...prev.vault,
+                    equippedBorder: borderId
+                },
+                equippedItems: {
+                    ...prev.equippedItems,
+                    avatarBorder: borderId
+                }
+            };
+        });
+    }, []);
+
+    // Update equipped theme locally
+    const updateEquippedTheme = useCallback((themeId) => {
+        setGamificationData(prev => {
+            if (!prev) return prev;
+            return {
+                ...prev,
+                vault: {
+                    ...prev.vault,
+                    equippedTheme: themeId
+                },
+                equippedItems: {
+                    ...prev.equippedItems,
+                    profileTheme: themeId
+                }
+            };
+        });
+    }, []);
+
+    // Update equipped badges locally
+    const updateEquippedBadges = useCallback((badges) => {
+        setGamificationData(prev => {
+            if (!prev) return prev;
+            return {
+                ...prev,
+                vault: {
+                    ...prev.vault,
+                    equippedBadges: badges
+                },
+                equippedItems: {
+                    ...prev.equippedItems,
+                    badges: badges
+                }
+            };
+        });
+    }, []);
+
+    // Update active perks locally
+    const updateActivePerks = useCallback((perks) => {
+        setGamificationData(prev => {
+            if (!prev) return prev;
+            return {
+                ...prev,
+                vault: {
+                    ...prev.vault,
+                    activePerks: perks
+                },
+                equippedItems: {
+                    ...prev.equippedItems,
+                    activePerk: perks[0] || null
+                }
+            };
+        });
+    }, []);
 
     const value = {
-        gamification: gamificationData,
+        // Full data object
         gamificationData,
         loading,
-        refreshGamification: fetchGamificationData,
-        fetchGamificationData,
-        checkIn,
-        awardXP,
-        showLevelUp,
-        setShowLevelUp,
-        levelUpData,
-        showAchievement,
-        setShowAchievement,
-        currentAchievement
+        error,
+        
+        // Convenience accessors (commonly used)
+        level: gamificationData?.level || 1,
+        xp: gamificationData?.xp || 0,
+        nexusCoins: gamificationData?.nexusCoins || 0,
+        loginStreak: gamificationData?.loginStreak || 0,
+        rank: gamificationData?.rank || 'Rookie Trader',
+        stats: gamificationData?.stats || {},
+        achievements: gamificationData?.achievements || [],
+        
+        // Vault data (for borders, themes, badges)
+        vault: gamificationData?.vault || {
+            equippedBorder: 'border-bronze',
+            equippedTheme: 'theme-default',
+            equippedBadges: [],
+            activePerks: []
+        },
+        
+        // Legacy support
+        equippedItems: gamificationData?.equippedItems || {},
+        
+        // XP progress
+        xpForCurrentLevel: gamificationData?.xpForCurrentLevel || 0,
+        xpForNextLevel: gamificationData?.xpForNextLevel || 1000,
+        progressPercent: gamificationData?.progressPercent || 0,
+        
+        // Functions
+        refreshGamification,
+        addXP,
+        updateCoins,
+        updateEquippedBorder,
+        updateEquippedTheme,
+        updateEquippedBadges,
+        updateActivePerks
     };
 
     return (
@@ -173,3 +292,5 @@ export const GamificationProvider = ({ children }) => {
         </GamificationContext.Provider>
     );
 };
+
+export default GamificationContext;
