@@ -1,50 +1,24 @@
-// client/src/pages/WatchlistPage.js - LEGENDARY WATCHLIST WITH DRAG-DROP & ALL FEATURES
+// client/src/pages/WatchlistPage.js - REVAMPED CLEAN WATCHLIST
 
-import React, { useState, useEffect } from 'react';
-import styled, { keyframes } from 'styled-components';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import React, { useState, useEffect, useMemo } from 'react';
+import styled, { keyframes, css } from 'styled-components';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import {
     TrendingUp, TrendingDown, Plus, Trash2, X, Eye, Star,
-    Activity, DollarSign, BarChart3, ArrowUpRight, ArrowDownRight,
-    Zap, Target, Bell, BellOff, AlertCircle, Flame, Award,
-    Filter, SortAsc, SortDesc, Download, GripVertical, Search,
-    RefreshCw, CheckSquare, Square, Trash, Settings
+    Activity, BarChart3, ArrowUpRight, ArrowDownRight,
+    Bell, BellOff, Download, Search, RefreshCw, Flame,
+    AlertTriangle, Target, Zap, Bitcoin, Coins
 } from 'lucide-react';
 import {
-    LineChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis
+    LineChart, Line, ResponsiveContainer, AreaChart, Area
 } from 'recharts';
 
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
-`;
-
-const slideIn = keyframes`
-    from { transform: translateX(-100%); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
-`;
-
-const pulse = keyframes`
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-`;
-
-const glow = keyframes`
-    0%, 100% { box-shadow: 0 0 20px rgba(0, 173, 237, 0.3); }
-    50% { box-shadow: 0 0 40px rgba(0, 173, 237, 0.6); }
-`;
-
-const float = keyframes`
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-10px); }
-`;
-
-const shimmer = keyframes`
-    0% { background-position: -200% center; }
-    100% { background-position: 200% center; }
 `;
 
 const rotate = keyframes`
@@ -58,96 +32,193 @@ const PageContainer = styled.div`
     background: linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
     color: #e0e6ed;
     padding: 6rem 2rem 2rem;
-    position: relative;
-    overflow-x: hidden;
+`;
+
+const ContentWrapper = styled.div`
+    max-width: 1600px;
+    margin: 0 auto;
 `;
 
 const Header = styled.div`
-    margin-bottom: 3rem;
-    animation: ${fadeIn} 0.8s ease-out;
+    margin-bottom: 2rem;
+    animation: ${fadeIn} 0.6s ease-out;
 `;
 
 const HeaderTop = styled.div`
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
     flex-wrap: wrap;
     gap: 1rem;
-
-    @media (max-width: 768px) {
-        flex-direction: column;
-        align-items: flex-start;
-    }
 `;
 
-const HeaderLeft = styled.div``;
-
 const Title = styled.h1`
-    font-size: 3.5rem;
+    font-size: 2.5rem;
     background: linear-gradient(135deg, #00adef 0%, #00ff88 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    margin-bottom: 0.5rem;
     font-weight: 900;
-    text-shadow: 0 0 30px rgba(0, 173, 237, 0.5);
 
     @media (max-width: 768px) {
-        font-size: 2.5rem;
+        font-size: 2rem;
     }
 `;
 
 const Subtitle = styled.p`
     color: #94a3b8;
-    font-size: 1.2rem;
+    font-size: 1rem;
+    margin-top: 0.25rem;
 `;
 
-const HeaderRight = styled.div`
+const HeaderActions = styled.div`
     display: flex;
-    gap: 1rem;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+`;
+
+const ActionButton = styled.button`
+    display: flex;
     align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.25rem;
+    background: ${props => props.$primary 
+        ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
+        : 'rgba(0, 173, 237, 0.1)'};
+    border: 1px solid ${props => props.$primary ? 'transparent' : 'rgba(0, 173, 237, 0.3)'};
+    border-radius: 10px;
+    color: ${props => props.$primary ? 'white' : '#00adef'};
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+        transform: translateY(-2px);
+        box-shadow: ${props => props.$primary 
+            ? '0 8px 24px rgba(16, 185, 129, 0.4)'
+            : '0 8px 24px rgba(0, 173, 237, 0.2)'};
+    }
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    svg {
+        ${props => props.$spinning && css`animation: ${rotate} 1s linear infinite;`}
+    }
+`;
+
+// ============ STATS HERO ============
+const StatsHero = styled.div`
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+
+    @media (max-width: 1200px) {
+        grid-template-columns: repeat(3, 1fr);
+    }
 
     @media (max-width: 768px) {
-        width: 100%;
-        flex-wrap: wrap;
+        grid-template-columns: repeat(2, 1fr);
     }
+
+    @media (max-width: 500px) {
+        grid-template-columns: 1fr;
+    }
+`;
+
+const StatCard = styled.div`
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    border: 1px solid rgba(0, 173, 237, 0.2);
+    border-radius: 16px;
+    padding: 1.25rem;
+    animation: ${fadeIn} 0.6s ease-out;
+    animation-delay: ${props => props.$delay || '0s'};
+    animation-fill-mode: backwards;
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: ${props => props.$color || 'linear-gradient(90deg, #00adef, #0088cc)'};
+    }
+`;
+
+const StatIcon = styled.div`
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: ${props => props.$bg || 'rgba(0, 173, 237, 0.15)'};
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: ${props => props.$color || '#00adef'};
+    margin-bottom: 0.75rem;
+`;
+
+const StatLabel = styled.div`
+    color: #64748b;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.25rem;
+`;
+
+const StatValue = styled.div`
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: ${props => props.$color || '#e0e6ed'};
+`;
+
+const StatSubtext = styled.div`
+    font-size: 0.8rem;
+    color: #64748b;
+    margin-top: 0.25rem;
 `;
 
 // ============ TOOLBAR ============
 const Toolbar = styled.div`
     display: flex;
     gap: 1rem;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
     flex-wrap: wrap;
     align-items: center;
 `;
 
-const SearchBar = styled.div`
+const SearchWrapper = styled.div`
     flex: 1;
-    min-width: 300px;
+    min-width: 250px;
     position: relative;
 
-    @media (max-width: 768px) {
+    @media (max-width: 600px) {
         min-width: 100%;
     }
 `;
 
 const SearchInput = styled.input`
     width: 100%;
-    padding: 0.75rem 1rem 0.75rem 3rem;
+    padding: 0.6rem 1rem 0.6rem 2.5rem;
     background: rgba(0, 173, 237, 0.05);
     border: 1px solid rgba(0, 173, 237, 0.3);
-    border-radius: 12px;
+    border-radius: 10px;
     color: #e0e6ed;
-    font-size: 1rem;
-    transition: all 0.2s ease;
+    font-size: 0.9rem;
 
     &:focus {
         outline: none;
         border-color: #00adef;
         background: rgba(0, 173, 237, 0.1);
-        box-shadow: 0 0 0 3px rgba(0, 173, 237, 0.2);
     }
 
     &::placeholder {
@@ -155,64 +226,29 @@ const SearchInput = styled.input`
     }
 `;
 
-const SearchIcon = styled(Search)`
+const SearchIconStyled = styled(Search)`
     position: absolute;
-    left: 1rem;
+    left: 0.75rem;
     top: 50%;
     transform: translateY(-50%);
-    color: #00adef;
-`;
-
-const ToolbarButton = styled.button`
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.25rem;
-    background: ${props => props.$active ? 
-        'linear-gradient(135deg, rgba(0, 173, 237, 0.2) 0%, rgba(0, 173, 237, 0.1) 100%)' :
-        'rgba(0, 173, 237, 0.05)'
-    };
-    border: 1px solid ${props => props.$active ? 'rgba(0, 173, 237, 0.5)' : 'rgba(0, 173, 237, 0.3)'};
-    border-radius: 12px;
-    color: ${props => props.$active ? '#00adef' : '#94a3b8'};
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    white-space: nowrap;
-
-    &:hover {
-        background: linear-gradient(135deg, rgba(0, 173, 237, 0.2) 0%, rgba(0, 173, 237, 0.1) 100%);
-        border-color: rgba(0, 173, 237, 0.5);
-        color: #00adef;
-        transform: translateY(-2px);
-    }
-
-    ${props => props.$danger && `
-        background: rgba(239, 68, 68, 0.1);
-        border-color: rgba(239, 68, 68, 0.3);
-        color: #ef4444;
-
-        &:hover {
-            background: rgba(239, 68, 68, 0.2);
-            border-color: rgba(239, 68, 68, 0.5);
-        }
-    `}
+    color: #64748b;
+    width: 16px;
+    height: 16px;
 `;
 
 const Select = styled.select`
-    padding: 0.75rem 1rem;
+    padding: 0.6rem 1rem;
     background: rgba(0, 173, 237, 0.05);
     border: 1px solid rgba(0, 173, 237, 0.3);
-    border-radius: 12px;
+    border-radius: 10px;
     color: #e0e6ed;
     font-weight: 600;
+    font-size: 0.9rem;
     cursor: pointer;
-    transition: all 0.2s ease;
 
     &:focus {
         outline: none;
         border-color: #00adef;
-        background: rgba(0, 173, 237, 0.1);
     }
 
     option {
@@ -221,400 +257,207 @@ const Select = styled.select`
     }
 `;
 
-// ============ BATCH ACTIONS BAR ============
-const BatchActionsBar = styled.div`
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(59, 130, 246, 0.15) 100%);
-    border: 1px solid rgba(139, 92, 246, 0.3);
-    border-radius: 16px;
-    padding: 1rem 1.5rem;
-    margin-bottom: 2rem;
+// ============ WATCHLIST TABLE ============
+const WatchlistSection = styled.div`
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    border: 1px solid rgba(0, 173, 237, 0.2);
+    border-radius: 20px;
+    padding: 1.5rem;
+    animation: ${fadeIn} 0.6s ease-out;
+`;
+
+const SectionHeader = styled.div`
     display: flex;
     justify-content: space-between;
     align-items: center;
-    animation: ${slideIn} 0.3s ease-out;
+    margin-bottom: 1.25rem;
+`;
 
-    @media (max-width: 768px) {
-        flex-direction: column;
-        gap: 1rem;
+const SectionTitle = styled.h2`
+    font-size: 1.3rem;
+    color: #00adef;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+`;
+
+const TableWrapper = styled.div`
+    overflow-x: auto;
+`;
+
+const Table = styled.table`
+    width: 100%;
+    border-collapse: collapse;
+`;
+
+const Th = styled.th`
+    text-align: left;
+    padding: 1rem 0.75rem;
+    color: #64748b;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid rgba(0, 173, 237, 0.1);
+`;
+
+const Tr = styled.tr`
+    transition: all 0.2s ease;
+    cursor: pointer;
+
+    &:hover {
+        background: rgba(0, 173, 237, 0.05);
     }
 `;
 
-const BatchInfo = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    color: #a78bfa;
-    font-weight: 600;
+const Td = styled.td`
+    padding: 1rem 0.75rem;
+    border-bottom: 1px solid rgba(0, 173, 237, 0.05);
+    vertical-align: middle;
 `;
 
-const BatchActions = styled.div`
+const SymbolCell = styled.div`
     display: flex;
+    align-items: center;
     gap: 0.75rem;
 `;
 
-const AddButton = styled.button`
-    position: fixed;
-    bottom: 2rem;
-    right: 2rem;
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    border: none;
-    color: white;
-    cursor: pointer;
+const SymbolIcon = styled.div`
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    background: ${props => props.$crypto 
+        ? 'linear-gradient(135deg, rgba(251, 191, 36, 0.2) 0%, rgba(245, 158, 11, 0.2) 100%)'
+        : 'linear-gradient(135deg, rgba(0, 173, 237, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%)'};
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 8px 32px rgba(16, 185, 129, 0.4);
-    transition: all 0.3s ease;
-    z-index: 100;
-    animation: ${float} 3s ease-in-out infinite;
-
-    &:hover {
-        transform: scale(1.1);
-        box-shadow: 0 12px 48px rgba(16, 185, 129, 0.6);
-    }
-
-    @media (max-width: 768px) {
-        bottom: 1rem;
-        right: 1rem;
-    }
+    font-weight: 800;
+    font-size: 0.85rem;
+    color: ${props => props.$crypto ? '#fbbf24' : '#00adef'};
 `;
 
-// ============ STATS CARDS ============
-const StatsGrid = styled.div`
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 3rem;
-`;
+const SymbolInfo = styled.div``;
 
-const StatCard = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(0, 173, 237, 0.2);
-    border-radius: 16px;
-    padding: 1.5rem;
-    position: relative;
-    overflow: hidden;
-    animation: ${fadeIn} 0.6s ease-out;
-    transition: all 0.3s ease;
-
-    &:hover {
-        transform: translateY(-5px);
-        border-color: rgba(0, 173, 237, 0.5);
-        box-shadow: 0 10px 40px rgba(0, 173, 237, 0.3);
-    }
-
-    &::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 2px;
-        background: ${props => {
-            if (props.variant === 'success') return 'linear-gradient(90deg, #10b981, #059669)';
-            if (props.variant === 'danger') return 'linear-gradient(90deg, #ef4444, #dc2626)';
-            if (props.variant === 'warning') return 'linear-gradient(90deg, #f59e0b, #d97706)';
-            return 'linear-gradient(90deg, #00adef, #0088cc)';
-        }};
-    }
-`;
-
-const StatIcon = styled.div`
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
+const SymbolName = styled.div`
+    font-weight: 700;
+    color: #e0e6ed;
+    font-size: 1rem;
     display: flex;
     align-items: center;
-    justify-content: center;
-    margin-bottom: 1rem;
-    background: ${props => {
-        if (props.variant === 'success') return 'rgba(16, 185, 129, 0.2)';
-        if (props.variant === 'danger') return 'rgba(239, 68, 68, 0.2)';
-        if (props.variant === 'warning') return 'rgba(245, 158, 11, 0.2)';
-        return 'rgba(0, 173, 237, 0.2)';
-    }};
-    color: ${props => {
-        if (props.variant === 'success') return '#10b981';
-        if (props.variant === 'danger') return '#ef4444';
-        if (props.variant === 'warning') return '#f59e0b';
-        return '#00adef';
-    }};
+    gap: 0.5rem;
 `;
 
-const StatLabel = styled.div`
-    color: #94a3b8;
-    font-size: 0.9rem;
-    margin-bottom: 0.5rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-`;
-
-const StatValue = styled.div`
-    font-size: 2.5rem;
-    font-weight: 900;
-    color: #00adef;
-    margin-bottom: 0.5rem;
-`;
-
-const StatSubtext = styled.div`
-    font-size: 0.9rem;
-    color: #94a3b8;
-`;
-
-// ============ WATCHLIST GRID ============
-const WatchlistGrid = styled.div`
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 3rem;
-
-    @media (max-width: 768px) {
-        grid-template-columns: 1fr;
-    }
-`;
-
-const WatchCard = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(0, 173, 237, 0.2);
-    border-radius: 16px;
-    padding: 1.5rem;
-    position: relative;
-    overflow: hidden;
-    animation: ${fadeIn} 0.5s ease-out;
-    transition: all 0.3s ease;
-    cursor: pointer;
-    user-select: none;
-
-    &:hover {
-        transform: translateY(-5px);
-        border-color: rgba(0, 173, 237, 0.5);
-        box-shadow: 0 10px 40px rgba(0, 173, 237, 0.3);
-    }
-
-    &::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 2px;
-        background: ${props => props.positive ? 
-            'linear-gradient(90deg, #10b981, #059669)' : 
-            'linear-gradient(90deg, #ef4444, #dc2626)'
-        };
-    }
-
-    ${props => props.$isDragging && `
-        opacity: 0.5;
-        transform: rotate(5deg);
-    `}
-
-    ${props => props.$selected && `
-        border-color: rgba(139, 92, 246, 0.5);
-        background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(59, 130, 246, 0.15) 100%);
-    `}
-`;
-
-const DragHandle = styled.div`
-    position: absolute;
-    left: 0.5rem;
-    top: 50%;
-    transform: translateY(-50%);
+const SymbolCompany = styled.div`
+    font-size: 0.75rem;
     color: #64748b;
-    cursor: grab;
-    padding: 0.5rem;
-    border-radius: 8px;
-    transition: all 0.2s ease;
-
-    &:hover {
-        color: #00adef;
-        background: rgba(0, 173, 237, 0.1);
-    }
-
-    &:active {
-        cursor: grabbing;
-    }
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 `;
 
-const WatchHeader = styled.div`
-    display: flex;
-    justify-content: space-between;
-    align-items: start;
-    margin-bottom: 1.5rem;
-    padding-left: 2rem;
-`;
-
-const WatchSymbolSection = styled.div`
-    display: flex;
+const TypeBadge = styled.span`
+    display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.25rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    background: ${props => props.$crypto 
+        ? 'rgba(251, 191, 36, 0.15)' 
+        : 'rgba(0, 173, 237, 0.15)'};
+    color: ${props => props.$crypto ? '#fbbf24' : '#00adef'};
+    border: 1px solid ${props => props.$crypto 
+        ? 'rgba(251, 191, 36, 0.3)' 
+        : 'rgba(0, 173, 237, 0.3)'};
 `;
 
-const SelectCheckbox = styled.div`
-    width: 24px;
-    height: 24px;
-    border-radius: 6px;
-    border: 2px solid ${props => props.$checked ? '#8b5cf6' : 'rgba(0, 173, 237, 0.3)'};
-    background: ${props => props.$checked ? '#8b5cf6' : 'transparent'};
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s ease;
-
-    &:hover {
-        border-color: #8b5cf6;
-        transform: scale(1.1);
-    }
-`;
-
-const WatchSymbol = styled.div`
-    font-size: 1.8rem;
-    font-weight: 900;
-    color: #00adef;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-`;
-
-const WatchName = styled.div`
-    color: #94a3b8;
-    font-size: 0.9rem;
-    margin-top: 0.25rem;
-`;
-
-const ActionButtons = styled.div`
-    display: flex;
-    gap: 0.5rem;
-`;
-
-const IconButton = styled.button`
-    background: ${props => props.variant === 'danger' ? 
-        'rgba(239, 68, 68, 0.1)' : 
-        props.variant === 'success' ?
-        'rgba(16, 185, 129, 0.1)' :
-        'rgba(0, 173, 237, 0.1)'
-    };
-    border: 1px solid ${props => props.variant === 'danger' ? 
-        'rgba(239, 68, 68, 0.3)' : 
-        props.variant === 'success' ?
-        'rgba(16, 185, 129, 0.3)' :
-        'rgba(0, 173, 237, 0.3)'
-    };
-    color: ${props => props.variant === 'danger' ? 
-        '#ef4444' : 
-        props.variant === 'success' ?
-        '#10b981' :
-        '#00adef'
-    };
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-
-    &:hover {
-        background: ${props => props.variant === 'danger' ? 
-            'rgba(239, 68, 68, 0.2)' : 
-            props.variant === 'success' ?
-            'rgba(16, 185, 129, 0.2)' :
-            'rgba(0, 173, 237, 0.2)'
-        };
-        transform: scale(1.1);
-    }
-
-    ${props => props.$active && `
-        background: rgba(16, 185, 129, 0.2);
-        border-color: rgba(16, 185, 129, 0.5);
-        color: #10b981;
-    `}
-`;
-
-const PriceSection = styled.div`
-    margin-bottom: 1rem;
-`;
-
-const CurrentPrice = styled.div`
-    font-size: 2.5rem;
-    font-weight: 900;
+const PriceCell = styled.div`
+    font-weight: 700;
     color: #e0e6ed;
-    margin-bottom: 0.5rem;
-`;
-
-const PriceChange = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
     font-size: 1.1rem;
+`;
+
+const ChangeCell = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+`;
+
+const ChangeValue = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
     font-weight: 700;
-    color: ${props => props.positive ? '#10b981' : '#ef4444'};
-`;
-
-const StatsRow = styled.div`
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1rem;
-    margin-bottom: 1rem;
-    padding: 1rem;
-    background: rgba(0, 173, 237, 0.05);
-    border: 1px solid rgba(0, 173, 237, 0.1);
-    border-radius: 12px;
-`;
-
-const StatItem = styled.div``;
-
-const StatItemLabel = styled.div`
-    color: #94a3b8;
-    font-size: 0.8rem;
-    margin-bottom: 0.25rem;
-`;
-
-const StatItemValue = styled.div`
-    color: #e0e6ed;
-    font-weight: 700;
+    color: ${props => props.$positive ? '#10b981' : '#ef4444'};
     font-size: 0.95rem;
 `;
 
-const MiniChart = styled.div`
-    height: 80px;
-    margin-top: 1rem;
-    opacity: 0.8;
+const ChangePercent = styled.div`
+    font-size: 0.8rem;
+    color: ${props => props.$positive ? '#10b981' : '#ef4444'};
+`;
+
+const SparklineCell = styled.div`
+    width: 100px;
+    height: 35px;
+`;
+
+const AlertCell = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 `;
 
 const AlertBadge = styled.div`
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    background: ${props => props.active ? 
-        'rgba(16, 185, 129, 0.15)' : 
-        'rgba(148, 163, 184, 0.1)'
-    };
-    border: 1px solid ${props => props.active ? 
-        'rgba(16, 185, 129, 0.3)' : 
-        'rgba(148, 163, 184, 0.2)'
-    };
-    border-radius: 8px;
-    font-size: 0.85rem;
-    color: ${props => props.active ? '#10b981' : '#94a3b8'};
-    margin-top: 1rem;
+    gap: 0.35rem;
+    padding: 0.35rem 0.75rem;
+    background: ${props => props.$active 
+        ? 'rgba(16, 185, 129, 0.15)' 
+        : 'rgba(100, 116, 139, 0.1)'};
+    border: 1px solid ${props => props.$active 
+        ? 'rgba(16, 185, 129, 0.3)' 
+        : 'rgba(100, 116, 139, 0.2)'};
+    border-radius: 6px;
+    font-size: 0.75rem;
+    color: ${props => props.$active ? '#10b981' : '#64748b'};
     cursor: pointer;
     transition: all 0.2s ease;
 
     &:hover {
-        background: ${props => props.active ? 
-            'rgba(16, 185, 129, 0.2)' : 
-            'rgba(148, 163, 184, 0.15)'
-        };
-        transform: translateX(3px);
+        background: ${props => props.$active 
+            ? 'rgba(16, 185, 129, 0.25)' 
+            : 'rgba(100, 116, 139, 0.2)'};
+        transform: scale(1.02);
+    }
+`;
+
+const ActionCell = styled.div`
+    display: flex;
+    gap: 0.5rem;
+`;
+
+const SmallButton = styled.button`
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: ${props => props.$danger ? 'rgba(239, 68, 68, 0.1)' : 'rgba(0, 173, 237, 0.1)'};
+    border: 1px solid ${props => props.$danger ? 'rgba(239, 68, 68, 0.3)' : 'rgba(0, 173, 237, 0.3)'};
+    color: ${props => props.$danger ? '#ef4444' : '#00adef'};
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+
+    &:hover {
+        background: ${props => props.$danger ? 'rgba(239, 68, 68, 0.2)' : 'rgba(0, 173, 237, 0.2)'};
+        transform: scale(1.05);
     }
 `;
 
@@ -631,40 +474,39 @@ const Modal = styled.div`
     align-items: center;
     justify-content: center;
     z-index: 1000;
-    animation: ${fadeIn} 0.3s ease-out;
     padding: 1rem;
+    animation: ${fadeIn} 0.2s ease-out;
 `;
 
 const ModalContent = styled.div`
     background: linear-gradient(135deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.98) 100%);
-    backdrop-filter: blur(20px);
     border: 1px solid rgba(0, 173, 237, 0.3);
-    border-radius: 16px;
+    border-radius: 20px;
     padding: 2rem;
-    max-width: 500px;
+    max-width: 450px;
     width: 100%;
     position: relative;
-    animation: ${slideIn} 0.3s ease-out;
-    max-height: 90vh;
-    overflow-y: auto;
+`;
+
+const ModalHeader = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
 `;
 
 const ModalTitle = styled.h2`
+    font-size: 1.5rem;
     color: #00adef;
-    margin-bottom: 2rem;
-    font-size: 1.8rem;
 `;
 
 const CloseButton = styled.button`
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
     background: rgba(239, 68, 68, 0.1);
     border: 1px solid rgba(239, 68, 68, 0.3);
     color: #ef4444;
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -673,42 +515,38 @@ const CloseButton = styled.button`
 
     &:hover {
         background: rgba(239, 68, 68, 0.2);
-        transform: scale(1.1);
     }
 `;
 
 const Form = styled.form`
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 1.25rem;
 `;
 
-const FormGroup = styled.div`
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-`;
+const FormGroup = styled.div``;
 
 const Label = styled.label`
+    display: block;
     color: #94a3b8;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     font-weight: 600;
+    margin-bottom: 0.5rem;
 `;
 
 const Input = styled.input`
+    width: 100%;
     padding: 0.75rem 1rem;
     background: rgba(0, 173, 237, 0.05);
     border: 1px solid rgba(0, 173, 237, 0.3);
     border-radius: 10px;
     color: #e0e6ed;
     font-size: 1rem;
-    transition: all 0.2s ease;
 
     &:focus {
         outline: none;
         border-color: #00adef;
         background: rgba(0, 173, 237, 0.1);
-        box-shadow: 0 0 0 3px rgba(0, 173, 237, 0.2);
     }
 
     &::placeholder {
@@ -716,16 +554,38 @@ const Input = styled.input`
     }
 `;
 
+const ModalSelect = styled.select`
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: rgba(0, 173, 237, 0.05);
+    border: 1px solid rgba(0, 173, 237, 0.3);
+    border-radius: 10px;
+    color: #e0e6ed;
+    font-size: 1rem;
+    cursor: pointer;
+
+    &:focus {
+        outline: none;
+        border-color: #00adef;
+    }
+
+    option {
+        background: #1a1f3a;
+        color: #e0e6ed;
+    }
+`;
+
 const SubmitButton = styled.button`
-    padding: 0.75rem 1.5rem;
+    width: 100%;
+    padding: 0.875rem;
     background: linear-gradient(135deg, #00adef 0%, #0088cc 100%);
-    color: white;
     border: none;
     border-radius: 10px;
-    cursor: pointer;
+    color: white;
     font-weight: 700;
     font-size: 1rem;
-    transition: all 0.3s ease;
+    cursor: pointer;
+    transition: all 0.2s ease;
 
     &:hover:not(:disabled) {
         transform: translateY(-2px);
@@ -733,22 +593,28 @@ const SubmitButton = styled.button`
     }
 
     &:disabled {
-        opacity: 0.6;
+        opacity: 0.5;
         cursor: not-allowed;
     }
 `;
 
+const HelpText = styled.div`
+    color: #64748b;
+    font-size: 0.8rem;
+    margin-top: 0.5rem;
+`;
+
+// ============ EMPTY STATE ============
 const EmptyState = styled.div`
     text-align: center;
     padding: 4rem 2rem;
-    animation: ${fadeIn} 0.5s ease-out;
 `;
 
 const EmptyIcon = styled.div`
-    width: 120px;
-    height: 120px;
-    margin: 0 auto 2rem;
-    background: linear-gradient(135deg, rgba(0, 173, 237, 0.2) 0%, rgba(0, 173, 237, 0.05) 100%);
+    width: 100px;
+    height: 100px;
+    margin: 0 auto 1.5rem;
+    background: linear-gradient(135deg, rgba(0, 173, 237, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%);
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -756,182 +622,185 @@ const EmptyIcon = styled.div`
     border: 2px dashed rgba(0, 173, 237, 0.3);
 `;
 
-const RefreshButton = styled.button`
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.25rem;
-    background: rgba(0, 173, 237, 0.1);
-    border: 1px solid rgba(0, 173, 237, 0.3);
-    border-radius: 12px;
+const EmptyTitle = styled.h2`
     color: #00adef;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-
-    &:hover {
-        background: rgba(0, 173, 237, 0.2);
-        transform: translateY(-2px);
-    }
-
-    &:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-
-    svg {
-        animation: ${props => props.$refreshing ? rotate : 'none'} 1s linear infinite;
-    }
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
 `;
+
+const EmptyText = styled.p`
+    color: #94a3b8;
+    margin-bottom: 2rem;
+`;
+
+// ============ LOADING ============
+const SpinningIcon = styled.div`
+    animation: ${rotate} 2s linear infinite;
+    display: inline-flex;
+`;
+
+// ============ CRYPTO DETECTION ============
+const CRYPTO_SYMBOLS = [
+    'BTC', 'ETH', 'BNB', 'XRP', 'ADA', 'DOGE', 'SOL', 'DOT', 'MATIC', 'LTC',
+    'SHIB', 'TRX', 'AVAX', 'LINK', 'ATOM', 'UNI', 'XLM', 'ETC', 'BCH', 'ALGO',
+    'VET', 'FIL', 'ICP', 'MANA', 'SAND', 'AXS', 'AAVE', 'MKR', 'COMP', 'SNX',
+    'CRO', 'NEAR', 'FTM', 'HBAR', 'EGLD', 'THETA', 'XTZ', 'EOS', 'CAKE', 'RUNE',
+    'ZEC', 'DASH', 'NEO', 'WAVES', 'KSM', 'ENJ', 'CHZ', 'BAT', 'ZIL', 'QTUM',
+    'BTT', 'ONE', 'HOT', 'IOTA', 'XMR', 'KLAY', 'GRT', 'SUSHI', 'YFI', 'CRV',
+    'BTCUSD', 'ETHUSD', 'BNBUSD', 'XRPUSD', 'SOLUSD', 'DOGEUSD', 'ADAUSD'
+];
+
+const isCrypto = (symbol) => {
+    if (!symbol) return false;
+    const upperSymbol = symbol.toUpperCase();
+    // Check if it's in our crypto list or ends with common crypto patterns
+    return CRYPTO_SYMBOLS.includes(upperSymbol) || 
+           upperSymbol.endsWith('USD') && CRYPTO_SYMBOLS.includes(upperSymbol.replace('USD', '')) ||
+           upperSymbol.endsWith('USDT') ||
+           upperSymbol.endsWith('BTC') ||
+           upperSymbol.endsWith('ETH');
+};
+
+const getCryptoName = (symbol) => {
+    const names = {
+        'BTC': 'Bitcoin', 'ETH': 'Ethereum', 'BNB': 'Binance Coin', 'XRP': 'Ripple',
+        'ADA': 'Cardano', 'DOGE': 'Dogecoin', 'SOL': 'Solana', 'DOT': 'Polkadot',
+        'MATIC': 'Polygon', 'LTC': 'Litecoin', 'SHIB': 'Shiba Inu', 'AVAX': 'Avalanche',
+        'LINK': 'Chainlink', 'UNI': 'Uniswap', 'ATOM': 'Cosmos', 'XLM': 'Stellar',
+        'ETC': 'Ethereum Classic', 'BCH': 'Bitcoin Cash', 'ALGO': 'Algorand',
+        'VET': 'VeChain', 'FIL': 'Filecoin', 'NEAR': 'NEAR Protocol', 'FTM': 'Fantom',
+        'SAND': 'The Sandbox', 'MANA': 'Decentraland', 'AXS': 'Axie Infinity',
+        'AAVE': 'Aave', 'MKR': 'Maker', 'CRO': 'Cronos', 'GRT': 'The Graph'
+    };
+    const base = symbol?.toUpperCase().replace('USD', '').replace('USDT', '');
+    return names[base] || `${base} Crypto`;
+};
+
+// Helper to format price - handles potential API issues
+const formatPrice = (price, symbol) => {
+    if (!price || price === 0) return '$0.00';
+    
+    // For display, determine decimal places based on price magnitude
+    if (price >= 1000) {
+        return `$${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    } else if (price >= 1) {
+        return `$${price.toFixed(2)}`;
+    } else if (price >= 0.01) {
+        return `$${price.toFixed(4)}`;
+    } else {
+        // Very small prices (like SHIB)
+        return `$${price.toFixed(8)}`;
+    }
+};
 
 // ============ COMPONENT ============
 const WatchlistPage = () => {
     const { api, isAuthenticated } = useAuth();
     const toast = useToast();
+    const navigate = useNavigate();
+
+    // State
     const [watchlist, setWatchlist] = useState([]);
-    const [filteredWatchlist, setFilteredWatchlist] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [sortBy, setSortBy] = useState('symbol');
+    const [filterBy, setFilterBy] = useState('all');
     const [showAddModal, setShowAddModal] = useState(false);
     const [showAlertModal, setShowAlertModal] = useState(false);
     const [selectedStock, setSelectedStock] = useState(null);
-    const [selectedStocks, setSelectedStocks] = useState(new Set());
-    const [searchQuery, setSearchQuery] = useState('');
-    const [sortBy, setSortBy] = useState('symbol'); // symbol, price, change, alphabetical
-    const [filterBy, setFilterBy] = useState('all'); // all, gainers, losers, alerts
     const [formData, setFormData] = useState({ symbol: '' });
-    const [alertFormData, setAlertFormData] = useState({
-        targetPrice: '',
-        condition: 'above' // above or below
-    });
+    const [alertFormData, setAlertFormData] = useState({ targetPrice: '', condition: 'above' });
 
+    // Fetch on mount
     useEffect(() => {
-    if (isAuthenticated) {
-        fetchWatchlist();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [isAuthenticated]);
-
-    useEffect(() => {
-        filterAndSortWatchlist();
-    }, [watchlist, searchQuery, sortBy, filterBy]);
+        if (isAuthenticated) {
+            fetchWatchlist();
+        }
+    }, [isAuthenticated]);
 
     const fetchWatchlist = async () => {
-    setLoading(true);
-    try {
-        const response = await api.get('/watchlist');
-        console.log('Watchlist response:', response.data);
-        
-        // ✅ Handle different response formats
-        const watchlistData = Array.isArray(response.data) 
-            ? response.data 
-            : response.data.watchlist || [];
-        
-        setWatchlist(watchlistData);
-        toast.success('Watchlist loaded', 'Success');
-    } catch (error) {
-        console.error('Error fetching watchlist:', error);
-        toast.error('Failed to load watchlist', 'Error');
-        setWatchlist([]); // ✅ Set empty array on error
-    } finally {
-        setLoading(false);
-    }
-};
+        setLoading(true);
+        try {
+            const response = await api.get('/watchlist');
+            console.log('📊 Raw watchlist response:', response.data);
+            
+            const watchlistData = Array.isArray(response.data) 
+                ? response.data 
+                : response.data.watchlist || [];
+            
+            // Debug: Log each item's price data
+            watchlistData.forEach(item => {
+                console.log(`💰 ${item.symbol}: price=${item.currentPrice || item.price}, change=${item.changePercent}`);
+            });
+            
+            // Generate mock chart data for each stock
+            const watchlistWithCharts = watchlistData.map(stock => ({
+                ...stock,
+                chartData: generateSparklineData(stock.changePercent >= 0)
+            }));
+            
+            setWatchlist(watchlistWithCharts);
+        } catch (error) {
+            console.error('Error fetching watchlist:', error);
+            toast.error('Failed to load watchlist');
+            setWatchlist([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const generateSparklineData = (positive) => {
+        const baseValue = 100;
+        const trend = positive ? 0.5 : -0.5;
+        return Array.from({ length: 20 }, (_, i) => ({
+            value: baseValue + (Math.random() - 0.5 + trend) * 10 + (i * trend)
+        }));
+    };
 
     const handleRefresh = async () => {
         setRefreshing(true);
         await fetchWatchlist();
-        setTimeout(() => setRefreshing(false), 500);
-        toast.success('Watchlist refreshed!', 'Updated');
-    };
-
-    const generateMockChartData = () => {
-        return Array.from({ length: 20 }, (_, i) => ({
-            value: Math.random() * 100 + 100
-        }));
-    };
-
-    const filterAndSortWatchlist = () => {
-        let filtered = [...watchlist];
-
-        // Search filter
-        if (searchQuery) {
-            filtered = filtered.filter(stock => {
-                const symbol = (stock.symbol || '').toLowerCase();
-                const name = (stock.name || '').toLowerCase();
-                const query = searchQuery.toLowerCase();
-                return symbol.includes(query) || name.includes(query);
-            });
-        }
-
-        // Category filter
-        if (filterBy === 'gainers') {
-            filtered = filtered.filter(s => (s.changePercent || 0) > 0);
-        } else if (filterBy === 'losers') {
-            filtered = filtered.filter(s => (s.changePercent || 0) < 0);
-        } else if (filterBy === 'alerts') {
-            filtered = filtered.filter(s => s.hasAlert);
-        }
-
-        // Sort
-        filtered.sort((a, b) => {
-            switch (sortBy) {
-                case 'symbol':
-                    return (a.symbol || '').localeCompare(b.symbol || '');
-                case 'price':
-                    return (b.currentPrice || 0) - (a.currentPrice || 0);
-                case 'change':
-                    return (b.changePercent || 0) - (a.changePercent || 0);
-                case 'alphabetical':
-                    return (a.name || '').localeCompare(b.name || '');
-                default:
-                    return 0;
-            }
-        });
-
-        setFilteredWatchlist(filtered);
+        setRefreshing(false);
+        toast.success('Watchlist refreshed!');
     };
 
     const handleAddStock = async (e) => {
         e.preventDefault();
         try {
-            await api.post('/watchlist', {
-                symbol: formData.symbol.toUpperCase()
-            });
-            
-            toast.success(`${formData.symbol.toUpperCase()} added to watchlist!`, 'Stock Added');
+            await api.post('/watchlist', { symbol: formData.symbol.toUpperCase() });
+            toast.success(`${formData.symbol.toUpperCase()} added!`);
             setShowAddModal(false);
             setFormData({ symbol: '' });
             fetchWatchlist();
         } catch (error) {
-            console.error('Error adding to watchlist:', error);
             const errorMsg = error.response?.data?.error || '';
-            
             if (errorMsg.includes('already exists')) {
-                toast.warning(`${formData.symbol.toUpperCase()} is already in your watchlist`, 'Already Exists');
+                toast.warning(`${formData.symbol.toUpperCase()} is already in your watchlist`);
             } else {
-                toast.error('Failed to add to watchlist', 'Error');
+                toast.error('Failed to add stock');
             }
         }
     };
 
-    const handleRemoveStock = async (symbol) => {
+    const handleRemoveStock = async (symbol, e) => {
+        e?.stopPropagation();
         if (!window.confirm(`Remove ${symbol} from watchlist?`)) return;
 
         try {
             await api.delete(`/watchlist/${symbol}`);
-            toast.success(`${symbol} removed from watchlist`, 'Removed');
+            toast.success(`${symbol} removed`);
             fetchWatchlist();
         } catch (error) {
-            console.error('Error removing from watchlist:', error);
-            toast.error('Failed to remove from watchlist', 'Error');
+            toast.error('Failed to remove stock');
         }
     };
 
-    const handleSetAlert = (stock) => {
+    const handleSetAlert = (stock, e) => {
+        e?.stopPropagation();
         setSelectedStock(stock);
         setAlertFormData({
-            targetPrice: stock.currentPrice || '',
+            targetPrice: stock.currentPrice || stock.price || '',
             condition: 'above'
         });
         setShowAlertModal(true);
@@ -939,82 +808,34 @@ const WatchlistPage = () => {
 
     const handleSubmitAlert = (e) => {
         e.preventDefault();
-        
         const targetPrice = parseFloat(alertFormData.targetPrice);
-        const currentPrice = selectedStock.currentPrice || 0;
         
         if (targetPrice <= 0) {
-            toast.warning('Target price must be greater than 0', 'Invalid Price');
+            toast.warning('Target price must be greater than 0');
             return;
         }
 
-        // Update the stock with alert
         setWatchlist(prev => prev.map(stock => 
             stock.symbol === selectedStock.symbol 
                 ? { ...stock, hasAlert: true, alertPrice: targetPrice, alertCondition: alertFormData.condition }
                 : stock
         ));
 
-        toast.success(
-            `Alert set for ${selectedStock.symbol} ${alertFormData.condition} $${targetPrice.toFixed(2)}`,
-            'Alert Created'
-        );
-        
+        toast.success(`Alert set: ${selectedStock.symbol} ${alertFormData.condition} $${targetPrice.toFixed(2)}`);
         setShowAlertModal(false);
         setSelectedStock(null);
     };
 
-    const toggleSelectStock = (symbol) => {
-        setSelectedStocks(prev => {
-            const newSet = new Set(prev);
-            if (newSet.has(symbol)) {
-                newSet.delete(symbol);
-            } else {
-                newSet.add(symbol);
-            }
-            return newSet;
-        });
-    };
-
-    const handleSelectAll = () => {
-        if (selectedStocks.size === filteredWatchlist.length) {
-            setSelectedStocks(new Set());
-        } else {
-            setSelectedStocks(new Set(filteredWatchlist.map(s => s.symbol || s.ticker)));
-        }
-    };
-
-    const handleBatchDelete = async () => {
-        if (selectedStocks.size === 0) return;
-        
-        if (!window.confirm(`Delete ${selectedStocks.size} stocks from watchlist?`)) return;
-
-        try {
-            await Promise.all(
-                Array.from(selectedStocks).map(symbol => 
-                    api.delete(`/watchlist/${symbol}`)
-                )
-            );
-            
-            toast.success(`${selectedStocks.size} stocks removed`, 'Batch Delete Complete');
-            setSelectedStocks(new Set());
-            fetchWatchlist();
-        } catch (error) {
-            console.error('Error batch deleting:', error);
-            toast.error('Failed to delete some stocks', 'Error');
-        }
-    };
-
     const handleExportCSV = () => {
         const csv = [
-            ['Symbol', 'Name', 'Price', 'Change', 'Change %', 'Volume'].join(','),
+            ['Symbol', 'Name', 'Price', 'Change', 'Change %', 'Alert'].join(','),
             ...filteredWatchlist.map(stock => [
                 stock.symbol || '',
                 stock.name || '',
-                stock.currentPrice || 0,
+                stock.currentPrice || stock.price || 0,
                 stock.change || 0,
                 stock.changePercent || 0,
-                Math.floor(Math.random() * 100) + 'M'
+                stock.hasAlert ? `${stock.alertCondition} $${stock.alertPrice}` : 'None'
             ].join(','))
         ].join('\n');
 
@@ -1024,91 +845,135 @@ const WatchlistPage = () => {
         a.href = url;
         a.download = `watchlist-${new Date().toISOString().split('T')[0]}.csv`;
         a.click();
-        
-        toast.success('Watchlist exported!', 'CSV Downloaded');
+        toast.success('Watchlist exported!');
     };
 
-    const handleDragEnd = (result) => {
-        if (!result.destination) return;
-
-        const items = Array.from(filteredWatchlist);
-        const [reorderedItem] = items.splice(result.source.index, 1);
-        items.splice(result.destination.index, 0, reorderedItem);
-
-        setFilteredWatchlist(items);
-        setWatchlist(items);
-        
-        toast.success('Order saved!', 'Reordered');
+    const handleRowClick = (symbol) => {
+        if (isCrypto(symbol)) {
+            navigate(`/crypto/${symbol}`);
+        } else {
+            navigate(`/stocks/${symbol}`);
+        }
     };
 
-    const getStats = () => {
-    // ✅ Add safety check
-    if (!Array.isArray(watchlist)) {
-        return { totalStocks: 0, gainers: 0, losers: 0, avgChange: 0, alertsActive: 0 };
-    }
-    
-    const totalStocks = watchlist.length;
-    const gainers = watchlist.filter(s => (s.changePercent || 0) > 0).length;
-    const losers = watchlist.filter(s => (s.changePercent || 0) < 0).length;
-    const avgChange = watchlist.length > 0 
-        ? watchlist.reduce((sum, s) => sum + (s.changePercent || 0), 0) / watchlist.length 
-        : 0;
-    const alertsActive = watchlist.filter(s => s.hasAlert).length;
+    // Filter and sort
+    const filteredWatchlist = useMemo(() => {
+        let filtered = [...watchlist];
 
-    return { totalStocks, gainers, losers, avgChange, alertsActive };
-};
-    const stats = getStats();
+        // Search
+        if (searchQuery) {
+            const query = searchQuery.toLowerCase();
+            filtered = filtered.filter(s => 
+                (s.symbol || '').toLowerCase().includes(query) ||
+                (s.name || '').toLowerCase().includes(query)
+            );
+        }
+
+        // Filter
+        if (filterBy === 'gainers') {
+            filtered = filtered.filter(s => (s.changePercent || 0) > 0);
+        } else if (filterBy === 'losers') {
+            filtered = filtered.filter(s => (s.changePercent || 0) < 0);
+        } else if (filterBy === 'alerts') {
+            filtered = filtered.filter(s => s.hasAlert);
+        } else if (filterBy === 'stocks') {
+            filtered = filtered.filter(s => !isCrypto(s.symbol || s.ticker));
+        } else if (filterBy === 'crypto') {
+            filtered = filtered.filter(s => isCrypto(s.symbol || s.ticker));
+        }
+
+        // Sort
+        filtered.sort((a, b) => {
+            switch (sortBy) {
+                case 'symbol':
+                    return (a.symbol || '').localeCompare(b.symbol || '');
+                case 'price':
+                    return (b.currentPrice || b.price || 0) - (a.currentPrice || a.price || 0);
+                case 'change':
+                    return (b.changePercent || 0) - (a.changePercent || 0);
+                case 'name':
+                    return (a.name || '').localeCompare(b.name || '');
+                default:
+                    return 0;
+            }
+        });
+
+        return filtered;
+    }, [watchlist, searchQuery, sortBy, filterBy]);
+
+    // Stats
+    const stats = useMemo(() => {
+        if (!Array.isArray(watchlist) || watchlist.length === 0) {
+            return { total: 0, stocks: 0, crypto: 0, gainers: 0, losers: 0, avgChange: 0, alerts: 0 };
+        }
+        
+        const stocks = watchlist.filter(s => !isCrypto(s.symbol || s.ticker)).length;
+        const crypto = watchlist.filter(s => isCrypto(s.symbol || s.ticker)).length;
+        const gainers = watchlist.filter(s => (s.changePercent || 0) > 0).length;
+        const losers = watchlist.filter(s => (s.changePercent || 0) < 0).length;
+        const avgChange = watchlist.reduce((sum, s) => sum + (s.changePercent || 0), 0) / watchlist.length;
+        const alerts = watchlist.filter(s => s.hasAlert).length;
+
+        return { total: watchlist.length, stocks, crypto, gainers, losers, avgChange, alerts };
+    }, [watchlist]);
 
     if (loading) {
         return (
             <PageContainer>
-                <div style={{ textAlign: 'center', padding: '4rem' }}>
-                    <Activity size={64} color="#00adef" />
-                    <h2 style={{ marginTop: '1rem', color: '#00adef' }}>Loading Watchlist...</h2>
-                </div>
+                <ContentWrapper>
+                    <div style={{ textAlign: 'center', padding: '4rem' }}>
+                        <SpinningIcon><Activity size={64} color="#00adef" /></SpinningIcon>
+                        <h2 style={{ marginTop: '1rem', color: '#00adef' }}>Loading Watchlist...</h2>
+                    </div>
+                </ContentWrapper>
             </PageContainer>
         );
     }
 
-    if (!watchlist || watchlist.length === 0) {
+    if (watchlist.length === 0) {
         return (
             <PageContainer>
-                <Header>
-                    <HeaderTop>
-                        <HeaderLeft>
-                            <Title>My Watchlist</Title>
-                            <Subtitle>Track your favorite stocks in real-time</Subtitle>
-                        </HeaderLeft>
-                    </HeaderTop>
-                </Header>
-                <EmptyState>
-                    <EmptyIcon>
-                        <Eye size={64} color="#00adef" />
-                    </EmptyIcon>
-                    <h2 style={{ color: '#00adef', marginBottom: '0.5rem' }}>Your watchlist is empty</h2>
-                    <p style={{ color: '#94a3b8', marginBottom: '2rem' }}>Add stocks to track their performance</p>
-                </EmptyState>
-                <AddButton onClick={() => setShowAddModal(true)}>
-                    <Plus size={28} />
-                </AddButton>
+                <ContentWrapper>
+                    <Header>
+                        <Title>My Watchlist</Title>
+                        <Subtitle>Track stocks & crypto in real-time</Subtitle>
+                    </Header>
+                    <EmptyState>
+                        <EmptyIcon>
+                            <Eye size={48} color="#00adef" />
+                        </EmptyIcon>
+                        <EmptyTitle>Your Watchlist is Empty</EmptyTitle>
+                        <EmptyText>Add stocks or crypto to track their performance</EmptyText>
+                        <ActionButton $primary onClick={() => setShowAddModal(true)}>
+                            <Plus size={20} />
+                            Add Your First Stock
+                        </ActionButton>
+                    </EmptyState>
+                </ContentWrapper>
 
                 {showAddModal && (
                     <Modal onClick={() => setShowAddModal(false)}>
-                        <ModalContent onClick={(e) => e.stopPropagation()}>
-                            <CloseButton onClick={() => setShowAddModal(false)}>
-                                <X size={20} />
-                            </CloseButton>
-                            <ModalTitle>Add to Watchlist</ModalTitle>
+                        <ModalContent onClick={e => e.stopPropagation()}>
+                            <ModalHeader>
+                                <ModalTitle>Add to Watchlist</ModalTitle>
+                                <CloseButton onClick={() => setShowAddModal(false)}>
+                                    <X size={18} />
+                                </CloseButton>
+                            </ModalHeader>
                             <Form onSubmit={handleAddStock}>
                                 <FormGroup>
-                                    <Label>Stock Symbol</Label>
+                                    <Label>Symbol (Stock or Crypto)</Label>
                                     <Input
                                         type="text"
-                                        placeholder="AAPL, TSLA, NVDA..."
+                                        placeholder="AAPL, TSLA, BTC, ETH..."
                                         value={formData.symbol}
-                                        onChange={(e) => setFormData({ symbol: e.target.value.toUpperCase() })}
+                                        onChange={e => setFormData({ symbol: e.target.value.toUpperCase() })}
                                         required
+                                        autoFocus
                                     />
+                                    <HelpText>
+                                        Enter any stock ticker or crypto symbol
+                                    </HelpText>
                                 </FormGroup>
                                 <SubmitButton type="submit">Add to Watchlist</SubmitButton>
                             </Form>
@@ -1121,278 +986,250 @@ const WatchlistPage = () => {
 
     return (
         <PageContainer>
-            <Header>
-                <HeaderTop>
-                    <HeaderLeft>
-                        <Title>My Watchlist</Title>
-                        <Subtitle>Real-time tracking • {filteredWatchlist.length} of {watchlist.length} stocks</Subtitle>
-                    </HeaderLeft>
-                    <HeaderRight>
-                        <RefreshButton onClick={handleRefresh} disabled={refreshing} $refreshing={refreshing}>
-                            <RefreshCw size={18} />
-                            Refresh
-                        </RefreshButton>
-                        <ToolbarButton onClick={handleExportCSV}>
-                            <Download size={18} />
-                            Export CSV
-                        </ToolbarButton>
-                    </HeaderRight>
-                </HeaderTop>
+            <ContentWrapper>
+                {/* Header */}
+                <Header>
+                    <HeaderTop>
+                        <div>
+                            <Title>My Watchlist</Title>
+                            <Subtitle>{watchlist.length} assets • Stocks & Crypto</Subtitle>
+                        </div>
+                        <HeaderActions>
+                            <ActionButton onClick={handleRefresh} disabled={refreshing} $spinning={refreshing}>
+                                <RefreshCw size={18} />
+                                Refresh
+                            </ActionButton>
+                            <ActionButton onClick={handleExportCSV}>
+                                <Download size={18} />
+                                Export
+                            </ActionButton>
+                            <ActionButton $primary onClick={() => setShowAddModal(true)}>
+                                <Plus size={18} />
+                                Add Stock
+                            </ActionButton>
+                        </HeaderActions>
+                    </HeaderTop>
+                </Header>
 
-                {/* TOOLBAR */}
-                <Toolbar>
-                    <SearchBar>
-                        <SearchIcon size={20} />
-                        <SearchInput
-                            type="text"
-                            placeholder="Search stocks..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                    </SearchBar>
+                {/* Stats */}
+                <StatsHero>
+                    <StatCard $delay="0s" $color="linear-gradient(90deg, #00adef, #0088cc)">
+                        <StatIcon $bg="rgba(0, 173, 237, 0.15)" $color="#00adef">
+                            <Eye size={20} />
+                        </StatIcon>
+                        <StatLabel>Total</StatLabel>
+                        <StatValue>{stats.total}</StatValue>
+                        <StatSubtext>watching</StatSubtext>
+                    </StatCard>
 
-                    <Select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-                        <option value="symbol">Sort by Symbol</option>
-                        <option value="alphabetical">Sort A-Z</option>
-                        <option value="price">Sort by Price</option>
-                        <option value="change">Sort by Change</option>
-                    </Select>
+                    <StatCard $delay="0.05s" $color="linear-gradient(90deg, #8b5cf6, #7c3aed)">
+                        <StatIcon $bg="rgba(139, 92, 246, 0.15)" $color="#a78bfa">
+                            <BarChart3 size={20} />
+                        </StatIcon>
+                        <StatLabel>Stocks</StatLabel>
+                        <StatValue $color="#a78bfa">{stats.stocks}</StatValue>
+                        <StatSubtext>equities</StatSubtext>
+                    </StatCard>
 
-                    <Select value={filterBy} onChange={(e) => setFilterBy(e.target.value)}>
-                        <option value="all">All Stocks</option>
-                        <option value="gainers">Gainers Only</option>
-                        <option value="losers">Losers Only</option>
-                        <option value="alerts">With Alerts</option>
-                    </Select>
+                    <StatCard $delay="0.1s" $color="linear-gradient(90deg, #fbbf24, #f59e0b)">
+                        <StatIcon $bg="rgba(251, 191, 36, 0.15)" $color="#fbbf24">
+                            <Bitcoin size={20} />
+                        </StatIcon>
+                        <StatLabel>Crypto</StatLabel>
+                        <StatValue $color="#fbbf24">{stats.crypto}</StatValue>
+                        <StatSubtext>tokens</StatSubtext>
+                    </StatCard>
 
-                    <ToolbarButton onClick={handleSelectAll}>
-                        {selectedStocks.size === filteredWatchlist.length ? <CheckSquare size={18} /> : <Square size={18} />}
-                        Select All
-                    </ToolbarButton>
-                </Toolbar>
-            </Header>
+                    <StatCard $delay="0.15s" $color="linear-gradient(90deg, #10b981, #059669)">
+                        <StatIcon $bg="rgba(16, 185, 129, 0.15)" $color="#10b981">
+                            <TrendingUp size={20} />
+                        </StatIcon>
+                        <StatLabel>Gainers</StatLabel>
+                        <StatValue $color="#10b981">{stats.gainers}</StatValue>
+                        <StatSubtext>up today</StatSubtext>
+                    </StatCard>
 
-            {/* BATCH ACTIONS */}
-            {selectedStocks.size > 0 && (
-                <BatchActionsBar>
-                    <BatchInfo>
-                        <CheckSquare size={20} />
-                        {selectedStocks.size} selected
-                    </BatchInfo>
-                    <BatchActions>
-                        <ToolbarButton $danger onClick={handleBatchDelete}>
-                            <Trash size={18} />
-                            Delete Selected
-                        </ToolbarButton>
-                        <ToolbarButton onClick={() => setSelectedStocks(new Set())}>
-                            <X size={18} />
-                            Clear Selection
-                        </ToolbarButton>
-                    </BatchActions>
-                </BatchActionsBar>
-            )}
+                    <StatCard $delay="0.2s" $color="linear-gradient(90deg, #ef4444, #dc2626)">
+                        <StatIcon $bg="rgba(239, 68, 68, 0.15)" $color="#ef4444">
+                            <TrendingDown size={20} />
+                        </StatIcon>
+                        <StatLabel>Losers</StatLabel>
+                        <StatValue $color="#ef4444">{stats.losers}</StatValue>
+                        <StatSubtext>down today</StatSubtext>
+                    </StatCard>
+                </StatsHero>
 
-            {/* STATS */}
-            <StatsGrid>
-                <StatCard>
-                    <StatIcon>
-                        <Eye size={24} />
-                    </StatIcon>
-                    <StatLabel>Tracking</StatLabel>
-                    <StatValue>{stats.totalStocks}</StatValue>
-                    <StatSubtext>Stocks in watchlist</StatSubtext>
-                </StatCard>
+                {/* Watchlist Table */}
+                <WatchlistSection>
+                    <SectionHeader>
+                        <SectionTitle>
+                            <Star size={22} />
+                            Watched Stocks
+                        </SectionTitle>
+                    </SectionHeader>
 
-                <StatCard variant="success">
-                    <StatIcon variant="success">
-                        <TrendingUp size={24} />
-                    </StatIcon>
-                    <StatLabel>Gainers</StatLabel>
-                    <StatValue>{stats.gainers}</StatValue>
-                    <StatSubtext>Stocks up today</StatSubtext>
-                </StatCard>
+                    <Toolbar>
+                        <SearchWrapper>
+                            <SearchIconStyled />
+                            <SearchInput
+                                type="text"
+                                placeholder="Search stocks..."
+                                value={searchQuery}
+                                onChange={e => setSearchQuery(e.target.value)}
+                            />
+                        </SearchWrapper>
 
-                <StatCard variant="danger">
-                    <StatIcon variant="danger">
-                        <TrendingDown size={24} />
-                    </StatIcon>
-                    <StatLabel>Losers</StatLabel>
-                    <StatValue>{stats.losers}</StatValue>
-                    <StatSubtext>Stocks down today</StatSubtext>
-                </StatCard>
+                        <Select value={sortBy} onChange={e => setSortBy(e.target.value)}>
+                            <option value="symbol">Sort by Symbol</option>
+                            <option value="name">Sort by Name</option>
+                            <option value="price">Sort by Price</option>
+                            <option value="change">Sort by Change</option>
+                        </Select>
 
-                <StatCard variant={stats.avgChange >= 0 ? 'success' : 'danger'}>
-                    <StatIcon variant={stats.avgChange >= 0 ? 'success' : 'danger'}>
-                        <BarChart3 size={24} />
-                    </StatIcon>
-                    <StatLabel>Avg Change</StatLabel>
-                    <StatValue>{stats.avgChange >= 0 ? '+' : ''}{stats.avgChange.toFixed(2)}%</StatValue>
-                    <StatSubtext>Average performance</StatSubtext>
-                </StatCard>
+                        <Select value={filterBy} onChange={e => setFilterBy(e.target.value)}>
+                            <option value="all">All Assets</option>
+                            <option value="stocks">Stocks Only</option>
+                            <option value="crypto">Crypto Only</option>
+                            <option value="gainers">Gainers Only</option>
+                            <option value="losers">Losers Only</option>
+                            <option value="alerts">With Alerts</option>
+                        </Select>
+                    </Toolbar>
 
-                <StatCard variant="warning">
-                    <StatIcon variant="warning">
-                        <Bell size={24} />
-                    </StatIcon>
-                    <StatLabel>Active Alerts</StatLabel>
-                    <StatValue>{stats.alertsActive}</StatValue>
-                    <StatSubtext>Price alerts set</StatSubtext>
-                </StatCard>
-            </StatsGrid>
+                    <TableWrapper>
+                        <Table>
+                            <thead>
+                                <tr>
+                                    <Th>Symbol</Th>
+                                    <Th>Price</Th>
+                                    <Th>Change</Th>
+                                    <Th>Trend</Th>
+                                    <Th>Alert</Th>
+                                    <Th></Th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredWatchlist.map(stock => {
+                                    const symbol = stock.symbol || stock.ticker || 'Unknown';
+                                    const price = stock.currentPrice || stock.price || 0;
+                                    const change = stock.change || 0;
+                                    const changePercent = stock.changePercent || 0;
+                                    const positive = changePercent >= 0;
+                                    const crypto = isCrypto(symbol);
+                                    const displayName = crypto ? getCryptoName(symbol) : (stock.name || 'Company');
 
-            {/* WATCHLIST WITH DRAG & DROP */}
-            <DragDropContext onDragEnd={handleDragEnd}>
-                <Droppable droppableId="watchlist">
-                    {(provided) => (
-                        <WatchlistGrid {...provided.droppableProps} ref={provided.innerRef}>
-                            {filteredWatchlist.map((stock, index) => {
-                                const symbol = stock.symbol || stock.ticker || 'Unknown';
-                                const price = stock.currentPrice || stock.price || 0;
-                                const change = stock.change || 0;
-                                const changePercent = stock.changePercent || 0;
-                                const positive = changePercent >= 0;
-                                const isSelected = selectedStocks.has(symbol);
-
-                                return (
-                                    <Draggable key={symbol} draggableId={symbol} index={index}>
-                                        {(provided, snapshot) => (
-                                            <WatchCard
-                                                ref={provided.innerRef}
-                                                {...provided.draggableProps}
-                                                positive={positive}
-                                                $isDragging={snapshot.isDragging}
-                                                $selected={isSelected}
-                                            >
-                                                <DragHandle {...provided.dragHandleProps}>
-                                                    <GripVertical size={20} />
-                                                </DragHandle>
-
-                                                <WatchHeader>
-                                                    <WatchSymbolSection>
-                                                        <SelectCheckbox
-                                                            $checked={isSelected}
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                toggleSelectStock(symbol);
-                                                            }}
-                                                        >
-                                                            {isSelected && <CheckSquare size={16} color="white" />}
-                                                        </SelectCheckbox>
-                                                        <div>
-                                                            <WatchSymbol>
-                                                                {symbol}
-                                                                {positive ? 
-                                                                    <Star size={20} color="#10b981" /> : 
-                                                                    <Flame size={20} color="#ef4444" />
-                                                                }
-                                                            </WatchSymbol>
-                                                            <WatchName>{stock.name || 'Company Name'}</WatchName>
-                                                        </div>
-                                                    </WatchSymbolSection>
-                                                    <ActionButtons>
-                                                        <IconButton
-                                                            variant={stock.hasAlert ? 'success' : 'default'}
-                                                            $active={stock.hasAlert}
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleSetAlert(stock);
-                                                            }}
-                                                        >
-                                                            {stock.hasAlert ? <Bell size={18} /> : <BellOff size={18} />}
-                                                        </IconButton>
-                                                        <IconButton 
-                                                            variant="danger" 
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleRemoveStock(symbol);
-                                                            }}
-                                                        >
-                                                            <Trash2 size={18} />
-                                                        </IconButton>
-                                                    </ActionButtons>
-                                                </WatchHeader>
-
-                                                <PriceSection>
-                                                    <CurrentPrice>${price.toFixed(2)}</CurrentPrice>
-                                                    <PriceChange positive={positive}>
-                                                        {positive ? <ArrowUpRight size={20} /> : <ArrowDownRight size={20} />}
-                                                        {positive ? '+' : ''}${Math.abs(change).toFixed(2)} ({positive ? '+' : ''}{changePercent.toFixed(2)}%)
-                                                    </PriceChange>
-                                                </PriceSection>
-
-                                                <StatsRow>
-                                                    <StatItem>
-                                                        <StatItemLabel>High</StatItemLabel>
-                                                        <StatItemValue>${(price * 1.05).toFixed(2)}</StatItemValue>
-                                                    </StatItem>
-                                                    <StatItem>
-                                                        <StatItemLabel>Low</StatItemLabel>
-                                                        <StatItemValue>${(price * 0.95).toFixed(2)}</StatItemValue>
-                                                    </StatItem>
-                                                    <StatItem>
-                                                        <StatItemLabel>Volume</StatItemLabel>
-                                                        <StatItemValue>{(Math.random() * 100).toFixed(1)}M</StatItemValue>
-                                                    </StatItem>
-                                                </StatsRow>
-
-                                                <MiniChart>
+                                    return (
+                                        <Tr key={symbol} onClick={() => handleRowClick(symbol)}>
+                                            <Td>
+                                                <SymbolCell>
+                                                    <SymbolIcon $crypto={crypto}>
+                                                        {crypto ? <Bitcoin size={18} /> : symbol.substring(0, 2)}
+                                                    </SymbolIcon>
+                                                    <SymbolInfo>
+                                                        <SymbolName>
+                                                            {symbol}
+                                                            {positive ? 
+                                                                <Star size={14} color="#10b981" /> : 
+                                                                <Flame size={14} color="#ef4444" />
+                                                            }
+                                                            <TypeBadge $crypto={crypto}>
+                                                                {crypto ? <Coins size={10} /> : <BarChart3 size={10} />}
+                                                                {crypto ? 'Crypto' : 'Stock'}
+                                                            </TypeBadge>
+                                                        </SymbolName>
+                                                        <SymbolCompany>{displayName}</SymbolCompany>
+                                                    </SymbolInfo>
+                                                </SymbolCell>
+                                            </Td>
+                                            <Td>
+                                                <PriceCell>{formatPrice(price, symbol)}</PriceCell>
+                                            </Td>
+                                            <Td>
+                                                <ChangeCell>
+                                                    <ChangeValue $positive={positive}>
+                                                        {positive ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
+                                                        ${Math.abs(change).toFixed(2)}
+                                                    </ChangeValue>
+                                                    <ChangePercent $positive={positive}>
+                                                        {positive ? '+' : ''}{changePercent.toFixed(2)}%
+                                                    </ChangePercent>
+                                                </ChangeCell>
+                                            </Td>
+                                            <Td>
+                                                <SparklineCell>
                                                     <ResponsiveContainer width="100%" height="100%">
-                                                        <LineChart data={stock.chartData || []}>
-                                                            <Line 
+                                                        <AreaChart data={stock.chartData || []}>
+                                                            <defs>
+                                                                <linearGradient id={`gradient-${symbol}`} x1="0" y1="0" x2="0" y2="1">
+                                                                    <stop offset="0%" stopColor={positive ? '#10b981' : '#ef4444'} stopOpacity={0.3} />
+                                                                    <stop offset="100%" stopColor={positive ? '#10b981' : '#ef4444'} stopOpacity={0} />
+                                                                </linearGradient>
+                                                            </defs>
+                                                            <Area 
                                                                 type="monotone" 
                                                                 dataKey="value" 
                                                                 stroke={positive ? '#10b981' : '#ef4444'} 
                                                                 strokeWidth={2}
-                                                                dot={false}
+                                                                fill={`url(#gradient-${symbol})`}
                                                             />
-                                                        </LineChart>
+                                                        </AreaChart>
                                                     </ResponsiveContainer>
-                                                </MiniChart>
+                                                </SparklineCell>
+                                            </Td>
+                                            <Td>
+                                                <AlertCell>
+                                                    <AlertBadge 
+                                                        $active={stock.hasAlert}
+                                                        onClick={e => handleSetAlert(stock, e)}
+                                                    >
+                                                        {stock.hasAlert ? <Bell size={12} /> : <BellOff size={12} />}
+                                                        {stock.hasAlert 
+                                                            ? `${stock.alertCondition} $${stock.alertPrice?.toFixed(0)}`
+                                                            : 'Set Alert'
+                                                        }
+                                                    </AlertBadge>
+                                                </AlertCell>
+                                            </Td>
+                                            <Td>
+                                                <ActionCell>
+                                                    <SmallButton $danger onClick={e => handleRemoveStock(symbol, e)}>
+                                                        <Trash2 size={14} />
+                                                    </SmallButton>
+                                                </ActionCell>
+                                            </Td>
+                                        </Tr>
+                                    );
+                                })}
+                            </tbody>
+                        </Table>
+                    </TableWrapper>
+                </WatchlistSection>
+            </ContentWrapper>
 
-                                                <AlertBadge 
-                                                    active={stock.hasAlert}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleSetAlert(stock);
-                                                    }}
-                                                >
-                                                    {stock.hasAlert ? <Bell size={16} /> : <BellOff size={16} />}
-                                                    {stock.hasAlert ? `Alert: ${stock.alertCondition} $${stock.alertPrice?.toFixed(2)}` : 'Set Price Alert'}
-                                                </AlertBadge>
-                                            </WatchCard>
-                                        )}
-                                    </Draggable>
-                                );
-                            })}
-                            {provided.placeholder}
-                        </WatchlistGrid>
-                    )}
-                </Droppable>
-            </DragDropContext>
-
-            <AddButton onClick={() => setShowAddModal(true)}>
-                <Plus size={28} />
-            </AddButton>
-
-            {/* ADD STOCK MODAL */}
+            {/* Add Modal */}
             {showAddModal && (
                 <Modal onClick={() => setShowAddModal(false)}>
-                    <ModalContent onClick={(e) => e.stopPropagation()}>
-                        <CloseButton onClick={() => setShowAddModal(false)}>
-                            <X size={20} />
-                        </CloseButton>
-                        <ModalTitle>Add to Watchlist</ModalTitle>
+                    <ModalContent onClick={e => e.stopPropagation()}>
+                        <ModalHeader>
+                            <ModalTitle>Add to Watchlist</ModalTitle>
+                            <CloseButton onClick={() => setShowAddModal(false)}>
+                                <X size={18} />
+                            </CloseButton>
+                        </ModalHeader>
                         <Form onSubmit={handleAddStock}>
                             <FormGroup>
-                                <Label>Stock Symbol</Label>
+                                <Label>Symbol (Stock or Crypto)</Label>
                                 <Input
                                     type="text"
-                                    placeholder="AAPL, TSLA, NVDA..."
+                                    placeholder="AAPL, TSLA, BTC, ETH..."
                                     value={formData.symbol}
-                                    onChange={(e) => setFormData({ symbol: e.target.value.toUpperCase() })}
+                                    onChange={e => setFormData({ symbol: e.target.value.toUpperCase() })}
                                     required
                                     autoFocus
                                 />
+                                <HelpText>
+                                    Enter any stock ticker (AAPL, NVDA) or crypto symbol (BTC, ETH, SOL)
+                                </HelpText>
                             </FormGroup>
                             <SubmitButton type="submit">Add to Watchlist</SubmitButton>
                         </Form>
@@ -1400,24 +1237,26 @@ const WatchlistPage = () => {
                 </Modal>
             )}
 
-            {/* PRICE ALERT MODAL */}
+            {/* Alert Modal */}
             {showAlertModal && selectedStock && (
                 <Modal onClick={() => setShowAlertModal(false)}>
-                    <ModalContent onClick={(e) => e.stopPropagation()}>
-                        <CloseButton onClick={() => setShowAlertModal(false)}>
-                            <X size={20} />
-                        </CloseButton>
-                        <ModalTitle>Set Price Alert for {selectedStock.symbol}</ModalTitle>
+                    <ModalContent onClick={e => e.stopPropagation()}>
+                        <ModalHeader>
+                            <ModalTitle>Set Alert for {selectedStock.symbol}</ModalTitle>
+                            <CloseButton onClick={() => setShowAlertModal(false)}>
+                                <X size={18} />
+                            </CloseButton>
+                        </ModalHeader>
                         <Form onSubmit={handleSubmitAlert}>
                             <FormGroup>
                                 <Label>Alert Condition</Label>
-                                <Select 
+                                <ModalSelect 
                                     value={alertFormData.condition}
-                                    onChange={(e) => setAlertFormData({ ...alertFormData, condition: e.target.value })}
+                                    onChange={e => setAlertFormData({ ...alertFormData, condition: e.target.value })}
                                 >
                                     <option value="above">Price goes above</option>
                                     <option value="below">Price goes below</option>
-                                </Select>
+                                </ModalSelect>
                             </FormGroup>
                             <FormGroup>
                                 <Label>Target Price</Label>
@@ -1426,13 +1265,13 @@ const WatchlistPage = () => {
                                     step="0.01"
                                     placeholder="150.00"
                                     value={alertFormData.targetPrice}
-                                    onChange={(e) => setAlertFormData({ ...alertFormData, targetPrice: e.target.value })}
+                                    onChange={e => setAlertFormData({ ...alertFormData, targetPrice: e.target.value })}
                                     required
                                     autoFocus
                                 />
-                                <div style={{ color: '#94a3b8', fontSize: '0.85rem', marginTop: '0.5rem' }}>
-                                    Current price: ${(selectedStock.currentPrice || 0).toFixed(2)}
-                                </div>
+                                <HelpText>
+                                    Current price: ${(selectedStock.currentPrice || selectedStock.price || 0).toFixed(2)}
+                                </HelpText>
                             </FormGroup>
                             <SubmitButton type="submit">Create Alert</SubmitButton>
                         </Form>
