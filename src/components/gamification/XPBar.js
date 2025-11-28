@@ -1,9 +1,12 @@
 // client/src/components/gamification/XPBar.js
+// XP Progress Bar with auto-calculated level from XP
+
 import React from 'react';
 import styled, { keyframes } from 'styled-components';
+import { Star, Coins, TrendingUp, Flame } from 'lucide-react';
 import { useGamification } from '../../context/GamificationContext';
-import { TrendingUp, Star, Zap } from 'lucide-react';
 
+// ============ ANIMATIONS ============
 const shimmer = keyframes`
     0% { background-position: -200% center; }
     100% { background-position: 200% center; }
@@ -14,218 +17,293 @@ const pulse = keyframes`
     50% { transform: scale(1.05); }
 `;
 
+// ============ STYLED COMPONENTS ============
 const Container = styled.div`
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(59, 130, 246, 0.15) 100%);
-    border: 2px solid rgba(139, 92, 246, 0.3);
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);
+    border: 1px solid rgba(139, 92, 246, 0.3);
     border-radius: 16px;
-    padding: 1.25rem;
-    position: relative;
-    overflow: hidden;
-
-    &::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(45deg, transparent 30%, rgba(139, 92, 246, 0.1) 50%, transparent 70%);
-        background-size: 200% 200%;
-        animation: ${shimmer} 3s linear infinite;
+    padding: 1.5rem 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    
+    @media (max-width: 768px) {
+        padding: 1rem 1.25rem;
     }
 `;
 
-const Header = styled.div`
+const TopRow = styled.div`
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1rem;
-    position: relative;
-    z-index: 1;
+    flex-wrap: wrap;
+    gap: 1rem;
 `;
 
 const LevelInfo = styled.div`
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 1rem;
 `;
 
-const LevelBadge = styled.div`
-    width: 48px;
-    height: 48px;
+const LevelCircle = styled.div`
+    width: 56px;
+    height: 56px;
     border-radius: 50%;
     background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
-    font-weight: 900;
-    font-size: 1.2rem;
-    box-shadow: 0 4px 16px rgba(139, 92, 246, 0.4);
-    animation: ${pulse} 2s ease-in-out infinite;
-`;
-
-const LevelText = styled.div``;
-
-const LevelNumber = styled.div`
     font-size: 1.5rem;
     font-weight: 900;
-    color: #a78bfa;
-    line-height: 1;
+    color: white;
+    box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
+    
+    @media (max-width: 768px) {
+        width: 48px;
+        height: 48px;
+        font-size: 1.25rem;
+    }
+`;
+
+const LevelDetails = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+`;
+
+const LevelTitle = styled.div`
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #f8fafc;
+    
+    @media (max-width: 768px) {
+        font-size: 1.25rem;
+    }
 `;
 
 const RankText = styled.div`
+    color: #a78bfa;
     font-size: 0.9rem;
-    color: #94a3b8;
+    font-weight: 600;
 `;
 
 const CoinsDisplay = styled.div`
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    background: rgba(245, 158, 11, 0.2);
-    border: 1px solid rgba(245, 158, 11, 0.4);
-    border-radius: 20px;
-    color: #f59e0b;
-    font-weight: 700;
-`;
-
-const ProgressContainer = styled.div`
-    position: relative;
-    z-index: 1;
-`;
-
-const ProgressInfo = styled.div`
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.5rem;
-`;
-
-const ProgressLabel = styled.div`
-    color: #94a3b8;
-    font-size: 0.9rem;
-    font-weight: 600;
-`;
-
-const ProgressNumbers = styled.div`
-    color: #a78bfa;
-    font-weight: 700;
-    font-size: 0.9rem;
-`;
-
-const ProgressBar = styled.div`
-    width: 100%;
-    height: 12px;
-    background: rgba(139, 92, 246, 0.2);
-    border-radius: 6px;
-    overflow: hidden;
-    position: relative;
-    border: 1px solid rgba(139, 92, 246, 0.3);
-`;
-
-const ProgressFill = styled.div`
-    height: 100%;
-    width: ${props => props.$progress || 0}%;
-    background: linear-gradient(90deg, #8b5cf6, #6366f1, #00adef);
-    border-radius: 6px;
-    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-    overflow: hidden;
-
-    &::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.3) 50%, transparent 70%);
-        background-size: 200% 200%;
-        animation: ${shimmer} 2s linear infinite;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(251, 191, 36, 0.1) 100%);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: 12px;
+    padding: 0.75rem 1.25rem;
+    
+    svg {
+        color: #fbbf24;
+    }
+    
+    span {
+        color: #fbbf24;
+        font-weight: 700;
+        font-size: 1.1rem;
     }
 `;
 
-const StatsRow = styled.div`
+const ProgressSection = styled.div`
     display: flex;
-    gap: 1rem;
-    margin-top: 1rem;
-    position: relative;
-    z-index: 1;
+    flex-direction: column;
+    gap: 0.5rem;
 `;
 
-const StatBadge = styled.div`
-    flex: 1;
+const ProgressHeader = styled.div`
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 0.75rem;
-    background: rgba(139, 92, 246, 0.1);
-    border: 1px solid rgba(139, 92, 246, 0.3);
-    border-radius: 10px;
-    color: #a78bfa;
+`;
+
+const ProgressLabel = styled.span`
+    color: #94a3b8;
     font-size: 0.85rem;
     font-weight: 600;
 `;
 
+const ProgressValue = styled.span`
+    color: #a78bfa;
+    font-size: 0.85rem;
+    font-weight: 700;
+`;
+
+const ProgressTrack = styled.div`
+    height: 12px;
+    background: rgba(100, 116, 139, 0.3);
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+`;
+
+const ProgressFill = styled.div`
+    height: 100%;
+    width: ${props => Math.min(100, Math.max(0, props.$percent || 0))}%;
+    background: linear-gradient(90deg, #8b5cf6 0%, #06b6d4 50%, #00ff88 100%);
+    background-size: 200% 100%;
+    border-radius: 6px;
+    transition: width 0.5s ease;
+    animation: ${shimmer} 3s ease-in-out infinite;
+`;
+
+const BottomRow = styled.div`
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    
+    @media (max-width: 480px) {
+        grid-template-columns: 1fr;
+    }
+`;
+
+const StatCard = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(100, 116, 139, 0.2);
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+`;
+
+const StatIcon = styled.div`
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: ${props => props.$bg || 'rgba(100, 116, 139, 0.2)'};
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    svg {
+        color: ${props => props.$color || '#94a3b8'};
+    }
+`;
+
+const StatInfo = styled.div`
+    display: flex;
+    flex-direction: column;
+`;
+
+const StatValue = styled.span`
+    font-size: 1rem;
+    font-weight: 700;
+    color: #f8fafc;
+`;
+
+const StatLabel = styled.span`
+    font-size: 0.75rem;
+    color: #64748b;
+`;
+
+// ============ HELPER FUNCTIONS ============
+const getRankForLevel = (level) => {
+    if (level >= 100) return 'Wall Street Titan';
+    if (level >= 75) return 'Market Mogul';
+    if (level >= 50) return 'Trading Legend';
+    if (level >= 40) return 'Master Trader';
+    if (level >= 30) return 'Expert Trader';
+    if (level >= 20) return 'Veteran Trader';
+    if (level >= 15) return 'Advanced Trader';
+    if (level >= 10) return 'Skilled Trader';
+    if (level >= 5) return 'Apprentice Trader';
+    if (level >= 2) return 'Novice Trader';
+    return 'Rookie Trader';
+};
+
+// ============ COMPONENT ============
 const XPBar = () => {
     const { gamificationData, loading } = useGamification();
 
-    if (loading || !gamificationData) {
-        return null;
-    }
+    // Extract raw values
+    const totalXp = gamificationData?.xp || 0;
+    const nexusCoins = gamificationData?.nexusCoins || 0;
+    const loginStreak = gamificationData?.loginStreak || 0;
 
-    const {
-        xp,
-        level,
-        rank,
-        nexusCoins,
-        loginStreak,
-        xpForNextLevel,
-        xpInCurrentLevel,
-        progressPercent
-    } = gamificationData;
+    // 🔥 AUTO-CALCULATE LEVEL FROM XP (1000 XP per level)
+    // This ensures frontend always shows correct level regardless of backend sync
+    const calculatedLevel = Math.floor(totalXp / 1000) + 1;
+    const calculatedRank = getRankForLevel(calculatedLevel);
+    
+    // Calculate XP progress within current level
+    const xpForCurrentLevel = (calculatedLevel - 1) * 1000;
+    const xpForNextLevel = calculatedLevel * 1000;
+    const xpInCurrentLevel = totalXp - xpForCurrentLevel;
+    const xpNeeded = xpForNextLevel - xpForCurrentLevel; // Always 1000
+    const progressPercent = xpNeeded > 0 ? (xpInCurrentLevel / xpNeeded) * 100 : 0;
+
+    if (loading) {
+        return (
+            <Container style={{ opacity: 0.5 }}>
+                <TopRow>
+                    <LevelInfo>
+                        <LevelCircle>-</LevelCircle>
+                        <LevelDetails>
+                            <LevelTitle>Loading...</LevelTitle>
+                            <RankText>Please wait</RankText>
+                        </LevelDetails>
+                    </LevelInfo>
+                </TopRow>
+            </Container>
+        );
+    }
 
     return (
         <Container>
-            <Header>
+            <TopRow>
                 <LevelInfo>
-                    <LevelBadge>
+                    <LevelCircle>
                         <Star size={24} />
-                    </LevelBadge>
-                    <LevelText>
-                        <LevelNumber>Level {level}</LevelNumber>
-                        <RankText>{rank}</RankText>
-                    </LevelText>
+                    </LevelCircle>
+                    <LevelDetails>
+                        <LevelTitle>Level {calculatedLevel}</LevelTitle>
+                        <RankText>{calculatedRank}</RankText>
+                    </LevelDetails>
                 </LevelInfo>
+                
                 <CoinsDisplay>
-                    <Zap size={18} />
-                    {nexusCoins?.toLocaleString()} Coins
+                    <Coins size={20} />
+                    <span>{nexusCoins.toLocaleString()} Coins</span>
                 </CoinsDisplay>
-            </Header>
+            </TopRow>
 
-            <ProgressContainer>
-                <ProgressInfo>
-                    <ProgressLabel>Progress to Level {level + 1}</ProgressLabel>
-                    <ProgressNumbers>
-                        {Math.floor(xpInCurrentLevel).toLocaleString()} / {(xpForNextLevel - Math.pow(level - 1, 2) * 100).toLocaleString()} XP
-                    </ProgressNumbers>
-                </ProgressInfo>
-                <ProgressBar>
-                    <ProgressFill $progress={progressPercent} />
-                </ProgressBar>
-            </ProgressContainer>
+            <ProgressSection>
+                <ProgressHeader>
+                    <ProgressLabel>Progress to Level {calculatedLevel + 1}</ProgressLabel>
+                    <ProgressValue>
+                        {Math.floor(xpInCurrentLevel).toLocaleString()} / {xpNeeded.toLocaleString()} XP
+                    </ProgressValue>
+                </ProgressHeader>
+                <ProgressTrack>
+                    <ProgressFill $percent={progressPercent} />
+                </ProgressTrack>
+            </ProgressSection>
 
-            <StatsRow>
-                <StatBadge>
-                    <TrendingUp size={16} />
-                    {xp?.toLocaleString()} Total XP
-                </StatBadge>
-                <StatBadge>
-                    🔥 {loginStreak} Day Streak
-                </StatBadge>
-            </StatsRow>
+            <BottomRow>
+                <StatCard>
+                    <StatIcon $bg="rgba(139, 92, 246, 0.15)" $color="#a78bfa">
+                        <TrendingUp size={18} />
+                    </StatIcon>
+                    <StatInfo>
+                        <StatValue>{totalXp.toLocaleString()} Total XP</StatValue>
+                        <StatLabel>Lifetime experience</StatLabel>
+                    </StatInfo>
+                </StatCard>
+
+                <StatCard>
+                    <StatIcon $bg="rgba(249, 115, 22, 0.15)" $color="#f97316">
+                        <Flame size={18} />
+                    </StatIcon>
+                    <StatInfo>
+                        <StatValue>{loginStreak} Day Streak</StatValue>
+                        <StatLabel>Keep it going!</StatLabel>
+                    </StatInfo>
+                </StatCard>
+            </BottomRow>
         </Container>
     );
 };
