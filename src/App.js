@@ -58,7 +58,6 @@ import DiscoveryPage from './pages/DiscoveryPage';
 import SocialFeed from './components/SocialFeed';
 import AchievementsPage from './pages/AchievementsPage';
 import AchievementsBrowserPage from './pages/AchievementsBrowserPage';
-import StockComparisonPage from './pages/StockComparisonPage';
 import VaultPage from './pages/VaultPage';
 import EquippedItemsPage from './pages/EquippedItemsPage';
 import PriceServiceTester from './components/dev/PriceServiceTester';
@@ -66,6 +65,7 @@ import OnboardingFlow from './pages/OnboardingFlow';
 import PredictionsShowcase from './pages/PredictionsShowcase';
 import CryptoPage from './pages/CryptoPage';
 import WhaleAlertsPage from './pages/WhaleAlertsPage';
+import ComparisonPage from './pages/ComparisonPage';
 
 // Wraps content with styled-components theme
 function AppContent() {
@@ -121,7 +121,7 @@ function AppContent() {
                     <Route path="/discover" element={<ProtectedRoute><DiscoveryPage /></ProtectedRoute>} />
                     <Route path="/feed" element={<SocialFeed />} />
                     <Route path="/achievements/browse" element={<ProtectedRoute><AchievementsBrowserPage /></ProtectedRoute>} />
-                    <Route path="/compare" element={<ProtectedRoute><StockComparisonPage /></ProtectedRoute>} />
+
                     <Route path="/vault" element={<ProtectedRoute><VaultPage /></ProtectedRoute>} />
                     <Route path="/equipped" element={<ProtectedRoute><EquippedItemsPage /></ProtectedRoute>} />
                     <Route path="/dev/price-test" element={<PriceServiceTester />} />
@@ -130,7 +130,8 @@ function AppContent() {
                     <Route path="/crypto/:symbol" element={<ProtectedRoute><CryptoPage /></ProtectedRoute>} />
                     <Route path="/whale-alerts" element={<ProtectedRoute><WhaleAlertsPage /></ProtectedRoute>} />
                     <Route path="/trader/:username" element={<ProtectedRoute><PublicProfilePage /></ProtectedRoute>} />
-<Route path="/profile/:username" element={<ProtectedRoute><PublicProfilePage /></ProtectedRoute>} />
+                    <Route path="/profile/:username" element={<ProtectedRoute><PublicProfilePage /></ProtectedRoute>} />
+                    <Route path="/compare" element={<ComparisonPage />} />
 
                     {/* 🎮 GAMIFICATION ROUTES */}
                     <Route path="/achievements" element={<ProtectedRoute><AchievementsPage /></ProtectedRoute>} />

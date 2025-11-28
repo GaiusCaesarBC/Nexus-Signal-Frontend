@@ -1038,6 +1038,7 @@ const Navbar = () => {
     const navigate = useNavigate();
     const { vault } = useGamification();
     const searchRef = useRef(null);
+    const mobileSearchRef = useRef(null);
     const searchInputRef = useRef(null);
     
     const [dropdowns, setDropdowns] = useState({
@@ -1171,6 +1172,7 @@ const Navbar = () => {
         setSearchQuery('');
         setShowSearchResults(false);
         setSearchResults({ stocks: [], crypto: [] });
+        setMobileMenuOpen(false); // Close mobile menu on selection
     };
 
     const handleSearchKeyDown = async (e) => {
@@ -1209,6 +1211,7 @@ const Navbar = () => {
                 setSearchQuery('');
                 setShowSearchResults(false);
                 setSearchResults({ stocks: [], crypto: [] });
+                setMobileMenuOpen(false); // Close mobile menu
             }
         } else if (e.key === 'Escape') {
             setShowSearchResults(false);
@@ -1270,6 +1273,12 @@ const Navbar = () => {
         setMobileMenuOpen(!mobileMenuOpen);
         setUserDropdownOpen(false);
         setNotificationsOpen(false);
+        // Clear search when toggling menu
+        if (mobileMenuOpen) {
+            setSearchQuery('');
+            setShowSearchResults(false);
+            setSearchResults({ stocks: [], crypto: [] });
+        }
     };
 
     const handleNotificationClick = async (notification) => {
@@ -1330,6 +1339,8 @@ const Navbar = () => {
         setUserDropdownOpen(false);
         setNotificationsOpen(false);
         setShowSearchResults(false);
+        setSearchQuery('');
+        setSearchResults({ stocks: [], crypto: [] });
         setDropdowns({
             trading: false,
             analysis: false,
@@ -1352,7 +1363,9 @@ const Navbar = () => {
                     community: false,
                 });
             }
-            if (searchRef.current && !searchRef.current.contains(e.target)) {
+            // Close search results when clicking outside (for both desktop and mobile)
+            if (searchRef.current && !searchRef.current.contains(e.target) &&
+                mobileSearchRef.current && !mobileSearchRef.current.contains(e.target)) {
                 setShowSearchResults(false);
             }
         };
@@ -1403,7 +1416,7 @@ const Navbar = () => {
                 {/* AUTHENTICATED VIEW */}
                 {isAuthenticated ? (
                     <>
-                        {/* SEARCH BAR */}
+                        {/* SEARCH BAR - DESKTOP */}
                         <SearchContainer ref={searchRef}>
                             <SearchInputWrapper>
                                 <SearchIconStyled size={16} />
@@ -1705,8 +1718,8 @@ const Navbar = () => {
             {/* MOBILE MENU */}
             <MobileMenu $open={mobileMenuOpen}>
                 <MobileNavLinks>
-                    {/* Mobile Search */}
-                    <MobileSearchContainer>
+                    {/* Mobile Search - FULLY FUNCTIONAL */}
+                    <MobileSearchContainer ref={mobileSearchRef}>
                         <SearchInputWrapper>
                             <SearchIconStyled size={16} />
                             <SearchInput
@@ -1714,9 +1727,84 @@ const Navbar = () => {
                                 placeholder="Search stocks & crypto..."
                                 value={searchQuery}
                                 onChange={(e) => handleSearch(e.target.value)}
+                                onFocus={() => searchQuery && setShowSearchResults(true)}
+                                onKeyDown={handleSearchKeyDown}
                                 style={{ width: '100%' }}
                             />
                         </SearchInputWrapper>
+                        
+                        {/* Mobile Search Results */}
+                        {showSearchResults && isSearching && (
+                            <SearchResults style={{ position: 'relative', top: '8px', marginBottom: '1rem' }}>
+                                <SearchLoading>Searching...</SearchLoading>
+                            </SearchResults>
+                        )}
+                        
+                        {showSearchResults && !isSearching && (searchResults.stocks.length > 0 || searchResults.crypto.length > 0) && (
+                            <SearchResults style={{ position: 'relative', top: '8px', marginBottom: '1rem' }}>
+                                {searchResults.stocks.length > 0 && (
+                                    <>
+                                        <SearchResultsHeader>
+                                            <LineChart size={14} />
+                                            Stocks
+                                        </SearchResultsHeader>
+                                        {searchResults.stocks.map((stock, idx) => (
+                                            <SearchResultItem
+                                                key={stock.symbol}
+                                                onClick={() => handleSearchSelect(stock)}
+                                                $selected={selectedIndex === idx}
+                                            >
+                                                <SearchResultIconBox>
+                                                    {stock.symbol.slice(0, 2)}
+                                                </SearchResultIconBox>
+                                                <SearchResultInfo>
+                                                    <SearchResultSymbol>{stock.symbol}</SearchResultSymbol>
+                                                    <SearchResultName>{stock.name}</SearchResultName>
+                                                </SearchResultInfo>
+                                                <SearchResultType>Stock</SearchResultType>
+                                            </SearchResultItem>
+                                        ))}
+                                    </>
+                                )}
+                                
+                                {searchResults.crypto.length > 0 && (
+                                    <>
+                                        <SearchResultsHeader>
+                                            <Bitcoin size={14} />
+                                            Crypto
+                                        </SearchResultsHeader>
+                                        {searchResults.crypto.map((crypto, idx) => (
+                                            <SearchResultItem
+                                                key={crypto.symbol + (crypto.coinGeckoId || '')}
+                                                onClick={() => handleSearchSelect(crypto)}
+                                                $selected={selectedIndex === searchResults.stocks.length + idx}
+                                            >
+                                                <SearchResultIconBox $crypto>
+                                                    {crypto.symbol.slice(0, 2)}
+                                                </SearchResultIconBox>
+                                                <SearchResultInfo>
+                                                    <SearchResultSymbol>{crypto.symbol}</SearchResultSymbol>
+                                                    <SearchResultName>{crypto.name}</SearchResultName>
+                                                </SearchResultInfo>
+                                                <SearchResultType $crypto>Crypto</SearchResultType>
+                                            </SearchResultItem>
+                                        ))}
+                                    </>
+                                )}
+                            </SearchResults>
+                        )}
+                        
+                        {showSearchResults && !isSearching && searchQuery && searchResults.stocks.length === 0 && searchResults.crypto.length === 0 && (
+                            <SearchResults style={{ position: 'relative', top: '8px', marginBottom: '1rem' }}>
+                                <NoResults>
+                                    No results for "{searchQuery}"
+                                    <br />
+                                    <small style={{ color: '#64748b' }}>
+                                        Press Enter to search anyway
+                                    </small>
+                                </NoResults>
+                            </SearchResults>
+                        )}
                     </MobileSearchContainer>
                     
                     <MobileNavLink 
