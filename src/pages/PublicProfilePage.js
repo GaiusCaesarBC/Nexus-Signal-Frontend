@@ -1,4 +1,4 @@
-// client/src/pages/PublicProfilePage.js - PUBLIC TRADER PROFILE PAGE (MINIMAL ENHANCEMENTS)
+// client/src/pages/PublicProfilePage.js - FULLY REVAMPED WITH REAL DATA & VAULT INTEGRATION
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -11,23 +11,46 @@ import {
     UserPlus, UserMinus, Settings, Share2, Flag, Check,
     Star, Flame, Crown, Zap, Activity, ArrowUpRight,
     ArrowDownRight, Lock, Globe, MessageSquare, AlertCircle,
-    Briefcase, Clock, Medal, ChevronLeft, RefreshCw
+    Briefcase, Clock, Medal, ChevronLeft, RefreshCw, Shield,
+    Gift, Coins, Sparkles
 } from 'lucide-react';
-import {
-    LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid,
-    Tooltip, ResponsiveContainer, RadarChart, Radar, PolarGrid,
-    PolarAngleAxis, PolarRadiusAxis
-} from 'recharts';
+
+// ============ BADGE DEFINITIONS (synced with backend vaultItems.js) ============
+const BADGE_DEFINITIONS = {
+    'badge-founder': { name: 'Founder', icon: '👑', color: '#fbbf24', rarity: 'legendary' },
+    'badge-first-trade': { name: 'First Trade', icon: '🎯', color: '#3b82f6', rarity: 'common' },
+    'badge-week-warrior': { name: 'Week Warrior', icon: '⭐', color: '#f59e0b', rarity: 'common' },
+    'badge-trade-master': { name: 'Trade Master', icon: '📊', color: '#3b82f6', rarity: 'rare' },
+    'badge-portfolio-builder': { name: 'Portfolio Pro', icon: '🏗️', color: '#0ea5e9', rarity: 'rare' },
+    'badge-profit-king': { name: 'Profit King', icon: '💰', color: '#10b981', rarity: 'epic' },
+    'badge-dedicated': { name: 'Dedicated', icon: '🔥', color: '#ef4444', rarity: 'rare' },
+    'badge-prediction-master': { name: 'Oracle', icon: '🔮', color: '#8b5cf6', rarity: 'epic' },
+    'badge-level-50': { name: 'Half Century', icon: '5️⃣0️⃣', color: '#a855f7', rarity: 'epic' },
+    'badge-whale': { name: 'Whale', icon: '🐋', color: '#8b5cf6', rarity: 'legendary' },
+    'badge-level-100': { name: 'Centurion', icon: '💯', color: '#f59e0b', rarity: 'legendary' },
+    'badge-millionaire': { name: 'Millionaire', icon: '💵', color: '#10b981', rarity: 'legendary' }
+};
+
+// ============ BORDER STYLES (synced with backend vaultItems.js) ============
+const BORDER_STYLES = {
+    'border-bronze': { name: 'Bronze', background: 'linear-gradient(135deg, #cd7f32, #b87333)', shadow: '0 0 15px rgba(205, 127, 50, 0.5)' },
+    'border-gold': { name: 'Gold', background: 'linear-gradient(135deg, #ffd700, #ffed4e)', shadow: '0 0 20px rgba(255, 215, 0, 0.6)' },
+    'border-diamond': { name: 'Diamond', background: 'linear-gradient(135deg, #b9f2ff, #e0f7ff)', shadow: '0 0 20px rgba(185, 242, 255, 0.6)' },
+    'border-fire': { name: 'Fire', background: 'linear-gradient(135deg, #ff4500, #ff6b35)', shadow: '0 0 20px rgba(255, 69, 0, 0.6)' },
+    'border-ice': { name: 'Ice', background: 'linear-gradient(135deg, #00bfff, #87ceeb)', shadow: '0 0 20px rgba(0, 191, 255, 0.6)' },
+    'border-toxic': { name: 'Toxic', background: 'linear-gradient(135deg, #39ff14, #7fff00)', shadow: '0 0 20px rgba(57, 255, 20, 0.6)' },
+    'border-royal': { name: 'Royal', background: 'linear-gradient(135deg, #9400d3, #ba55d3)', shadow: '0 0 20px rgba(148, 0, 211, 0.6)' },
+    'border-sunset': { name: 'Sunset', background: 'linear-gradient(135deg, #ff6b6b, #feca57)', shadow: '0 0 20px rgba(255, 107, 107, 0.6)' },
+    'border-ocean': { name: 'Ocean', background: 'linear-gradient(135deg, #0077be, #00a8cc)', shadow: '0 0 20px rgba(0, 119, 190, 0.6)' },
+    'border-galaxy': { name: 'Galaxy', background: 'linear-gradient(135deg, #1a1a2e, #16213e, #0f3460, #8b5cf6)', shadow: '0 0 25px rgba(138, 43, 226, 0.8)' },
+    'border-rainbow': { name: 'Rainbow', background: 'linear-gradient(135deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #8b00ff)', shadow: '0 0 25px rgba(255, 0, 0, 0.5)' },
+    'border-nexus': { name: 'Nexus', background: 'linear-gradient(135deg, #ffd700, #00adef)', shadow: '0 0 30px rgba(255, 215, 0, 0.7)' }
+};
 
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
-`;
-
-const slideIn = keyframes`
-    from { transform: translateX(-100%); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
 `;
 
 const pulse = keyframes`
@@ -45,14 +68,20 @@ const shimmer = keyframes`
     100% { background-position: 200% center; }
 `;
 
-const float = keyframes`
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-10px); }
-`;
-
 const spin = keyframes`
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
+`;
+
+const legendaryPulse = keyframes`
+    0%, 100% { transform: scale(1); filter: brightness(1); }
+    50% { transform: scale(1.1); filter: brightness(1.2); }
+`;
+
+const borderRotate = keyframes`
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
 `;
 
 // ============ STYLED COMPONENTS ============
@@ -64,6 +93,11 @@ const PageContainer = styled.div`
     padding-left: 2rem;
     padding-right: 2rem;
     padding-bottom: 2rem;
+
+    @media (max-width: 768px) {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
 `;
 
 const TopBar = styled.div`
@@ -133,7 +167,7 @@ const ProfileHeader = styled.div`
     backdrop-filter: blur(10px);
     border: 2px solid rgba(255, 215, 0, 0.3);
     border-radius: 20px;
-    padding: 3rem;
+    padding: 2.5rem;
     position: relative;
     overflow: hidden;
     animation: ${fadeIn} 0.8s ease-out;
@@ -145,9 +179,13 @@ const ProfileHeader = styled.div`
         left: 0;
         width: 100%;
         height: 4px;
-        background: linear-gradient(90deg, #ffd700, #ffed4e, #ffd700);
+        background: linear-gradient(90deg, #ffd700, #00adef, #ffd700);
         background-size: 200% 100%;
         animation: ${shimmer} 3s linear infinite;
+    }
+
+    @media (max-width: 768px) {
+        padding: 1.5rem;
     }
 `;
 
@@ -173,38 +211,64 @@ const UserInfoSection = styled.div`
         flex-direction: column;
         align-items: center;
         text-align: center;
+        width: 100%;
     }
 `;
 
-const AvatarLarge = styled.div`
-    width: 120px;
-    height: 120px;
+const AvatarContainer = styled.div`
+    position: relative;
+    flex-shrink: 0;
+`;
+
+const AvatarBorder = styled.div`
+    width: 140px;
+    height: 140px;
+    border-radius: 24px;
+    padding: 5px;
+    background: ${props => {
+        const border = BORDER_STYLES[props.$border];
+        return border?.background || 'linear-gradient(135deg, #cd7f32, #b87333)';
+    }};
+    background-size: 200% 200%;
+    box-shadow: ${props => {
+        const border = BORDER_STYLES[props.$border];
+        return border?.shadow || '0 0 15px rgba(205, 127, 50, 0.5)';
+    }};
+    animation: ${props => props.$animated ? css`${borderRotate} 3s ease infinite` : 'none'};
+    
+    ${props => props.$rank <= 3 && css`
+        animation: ${glow} 3s ease-in-out infinite, ${borderRotate} 3s ease infinite;
+    `}
+
+    @media (max-width: 768px) {
+        width: 120px;
+        height: 120px;
+    }
+`;
+
+const AvatarInner = styled.div`
+    width: 100%;
+    height: 100%;
     border-radius: 20px;
     background: ${props => props.$src ? 
         `url(${props.$src}) center/cover` : 
-        'linear-gradient(135deg, #ffd700, #ffed4e)'
+        'linear-gradient(135deg, #1e293b, #0f172a)'
     };
-    border: 4px solid rgba(255, 215, 0, 0.5);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: ${props => props.$src ? '0' : '3rem'};
     font-weight: 900;
-    color: #0a0e27;
-    box-shadow: 0 10px 40px rgba(255, 215, 0, 0.4);
-    position: relative;
-
-    ${props => props.$rank <= 3 && css`
-        animation: ${glow} 3s ease-in-out infinite;
-    `}
+    color: #ffd700;
+    overflow: hidden;
 `;
 
 const RankBadge = styled.div`
     position: absolute;
-    top: -10px;
-    right: -10px;
-    width: 40px;
-    height: 40px;
+    top: -8px;
+    right: -8px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     background: ${props => {
         if (props.$rank === 1) return 'linear-gradient(135deg, #ffd700, #ffed4e)';
@@ -217,59 +281,145 @@ const RankBadge = styled.div`
     align-items: center;
     justify-content: center;
     color: ${props => props.$rank <= 3 ? '#0a0e27' : '#ffd700'};
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     font-weight: 900;
     animation: ${pulse} 2s ease-in-out infinite;
+    z-index: 10;
+`;
+
+const LevelRing = styled.div`
+    position: absolute;
+    bottom: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #ffd700, #ffed4e);
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    border: 2px solid #0a0e27;
+    z-index: 10;
+`;
+
+const LevelText = styled.span`
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #0a0e27;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
 `;
 
 const UserDetails = styled.div`
     flex: 1;
+    min-width: 0;
 `;
 
 const DisplayName = styled.h1`
-    font-size: 2.5rem;
+    font-size: 2.2rem;
     font-weight: 900;
     color: #ffd700;
     margin-bottom: 0.5rem;
     display: flex;
     align-items: center;
     gap: 0.75rem;
+    flex-wrap: wrap;
 
     @media (max-width: 768px) {
-        font-size: 2rem;
+        font-size: 1.75rem;
         justify-content: center;
     }
 `;
 
+const TitleBadge = styled.span`
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.25rem 0.75rem;
+    background: linear-gradient(135deg, rgba(138, 43, 226, 0.3), rgba(138, 43, 226, 0.1));
+    border: 1px solid rgba(138, 43, 226, 0.5);
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #a855f7;
+`;
+
+const EquippedBadgesRow = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.75rem 0;
+    flex-wrap: wrap;
+
+    @media (max-width: 768px) {
+        justify-content: center;
+    }
+`;
+
+const EquippedBadge = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.75rem;
+    background: ${props => props.$color ? `${props.$color}20` : 'rgba(100, 116, 139, 0.2)'};
+    border: 2px solid ${props => props.$color || '#64748b'};
+    border-radius: 10px;
+    cursor: default;
+    transition: all 0.2s ease;
+
+    ${props => props.$legendary && css`
+        animation: ${legendaryPulse} 2s ease-in-out infinite;
+        box-shadow: 0 0 15px ${props.$color}50;
+    `}
+
+    &:hover {
+        transform: translateY(-2px) scale(1.05);
+        box-shadow: 0 4px 15px ${props => props.$color || '#64748b'}40;
+    }
+`;
+
+const BadgeIcon = styled.span`
+    font-size: 1.1rem;
+`;
+
+const BadgeName = styled.span`
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: ${props => props.$color || '#e0e6ed'};
+`;
+
 const UserBio = styled.p`
     color: #94a3b8;
-    font-size: 1.1rem;
+    font-size: 1rem;
     line-height: 1.6;
     margin-bottom: 1rem;
     max-width: 600px;
+
+    @media (max-width: 768px) {
+        max-width: 100%;
+    }
 `;
 
 const UserMeta = styled.div`
     display: flex;
-    gap: 2rem;
+    gap: 1.5rem;
     flex-wrap: wrap;
     color: #64748b;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
 
     @media (max-width: 768px) {
         justify-content: center;
+        gap: 1rem;
     }
 `;
 
 const MetaItem = styled.div`
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.4rem;
 `;
 
 const ActionButtons = styled.div`
     display: flex;
-    gap: 1rem;
+    gap: 0.75rem;
     flex-wrap: wrap;
 
     @media (max-width: 768px) {
@@ -279,7 +429,7 @@ const ActionButtons = styled.div`
 `;
 
 const ActionButton = styled.button`
-    padding: 0.75rem 1.5rem;
+    padding: 0.7rem 1.25rem;
     background: ${props => {
         if (props.$primary) return 'linear-gradient(135deg, #ffd700 0%, #ffed4e 100%)';
         if (props.$danger) return 'rgba(239, 68, 68, 0.1)';
@@ -297,6 +447,7 @@ const ActionButton = styled.button`
         return '#ffd700';
     }};
     font-weight: 700;
+    font-size: 0.9rem;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -315,41 +466,43 @@ const ActionButton = styled.button`
     &:disabled {
         opacity: 0.6;
         cursor: not-allowed;
+        transform: none;
     }
 `;
 
 const StatsGrid = styled.div`
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1.5rem;
-    padding-top: 2rem;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1rem;
+    padding-top: 1.5rem;
     border-top: 1px solid rgba(255, 215, 0, 0.2);
 `;
 
 const StatBox = styled.div`
     text-align: center;
-    padding: 1rem;
+    padding: 1rem 0.75rem;
     background: rgba(255, 215, 0, 0.05);
-    border: 1px solid rgba(255, 215, 0, 0.2);
+    border: 1px solid rgba(255, 215, 0, 0.15);
     border-radius: 12px;
     transition: all 0.3s ease;
 
     &:hover {
         background: rgba(255, 215, 0, 0.1);
         transform: translateY(-3px);
+        border-color: rgba(255, 215, 0, 0.3);
     }
 `;
 
 const StatLabel = styled.div`
     color: #64748b;
-    font-size: 0.9rem;
-    margin-bottom: 0.5rem;
+    font-size: 0.75rem;
+    margin-bottom: 0.4rem;
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 0.5px;
 `;
 
 const StatValue = styled.div`
-    font-size: 2rem;
+    font-size: 1.4rem;
     font-weight: 900;
     color: ${props => {
         if (props.$positive) return '#10b981';
@@ -359,7 +512,7 @@ const StatValue = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
+    gap: 0.3rem;
 `;
 
 // ============ TABS ============
@@ -367,27 +520,14 @@ const TabsContainer = styled.div`
     max-width: 1400px;
     margin: 0 auto 2rem;
     display: flex;
-    gap: 1rem;
+    gap: 0.5rem;
     border-bottom: 2px solid rgba(255, 215, 0, 0.2);
     overflow-x: auto;
     padding-bottom: 0.5rem;
-
-    &::-webkit-scrollbar {
-        height: 4px;
-    }
-
-    &::-webkit-scrollbar-track {
-        background: rgba(255, 215, 0, 0.1);
-    }
-
-    &::-webkit-scrollbar-thumb {
-        background: rgba(255, 215, 0, 0.5);
-        border-radius: 2px;
-    }
 `;
 
 const Tab = styled.button`
-    padding: 0.75rem 1.5rem;
+    padding: 0.75rem 1.25rem;
     background: ${props => props.$active ? 
         'linear-gradient(135deg, rgba(255, 215, 0, 0.2) 0%, rgba(255, 215, 0, 0.1) 100%)' :
         'transparent'
@@ -408,7 +548,16 @@ const Tab = styled.button`
     }
 `;
 
-// ============ CONTENT SECTIONS ============
+const TabBadge = styled.span`
+    background: rgba(255, 215, 0, 0.2);
+    color: #ffd700;
+    padding: 0.1rem 0.5rem;
+    border-radius: 10px;
+    font-size: 0.75rem;
+    font-weight: 700;
+`;
+
+// ============ CONTENT ============
 const ContentContainer = styled.div`
     max-width: 1400px;
     margin: 0 auto;
@@ -416,8 +565,8 @@ const ContentContainer = styled.div`
 
 const SectionGrid = styled.div`
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-    gap: 2rem;
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    gap: 1.5rem;
 
     @media (max-width: 768px) {
         grid-template-columns: 1fr;
@@ -429,21 +578,15 @@ const Card = styled.div`
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 215, 0, 0.2);
     border-radius: 16px;
-    padding: 2rem;
+    padding: 1.5rem;
     animation: ${fadeIn} 0.6s ease-out;
-    transition: all 0.3s ease;
-
-    &:hover {
-        border-color: rgba(255, 215, 0, 0.4);
-        transform: translateY(-5px);
-    }
 `;
 
 const CardTitle = styled.h3`
     color: #ffd700;
-    font-size: 1.3rem;
+    font-size: 1.1rem;
     font-weight: 700;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.25rem;
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -451,19 +594,19 @@ const CardTitle = styled.h3`
 
 const AchievementGrid = styled.div`
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    gap: 0.75rem;
 `;
 
 const Achievement = styled.div`
     text-align: center;
-    padding: 1rem;
+    padding: 0.75rem 0.5rem;
     background: ${props => props.$earned ? 
-        'rgba(255, 215, 0, 0.15)' :
+        `linear-gradient(135deg, ${props.$color || 'rgba(255, 215, 0, 0.15)'}, transparent)` :
         'rgba(100, 116, 139, 0.1)'
     };
     border: 1px solid ${props => props.$earned ? 
-        'rgba(255, 215, 0, 0.3)' :
+        (props.$color || 'rgba(255, 215, 0, 0.3)') :
         'rgba(100, 116, 139, 0.2)'
     };
     border-radius: 12px;
@@ -473,86 +616,89 @@ const Achievement = styled.div`
 
     &:hover {
         transform: translateY(-3px);
-        border-color: rgba(255, 215, 0, 0.5);
     }
 `;
 
 const AchievementIcon = styled.div`
-    font-size: 2rem;
-    margin-bottom: 0.5rem;
+    font-size: 1.75rem;
+    margin-bottom: 0.4rem;
 `;
 
 const AchievementName = styled.div`
     color: #e0e6ed;
-    font-size: 0.85rem;
+    font-size: 0.7rem;
     font-weight: 600;
+    line-height: 1.2;
+`;
+
+const AchievementXP = styled.div`
+    color: #ffd700;
+    font-size: 0.65rem;
+    font-weight: 700;
+    margin-top: 0.25rem;
 `;
 
 const ActivityFeed = styled.div`
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.75rem;
+    max-height: 400px;
+    overflow-y: auto;
 `;
 
 const ActivityItem = styled.div`
     display: flex;
-    gap: 1rem;
-    padding: 1rem;
-    background: rgba(255, 215, 0, 0.05);
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: rgba(255, 215, 0, 0.03);
     border: 1px solid rgba(255, 215, 0, 0.1);
-    border-radius: 12px;
+    border-radius: 10px;
     transition: all 0.2s ease;
 
     &:hover {
-        background: rgba(255, 215, 0, 0.1);
+        background: rgba(255, 215, 0, 0.08);
         transform: translateX(5px);
     }
 `;
 
-const ActivityIcon = styled.div`
-    width: 40px;
-    height: 40px;
+const ActivityIconWrapper = styled.div`
+    width: 36px;
+    height: 36px;
     border-radius: 10px;
-    background: ${props => {
-        if (props.$type === 'trade') return 'rgba(0, 173, 237, 0.2)';
-        if (props.$type === 'achievement') return 'rgba(255, 215, 0, 0.2)';
-        return 'rgba(16, 185, 129, 0.2)';
-    }};
-    color: ${props => {
-        if (props.$type === 'trade') return '#00adef';
-        if (props.$type === 'achievement') return '#ffd700';
-        return '#10b981';
-    }};
+    background: ${props => props.$bg || 'rgba(255, 215, 0, 0.2)'};
+    color: ${props => props.$color || '#ffd700'};
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    font-size: 1rem;
 `;
 
 const ActivityContent = styled.div`
     flex: 1;
+    min-width: 0;
 `;
 
 const ActivityText = styled.div`
     color: #e0e6ed;
-    font-size: 0.95rem;
-    margin-bottom: 0.25rem;
+    font-size: 0.85rem;
+    margin-bottom: 0.2rem;
 `;
 
 const ActivityTime = styled.div`
     color: #64748b;
-    font-size: 0.85rem;
+    font-size: 0.75rem;
 `;
 
 const EmptyState = styled.div`
     text-align: center;
-    padding: 3rem 2rem;
+    padding: 2rem 1rem;
     color: #64748b;
 `;
 
 const EmptyIcon = styled.div`
-    width: 80px;
-    height: 80px;
+    width: 60px;
+    height: 60px;
     margin: 0 auto 1rem;
     border-radius: 50%;
     background: rgba(255, 215, 0, 0.1);
@@ -560,11 +706,6 @@ const EmptyIcon = styled.div`
     align-items: center;
     justify-content: center;
     color: #ffd700;
-`;
-
-const EmptyText = styled.div`
-    color: #94a3b8;
-    font-size: 1rem;
 `;
 
 const LoadingContainer = styled.div`
@@ -582,19 +723,18 @@ const LoadingSpinner = styled(Trophy)`
 `;
 
 const PrivateMessage = styled.div`
-    max-width: 600px;
+    max-width: 500px;
     margin: 4rem auto;
     text-align: center;
-    padding: 3rem;
+    padding: 2.5rem;
     background: rgba(239, 68, 68, 0.1);
     border: 2px solid rgba(239, 68, 68, 0.3);
     border-radius: 16px;
-    animation: ${fadeIn} 0.6s ease-out;
 `;
 
 const PrivateIcon = styled.div`
-    width: 80px;
-    height: 80px;
+    width: 70px;
+    height: 70px;
     margin: 0 auto 1.5rem;
     border-radius: 50%;
     background: rgba(239, 68, 68, 0.2);
@@ -606,14 +746,41 @@ const PrivateIcon = styled.div`
 
 const PrivateTitle = styled.h2`
     color: #ef4444;
-    font-size: 2rem;
-    margin-bottom: 1rem;
+    font-size: 1.75rem;
+    margin-bottom: 0.75rem;
 `;
 
 const PrivateText = styled.p`
     color: #94a3b8;
-    font-size: 1.1rem;
+    font-size: 1rem;
 `;
+
+// ============ HELPER FUNCTIONS ============
+const formatTimeAgo = (date) => {
+    if (!date) return 'Unknown';
+    const now = new Date();
+    const then = new Date(date);
+    const diffMs = now - then;
+    const diffMin = Math.floor(diffMs / 60000);
+    const diffHour = Math.floor(diffMin / 60);
+    const diffDay = Math.floor(diffHour / 24);
+
+    if (diffDay > 30) return then.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    if (diffDay > 0) return `${diffDay}d ago`;
+    if (diffHour > 0) return `${diffHour}h ago`;
+    if (diffMin > 0) return `${diffMin}m ago`;
+    return 'Just now';
+};
+
+const getActivityIcon = (type) => {
+    switch (type) {
+        case 'achievement': return { icon: '🏆', bg: 'rgba(255, 215, 0, 0.2)', color: '#ffd700' };
+        case 'trade': return { icon: '📈', bg: 'rgba(16, 185, 129, 0.2)', color: '#10b981' };
+        case 'prediction': return { icon: '🔮', bg: 'rgba(139, 92, 246, 0.2)', color: '#8b5cf6' };
+        case 'level': return { icon: '⬆️', bg: 'rgba(0, 173, 237, 0.2)', color: '#00adef' };
+        default: return { icon: '⭐', bg: 'rgba(255, 215, 0, 0.2)', color: '#ffd700' };
+    }
+};
 
 // ============ COMPONENT ============
 const PublicProfilePage = () => {
@@ -628,23 +795,43 @@ const PublicProfilePage = () => {
     const [activeTab, setActiveTab] = useState('overview');
     const [isFollowing, setIsFollowing] = useState(false);
     const [followLoading, setFollowLoading] = useState(false);
+    const [activities, setActivities] = useState([]);
 
-    // Keep original fetch logic exactly as it was
     const fetchProfile = useCallback(async (isRefresh = false) => {
-        if (!isRefresh) {
-            setLoading(true);
-        }
+        if (!isRefresh) setLoading(true);
+        
         try {
             const response = await api.get(`/social/profile/username/${username}`);
             setProfile(response.data);
             
-            // Check if following
             if (currentUser && response.data.social?.followers) {
                 const isCurrentlyFollowing = response.data.social.followers.some(
                     follower => follower._id === currentUser.id || follower === currentUser.id
                 );
                 setIsFollowing(isCurrentlyFollowing);
             }
+
+            // Build activity from achievements
+            const achievementActivities = (response.data.achievements || [])
+                .sort((a, b) => {
+                    // Handle both earnedAt (User model) and unlockedAt (Gamification model)
+                    const dateA = new Date(a.earnedAt || a.unlockedAt || 0);
+                    const dateB = new Date(b.earnedAt || b.unlockedAt || 0);
+                    return dateB - dateA;
+                })
+                .slice(0, 15)
+                .map(ach => ({
+                    id: ach.achievementId || ach.id,
+                    type: 'achievement',
+                    text: `Earned "${ach.name || ach.id}"`,
+                    xp: ach.xpReward || ach.points || 0,
+                    coins: ach.coinReward || 0,
+                    time: ach.earnedAt || ach.unlockedAt,
+                    icon: ach.icon || '🏆',
+                    rarity: ach.rarity || 'common'
+                }));
+
+            setActivities(achievementActivities);
             
         } catch (error) {
             console.error('Error fetching profile:', error);
@@ -652,10 +839,8 @@ const PublicProfilePage = () => {
                 setProfile({ private: true });
             } else if (error.response?.status === 404) {
                 setProfile(null);
-            } else {
-                if (!isRefresh) {
-                    toast.error('Failed to load profile', 'Error');
-                }
+            } else if (!isRefresh) {
+                toast.error('Failed to load profile');
             }
         } finally {
             setLoading(false);
@@ -667,20 +852,17 @@ const PublicProfilePage = () => {
         fetchProfile();
     }, [fetchProfile]);
 
-    // Manual refresh handler
     const handleRefresh = () => {
         setRefreshing(true);
         fetchProfile(true);
     };
 
-    // Optimistic follow/unfollow
     const handleFollow = async () => {
         if (!profile?.userId && !profile?._id) return;
         
         const profileId = profile.userId || profile._id;
         const wasFollowing = isFollowing;
         
-        // Optimistic update
         setIsFollowing(!wasFollowing);
         setProfile(prev => ({
             ...prev,
@@ -692,15 +874,9 @@ const PublicProfilePage = () => {
         
         setFollowLoading(true);
         try {
-            if (wasFollowing) {
-                await api.post(`/social/unfollow/${profileId}`);
-                toast.success('Unfollowed user', 'Success');
-            } else {
-                await api.post(`/social/follow/${profileId}`);
-                toast.success('Following user!', 'Success');
-            }
+            await api.post(`/social/${wasFollowing ? 'unfollow' : 'follow'}/${profileId}`);
+            toast.success(wasFollowing ? 'Unfollowed' : 'Following!');
         } catch (error) {
-            // Revert on error
             setIsFollowing(wasFollowing);
             setProfile(prev => ({
                 ...prev,
@@ -709,56 +885,60 @@ const PublicProfilePage = () => {
                     followersCount: Math.max(0, (prev.social?.followersCount || 0) + (wasFollowing ? 1 : -1))
                 }
             }));
-            console.error('Error following/unfollowing:', error);
-            toast.error(error.response?.data?.error || 'Failed to follow user', 'Error');
+            toast.error('Action failed');
         } finally {
             setFollowLoading(false);
         }
     };
 
     const handleShare = () => {
-        const url = window.location.href;
-        navigator.clipboard.writeText(url);
-        toast.success('Profile link copied to clipboard!', 'Copied');
+        navigator.clipboard.writeText(window.location.href);
+        toast.success('Link copied!');
     };
 
-    const handleReport = () => {
-        toast.info('Report feature coming soon', 'Coming Soon');
+    // Extract data from profile - check multiple sources
+    const equippedBadges = profile?.vault?.equippedBadges || [];
+    const equippedBorder = profile?.vault?.equippedBorder || 'border-bronze';
+    const userLevel = profile?.gamification?.level || 1;
+    const userTitle = profile?.gamification?.title || profile?.gamification?.rank || 'Rookie Trader';
+    const userXp = profile?.gamification?.totalXpEarned || profile?.gamification?.xp || 0;
+    const achievements = profile?.achievements || [];
+    
+    // 🔥 FIXED: Merge stats from both profile.stats AND profile.gamification.stats
+    const profileStats = profile?.stats || {};
+    const gamificationStats = profile?.gamification?.stats || {};
+    
+    const stats = {
+        // Trading stats - prefer profile.stats, fallback to gamification.stats
+        totalReturnPercent: profileStats.totalReturnPercent ?? gamificationStats.totalReturnPercent ?? 0,
+        winRate: profileStats.winRate ?? gamificationStats.winRate ?? 0,
+        totalTrades: profileStats.totalTrades ?? gamificationStats.totalTrades ?? 0,
+        
+        // Prediction stats - check both locations
+        totalPredictions: profileStats.totalPredictions ?? gamificationStats.predictionsCreated ?? 0,
+        predictionAccuracy: profileStats.predictionAccuracy ?? gamificationStats.predictionAccuracy ?? 0,
+        
+        // Streak - check multiple sources: profile.stats, then gamification root (login or profit), then gamification.stats
+        currentStreak: profileStats.currentStreak || 
+                       profile?.gamification?.loginStreak || 
+                       profile?.gamification?.profitStreak || 
+                       profileStats.loginStreak ||
+                       gamificationStats.profitStreak || 
+                       0,
+        
+        // Rank - only if it's a real rank (> 0)
+        rank: profileStats.rank > 0 ? profileStats.rank : null,
+        
+        // Best trade
+        bestTrade: profileStats.bestTrade ?? gamificationStats.biggestWinPercent ?? 0
     };
-
-    const mockAchievements = [
-        { id: 1, name: 'First Trade', icon: '🎯', earned: true },
-        { id: 2, name: '10 Wins', icon: '🏆', earned: true },
-        { id: 3, name: 'Hot Streak', icon: '🔥', earned: true },
-        { id: 4, name: '100% Profit', icon: '💎', earned: true },
-        { id: 5, name: 'Speed Trader', icon: '⚡', earned: false },
-        { id: 6, name: 'Millionaire', icon: '💰', earned: false },
-        { id: 7, name: 'Long Term', icon: '📈', earned: false },
-        { id: 8, name: 'Risk Taker', icon: '🎲', earned: false },
-    ];
-
-    const mockActivity = [
-        { id: 1, type: 'trade', text: 'Bought 50 shares of AAPL', time: '2 hours ago', icon: TrendingUp },
-        { id: 2, type: 'achievement', text: 'Earned "Hot Streak" badge', time: '5 hours ago', icon: Award },
-        { id: 3, type: 'trade', text: 'Sold 100 shares of TSLA for +15% profit', time: '1 day ago', icon: DollarSign },
-        { id: 4, type: 'follow', text: 'Started following 3 new traders', time: '2 days ago', icon: Users },
-    ];
-
-    const performanceData = [
-        { month: 'Jan', profit: 5 },
-        { month: 'Feb', profit: 12 },
-        { month: 'Mar', profit: -3 },
-        { month: 'Apr', profit: 18 },
-        { month: 'May', profit: 25 },
-        { month: 'Jun', profit: 15 },
-    ];
 
     if (loading) {
         return (
             <PageContainer>
                 <LoadingContainer>
-                    <LoadingSpinner size={64} />
-                    <div style={{ color: '#94a3b8', fontSize: '1.1rem' }}>Loading profile...</div>
+                    <LoadingSpinner size={56} />
+                    <div style={{ color: '#94a3b8' }}>Loading profile...</div>
                 </LoadingContainer>
             </PageContainer>
         );
@@ -769,18 +949,13 @@ const PublicProfilePage = () => {
             <PageContainer>
                 <TopBar>
                     <BackButton onClick={() => navigate('/leaderboard')}>
-                        <ChevronLeft size={20} />
-                        Back to Leaderboard
+                        <ChevronLeft size={18} /> Back
                     </BackButton>
                 </TopBar>
                 <PrivateMessage>
-                    <PrivateIcon>
-                        <Lock size={40} />
-                    </PrivateIcon>
-                    <PrivateTitle>Profile is Private</PrivateTitle>
-                    <PrivateText>
-                        This trader's profile is private or does not exist.
-                    </PrivateText>
+                    <PrivateIcon><Lock size={32} /></PrivateIcon>
+                    <PrivateTitle>Private Profile</PrivateTitle>
+                    <PrivateText>This profile is private.</PrivateText>
                 </PrivateMessage>
             </PageContainer>
         );
@@ -791,33 +966,27 @@ const PublicProfilePage = () => {
             <PageContainer>
                 <TopBar>
                     <BackButton onClick={() => navigate('/leaderboard')}>
-                        <ChevronLeft size={20} />
-                        Back to Leaderboard
+                        <ChevronLeft size={18} /> Back
                     </BackButton>
                 </TopBar>
                 <EmptyState>
-                    <Trophy size={64} color="#ffd700" style={{ margin: '0 auto 1rem' }} />
-                    <h2 style={{ color: '#ffd700', marginBottom: '0.5rem' }}>Profile Not Found</h2>
-                    <p>This trader's profile could not be loaded.</p>
+                    <Trophy size={56} color="#ffd700" style={{ margin: '0 auto 1rem' }} />
+                    <h2 style={{ color: '#ffd700' }}>Profile Not Found</h2>
                 </EmptyState>
             </PageContainer>
         );
     }
 
     const isOwnProfile = (profile.userId || profile._id) === currentUser?.id;
+    const isSpecialBorder = ['border-galaxy', 'border-rainbow', 'border-nexus'].includes(equippedBorder);
 
     return (
         <PageContainer>
             <TopBar>
                 <BackButton onClick={() => navigate('/leaderboard')}>
-                    <ChevronLeft size={20} />
-                    Back to Leaderboard
+                    <ChevronLeft size={18} /> Back to Leaderboard
                 </BackButton>
-                <RefreshButton 
-                    onClick={handleRefresh} 
-                    disabled={refreshing}
-                    $loading={refreshing}
-                >
+                <RefreshButton onClick={handleRefresh} disabled={refreshing} $loading={refreshing}>
                     <RefreshCw size={16} />
                     {refreshing ? 'Refreshing...' : 'Refresh'}
                 </RefreshButton>
@@ -826,37 +995,52 @@ const PublicProfilePage = () => {
             <ProfileHeader>
                 <HeaderTop>
                     <UserInfoSection>
-                        <AvatarLarge $src={profile.profile?.avatar} $rank={profile.stats?.rank}>
-                            {!profile.profile?.avatar && (profile.profile?.displayName?.charAt(0) || profile.username?.charAt(0) || 'T')}
-                            {profile.stats?.rank && (
-                                <RankBadge $rank={profile.stats.rank}>
-                                    #{profile.stats.rank}
-                                </RankBadge>
+                        <AvatarContainer>
+                            <AvatarBorder $border={equippedBorder} $rank={stats.rank} $animated={isSpecialBorder}>
+                                <AvatarInner $src={profile.profile?.avatar}>
+                                    {!profile.profile?.avatar && (profile.profile?.displayName?.charAt(0) || profile.username?.charAt(0) || 'T')}
+                                </AvatarInner>
+                            </AvatarBorder>
+                            {/* Only show rank badge if rank is a valid positive number <= 100 */}
+                            {stats.rank && stats.rank > 0 && stats.rank <= 100 && (
+                                <RankBadge $rank={stats.rank}>#{stats.rank}</RankBadge>
                             )}
-                        </AvatarLarge>
+                            <LevelRing>
+                                <LevelText><Star size={12} /> Lv.{userLevel}</LevelText>
+                            </LevelRing>
+                        </AvatarContainer>
 
                         <UserDetails>
                             <DisplayName>
-                                {profile.profile?.displayName || profile.username || 'Anonymous Trader'}
-                                {profile.stats?.rank === 1 && <Crown size={32} color="#ffd700" />}
-                                {profile.profile?.badges?.includes('verified') && <Check size={24} color="#10b981" />}
+                                {profile.profile?.displayName || profile.username || 'Trader'}
+                                {stats.rank === 1 && <Crown size={28} color="#ffd700" />}
+                                {profile.profile?.verified && <Check size={22} color="#10b981" />}
                             </DisplayName>
-                            <UserBio>
-                                {profile.profile?.bio || 'This trader prefers to remain mysterious...'}
-                            </UserBio>
+                            
+                            <TitleBadge><Sparkles size={14} /> {userTitle}</TitleBadge>
+
+                            {equippedBadges.length > 0 && (
+                                <EquippedBadgesRow>
+                                    {equippedBadges.map(badgeId => {
+                                        const badge = BADGE_DEFINITIONS[badgeId];
+                                        if (!badge) return null;
+                                        return (
+                                            <EquippedBadge key={badgeId} $color={badge.color} $legendary={badge.rarity === 'legendary'}>
+                                                <BadgeIcon>{badge.icon}</BadgeIcon>
+                                                <BadgeName $color={badge.color}>{badge.name}</BadgeName>
+                                            </EquippedBadge>
+                                        );
+                                    })}
+                                </EquippedBadgesRow>
+                            )}
+
+                            <UserBio>{profile.profile?.bio || 'This trader lets their results speak for themselves.'}</UserBio>
+                            
                             <UserMeta>
-                                <MetaItem>
-                                    <Calendar size={16} />
-                                    Joined {new Date(profile.date || Date.now()).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                                </MetaItem>
-                                <MetaItem>
-                                    <Users size={16} />
-                                    {profile.social?.followersCount || 0} Followers
-                                </MetaItem>
-                                <MetaItem>
-                                    <Eye size={16} />
-                                    {profile.social?.followingCount || 0} Following
-                                </MetaItem>
+                                <MetaItem><Calendar size={14} /> Joined {new Date(profile.date || Date.now()).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</MetaItem>
+                                <MetaItem><Users size={14} /> {profile.social?.followersCount || 0} Followers</MetaItem>
+                                <MetaItem><Eye size={14} /> {profile.social?.followingCount || 0} Following</MetaItem>
+                                <MetaItem><Zap size={14} color="#ffd700" /> {userXp.toLocaleString()} XP</MetaItem>
                             </UserMeta>
                         </UserDetails>
                     </UserInfoSection>
@@ -864,47 +1048,18 @@ const PublicProfilePage = () => {
                     <ActionButtons>
                         {isOwnProfile ? (
                             <>
-                                <ActionButton $primary onClick={() => navigate('/settings')}>
-                                    <Settings size={18} />
-                                    Edit Profile
-                                </ActionButton>
-                                <ActionButton onClick={handleShare}>
-                                    <Share2 size={18} />
-                                    Share
-                                </ActionButton>
+                                <ActionButton $primary onClick={() => navigate('/settings')}><Settings size={16} /> Edit</ActionButton>
+                                <ActionButton onClick={() => navigate('/vault')}><Gift size={16} /> Vault</ActionButton>
+                                <ActionButton onClick={handleShare}><Share2 size={16} /> Share</ActionButton>
                             </>
                         ) : (
                             <>
-                                <ActionButton 
-                                    $primary={!isFollowing}
-                                    $danger={isFollowing}
-                                    onClick={handleFollow}
-                                    disabled={followLoading}
-                                >
-                                    {isFollowing ? (
-                                        <>
-                                            <UserMinus size={18} />
-                                            {followLoading ? 'Loading...' : 'Unfollow'}
-                                        </>
-                                    ) : (
-                                        <>
-                                            <UserPlus size={18} />
-                                            {followLoading ? 'Loading...' : 'Follow'}
-                                        </>
-                                    )}
+                                <ActionButton $primary={!isFollowing} $danger={isFollowing} onClick={handleFollow} disabled={followLoading}>
+                                    {isFollowing ? <UserMinus size={16} /> : <UserPlus size={16} />}
+                                    {followLoading ? '...' : isFollowing ? 'Unfollow' : 'Follow'}
                                 </ActionButton>
-                                <ActionButton onClick={() => toast.info('Messaging coming soon!', 'Coming Soon')}>
-                                    <MessageSquare size={18} />
-                                    Message
-                                </ActionButton>
-                                <ActionButton onClick={handleShare}>
-                                    <Share2 size={18} />
-                                    Share
-                                </ActionButton>
-                                <ActionButton onClick={handleReport}>
-                                    <Flag size={18} />
-                                    Report
-                                </ActionButton>
+                                <ActionButton onClick={() => toast.info('Coming soon!')}><MessageSquare size={16} /> Message</ActionButton>
+                                <ActionButton onClick={handleShare}><Share2 size={16} /> Share</ActionButton>
                             </>
                         )}
                     </ActionButtons>
@@ -912,181 +1067,166 @@ const PublicProfilePage = () => {
 
                 <StatsGrid>
                     <StatBox>
-                        <StatLabel>Total Return</StatLabel>
-                        <StatValue $positive={(profile.stats?.totalReturnPercent || 0) >= 0} $negative={(profile.stats?.totalReturnPercent || 0) < 0}>
-                            {(profile.stats?.totalReturnPercent || 0) >= 0 ? <ArrowUpRight size={24} /> : <ArrowDownRight size={24} />}
-                            {(profile.stats?.totalReturnPercent || 0) >= 0 ? '+' : ''}
-                            {(profile.stats?.totalReturnPercent || 0).toFixed(2)}%
+                        <StatLabel>Return</StatLabel>
+                        <StatValue $positive={(stats.totalReturnPercent || 0) >= 0} $negative={(stats.totalReturnPercent || 0) < 0}>
+                            {(stats.totalReturnPercent || 0) >= 0 ? <ArrowUpRight size={18} /> : <ArrowDownRight size={18} />}
+                            {(stats.totalReturnPercent || 0).toFixed(2)}%
                         </StatValue>
                     </StatBox>
                     <StatBox>
                         <StatLabel>Win Rate</StatLabel>
-                        <StatValue>
-                            {(profile.stats?.winRate || 0).toFixed(1)}%
-                        </StatValue>
+                        <StatValue>{(stats.winRate || 0).toFixed(1)}%</StatValue>
                     </StatBox>
                     <StatBox>
-                        <StatLabel>Total Trades</StatLabel>
-                        <StatValue>
-                            {profile.stats?.totalTrades || 0}
-                        </StatValue>
+                        <StatLabel>Trades</StatLabel>
+                        <StatValue>{stats.totalTrades || 0}</StatValue>
                     </StatBox>
                     <StatBox>
-                        <StatLabel>Best Trade</StatLabel>
-                        <StatValue $positive>
-                            <ArrowUpRight size={20} />
-                            +{(profile.stats?.bestTrade || 0).toFixed(2)}%
-                        </StatValue>
+                        <StatLabel>Predictions</StatLabel>
+                        <StatValue>{stats.totalPredictions || 0}</StatValue>
                     </StatBox>
                     <StatBox>
-                        <StatLabel>Current Streak</StatLabel>
-                        <StatValue>
-                            <Flame size={20} />
-                            {profile.stats?.currentStreak || 0}
-                        </StatValue>
+                        <StatLabel>Accuracy</StatLabel>
+                        <StatValue>{(stats.predictionAccuracy || 0).toFixed(1)}%</StatValue>
+                    </StatBox>
+                    <StatBox>
+                        <StatLabel>Streak</StatLabel>
+                        <StatValue><Flame size={16} /> {stats.currentStreak || 0}</StatValue>
                     </StatBox>
                 </StatsGrid>
             </ProfileHeader>
 
             <TabsContainer>
-                <Tab $active={activeTab === 'overview'} onClick={() => setActiveTab('overview')}>
-                    <BarChart3 size={18} />
-                    Overview
-                </Tab>
-                <Tab $active={activeTab === 'achievements'} onClick={() => setActiveTab('achievements')}>
-                    <Award size={18} />
-                    Achievements
-                </Tab>
-                <Tab $active={activeTab === 'activity'} onClick={() => setActiveTab('activity')}>
-                    <Activity size={18} />
-                    Activity
-                </Tab>
-                {profile.profile?.showPortfolio && (
-                    <Tab $active={activeTab === 'portfolio'} onClick={() => setActiveTab('portfolio')}>
-                        <Target size={18} />
-                        Portfolio
-                    </Tab>
-                )}
+                <Tab $active={activeTab === 'overview'} onClick={() => setActiveTab('overview')}><BarChart3 size={16} /> Overview</Tab>
+                <Tab $active={activeTab === 'achievements'} onClick={() => setActiveTab('achievements')}><Trophy size={16} /> Achievements <TabBadge>{achievements.length}</TabBadge></Tab>
+                <Tab $active={activeTab === 'activity'} onClick={() => setActiveTab('activity')}><Activity size={16} /> Activity</Tab>
             </TabsContainer>
 
             <ContentContainer>
                 {activeTab === 'overview' && (
                     <SectionGrid>
                         <Card>
-                            <CardTitle>
-                                <TrendingUp size={24} />
-                                Performance Chart
-                            </CardTitle>
-                            <ResponsiveContainer width="100%" height={300}>
-                                <AreaChart data={performanceData}>
-                                    <defs>
-                                        <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#ffd700" stopOpacity={0.8}/>
-                                            <stop offset="95%" stopColor="#ffd700" stopOpacity={0.1}/>
-                                        </linearGradient>
-                                    </defs>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 215, 0, 0.2)" />
-                                    <XAxis dataKey="month" stroke="#94a3b8" />
-                                    <YAxis stroke="#94a3b8" />
-                                    <Tooltip
-                                        contentStyle={{
-                                            background: 'rgba(15, 23, 42, 0.95)',
-                                            border: '1px solid rgba(255, 215, 0, 0.5)',
-                                            borderRadius: '8px',
-                                            color: '#e0e6ed'
-                                        }}
-                                    />
-                                    <Area
-                                        type="monotone"
-                                        dataKey="profit"
-                                        stroke="#ffd700"
-                                        strokeWidth={3}
-                                        fillOpacity={1}
-                                        fill="url(#colorProfit)"
-                                    />
-                                </AreaChart>
-                            </ResponsiveContainer>
+                            <CardTitle><Trophy size={20} /> Recent Achievements</CardTitle>
+                            {achievements.length > 0 ? (
+                                <AchievementGrid>
+                                    {achievements.slice(0, 8).map((ach, i) => {
+                                        const achIcon = ach.icon || '🏆';
+                                        const achName = ach.name || ach.id || 'Achievement';
+                                        const achDesc = ach.description || '';
+                                        const achXp = ach.xpReward || ach.points || 0;
+                                        const achRarity = ach.rarity || 'common';
+                                        
+                                        const rarityColors = {
+                                            common: 'rgba(148, 163, 184, 0.3)',
+                                            rare: 'rgba(59, 130, 246, 0.3)',
+                                            epic: 'rgba(168, 85, 247, 0.3)',
+                                            legendary: 'rgba(255, 215, 0, 0.3)'
+                                        };
+                                        
+                                        return (
+                                            <Achievement 
+                                                key={ach.achievementId || ach.id || i} 
+                                                $earned 
+                                                $color={rarityColors[achRarity]}
+                                                title={achDesc}
+                                            >
+                                                <AchievementIcon>{achIcon}</AchievementIcon>
+                                                <AchievementName>{achName}</AchievementName>
+                                                {achXp > 0 && <AchievementXP>+{achXp} XP</AchievementXP>}
+                                            </Achievement>
+                                        );
+                                    })}
+                                </AchievementGrid>
+                            ) : (
+                                <EmptyState><EmptyIcon><Trophy size={28} /></EmptyIcon><div>No achievements yet</div></EmptyState>
+                            )}
                         </Card>
 
                         <Card>
-                            <CardTitle>
-                                <Award size={24} />
-                                Recent Achievements
-                            </CardTitle>
-                            <AchievementGrid>
-                                {mockAchievements.slice(0, 6).map(achievement => (
-                                    <Achievement key={achievement.id} $earned={achievement.earned}>
-                                        <AchievementIcon>{achievement.icon}</AchievementIcon>
-                                        <AchievementName>{achievement.name}</AchievementName>
-                                    </Achievement>
-                                ))}
-                            </AchievementGrid>
+                            <CardTitle><Activity size={20} /> Recent Activity</CardTitle>
+                            {activities.length > 0 ? (
+                                <ActivityFeed>
+                                    {activities.slice(0, 6).map((act, i) => {
+                                        const style = getActivityIcon(act.type);
+                                        return (
+                                            <ActivityItem key={act.id || i}>
+                                                <ActivityIconWrapper $bg={style.bg}>{act.icon || style.icon}</ActivityIconWrapper>
+                                                <ActivityContent>
+                                                    <ActivityText>{act.text}</ActivityText>
+                                                    <ActivityTime>{formatTimeAgo(act.time)}{act.xp > 0 && ` • +${act.xp} XP`}</ActivityTime>
+                                                </ActivityContent>
+                                            </ActivityItem>
+                                        );
+                                    })}
+                                </ActivityFeed>
+                            ) : (
+                                <EmptyState><EmptyIcon><Activity size={28} /></EmptyIcon><div>No activity yet</div></EmptyState>
+                            )}
                         </Card>
                     </SectionGrid>
                 )}
 
                 {activeTab === 'achievements' && (
                     <Card>
-                        <CardTitle>
-                            <Trophy size={24} />
-                            All Achievements ({mockAchievements.filter(a => a.earned).length}/{mockAchievements.length})
-                        </CardTitle>
-                        <AchievementGrid>
-                            {mockAchievements.map(achievement => (
-                                <Achievement key={achievement.id} $earned={achievement.earned}>
-                                    <AchievementIcon>{achievement.icon}</AchievementIcon>
-                                    <AchievementName>{achievement.name}</AchievementName>
-                                </Achievement>
-                            ))}
-                        </AchievementGrid>
+                        <CardTitle><Trophy size={20} /> All Achievements ({achievements.length})</CardTitle>
+                        {achievements.length > 0 ? (
+                            <AchievementGrid>
+                                {achievements.map((ach, i) => {
+                                    // Handle both achievement formats (from User model or Gamification model)
+                                    const achIcon = ach.icon || '🏆';
+                                    const achName = ach.name || ach.id || 'Achievement';
+                                    const achDesc = ach.description || '';
+                                    const achXp = ach.xpReward || ach.points || 0;
+                                    const achRarity = ach.rarity || 'common';
+                                    
+                                    // Color by rarity
+                                    const rarityColors = {
+                                        common: 'rgba(148, 163, 184, 0.3)',
+                                        rare: 'rgba(59, 130, 246, 0.3)',
+                                        epic: 'rgba(168, 85, 247, 0.3)',
+                                        legendary: 'rgba(255, 215, 0, 0.3)'
+                                    };
+                                    
+                                    return (
+                                        <Achievement 
+                                            key={ach.achievementId || ach.id || i} 
+                                            $earned 
+                                            $color={rarityColors[achRarity]}
+                                            title={achDesc}
+                                        >
+                                            <AchievementIcon>{achIcon}</AchievementIcon>
+                                            <AchievementName>{achName}</AchievementName>
+                                            {achXp > 0 && <AchievementXP>+{achXp} XP</AchievementXP>}
+                                        </Achievement>
+                                    );
+                                })}
+                            </AchievementGrid>
+                        ) : (
+                            <EmptyState><EmptyIcon><Trophy size={28} /></EmptyIcon><div>No achievements earned yet</div></EmptyState>
+                        )}
                     </Card>
                 )}
 
                 {activeTab === 'activity' && (
                     <Card>
-                        <CardTitle>
-                            <Activity size={24} />
-                            Recent Activity
-                        </CardTitle>
-                        <ActivityFeed>
-                            {mockActivity.map(activity => {
-                                const Icon = activity.icon;
-                                return (
-                                    <ActivityItem key={activity.id}>
-                                        <ActivityIcon $type={activity.type}>
-                                            <Icon size={20} />
-                                        </ActivityIcon>
-                                        <ActivityContent>
-                                            <ActivityText>{activity.text}</ActivityText>
-                                            <ActivityTime>{activity.time}</ActivityTime>
-                                        </ActivityContent>
-                                    </ActivityItem>
-                                );
-                            })}
-                        </ActivityFeed>
-                    </Card>
-                )}
-
-                {activeTab === 'portfolio' && (
-                    <Card>
-                        <CardTitle>
-                            <Lock size={24} />
-                            Portfolio
-                        </CardTitle>
-                        {profile.profile?.showPortfolio ? (
-                            <EmptyState>
-                                <EmptyIcon>
-                                    <Briefcase size={40} />
-                                </EmptyIcon>
-                                <EmptyText>Portfolio sharing coming soon!</EmptyText>
-                            </EmptyState>
+                        <CardTitle><Activity size={20} /> Activity Feed</CardTitle>
+                        {activities.length > 0 ? (
+                            <ActivityFeed>
+                                {activities.map((act, i) => {
+                                    const style = getActivityIcon(act.type);
+                                    return (
+                                        <ActivityItem key={act.id || i}>
+                                            <ActivityIconWrapper $bg={style.bg}>{act.icon || style.icon}</ActivityIconWrapper>
+                                            <ActivityContent>
+                                                <ActivityText>{act.text}</ActivityText>
+                                                <ActivityTime>{formatTimeAgo(act.time)}{act.xp > 0 && ` • +${act.xp} XP`}{act.coins > 0 && ` • +${act.coins} 🪙`}</ActivityTime>
+                                            </ActivityContent>
+                                        </ActivityItem>
+                                    );
+                                })}
+                            </ActivityFeed>
                         ) : (
-                            <EmptyState>
-                                <EmptyIcon>
-                                    <Lock size={40} />
-                                </EmptyIcon>
-                                <EmptyText>This trader's portfolio is private</EmptyText>
-                            </EmptyState>
+                            <EmptyState><EmptyIcon><Activity size={28} /></EmptyIcon><div>No activity to display</div></EmptyState>
                         )}
                     </Card>
                 )}

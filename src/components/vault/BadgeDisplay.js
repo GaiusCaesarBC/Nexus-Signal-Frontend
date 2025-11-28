@@ -1,104 +1,105 @@
 // client/src/components/vault/BadgeDisplay.js
 // Displays user's equipped badges with tooltips and animations
+// UPDATED: Badge IDs now match server/data/vaultItems.js
 
 import React, { useState } from 'react';
 import styled, { keyframes, css } from 'styled-components';
 
 // ============ BADGE DEFINITIONS ============
-// Must match vaultItems.js badges
+// ✅ SYNCED with server/data/vaultItems.js
 export const BADGE_DEFINITIONS = {
     'badge-founder': {
         name: 'Founder',
         description: 'Early adopter of Nexus Signal',
-        icon: '🏆',
-        color: 'rgba(245, 158, 11, 0.3)',
-        borderColor: '#f59e0b',
+        icon: '👑',
+        color: 'rgba(251, 191, 36, 0.3)',
+        borderColor: '#fbbf24',
         rarity: 'legendary'
     },
     'badge-first-trade': {
         name: 'First Trade',
         description: 'Completed your first trade',
-        icon: '📈',
-        color: 'rgba(16, 185, 129, 0.3)',
-        borderColor: '#10b981',
+        icon: '🎯',
+        color: 'rgba(59, 130, 246, 0.3)',
+        borderColor: '#3b82f6',
         rarity: 'common'
     },
     'badge-week-warrior': {
         name: 'Week Warrior',
-        description: '7 day login streak',
-        icon: '🔥',
-        color: 'rgba(249, 115, 22, 0.3)',
-        borderColor: '#f97316',
+        description: '7 day login streak achieved',
+        icon: '⭐',
+        color: 'rgba(245, 158, 11, 0.3)',
+        borderColor: '#f59e0b',
         rarity: 'common'
     },
     'badge-trade-master': {
         name: 'Trade Master',
-        description: '500 trades completed',
-        icon: '⚡',
+        description: 'Completed 500+ trades',
+        icon: '📊',
         color: 'rgba(59, 130, 246, 0.3)',
         borderColor: '#3b82f6',
         rarity: 'rare'
     },
     'badge-portfolio-builder': {
         name: 'Portfolio Builder',
-        description: '10 different stocks owned',
+        description: 'Own 10+ different stocks',
         icon: '🏗️',
-        color: 'rgba(139, 92, 246, 0.3)',
-        borderColor: '#8b5cf6',
+        color: 'rgba(14, 165, 233, 0.3)',
+        borderColor: '#0ea5e9',
         rarity: 'rare'
     },
     'badge-profit-king': {
         name: 'Profit King',
-        description: '$10,000 total profit',
-        icon: '👑',
-        color: 'rgba(245, 158, 11, 0.3)',
-        borderColor: '#f59e0b',
+        description: 'Earned over $10,000 in profits',
+        icon: '💰',
+        color: 'rgba(16, 185, 129, 0.3)',
+        borderColor: '#10b981',
         rarity: 'epic'
     },
     'badge-dedicated': {
         name: 'Dedicated',
-        description: '30 day login streak',
-        icon: '💎',
-        color: 'rgba(6, 182, 212, 0.3)',
-        borderColor: '#06b6d4',
+        description: '30 day login streak achieved',
+        icon: '🔥',
+        color: 'rgba(239, 68, 68, 0.3)',
+        borderColor: '#ef4444',
         rarity: 'epic'
     },
-    'badge-oracle': {
+    'badge-prediction-master': {
         name: 'Oracle',
-        description: '100 correct predictions',
+        description: '100+ correct predictions',
         icon: '🔮',
+        color: 'rgba(139, 92, 246, 0.3)',
+        borderColor: '#8b5cf6',
+        rarity: 'epic'
+    },
+    'badge-level-50': {
+        name: 'Half Century',
+        description: 'Reached Level 50',
+        icon: '5️⃣0️⃣',
         color: 'rgba(168, 85, 247, 0.3)',
         borderColor: '#a855f7',
         rarity: 'epic'
     },
-    'badge-half-century': {
-        name: 'Half Century',
-        description: 'Reached level 50',
-        icon: '🎯',
-        color: 'rgba(236, 72, 153, 0.3)',
-        borderColor: '#ec4899',
-        rarity: 'epic'
-    },
     'badge-whale': {
         name: 'Whale',
-        description: '100,000 Nexus Coins owned',
+        description: 'Own 100,000+ Nexus Coins',
         icon: '🐋',
-        color: 'rgba(59, 130, 246, 0.3)',
-        borderColor: '#3b82f6',
+        color: 'rgba(139, 92, 246, 0.3)',
+        borderColor: '#8b5cf6',
         rarity: 'legendary'
     },
-    'badge-centurion': {
+    'badge-level-100': {
         name: 'Centurion',
-        description: 'Reached level 100',
-        icon: '🏛️',
+        description: 'Reached Level 100',
+        icon: '💯',
         color: 'rgba(245, 158, 11, 0.3)',
         borderColor: '#f59e0b',
         rarity: 'legendary'
     },
     'badge-millionaire': {
         name: 'Millionaire',
-        description: '$1,000,000 portfolio value',
-        icon: '💰',
+        description: 'Portfolio value exceeds $1,000,000',
+        icon: '💵',
         color: 'rgba(16, 185, 129, 0.3)',
         borderColor: '#10b981',
         rarity: 'legendary'

@@ -16,6 +16,7 @@ import {
 import styled, { keyframes, css } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useVault } from '../context/VaultContext';
 
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`
@@ -594,6 +595,65 @@ const LevelBadge = styled.span`
     color: #a78bfa;
 `;
 
+
+
+const AuthorBadges = ({ badges, maxDisplay = 3 }) => {
+    if (!badges || badges.length === 0) return null;
+    const displayBadges = badges.slice(0, maxDisplay);
+    const remaining = badges.length - maxDisplay;
+    
+    return (
+        <BadgesContainer>
+            {displayBadges.map(badgeId => (
+                <MiniBadge key={badgeId} $color={BADGE_COLORS[badgeId]}>
+                    {BADGE_ICONS[badgeId] || '?'}
+                </MiniBadge>
+            ))}
+            {remaining > 0 && <span>+{remaining}</span>}
+        </BadgesContainer>
+    );
+};
+
+const BadgesContainer = styled.div`
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    margin-left: 0.25rem;
+`;
+
+const MiniBadge = styled.span`
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 5px;
+    background: ${props => props.$color ? `${props.$color}25` : 'rgba(100, 116, 139, 0.2)'};
+    border: 1.5px solid ${props => props.$color || '#64748b'};
+    font-size: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    
+    &:hover {
+        transform: scale(1.15);
+        box-shadow: 0 0 8px ${props => props.$color || '#64748b'}50;
+    }
+`;
+
+const MoreBadgesIndicator = styled.span`
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 5px;
+    background: rgba(100, 116, 139, 0.15);
+    border: 1.5px solid rgba(100, 116, 139, 0.3);
+    font-size: 0.55rem;
+    font-weight: 700;
+    color: #94a3b8;
+`;
+
 const AuthorMeta = styled.div`
     display: flex;
     align-items: center;
@@ -1127,6 +1187,38 @@ const ReactionCount = styled.span`
         text-decoration: underline;
     }
 `;
+
+
+const BADGE_ICONS = {
+    'badge-founder': '👑',
+    'badge-first-trade': '🎯',
+    'badge-week-warrior': '⭐',
+    'badge-trade-master': '📊',
+    'badge-portfolio-builder': '🏗️',
+    'badge-profit-king': '💰',
+    'badge-dedicated': '🔥',
+    'badge-prediction-master': '🔮',
+    'badge-level-50': '5️⃣0️⃣',
+    'badge-whale': '🐋',
+    'badge-level-100': '💯',
+    'badge-millionaire': '💵'
+};
+
+const BADGE_COLORS = {
+    'badge-founder': '#fbbf24',
+    'badge-first-trade': '#3b82f6',
+    'badge-week-warrior': '#f59e0b',
+    'badge-trade-master': '#3b82f6',
+    'badge-portfolio-builder': '#0ea5e9',
+    'badge-profit-king': '#10b981',
+    'badge-dedicated': '#ef4444',
+    'badge-prediction-master': '#8b5cf6',
+    'badge-level-50': '#a855f7',
+    'badge-whale': '#8b5cf6',
+    'badge-level-100': '#f59e0b',
+    'badge-millionaire': '#10b981'
+};
+
 
 const StatsRight = styled.div`
     display: flex;
@@ -1970,6 +2062,32 @@ const SocialFeed = () => {
 const [topTraders, setTopTraders] = useState([]);
 const [suggestedUsers, setSuggestedUsers] = useState([]);
 
+const AuthorBadges = ({ badges, maxDisplay = 3 }) => {
+    if (!badges || badges.length === 0) return null;
+    
+    const displayBadges = badges.slice(0, maxDisplay);
+    const remaining = badges.length - maxDisplay;
+    
+    return (
+        <BadgesContainer>
+            {displayBadges.map(badgeId => (
+                <MiniBadge 
+                    key={badgeId} 
+                    $color={BADGE_COLORS[badgeId]}
+                    title={badgeId.replace('badge-', '').replace(/-/g, ' ')}
+                >
+                    {BADGE_ICONS[badgeId] || '?'}
+                </MiniBadge>
+            ))}
+            {remaining > 0 && (
+                <MoreBadgesIndicator>+{remaining}</MoreBadgesIndicator>
+            )}
+        </BadgesContainer>
+    );
+};
+
+
+
     // Fetch feed
     const fetchFeed = useCallback(async (filterType = filter, pageNum = 1, append = false) => {
         try {
@@ -2532,17 +2650,19 @@ useEffect(() => {
                                             )}
                                         </UserAvatar>
                                         <AuthorInfo>
-                                            <AuthorName onClick={() => navigate(`/profile/${post.author?.username}`)}>
-                                                {post.author?.displayName || 'Anonymous'}
-                                                {post.author?.verified && (
-                                                    <VerifiedBadge>
-                                                        <Check size={12} />
-                                                    </VerifiedBadge>
-                                                )}
-                                                {post.author?.level && (
-                                                    <LevelBadge>Lv {post.author.level}</LevelBadge>
-                                                )}
-                                            </AuthorName>
+                                            {/* AFTER (with badges): */}
+<AuthorName onClick={() => navigate(`/profile/${post.author?.username}`)}>
+    {post.author?.displayName || 'Anonymous'}
+    {post.author?.verified && (
+        <VerifiedBadge>
+            <Check size={12} />
+        </VerifiedBadge>
+    )}
+   {post.author?.level && (
+    <LevelBadge>Lv {post.author.level}</LevelBadge>
+)}
+<AuthorBadges badges={post.author?.equippedBadges} maxDisplay={3} />
+</AuthorName>
                                             <AuthorMeta>
                                                 <Username onClick={() => navigate(`/profile/${post.author?.username}`)}>
                                                     @{post.author?.username}
