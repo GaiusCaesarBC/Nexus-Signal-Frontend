@@ -1,8 +1,8 @@
-// client/src/components/Navbar.js - FULLY FIXED VERSION 🎨
+// client/src/components/Navbar.js - WITH SEARCH BAR & CONSOLIDATED NAV
 import axios from 'axios';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import styled, { keyframes } from 'styled-components';
+import styled, { keyframes, css } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import NavbarGamification from './gamification/NavbarGamification';
 import { useGamification } from '../context/GamificationContext';
@@ -12,7 +12,8 @@ import {
     DollarSign, LogOut, User, Menu, X, ChevronDown, Zap, Users,
     Settings, Bell, CheckCircle, AlertCircle, TrendingUp as TrendingUpIcon,
     DollarSign as DollarIcon, Clock, ArrowUpRight, ArrowDownRight, Trophy, Twitter,
-    Briefcase, BarChart3, Activity, Sparkles, Globe, Calculator, TrendingDown, MessageCircle, Award, Waves
+    Briefcase, BarChart3, Activity, Sparkles, Globe, Calculator, TrendingDown, MessageCircle, Award, Waves,
+    Search, Bitcoin, LineChart
 } from 'lucide-react';
 import nexusSignalLogo from '../assets/nexus-signal-logo.png';
 
@@ -38,7 +39,7 @@ const shake = keyframes`
     20%, 40%, 60%, 80% { transform: rotate(10deg); }
 `;
 
-// ============ STYLED COMPONENTS (FIXED COLORS!) ============
+// ============ STYLED COMPONENTS ============
 const NavContainer = styled.nav`
     position: fixed;
     top: 0;
@@ -52,7 +53,6 @@ const NavContainer = styled.nav`
     animation: ${fadeIn} 0.5s ease-out;
 `;
 
-// ✅ FIXED: Nav starts from left edge, no centering
 const NavInner = styled.div`
     width: 100%;
     padding: 0 1.5rem;
@@ -67,7 +67,7 @@ const NavInner = styled.div`
     }
 `;
 
-// ============ LOGO (FIXED VISIBILITY!) ============
+// ============ LOGO ============
 const Logo = styled(Link)`
     display: flex;
     align-items: center;
@@ -134,7 +134,6 @@ const LogoImage = styled.img`
     z-index: 1;
 `;
 
-// ✅ FIXED: Bright visible gradient for "Nexus Signal" text
 const LogoText = styled.span`
     letter-spacing: 1px;
     font-size: 1rem;
@@ -162,6 +161,182 @@ const LogoText = styled.span`
     }
 `;
 
+// ============ SEARCH BAR ============
+const SearchContainer = styled.div`
+    position: relative;
+    width: 240px;
+    margin-right: 0.5rem;
+    
+    @media (max-width: 1200px) {
+        width: 180px;
+    }
+    
+    @media (max-width: 1024px) {
+        display: none;
+    }
+`;
+
+const SearchInputWrapper = styled.div`
+    position: relative;
+    display: flex;
+    align-items: center;
+`;
+
+const SearchIconStyled = styled(Search)`
+    position: absolute;
+    left: 0.75rem;
+    color: #64748b;
+    width: 16px;
+    height: 16px;
+    pointer-events: none;
+`;
+
+const SearchInput = styled.input`
+    width: 100%;
+    padding: 0.5rem 1rem 0.5rem 2.25rem;
+    background: rgba(30, 41, 59, 0.6);
+    border: 1px solid rgba(100, 116, 139, 0.3);
+    border-radius: 20px;
+    color: #f8fafc;
+    font-size: 0.8rem;
+    transition: all 0.2s ease;
+    
+    &::placeholder {
+        color: #64748b;
+    }
+    
+    &:focus {
+        outline: none;
+        border-color: #00adef;
+        background: rgba(30, 41, 59, 0.8);
+        box-shadow: 0 0 0 3px rgba(0, 173, 239, 0.1);
+    }
+`;
+
+const SearchResults = styled.div`
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    background: rgba(15, 23, 42, 0.98);
+    border: 1px solid rgba(0, 173, 239, 0.3);
+    border-radius: 12px;
+    max-height: 400px;
+    overflow-y: auto;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    animation: ${slideDown} 0.2s ease;
+    z-index: 1001;
+`;
+
+const SearchResultsHeader = styled.div`
+    padding: 0.6rem 1rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid rgba(100, 116, 139, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+`;
+
+const SearchResultItem = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 1rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border-bottom: 1px solid rgba(100, 116, 139, 0.1);
+    
+    &:last-child {
+        border-bottom: none;
+    }
+    
+    &:hover {
+        background: rgba(0, 173, 239, 0.1);
+    }
+    
+    ${props => props.$selected && css`
+        background: rgba(0, 173, 239, 0.15);
+    `}
+`;
+
+const SearchResultIconBox = styled.div`
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    background: ${props => props.$crypto ? 'rgba(247, 147, 26, 0.2)' : 'rgba(0, 173, 239, 0.2)'};
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: ${props => props.$crypto ? '#f7931a' : '#00adef'};
+    font-weight: 600;
+    font-size: 0.7rem;
+`;
+
+const SearchResultInfo = styled.div`
+    flex: 1;
+    min-width: 0;
+`;
+
+const SearchResultSymbol = styled.div`
+    font-weight: 600;
+    color: #f8fafc;
+    font-size: 0.85rem;
+`;
+
+const SearchResultName = styled.div`
+    font-size: 0.7rem;
+    color: #64748b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+`;
+
+const SearchResultType = styled.span`
+    font-size: 0.6rem;
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    background: ${props => props.$crypto ? 'rgba(247, 147, 26, 0.2)' : 'rgba(0, 173, 239, 0.2)'};
+    color: ${props => props.$crypto ? '#f7931a' : '#00adef'};
+    font-weight: 500;
+    flex-shrink: 0;
+`;
+
+const NoResults = styled.div`
+    padding: 1.5rem 1rem;
+    text-align: center;
+    color: #64748b;
+    font-size: 0.8rem;
+`;
+
+const SearchLoading = styled.div`
+    padding: 1.5rem 1rem;
+    text-align: center;
+    color: #64748b;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    
+    &::after {
+        content: '';
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(0, 173, 239, 0.3);
+        border-top-color: #00adef;
+        border-radius: 50%;
+        animation: ${pulse} 0.8s linear infinite;
+    }
+    
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+`;
+
 // ============ NAV LINKS ============
 const NavLinks = styled.div`
     display: flex;
@@ -177,7 +352,6 @@ const NavItem = styled.div`
     position: relative;
 `;
 
-// ✅ FIXED: Cyan active color instead of purple
 const NavLink = styled(Link)`
     display: flex;
     align-items: center;
@@ -202,7 +376,6 @@ const NavLink = styled(Link)`
     }
 `;
 
-// ✅ FIXED: Cyan active color instead of purple
 const DropdownTrigger = styled.button`
     display: flex;
     align-items: center;
@@ -269,8 +442,22 @@ const DropdownItem = styled(Link)`
     }
 `;
 
+const DropdownDivider = styled.div`
+    height: 1px;
+    background: rgba(0, 173, 239, 0.2);
+    margin: 0.25rem 0;
+`;
+
+const DropdownLabel = styled.div`
+    padding: 0.5rem 1.25rem 0.25rem;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+`;
+
 // ============ USER SECTION ============
-// ✅ FIXED: Added margin-left: auto to push user section to the right
 const UserSection = styled.div`
     display: flex;
     align-items: center;
@@ -577,7 +764,7 @@ const UserName = styled.span`
     }
 `;
 
-const DropdownIcon = styled(ChevronDown)`
+const DropdownIconStyled = styled(ChevronDown)`
     transition: transform 0.3s ease;
     transform: ${props => props.$open ? 'rotate(180deg)' : 'rotate(0)'};
 
@@ -729,11 +916,29 @@ const MobileNavLink = styled(Link)`
     }
 `;
 
+const MobileSearchContainer = styled.div`
+    margin-bottom: 1rem;
+    position: relative;
+`;
+
 const Divider = styled.div`
     height: 1px;
     background: linear-gradient(90deg, transparent, rgba(0, 173, 239, 0.3), transparent);
     margin: 1rem 0;
 `;
+
+// ============ SEARCH DEBOUNCE HELPER ============
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
 
 // ============ COMPONENT ============
 const Navbar = () => {
@@ -741,22 +946,26 @@ const Navbar = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const { vault } = useGamification();
+    const searchRef = useRef(null);
+    const searchInputRef = useRef(null);
     
     const [dropdowns, setDropdowns] = useState({
         trading: false,
         analysis: false,
         community: false,
-        ai: false,
-        market: false,
-        vault: false,
     });
     
     const [userDropdownOpen, setUserDropdownOpen] = useState(false);
     const [notificationsOpen, setNotificationsOpen] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-    
-    // ✅ FIXED: Added missing useState for notifications
     const [notifications, setNotifications] = useState([]);
+    
+    // Search state
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState({ stocks: [], crypto: [] });
+    const [showSearchResults, setShowSearchResults] = useState(false);
+    const [selectedIndex, setSelectedIndex] = useState(-1);
+    const [isSearching, setIsSearching] = useState(false);
 
     // Helper functions
     const getIconForType = (type) => {
@@ -779,15 +988,11 @@ const Navbar = () => {
         return `${Math.floor(diffInMinutes / 1440)}d ago`;
     };
 
-    // ✅ FIXED: Single, complete fetchNotifications function
     const fetchNotifications = async () => {
-        // Don't fetch if not authenticated
         if (!isAuthenticated || !user) return;
         
         try {
             const response = await api.get('/notifications');
-            
-            // Map backend notifications to your format
             const mappedNotifications = (response.data.notifications || response.data || []).map(notif => ({
                 id: notif._id,
                 type: notif.type === 'price_alert' ? 'success' : 
@@ -798,34 +1003,131 @@ const Navbar = () => {
                 unread: !notif.read,
                 icon: getIconForType(notif.type)
             }));
-            
             setNotifications(mappedNotifications);
         } catch (error) {
-            // Silently fail for 401 errors (user not logged in)
             if (error.response?.status !== 401) {
                 console.error('Failed to fetch notifications:', error);
             }
         }
     };
 
-    // ✅ FIXED: useEffect with proper dependencies
     useEffect(() => {
         if (!isAuthenticated || !user) return;
-        
         fetchNotifications();
         const interval = setInterval(fetchNotifications, 30000);
-        
         return () => clearInterval(interval);
     }, [isAuthenticated, user]);
 
     const unreadCount = notifications.filter(n => n.unread).length;
 
-    // Navigation structure
+    // API-based search with debounce
+    const performSearch = async (query) => {
+        if (query.trim().length < 1) {
+            setSearchResults({ stocks: [], crypto: [] });
+            setShowSearchResults(false);
+            setIsSearching(false);
+            return;
+        }
+
+        setIsSearching(true);
+        
+        try {
+            const response = await api.get(`/search?q=${encodeURIComponent(query)}`);
+            const data = response.data;
+            
+            setSearchResults({
+                stocks: (data.stocks || []).map(s => ({ ...s, type: 'stock' })),
+                crypto: (data.crypto || []).map(c => ({ ...c, type: 'crypto' }))
+            });
+            setShowSearchResults(true);
+        } catch (error) {
+            console.error('Search failed:', error);
+            setSearchResults({ stocks: [], crypto: [] });
+        } finally {
+            setIsSearching(false);
+        }
+    };
+
+    // Debounced search (300ms delay)
+    const debouncedSearch = useRef(
+        debounce((query) => performSearch(query), 300)
+    ).current;
+
+    const handleSearch = (query) => {
+        setSearchQuery(query);
+        setSelectedIndex(-1);
+        
+        if (query.trim().length === 0) {
+            setSearchResults({ stocks: [], crypto: [] });
+            setShowSearchResults(false);
+            setIsSearching(false);
+            return;
+        }
+        
+        setIsSearching(true);
+        setShowSearchResults(true);
+        debouncedSearch(query);
+    };
+
+    const handleSearchSelect = (item) => {
+        if (item.type === 'crypto') {
+            // Use coinGeckoId if available, otherwise symbol
+            const cryptoParam = item.coinGeckoId || item.symbol;
+            navigate(`/crypto/${cryptoParam}`);
+        } else {
+            navigate(`/stock/${item.symbol}`);
+        }
+        setSearchQuery('');
+        setShowSearchResults(false);
+        setSearchResults({ stocks: [], crypto: [] });
+    };
+
+    const handleSearchKeyDown = async (e) => {
+        const allResults = [...searchResults.stocks, ...searchResults.crypto];
+        
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            setSelectedIndex(prev => Math.min(prev + 1, allResults.length - 1));
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            setSelectedIndex(prev => Math.max(prev - 1, -1));
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (selectedIndex >= 0 && allResults[selectedIndex]) {
+                handleSearchSelect(allResults[selectedIndex]);
+            } else if (searchQuery.trim()) {
+                // Validate symbol type via API
+                try {
+                    const response = await api.get(`/search/validate/${encodeURIComponent(searchQuery.trim())}`);
+                    const validation = response.data;
+                    
+                    if (validation.valid) {
+                        if (validation.type === 'crypto') {
+                            navigate(`/crypto/${validation.coinGeckoId || validation.symbol}`);
+                        } else {
+                            navigate(`/stock/${validation.symbol}`);
+                        }
+                    } else {
+                        // Default to stock if unknown
+                        navigate(`/stock/${searchQuery.toUpperCase()}`);
+                    }
+                } catch (error) {
+                    // Default to stock on error
+                    navigate(`/stock/${searchQuery.toUpperCase()}`);
+                }
+                setSearchQuery('');
+                setShowSearchResults(false);
+                setSearchResults({ stocks: [], crypto: [] });
+            }
+        } else if (e.key === 'Escape') {
+            setShowSearchResults(false);
+            setSearchResults({ stocks: [], crypto: [] });
+            searchInputRef.current?.blur();
+        }
+    };
+
+    // CONSOLIDATED Navigation structure
     const navStructure = {
-        single: [
-            { path: '/dashboard', label: 'Dashboard', icon: Home },
-            { path: '/vault', label: 'The Vault', icon: DollarSign }, 
-        ],
         trading: [
             { path: '/portfolio', label: 'Portfolio', icon: Briefcase },
             { path: '/watchlist', label: 'Watchlist', icon: Eye },
@@ -837,37 +1139,31 @@ const Navbar = () => {
             { path: '/sentiment', label: 'Sentiment', icon: Activity },
             { path: '/compare', label: 'Stock Comparison', icon: BarChart3 },
             { path: '/whale-alerts', label: 'Whale Alerts', icon: Waves },
-        ],
-        community: [
-            { path: '/leaderboard', label: 'Leaderboard', icon: Trophy },
-            { path: '/discover', label: 'Discover', icon: Sparkles },
-            { path: '/journal', label: 'Journal', icon: BookOpen },
-        ],
-        ai: [
-            { path: '/predict', label: 'AI Predict', icon: Brain },
+            // AI Tools
+            { path: '/predict', label: 'AI Predict', icon: Brain, section: 'AI Tools' },
             { path: '/chat', label: 'AI Chat', icon: MessageSquare },
-        ],
-        market: [
-            { path: '/news', label: 'News', icon: Newspaper },
+            // Market
+            { path: '/news', label: 'News', icon: Newspaper, section: 'Market' },
             { path: '/calculators', label: 'Calculators', icon: Calculator },
         ],
-        bottom: [
-            { path: '/pricing', label: 'Pricing', icon: DollarSign },
+        community: [
+            { path: '/feed', label: 'Social Feed', icon: MessageCircle },
+            { path: '/leaderboard', label: 'Leaderboard', icon: Trophy },
+            { path: '/discover', label: 'Discover Traders', icon: Sparkles },
+            { path: '/journal', label: 'Journal', icon: BookOpen },
+            { path: '/achievements/browse', label: 'Achievements', icon: Award },
+            // Vault/Rewards
+            { path: '/vault', label: 'The Vault', icon: DollarSign, section: 'Rewards' },
+            { path: '/equipped', label: 'Equipped Items', icon: Award },
         ],
     };
 
-    // ✅ FIXED: Close other dropdowns when opening a new one
     const handleDropdownToggle = (dropdown) => {
         setDropdowns({
-            trading: false,
-            analysis: false,
-            community: false,
-            ai: false,
-            market: false,
-            vault: false,
-            [dropdown]: !dropdowns[dropdown]
+            trading: dropdown === 'trading' ? !dropdowns.trading : false,
+            analysis: dropdown === 'analysis' ? !dropdowns.analysis : false,
+            community: dropdown === 'community' ? !dropdowns.community : false,
         });
-        // Also close user dropdown and notifications when opening nav dropdown
         setUserDropdownOpen(false);
         setNotificationsOpen(false);
     };
@@ -886,49 +1182,44 @@ const Navbar = () => {
     };
 
     const handleNotificationClick = async (notification) => {
-    try {
-        await api.put(`/notifications/${notification.id}/read`);
-        
-        // Update local state
-        setNotifications(notifications.map(n => 
-            n.id === notification.id ? { ...n, unread: false } : n
-        ));
+        try {
+            await api.put(`/notifications/${notification.id}/read`);
+            setNotifications(notifications.map(n => 
+                n.id === notification.id ? { ...n, unread: false } : n
+            ));
 
-        // Navigate based on notification type
-        if (notification.type === 'success' || notification.type === 'price_alert') {
-            navigate('/watchlist');
-        } else if (notification.type === 'warning' || notification.type === 'prediction_expiry') {
-            navigate('/predict');
-        } else if (notification.type === 'achievement') {
-            navigate('/achievements/browse');
-        } else if (notification.type === 'level_up') {
-            navigate('/profile');
-        } else if (notification.type === 'follow') {
-            navigate('/profile');
-        } else if (notification.type === 'portfolio_milestone') {
-            navigate('/portfolio');
-        } else {
-            // Default: go to dashboard
-            navigate('/dashboard');
+            if (notification.type === 'success' || notification.type === 'price_alert') {
+                navigate('/watchlist');
+            } else if (notification.type === 'warning' || notification.type === 'prediction_expiry') {
+                navigate('/predict');
+            } else if (notification.type === 'achievement') {
+                navigate('/achievements/browse');
+            } else if (notification.type === 'level_up') {
+                navigate('/profile');
+            } else if (notification.type === 'follow') {
+                navigate('/profile');
+            } else if (notification.type === 'portfolio_milestone') {
+                navigate('/portfolio');
+            } else {
+                navigate('/dashboard');
+            }
+
+            setNotificationsOpen(false);
+        } catch (error) {
+            console.error('Failed to mark as read:', error);
+            setNotificationsOpen(false);
         }
+    };
 
-        setNotificationsOpen(false);
-    } catch (error) {
-        console.error('Failed to mark as read:', error);
-        // Still navigate and close even if marking as read fails
-        setNotificationsOpen(false);
-    }
-};
+    const handleMarkAllRead = async () => {
+        try {
+            await api.post('/notifications/mark-all-read');
+            setNotifications(notifications.map(n => ({ ...n, unread: false })));
+        } catch (error) {
+            console.error('Failed to mark all as read:', error);
+        }
+    };
 
-const handleMarkAllRead = async () => {
-    try {
-        await api.post('/notifications/mark-all-read');
-        
-        setNotifications(notifications.map(n => ({ ...n, unread: false })));
-    } catch (error) {
-        console.error('Failed to mark all as read:', error);
-    }
-};
     const getUserInitials = () => {
         if (!user?.name) return 'U';
         return user.name
@@ -947,13 +1238,11 @@ const handleMarkAllRead = async () => {
         setMobileMenuOpen(false);
         setUserDropdownOpen(false);
         setNotificationsOpen(false);
+        setShowSearchResults(false);
         setDropdowns({
             trading: false,
             analysis: false,
             community: false,
-            ai: false,
-            market: false,
-            vault: false,
         });
     }, [location]);
 
@@ -970,16 +1259,44 @@ const handleMarkAllRead = async () => {
                     trading: false,
                     analysis: false,
                     community: false,
-                    ai: false,
-                    market: false,
-                    vault: false,
                 });
+            }
+            if (searchRef.current && !searchRef.current.contains(e.target)) {
+                setShowSearchResults(false);
             }
         };
 
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    // Helper to render dropdown items with sections
+    const renderDropdownItems = (items) => {
+        let currentSection = null;
+        return items.map((item, index) => {
+            const Icon = item.icon;
+            const showSection = item.section && item.section !== currentSection;
+            if (item.section) currentSection = item.section;
+            
+            return (
+                <React.Fragment key={item.path}>
+                    {showSection && (
+                        <>
+                            <DropdownDivider />
+                            <DropdownLabel>{item.section}</DropdownLabel>
+                        </>
+                    )}
+                    <DropdownItem
+                        to={item.path}
+                        $active={location.pathname === item.path}
+                    >
+                        <Icon size={16} />
+                        {item.label}
+                    </DropdownItem>
+                </React.Fragment>
+            );
+        });
+    };
 
     return (
         <NavContainer>
@@ -992,49 +1309,100 @@ const handleMarkAllRead = async () => {
                     <LogoText>Nexus Signal</LogoText>
                 </Logo>
 
+                {/* SEARCH BAR */}
+                <SearchContainer ref={searchRef}>
+                    <SearchInputWrapper>
+                        <SearchIconStyled size={16} />
+                        <SearchInput
+                            ref={searchInputRef}
+                            type="text"
+                            placeholder="Search stocks & crypto..."
+                            value={searchQuery}
+                            onChange={(e) => handleSearch(e.target.value)}
+                            onFocus={() => searchQuery && setShowSearchResults(true)}
+                            onKeyDown={handleSearchKeyDown}
+                        />
+                    </SearchInputWrapper>
+                    
+                    {showSearchResults && isSearching && (
+                        <SearchResults>
+                            <SearchLoading>Searching...</SearchLoading>
+                        </SearchResults>
+                    )}
+                    
+                    {showSearchResults && !isSearching && (searchResults.stocks.length > 0 || searchResults.crypto.length > 0) && (
+                        <SearchResults>
+                            {searchResults.stocks.length > 0 && (
+                                <>
+                                    <SearchResultsHeader>
+                                        <LineChart size={14} />
+                                        Stocks
+                                    </SearchResultsHeader>
+                                    {searchResults.stocks.map((stock, idx) => (
+                                        <SearchResultItem
+                                            key={stock.symbol}
+                                            onClick={() => handleSearchSelect(stock)}
+                                            $selected={selectedIndex === idx}
+                                        >
+                                            <SearchResultIconBox>
+                                                {stock.symbol.slice(0, 2)}
+                                            </SearchResultIconBox>
+                                            <SearchResultInfo>
+                                                <SearchResultSymbol>{stock.symbol}</SearchResultSymbol>
+                                                <SearchResultName>{stock.name}</SearchResultName>
+                                            </SearchResultInfo>
+                                            <SearchResultType>Stock</SearchResultType>
+                                        </SearchResultItem>
+                                    ))}
+                                </>
+                            )}
+                            
+                            {searchResults.crypto.length > 0 && (
+                                <>
+                                    <SearchResultsHeader>
+                                        <Bitcoin size={14} />
+                                        Crypto
+                                    </SearchResultsHeader>
+                                    {searchResults.crypto.map((crypto, idx) => (
+                                        <SearchResultItem
+                                            key={crypto.symbol + (crypto.coinGeckoId || '')}
+                                            onClick={() => handleSearchSelect(crypto)}
+                                            $selected={selectedIndex === searchResults.stocks.length + idx}
+                                        >
+                                            <SearchResultIconBox $crypto>
+                                                {crypto.symbol.slice(0, 2)}
+                                            </SearchResultIconBox>
+                                            <SearchResultInfo>
+                                                <SearchResultSymbol>{crypto.symbol}</SearchResultSymbol>
+                                                <SearchResultName>{crypto.name}</SearchResultName>
+                                            </SearchResultInfo>
+                                            <SearchResultType $crypto>Crypto</SearchResultType>
+                                        </SearchResultItem>
+                                    ))}
+                                </>
+                            )}
+                        </SearchResults>
+                    )}
+                    
+                    {showSearchResults && !isSearching && searchQuery && searchResults.stocks.length === 0 && searchResults.crypto.length === 0 && (
+                        <SearchResults>
+                            <NoResults>
+                                No results for "{searchQuery}"
+                                <br />
+                                <small style={{ color: '#64748b' }}>
+                                    Press Enter to search anyway
+                                </small>
+                            </NoResults>
+                        </SearchResults>
+                    )}
+                </SearchContainer>
+
                 {/* DESKTOP NAV LINKS */}
                 <NavLinks>
                     {/* Dashboard */}
                     <NavLink to="/dashboard" $active={location.pathname === '/dashboard'}>
                         <Home size={16} />
                         Dashboard
-                    </NavLink>
-
-                    {/* Vault Dropdown */}
-                    <NavItem data-dropdown>
-                        <DropdownTrigger
-                            onClick={() => handleDropdownToggle('vault')}
-                            $open={dropdowns.vault}
-                            $active={location.pathname === '/vault' || location.pathname === '/equipped'}
-                        >
-                            <DollarSign size={16} />
-                            Vault
-                            <ChevronDown size={14} />
-                        </DropdownTrigger>
-                        {dropdowns.vault && (
-                            <DropdownMenu>
-                                <DropdownItem
-                                    to="/vault"
-                                    $active={location.pathname === '/vault'}
-                                >
-                                    <DollarSign size={16} />
-                                    The Vault
-                                </DropdownItem>
-                                <DropdownItem
-                                    to="/equipped"
-                                    $active={location.pathname === '/equipped'}
-                                >
-                                    <Award size={16} />
-                                    Equipped Items
-                                </DropdownItem>
-                            </DropdownMenu>
-                        )}
-                    </NavItem>
-
-                    {/* Social Feed */}
-                    <NavLink to="/feed" $active={location.pathname === '/feed'}>
-                        <MessageCircle size={16} />
-                        Feed
                     </NavLink>
 
                     {/* Trading Dropdown */}
@@ -1067,7 +1435,7 @@ const handleMarkAllRead = async () => {
                         )}
                     </NavItem>
 
-                    {/* Analysis Dropdown */}
+                    {/* Analysis Dropdown (includes AI Tools & Market) */}
                     <NavItem data-dropdown>
                         <DropdownTrigger
                             onClick={() => handleDropdownToggle('analysis')}
@@ -1080,24 +1448,12 @@ const handleMarkAllRead = async () => {
                         </DropdownTrigger>
                         {dropdowns.analysis && (
                             <DropdownMenu>
-                                {navStructure.analysis.map(item => {
-                                    const Icon = item.icon;
-                                    return (
-                                        <DropdownItem
-                                            key={item.path}
-                                            to={item.path}
-                                            $active={location.pathname === item.path}
-                                        >
-                                            <Icon size={16} />
-                                            {item.label}
-                                        </DropdownItem>
-                                    );
-                                })}
+                                {renderDropdownItems(navStructure.analysis)}
                             </DropdownMenu>
                         )}
                     </NavItem>
 
-                    {/* Community Dropdown */}
+                    {/* Community Dropdown (includes Feed & Vault) */}
                     <NavItem data-dropdown>
                         <DropdownTrigger
                             onClick={() => handleDropdownToggle('community')}
@@ -1110,86 +1466,7 @@ const handleMarkAllRead = async () => {
                         </DropdownTrigger>
                         {dropdowns.community && (
                             <DropdownMenu>
-                                {navStructure.community.map(item => {
-                                    const Icon = item.icon;
-                                    return (
-                                        <DropdownItem
-                                            key={item.path}
-                                            to={item.path}
-                                            $active={location.pathname === item.path}
-                                        >
-                                            <Icon size={16} />
-                                            {item.label}
-                                        </DropdownItem>
-                                    );
-                                })}
-                                <DropdownItem
-                                    to="/achievements/browse"
-                                    $active={location.pathname === '/achievements/browse'}
-                                >
-                                    <Award size={16} />
-                                    Browse Achievements
-                                </DropdownItem>
-                            </DropdownMenu>  
-                        )}
-                    </NavItem>
-
-                    {/* AI Tools Dropdown */}
-                    <NavItem data-dropdown>
-                        <DropdownTrigger
-                            onClick={() => handleDropdownToggle('ai')}
-                            $open={dropdowns.ai}
-                            $active={isPathActive(navStructure.ai)}
-                        >
-                            <Zap size={16} />
-                            AI Tools
-                            <ChevronDown size={14} />
-                        </DropdownTrigger>
-                        {dropdowns.ai && (
-                            <DropdownMenu>
-                                {navStructure.ai.map(item => {
-                                    const Icon = item.icon;
-                                    return (
-                                        <DropdownItem
-                                            key={item.path}
-                                            to={item.path}
-                                            $active={location.pathname === item.path}
-                                        >
-                                            <Icon size={16} />
-                                            {item.label}
-                                        </DropdownItem>
-                                    );
-                                })}
-                            </DropdownMenu>
-                        )}
-                    </NavItem>
-
-                    {/* Market Dropdown */}
-                    <NavItem data-dropdown>
-                        <DropdownTrigger
-                            onClick={() => handleDropdownToggle('market')}
-                            $open={dropdowns.market}
-                            $active={isPathActive(navStructure.market)}
-                        >
-                            <Globe size={16} />
-                            Market
-                            <ChevronDown size={14} />
-                        </DropdownTrigger>
-                        {dropdowns.market && (
-                            <DropdownMenu>
-                                {navStructure.market.map(item => {
-                                    const Icon = item.icon;
-                                    return (
-                                        <DropdownItem
-                                            key={item.path}
-                                            to={item.path}
-                                            $active={location.pathname === item.path}
-                                        >
-                                            <Icon size={16} />
-                                            {item.label}
-                                        </DropdownItem>
-                                    );
-                                })}
+                                {renderDropdownItems(navStructure.community)}
                             </DropdownMenu>
                         )}
                     </NavItem>
@@ -1212,14 +1489,7 @@ const handleMarkAllRead = async () => {
                             onClick={() => {
                                 setNotificationsOpen(!notificationsOpen);
                                 setUserDropdownOpen(false);
-                                setDropdowns({
-                                    trading: false,
-                                    analysis: false,
-                                    community: false,
-                                    ai: false,
-                                    market: false,
-                                    vault: false,
-                                });
+                                setDropdowns({ trading: false, analysis: false, community: false });
                             }}
                             data-notification-button
                         >
@@ -1288,14 +1558,7 @@ const handleMarkAllRead = async () => {
                         <UserMenuButton onClick={() => {
                             setUserDropdownOpen(!userDropdownOpen);
                             setNotificationsOpen(false);
-                            setDropdowns({
-                                trading: false,
-                                analysis: false,
-                                community: false,
-                                ai: false,
-                                market: false,
-                                vault: false,
-                            });
+                            setDropdowns({ trading: false, analysis: false, community: false });
                         }}>
                             <UserAvatar $src={user?.profile?.avatar}>
                                 {user?.profile?.avatar ? (
@@ -1313,7 +1576,7 @@ const handleMarkAllRead = async () => {
                                 )}
                             </UserAvatar>
                             <UserName>{user?.name || 'User'}</UserName>
-                            <DropdownIcon size={18} $open={userDropdownOpen} />
+                            <DropdownIconStyled size={18} $open={userDropdownOpen} />
                         </UserMenuButton>
 
                         {userDropdownOpen && (
@@ -1349,6 +1612,20 @@ const handleMarkAllRead = async () => {
             {/* MOBILE MENU */}
             <MobileMenu $open={mobileMenuOpen}>
                 <MobileNavLinks>
+                    {/* Mobile Search */}
+                    <MobileSearchContainer>
+                        <SearchInputWrapper>
+                            <SearchIconStyled size={16} />
+                            <SearchInput
+                                type="text"
+                                placeholder="Search stocks & crypto..."
+                                value={searchQuery}
+                                onChange={(e) => handleSearch(e.target.value)}
+                                style={{ width: '100%' }}
+                            />
+                        </SearchInputWrapper>
+                    </MobileSearchContainer>
+                    
                     <MobileNavLink 
                         to="/dashboard" 
                         $active={location.pathname === '/dashboard'}
@@ -1356,39 +1633,6 @@ const handleMarkAllRead = async () => {
                     >
                         <Home size={22} />
                         Dashboard
-                    </MobileNavLink>
-
-                    {/* Vault Category */}
-                    <MobileNavCategory>
-                        <MobileCategoryTitle>
-                            <DollarSign size={16} />
-                            Vault
-                        </MobileCategoryTitle>
-                        <MobileNavLink 
-                            to="/vault" 
-                            $active={location.pathname === '/vault'}
-                            onClick={() => setMobileMenuOpen(false)}
-                        >
-                            <DollarSign size={22} />
-                            The Vault
-                        </MobileNavLink>
-                        <MobileNavLink 
-                            to="/equipped" 
-                            $active={location.pathname === '/equipped'}
-                            onClick={() => setMobileMenuOpen(false)}
-                        >
-                            <Award size={22} />
-                            Equipped Items
-                        </MobileNavLink>
-                    </MobileNavCategory>
-
-                    <MobileNavLink 
-                        to="/feed" 
-                        $active={location.pathname === '/feed'}
-                        onClick={() => setMobileMenuOpen(false)}
-                    >
-                        <MessageCircle size={22} />
-                        Social Feed
                     </MobileNavLink>
 
                     <MobileNavCategory>
@@ -1415,7 +1659,7 @@ const handleMarkAllRead = async () => {
                     <MobileNavCategory>
                         <MobileCategoryTitle>
                             <BarChart3 size={16} />
-                            Analysis
+                            Analysis & Tools
                         </MobileCategoryTitle>
                         {navStructure.analysis.map(item => {
                             const Icon = item.icon;
@@ -1436,59 +1680,9 @@ const handleMarkAllRead = async () => {
                     <MobileNavCategory>
                         <MobileCategoryTitle>
                             <Users size={16} />
-                            Community
+                            Community & Rewards
                         </MobileCategoryTitle>
                         {navStructure.community.map(item => {
-                            const Icon = item.icon;
-                            return (
-                                <MobileNavLink
-                                    key={item.path}
-                                    to={item.path}
-                                    $active={location.pathname === item.path}
-                                    onClick={() => setMobileMenuOpen(false)}
-                                >
-                                    <Icon size={22} />
-                                    {item.label}
-                                </MobileNavLink>
-                            );
-                        })}
-                        <MobileNavLink
-                            to="/achievements/browse"
-                            $active={location.pathname === '/achievements/browse'}
-                            onClick={() => setMobileMenuOpen(false)}
-                        >
-                            <Award size={22} />
-                            Browse Achievements
-                        </MobileNavLink>
-                    </MobileNavCategory>
-
-                    <MobileNavCategory>
-                        <MobileCategoryTitle>
-                            <Zap size={16} />
-                            AI Tools
-                        </MobileCategoryTitle>
-                        {navStructure.ai.map(item => {
-                            const Icon = item.icon;
-                            return (
-                                <MobileNavLink
-                                    key={item.path}
-                                    to={item.path}
-                                    $active={location.pathname === item.path}
-                                    onClick={() => setMobileMenuOpen(false)}
-                                >
-                                    <Icon size={22} />
-                                    {item.label}
-                                </MobileNavLink>
-                            );
-                        })}
-                    </MobileNavCategory>
-
-                    <MobileNavCategory>
-                        <MobileCategoryTitle>
-                            <Globe size={16} />
-                            Market
-                        </MobileCategoryTitle>
-                        {navStructure.market.map(item => {
                             const Icon = item.icon;
                             return (
                                 <MobileNavLink

@@ -23,6 +23,9 @@ import LevelUpCelebration from './components/gamification/LevelUpCelebration';
 import AchievementPopup from './components/gamification/AchievementPopup';
 import XPNotification from './components/gamification/XPNotification';
 
+// 🏆 Vault imports
+import { VaultProvider } from './context/VaultContext';
+
 // Page imports
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
@@ -62,8 +65,7 @@ import PriceServiceTester from './components/dev/PriceServiceTester';
 import OnboardingFlow from './pages/OnboardingFlow';
 import PredictionsShowcase from './pages/PredictionsShowcase';
 import CryptoPage from './pages/CryptoPage';
-import WhaleAlertsPage from './pages/WhaleAlertsPage'
-
+import WhaleAlertsPage from './pages/WhaleAlertsPage';
 
 // Wraps content with styled-components theme
 function AppContent() {
@@ -127,6 +129,8 @@ function AppContent() {
                     <Route path="/predictions-showcase" element={<PredictionsShowcase />} />
                     <Route path="/crypto/:symbol" element={<ProtectedRoute><CryptoPage /></ProtectedRoute>} />
                     <Route path="/whale-alerts" element={<ProtectedRoute><WhaleAlertsPage /></ProtectedRoute>} />
+                    <Route path="/trader/:username" element={<ProtectedRoute><PublicProfilePage /></ProtectedRoute>} />
+<Route path="/profile/:username" element={<ProtectedRoute><PublicProfilePage /></ProtectedRoute>} />
 
                     {/* 🎮 GAMIFICATION ROUTES */}
                     <Route path="/achievements" element={<ProtectedRoute><AchievementsPage /></ProtectedRoute>} />
@@ -147,22 +151,24 @@ function AppContent() {
             <XPNotification />
 
             {/* 🐋 WHALE NOTIFICATIONS */}
-<WhaleNotification />
-{/* 📊 VERCEL ANALYTICS */}
+            <WhaleNotification />
+            
+            {/* 📊 VERCEL ANALYTICS */}
             <Analytics />
             <SpeedInsights />
         </StyledThemeProvider>
     );
 }
 
-// Main App - CORRECT PROVIDER ORDER! 🎮
 function App() {
     return (
-        <GamificationProvider>
-            <ThemeProvider>
-                <AppContent />
-            </ThemeProvider>
-        </GamificationProvider>
+        <ThemeProvider>
+            <GamificationProvider>
+                <VaultProvider>
+                    <AppContent />
+                </VaultProvider>
+            </GamificationProvider>
+        </ThemeProvider>
     );
 }
 

@@ -1,5 +1,5 @@
 // client/src/components/gamification/NavbarGamification.js
-// Shows gamification stats with dropdown panel
+// Shows gamification stats with dropdown panel + EQUIPPED BADGES
 
 import React, { useState, useRef, useEffect } from 'react';
 import styled, { keyframes, css } from 'styled-components';
@@ -10,6 +10,53 @@ import {
 } from 'lucide-react';
 import { useGamification } from '../../context/GamificationContext';
 import { useAuth } from '../../context/AuthContext';
+import { useVault } from '../../context/VaultContext';
+
+// ============ BADGE DEFINITIONS (synced with backend) ============
+const BADGE_ICONS = {
+    'badge-founder': '👑',
+    'badge-first-trade': '🎯',
+    'badge-week-warrior': '⭐',
+    'badge-trade-master': '📊',
+    'badge-portfolio-builder': '🏗️',
+    'badge-profit-king': '💰',
+    'badge-dedicated': '🔥',
+    'badge-prediction-master': '🔮',
+    'badge-level-50': '5️⃣0️⃣',
+    'badge-whale': '🐋',
+    'badge-level-100': '💯',
+    'badge-millionaire': '💵'
+};
+
+const BADGE_COLORS = {
+    'badge-founder': '#fbbf24',
+    'badge-first-trade': '#3b82f6',
+    'badge-week-warrior': '#f59e0b',
+    'badge-trade-master': '#3b82f6',
+    'badge-portfolio-builder': '#0ea5e9',
+    'badge-profit-king': '#10b981',
+    'badge-dedicated': '#ef4444',
+    'badge-prediction-master': '#8b5cf6',
+    'badge-level-50': '#a855f7',
+    'badge-whale': '#8b5cf6',
+    'badge-level-100': '#f59e0b',
+    'badge-millionaire': '#10b981'
+};
+
+const BADGE_NAMES = {
+    'badge-founder': 'Founder',
+    'badge-first-trade': 'First Trade',
+    'badge-week-warrior': 'Week Warrior',
+    'badge-trade-master': 'Trade Master',
+    'badge-portfolio-builder': 'Portfolio Builder',
+    'badge-profit-king': 'Profit King',
+    'badge-dedicated': 'Dedicated',
+    'badge-prediction-master': 'Oracle',
+    'badge-level-50': 'Half Century',
+    'badge-whale': 'Whale',
+    'badge-level-100': 'Centurion',
+    'badge-millionaire': 'Millionaire'
+};
 
 // ============ BORDER COLORS ============
 const BORDER_COLORS = {
@@ -41,6 +88,16 @@ const slideDown = keyframes`
 const coinGlow = keyframes`
     0%, 100% { filter: drop-shadow(0 0 3px rgba(245, 158, 11, 0.5)); }
     50% { filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.8)); }
+`;
+
+const badgePulse = keyframes`
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+`;
+
+const tooltipFadeIn = keyframes`
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
 `;
 
 // ============ STYLED COMPONENTS ============
@@ -170,6 +227,88 @@ const LevelChip = styled.div`
     border-radius: 10px;
 `;
 
+// ============ BADGE COMPONENTS ============
+const BadgesContainer = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    
+    @media (max-width: 640px) {
+        display: none;
+    }
+`;
+
+const BadgeItem = styled.div`
+    position: relative;
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    background: ${props => props.$color ? `${props.$color}30` : 'rgba(100, 116, 139, 0.3)'};
+    border: 1.5px solid ${props => props.$color || '#64748b'};
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    
+    &:hover {
+        transform: scale(1.15);
+        box-shadow: 0 0 10px ${props => props.$color || '#64748b'}60;
+        z-index: 10;
+    }
+    
+    ${props => props.$legendary && css`
+        animation: ${badgePulse} 2s ease-in-out infinite;
+        box-shadow: 0 0 8px ${props.$color || '#f59e0b'}50;
+    `}
+`;
+
+const BadgeTooltip = styled.div`
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(15, 23, 42, 0.98);
+    border: 1px solid ${props => props.$color || 'rgba(100, 116, 139, 0.5)'};
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    white-space: nowrap;
+    z-index: 1000;
+    animation: ${tooltipFadeIn} 0.2s ease-out;
+    pointer-events: none;
+    
+    &::after {
+        content: '';
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        border: 6px solid transparent;
+        border-top-color: rgba(15, 23, 42, 0.98);
+    }
+`;
+
+const BadgeTooltipName = styled.div`
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #f8fafc;
+`;
+
+const MoreBadges = styled.div`
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    background: rgba(100, 116, 139, 0.2);
+    border: 1.5px solid rgba(100, 116, 139, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: #94a3b8;
+`;
+
 const DropdownIcon = styled(ChevronDown)`
     color: #64748b;
     transition: transform 0.3s ease;
@@ -270,6 +409,78 @@ const RankBadge = styled.span`
 const RankTitle = styled.span`
     color: #94a3b8;
     font-size: 0.8rem;
+`;
+
+// Badges Section in Dropdown
+const BadgesSection = styled.div`
+    padding: 0.75rem 1.25rem;
+    border-bottom: 1px solid rgba(0, 173, 239, 0.1);
+`;
+
+const BadgesSectionHeader = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+`;
+
+const BadgesSectionTitle = styled.span`
+    color: #94a3b8;
+    font-size: 0.8rem;
+    font-weight: 600;
+`;
+
+const BadgesSectionLink = styled.button`
+    background: none;
+    border: none;
+    color: #00adef;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    
+    &:hover {
+        text-decoration: underline;
+    }
+`;
+
+const BadgesGrid = styled.div`
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+`;
+
+const DropdownBadge = styled.div`
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: ${props => props.$color ? `${props.$color}25` : 'rgba(100, 116, 139, 0.2)'};
+    border: 2px solid ${props => props.$color || '#64748b'};
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    
+    &:hover {
+        transform: scale(1.1);
+        box-shadow: 0 0 12px ${props => props.$color || '#64748b'}50;
+    }
+    
+    ${props => props.$legendary && css`
+        animation: ${badgePulse} 2s ease-in-out infinite;
+        box-shadow: 0 0 10px ${props.$color || '#f59e0b'}40;
+    `}
+`;
+
+const EmptyBadgesText = styled.div`
+    color: #64748b;
+    font-size: 0.8rem;
+    font-style: italic;
 `;
 
 // XP Progress Section
@@ -412,11 +623,39 @@ const QuickLinkIcon = styled.div`
     color: ${props => props.$color || '#00adef'};
 `;
 
+// ============ SINGLE BADGE WITH TOOLTIP ============
+const NavBadge = ({ badgeId, size = 22 }) => {
+    const [showTooltip, setShowTooltip] = useState(false);
+    
+    const icon = BADGE_ICONS[badgeId] || '?';
+    const color = BADGE_COLORS[badgeId] || '#64748b';
+    const name = BADGE_NAMES[badgeId] || 'Unknown Badge';
+    const isLegendary = ['badge-founder', 'badge-whale', 'badge-level-100', 'badge-millionaire'].includes(badgeId);
+    
+    return (
+        <BadgeItem
+            $color={color}
+            $legendary={isLegendary}
+            onMouseEnter={() => setShowTooltip(true)}
+            onMouseLeave={() => setShowTooltip(false)}
+            style={{ width: size, height: size, fontSize: size * 0.55 }}
+        >
+            {icon}
+            {showTooltip && (
+                <BadgeTooltip $color={color}>
+                    <BadgeTooltipName>{name}</BadgeTooltipName>
+                </BadgeTooltip>
+            )}
+        </BadgeItem>
+    );
+};
+
 // ============ COMPONENT ============
 const NavbarGamification = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
     const { gamificationData, loading, vault } = useGamification();
+    const { equippedBadges } = useVault();
     const [isOpen, setIsOpen] = useState(false);
     const wrapperRef = useRef(null);
 
@@ -452,6 +691,11 @@ const NavbarGamification = () => {
     // Get border style
     const borderId = vault?.equippedBorder || 'border-bronze';
     const borderStyle = BORDER_COLORS[borderId] || BORDER_COLORS['border-bronze'];
+
+    // Get equipped badges (max 3 shown in navbar, 5 in dropdown)
+    const badges = equippedBadges || [];
+    const navbarBadges = badges.slice(0, 3);
+    const remainingBadges = badges.length - 3;
 
     // Get initials
     const getInitials = () => {
@@ -501,6 +745,19 @@ const NavbarGamification = () => {
                 {/* Quick Stats */}
                 <QuickStats>
                     <LevelChip>Lv.{level}</LevelChip>
+                    
+                    {/* 🏆 EQUIPPED BADGES */}
+                    {navbarBadges.length > 0 && (
+                        <BadgesContainer>
+                            {navbarBadges.map(badgeId => (
+                                <NavBadge key={badgeId} badgeId={badgeId} size={22} />
+                            ))}
+                            {remainingBadges > 0 && (
+                                <MoreBadges>+{remainingBadges}</MoreBadges>
+                            )}
+                        </BadgesContainer>
+                    )}
+                    
                     <CoinChip>
                         <Coins size={14} />
                         <span>{nexusCoins.toLocaleString()}</span>
@@ -544,6 +801,37 @@ const NavbarGamification = () => {
                             </HeaderRank>
                         </HeaderInfo>
                     </PanelHeader>
+
+                    {/* 🏆 BADGES SECTION IN DROPDOWN */}
+                    <BadgesSection>
+                        <BadgesSectionHeader>
+                            <BadgesSectionTitle>Equipped Badges</BadgesSectionTitle>
+                            <BadgesSectionLink onClick={() => handleNavigate('/vault')}>
+                                Manage <ArrowRight size={12} />
+                            </BadgesSectionLink>
+                        </BadgesSectionHeader>
+                        <BadgesGrid>
+                            {badges.length > 0 ? (
+                                badges.map(badgeId => {
+                                    const icon = BADGE_ICONS[badgeId] || '?';
+                                    const color = BADGE_COLORS[badgeId] || '#64748b';
+                                    const isLegendary = ['badge-founder', 'badge-whale', 'badge-level-100', 'badge-millionaire'].includes(badgeId);
+                                    return (
+                                        <DropdownBadge 
+                                            key={badgeId} 
+                                            $color={color}
+                                            $legendary={isLegendary}
+                                            title={BADGE_NAMES[badgeId]}
+                                        >
+                                            {icon}
+                                        </DropdownBadge>
+                                    );
+                                })
+                            ) : (
+                                <EmptyBadgesText>No badges equipped</EmptyBadgesText>
+                            )}
+                        </BadgesGrid>
+                    </BadgesSection>
 
                     {/* XP Progress */}
                     <XPSection>
