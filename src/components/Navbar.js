@@ -9,11 +9,11 @@ import { useGamification } from '../context/GamificationContext';
 
 import {
     Home, TrendingUp, PieChart, Eye, Filter, MapPin, Newspaper, BookOpen, Brain, MessageSquare,
-    DollarSign, LogOut, User, Menu, X, ChevronDown, Zap, Users,
+    DollarSign, LogOut, LogIn, User, Menu, X, ChevronDown, Zap, Users,
     Settings, Bell, CheckCircle, AlertCircle, TrendingUp as TrendingUpIcon,
     DollarSign as DollarIcon, Clock, ArrowUpRight, ArrowDownRight, Trophy, Twitter,
     Briefcase, BarChart3, Activity, Sparkles, Globe, Calculator, TrendingDown, MessageCircle, Award, Waves,
-    Search, Bitcoin, LineChart
+    Search, Bitcoin, LineChart, UserPlus
 } from 'lucide-react';
 import nexusSignalLogo from '../assets/nexus-signal-logo.png';
 
@@ -927,6 +927,97 @@ const Divider = styled.div`
     margin: 1rem 0;
 `;
 
+// ============ AUTH BUTTONS (for logged out state) ============
+const AuthButtons = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-left: auto;
+    
+    @media (max-width: 768px) {
+        gap: 0.5rem;
+    }
+`;
+
+const LoginButton = styled(Link)`
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.6rem 1.25rem;
+    color: #00adef;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    border-radius: 8px;
+    background: transparent;
+    border: 1px solid rgba(0, 173, 239, 0.3);
+    transition: all 0.3s ease;
+    
+    &:hover {
+        background: rgba(0, 173, 239, 0.1);
+        border-color: rgba(0, 173, 239, 0.5);
+        transform: translateY(-2px);
+    }
+    
+    @media (max-width: 768px) {
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
+    }
+`;
+
+const SignUpButton = styled(Link)`
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.6rem 1.25rem;
+    color: #0a0e27;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #00adef 0%, #00ff88 100%);
+    border: none;
+    transition: all 0.3s ease;
+    
+    &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(0, 173, 239, 0.4);
+    }
+    
+    @media (max-width: 768px) {
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
+    }
+`;
+
+const PublicNavLinks = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    
+    @media (max-width: 768px) {
+        display: none;
+    }
+`;
+
+const PublicNavLink = styled(Link)`
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.6rem 0.75rem;
+    color: #94a3b8;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.85rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    
+    &:hover {
+        color: #00adef;
+        background: rgba(0, 173, 239, 0.1);
+    }
+`;
+
 // ============ SEARCH DEBOUNCE HELPER ============
 function debounce(func, wait) {
     let timeout;
@@ -1301,34 +1392,37 @@ const Navbar = () => {
     return (
         <NavContainer>
             <NavInner>
-                {/* LOGO */}
-                <Logo to="/dashboard">
+                {/* LOGO - goes to dashboard if logged in, landing page if not */}
+                <Logo to={isAuthenticated ? "/dashboard" : "/"}>
                     <LogoIcon>
                         <LogoImage src={nexusSignalLogo} alt="Nexus Signal Logo" />
                     </LogoIcon>
                     <LogoText>Nexus Signal</LogoText>
                 </Logo>
 
-                {/* SEARCH BAR */}
-                <SearchContainer ref={searchRef}>
-                    <SearchInputWrapper>
-                        <SearchIconStyled size={16} />
-                        <SearchInput
-                            ref={searchInputRef}
-                            type="text"
-                            placeholder="Search stocks & crypto..."
-                            value={searchQuery}
-                            onChange={(e) => handleSearch(e.target.value)}
-                            onFocus={() => searchQuery && setShowSearchResults(true)}
-                            onKeyDown={handleSearchKeyDown}
-                        />
-                    </SearchInputWrapper>
-                    
-                    {showSearchResults && isSearching && (
-                        <SearchResults>
-                            <SearchLoading>Searching...</SearchLoading>
-                        </SearchResults>
-                    )}
+                {/* AUTHENTICATED VIEW */}
+                {isAuthenticated ? (
+                    <>
+                        {/* SEARCH BAR */}
+                        <SearchContainer ref={searchRef}>
+                            <SearchInputWrapper>
+                                <SearchIconStyled size={16} />
+                                <SearchInput
+                                    ref={searchInputRef}
+                                    type="text"
+                                    placeholder="Search stocks & crypto..."
+                                    value={searchQuery}
+                                    onChange={(e) => handleSearch(e.target.value)}
+                                    onFocus={() => searchQuery && setShowSearchResults(true)}
+                                    onKeyDown={handleSearchKeyDown}
+                                />
+                            </SearchInputWrapper>
+                            
+                            {showSearchResults && isSearching && (
+                                <SearchResults>
+                                    <SearchLoading>Searching...</SearchLoading>
+                                </SearchResults>
+                            )}
                     
                     {showSearchResults && !isSearching && (searchResults.stocks.length > 0 || searchResults.crypto.length > 0) && (
                         <SearchResults>
@@ -1607,7 +1701,6 @@ const Navbar = () => {
                         {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
                     </MobileMenuButton>
                 </UserSection>
-            </NavInner>
 
             {/* MOBILE MENU */}
             <MobileMenu $open={mobileMenuOpen}>
@@ -1739,6 +1832,30 @@ const Navbar = () => {
                     </MobileNavLink>
                 </MobileNavLinks>
             </MobileMenu>
+            </>
+                ) : (
+                    /* UNAUTHENTICATED VIEW */
+                    <>
+                        <PublicNavLinks>
+                            <PublicNavLink to="/pricing">
+                                <DollarSign size={16} />
+                                Pricing
+                            </PublicNavLink>
+                        </PublicNavLinks>
+                        
+                        <AuthButtons>
+                            <LoginButton to="/login">
+                                <LogIn size={16} />
+                                Log In
+                            </LoginButton>
+                            <SignUpButton to="/register">
+                                <UserPlus size={16} />
+                                Sign Up Free
+                            </SignUpButton>
+                        </AuthButtons>
+                    </>
+                )}
+            </NavInner>
         </NavContainer>
     );
 };
