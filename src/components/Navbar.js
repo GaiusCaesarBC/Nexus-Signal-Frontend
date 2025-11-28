@@ -221,11 +221,12 @@ const SearchResults = styled.div`
     background: rgba(15, 23, 42, 0.98);
     border: 1px solid rgba(0, 173, 239, 0.3);
     border-radius: 12px;
-    max-height: 400px;
+    max-height: 350px;
     overflow-y: auto;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
     animation: ${slideDown} 0.2s ease;
-    z-index: 1001;
+    z-index: 9999;
+    -webkit-overflow-scrolling: touch;
 `;
 
 const SearchResultsHeader = styled.div`
@@ -245,16 +246,19 @@ const SearchResultItem = styled.div`
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    padding: 0.6rem 1rem;
+    padding: 0.8rem 1rem;
     cursor: pointer;
     transition: all 0.15s ease;
     border-bottom: 1px solid rgba(100, 116, 139, 0.1);
+    -webkit-tap-highlight-color: rgba(0, 173, 239, 0.2);
+    touch-action: manipulation;
+    user-select: none;
     
     &:last-child {
         border-bottom: none;
     }
     
-    &:hover {
+    &:hover, &:active {
         background: rgba(0, 173, 239, 0.1);
     }
     
@@ -919,6 +923,7 @@ const MobileNavLink = styled(Link)`
 const MobileSearchContainer = styled.div`
     margin-bottom: 1rem;
     position: relative;
+    z-index: 100;
 `;
 
 const Divider = styled.div`
@@ -1752,6 +1757,10 @@ const Navbar = () => {
                                             <SearchResultItem
                                                 key={stock.symbol}
                                                 onClick={() => handleSearchSelect(stock)}
+                                                onTouchEnd={(e) => {
+                                                    e.preventDefault();
+                                                    handleSearchSelect(stock);
+                                                }}
                                                 $selected={selectedIndex === idx}
                                             >
                                                 <SearchResultIconBox>
@@ -1777,6 +1786,10 @@ const Navbar = () => {
                                             <SearchResultItem
                                                 key={crypto.symbol + (crypto.coinGeckoId || '')}
                                                 onClick={() => handleSearchSelect(crypto)}
+                                                onTouchEnd={(e) => {
+                                                    e.preventDefault();
+                                                    handleSearchSelect(crypto);
+                                                }}
                                                 $selected={selectedIndex === searchResults.stocks.length + idx}
                                             >
                                                 <SearchResultIconBox $crypto>
