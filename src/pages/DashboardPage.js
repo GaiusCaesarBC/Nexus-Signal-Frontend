@@ -278,6 +278,13 @@ const TickerTrack = styled.div`
     display: flex;
     animation: ${props => props.$reverse ? scrollTickerReverse : scrollTicker} ${props => props.$duration || '30s'} linear infinite;
     white-space: nowrap;
+
+    @media (max-width: 768px) {
+        animation-duration: ${props => {
+            const duration = parseFloat(props.$duration) || 30;
+            return `${duration * 0.5}s`; // 50% faster on mobile
+        }};
+    }
 `;
 
 const TickerItem = styled.div`
