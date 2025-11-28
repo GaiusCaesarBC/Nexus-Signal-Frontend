@@ -1098,8 +1098,10 @@ const PublicProfilePage = () => {
 
             <TabsContainer>
                 <Tab $active={activeTab === 'overview'} onClick={() => setActiveTab('overview')}><BarChart3 size={16} /> Overview</Tab>
+                <Tab $active={activeTab === 'posts'} onClick={() => setActiveTab('posts')}><MessageSquare size={16} /> Posts <TabBadge>{profile?.postsCount || 0}</TabBadge></Tab>
+                <Tab $active={activeTab === 'trades'} onClick={() => setActiveTab('trades')}><TrendingUp size={16} /> Trades</Tab>
+                <Tab $active={activeTab === 'predictions'} onClick={() => navigate('/predict')}><Target size={16} /> Predictions <TabBadge>{stats.totalPredictions || 0}</TabBadge></Tab>
                 <Tab $active={activeTab === 'achievements'} onClick={() => setActiveTab('achievements')}><Trophy size={16} /> Achievements <TabBadge>{achievements.length}</TabBadge></Tab>
-                <Tab $active={activeTab === 'activity'} onClick={() => setActiveTab('activity')}><Activity size={16} /> Activity</Tab>
             </TabsContainer>
 
             <ContentContainer>
