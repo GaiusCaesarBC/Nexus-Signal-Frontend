@@ -1,11 +1,15 @@
-// client/src/pages/AboutPage.js - THE MOST LEGENDARY ABOUT PAGE
+// client/src/pages/AboutPage.js - WITH REAL API DATA
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
+import axios from 'axios';
 import { 
     Target, ShieldCheck, Users, Zap, TrendingUp, Brain, 
     Rocket, Award, Star, CheckCircle, Code, BarChart3,
     Sparkles, Trophy, Flame, Heart
 } from 'lucide-react';
+
+// API base URL
+const API_URL = process.env.REACT_APP_API_URL || process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
 
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`
@@ -219,6 +223,16 @@ const StatLabel = styled.div`
     font-weight: 500;
 `;
 
+const LoadingPulse = styled.div`
+    width: 60px;
+    height: 30px;
+    background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+    background-size: 200% 100%;
+    animation: ${shimmer} 1.5s infinite;
+    border-radius: 4px;
+    margin: 0 auto;
+`;
+
 // ============ CONTENT SECTIONS ============
 const ContentGrid = styled.div`
     display: grid;
@@ -405,9 +419,30 @@ const ValueText = styled.p`
     line-height: 1.6;
 `;
 
+// ============ HELPER FUNCTIONS ============
+const formatNumber = (num) => {
+    if (num >= 1000000) {
+        return (num / 1000000).toFixed(1) + 'M';
+    } else if (num >= 1000) {
+        return (num / 1000).toFixed(1) + 'K';
+    }
+    return num?.toString() || '0';
+};
+
+const formatPercent = (num) => {
+    if (num === null || num === undefined) return '--';
+    return num.toFixed(1) + '%';
+};
+
 // ============ COMPONENT ============
 const AboutPage = () => {
-    const [particles, setParticles] = useState([]);
+    const [particlesData, setParticlesData] = useState([]);
+    const [stats, setStats] = useState({
+        totalUsers: null,
+        totalPredictions: null,
+        predictionAccuracy: null,
+        isLoading: true
+    });
 
     // Generate background particles on mount
     useEffect(() => {
@@ -419,14 +454,41 @@ const AboutPage = () => {
             delay: Math.random() * 5,
             color: ['#3b82f6', '#8b5cf6', '#10b981'][Math.floor(Math.random() * 3)]
         }));
-        setParticles(newParticles);
+        setParticlesData(newParticles);
+    }, []);
+
+    // Fetch real stats from API
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                // Use the same endpoint as PredictionsPage - this has the correct accuracy!
+                const response = await axios.get(`${API_URL}/predictions/platform-stats`);
+                
+                if (response.data.success) {
+                    setStats({
+                        totalUsers: response.data.totalUsers || 0,
+                        totalPredictions: response.data.totalPredictions || 0,
+                        predictionAccuracy: response.data.accuracy || 0,
+                        totalTrades: response.data.totalTrades || 0,
+                        isLoading: false
+                    });
+                } else {
+                    setStats(prev => ({ ...prev, isLoading: false }));
+                }
+            } catch (error) {
+                console.error('Error fetching platform stats:', error);
+                setStats(prev => ({ ...prev, isLoading: false }));
+            }
+        };
+
+        fetchStats();
     }, []);
 
     return (
         <AboutContainer>
             {/* Animated Background Particles */}
             <ParticleContainer>
-                {particles.map(particle => (
+                {particlesData.map(particle => (
                     <Particle
                         key={particle.id}
                         size={particle.size}
@@ -453,28 +515,48 @@ const AboutPage = () => {
                     </Badge>
                 </Header>
 
-                {/* Stats Section */}
+                {/* Stats Section - REAL DATA */}
                 <StatsSection>
                     <StatCard delay={0.2}>
                         <StatIcon gradient="linear-gradient(135deg, #3b82f6, #2563eb)">
                             <Trophy size={32} />
                         </StatIcon>
-                        <StatValue>98.2%</StatValue>
-                        <StatLabel>Accuracy Rate</StatLabel>
+                        <StatValue>
+                            {stats.isLoading ? (
+                                <LoadingPulse />
+                            ) : stats.predictionAccuracy !== null ? (
+                                formatPercent(stats.predictionAccuracy)
+                            ) : (
+                                '--'
+                            )}
+                        </StatValue>
+                        <StatLabel>AI Prediction Accuracy</StatLabel>
                     </StatCard>
                     <StatCard delay={0.3}>
                         <StatIcon gradient="linear-gradient(135deg, #10b981, #059669)">
                             <Users size={32} />
                         </StatIcon>
-                        <StatValue>50K+</StatValue>
-                        <StatLabel>Active Users</StatLabel>
+                        <StatValue>
+                            {stats.isLoading ? (
+                                <LoadingPulse />
+                            ) : (
+                                formatNumber(stats.totalUsers)
+                            )}
+                        </StatValue>
+                        <StatLabel>Active Traders</StatLabel>
                     </StatCard>
                     <StatCard delay={0.4}>
                         <StatIcon gradient="linear-gradient(135deg, #f59e0b, #d97706)">
                             <Zap size={32} />
                         </StatIcon>
-                        <StatValue>1M+</StatValue>
-                        <StatLabel>Predictions Made</StatLabel>
+                        <StatValue>
+                            {stats.isLoading ? (
+                                <LoadingPulse />
+                            ) : (
+                                formatNumber(stats.totalPredictions)
+                            )}
+                        </StatValue>
+                        <StatLabel>AI Predictions Made</StatLabel>
                     </StatCard>
                     <StatCard delay={0.5}>
                         <StatIcon gradient="linear-gradient(135deg, #8b5cf6, #7c3aed)">
