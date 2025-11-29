@@ -47,22 +47,12 @@ const float = keyframes`
 // ============================================
 const PageContainer = styled.div`
     min-height: 100vh;
-    padding: 6rem 2rem 2rem;
-    background: ${({ theme }) => theme.bg?.page || 'linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%)'};
+    padding: 100px 2rem 2rem;
+    background: transparent;
     color: ${({ theme }) => theme.text?.primary || '#e0e6ed'};
     position: relative;
     overflow: hidden;
-
-    &::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 300px;
-        background: ${({ theme }) => `radial-gradient(circle at 50% 0%, ${theme.brand?.primary || '#00adef'}26 0%, transparent 70%)`};
-        pointer-events: none;
-    }
+    z-index: 1;
 `;
 
 const BackgroundOrbs = styled.div`

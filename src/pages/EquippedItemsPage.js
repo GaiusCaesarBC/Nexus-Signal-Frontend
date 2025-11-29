@@ -39,13 +39,13 @@ const float = keyframes`
 // ============ STYLED COMPONENTS ============
 const PageContainer = styled.div`
     min-height: 100vh;
-    padding: 6rem 2rem 2rem;
-    background: ${({ theme }) => theme.bg?.page || 'linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%)'};
+    padding: 100px 2rem 2rem;
+    background: transparent;
     color: ${({ theme }) => theme.text?.primary || '#e0e6ed'};
     position: relative;
     overflow-x: hidden;
+    z-index: 1;
 `;
-
 const BackgroundOrbs = styled.div`
     position: fixed;
     top: 0;

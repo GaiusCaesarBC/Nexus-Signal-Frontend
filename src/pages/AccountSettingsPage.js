@@ -1,213 +1,876 @@
-// client/src/pages/AccountSettingsPage.js - Expanded information and warning cleanup
-import React, { useEffect } from 'react'; // Removed useState as it wasn't used
+// client/src/pages/AccountSettingsPage.js - Modern Revamp
+import React, { useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import Loader from '../components/Loader';
-import { User, Zap, Key, LogOut, Hash, Calendar, Heart, Award } from 'lucide-react'; // Added Hash, Calendar, Heart, Award, removed Mail
-
-// Keyframes for animations
-const fadeIn = keyframes`
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-`;
-
-const slideInLeft = keyframes`
-    from { opacity: 0; transform: translateX(-20px); }
-    to { opacity: 1; transform: translateX(0); }
-`;
-
-// Styled Components
-const SettingsContainer = styled.div`
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 3rem 1.5rem;
-    min-height: calc(100vh - var(--navbar-height));
-    background: linear-gradient(145deg, #0d1a2f 0%, #1a273b 100%);
-    color: #e0e0e0;
-    font-family: 'Inter', sans-serif;
-    animation: ${fadeIn} 0.8s ease-out forwards;
-`;
-
-const SettingsBox = styled.div`
-    background: linear-gradient(135deg, #1e293b 0%, #2c3e50 100%);
-    border-radius: 12px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-    padding: 3rem;
-    max-width: 700px;
-    width: 100%;
-    border: 1px solid rgba(0, 173, 237, 0.2);
-    animation: ${slideInLeft} 0.8s ease-out forwards;
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-`;
-
-const Header = styled.h2`
-    font-size: 2.5rem;
-    color: #00adef;
-    margin-bottom: 1.5rem;
-    text-align: center;
-    text-shadow: 0 0 10px rgba(0, 173, 237, 0.5);
-`;
-
-const SectionTitle = styled.h3`
-    font-size: 1.8rem;
-    color: #f8fafc;
-    margin-top: 2rem;
-    margin-bottom: 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 2px solid rgba(0, 173, 237, 0.4);
-    display: flex;
-    align-items: center;
-    gap: 0.8rem;
-`;
-
-const InfoGroup = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    margin-bottom: 1rem;
-    padding: 0.8rem;
-    background-color: #1a273b;
-    border-radius: 8px;
-    box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
-
-    span {
-        font-size: 1.1rem;
-        color: #94a3b8;
-        font-weight: 500;
-        min-width: 120px; /* Aligned labels */
-    }
-    p {
-        font-size: 1.1rem;
-        color: #e0e0e0;
-        flex-grow: 1;
-    }
-`;
-
-const Button = styled.button`
-    padding: 0.9rem 1.8rem;
-    background: linear-gradient(90deg, #00adef 0%, #008cd4 100%);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 1.05rem;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(0, 173, 237, 0.4);
-    margin-top: 2rem;
-    align-self: flex-start;
-
-    &:hover {
-        background: linear-gradient(90deg, #008cd4 0%, #00adef 100%);
-        box-shadow: 0 6px 20px rgba(0, 173, 237, 0.6);
-        transform: translateY(-2px);
-    }
-
-    &:disabled {
-        background: #4a5a6b;
-        cursor: not-allowed;
-        opacity: 0.7;
-        transform: none;
-        box-shadow: none;
-    }
-`;
-
-const ErrorMessage = styled.p`
-    color: #ff6b6b;
-    margin-top: 1rem;
-    font-size: 0.95rem;
-    text-align: center;
-`;
+import { 
+    User, 
+    Zap, 
+    Shield, 
+    LogOut, 
+    Calendar, 
+    Mail,
+    Crown,
+    Eye,
+    EyeOff,
+    ChevronRight,
+    AlertTriangle,
+    CheckCircle,
+    Copy,
+    Check,
+    Settings,
+    Bell,
+    Palette,
+    CreditCard,
+    HelpCircle,
+    ExternalLink
+} from 'lucide-react';
 
 const AccountSettingsPage = () => {
     const { user, loading: authLoading, isAuthenticated, logout } = useAuth();
     const navigate = useNavigate();
+    const [showUserId, setShowUserId] = useState(false);
+    const [copied, setCopied] = useState(false);
+    const [loggingOut, setLoggingOut] = useState(false);
 
-    useEffect(() => {
-        if (!authLoading && !isAuthenticated) {
-            navigate('/login');
-        }
-    }, [isAuthenticated, authLoading, navigate]);
-
-    const handleLogout = () => {
-        logout();
+    const handleLogout = async () => {
+        setLoggingOut(true);
+        await logout();
         navigate('/login');
     };
 
+    const copyUserId = () => {
+        if (user?._id) {
+            navigator.clipboard.writeText(user._id);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        }
+    };
+
+    const formatDate = (dateString) => {
+        if (!dateString) return 'N/A';
+        return new Date(dateString).toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric'
+        });
+    };
+
+    const getMembershipDuration = (dateString) => {
+        if (!dateString) return '';
+        const joined = new Date(dateString);
+        const now = new Date();
+        const diffTime = Math.abs(now - joined);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        if (diffDays < 30) return `${diffDays} days`;
+        if (diffDays < 365) return `${Math.floor(diffDays / 30)} months`;
+        return `${Math.floor(diffDays / 365)} years`;
+    };
+
+    const getTierColor = (tier) => {
+        switch (tier?.toLowerCase()) {
+            case 'pro': return '#f59e0b';
+            case 'premium': return '#a855f7';
+            case 'enterprise': return '#ec4899';
+            default: return '#10b981';
+        }
+    };
+
+    const getTierIcon = (tier) => {
+        switch (tier?.toLowerCase()) {
+            case 'pro':
+            case 'premium':
+            case 'enterprise':
+                return <Crown size={16} />;
+            default:
+                return <Zap size={16} />;
+        }
+    };
+
     if (authLoading) {
-        return <Loader />;
+        return (
+            <PageContainer>
+                <LoadingState>
+                    <Spinner />
+                    <span>Loading settings...</span>
+                </LoadingState>
+            </PageContainer>
+        );
     }
 
     if (!isAuthenticated || !user) {
         return (
-            <SettingsContainer>
-                <SettingsBox>
-                    <ErrorMessage>You need to be logged in to view account settings.</ErrorMessage>
-                    <Button onClick={() => navigate('/login')}>Login Now</Button>
-                </SettingsBox>
-            </SettingsContainer>
+            <PageContainer>
+                <ContentWrapper>
+                    <ErrorCard>
+                        <AlertTriangle size={48} />
+                        <h3>Authentication Required</h3>
+                        <p>Please log in to view your account settings.</p>
+                        <PrimaryButton onClick={() => navigate('/login')}>
+                            Go to Login
+                        </PrimaryButton>
+                    </ErrorCard>
+                </ContentWrapper>
+            </PageContainer>
         );
     }
 
-    // Helper to format dates
-    const formatDate = (dateString) => {
-        if (!dateString) return 'N/A';
-        const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-        return new Date(dateString).toLocaleDateString(undefined, options);
-    };
-
     return (
-        <SettingsContainer>
-            <SettingsBox>
-                <Header>Account Settings</Header>
+        <PageContainer>
+            <ContentWrapper>
+                {/* Header */}
+                <PageHeader>
+                    <HeaderIcon>
+                        <Settings size={28} />
+                    </HeaderIcon>
+                    <div>
+                        <PageTitle>Account Settings</PageTitle>
+                        <PageSubtitle>Manage your profile and preferences</PageSubtitle>
+                    </div>
+                </PageHeader>
 
-                <SectionTitle><User size={24} color="#00adef" /> Profile Information</SectionTitle>
-                <InfoGroup>
-                    <span>Username:</span> <p>{user.username}</p>
-                </InfoGroup>
-                <InfoGroup>
-                    <span>Email:</span> <p>{user.email}</p>
-                </InfoGroup>
-                {/* Assuming user._id exists */}
-                <InfoGroup>
-                    <span>User ID:</span> <p>{user._id || 'N/A'}</p>
-                </InfoGroup>
-                {/* Assuming user.createdAt exists (from MongoDB models) */}
-                <InfoGroup>
-                    <span>Joined:</span> <p>{formatDate(user.createdAt)}</p>
-                </InfoGroup>
+                <SettingsGrid>
+                    {/* Profile Card */}
+                    <ProfileCard>
+                        <ProfileHeader>
+                            <Avatar>
+                                {user.avatar ? (
+                                    <img src={user.avatar} alt={user.username} />
+                                ) : (
+                                    <AvatarPlaceholder>
+                                        {user.username?.charAt(0).toUpperCase()}
+                                    </AvatarPlaceholder>
+                                )}
+                            </Avatar>
+                            <ProfileInfo>
+                                <Username>{user.username}</Username>
+                                <Email>
+                                    <Mail size={14} />
+                                    {user.email}
+                                </Email>
+                                <TierBadge $color={getTierColor(user.subscriptionTier)}>
+                                    {getTierIcon(user.subscriptionTier)}
+                                    {user.subscriptionTier || 'Free'} Plan
+                                </TierBadge>
+                            </ProfileInfo>
+                        </ProfileHeader>
+                        
+                        <ProfileStats>
+                            <StatItem>
+                                <StatValue>{getMembershipDuration(user.createdAt)}</StatValue>
+                                <StatLabel>Member</StatLabel>
+                            </StatItem>
+                            <StatDivider />
+                            <StatItem>
+                                <StatValue>{user.watchlist?.length || 0}</StatValue>
+                                <StatLabel>Watchlist</StatLabel>
+                            </StatItem>
+                            <StatDivider />
+                            <StatItem>
+                                <StatValue>{user.level || 1}</StatValue>
+                                <StatLabel>Level</StatLabel>
+                            </StatItem>
+                        </ProfileStats>
 
-                <SectionTitle><Zap size={24} color="#f97316" /> Subscription & Plan</SectionTitle>
-                <InfoGroup>
-                    <span>Tier:</span> <p>{user.subscriptionTier || 'Free'}</p>
-                </InfoGroup>
-                {/* Assuming user.watchlist is an array */}
-                <InfoGroup>
-                    <span>Watchlist Items:</span> <p>{user.watchlist ? user.watchlist.length : 0}</p>
-                </InfoGroup>
-                {/* Placeholder for future subscription details */}
-                <InfoGroup>
-                    <span>Next Billing:</span> <p>N/A (Future Feature)</p>
-                </InfoGroup>
+                        <EditProfileButton onClick={() => navigate('/profile')}>
+                            Edit Profile
+                            <ChevronRight size={16} />
+                        </EditProfileButton>
+                    </ProfileCard>
 
+                    {/* Main Settings */}
+                    <MainSettings>
+                        {/* Account Information */}
+                        <SettingsSection>
+                            <SectionHeader>
+                                <User size={20} />
+                                <span>Account Information</span>
+                            </SectionHeader>
+                            
+                            <SettingsList>
+                                <SettingItem>
+                                    <SettingLabel>Username</SettingLabel>
+                                    <SettingValue>{user.username}</SettingValue>
+                                </SettingItem>
+                                
+                                <SettingItem>
+                                    <SettingLabel>Email Address</SettingLabel>
+                                    <SettingValue>{user.email}</SettingValue>
+                                </SettingItem>
+                                
+                                <SettingItem>
+                                    <SettingLabel>User ID</SettingLabel>
+                                    <SettingValue $mono>
+                                        {showUserId ? (
+                                            <>
+                                                <span>{user._id}</span>
+                                                <IconBtn onClick={copyUserId} title="Copy ID">
+                                                    {copied ? <Check size={14} /> : <Copy size={14} />}
+                                                </IconBtn>
+                                            </>
+                                        ) : (
+                                            <span>••••••••••••••••••••••••</span>
+                                        )}
+                                        <IconBtn onClick={() => setShowUserId(!showUserId)}>
+                                            {showUserId ? <EyeOff size={14} /> : <Eye size={14} />}
+                                        </IconBtn>
+                                    </SettingValue>
+                                </SettingItem>
+                                
+                                <SettingItem>
+                                    <SettingLabel>Member Since</SettingLabel>
+                                    <SettingValue>
+                                        <Calendar size={14} />
+                                        {formatDate(user.createdAt)}
+                                    </SettingValue>
+                                </SettingItem>
+                            </SettingsList>
+                        </SettingsSection>
 
-                <SectionTitle><Key size={24} color="#94a3b8" /> Security</SectionTitle>
-                <p>For security reasons, changing your password or other sensitive details requires re-authentication.</p>
-                {/* Future implementation: <Button>Change Password</Button> */}
-                {/* Future implementation: <Button>Enable 2FA</Button> */}
-                <InfoGroup>
-                    <span>2FA Status:</span> <p>Disabled (Future Feature)</p>
-                </InfoGroup>
+                        {/* Subscription */}
+                        <SettingsSection>
+                            <SectionHeader>
+                                <CreditCard size={20} />
+                                <span>Subscription</span>
+                            </SectionHeader>
+                            
+                            <SubscriptionCard $color={getTierColor(user.subscriptionTier)}>
+                                <SubscriptionInfo>
+                                    <SubscriptionTier>
+                                        {getTierIcon(user.subscriptionTier)}
+                                        {user.subscriptionTier || 'Free'} Plan
+                                    </SubscriptionTier>
+                                    <SubscriptionDesc>
+                                        {user.subscriptionTier === 'Free' 
+                                            ? 'Upgrade to unlock premium features'
+                                            : 'You have access to all premium features'
+                                        }
+                                    </SubscriptionDesc>
+                                </SubscriptionInfo>
+                                {user.subscriptionTier === 'Free' && (
+                                    <UpgradeButton onClick={() => navigate('/pricing')}>
+                                        Upgrade
+                                    </UpgradeButton>
+                                )}
+                            </SubscriptionCard>
+                        </SettingsSection>
 
+                        {/* Security */}
+                        <SettingsSection>
+                            <SectionHeader>
+                                <Shield size={20} />
+                                <span>Security</span>
+                            </SectionHeader>
+                            
+                            <SettingsList>
+                                <SettingRow onClick={() => {}}>
+                                    <SettingRowLeft>
+                                        <SettingRowIcon><Shield size={18} /></SettingRowIcon>
+                                        <div>
+                                            <SettingRowTitle>Password</SettingRowTitle>
+                                            <SettingRowDesc>Last changed: Never</SettingRowDesc>
+                                        </div>
+                                    </SettingRowLeft>
+                                    <ComingSoonBadge>Coming Soon</ComingSoonBadge>
+                                </SettingRow>
+                                
+                                <SettingRow onClick={() => {}}>
+                                    <SettingRowLeft>
+                                        <SettingRowIcon><Shield size={18} /></SettingRowIcon>
+                                        <div>
+                                            <SettingRowTitle>Two-Factor Authentication</SettingRowTitle>
+                                            <SettingRowDesc>Add an extra layer of security</SettingRowDesc>
+                                        </div>
+                                    </SettingRowLeft>
+                                    <ComingSoonBadge>Coming Soon</ComingSoonBadge>
+                                </SettingRow>
+                            </SettingsList>
+                        </SettingsSection>
 
-                <Button onClick={handleLogout}><LogOut size={20} style={{marginRight: '8px'}} /> Logout</Button>
-            </SettingsBox>
-        </SettingsContainer>
+                        {/* Quick Links */}
+                        <SettingsSection>
+                            <SectionHeader>
+                                <HelpCircle size={20} />
+                                <span>Quick Links</span>
+                            </SectionHeader>
+                            
+                            <QuickLinksGrid>
+                                <QuickLink onClick={() => navigate('/vault')}>
+                                    <Palette size={20} />
+                                    <span>Vault & Themes</span>
+                                </QuickLink>
+                                <QuickLink onClick={() => navigate('/achievements')}>
+                                    <Crown size={20} />
+                                    <span>Achievements</span>
+                                </QuickLink>
+                                <QuickLink onClick={() => navigate('/privacy')}>
+                                    <Shield size={20} />
+                                    <span>Privacy Policy</span>
+                                </QuickLink>
+                                <QuickLink onClick={() => navigate('/terms')}>
+                                    <ExternalLink size={20} />
+                                    <span>Terms of Service</span>
+                                </QuickLink>
+                            </QuickLinksGrid>
+                        </SettingsSection>
+
+                        {/* Danger Zone */}
+                        <DangerSection>
+                            <SectionHeader $danger>
+                                <AlertTriangle size={20} />
+                                <span>Session</span>
+                            </SectionHeader>
+                            
+                            <LogoutButton onClick={handleLogout} disabled={loggingOut}>
+                                <LogOut size={18} />
+                                {loggingOut ? 'Logging out...' : 'Logout'}
+                            </LogoutButton>
+                        </DangerSection>
+                    </MainSettings>
+                </SettingsGrid>
+            </ContentWrapper>
+        </PageContainer>
     );
 };
+
+// Animations
+const spin = keyframes`
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+`;
+
+const fadeIn = keyframes`
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+`;
+
+// Styled Components
+const PageContainer = styled.div`
+    min-height: 100vh;
+    padding-top: 80px;
+    background: transparent;
+    color: ${props => props.theme.text?.primary || '#e0e6ed'};
+`;
+
+const ContentWrapper = styled.div`
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+    animation: ${fadeIn} 0.4s ease-out;
+
+    @media (max-width: 768px) {
+        padding: 1rem;
+    }
+`;
+
+const PageHeader = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 32px;
+`;
+
+const HeaderIcon = styled.div`
+    width: 56px;
+    height: 56px;
+    background: linear-gradient(135deg, 
+        ${props => props.theme.brand?.primary || '#00adef'}20 0%, 
+        ${props => props.theme.brand?.accent || '#06b6d4'}20 100%
+    );
+    border: 1px solid ${props => props.theme.brand?.primary || '#00adef'}40;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: ${props => props.theme.brand?.primary || '#00adef'};
+`;
+
+const PageTitle = styled.h1`
+    margin: 0;
+    font-size: 26px;
+    font-weight: 700;
+    color: ${props => props.theme.text?.primary || '#e0e6ed'};
+`;
+
+const PageSubtitle = styled.p`
+    margin: 4px 0 0 0;
+    color: ${props => props.theme.text?.secondary || '#94a3b8'};
+    font-size: 14px;
+`;
+
+const SettingsGrid = styled.div`
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 24px;
+
+    @media (max-width: 900px) {
+        grid-template-columns: 1fr;
+    }
+`;
+
+const ProfileCard = styled.div`
+    background: ${props => props.theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
+    border: 1px solid ${props => props.theme.border?.primary || 'rgba(100, 116, 139, 0.3)'};
+    border-radius: 16px;
+    padding: 24px;
+    height: fit-content;
+    position: sticky;
+    top: 100px;
+
+    @media (max-width: 900px) {
+        position: static;
+    }
+`;
+
+const ProfileHeader = styled.div`
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    margin-bottom: 20px;
+`;
+
+const Avatar = styled.div`
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    overflow: hidden;
+    margin-bottom: 16px;
+    border: 3px solid ${props => props.theme.brand?.primary || '#00adef'};
+    box-shadow: 0 0 20px ${props => props.theme.brand?.primary || '#00adef'}40;
+
+    img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+`;
+
+const AvatarPlaceholder = styled.div`
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, 
+        ${props => props.theme.brand?.primary || '#00adef'} 0%, 
+        ${props => props.theme.brand?.accent || '#06b6d4'} 100%
+    );
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    font-weight: 700;
+    color: white;
+`;
+
+const ProfileInfo = styled.div`
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+`;
+
+const Username = styled.h2`
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: ${props => props.theme.text?.primary || '#e0e6ed'};
+`;
+
+const Email = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: ${props => props.theme.text?.secondary || '#94a3b8'};
+    font-size: 13px;
+`;
+
+const TierBadge = styled.div`
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: ${props => props.$color}20;
+    color: ${props => props.$color};
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-top: 4px;
+`;
+
+const ProfileStats = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 16px 0;
+    border-top: 1px solid ${props => props.theme.border?.tertiary || 'rgba(100, 116, 139, 0.2)'};
+    border-bottom: 1px solid ${props => props.theme.border?.tertiary || 'rgba(100, 116, 139, 0.2)'};
+    margin-bottom: 16px;
+`;
+
+const StatItem = styled.div`
+    text-align: center;
+`;
+
+const StatValue = styled.div`
+    font-size: 18px;
+    font-weight: 700;
+    color: ${props => props.theme.text?.primary || '#e0e6ed'};
+`;
+
+const StatLabel = styled.div`
+    font-size: 11px;
+    color: ${props => props.theme.text?.tertiary || '#64748b'};
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+`;
+
+const StatDivider = styled.div`
+    width: 1px;
+    height: 30px;
+    background: ${props => props.theme.border?.tertiary || 'rgba(100, 116, 139, 0.2)'};
+`;
+
+const EditProfileButton = styled.button`
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px;
+    background: transparent;
+    border: 1px solid ${props => props.theme.border?.primary || 'rgba(100, 116, 139, 0.3)'};
+    border-radius: 10px;
+    color: ${props => props.theme.text?.primary || '#e0e6ed'};
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+        background: ${props => props.theme.brand?.primary || '#00adef'}15;
+        border-color: ${props => props.theme.brand?.primary || '#00adef'}50;
+        color: ${props => props.theme.brand?.primary || '#00adef'};
+    }
+`;
+
+const MainSettings = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+`;
+
+const SettingsSection = styled.div`
+    background: ${props => props.theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
+    border: 1px solid ${props => props.theme.border?.primary || 'rgba(100, 116, 139, 0.3)'};
+    border-radius: 16px;
+    overflow: hidden;
+`;
+
+const DangerSection = styled(SettingsSection)`
+    border-color: rgba(239, 68, 68, 0.3);
+`;
+
+const SectionHeader = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 20px;
+    border-bottom: 1px solid ${props => props.theme.border?.tertiary || 'rgba(100, 116, 139, 0.2)'};
+    font-weight: 600;
+    color: ${props => props.$danger ? '#ef4444' : props.theme.text?.primary || '#e0e6ed'};
+
+    svg {
+        color: ${props => props.$danger ? '#ef4444' : props.theme.brand?.primary || '#00adef'};
+    }
+`;
+
+const SettingsList = styled.div`
+    padding: 8px;
+`;
+
+const SettingItem = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;
+    border-radius: 10px;
+    transition: background 0.2s ease;
+
+    &:hover {
+        background: ${props => props.theme.bg?.input || 'rgba(15, 23, 42, 0.5)'};
+    }
+`;
+
+const SettingLabel = styled.div`
+    color: ${props => props.theme.text?.secondary || '#94a3b8'};
+    font-size: 14px;
+`;
+
+const SettingValue = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: ${props => props.theme.text?.primary || '#e0e6ed'};
+    font-size: 14px;
+    font-family: ${props => props.$mono ? "'Monaco', 'Menlo', monospace" : 'inherit'};
+
+    svg {
+        color: ${props => props.theme.text?.tertiary || '#64748b'};
+    }
+`;
+
+const IconBtn = styled.button`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: ${props => props.theme.bg?.input || 'rgba(15, 23, 42, 0.8)'};
+    border: 1px solid ${props => props.theme.border?.tertiary || 'rgba(100, 116, 139, 0.2)'};
+    border-radius: 6px;
+    color: ${props => props.theme.text?.secondary || '#94a3b8'};
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+        background: ${props => props.theme.brand?.primary || '#00adef'}20;
+        color: ${props => props.theme.brand?.primary || '#00adef'};
+    }
+`;
+
+const SubscriptionCard = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px;
+    margin: 12px;
+    background: ${props => props.$color}10;
+    border: 1px solid ${props => props.$color}30;
+    border-radius: 12px;
+`;
+
+const SubscriptionInfo = styled.div``;
+
+const SubscriptionTier = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    color: ${props => props.theme.text?.primary || '#e0e6ed'};
+    margin-bottom: 4px;
+
+    svg {
+        color: ${props => props.theme.brand?.primary || '#00adef'};
+    }
+`;
+
+const SubscriptionDesc = styled.div`
+    color: ${props => props.theme.text?.secondary || '#94a3b8'};
+    font-size: 13px;
+`;
+
+const UpgradeButton = styled.button`
+    padding: 10px 20px;
+    background: linear-gradient(135deg, 
+        ${props => props.theme.brand?.primary || '#00adef'} 0%, 
+        ${props => props.theme.brand?.accent || '#06b6d4'} 100%
+    );
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px ${props => props.theme.brand?.primary || '#00adef'}40;
+    }
+`;
+
+const SettingRow = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px;
+    margin: 8px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+
+    &:hover {
+        background: ${props => props.theme.bg?.input || 'rgba(15, 23, 42, 0.5)'};
+    }
+`;
+
+const SettingRowLeft = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 14px;
+`;
+
+const SettingRowIcon = styled.div`
+    width: 40px;
+    height: 40px;
+    background: ${props => props.theme.bg?.input || 'rgba(15, 23, 42, 0.8)'};
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: ${props => props.theme.brand?.primary || '#00adef'};
+`;
+
+const SettingRowTitle = styled.div`
+    font-weight: 500;
+    color: ${props => props.theme.text?.primary || '#e0e6ed'};
+    font-size: 14px;
+`;
+
+const SettingRowDesc = styled.div`
+    color: ${props => props.theme.text?.tertiary || '#64748b'};
+    font-size: 12px;
+    margin-top: 2px;
+`;
+
+const ComingSoonBadge = styled.span`
+    padding: 4px 10px;
+    background: ${props => props.theme.text?.tertiary || '#64748b'}20;
+    color: ${props => props.theme.text?.tertiary || '#64748b'};
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 500;
+`;
+
+const QuickLinksGrid = styled.div`
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    padding: 12px;
+
+    @media (max-width: 500px) {
+        grid-template-columns: 1fr;
+    }
+`;
+
+const QuickLink = styled.button`
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    background: ${props => props.theme.bg?.input || 'rgba(15, 23, 42, 0.5)'};
+    border: 1px solid transparent;
+    border-radius: 10px;
+    color: ${props => props.theme.text?.primary || '#e0e6ed'};
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+
+    svg {
+        color: ${props => props.theme.brand?.primary || '#00adef'};
+    }
+
+    &:hover {
+        background: ${props => props.theme.brand?.primary || '#00adef'}15;
+        border-color: ${props => props.theme.brand?.primary || '#00adef'}30;
+    }
+`;
+
+const LogoutButton = styled.button`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: calc(100% - 24px);
+    margin: 12px;
+    padding: 14px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 10px;
+    color: #ef4444;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover:not(:disabled) {
+        background: rgba(239, 68, 68, 0.2);
+    }
+
+    &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+`;
+
+const LoadingState = styled.div`
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    min-height: 60vh;
+    color: ${props => props.theme.text?.secondary || '#94a3b8'};
+`;
+
+const Spinner = styled.div`
+    width: 40px;
+    height: 40px;
+    border: 3px solid ${props => props.theme.border?.tertiary || 'rgba(100, 116, 139, 0.3)'};
+    border-top-color: ${props => props.theme.brand?.primary || '#00adef'};
+    border-radius: 50%;
+    animation: ${spin} 1s linear infinite;
+`;
+
+const ErrorCard = styled.div`
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 60px 40px;
+    background: ${props => props.theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
+    border: 1px solid ${props => props.theme.border?.primary || 'rgba(100, 116, 139, 0.3)'};
+    border-radius: 16px;
+    text-align: center;
+    max-width: 400px;
+    margin: 0 auto;
+
+    svg {
+        color: #f59e0b;
+    }
+
+    h3 {
+        margin: 0;
+        color: ${props => props.theme.text?.primary || '#e0e6ed'};
+    }
+
+    p {
+        margin: 0;
+        color: ${props => props.theme.text?.secondary || '#94a3b8'};
+    }
+`;
+
+const PrimaryButton = styled.button`
+    padding: 12px 24px;
+    background: linear-gradient(135deg, 
+        ${props => props.theme.brand?.primary || '#00adef'} 0%, 
+        ${props => props.theme.brand?.accent || '#06b6d4'} 100%
+    );
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px ${props => props.theme.brand?.primary || '#00adef'}40;
+    }
+`;
 
 export default AccountSettingsPage;

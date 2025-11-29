@@ -157,7 +157,7 @@ function AppContent() {
                     <Route path="/achievements" element={<ProtectedRoute><AchievementsPage /></ProtectedRoute>} />
 
                     {/* Stock Details Page Route */}
-                    <Route path="/stocks/:symbol" element={<ProtectedRoute><StockPage /></ProtectedRoute>} />
+                   <Route path="/stock/:symbol" element={<ProtectedRoute><StockPage /></ProtectedRoute>} />
 
                     {/* Catch-all for 404 Not Found pages */}
                     <Route path="*" element={<NotFoundPage />} />

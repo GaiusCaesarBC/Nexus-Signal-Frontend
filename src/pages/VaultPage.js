@@ -72,12 +72,13 @@ const epicGlow = keyframes`
 // ============ STYLED COMPONENTS ============
 const PageContainer = styled.div`
     min-height: 100vh;
-    background: ${({ theme }) => theme.bg?.page || 'linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%)'};
+    background: transparent;
     color: ${({ theme }) => theme.text?.primary || '#e0e6ed'};
     padding: 2rem;
     padding-top: 100px;
     position: relative;
     overflow-x: hidden;
+    z-index: 1;
 `;
 
 const BackgroundOrbs = styled.div`
