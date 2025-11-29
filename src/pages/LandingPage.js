@@ -179,70 +179,38 @@ const LandingPage = () => {
     };
 
     const fetchPlatformStats = async () => {
-        let statsData = { totalUsers: 0, totalTrades: 0, totalPredictions: 0, predictionAccuracy: 0, resolvedPredictions: 0, correctPredictions: 0, avgWinRate: 0, topPerformerReturn: 0 };
-        
-        // Try new public stats endpoint first
-        try {
-            const res = await fetch('/api/public/stats');
-            if (res.ok) {
-                const data = await res.json();
-                if (data.success && data.stats) {
-                    setStats({ ...statsData, ...data.stats });
-                    return;
-                }
+    let statsData = { totalUsers: 0, totalTrades: 0, totalPredictions: 0, predictionAccuracy: 0, resolvedPredictions: 0, correctPredictions: 0, avgWinRate: 0, topPerformerReturn: 0 };
+    
+    // Use /predictions/platform-stats - same endpoint as PredictionsPage (has correct 52.4% accuracy)
+    try {
+        const res = await fetch('/api/predictions/platform-stats');
+        if (res.ok) {
+            const data = await res.json();
+            if (data.success) {
+                statsData.predictionAccuracy = data.accuracy || 0;
+                statsData.totalPredictions = data.totalPredictions || 0;
+                statsData.correctPredictions = data.correctPredictions || 0;
             }
-        } catch (err) { console.log('Public stats endpoint not available yet'); }
-        
-        // Fallback: Fetch from multiple existing endpoints
-        try {
-            // Get leaderboard data
-            const leaderboardRes = await fetch('/api/paper-trading/leaderboard?limit=100');
-            if (leaderboardRes.ok) {
-                const data = await leaderboardRes.json();
-                const traders = data.leaderboard || [];
-                if (traders.length > 0) {
-                    statsData.totalUsers = traders.length;
-                    statsData.totalTrades = traders.reduce((sum, t) => sum + (t.totalTrades || 0), 0);
-                    statsData.avgWinRate = traders.reduce((sum, t) => sum + (t.winRate || 0), 0) / traders.length;
-                    statsData.topPerformerReturn = traders[0]?.profitLossPercent || 0;
-                }
-            }
-        } catch (err) { console.log('Leaderboard fetch failed'); }
-        
-        // Get prediction stats from recent predictions endpoint
-        try {
-            const predRes = await fetch('/api/predictions/stats');
-            if (predRes.ok) {
-                const predData = await predRes.json();
-                statsData.totalPredictions = predData.totalPredictions || predData.total || 0;
-                statsData.resolvedPredictions = predData.resolvedPredictions || predData.resolved || 0;
-                statsData.correctPredictions = predData.correctPredictions || predData.correct || 0;
-                if (statsData.resolvedPredictions > 0) {
-                    statsData.predictionAccuracy = (statsData.correctPredictions / statsData.resolvedPredictions) * 100;
-                }
-            }
-        } catch (err) { 
-            // Try alternative: count from recent predictions
-            try {
-                const recentRes = await fetch('/api/predictions/recent?limit=500');
-                if (recentRes.ok) {
-                    const predictions = await recentRes.json();
-                    if (Array.isArray(predictions)) {
-                        statsData.totalPredictions = predictions.length;
-                        const resolved = predictions.filter(p => p.status === 'correct' || p.status === 'incorrect');
-                        const correct = predictions.filter(p => p.status === 'correct');
-                        statsData.resolvedPredictions = resolved.length;
-                        statsData.correctPredictions = correct.length;
-                        if (resolved.length > 0) {
-                            statsData.predictionAccuracy = (correct.length / resolved.length) * 100;
-                        }
-                    }
-                }
-            } catch (e) { console.log('Predictions fetch failed'); }
         }
-        
-        setStats(statsData);
-    };
+    } catch (err) { console.log('Platform stats endpoint failed'); }
+    
+    // Get user/trade counts from leaderboard
+    try {
+        const leaderboardRes = await fetch('/api/paper-trading/leaderboard?limit=100');
+        if (leaderboardRes.ok) {
+            const data = await leaderboardRes.json();
+            const traders = data.leaderboard || [];
+            if (traders.length > 0) {
+                statsData.totalUsers = traders.length;
+                statsData.totalTrades = traders.reduce((sum, t) => sum + (t.totalTrades || 0), 0);
+                statsData.avgWinRate = traders.reduce((sum, t) => sum + (t.winRate || 0), 0) / traders.length;
+                statsData.topPerformerReturn = traders[0]?.profitLossPercent || traders[0]?.totalProfitLossPercent || 0;
+            }
+        }
+    } catch (err) { console.log('Leaderboard fetch failed'); }
+    
+    setStats(statsData);
+};
 
     const fetchRecentWinners = async () => {
         try {
