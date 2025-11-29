@@ -98,14 +98,15 @@ const blink = keyframes`
 // ============ STYLED COMPONENTS ============
 const PageContainer = styled.div`
     min-height: 100vh;
-    padding-top: 80px;
-    background: ${({ theme }) => theme.bg?.page || 'linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%)'};
+    padding-top: 100px;
+    background: transparent;
     color: ${({ theme }) => theme.text?.primary || '#e0e6ed'};
     padding-left: 2rem;
     padding-right: 2rem;
     padding-bottom: 2rem;
     position: relative;
     overflow-x: hidden;
+    z-index: 1;
 `;
 
 const BackgroundOrbs = styled.div`

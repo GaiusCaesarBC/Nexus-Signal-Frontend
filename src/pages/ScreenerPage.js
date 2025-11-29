@@ -21,26 +21,6 @@ const fadeIn = keyframes`
     to { opacity: 1; transform: translateY(0); }
 `;
 
-const slideIn = keyframes`
-    from { transform: translateX(-100%); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
-`;
-
-const pulse = keyframes`
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-`;
-
-const glow = keyframes`
-    0%, 100% { box-shadow: 0 0 20px ${props => props.theme?.brand?.primary || '#00adef'}66; }
-    50% { box-shadow: 0 0 40px ${props => props.theme?.brand?.primary || '#00adef'}cc; }
-`;
-
-const shimmer = keyframes`
-    0% { background-position: -200% center; }
-    100% { background-position: 200% center; }
-`;
-
 const spin = keyframes`
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
@@ -51,24 +31,11 @@ const float = keyframes`
     50% { transform: translateY(-10px); }
 `;
 
-const neonGlow = keyframes`
-    0%, 100% {
-        text-shadow: 
-            0 0 10px ${props => props.theme?.brand?.primary || '#00adef'}cc,
-            0 0 20px ${props => props.theme?.brand?.primary || '#00adef'}99;
-    }
-    50% {
-        text-shadow: 
-            0 0 20px ${props => props.theme?.brand?.primary || '#00adef'},
-            0 0 40px ${props => props.theme?.brand?.primary || '#00adef'}cc;
-    }
-`;
-
 // ============ STYLED COMPONENTS ============
 const PageContainer = styled.div`
     min-height: 100vh;
     padding-top: 80px;
-    background: linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
+    background: transparent;
     color: ${props => props.theme?.text?.primary || '#e0e6ed'};
     padding-left: 2rem;
     padding-right: 2rem;
@@ -164,24 +131,14 @@ const ModeButton = styled.button`
 const FiltersContainer = styled.div`
     max-width: 1800px;
     margin: 0 auto 2rem;
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    background: ${props => props.theme?.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     backdrop-filter: blur(10px);
-    border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}4D;
+    border: 1px solid ${props => props.theme?.border?.primary || 'rgba(100, 116, 139, 0.3)'};
     border-radius: 16px;
     padding: 2rem;
     animation: ${fadeIn} 0.6s ease-out;
     position: relative;
     overflow: hidden;
-
-    &::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 3px;
-        background: ${props => props.theme?.brand?.gradient || 'linear-gradient(90deg, #00adef, #00ff88)'};
-    }
 `;
 
 const FiltersHeader = styled.div`
@@ -275,8 +232,8 @@ const FilterLabel = styled.label`
 
 const SearchInput = styled.input`
     padding: 0.875rem 1rem;
-    background: ${props => props.theme?.brand?.primary || '#00adef'}0D;
-    border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}4D;
+    background: ${props => props.theme?.bg?.input || 'rgba(15, 23, 42, 0.8)'};
+    border: 1px solid ${props => props.theme?.border?.primary || 'rgba(100, 116, 139, 0.3)'};
     border-radius: 10px;
     color: ${props => props.theme?.text?.primary || '#e0e6ed'};
     font-size: 1rem;
@@ -285,7 +242,6 @@ const SearchInput = styled.input`
     &:focus {
         outline: none;
         border-color: ${props => props.theme?.brand?.primary || '#00adef'};
-        background: ${props => props.theme?.brand?.primary || '#00adef'}1A;
         box-shadow: 0 0 0 3px ${props => props.theme?.brand?.primary || '#00adef'}33;
     }
 
@@ -296,8 +252,8 @@ const SearchInput = styled.input`
 
 const Select = styled.select`
     padding: 0.875rem 1rem;
-    background: ${props => props.theme?.brand?.primary || '#00adef'}0D;
-    border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}4D;
+    background: ${props => props.theme?.bg?.input || 'rgba(15, 23, 42, 0.8)'};
+    border: 1px solid ${props => props.theme?.border?.primary || 'rgba(100, 116, 139, 0.3)'};
     border-radius: 10px;
     color: ${props => props.theme?.text?.primary || '#e0e6ed'};
     font-size: 1rem;
@@ -307,11 +263,10 @@ const Select = styled.select`
     &:focus {
         outline: none;
         border-color: ${props => props.theme?.brand?.primary || '#00adef'};
-        background: ${props => props.theme?.brand?.primary || '#00adef'}1A;
     }
 
     option {
-        background: #1a1f3a;
+        background: ${props => props.theme?.bg?.card || '#1a1f3a'};
         color: ${props => props.theme?.text?.primary || '#e0e6ed'};
     }
 `;
@@ -325,8 +280,8 @@ const RangeContainer = styled.div`
 const RangeInput = styled.input`
     flex: 1;
     padding: 0.875rem 1rem;
-    background: ${props => props.theme?.brand?.primary || '#00adef'}0D;
-    border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}4D;
+    background: ${props => props.theme?.bg?.input || 'rgba(15, 23, 42, 0.8)'};
+    border: 1px solid ${props => props.theme?.border?.primary || 'rgba(100, 116, 139, 0.3)'};
     border-radius: 10px;
     color: ${props => props.theme?.text?.primary || '#e0e6ed'};
     font-size: 1rem;
@@ -335,7 +290,6 @@ const RangeInput = styled.input`
     &:focus {
         outline: none;
         border-color: ${props => props.theme?.brand?.primary || '#00adef'};
-        background: ${props => props.theme?.brand?.primary || '#00adef'}1A;
     }
 
     &::placeholder {
@@ -354,7 +308,7 @@ const QuickFilters = styled.div`
     gap: 0.75rem;
     flex-wrap: wrap;
     padding-top: 1rem;
-    border-top: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}33;
+    border-top: 1px solid ${props => props.theme?.border?.tertiary || 'rgba(100, 116, 139, 0.2)'};
 `;
 
 const QuickFilterChip = styled.button`
@@ -455,9 +409,9 @@ const SortButton = styled.button`
 
 // ============ RESULTS TABLE ============
 const ResultsTable = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    background: ${props => props.theme?.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     backdrop-filter: blur(10px);
-    border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}4D;
+    border: 1px solid ${props => props.theme?.border?.primary || 'rgba(100, 116, 139, 0.3)'};
     border-radius: 16px;
     overflow: hidden;
     animation: ${fadeIn} 0.6s ease-out;
@@ -469,7 +423,7 @@ const TableHeader = styled.div`
     gap: 1rem;
     padding: 1.25rem 1.5rem;
     background: ${props => props.theme?.brand?.primary || '#00adef'}1A;
-    border-bottom: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}4D;
+    border-bottom: 1px solid ${props => props.theme?.border?.tertiary || 'rgba(100, 116, 139, 0.2)'};
     font-weight: 700;
     color: ${props => props.theme?.brand?.primary || '#00adef'};
     font-size: 0.9rem;
@@ -514,7 +468,7 @@ const TableBody = styled.div`
     }
 
     &::-webkit-scrollbar-track {
-        background: ${props => props.theme?.brand?.primary || '#00adef'}1A;
+        background: ${props => props.theme?.bg?.input || 'rgba(15, 23, 42, 0.5)'};
     }
 
     &::-webkit-scrollbar-thumb {
@@ -532,7 +486,7 @@ const TableRow = styled.div`
     grid-template-columns: 50px 120px 1fr 120px 120px 120px 120px 100px;
     gap: 1rem;
     padding: 1.25rem 1.5rem;
-    border-bottom: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}1A;
+    border-bottom: 1px solid ${props => props.theme?.border?.tertiary || 'rgba(100, 116, 139, 0.1)'};
     transition: all 0.2s ease;
     cursor: pointer;
     animation: ${fadeIn} 0.4s ease-out;

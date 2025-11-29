@@ -57,10 +57,11 @@ const PageContainer = styled.div`
     flex-direction: column;
     min-height: 100vh;
     padding-top: 80px;
-    background: linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
+    background: transparent;
     color: ${props => props.theme?.text?.primary || '#e0e6ed'};
     position: relative;
     overflow: hidden;
+    z-index: 1;
 `;
 
 const ParticleContainer = styled.div`
@@ -93,8 +94,7 @@ const Particle = styled.div`
 const Header = styled.div`
     padding: 2rem;
     text-align: center;
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
-    backdrop-filter: blur(10px);
+    background: transparent;
     border-bottom: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}33;
     position: relative;
     z-index: 1;

@@ -176,13 +176,16 @@ const heartBeat = keyframes`
 // ============ PAGE LAYOUT ============
 const PageContainer = styled.div`
     min-height: 100vh;
-    background: ${props => props.theme.bg?.page || 'linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%)'};
+    background: transparent;
     padding: 2rem;
+    padding-top: 100px;
     position: relative;
     overflow-x: hidden;
+    z-index: 1;
 
     @media (max-width: 768px) {
         padding: 1rem;
+        padding-top: 90px;
     }
 `;
 
