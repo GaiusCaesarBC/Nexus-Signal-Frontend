@@ -1,4 +1,4 @@
-// client/src/pages/VaultPage.js - NEXUS VAULT SHOP
+// client/src/pages/VaultPage.js - NEXUS VAULT SHOP - FIXED THEME SWITCHING
 // Browse, Purchase, and Equip: Avatar Borders, Profile Themes, Badges, and Perks
 
 import React, { useState, useEffect } from 'react';
@@ -6,6 +6,7 @@ import styled, { keyframes, css } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useGamification } from '../context/GamificationContext';
 import { useToast } from '../context/ToastContext';
+import { useTheme } from '../context/ThemeContext'; // ✅ ADD THIS
 import {
     Store, Sparkles, Crown, Shield, Palette, Award, Zap,
     Lock, Check, ChevronRight, Star, Diamond, Gem,
@@ -837,6 +838,7 @@ const VaultPage = () => {
     const { api, user } = useAuth();
     const { gamificationData, refreshGamification } = useGamification();
     const toast = useToast();
+    const { setProfileTheme } = useTheme(); // ✅ ADD THIS
 
     // State
     const [loading, setLoading] = useState(true);
@@ -970,6 +972,12 @@ const VaultPage = () => {
             if (response.data.success) {
                 toast.success(response.data.message, '✅ Equipped!');
                 setEquipped(response.data.equipped);
+                
+                // ✅ UPDATE LOCAL THEME IMMEDIATELY IF IT'S A THEME
+                if (item.type === 'profile-theme') {
+                    setProfileTheme(item.id);
+                    console.log('🎨 Theme updated locally:', item.id);
+                }
                 
                 // Update items state
                 fetchVaultData();
