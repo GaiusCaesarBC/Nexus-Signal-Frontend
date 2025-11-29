@@ -1,8 +1,9 @@
-// client/src/components/AIChatWidget.js - FIXED WITH REAL API!
+// client/src/components/AIChatWidget.js - FIXED WITH REAL API! - THEMED VERSION
 
 import React, { useState, useEffect, useRef } from 'react';
 import styled, { keyframes, css } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import {
     MessageSquare, X, Send, Minimize2, Maximize2, Sparkles,
     TrendingUp, Brain, DollarSign, AlertCircle, Zap, ChevronDown,
@@ -23,11 +24,6 @@ const slideUp = keyframes`
 const pulse = keyframes`
     0%, 100% { transform: scale(1); }
     50% { transform: scale(1.05); }
-`;
-
-const glow = keyframes`
-    0%, 100% { box-shadow: 0 0 20px rgba(0, 173, 237, 0.5); }
-    50% { box-shadow: 0 0 40px rgba(0, 173, 237, 0.8); }
 `;
 
 const shimmer = keyframes`
@@ -67,13 +63,13 @@ const ChatBubble = styled.button`
     width: 60px;
     height: 60px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #00adef 0%, #0088cc 100%);
+    background: ${props => props.theme.brand?.gradient || `linear-gradient(135deg, ${props.theme.brand?.primary} 0%, ${props.theme.brand?.accent || props.theme.brand?.secondary} 100%)`};
     border: none;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 8px 30px rgba(0, 173, 237, 0.6);
+    box-shadow: 0 8px 30px ${props => props.theme.brand?.primary}99;
     transition: all 0.3s ease;
     position: relative;
     overflow: hidden;
@@ -92,7 +88,7 @@ const ChatBubble = styled.button`
 
     &:hover {
         transform: scale(1.1);
-        box-shadow: 0 10px 40px rgba(0, 173, 237, 0.8);
+        box-shadow: 0 10px 40px ${props => props.theme.brand?.primary}cc;
     }
 
     ${props => props.$hasNotification && css`
@@ -106,7 +102,7 @@ const NotificationDot = styled.div`
     right: 8px;
     width: 12px;
     height: 12px;
-    background: #ef4444;
+    background: ${props => props.theme.error};
     border-radius: 50%;
     border: 2px solid white;
     animation: ${pulse} 1.5s ease-in-out infinite;
@@ -119,7 +115,7 @@ const ChatWindow = styled.div`
     background: linear-gradient(135deg, rgba(15, 23, 42, 0.98) 0%, rgba(30, 41, 59, 0.98) 100%);
     backdrop-filter: blur(20px);
     border-radius: 20px;
-    border: 1px solid rgba(0, 173, 237, 0.3);
+    border: 1px solid ${props => props.theme.brand?.primary}4D;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
     display: flex;
     flex-direction: column;
@@ -135,8 +131,8 @@ const ChatWindow = styled.div`
 
 // Header
 const ChatHeader = styled.div`
-    background: linear-gradient(135deg, rgba(0, 173, 237, 0.2) 0%, rgba(0, 173, 237, 0.05) 100%);
-    border-bottom: 1px solid rgba(0, 173, 237, 0.3);
+    background: linear-gradient(135deg, ${props => props.theme.brand?.primary}33 0%, ${props => props.theme.brand?.primary}0d 100%);
+    border-bottom: 1px solid ${props => props.theme.brand?.primary}4D;
     padding: 1.25rem;
     display: flex;
     justify-content: space-between;
@@ -151,7 +147,7 @@ const ChatHeader = styled.div`
         left: 0;
         width: 100%;
         height: 100%;
-        background: linear-gradient(45deg, transparent 30%, rgba(0, 173, 237, 0.1) 50%, transparent 70%);
+        background: linear-gradient(45deg, transparent 30%, ${props => props.theme.brand?.primary}1a 50%, transparent 70%);
         background-size: 200% 200%;
         animation: ${shimmer} 4s linear infinite;
     }
@@ -169,11 +165,11 @@ const AIAvatar = styled.div`
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #00adef, #00ff88);
+    background: ${props => props.theme.brand?.gradient || `linear-gradient(135deg, ${props.theme.brand?.primary}, ${props.theme.brand?.accent || props.theme.success})`};
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 15px rgba(0, 173, 237, 0.5);
+    box-shadow: 0 4px 15px ${props => props.theme.brand?.primary}80;
     animation: ${pulse} 2s ease-in-out infinite;
 `;
 
@@ -182,14 +178,14 @@ const HeaderInfo = styled.div``;
 const HeaderTitle = styled.h3`
     margin: 0;
     font-size: 1.1rem;
-    color: #00adef;
+    color: ${props => props.theme.brand?.primary};
     font-weight: 700;
 `;
 
 const HeaderStatus = styled.p`
     margin: 0;
     font-size: 0.85rem;
-    color: #10b981;
+    color: ${props => props.theme.success};
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -199,7 +195,7 @@ const StatusDot = styled.div`
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: #10b981;
+    background: ${props => props.theme.success};
     animation: ${pulse} 2s ease-in-out infinite;
 `;
 
@@ -214,9 +210,9 @@ const IconButton = styled.button`
     width: 36px;
     height: 36px;
     border-radius: 8px;
-    background: rgba(0, 173, 237, 0.1);
-    border: 1px solid rgba(0, 173, 237, 0.3);
-    color: #00adef;
+    background: ${props => props.theme.brand?.primary}1a;
+    border: 1px solid ${props => props.theme.brand?.primary}4D;
+    color: ${props => props.theme.brand?.primary};
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -224,7 +220,7 @@ const IconButton = styled.button`
     transition: all 0.2s ease;
 
     &:hover {
-        background: rgba(0, 173, 237, 0.2);
+        background: ${props => props.theme.brand?.primary}33;
         transform: translateY(-2px);
     }
 `;
@@ -232,8 +228,8 @@ const IconButton = styled.button`
 // Quick Actions
 const QuickActions = styled.div`
     padding: 1rem;
-    background: rgba(0, 173, 237, 0.05);
-    border-bottom: 1px solid rgba(0, 173, 237, 0.1);
+    background: ${props => props.theme.brand?.primary}0d;
+    border-bottom: 1px solid ${props => props.theme.brand?.primary}1a;
     display: flex;
     gap: 0.5rem;
     overflow-x: auto;
@@ -243,21 +239,21 @@ const QuickActions = styled.div`
     }
 
     &::-webkit-scrollbar-track {
-        background: rgba(0, 173, 237, 0.1);
+        background: ${props => props.theme.brand?.primary}1a;
     }
 
     &::-webkit-scrollbar-thumb {
-        background: rgba(0, 173, 237, 0.5);
+        background: ${props => props.theme.brand?.primary}80;
         border-radius: 2px;
     }
 `;
 
 const QuickActionButton = styled.button`
     padding: 0.5rem 1rem;
-    background: rgba(0, 173, 237, 0.1);
-    border: 1px solid rgba(0, 173, 237, 0.3);
+    background: ${props => props.theme.brand?.primary}1a;
+    border: 1px solid ${props => props.theme.brand?.primary}4D;
     border-radius: 20px;
-    color: #00adef;
+    color: ${props => props.theme.brand?.primary};
     font-size: 0.85rem;
     font-weight: 600;
     cursor: pointer;
@@ -268,9 +264,9 @@ const QuickActionButton = styled.button`
     transition: all 0.2s ease;
 
     &:hover {
-        background: rgba(0, 173, 237, 0.2);
+        background: ${props => props.theme.brand?.primary}33;
         transform: translateY(-2px);
-        box-shadow: 0 4px 15px rgba(0, 173, 237, 0.3);
+        box-shadow: 0 4px 15px ${props => props.theme.brand?.primary}4D;
     }
 `;
 
@@ -288,15 +284,15 @@ const MessagesContainer = styled.div`
     }
 
     &::-webkit-scrollbar-track {
-        background: rgba(0, 173, 237, 0.1);
+        background: ${props => props.theme.brand?.primary}1a;
     }
 
     &::-webkit-scrollbar-thumb {
-        background: rgba(0, 173, 237, 0.5);
+        background: ${props => props.theme.brand?.primary}80;
         border-radius: 4px;
 
         &:hover {
-            background: rgba(0, 173, 237, 0.7);
+            background: ${props => props.theme.brand?.primary}b3;
         }
     }
 `;
@@ -317,23 +313,23 @@ const MessageAvatar = styled.div`
     border-radius: 50%;
     background: ${props => props.$isUser 
         ? 'linear-gradient(135deg, #8b5cf6, #6366f1)' 
-        : 'linear-gradient(135deg, #00adef, #00ff88)'};
+        : props.theme.brand?.gradient || `linear-gradient(135deg, ${props.theme.brand?.primary}, ${props.theme.brand?.accent || props.theme.success})`};
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
     box-shadow: 0 2px 10px ${props => props.$isUser 
         ? 'rgba(139, 92, 246, 0.5)' 
-        : 'rgba(0, 173, 237, 0.5)'};
+        : `${props.theme.brand?.primary}80`};
 `;
 
 const MessageBubble = styled.div`
     background: ${props => props.$isUser 
         ? 'linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(99, 102, 241, 0.2) 100%)' 
-        : 'linear-gradient(135deg, rgba(0, 173, 237, 0.15) 0%, rgba(0, 136, 204, 0.15) 100%)'};
+        : `linear-gradient(135deg, ${props.theme.brand?.primary}26 0%, ${props.theme.brand?.primary}1a 100%)`};
     border: 1px solid ${props => props.$isUser 
         ? 'rgba(139, 92, 246, 0.3)' 
-        : 'rgba(0, 173, 237, 0.3)'};
+        : `${props.theme.brand?.primary}4D`};
     border-radius: 16px;
     padding: 0.875rem 1.125rem;
     max-width: 75%;
@@ -357,7 +353,7 @@ const MessageBubble = styled.div`
         height: 100%;
         background: linear-gradient(45deg, transparent 30%, ${props => props.$isUser 
             ? 'rgba(139, 92, 246, 0.1)' 
-            : 'rgba(0, 173, 237, 0.1)'} 50%, transparent 70%);
+            : `${props.theme.brand?.primary}1a`} 50%, transparent 70%);
         background-size: 200% 200%;
         animation: ${shimmer} 4s linear infinite;
     }
@@ -376,7 +372,7 @@ const MessageText = styled.div`
 
 const MessageTime = styled.span`
     font-size: 0.75rem;
-    color: #64748b;
+    color: ${props => props.theme.text?.tertiary};
     margin-top: 0.25rem;
     display: block;
     position: relative;
@@ -392,8 +388,8 @@ const TypingIndicator = styled.div`
 `;
 
 const TypingBubble = styled.div`
-    background: linear-gradient(135deg, rgba(0, 173, 237, 0.15) 0%, rgba(0, 136, 204, 0.15) 100%);
-    border: 1px solid rgba(0, 173, 237, 0.3);
+    background: linear-gradient(135deg, ${props => props.theme.brand?.primary}26 0%, ${props => props.theme.brand?.primary}1a 100%);
+    border: 1px solid ${props => props.theme.brand?.primary}4D;
     border-radius: 16px;
     border-bottom-left-radius: 4px;
     padding: 0.875rem 1.125rem;
@@ -405,7 +401,7 @@ const TypingDot = styled.div`
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: #00adef;
+    background: ${props => props.theme.brand?.primary};
     animation: ${typing} 1.4s ease-in-out infinite;
     animation-delay: ${props => props.$delay}s;
 `;
@@ -413,8 +409,8 @@ const TypingDot = styled.div`
 // Input Area
 const InputContainer = styled.div`
     padding: 1.25rem;
-    background: rgba(0, 173, 237, 0.05);
-    border-top: 1px solid rgba(0, 173, 237, 0.2);
+    background: ${props => props.theme.brand?.primary}0d;
+    border-top: 1px solid ${props => props.theme.brand?.primary}33;
 `;
 
 const InputWrapper = styled.div`
@@ -426,7 +422,7 @@ const InputWrapper = styled.div`
 const InputField = styled.textarea`
     flex: 1;
     background: rgba(15, 23, 42, 0.8);
-    border: 1px solid rgba(0, 173, 237, 0.3);
+    border: 1px solid ${props => props.theme.brand?.primary}4D;
     border-radius: 12px;
     padding: 0.875rem;
     color: #e0e6ed;
@@ -438,12 +434,12 @@ const InputField = styled.textarea`
 
     &:focus {
         outline: none;
-        border-color: #00adef;
-        box-shadow: 0 0 20px rgba(0, 173, 237, 0.3);
+        border-color: ${props => props.theme.brand?.primary};
+        box-shadow: 0 0 20px ${props => props.theme.brand?.primary}4D;
     }
 
     &::placeholder {
-        color: #64748b;
+        color: ${props => props.theme.text?.tertiary};
     }
 
     &::-webkit-scrollbar {
@@ -451,11 +447,11 @@ const InputField = styled.textarea`
     }
 
     &::-webkit-scrollbar-track {
-        background: rgba(0, 173, 237, 0.1);
+        background: ${props => props.theme.brand?.primary}1a;
     }
 
     &::-webkit-scrollbar-thumb {
-        background: rgba(0, 173, 237, 0.5);
+        background: ${props => props.theme.brand?.primary}80;
         border-radius: 3px;
     }
 `;
@@ -464,7 +460,7 @@ const SendButton = styled.button`
     width: 44px;
     height: 44px;
     border-radius: 12px;
-    background: linear-gradient(135deg, #00adef 0%, #0088cc 100%);
+    background: ${props => props.theme.brand?.gradient || `linear-gradient(135deg, ${props.theme.brand?.primary} 0%, ${props.theme.brand?.accent || props.theme.brand?.secondary} 100%)`};
     border: none;
     cursor: pointer;
     display: flex;
@@ -488,7 +484,7 @@ const SendButton = styled.button`
 
     &:hover:not(:disabled) {
         transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(0, 173, 237, 0.5);
+        box-shadow: 0 6px 20px ${props => props.theme.brand?.primary}80;
     }
 
     &:disabled {
@@ -512,24 +508,24 @@ const WelcomeIcon = styled.div`
     width: 80px;
     height: 80px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #00adef, #00ff88);
+    background: ${props => props.theme.brand?.gradient || `linear-gradient(135deg, ${props.theme.brand?.primary}, ${props.theme.brand?.accent || props.theme.success})`};
     display: flex;
     align-items: center;
     justify-content: center;
     margin-bottom: 1.5rem;
     animation: ${bounce} 2s ease-in-out infinite;
-    box-shadow: 0 10px 40px rgba(0, 173, 237, 0.6);
+    box-shadow: 0 10px 40px ${props => props.theme.brand?.primary}99;
 `;
 
 const WelcomeTitle = styled.h2`
     font-size: 1.8rem;
-    color: #00adef;
+    color: ${props => props.theme.brand?.primary};
     margin-bottom: 0.75rem;
     font-weight: 900;
 `;
 
 const WelcomeText = styled.p`
-    color: #94a3b8;
+    color: ${props => props.theme.text?.secondary};
     font-size: 1rem;
     line-height: 1.6;
     margin-bottom: 2rem;
@@ -544,10 +540,10 @@ const SuggestedPrompts = styled.div`
 
 const PromptButton = styled.button`
     padding: 1rem;
-    background: rgba(0, 173, 237, 0.1);
-    border: 1px solid rgba(0, 173, 237, 0.3);
+    background: ${props => props.theme.brand?.primary}1a;
+    border: 1px solid ${props => props.theme.brand?.primary}4D;
     border-radius: 12px;
-    color: #00adef;
+    color: ${props => props.theme.brand?.primary};
     font-size: 0.95rem;
     cursor: pointer;
     text-align: left;
@@ -557,15 +553,16 @@ const PromptButton = styled.button`
     gap: 0.75rem;
 
     &:hover {
-        background: rgba(0, 173, 237, 0.2);
+        background: ${props => props.theme.brand?.primary}33;
         transform: translateX(5px);
-        border-color: #00adef;
+        border-color: ${props => props.theme.brand?.primary};
     }
 `;
 
 // ============ COMPONENT ============
 const AIChatWidget = () => {
     const { user, api } = useAuth();
+    const { theme } = useTheme();
     const [isOpen, setIsOpen] = useState(false);
     const [isMinimized, setIsMinimized] = useState(false);
     const [messages, setMessages] = useState([]);

@@ -1,15 +1,17 @@
-// client/src/pages/SentimentPage.js - REVAMPED CLEAN SENTIMENT PAGE
+// client/src/pages/SentimentPage.js - THEMED SENTIMENT PAGE
 
 import React, { useState, useEffect, useMemo } from 'react';
 import styled, { keyframes, css } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useTheme } from '../context/ThemeContext';
 import { useNavigate } from 'react-router-dom';
 import {
     TrendingUp, TrendingDown, Search, Flame, Brain,
     ThumbsUp, ThumbsDown, Minus, RefreshCw, Zap, Target,
     Activity, MessageCircle, Heart, Repeat2, BarChart3,
-    ArrowUpRight, ArrowDownRight, Clock, Sparkles, Hash
+    ArrowUpRight, ArrowDownRight, Clock, Sparkles, Hash,
+    ExternalLink
 } from 'lucide-react';
 
 // ============ ANIMATIONS ============
@@ -27,7 +29,7 @@ const rotate = keyframes`
 const PageContainer = styled.div`
     min-height: 100vh;
     background: linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
-    color: #e0e6ed;
+    color: ${props => props.theme?.text?.primary || '#e0e6ed'};
     padding: 6rem 2rem 2rem;
 `;
 
@@ -59,7 +61,7 @@ const TitleSection = styled.div``;
 
 const Title = styled.h1`
     font-size: 2.5rem;
-    background: linear-gradient(135deg, #00adef 0%, #8b5cf6 100%);
+    background: ${props => props.theme?.brand?.gradient || 'linear-gradient(135deg, #00adef 0%, #8b5cf6 100%)'};
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -74,7 +76,7 @@ const Title = styled.h1`
 `;
 
 const Subtitle = styled.p`
-    color: #94a3b8;
+    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
     font-size: 1rem;
     margin-top: 0.25rem;
 `;
@@ -82,7 +84,7 @@ const Subtitle = styled.p`
 // ============ SEARCH BAR ============
 const SearchContainer = styled.div`
     background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
-    border: 1px solid rgba(0, 173, 237, 0.2);
+    border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}33;
     border-radius: 16px;
     padding: 1.5rem;
     margin-bottom: 2rem;
@@ -108,27 +110,27 @@ const SearchIcon = styled.div`
     left: 1rem;
     top: 50%;
     transform: translateY(-50%);
-    color: #64748b;
+    color: ${props => props.theme?.text?.tertiary || '#64748b'};
 `;
 
 const SearchInput = styled.input`
     width: 100%;
     padding: 1rem 1rem 1rem 3rem;
     background: rgba(15, 23, 42, 0.6);
-    border: 1px solid rgba(0, 173, 237, 0.2);
+    border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}33;
     border-radius: 12px;
-    color: #e0e6ed;
+    color: ${props => props.theme?.text?.primary || '#e0e6ed'};
     font-size: 1rem;
     transition: all 0.2s ease;
 
     &:focus {
         outline: none;
-        border-color: #00adef;
-        box-shadow: 0 0 0 3px rgba(0, 173, 237, 0.1);
+        border-color: ${props => props.theme?.brand?.primary || '#00adef'};
+        box-shadow: 0 0 0 3px ${props => props.theme?.brand?.primary || '#00adef'}1A;
     }
 
     &::placeholder {
-        color: #64748b;
+        color: ${props => props.theme?.text?.tertiary || '#64748b'};
     }
 `;
 
@@ -138,7 +140,7 @@ const SearchButton = styled.button`
     justify-content: center;
     gap: 0.5rem;
     padding: 1rem 2rem;
-    background: linear-gradient(135deg, #00adef 0%, #0088cc 100%);
+    background: ${props => `linear-gradient(135deg, ${props.theme?.brand?.primary || '#00adef'} 0%, ${props.theme?.brand?.secondary || '#0088cc'} 100%)`};
     border: none;
     border-radius: 12px;
     color: white;
@@ -150,7 +152,7 @@ const SearchButton = styled.button`
 
     &:hover:not(:disabled) {
         transform: translateY(-2px);
-        box-shadow: 0 8px 24px rgba(0, 173, 237, 0.3);
+        box-shadow: 0 8px 24px ${props => props.theme?.brand?.primary || '#00adef'}4D;
     }
 
     &:disabled {
@@ -182,7 +184,7 @@ const StatsBar = styled.div`
 
 const StatCard = styled.div`
     background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
-    border: 1px solid rgba(0, 173, 237, 0.2);
+    border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}33;
     border-radius: 14px;
     padding: 1.25rem;
     animation: ${fadeIn} 0.6s ease-out;
@@ -198,7 +200,7 @@ const StatCard = styled.div`
         left: 0;
         right: 0;
         height: 3px;
-        background: ${props => props.$color || 'linear-gradient(90deg, #00adef, #0088cc)'};
+        background: ${props => props.$color || props.theme?.brand?.gradient || 'linear-gradient(90deg, #00adef, #0088cc)'};
     }
 `;
 
@@ -213,15 +215,15 @@ const StatIcon = styled.div`
     width: 32px;
     height: 32px;
     border-radius: 8px;
-    background: ${props => props.$bg || 'rgba(0, 173, 237, 0.15)'};
+    background: ${props => props.$bg || `${props.theme?.brand?.primary || '#00adef'}26`};
     display: flex;
     align-items: center;
     justify-content: center;
-    color: ${props => props.$color || '#00adef'};
+    color: ${props => props.$color || props.theme?.brand?.primary || '#00adef'};
 `;
 
 const StatLabel = styled.div`
-    color: #64748b;
+    color: ${props => props.theme?.text?.tertiary || '#64748b'};
     font-size: 0.75rem;
     font-weight: 600;
     text-transform: uppercase;
@@ -231,7 +233,7 @@ const StatLabel = styled.div`
 const StatValue = styled.div`
     font-size: 1.5rem;
     font-weight: 800;
-    color: ${props => props.$color || '#e0e6ed'};
+    color: ${props => props.$color || props.theme?.text?.primary || '#e0e6ed'};
 `;
 
 // ============ MAIN GRID ============
@@ -260,7 +262,7 @@ const Sidebar = styled.div`
 // ============ CARDS ============
 const Card = styled.div`
     background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
-    border: 1px solid rgba(0, 173, 237, 0.2);
+    border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}33;
     border-radius: 16px;
     padding: 1.5rem;
     animation: ${fadeIn} 0.6s ease-out;
@@ -275,7 +277,7 @@ const CardHeader = styled.div`
 
 const CardTitle = styled.h3`
     font-size: 1.1rem;
-    color: #00adef;
+    color: ${props => props.theme?.brand?.primary || '#00adef'};
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -285,9 +287,9 @@ const CardTitle = styled.h3`
 const CardBadge = styled.span`
     font-size: 0.75rem;
     padding: 0.25rem 0.6rem;
-    background: rgba(0, 173, 237, 0.15);
+    background: ${props => props.theme?.brand?.primary || '#00adef'}26;
     border-radius: 6px;
-    color: #64748b;
+    color: ${props => props.theme?.text?.tertiary || '#64748b'};
 `;
 
 // ============ SENTIMENT RESULT ============
@@ -297,7 +299,7 @@ const SentimentHero = styled.div`
     gap: 1.5rem;
     margin-bottom: 1.5rem;
     padding-bottom: 1.5rem;
-    border-bottom: 1px solid rgba(100, 116, 139, 0.2);
+    border-bottom: 1px solid ${props => props.theme?.text?.tertiary || '#64748b'}33;
 
     @media (max-width: 600px) {
         flex-direction: column;
@@ -312,20 +314,26 @@ const SentimentBadge = styled.div`
     gap: 0.5rem;
     padding: 1rem 1.5rem;
     background: ${props => {
-        if (props.$sentiment === 'bullish') return 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.1))';
-        if (props.$sentiment === 'bearish') return 'linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.1))';
-        return 'linear-gradient(135deg, rgba(100, 116, 139, 0.2), rgba(71, 85, 105, 0.1))';
+        const success = props.theme?.success || '#10b981';
+        const error = props.theme?.error || '#ef4444';
+        const neutral = props.theme?.text?.tertiary || '#64748b';
+        if (props.$sentiment === 'bullish') return `linear-gradient(135deg, ${success}33, ${success}1A)`;
+        if (props.$sentiment === 'bearish') return `linear-gradient(135deg, ${error}33, ${error}1A)`;
+        return `linear-gradient(135deg, ${neutral}33, ${neutral}1A)`;
     }};
     border: 1px solid ${props => {
-        if (props.$sentiment === 'bullish') return 'rgba(16, 185, 129, 0.4)';
-        if (props.$sentiment === 'bearish') return 'rgba(239, 68, 68, 0.4)';
-        return 'rgba(100, 116, 139, 0.4)';
+        const success = props.theme?.success || '#10b981';
+        const error = props.theme?.error || '#ef4444';
+        const neutral = props.theme?.text?.tertiary || '#64748b';
+        if (props.$sentiment === 'bullish') return `${success}66`;
+        if (props.$sentiment === 'bearish') return `${error}66`;
+        return `${neutral}66`;
     }};
     border-radius: 12px;
     color: ${props => {
-        if (props.$sentiment === 'bullish') return '#10b981';
-        if (props.$sentiment === 'bearish') return '#ef4444';
-        return '#94a3b8';
+        if (props.$sentiment === 'bullish') return props.theme?.success || '#10b981';
+        if (props.$sentiment === 'bearish') return props.theme?.error || '#ef4444';
+        return props.theme?.text?.secondary || '#94a3b8';
     }};
     font-size: 1.25rem;
     font-weight: 800;
@@ -338,12 +346,18 @@ const SentimentInfo = styled.div`
 const SentimentSymbol = styled.div`
     font-size: 1.75rem;
     font-weight: 900;
-    color: #e0e6ed;
+    color: ${props => props.theme?.text?.primary || '#e0e6ed'};
     margin-bottom: 0.25rem;
+    cursor: pointer;
+    transition: color 0.2s ease;
+
+    &:hover {
+        color: ${props => props.theme?.brand?.primary || '#00adef'};
+    }
 `;
 
 const SentimentMeta = styled.div`
-    color: #64748b;
+    color: ${props => props.theme?.text?.tertiary || '#64748b'};
     font-size: 0.9rem;
 `;
 
@@ -388,7 +402,7 @@ const MetricsGrid = styled.div`
 
 const MetricCard = styled.div`
     background: rgba(15, 23, 42, 0.5);
-    border: 1px solid rgba(100, 116, 139, 0.2);
+    border: 1px solid ${props => props.theme?.text?.tertiary || '#64748b'}33;
     border-radius: 10px;
     padding: 1rem;
     text-align: center;
@@ -397,20 +411,29 @@ const MetricCard = styled.div`
 const MetricValue = styled.div`
     font-size: 1.5rem;
     font-weight: 800;
-    color: ${props => props.$color || '#e0e6ed'};
+    color: ${props => props.$color || props.theme?.text?.primary || '#e0e6ed'};
     margin-bottom: 0.25rem;
 `;
 
 const MetricLabel = styled.div`
     font-size: 0.75rem;
-    color: #64748b;
+    color: ${props => props.theme?.text?.tertiary || '#64748b'};
     text-transform: uppercase;
 `;
 
 // ============ AI PREDICTION ============
 const PredictionCard = styled(Card)`
-    border-color: rgba(139, 92, 246, 0.3);
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(30, 41, 59, 0.9) 100%);
+    border-color: ${props => props.theme?.brand?.accent || '#8b5cf6'}4D;
+    background: linear-gradient(135deg, ${props => props.theme?.brand?.accent || '#8b5cf6'}1A 0%, rgba(30, 41, 59, 0.9) 100%);
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 40px ${props => props.theme?.brand?.accent || '#8b5cf6'}40;
+        border-color: ${props => props.theme?.brand?.accent || '#8b5cf6'}80;
+    }
 
     &::before {
         content: '';
@@ -419,8 +442,27 @@ const PredictionCard = styled(Card)`
         left: 0;
         right: 0;
         height: 3px;
-        background: linear-gradient(90deg, #8b5cf6, #7c3aed);
+        background: linear-gradient(90deg, ${props => props.theme?.brand?.accent || '#8b5cf6'}, ${props => props.theme?.brand?.accent || '#7c3aed'});
         border-radius: 16px 16px 0 0;
+    }
+`;
+
+const PredictionClickHint = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid ${props => props.theme?.brand?.accent || '#8b5cf6'}33;
+    color: ${props => props.theme?.brand?.accent || '#8b5cf6'};
+    font-size: 0.85rem;
+    font-weight: 600;
+    opacity: 0.8;
+    transition: opacity 0.2s ease;
+
+    &:hover {
+        opacity: 1;
     }
 `;
 
@@ -439,11 +481,15 @@ const PredictionBadge = styled.div`
     gap: 0.4rem;
     padding: 0.5rem 1rem;
     background: ${props => props.$direction === 'UP' 
-        ? 'rgba(16, 185, 129, 0.2)' 
-        : 'rgba(239, 68, 68, 0.2)'};
-    border: 1px solid ${props => props.$direction === 'UP' ? '#10b981' : '#ef4444'};
+        ? `${props.theme?.success || '#10b981'}33` 
+        : `${props.theme?.error || '#ef4444'}33`};
+    border: 1px solid ${props => props.$direction === 'UP' 
+        ? (props.theme?.success || '#10b981') 
+        : (props.theme?.error || '#ef4444')};
     border-radius: 8px;
-    color: ${props => props.$direction === 'UP' ? '#10b981' : '#ef4444'};
+    color: ${props => props.$direction === 'UP' 
+        ? (props.theme?.success || '#10b981') 
+        : (props.theme?.error || '#ef4444')};
     font-size: 1rem;
     font-weight: 800;
 `;
@@ -460,7 +506,7 @@ const PredictionGrid = styled.div`
 
 const PredictionStat = styled.div`
     background: rgba(15, 23, 42, 0.6);
-    border: 1px solid rgba(139, 92, 246, 0.2);
+    border: 1px solid ${props => props.theme?.brand?.accent || '#8b5cf6'}33;
     border-radius: 10px;
     padding: 1rem;
     text-align: center;
@@ -469,13 +515,13 @@ const PredictionStat = styled.div`
 const PredStatValue = styled.div`
     font-size: 1.25rem;
     font-weight: 800;
-    color: ${props => props.$color || '#8b5cf6'};
+    color: ${props => props.$color || props.theme?.brand?.accent || '#8b5cf6'};
     margin-bottom: 0.25rem;
 `;
 
 const PredStatLabel = styled.div`
     font-size: 0.7rem;
-    color: #64748b;
+    color: ${props => props.theme?.text?.tertiary || '#64748b'};
     text-transform: uppercase;
 `;
 
@@ -498,18 +544,18 @@ const TweetsList = styled.div`
     }
 
     &::-webkit-scrollbar-thumb {
-        background: rgba(0, 173, 237, 0.3);
+        background: ${props => props.theme?.brand?.primary || '#00adef'}4D;
         border-radius: 3px;
     }
 `;
 
 const TweetCard = styled.div`
     background: rgba(15, 23, 42, 0.5);
-    border: 1px solid rgba(100, 116, 139, 0.2);
+    border: 1px solid ${props => props.theme?.text?.tertiary || '#64748b'}33;
     border-left: 3px solid ${props => {
-        if (props.$sentiment === 'bullish') return '#10b981';
-        if (props.$sentiment === 'bearish') return '#ef4444';
-        return '#64748b';
+        if (props.$sentiment === 'bullish') return props.theme?.success || '#10b981';
+        if (props.$sentiment === 'bearish') return props.theme?.error || '#ef4444';
+        return props.theme?.text?.tertiary || '#64748b';
     }};
     border-radius: 10px;
     padding: 1rem;
@@ -532,7 +578,7 @@ const TweetAuthor = styled.div`
     display: flex;
     align-items: center;
     gap: 0.4rem;
-    color: #00adef;
+    color: ${props => props.theme?.brand?.primary || '#00adef'};
     font-weight: 600;
     font-size: 0.9rem;
 `;
@@ -543,23 +589,23 @@ const TweetSentimentTag = styled.div`
     gap: 0.25rem;
     padding: 0.2rem 0.5rem;
     background: ${props => {
-        if (props.$sentiment === 'bullish') return 'rgba(16, 185, 129, 0.15)';
-        if (props.$sentiment === 'bearish') return 'rgba(239, 68, 68, 0.15)';
-        return 'rgba(100, 116, 139, 0.15)';
+        if (props.$sentiment === 'bullish') return `${props.theme?.success || '#10b981'}26`;
+        if (props.$sentiment === 'bearish') return `${props.theme?.error || '#ef4444'}26`;
+        return `${props.theme?.text?.tertiary || '#64748b'}26`;
     }};
     border-radius: 4px;
     font-size: 0.7rem;
     font-weight: 600;
     text-transform: uppercase;
     color: ${props => {
-        if (props.$sentiment === 'bullish') return '#10b981';
-        if (props.$sentiment === 'bearish') return '#ef4444';
-        return '#94a3b8';
+        if (props.$sentiment === 'bullish') return props.theme?.success || '#10b981';
+        if (props.$sentiment === 'bearish') return props.theme?.error || '#ef4444';
+        return props.theme?.text?.secondary || '#94a3b8';
     }};
 `;
 
 const TweetText = styled.p`
-    color: #e0e6ed;
+    color: ${props => props.theme?.text?.primary || '#e0e6ed'};
     font-size: 0.9rem;
     line-height: 1.5;
     margin-bottom: 0.5rem;
@@ -568,7 +614,7 @@ const TweetText = styled.p`
 const TweetMeta = styled.div`
     display: flex;
     gap: 1rem;
-    color: #64748b;
+    color: ${props => props.theme?.text?.tertiary || '#64748b'};
     font-size: 0.8rem;
 `;
 
@@ -591,14 +637,14 @@ const TrendingItem = styled.div`
     align-items: center;
     padding: 0.75rem 1rem;
     background: rgba(15, 23, 42, 0.5);
-    border: 1px solid rgba(100, 116, 139, 0.2);
+    border: 1px solid ${props => props.theme?.text?.tertiary || '#64748b'}33;
     border-radius: 10px;
     cursor: pointer;
     transition: all 0.2s ease;
 
     &:hover {
-        background: rgba(0, 173, 237, 0.1);
-        border-color: rgba(0, 173, 237, 0.3);
+        background: ${props => props.theme?.brand?.primary || '#00adef'}1A;
+        border-color: ${props => props.theme?.brand?.primary || '#00adef'}4D;
         transform: translateX(4px);
     }
 `;
@@ -608,19 +654,19 @@ const TrendingInfo = styled.div``;
 const TrendingSymbol = styled.div`
     font-size: 1rem;
     font-weight: 800;
-    color: #00adef;
+    color: ${props => props.theme?.brand?.primary || '#00adef'};
 `;
 
 const TrendingMentions = styled.div`
     font-size: 0.75rem;
-    color: #64748b;
+    color: ${props => props.theme?.text?.tertiary || '#64748b'};
 `;
 
 const TrendingScore = styled.div`
     display: flex;
     align-items: center;
     gap: 0.3rem;
-    color: #f59e0b;
+    color: ${props => props.theme?.warning || '#f59e0b'};
     font-weight: 700;
     font-size: 0.9rem;
 `;
@@ -636,22 +682,22 @@ const EmptyIcon = styled.div`
     width: 100px;
     height: 100px;
     margin: 0 auto 1.5rem;
-    background: linear-gradient(135deg, rgba(0, 173, 237, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%);
+    background: linear-gradient(135deg, ${props => props.theme?.brand?.primary || '#00adef'}33 0%, ${props => props.theme?.brand?.accent || '#8b5cf6'}33 100%);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px dashed rgba(0, 173, 237, 0.3);
+    border: 2px dashed ${props => props.theme?.brand?.primary || '#00adef'}4D;
 `;
 
 const EmptyTitle = styled.h2`
-    color: #00adef;
+    color: ${props => props.theme?.brand?.primary || '#00adef'};
     font-size: 1.5rem;
     margin-bottom: 0.5rem;
 `;
 
 const EmptyText = styled.p`
-    color: #94a3b8;
+    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
     max-width: 400px;
     margin: 0 auto;
 `;
@@ -660,6 +706,7 @@ const EmptyText = styled.p`
 const SentimentPage = () => {
     const { api, isAuthenticated } = useAuth();
     const toast = useToast();
+    const { theme } = useTheme();
     const navigate = useNavigate();
 
     const [searchSymbol, setSearchSymbol] = useState('');
@@ -667,6 +714,9 @@ const SentimentPage = () => {
     const [sentiment, setSentiment] = useState(null);
     const [trending, setTrending] = useState([]);
     const [marketSentiment, setMarketSentiment] = useState(null);
+
+    // Common crypto symbols for detection
+    const cryptoSymbols = ['BTC', 'ETH', 'BNB', 'XRP', 'ADA', 'DOGE', 'SOL', 'DOT', 'MATIC', 'SHIB', 'AVAX', 'LINK', 'UNI', 'ATOM', 'LTC'];
 
     useEffect(() => {
         if (isAuthenticated) {
@@ -723,30 +773,61 @@ const SentimentPage = () => {
         handleSearch(symbol);
     };
 
+    // Navigate to stock or crypto detail page
+    const handleSymbolClick = (symbol) => {
+        const upperSymbol = symbol.toUpperCase();
+        const isCrypto = cryptoSymbols.includes(upperSymbol) || sentiment?.type === 'crypto';
+        
+        if (isCrypto) {
+            // Navigate to crypto page - use lowercase for CoinGecko compatibility
+            navigate(`/crypto/${upperSymbol.toLowerCase()}`);
+        } else {
+            // Navigate to stock page - route is /stocks/:symbol
+            navigate(`/stocks/${upperSymbol}`);
+        }
+    };
+
+    // Navigate to AI Predict page with the symbol pre-filled
+    const handlePredictionClick = (symbol) => {
+        const upperSymbol = symbol.toUpperCase();
+        const isCryptoSymbol = cryptoSymbols.includes(upperSymbol) || sentiment?.type === 'crypto';
+        
+        // Navigate to predict page with symbol as query param
+        navigate(`/predict?symbol=${upperSymbol}&type=${isCryptoSymbol ? 'crypto' : 'stock'}`);
+    };
+
+    // Theme colors
+    const successColor = theme?.success || '#10b981';
+    const errorColor = theme?.error || '#ef4444';
+    const warningColor = theme?.warning || '#f59e0b';
+    const primaryColor = theme?.brand?.primary || '#00adef';
+    const accentColor = theme?.brand?.accent || '#8b5cf6';
+
     return (
-        <PageContainer>
+        <PageContainer theme={theme}>
             <ContentWrapper>
                 {/* Header */}
                 <Header>
                     <HeaderTop>
                         <TitleSection>
-                            <Title>
-                                <MessageCircle size={32} />
+                            <Title theme={theme}>
+                                <MessageCircle size={32} color={primaryColor} />
                                 Social Sentiment
                             </Title>
-                            <Subtitle>Real-time sentiment analysis & AI predictions</Subtitle>
+                            <Subtitle theme={theme}>Real-time sentiment analysis & AI predictions</Subtitle>
                         </TitleSection>
                     </HeaderTop>
                 </Header>
 
                 {/* Search */}
-                <SearchContainer>
+                <SearchContainer theme={theme}>
                     <SearchRow>
                         <SearchInputWrapper>
-                            <SearchIcon>
+                            <SearchIcon theme={theme}>
                                 <Search size={20} />
                             </SearchIcon>
                             <SearchInput
+                                theme={theme}
                                 type="text"
                                 placeholder="Enter stock or crypto symbol (AAPL, TSLA, BTC, ETH)..."
                                 value={searchSymbol}
@@ -755,7 +836,7 @@ const SentimentPage = () => {
                                 disabled={loading}
                             />
                         </SearchInputWrapper>
-                        <SearchButton onClick={() => handleSearch()} disabled={loading} $loading={loading}>
+                        <SearchButton theme={theme} onClick={() => handleSearch()} disabled={loading} $loading={loading}>
                             {loading ? <RefreshCw size={20} /> : <Sparkles size={20} />}
                             {loading ? 'Analyzing...' : 'Analyze'}
                         </SearchButton>
@@ -765,44 +846,44 @@ const SentimentPage = () => {
                 {/* Market Stats */}
                 {marketSentiment && (
                     <StatsBar>
-                        <StatCard $delay="0s" $color="linear-gradient(90deg, #10b981, #059669)">
+                        <StatCard theme={theme} $delay="0s" $color={`linear-gradient(90deg, ${successColor}, ${successColor})`}>
                             <StatHeader>
-                                <StatIcon $bg="rgba(16, 185, 129, 0.15)" $color="#10b981">
+                                <StatIcon theme={theme} $bg={`${successColor}26`} $color={successColor}>
                                     <ThumbsUp size={16} />
                                 </StatIcon>
-                                <StatLabel>Bullish</StatLabel>
+                                <StatLabel theme={theme}>Bullish</StatLabel>
                             </StatHeader>
-                            <StatValue $color="#10b981">{marketSentiment.bullishPercentage}%</StatValue>
+                            <StatValue theme={theme} $color={successColor}>{marketSentiment.bullishPercentage}%</StatValue>
                         </StatCard>
 
-                        <StatCard $delay="0.1s" $color="linear-gradient(90deg, #ef4444, #dc2626)">
+                        <StatCard theme={theme} $delay="0.1s" $color={`linear-gradient(90deg, ${errorColor}, ${errorColor})`}>
                             <StatHeader>
-                                <StatIcon $bg="rgba(239, 68, 68, 0.15)" $color="#ef4444">
+                                <StatIcon theme={theme} $bg={`${errorColor}26`} $color={errorColor}>
                                     <ThumbsDown size={16} />
                                 </StatIcon>
-                                <StatLabel>Bearish</StatLabel>
+                                <StatLabel theme={theme}>Bearish</StatLabel>
                             </StatHeader>
-                            <StatValue $color="#ef4444">{marketSentiment.bearishPercentage}%</StatValue>
+                            <StatValue theme={theme} $color={errorColor}>{marketSentiment.bearishPercentage}%</StatValue>
                         </StatCard>
 
-                        <StatCard $delay="0.2s" $color="linear-gradient(90deg, #00adef, #0088cc)">
+                        <StatCard theme={theme} $delay="0.2s" $color={`linear-gradient(90deg, ${primaryColor}, ${primaryColor})`}>
                             <StatHeader>
-                                <StatIcon $bg="rgba(0, 173, 237, 0.15)" $color="#00adef">
+                                <StatIcon theme={theme} $bg={`${primaryColor}26`} $color={primaryColor}>
                                     <MessageCircle size={16} />
                                 </StatIcon>
-                                <StatLabel>Tweets</StatLabel>
+                                <StatLabel theme={theme}>Tweets</StatLabel>
                             </StatHeader>
-                            <StatValue>{marketSentiment.totalTweets?.toLocaleString()}</StatValue>
+                            <StatValue theme={theme}>{marketSentiment.totalTweets?.toLocaleString()}</StatValue>
                         </StatCard>
 
-                        <StatCard $delay="0.3s" $color="linear-gradient(90deg, #f59e0b, #d97706)">
+                        <StatCard theme={theme} $delay="0.3s" $color={`linear-gradient(90deg, ${warningColor}, ${warningColor})`}>
                             <StatHeader>
-                                <StatIcon $bg="rgba(245, 158, 11, 0.15)" $color="#f59e0b">
+                                <StatIcon theme={theme} $bg={`${warningColor}26`} $color={warningColor}>
                                     <Activity size={16} />
                                 </StatIcon>
-                                <StatLabel>Market Mood</StatLabel>
+                                <StatLabel theme={theme}>Market Mood</StatLabel>
                             </StatHeader>
-                            <StatValue $color="#f59e0b">{marketSentiment.overall?.toUpperCase()}</StatValue>
+                            <StatValue theme={theme} $color={warningColor}>{marketSentiment.overall?.toUpperCase()}</StatValue>
                         </StatCard>
                     </StatsBar>
                 )}
@@ -812,68 +893,78 @@ const SentimentPage = () => {
                     <MainGrid>
                         <MainContent>
                             {/* Sentiment Analysis */}
-                            <Card>
+                            <Card theme={theme}>
                                 <CardHeader>
-                                    <CardTitle>
+                                    <CardTitle theme={theme}>
                                         <Brain size={20} />
                                         Sentiment Analysis
                                     </CardTitle>
-                                    <CardBadge>{sentiment.tweets?.length || 0} tweets analyzed</CardBadge>
+                                    <CardBadge theme={theme}>{sentiment.tweets?.length || 0} tweets analyzed</CardBadge>
                                 </CardHeader>
 
-                                <SentimentHero>
-                                    <SentimentBadge $sentiment={sentiment.sentiment?.overall}>
+                                <SentimentHero theme={theme}>
+                                    <SentimentBadge theme={theme} $sentiment={sentiment.sentiment?.overall}>
                                         {sentiment.sentiment?.overall === 'bullish' && <TrendingUp size={24} />}
                                         {sentiment.sentiment?.overall === 'bearish' && <TrendingDown size={24} />}
                                         {sentiment.sentiment?.overall === 'neutral' && <Minus size={24} />}
                                         {sentiment.sentiment?.overall?.toUpperCase()}
                                     </SentimentBadge>
                                     <SentimentInfo>
-                                        <SentimentSymbol>${sentiment.symbol}</SentimentSymbol>
-                                        <SentimentMeta>Based on recent social media activity</SentimentMeta>
+                                        <SentimentSymbol 
+                                            theme={theme} 
+                                            onClick={() => handleSymbolClick(sentiment.symbol)}
+                                            title={`Click to view ${sentiment.symbol} details`}
+                                        >
+                                            ${sentiment.symbol}
+                                        </SentimentSymbol>
+                                        <SentimentMeta theme={theme}>Based on recent social media activity • Click symbol for details</SentimentMeta>
                                     </SentimentInfo>
                                 </SentimentHero>
 
                                 {/* Distribution */}
                                 <DistributionContainer>
                                     <DistributionLabel>
-                                        <span style={{ color: '#10b981' }}>🐂 {sentiment.sentiment?.distribution?.bullish}%</span>
-                                        <span style={{ color: '#64748b' }}>{sentiment.sentiment?.distribution?.neutral}%</span>
-                                        <span style={{ color: '#ef4444' }}>{sentiment.sentiment?.distribution?.bearish}% 🐻</span>
+                                        <span style={{ color: successColor }}>🐂 {sentiment.sentiment?.distribution?.bullish}%</span>
+                                        <span style={{ color: theme?.text?.tertiary || '#64748b' }}>{sentiment.sentiment?.distribution?.neutral}%</span>
+                                        <span style={{ color: errorColor }}>{sentiment.sentiment?.distribution?.bearish}% 🐻</span>
                                     </DistributionLabel>
                                     <DistributionBar>
-                                        <BarSegment $width={sentiment.sentiment?.distribution?.bullish} $color="#10b981" />
-                                        <BarSegment $width={sentiment.sentiment?.distribution?.neutral} $color="#64748b" />
-                                        <BarSegment $width={sentiment.sentiment?.distribution?.bearish} $color="#ef4444" />
+                                        <BarSegment $width={sentiment.sentiment?.distribution?.bullish} $color={successColor} />
+                                        <BarSegment $width={sentiment.sentiment?.distribution?.neutral} $color={theme?.text?.tertiary || '#64748b'} />
+                                        <BarSegment $width={sentiment.sentiment?.distribution?.bearish} $color={errorColor} />
                                     </DistributionBar>
                                 </DistributionContainer>
 
                                 {/* Metrics */}
                                 <MetricsGrid>
-                                    <MetricCard>
-                                        <MetricValue $color="#10b981">{sentiment.sentiment?.counts?.bullish || 0}</MetricValue>
-                                        <MetricLabel>Bullish</MetricLabel>
+                                    <MetricCard theme={theme}>
+                                        <MetricValue theme={theme} $color={successColor}>{sentiment.sentiment?.counts?.bullish || 0}</MetricValue>
+                                        <MetricLabel theme={theme}>Bullish</MetricLabel>
                                     </MetricCard>
-                                    <MetricCard>
-                                        <MetricValue $color="#64748b">{sentiment.sentiment?.counts?.neutral || 0}</MetricValue>
-                                        <MetricLabel>Neutral</MetricLabel>
+                                    <MetricCard theme={theme}>
+                                        <MetricValue theme={theme} $color={theme?.text?.tertiary || '#64748b'}>{sentiment.sentiment?.counts?.neutral || 0}</MetricValue>
+                                        <MetricLabel theme={theme}>Neutral</MetricLabel>
                                     </MetricCard>
-                                    <MetricCard>
-                                        <MetricValue $color="#ef4444">{sentiment.sentiment?.counts?.bearish || 0}</MetricValue>
-                                        <MetricLabel>Bearish</MetricLabel>
+                                    <MetricCard theme={theme}>
+                                        <MetricValue theme={theme} $color={errorColor}>{sentiment.sentiment?.counts?.bearish || 0}</MetricValue>
+                                        <MetricLabel theme={theme}>Bearish</MetricLabel>
                                     </MetricCard>
                                 </MetricsGrid>
                             </Card>
 
                             {/* AI Prediction */}
                             {sentiment.prediction?.prediction && (
-                                <PredictionCard>
+                                <PredictionCard 
+                                    theme={theme}
+                                    onClick={() => handlePredictionClick(sentiment.symbol)}
+                                    title={`Click to make your own prediction for ${sentiment.symbol}`}
+                                >
                                     <PredictionHeader>
-                                        <CardTitle style={{ marginBottom: 0 }}>
+                                        <CardTitle theme={theme} style={{ marginBottom: 0, color: accentColor }}>
                                             <Zap size={20} />
                                             AI Price Prediction
                                         </CardTitle>
-                                        <PredictionBadge $direction={sentiment.prediction.prediction.direction}>
+                                        <PredictionBadge theme={theme} $direction={sentiment.prediction.prediction.direction}>
                                             {sentiment.prediction.prediction.direction === 'UP' 
                                                 ? <ArrowUpRight size={18} /> 
                                                 : <ArrowDownRight size={18} />}
@@ -882,59 +973,65 @@ const SentimentPage = () => {
                                     </PredictionHeader>
 
                                     <PredictionGrid>
-                                        <PredictionStat>
-                                            <PredStatValue>${sentiment.prediction.prediction.target_price?.toFixed(2)}</PredStatValue>
-                                            <PredStatLabel>Target Price</PredStatLabel>
+                                        <PredictionStat theme={theme}>
+                                            <PredStatValue theme={theme}>${sentiment.prediction.prediction.target_price?.toFixed(2)}</PredStatValue>
+                                            <PredStatLabel theme={theme}>Target Price</PredStatLabel>
                                         </PredictionStat>
-                                        <PredictionStat>
-                                            <PredStatValue $color={sentiment.prediction.prediction.price_change_percent > 0 ? '#10b981' : '#ef4444'}>
+                                        <PredictionStat theme={theme}>
+                                            <PredStatValue theme={theme} $color={sentiment.prediction.prediction.price_change_percent > 0 ? successColor : errorColor}>
                                                 {sentiment.prediction.prediction.price_change_percent > 0 ? '+' : ''}
                                                 {sentiment.prediction.prediction.price_change_percent?.toFixed(2)}%
                                             </PredStatValue>
-                                            <PredStatLabel>Expected</PredStatLabel>
+                                            <PredStatLabel theme={theme}>Expected</PredStatLabel>
                                         </PredictionStat>
-                                        <PredictionStat>
-                                            <PredStatValue $color="#f59e0b">
+                                        <PredictionStat theme={theme}>
+                                            <PredStatValue theme={theme} $color={warningColor}>
                                                 {sentiment.prediction.prediction.confidence?.toFixed(0)}%
                                             </PredStatValue>
-                                            <PredStatLabel>Confidence</PredStatLabel>
+                                            <PredStatLabel theme={theme}>Confidence</PredStatLabel>
                                         </PredictionStat>
-                                        <PredictionStat>
-                                            <PredStatValue $color="#00adef">
+                                        <PredictionStat theme={theme}>
+                                            <PredStatValue theme={theme} $color={primaryColor}>
                                                 {sentiment.prediction.prediction.days}d
                                             </PredStatValue>
-                                            <PredStatLabel>Timeframe</PredStatLabel>
+                                            <PredStatLabel theme={theme}>Timeframe</PredStatLabel>
                                         </PredictionStat>
                                     </PredictionGrid>
+
+                                    <PredictionClickHint theme={theme}>
+                                        <Zap size={16} />
+                                        Click to make your own prediction
+                                        <ExternalLink size={14} />
+                                    </PredictionClickHint>
                                 </PredictionCard>
                             )}
 
                             {/* Tweets */}
-                            <Card>
+                            <Card theme={theme}>
                                 <CardHeader>
-                                    <CardTitle>
+                                    <CardTitle theme={theme}>
                                         <Hash size={20} />
                                         Recent Tweets
                                     </CardTitle>
-                                    <CardBadge>{sentiment.tweets?.length || 0}</CardBadge>
+                                    <CardBadge theme={theme}>{sentiment.tweets?.length || 0}</CardBadge>
                                 </CardHeader>
 
-                                <TweetsList>
+                                <TweetsList theme={theme}>
                                     {sentiment.tweets?.map((tweet, index) => (
-                                        <TweetCard key={index} $sentiment={tweet.sentiment?.classification}>
+                                        <TweetCard theme={theme} key={index} $sentiment={tweet.sentiment?.classification}>
                                             <TweetHeader>
-                                                <TweetAuthor>
+                                                <TweetAuthor theme={theme}>
                                                     <MessageCircle size={14} />
                                                     @{tweet.author?.username}
                                                 </TweetAuthor>
-                                                <TweetSentimentTag $sentiment={tweet.sentiment?.classification}>
+                                                <TweetSentimentTag theme={theme} $sentiment={tweet.sentiment?.classification}>
                                                     {tweet.sentiment?.classification === 'bullish' && <TrendingUp size={10} />}
                                                     {tweet.sentiment?.classification === 'bearish' && <TrendingDown size={10} />}
                                                     {tweet.sentiment?.classification}
                                                 </TweetSentimentTag>
                                             </TweetHeader>
-                                            <TweetText>{tweet.text}</TweetText>
-                                            <TweetMeta>
+                                            <TweetText theme={theme}>{tweet.text}</TweetText>
+                                            <TweetMeta theme={theme}>
                                                 <MetaItem>
                                                     <Heart size={12} />
                                                     {tweet.likes || 0}
@@ -952,21 +1049,21 @@ const SentimentPage = () => {
 
                         {/* Sidebar */}
                         <Sidebar>
-                            <Card>
+                            <Card theme={theme}>
                                 <CardHeader>
-                                    <CardTitle>
+                                    <CardTitle theme={theme}>
                                         <Flame size={20} />
                                         Trending
                                     </CardTitle>
                                 </CardHeader>
                                 <TrendingList>
                                     {trending.map((item, index) => (
-                                        <TrendingItem key={index} onClick={() => handleTrendingClick(item.symbol)}>
+                                        <TrendingItem theme={theme} key={index} onClick={() => handleTrendingClick(item.symbol)}>
                                             <TrendingInfo>
-                                                <TrendingSymbol>${item.symbol}</TrendingSymbol>
-                                                <TrendingMentions>{item.mentions} mentions</TrendingMentions>
+                                                <TrendingSymbol theme={theme}>${item.symbol}</TrendingSymbol>
+                                                <TrendingMentions theme={theme}>{item.mentions} mentions</TrendingMentions>
                                             </TrendingInfo>
-                                            <TrendingScore>
+                                            <TrendingScore theme={theme}>
                                                 <Flame size={14} />
                                                 {Math.round(item.score)}
                                             </TrendingScore>
@@ -979,39 +1076,39 @@ const SentimentPage = () => {
                 ) : (
                     <MainGrid>
                         <MainContent>
-                            <EmptyState>
-                                <EmptyIcon>
-                                    <MessageCircle size={48} color="#00adef" />
+                            <EmptyState theme={theme}>
+                                <EmptyIcon theme={theme}>
+                                    <MessageCircle size={48} color={primaryColor} />
                                 </EmptyIcon>
-                                <EmptyTitle>Search for Sentiment</EmptyTitle>
-                                <EmptyText>
+                                <EmptyTitle theme={theme}>Search for Sentiment</EmptyTitle>
+                                <EmptyText theme={theme}>
                                     Enter a stock or crypto symbol to analyze social sentiment and get AI-powered predictions
                                 </EmptyText>
                             </EmptyState>
                         </MainContent>
 
                         <Sidebar>
-                            <Card>
+                            <Card theme={theme}>
                                 <CardHeader>
-                                    <CardTitle>
+                                    <CardTitle theme={theme}>
                                         <Flame size={20} />
                                         Trending
                                     </CardTitle>
                                 </CardHeader>
                                 <TrendingList>
                                     {trending.length > 0 ? trending.map((item, index) => (
-                                        <TrendingItem key={index} onClick={() => handleTrendingClick(item.symbol)}>
+                                        <TrendingItem theme={theme} key={index} onClick={() => handleTrendingClick(item.symbol)}>
                                             <TrendingInfo>
-                                                <TrendingSymbol>${item.symbol}</TrendingSymbol>
-                                                <TrendingMentions>{item.mentions} mentions</TrendingMentions>
+                                                <TrendingSymbol theme={theme}>${item.symbol}</TrendingSymbol>
+                                                <TrendingMentions theme={theme}>{item.mentions} mentions</TrendingMentions>
                                             </TrendingInfo>
-                                            <TrendingScore>
+                                            <TrendingScore theme={theme}>
                                                 <Flame size={14} />
                                                 {Math.round(item.score)}
                                             </TrendingScore>
                                         </TrendingItem>
                                     )) : (
-                                        <div style={{ color: '#64748b', textAlign: 'center', padding: '1rem' }}>
+                                        <div style={{ color: theme?.text?.tertiary || '#64748b', textAlign: 'center', padding: '1rem' }}>
                                             Loading trending...
                                         </div>
                                     )}

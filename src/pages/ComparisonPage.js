@@ -1,21 +1,25 @@
-// client/src/pages/ComparisonPage.js - STOCKS & CRYPTO COMPARISON (REAL API DATA)
+// client/src/pages/ComparisonPage.js - STOCKS & CRYPTO COMPARISON (REAL API DATA + THEMED)
 
 import React, { useState, useMemo } from 'react';
 import styled, { keyframes, css } from 'styled-components';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useTheme } from '../context/ThemeContext';
 import { 
     TrendingUp, TrendingDown, Plus, X, ArrowUpRight, ArrowDownRight,
     DollarSign, Activity, BarChart3, Award, AlertCircle, Search,
-    Target, Shield, GitCompare, Percent, Building, Bitcoin, RefreshCw
+    Target, Shield, GitCompare, Percent, Building, Bitcoin, RefreshCw,
+    ExternalLink
 } from 'lucide-react';
-import { Line } from 'react-chartjs-2';
+import { Line, Bar } from 'react-chartjs-2';
 import {
     Chart as ChartJS,
     CategoryScale,
     LinearScale,
     PointElement,
     LineElement,
+    BarElement,
     Title as ChartJSTitle,
     Tooltip,
     Legend,
@@ -23,7 +27,7 @@ import {
 } from 'chart.js';
 
 ChartJS.register(
-    CategoryScale, LinearScale, PointElement, LineElement,
+    CategoryScale, LinearScale, PointElement, LineElement, BarElement,
     ChartJSTitle, Tooltip, Legend, Filler
 );
 
@@ -42,7 +46,7 @@ const rotate = keyframes`
 const PageContainer = styled.div`
     min-height: 100vh;
     background: linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
-    color: #e0e6ed;
+    color: ${props => props.theme?.text?.primary || '#e0e6ed'};
     padding: 6rem 2rem 2rem;
 `;
 
@@ -69,7 +73,7 @@ const TitleSection = styled.div``;
 
 const Title = styled.h1`
     font-size: 2.5rem;
-    background: linear-gradient(135deg, #00adef 0%, #00ff88 100%);
+    background: ${props => props.theme?.brand?.gradient || 'linear-gradient(135deg, #00adef 0%, #00ff88 100%)'};
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -84,7 +88,7 @@ const Title = styled.h1`
 `;
 
 const Subtitle = styled.p`
-    color: #94a3b8;
+    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
     font-size: 1rem;
     margin-top: 0.25rem;
 `;
@@ -92,7 +96,7 @@ const Subtitle = styled.p`
 // ============ ASSET SELECTOR ============
 const SelectorCard = styled.div`
     background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
-    border: 1px solid rgba(0, 173, 237, 0.2);
+    border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}33;
     border-radius: 16px;
     padding: 1.5rem;
     margin-bottom: 2rem;
@@ -110,7 +114,7 @@ const SelectorHeader = styled.div`
 
 const SelectorTitle = styled.h3`
     font-size: 1rem;
-    color: #00adef;
+    color: ${props => props.theme?.brand?.primary || '#00adef'};
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -119,8 +123,8 @@ const SelectorTitle = styled.h3`
 
 const AssetCount = styled.span`
     font-size: 0.8rem;
-    color: #64748b;
-    background: rgba(100, 116, 139, 0.2);
+    color: ${props => props.theme?.text?.tertiary || '#64748b'};
+    background: ${props => props.theme?.text?.tertiary || '#64748b'}33;
     padding: 0.25rem 0.6rem;
     border-radius: 6px;
 `;
@@ -140,19 +144,25 @@ const AssetChip = styled.div`
     gap: 0.5rem;
     padding: 0.5rem 1rem;
     background: ${props => props.$type === 'crypto'
-        ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(245, 158, 11, 0.08))'
-        : 'linear-gradient(135deg, rgba(0, 173, 237, 0.15), rgba(0, 173, 237, 0.08))'};
+        ? `${props.theme?.warning || '#f59e0b'}26`
+        : `${props.theme?.brand?.primary || '#00adef'}26`};
     border: 1px solid ${props => props.$type === 'crypto' 
-        ? 'rgba(245, 158, 11, 0.3)' 
-        : 'rgba(0, 173, 237, 0.3)'};
+        ? `${props.theme?.warning || '#f59e0b'}4D` 
+        : `${props.theme?.brand?.primary || '#00adef'}4D`};
     border-radius: 10px;
-    color: ${props => props.$type === 'crypto' ? '#f59e0b' : '#00adef'};
+    color: ${props => props.$type === 'crypto' 
+        ? (props.theme?.warning || '#f59e0b') 
+        : (props.theme?.brand?.primary || '#00adef')};
     font-weight: 700;
     font-size: 0.95rem;
     transition: all 0.2s ease;
+    cursor: pointer;
 
     &:hover {
         transform: translateY(-2px);
+        box-shadow: 0 4px 12px ${props => props.$type === 'crypto' 
+            ? `${props.theme?.warning || '#f59e0b'}40` 
+            : `${props.theme?.brand?.primary || '#00adef'}40`};
     }
 `;
 
@@ -169,23 +179,23 @@ const TypeIcon = styled.div`
 `;
 
 const RemoveBtn = styled.button`
-    background: rgba(239, 68, 68, 0.15);
+    background: ${props => props.theme?.error || '#ef4444'}26;
     border: none;
     border-radius: 6px;
     padding: 0.2rem;
-    color: #ef4444;
+    color: ${props => props.theme?.error || '#ef4444'};
     cursor: pointer;
     display: flex;
     align-items: center;
     transition: all 0.2s ease;
 
     &:hover {
-        background: rgba(239, 68, 68, 0.3);
+        background: ${props => props.theme?.error || '#ef4444'}4D;
     }
 `;
 
 const EmptyChips = styled.div`
-    color: #64748b;
+    color: ${props => props.theme?.text?.tertiary || '#64748b'};
     font-size: 0.9rem;
 `;
 
@@ -208,27 +218,27 @@ const SearchIconStyled = styled.div`
     left: 1rem;
     top: 50%;
     transform: translateY(-50%);
-    color: #64748b;
+    color: ${props => props.theme?.text?.tertiary || '#64748b'};
 `;
 
 const SearchInput = styled.input`
     width: 100%;
     padding: 0.875rem 1rem 0.875rem 2.75rem;
     background: rgba(15, 23, 42, 0.6);
-    border: 1px solid rgba(0, 173, 237, 0.2);
+    border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}33;
     border-radius: 10px;
-    color: #e0e6ed;
+    color: ${props => props.theme?.text?.primary || '#e0e6ed'};
     font-size: 0.95rem;
     transition: all 0.2s ease;
 
     &:focus {
         outline: none;
-        border-color: #00adef;
-        box-shadow: 0 0 0 3px rgba(0, 173, 237, 0.1);
+        border-color: ${props => props.theme?.brand?.primary || '#00adef'};
+        box-shadow: 0 0 0 3px ${props => props.theme?.brand?.primary || '#00adef'}1A;
     }
 
     &::placeholder {
-        color: #64748b;
+        color: ${props => props.theme?.text?.tertiary || '#64748b'};
     }
 `;
 
@@ -237,7 +247,7 @@ const AddButton = styled.button`
     align-items: center;
     gap: 0.5rem;
     padding: 0.875rem 1.5rem;
-    background: linear-gradient(135deg, #00adef 0%, #0088cc 100%);
+    background: ${props => props.theme?.brand?.gradient || 'linear-gradient(135deg, #00adef 0%, #0088cc 100%)'};
     border: none;
     border-radius: 10px;
     color: white;
@@ -249,7 +259,7 @@ const AddButton = styled.button`
 
     &:hover:not(:disabled) {
         transform: translateY(-2px);
-        box-shadow: 0 8px 24px rgba(0, 173, 237, 0.3);
+        box-shadow: 0 8px 24px ${props => props.theme?.brand?.primary || '#00adef'}4D;
     }
 
     &:disabled {
@@ -263,7 +273,7 @@ const AddButton = styled.button`
 `;
 
 const HelpText = styled.div`
-    color: #64748b;
+    color: ${props => props.theme?.text?.tertiary || '#64748b'};
     font-size: 0.8rem;
     margin-top: 0.75rem;
 `;
@@ -282,7 +292,7 @@ const InsightsGrid = styled.div`
 
 const InsightCard = styled.div`
     background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
-    border: 1px solid rgba(0, 173, 237, 0.2);
+    border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}33;
     border-radius: 14px;
     padding: 1.25rem;
     animation: ${fadeIn} 0.6s ease-out;
@@ -298,7 +308,7 @@ const InsightCard = styled.div`
         left: 0;
         right: 0;
         height: 3px;
-        background: ${props => props.$color || 'linear-gradient(90deg, #00adef, #0088cc)'};
+        background: ${props => props.$color || props.theme?.brand?.gradient || 'linear-gradient(90deg, #00adef, #0088cc)'};
     }
 `;
 
@@ -313,16 +323,16 @@ const InsightIcon = styled.div`
     width: 36px;
     height: 36px;
     border-radius: 10px;
-    background: ${props => props.$bg || 'rgba(0, 173, 237, 0.15)'};
+    background: ${props => props.$bg || `${props.theme?.brand?.primary || '#00adef'}26`};
     display: flex;
     align-items: center;
     justify-content: center;
-    color: ${props => props.$color || '#00adef'};
+    color: ${props => props.$color || props.theme?.brand?.primary || '#00adef'};
 `;
 
 const InsightLabel = styled.div`
     font-size: 0.75rem;
-    color: #64748b;
+    color: ${props => props.theme?.text?.tertiary || '#64748b'};
     text-transform: uppercase;
     letter-spacing: 0.5px;
     font-weight: 600;
@@ -331,19 +341,19 @@ const InsightLabel = styled.div`
 const InsightValue = styled.div`
     font-size: 1.5rem;
     font-weight: 800;
-    color: ${props => props.$color || '#e0e6ed'};
+    color: ${props => props.$color || props.theme?.text?.primary || '#e0e6ed'};
     margin-bottom: 0.25rem;
 `;
 
 const InsightSubtext = styled.div`
     font-size: 0.85rem;
-    color: ${props => props.$color || '#64748b'};
+    color: ${props => props.$color || props.theme?.text?.tertiary || '#64748b'};
 `;
 
 // ============ CHART SECTION ============
 const ChartCard = styled.div`
     background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
-    border: 1px solid rgba(0, 173, 237, 0.2);
+    border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}33;
     border-radius: 16px;
     padding: 1.5rem;
     margin-bottom: 2rem;
@@ -359,9 +369,55 @@ const ChartHeader = styled.div`
     gap: 1rem;
 `;
 
+const ChartControls = styled.div`
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    align-items: center;
+`;
+
+const MetricToggle = styled.div`
+    display: flex;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}33;
+    border-radius: 10px;
+    padding: 0.25rem;
+    flex-wrap: wrap;
+`;
+
+const MetricBtn = styled.button`
+    padding: 0.4rem 0.75rem;
+    background: ${props => props.$active 
+        ? `${props.theme?.brand?.primary || '#00adef'}4D`
+        : 'transparent'};
+    border: none;
+    border-radius: 8px;
+    color: ${props => props.$active 
+        ? (props.theme?.brand?.primary || '#00adef') 
+        : (props.theme?.text?.tertiary || '#64748b')};
+    font-weight: 600;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    white-space: nowrap;
+
+    &:hover {
+        color: ${props => props.theme?.brand?.primary || '#00adef'};
+        background: ${props => props.theme?.brand?.primary || '#00adef'}1A;
+    }
+
+    &:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+`;
+
 const SectionTitle = styled.h3`
     font-size: 1.1rem;
-    color: #00adef;
+    color: ${props => props.theme?.brand?.primary || '#00adef'};
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -371,7 +427,7 @@ const SectionTitle = styled.h3`
 const TimeframeToggle = styled.div`
     display: flex;
     background: rgba(15, 23, 42, 0.6);
-    border: 1px solid rgba(0, 173, 237, 0.2);
+    border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}33;
     border-radius: 10px;
     padding: 0.25rem;
 `;
@@ -379,18 +435,20 @@ const TimeframeToggle = styled.div`
 const TimeframeBtn = styled.button`
     padding: 0.5rem 1rem;
     background: ${props => props.$active 
-        ? 'linear-gradient(135deg, rgba(0, 173, 237, 0.3), rgba(0, 173, 237, 0.15))'
+        ? `${props.theme?.brand?.primary || '#00adef'}4D`
         : 'transparent'};
     border: none;
     border-radius: 8px;
-    color: ${props => props.$active ? '#00adef' : '#64748b'};
+    color: ${props => props.$active 
+        ? (props.theme?.brand?.primary || '#00adef') 
+        : (props.theme?.text?.tertiary || '#64748b')};
     font-weight: 600;
     font-size: 0.85rem;
     cursor: pointer;
     transition: all 0.2s ease;
 
     &:hover {
-        color: #00adef;
+        color: ${props => props.theme?.brand?.primary || '#00adef'};
     }
 `;
 
@@ -404,13 +462,13 @@ const ChartLoading = styled.div`
     align-items: center;
     justify-content: center;
     height: 100%;
-    color: #64748b;
+    color: ${props => props.theme?.text?.tertiary || '#64748b'};
 `;
 
 // ============ COMPARISON TABLE ============
 const TableCard = styled.div`
     background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
-    border: 1px solid rgba(0, 173, 237, 0.2);
+    border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}33;
     border-radius: 16px;
     padding: 1.5rem;
     overflow-x: auto;
@@ -431,27 +489,37 @@ const Table = styled.table`
 `;
 
 const THead = styled.thead`
-    border-bottom: 2px solid rgba(0, 173, 237, 0.2);
+    border-bottom: 2px solid ${props => props.theme?.brand?.primary || '#00adef'}33;
 `;
 
 const TH = styled.th`
     padding: 0.875rem 1rem;
     text-align: ${props => props.$align || 'left'};
-    color: #94a3b8;
+    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
     font-weight: 600;
     font-size: 0.8rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 `;
 
-const TBody = styled.tbody``;
-
-const TR = styled.tr`
-    border-bottom: 1px solid rgba(100, 116, 139, 0.15);
+const THClickable = styled(TH)`
+    cursor: pointer;
     transition: all 0.2s ease;
 
     &:hover {
-        background: rgba(0, 173, 237, 0.03);
+        color: ${props => props.theme?.brand?.primary || '#00adef'};
+        background: ${props => props.theme?.brand?.primary || '#00adef'}1A;
+    }
+`;
+
+const TBody = styled.tbody``;
+
+const TR = styled.tr`
+    border-bottom: 1px solid ${props => props.theme?.text?.tertiary || '#64748b'}26;
+    transition: all 0.2s ease;
+
+    &:hover {
+        background: ${props => props.theme?.brand?.primary || '#00adef'}0D;
     }
 
     &:last-child {
@@ -462,7 +530,7 @@ const TR = styled.tr`
 const TD = styled.td`
     padding: 0.875rem 1rem;
     text-align: ${props => props.$align || 'left'};
-    color: #e0e6ed;
+    color: ${props => props.theme?.text?.primary || '#e0e6ed'};
     font-size: 0.95rem;
 `;
 
@@ -470,16 +538,16 @@ const MetricCell = styled.div`
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    color: #94a3b8;
+    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
     font-weight: 600;
 `;
 
 const ValueCell = styled.div`
     font-weight: 600;
     color: ${props => {
-        if (props.$best) return '#10b981';
-        if (props.$worst) return '#ef4444';
-        return '#e0e6ed';
+        if (props.$best) return props.theme?.success || '#10b981';
+        if (props.$worst) return props.theme?.error || '#ef4444';
+        return props.theme?.text?.primary || '#e0e6ed';
     }};
     display: flex;
     align-items: center;
@@ -492,8 +560,12 @@ const Badge = styled.span`
     padding: 0.15rem 0.4rem;
     border-radius: 4px;
     font-weight: 700;
-    background: ${props => props.$type === 'best' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'};
-    color: ${props => props.$type === 'best' ? '#10b981' : '#ef4444'};
+    background: ${props => props.$type === 'best' 
+        ? `${props.theme?.success || '#10b981'}33` 
+        : `${props.theme?.error || '#ef4444'}33`};
+    color: ${props => props.$type === 'best' 
+        ? (props.theme?.success || '#10b981') 
+        : (props.theme?.error || '#ef4444')};
 `;
 
 const ChangeValue = styled.div`
@@ -501,12 +573,14 @@ const ChangeValue = styled.div`
     align-items: center;
     justify-content: center;
     gap: 0.25rem;
-    color: ${props => props.$positive ? '#10b981' : '#ef4444'};
+    color: ${props => props.$positive 
+        ? (props.theme?.success || '#10b981') 
+        : (props.theme?.error || '#ef4444')};
     font-weight: 600;
 `;
 
 const NAValue = styled.span`
-    color: #64748b;
+    color: ${props => props.theme?.text?.tertiary || '#64748b'};
     font-style: italic;
 `;
 
@@ -521,22 +595,22 @@ const EmptyIcon = styled.div`
     width: 100px;
     height: 100px;
     margin: 0 auto 1.5rem;
-    background: linear-gradient(135deg, rgba(0, 173, 237, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%);
+    background: linear-gradient(135deg, ${props => props.theme?.brand?.primary || '#00adef'}33 0%, ${props => props.theme?.brand?.accent || '#8b5cf6'}33 100%);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px dashed rgba(0, 173, 237, 0.3);
+    border: 2px dashed ${props => props.theme?.brand?.primary || '#00adef'}4D;
 `;
 
 const EmptyTitle = styled.h2`
-    color: #00adef;
+    color: ${props => props.theme?.brand?.primary || '#00adef'};
     font-size: 1.5rem;
     margin-bottom: 0.5rem;
 `;
 
 const EmptyText = styled.p`
-    color: #94a3b8;
+    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
     max-width: 400px;
     margin: 0 auto;
 `;
@@ -553,11 +627,8 @@ const LoadingOverlay = styled.div`
 
 const SpinningIcon = styled.div`
     animation: ${rotate} 1s linear infinite;
-    color: #00adef;
+    color: ${props => props.theme?.brand?.primary || '#00adef'};
 `;
-
-// ============ CHART COLORS ============
-const CHART_COLORS = ['#00adef', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444'];
 
 // ============ CRYPTO DETECTION ============
 const CRYPTO_SYMBOLS = [
@@ -575,6 +646,8 @@ const isCrypto = (symbol) => CRYPTO_SYMBOLS.includes(symbol.toUpperCase());
 const ComparisonPage = () => {
     const { api } = useAuth();
     const toast = useToast();
+    const navigate = useNavigate();
+    const { theme } = useTheme();
 
     const [selectedAssets, setSelectedAssets] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
@@ -582,6 +655,46 @@ const ComparisonPage = () => {
     const [chartData, setChartData] = useState({});
     const [loading, setLoading] = useState(false);
     const [timeframe, setTimeframe] = useState('1M');
+    const [chartMetric, setChartMetric] = useState('price'); // price, volume, marketCap, performance, change24h, peRatio, week52High
+
+    // Theme colors
+    const primaryColor = theme?.brand?.primary || '#00adef';
+    const secondaryColor = theme?.brand?.secondary || '#0088cc';
+    const accentColor = theme?.brand?.accent || '#8b5cf6';
+    const successColor = theme?.success || '#10b981';
+    const errorColor = theme?.error || '#ef4444';
+    const warningColor = theme?.warning || '#f59e0b';
+    const infoColor = theme?.info || '#3b82f6';
+
+    // Chart colors from theme
+    const CHART_COLORS = [
+        primaryColor,
+        successColor,
+        warningColor,
+        accentColor,
+        errorColor
+    ];
+
+    // Navigate to asset detail page
+    const handleAssetClick = (symbol, type, e) => {
+        // Don't navigate if clicking remove button
+        if (e?.target?.closest('button')) return;
+        
+        if (type === 'crypto') {
+            navigate(`/crypto/${symbol.toLowerCase()}`);
+        } else {
+            navigate(`/stocks/${symbol.toUpperCase()}`);
+        }
+    };
+
+    // Navigate to detail page from table header
+    const handleHeaderClick = (symbol, type) => {
+        if (type === 'crypto') {
+            navigate(`/crypto/${symbol.toLowerCase()}`);
+        } else {
+            navigate(`/stocks/${symbol.toUpperCase()}`);
+        }
+    };
 
     // Fetch real data for a stock using /stocks/quote/:symbol
     const fetchStockData = async (symbol) => {
@@ -732,7 +845,8 @@ const ComparisonPage = () => {
     };
 
     // Remove asset
-    const handleRemoveAsset = (symbol) => {
+    const handleRemoveAsset = (symbol, e) => {
+        e.stopPropagation();
         setSelectedAssets(prev => prev.filter(a => a.symbol !== symbol));
         setAssetData(prev => {
             const newData = { ...prev };
@@ -814,55 +928,133 @@ const ComparisonPage = () => {
         return { bestPerformer, highestMarketCap, highestVolume };
     }, [selectedAssets, assetData]);
 
-    // Build chart
+    // Build chart based on selected metric
     const buildChartData = useMemo(() => {
         if (selectedAssets.length === 0) return null;
 
-        // Find the asset with chart data to get labels
-        const firstWithData = selectedAssets.find(({ symbol }) => 
-            chartData[symbol]?.length > 0
-        );
-        
-        if (!firstWithData) return null;
+        // For time-series metrics (price, volume), use historical data
+        if (chartMetric === 'price' || chartMetric === 'volume') {
+            // Find the asset with chart data to get labels
+            const firstWithData = selectedAssets.find(({ symbol }) => 
+                chartData[symbol]?.length > 0
+            );
+            
+            if (!firstWithData) return null;
 
-        const labels = chartData[firstWithData.symbol].map((point, i) => {
-            if (point.date) {
-                return new Date(point.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            const labels = chartData[firstWithData.symbol].map((point, i) => {
+                if (point.date) {
+                    return new Date(point.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                }
+                if (point[0]) {
+                    return new Date(point[0]).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                }
+                return `Day ${i + 1}`;
+            });
+
+            return {
+                labels,
+                datasets: selectedAssets.map(({ symbol }, index) => {
+                    const data = chartData[symbol] || [];
+                    return {
+                        label: symbol,
+                        data: data.map(point => {
+                            if (chartMetric === 'volume') {
+                                return point.volume || 0;
+                            }
+                            return point.price || point.close || point[1] || point;
+                        }),
+                        borderColor: CHART_COLORS[index],
+                        backgroundColor: `${CHART_COLORS[index]}20`,
+                        borderWidth: 2.5,
+                        tension: 0.4,
+                        fill: false,
+                        pointRadius: 0,
+                        pointHoverRadius: 5
+                    };
+                })
+            };
+        }
+
+        // For snapshot metrics (marketCap, change24h, peRatio, etc.), use bar-style comparison
+        const metricLabels = {
+            marketCap: 'Market Cap',
+            performance: 'Performance %',
+            change24h: '24h Change %',
+            peRatio: 'P/E Ratio',
+            week52High: '52 Week High'
+        };
+
+        const getMetricValue = (symbol) => {
+            const data = assetData[symbol];
+            if (!data) return 0;
+            
+            switch (chartMetric) {
+                case 'marketCap':
+                    return data.marketCap || 0;
+                case 'performance':
+                case 'change24h':
+                    return data.changePercent || 0;
+                case 'peRatio':
+                    return data.peRatio || 0;
+                case 'week52High':
+                    return data.week52High || data.ath || 0;
+                default:
+                    return 0;
             }
-            if (point[0]) {
-                return new Date(point[0]).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            }
-            return `Day ${i + 1}`;
-        });
+        };
 
         return {
-            labels,
-            datasets: selectedAssets.map(({ symbol }, index) => {
-                const data = chartData[symbol] || [];
-                return {
-                    label: symbol,
-                    data: data.map(point => point.price || point.close || point[1] || point),
-                    borderColor: CHART_COLORS[index],
-                    backgroundColor: `${CHART_COLORS[index]}20`,
-                    borderWidth: 2.5,
-                    tension: 0.4,
-                    fill: false,
-                    pointRadius: 0,
-                    pointHoverRadius: 5
-                };
-            })
+            labels: selectedAssets.map(({ symbol }) => symbol),
+            datasets: [{
+                label: metricLabels[chartMetric] || chartMetric,
+                data: selectedAssets.map(({ symbol }) => getMetricValue(symbol)),
+                backgroundColor: selectedAssets.map((_, index) => `${CHART_COLORS[index]}80`),
+                borderColor: selectedAssets.map((_, index) => CHART_COLORS[index]),
+                borderWidth: 2,
+                borderRadius: 8,
+                barThickness: 60
+            }]
         };
-    }, [selectedAssets, chartData]);
+    }, [selectedAssets, chartData, assetData, chartMetric, CHART_COLORS]);
+
+    // Determine chart type based on metric
+    const isBarChart = !['price', 'volume'].includes(chartMetric);
+
+    // Format value based on metric type
+    const formatChartValue = (value) => {
+        if (chartMetric === 'marketCap') {
+            if (value >= 1e12) return `$${(value / 1e12).toFixed(2)}T`;
+            if (value >= 1e9) return `$${(value / 1e9).toFixed(2)}B`;
+            if (value >= 1e6) return `$${(value / 1e6).toFixed(2)}M`;
+            return `$${value.toLocaleString()}`;
+        }
+        if (chartMetric === 'performance' || chartMetric === 'change24h') {
+            return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
+        }
+        if (chartMetric === 'peRatio') {
+            return value.toFixed(2);
+        }
+        if (chartMetric === 'week52High' || chartMetric === 'price') {
+            return formatPrice(value);
+        }
+        if (chartMetric === 'volume') {
+            if (value >= 1e9) return `${(value / 1e9).toFixed(2)}B`;
+            if (value >= 1e6) return `${(value / 1e6).toFixed(2)}M`;
+            if (value >= 1e3) return `${(value / 1e3).toFixed(2)}K`;
+            return value.toLocaleString();
+        }
+        return value;
+    };
 
     const chartOptions = {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
             legend: {
-                display: true,
+                display: !isBarChart, // Hide legend for bar charts (labels are on x-axis)
                 position: 'top',
                 labels: {
-                    color: '#94a3b8',
+                    color: theme?.text?.secondary || '#94a3b8',
                     font: { size: 12, weight: '600' },
                     padding: 15,
                     usePointStyle: true,
@@ -873,29 +1065,37 @@ const ComparisonPage = () => {
                 mode: 'index',
                 intersect: false,
                 backgroundColor: 'rgba(15, 23, 42, 0.95)',
-                titleColor: '#00adef',
-                bodyColor: '#e0e6ed',
-                borderColor: 'rgba(0, 173, 237, 0.3)',
+                titleColor: primaryColor,
+                bodyColor: theme?.text?.primary || '#e0e6ed',
+                borderColor: `${primaryColor}4D`,
                 borderWidth: 1,
                 padding: 12,
                 displayColors: true,
                 callbacks: {
-                    label: (context) => `${context.dataset.label}: ${formatPrice(context.raw)}`
+                    label: (context) => {
+                        const value = context.raw;
+                        return `${context.dataset.label}: ${formatChartValue(value)}`;
+                    }
                 }
             }
         },
         scales: {
             x: {
-                grid: { color: 'rgba(100, 116, 139, 0.1)' },
-                ticks: { color: '#64748b', font: { size: 11 }, maxTicksLimit: 10 }
+                grid: { color: `${theme?.text?.tertiary || '#64748b'}1A` },
+                ticks: { 
+                    color: theme?.text?.tertiary || '#64748b', 
+                    font: { size: 11, weight: isBarChart ? '600' : '400' }, 
+                    maxTicksLimit: isBarChart ? undefined : 10 
+                }
             },
             y: {
-                grid: { color: 'rgba(100, 116, 139, 0.1)' },
+                grid: { color: `${theme?.text?.tertiary || '#64748b'}1A` },
                 ticks: { 
-                    color: '#64748b', 
+                    color: theme?.text?.tertiary || '#64748b', 
                     font: { size: 11 },
-                    callback: (value) => formatPrice(value)
-                }
+                    callback: (value) => formatChartValue(value)
+                },
+                beginAtZero: chartMetric === 'change24h' || chartMetric === 'performance' ? false : true
             }
         },
         interaction: { mode: 'index', intersect: false }
@@ -906,54 +1106,68 @@ const ComparisonPage = () => {
     const hasCrypto = selectedAssets.some(a => a.type === 'crypto');
 
     return (
-        <PageContainer>
+        <PageContainer theme={theme}>
             <ContentWrapper>
                 {/* Header */}
                 <Header>
                     <HeaderTop>
                         <TitleSection>
-                            <Title>
+                            <Title theme={theme}>
                                 <GitCompare size={32} />
                                 Asset Comparison
                             </Title>
-                            <Subtitle>Compare stocks and cryptocurrencies side-by-side</Subtitle>
+                            <Subtitle theme={theme}>Compare stocks and cryptocurrencies side-by-side</Subtitle>
                         </TitleSection>
                     </HeaderTop>
                 </Header>
 
                 {/* Asset Selector */}
-                <SelectorCard>
+                <SelectorCard theme={theme}>
                     <SelectorHeader>
-                        <SelectorTitle>
-                            <BarChart3 size={18} />
+                        <SelectorTitle theme={theme}>
+                            <BarChart3 size={18} color={primaryColor} />
                             Select Assets
                         </SelectorTitle>
-                        <AssetCount>{selectedAssets.length}/5 assets</AssetCount>
+                        <AssetCount theme={theme}>{selectedAssets.length}/5 assets</AssetCount>
                     </SelectorHeader>
 
                     <SelectedAssets>
                         {selectedAssets.length > 0 ? selectedAssets.map(({ symbol, type }, index) => (
-                            <AssetChip key={symbol} $type={type}>
+                            <AssetChip 
+                                key={symbol} 
+                                $type={type}
+                                theme={theme}
+                                onClick={(e) => handleAssetClick(symbol, type, e)}
+                                title={`Click to view ${symbol} details`}
+                            >
                                 <ChipColor $color={CHART_COLORS[index]} />
                                 <TypeIcon>
-                                    {type === 'crypto' ? <Bitcoin size={14} /> : <BarChart3 size={14} />}
+                                    {type === 'crypto' 
+                                        ? <Bitcoin size={14} /> 
+                                        : <BarChart3 size={14} />}
                                 </TypeIcon>
                                 {symbol}
-                                <RemoveBtn onClick={() => handleRemoveAsset(symbol)}>
+                                <ExternalLink size={12} style={{ opacity: 0.6 }} />
+                                <RemoveBtn 
+                                    theme={theme}
+                                    onClick={(e) => handleRemoveAsset(symbol, e)}
+                                    title="Remove from comparison"
+                                >
                                     <X size={14} />
                                 </RemoveBtn>
                             </AssetChip>
                         )) : (
-                            <EmptyChips>No assets selected. Add stocks or crypto to compare.</EmptyChips>
+                            <EmptyChips theme={theme}>No assets selected. Add stocks or crypto to compare.</EmptyChips>
                         )}
                     </SelectedAssets>
 
                     <SearchRow>
                         <SearchInputWrapper>
-                            <SearchIconStyled>
+                            <SearchIconStyled theme={theme}>
                                 <Search size={18} />
                             </SearchIconStyled>
                             <SearchInput
+                                theme={theme}
                                 type="text"
                                 placeholder="Enter symbol (AAPL, MSFT, BTC, ETH, SOL...)"
                                 value={searchQuery}
@@ -963,6 +1177,7 @@ const ComparisonPage = () => {
                             />
                         </SearchInputWrapper>
                         <AddButton 
+                            theme={theme}
                             onClick={handleAddAsset}
                             disabled={!searchQuery || selectedAssets.length >= 5 || loading}
                             $loading={loading}
@@ -972,18 +1187,18 @@ const ComparisonPage = () => {
                         </AddButton>
                     </SearchRow>
 
-                    <HelpText>
-                        Stocks: AAPL, MSFT, GOOGL, TSLA, NVDA • Crypto: BTC, ETH, SOL, XRP, ADA
+                    <HelpText theme={theme}>
+                        Stocks: AAPL, MSFT, GOOGL, TSLA, NVDA • Crypto: BTC, ETH, SOL, XRP, ADA • Click chips to view details
                     </HelpText>
                 </SelectorCard>
 
                 {selectedAssets.length === 0 ? (
                     <EmptyState>
-                        <EmptyIcon>
-                            <GitCompare size={48} color="#00adef" />
+                        <EmptyIcon theme={theme}>
+                            <GitCompare size={48} color={primaryColor} />
                         </EmptyIcon>
-                        <EmptyTitle>Start Comparing</EmptyTitle>
-                        <EmptyText>
+                        <EmptyTitle theme={theme}>Start Comparing</EmptyTitle>
+                        <EmptyText theme={theme}>
                             Add 2 or more stocks or cryptocurrencies to see charts, metrics, and insights
                         </EmptyText>
                     </EmptyState>
@@ -992,42 +1207,71 @@ const ComparisonPage = () => {
                         {/* Insights */}
                         {insights && selectedAssets.length >= 2 && (
                             <InsightsGrid>
-                                <InsightCard $delay="0s" $color="linear-gradient(90deg, #10b981, #059669)">
+                                <InsightCard 
+                                    theme={theme}
+                                    $delay="0s" 
+                                    $color={`linear-gradient(90deg, ${successColor}, ${successColor}cc)`}
+                                >
                                     <InsightHeader>
-                                        <InsightIcon $bg="rgba(16, 185, 129, 0.15)" $color="#10b981">
+                                        <InsightIcon 
+                                            theme={theme}
+                                            $bg={`${successColor}26`} 
+                                            $color={successColor}
+                                        >
                                             <TrendingUp size={18} />
                                         </InsightIcon>
-                                        <InsightLabel>Best Performer</InsightLabel>
+                                        <InsightLabel theme={theme}>Best Performer</InsightLabel>
                                     </InsightHeader>
-                                    <InsightValue $color="#10b981">{insights.bestPerformer.symbol}</InsightValue>
-                                    <InsightSubtext $color={insights.bestPerformer.perf >= 0 ? '#10b981' : '#ef4444'}>
+                                    <InsightValue theme={theme} $color={successColor}>
+                                        {insights.bestPerformer.symbol}
+                                    </InsightValue>
+                                    <InsightSubtext 
+                                        theme={theme}
+                                        $color={insights.bestPerformer.perf >= 0 ? successColor : errorColor}
+                                    >
                                         {insights.bestPerformer.perf >= 0 ? '+' : ''}
                                         {insights.bestPerformer.perf?.toFixed(2)}% (24h)
                                     </InsightSubtext>
                                 </InsightCard>
 
-                                <InsightCard $delay="0.1s" $color="linear-gradient(90deg, #3b82f6, #2563eb)">
+                                <InsightCard 
+                                    theme={theme}
+                                    $delay="0.1s" 
+                                    $color={`linear-gradient(90deg, ${infoColor}, ${infoColor}cc)`}
+                                >
                                     <InsightHeader>
-                                        <InsightIcon $bg="rgba(59, 130, 246, 0.15)" $color="#3b82f6">
+                                        <InsightIcon 
+                                            theme={theme}
+                                            $bg={`${infoColor}26`} 
+                                            $color={infoColor}
+                                        >
                                             <Building size={18} />
                                         </InsightIcon>
-                                        <InsightLabel>Largest Market Cap</InsightLabel>
+                                        <InsightLabel theme={theme}>Largest Market Cap</InsightLabel>
                                     </InsightHeader>
-                                    <InsightValue>{insights.highestMarketCap}</InsightValue>
-                                    <InsightSubtext>
+                                    <InsightValue theme={theme}>{insights.highestMarketCap}</InsightValue>
+                                    <InsightSubtext theme={theme}>
                                         {formatNumber(assetData[insights.highestMarketCap]?.marketCap)}
                                     </InsightSubtext>
                                 </InsightCard>
 
-                                <InsightCard $delay="0.2s" $color="linear-gradient(90deg, #f59e0b, #d97706)">
+                                <InsightCard 
+                                    theme={theme}
+                                    $delay="0.2s" 
+                                    $color={`linear-gradient(90deg, ${warningColor}, ${warningColor}cc)`}
+                                >
                                     <InsightHeader>
-                                        <InsightIcon $bg="rgba(245, 158, 11, 0.15)" $color="#f59e0b">
+                                        <InsightIcon 
+                                            theme={theme}
+                                            $bg={`${warningColor}26`} 
+                                            $color={warningColor}
+                                        >
                                             <Activity size={18} />
                                         </InsightIcon>
-                                        <InsightLabel>Highest Volume</InsightLabel>
+                                        <InsightLabel theme={theme}>Highest Volume</InsightLabel>
                                     </InsightHeader>
-                                    <InsightValue>{insights.highestVolume}</InsightValue>
-                                    <InsightSubtext>
+                                    <InsightValue theme={theme}>{insights.highestVolume}</InsightValue>
+                                    <InsightSubtext theme={theme}>
                                         {formatNumber(assetData[insights.highestVolume]?.volume)}
                                     </InsightSubtext>
                                 </InsightCard>
@@ -1035,29 +1279,101 @@ const ComparisonPage = () => {
                         )}
 
                         {/* Chart */}
-                        <ChartCard>
+                        <ChartCard theme={theme}>
                             <ChartHeader>
-                                <SectionTitle>
-                                    <Activity size={20} />
-                                    Price Performance
+                                <SectionTitle theme={theme}>
+                                    <Activity size={20} color={primaryColor} />
+                                    {chartMetric === 'price' && 'Price Performance'}
+                                    {chartMetric === 'volume' && 'Volume History'}
+                                    {chartMetric === 'marketCap' && 'Market Cap Comparison'}
+                                    {chartMetric === 'performance' && 'Performance Comparison'}
+                                    {chartMetric === 'change24h' && '24h Change Comparison'}
+                                    {chartMetric === 'peRatio' && 'P/E Ratio Comparison'}
+                                    {chartMetric === 'week52High' && '52 Week High Comparison'}
                                 </SectionTitle>
-                                <TimeframeToggle>
-                                    {['1W', '1M', '3M', '1Y'].map(tf => (
-                                        <TimeframeBtn 
-                                            key={tf} 
-                                            $active={timeframe === tf}
-                                            onClick={() => setTimeframe(tf)}
+                                <ChartControls>
+                                    <MetricToggle theme={theme}>
+                                        <MetricBtn 
+                                            theme={theme}
+                                            $active={chartMetric === 'price'}
+                                            onClick={() => setChartMetric('price')}
+                                            title="Price over time"
                                         >
-                                            {tf}
-                                        </TimeframeBtn>
-                                    ))}
-                                </TimeframeToggle>
+                                            <DollarSign size={14} />
+                                            Price
+                                        </MetricBtn>
+                                        <MetricBtn 
+                                            theme={theme}
+                                            $active={chartMetric === 'volume'}
+                                            onClick={() => setChartMetric('volume')}
+                                            title="Trading volume over time"
+                                        >
+                                            <BarChart3 size={14} />
+                                            Volume
+                                        </MetricBtn>
+                                        <MetricBtn 
+                                            theme={theme}
+                                            $active={chartMetric === 'marketCap'}
+                                            onClick={() => setChartMetric('marketCap')}
+                                            title="Market cap comparison"
+                                        >
+                                            <Building size={14} />
+                                            Mkt Cap
+                                        </MetricBtn>
+                                        <MetricBtn 
+                                            theme={theme}
+                                            $active={chartMetric === 'change24h'}
+                                            onClick={() => setChartMetric('change24h')}
+                                            title="24 hour price change"
+                                        >
+                                            <Activity size={14} />
+                                            24h %
+                                        </MetricBtn>
+                                        <MetricBtn 
+                                            theme={theme}
+                                            $active={chartMetric === 'peRatio'}
+                                            onClick={() => setChartMetric('peRatio')}
+                                            title="P/E Ratio (stocks only)"
+                                            disabled={!hasStocks}
+                                        >
+                                            <Target size={14} />
+                                            P/E
+                                        </MetricBtn>
+                                        <MetricBtn 
+                                            theme={theme}
+                                            $active={chartMetric === 'week52High'}
+                                            onClick={() => setChartMetric('week52High')}
+                                            title="52 Week High / All-Time High"
+                                        >
+                                            <TrendingUp size={14} />
+                                            52W/ATH
+                                        </MetricBtn>
+                                    </MetricToggle>
+                                    {(chartMetric === 'price' || chartMetric === 'volume') && (
+                                        <TimeframeToggle theme={theme}>
+                                            {['1W', '1M', '3M', '1Y'].map(tf => (
+                                                <TimeframeBtn 
+                                                    key={tf} 
+                                                    theme={theme}
+                                                    $active={timeframe === tf}
+                                                    onClick={() => setTimeframe(tf)}
+                                                >
+                                                    {tf}
+                                                </TimeframeBtn>
+                                            ))}
+                                        </TimeframeToggle>
+                                    )}
+                                </ChartControls>
                             </ChartHeader>
                             <ChartWrapper>
                                 {buildChartData ? (
-                                    <Line data={buildChartData} options={chartOptions} />
+                                    isBarChart ? (
+                                        <Bar data={buildChartData} options={chartOptions} />
+                                    ) : (
+                                        <Line data={buildChartData} options={chartOptions} />
+                                    )
                                 ) : (
-                                    <ChartLoading>
+                                    <ChartLoading theme={theme}>
                                         Loading chart data...
                                     </ChartLoading>
                                 )}
@@ -1065,48 +1381,67 @@ const ComparisonPage = () => {
                         </ChartCard>
 
                         {/* Comparison Table */}
-                        <TableCard>
+                        <TableCard theme={theme}>
                             <TableHeader>
-                                <SectionTitle>
-                                    <BarChart3 size={20} />
+                                <SectionTitle theme={theme}>
+                                    <BarChart3 size={20} color={primaryColor} />
                                     Detailed Comparison
                                 </SectionTitle>
                             </TableHeader>
                             <Table>
-                                <THead>
+                                <THead theme={theme}>
                                     <tr>
-                                        <TH>Metric</TH>
+                                        <TH theme={theme}>Metric</TH>
                                         {selectedAssets.map(({ symbol, type }, index) => (
-                                            <TH key={symbol} $align="center">
+                                            <THClickable 
+                                                key={symbol} 
+                                                theme={theme}
+                                                $align="center"
+                                                onClick={() => handleHeaderClick(symbol, type)}
+                                                title={`Click to view ${symbol} details`}
+                                            >
                                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
                                                     <ChipColor $color={CHART_COLORS[index]} />
                                                     {type === 'crypto' ? <Bitcoin size={12} /> : <BarChart3 size={12} />}
                                                     {symbol}
+                                                    <ExternalLink size={10} style={{ opacity: 0.5 }} />
                                                 </div>
-                                            </TH>
+                                            </THClickable>
                                         ))}
                                     </tr>
                                 </THead>
                                 <TBody>
                                     {/* Price */}
-                                    <TR>
-                                        <TD><MetricCell><DollarSign size={16} />Price</MetricCell></TD>
+                                    <TR theme={theme}>
+                                        <TD theme={theme}>
+                                            <MetricCell theme={theme}>
+                                                <DollarSign size={16} color={primaryColor} />
+                                                Price
+                                            </MetricCell>
+                                        </TD>
                                         {selectedAssets.map(({ symbol }) => (
-                                            <TD key={symbol} $align="center">
+                                            <TD key={symbol} theme={theme} $align="center">
                                                 {formatPrice(assetData[symbol]?.price)}
                                             </TD>
                                         ))}
                                     </TR>
 
                                     {/* Change */}
-                                    <TR>
-                                        <TD><MetricCell><Activity size={16} />24h Change</MetricCell></TD>
+                                    <TR theme={theme}>
+                                        <TD theme={theme}>
+                                            <MetricCell theme={theme}>
+                                                <Activity size={16} color={primaryColor} />
+                                                24h Change
+                                            </MetricCell>
+                                        </TD>
                                         {selectedAssets.map(({ symbol }) => {
                                             const change = assetData[symbol]?.changePercent;
                                             return (
-                                                <TD key={symbol} $align="center">
-                                                    <ChangeValue $positive={change > 0}>
-                                                        {change > 0 ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
+                                                <TD key={symbol} theme={theme} $align="center">
+                                                    <ChangeValue theme={theme} $positive={change > 0}>
+                                                        {change > 0 
+                                                            ? <ArrowUpRight size={16} /> 
+                                                            : <ArrowDownRight size={16} />}
                                                         {change > 0 ? '+' : ''}{change?.toFixed(2)}%
                                                     </ChangeValue>
                                                 </TD>
@@ -1115,16 +1450,26 @@ const ComparisonPage = () => {
                                     </TR>
 
                                     {/* Market Cap */}
-                                    <TR>
-                                        <TD><MetricCell><Building size={16} />Market Cap</MetricCell></TD>
+                                    <TR theme={theme}>
+                                        <TD theme={theme}>
+                                            <MetricCell theme={theme}>
+                                                <Building size={16} color={primaryColor} />
+                                                Market Cap
+                                            </MetricCell>
+                                        </TD>
                                         {selectedAssets.map(({ symbol }) => {
                                             const bestWorst = getBestWorst('marketCap');
                                             const value = assetData[symbol]?.marketCap;
                                             return (
-                                                <TD key={symbol} $align="center">
-                                                    <ValueCell $best={symbol === bestWorst.best} $worst={symbol === bestWorst.worst}>
-                                                        {formatNumber(value) || <NAValue>N/A</NAValue>}
-                                                        {symbol === bestWorst.best && selectedAssets.length > 1 && <Badge $type="best">Best</Badge>}
+                                                <TD key={symbol} theme={theme} $align="center">
+                                                    <ValueCell 
+                                                        theme={theme}
+                                                        $best={symbol === bestWorst.best} 
+                                                        $worst={symbol === bestWorst.worst}
+                                                    >
+                                                        {formatNumber(value) || <NAValue theme={theme}>N/A</NAValue>}
+                                                        {symbol === bestWorst.best && selectedAssets.length > 1 && 
+                                                            <Badge theme={theme} $type="best">Best</Badge>}
                                                     </ValueCell>
                                                 </TD>
                                             );
@@ -1132,15 +1477,20 @@ const ComparisonPage = () => {
                                     </TR>
 
                                     {/* Volume */}
-                                    <TR>
-                                        <TD><MetricCell><BarChart3 size={16} />Volume</MetricCell></TD>
+                                    <TR theme={theme}>
+                                        <TD theme={theme}>
+                                            <MetricCell theme={theme}>
+                                                <BarChart3 size={16} color={primaryColor} />
+                                                Volume
+                                            </MetricCell>
+                                        </TD>
                                         {selectedAssets.map(({ symbol }) => {
                                             const bestWorst = getBestWorst('volume');
                                             const value = assetData[symbol]?.volume;
                                             return (
-                                                <TD key={symbol} $align="center">
-                                                    <ValueCell $best={symbol === bestWorst.best}>
-                                                        {formatNumber(value) || <NAValue>N/A</NAValue>}
+                                                <TD key={symbol} theme={theme} $align="center">
+                                                    <ValueCell theme={theme} $best={symbol === bestWorst.best}>
+                                                        {formatNumber(value) || <NAValue theme={theme}>N/A</NAValue>}
                                                     </ValueCell>
                                                 </TD>
                                             );
@@ -1149,19 +1499,29 @@ const ComparisonPage = () => {
 
                                     {/* P/E Ratio - Stocks only */}
                                     {hasStocks && (
-                                        <TR>
-                                            <TD><MetricCell><Target size={16} />P/E Ratio</MetricCell></TD>
+                                        <TR theme={theme}>
+                                            <TD theme={theme}>
+                                                <MetricCell theme={theme}>
+                                                    <Target size={16} color={primaryColor} />
+                                                    P/E Ratio
+                                                </MetricCell>
+                                            </TD>
                                             {selectedAssets.map(({ symbol, type }) => {
                                                 if (type === 'crypto') {
-                                                    return <TD key={symbol} $align="center"><NAValue>N/A</NAValue></TD>;
+                                                    return (
+                                                        <TD key={symbol} theme={theme} $align="center">
+                                                            <NAValue theme={theme}>N/A</NAValue>
+                                                        </TD>
+                                                    );
                                                 }
                                                 const bestWorst = getBestWorst('peRatio', true);
                                                 const value = assetData[symbol]?.peRatio;
                                                 return (
-                                                    <TD key={symbol} $align="center">
-                                                        <ValueCell $best={symbol === bestWorst.best}>
-                                                            {value?.toFixed(2) || <NAValue>N/A</NAValue>}
-                                                            {symbol === bestWorst.best && <Badge $type="best">Best</Badge>}
+                                                    <TD key={symbol} theme={theme} $align="center">
+                                                        <ValueCell theme={theme} $best={symbol === bestWorst.best}>
+                                                            {value?.toFixed(2) || <NAValue theme={theme}>N/A</NAValue>}
+                                                            {symbol === bestWorst.best && 
+                                                                <Badge theme={theme} $type="best">Best</Badge>}
                                                         </ValueCell>
                                                     </TD>
                                                 );
@@ -1171,18 +1531,27 @@ const ComparisonPage = () => {
 
                                     {/* Dividend - Stocks only */}
                                     {hasStocks && (
-                                        <TR>
-                                            <TD><MetricCell><Award size={16} />Dividend Yield</MetricCell></TD>
+                                        <TR theme={theme}>
+                                            <TD theme={theme}>
+                                                <MetricCell theme={theme}>
+                                                    <Award size={16} color={primaryColor} />
+                                                    Dividend Yield
+                                                </MetricCell>
+                                            </TD>
                                             {selectedAssets.map(({ symbol, type }) => {
                                                 if (type === 'crypto') {
-                                                    return <TD key={symbol} $align="center"><NAValue>N/A</NAValue></TD>;
+                                                    return (
+                                                        <TD key={symbol} theme={theme} $align="center">
+                                                            <NAValue theme={theme}>N/A</NAValue>
+                                                        </TD>
+                                                    );
                                                 }
                                                 const bestWorst = getBestWorst('dividend');
                                                 const value = assetData[symbol]?.dividend;
                                                 return (
-                                                    <TD key={symbol} $align="center">
-                                                        <ValueCell $best={symbol === bestWorst.best}>
-                                                            {value ? `${value.toFixed(2)}%` : <NAValue>N/A</NAValue>}
+                                                    <TD key={symbol} theme={theme} $align="center">
+                                                        <ValueCell theme={theme} $best={symbol === bestWorst.best}>
+                                                            {value ? `${value.toFixed(2)}%` : <NAValue theme={theme}>N/A</NAValue>}
                                                         </ValueCell>
                                                     </TD>
                                                 );
@@ -1192,16 +1561,25 @@ const ComparisonPage = () => {
 
                                     {/* 52 Week High - Stocks only */}
                                     {hasStocks && (
-                                        <TR>
-                                            <TD><MetricCell><TrendingUp size={16} />52W High</MetricCell></TD>
+                                        <TR theme={theme}>
+                                            <TD theme={theme}>
+                                                <MetricCell theme={theme}>
+                                                    <TrendingUp size={16} color={primaryColor} />
+                                                    52W High
+                                                </MetricCell>
+                                            </TD>
                                             {selectedAssets.map(({ symbol, type }) => {
                                                 if (type === 'crypto') {
-                                                    return <TD key={symbol} $align="center"><NAValue>N/A</NAValue></TD>;
+                                                    return (
+                                                        <TD key={symbol} theme={theme} $align="center">
+                                                            <NAValue theme={theme}>N/A</NAValue>
+                                                        </TD>
+                                                    );
                                                 }
                                                 const value = assetData[symbol]?.week52High;
                                                 return (
-                                                    <TD key={symbol} $align="center">
-                                                        {value ? formatPrice(value) : <NAValue>N/A</NAValue>}
+                                                    <TD key={symbol} theme={theme} $align="center">
+                                                        {value ? formatPrice(value) : <NAValue theme={theme}>N/A</NAValue>}
                                                     </TD>
                                                 );
                                             })}
@@ -1210,16 +1588,25 @@ const ComparisonPage = () => {
 
                                     {/* ATH - Crypto only */}
                                     {hasCrypto && (
-                                        <TR>
-                                            <TD><MetricCell><TrendingUp size={16} />All-Time High</MetricCell></TD>
+                                        <TR theme={theme}>
+                                            <TD theme={theme}>
+                                                <MetricCell theme={theme}>
+                                                    <TrendingUp size={16} color={primaryColor} />
+                                                    All-Time High
+                                                </MetricCell>
+                                            </TD>
                                             {selectedAssets.map(({ symbol, type }) => {
                                                 if (type === 'stock') {
-                                                    return <TD key={symbol} $align="center"><NAValue>N/A</NAValue></TD>;
+                                                    return (
+                                                        <TD key={symbol} theme={theme} $align="center">
+                                                            <NAValue theme={theme}>N/A</NAValue>
+                                                        </TD>
+                                                    );
                                                 }
                                                 const value = assetData[symbol]?.ath;
                                                 return (
-                                                    <TD key={symbol} $align="center">
-                                                        {value ? formatPrice(value) : <NAValue>N/A</NAValue>}
+                                                    <TD key={symbol} theme={theme} $align="center">
+                                                        {value ? formatPrice(value) : <NAValue theme={theme}>N/A</NAValue>}
                                                     </TD>
                                                 );
                                             })}
@@ -1228,16 +1615,25 @@ const ComparisonPage = () => {
 
                                     {/* Circulating Supply - Crypto only */}
                                     {hasCrypto && (
-                                        <TR>
-                                            <TD><MetricCell><Percent size={16} />Circulating Supply</MetricCell></TD>
+                                        <TR theme={theme}>
+                                            <TD theme={theme}>
+                                                <MetricCell theme={theme}>
+                                                    <Percent size={16} color={primaryColor} />
+                                                    Circulating Supply
+                                                </MetricCell>
+                                            </TD>
                                             {selectedAssets.map(({ symbol, type }) => {
                                                 if (type === 'stock') {
-                                                    return <TD key={symbol} $align="center"><NAValue>N/A</NAValue></TD>;
+                                                    return (
+                                                        <TD key={symbol} theme={theme} $align="center">
+                                                            <NAValue theme={theme}>N/A</NAValue>
+                                                        </TD>
+                                                    );
                                                 }
                                                 const value = assetData[symbol]?.circulatingSupply;
                                                 return (
-                                                    <TD key={symbol} $align="center">
-                                                        {value ? value.toLocaleString() : <NAValue>N/A</NAValue>}
+                                                    <TD key={symbol} theme={theme} $align="center">
+                                                        {value ? value.toLocaleString() : <NAValue theme={theme}>N/A</NAValue>}
                                                     </TD>
                                                 );
                                             })}

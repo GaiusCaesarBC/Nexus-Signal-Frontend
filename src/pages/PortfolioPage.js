@@ -1,9 +1,10 @@
-// client/src/pages/PortfolioPage.js - REVAMPED WITH LOCAL AI ANALYSIS
+// client/src/pages/PortfolioPage.js - THEMED VERSION WITH LOCAL AI ANALYSIS
 
 import React, { useState, useEffect, useMemo } from 'react';
 import styled, { keyframes, css } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useTheme } from '../context/ThemeContext';
 import { useNavigate } from 'react-router-dom';
 import {
     TrendingUp, TrendingDown, DollarSign, PieChart, BarChart3,
@@ -54,7 +55,7 @@ const glow = keyframes`
 const PageContainer = styled.div`
     min-height: 100vh;
     background: linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
-    color: #e0e6ed;
+    color: ${props => props.theme.text?.primary || '#e0e6ed'};
     padding: 6rem 2rem 2rem;
 `;
 
@@ -79,7 +80,7 @@ const HeaderTop = styled.div`
 
 const Title = styled.h1`
     font-size: 2.5rem;
-    background: linear-gradient(135deg, #00adef 0%, #00ff88 100%);
+    background: ${props => props.theme.brand?.gradient || 'linear-gradient(135deg, #00adef 0%, #00ff88 100%)'};
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -91,7 +92,7 @@ const Title = styled.h1`
 `;
 
 const Subtitle = styled.p`
-    color: #94a3b8;
+    color: ${props => props.theme.text?.secondary || '#94a3b8'};
     font-size: 1rem;
     margin-top: 0.25rem;
 `;
@@ -108,11 +109,11 @@ const ActionButton = styled.button`
     gap: 0.5rem;
     padding: 0.6rem 1.25rem;
     background: ${props => props.$primary 
-        ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
-        : 'rgba(0, 173, 237, 0.1)'};
-    border: 1px solid ${props => props.$primary ? 'transparent' : 'rgba(0, 173, 237, 0.3)'};
+        ? `linear-gradient(135deg, ${props.theme.success || '#10b981'} 0%, ${props.theme.success || '#059669'} 100%)`
+        : `${props.theme.brand?.primary || '#00adef'}15`};
+    border: 1px solid ${props => props.$primary ? 'transparent' : `${props.theme.brand?.primary || '#00adef'}4D`};
     border-radius: 10px;
-    color: ${props => props.$primary ? 'white' : '#00adef'};
+    color: ${props => props.$primary ? 'white' : props.theme.brand?.primary || '#00adef'};
     font-weight: 600;
     font-size: 0.9rem;
     cursor: pointer;
@@ -121,8 +122,8 @@ const ActionButton = styled.button`
     &:hover {
         transform: translateY(-2px);
         box-shadow: ${props => props.$primary 
-            ? '0 8px 24px rgba(16, 185, 129, 0.4)'
-            : '0 8px 24px rgba(0, 173, 237, 0.2)'};
+            ? `0 8px 24px ${props.theme.success || '#10b981'}66`
+            : `0 8px 24px ${props.theme.brand?.primary || '#00adef'}33`};
     }
 
     &:disabled {
@@ -153,8 +154,8 @@ const StatsHero = styled.div`
 `;
 
 const MainStatCard = styled.div`
-    background: linear-gradient(135deg, rgba(0, 173, 237, 0.15) 0%, rgba(16, 185, 129, 0.15) 100%);
-    border: 1px solid rgba(0, 173, 237, 0.3);
+    background: linear-gradient(135deg, ${props => props.theme.brand?.primary || '#00adef'}26 0%, ${props => props.theme.success || '#10b981'}26 100%);
+    border: 1px solid ${props => props.theme.brand?.primary || '#00adef'}4D;
     border-radius: 20px;
     padding: 2rem;
     animation: ${fadeIn} 0.6s ease-out;
@@ -168,12 +169,12 @@ const MainStatCard = styled.div`
         left: 0;
         right: 0;
         height: 3px;
-        background: linear-gradient(90deg, #00adef, #10b981);
+        background: ${props => props.theme.brand?.gradient || `linear-gradient(90deg, ${props.theme.brand?.primary || '#00adef'}, ${props.theme.success || '#10b981'})`};
     }
 `;
 
 const MainStatLabel = styled.div`
-    color: #94a3b8;
+    color: ${props => props.theme.text?.secondary || '#94a3b8'};
     font-size: 0.9rem;
     font-weight: 600;
     text-transform: uppercase;
@@ -184,7 +185,7 @@ const MainStatLabel = styled.div`
 const MainStatValue = styled.div`
     font-size: 3rem;
     font-weight: 900;
-    color: #e0e6ed;
+    color: ${props => props.theme.text?.primary || '#e0e6ed'};
     margin-bottom: 0.5rem;
 
     @media (max-width: 768px) {
@@ -198,12 +199,12 @@ const MainStatChange = styled.div`
     gap: 0.5rem;
     font-size: 1.1rem;
     font-weight: 700;
-    color: ${props => props.$positive ? '#10b981' : '#ef4444'};
+    color: ${props => props.$positive ? props.theme.success || '#10b981' : props.theme.error || '#ef4444'};
 `;
 
 const StatCard = styled.div`
     background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
-    border: 1px solid rgba(0, 173, 237, 0.2);
+    border: 1px solid ${props => props.theme.brand?.primary || '#00adef'}33;
     border-radius: 16px;
     padding: 1.5rem;
     animation: ${fadeIn} 0.6s ease-out;
@@ -215,16 +216,16 @@ const StatIcon = styled.div`
     width: 44px;
     height: 44px;
     border-radius: 12px;
-    background: ${props => props.$bg || 'rgba(0, 173, 237, 0.15)'};
+    background: ${props => props.$bg || `${props.theme.brand?.primary || '#00adef'}26`};
     display: flex;
     align-items: center;
     justify-content: center;
-    color: ${props => props.$color || '#00adef'};
+    color: ${props => props.$color || props.theme.brand?.primary || '#00adef'};
     margin-bottom: 1rem;
 `;
 
 const StatLabel = styled.div`
-    color: #64748b;
+    color: ${props => props.theme.text?.tertiary || '#64748b'};
     font-size: 0.8rem;
     font-weight: 600;
     text-transform: uppercase;
@@ -235,13 +236,13 @@ const StatLabel = styled.div`
 const StatValue = styled.div`
     font-size: 1.75rem;
     font-weight: 800;
-    color: ${props => props.$color || '#e0e6ed'};
+    color: ${props => props.$color || props.theme.text?.primary || '#e0e6ed'};
 `;
 
 // ============ AI ANALYSIS SECTION ============
 const AISection = styled.div`
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
-    border: 2px solid rgba(139, 92, 246, 0.3);
+    background: linear-gradient(135deg, ${props => props.theme.brand?.accent || '#8b5cf6'}1A 0%, ${props => props.theme.info || '#3b82f6'}1A 100%);
+    border: 2px solid ${props => props.theme.brand?.accent || '#8b5cf6'}4D;
     border-radius: 20px;
     padding: 2rem;
     margin-bottom: 2rem;
@@ -261,7 +262,7 @@ const AISectionHeader = styled.div`
 
 const AITitle = styled.h2`
     font-size: 1.5rem;
-    color: #a78bfa;
+    color: ${props => props.theme.brand?.accent || '#a78bfa'};
     display: flex;
     align-items: center;
     gap: 0.75rem;
@@ -273,10 +274,10 @@ const AIBadge = styled.div`
     align-items: center;
     gap: 0.5rem;
     padding: 0.4rem 1rem;
-    background: rgba(16, 185, 129, 0.2);
-    border: 1px solid rgba(16, 185, 129, 0.4);
+    background: ${props => props.theme.success || '#10b981'}33;
+    border: 1px solid ${props => props.theme.success || '#10b981'}66;
     border-radius: 20px;
-    color: #10b981;
+    color: ${props => props.theme.success || '#10b981'};
     font-size: 0.8rem;
     font-weight: 700;
 `;
@@ -288,15 +289,15 @@ const AIGrid = styled.div`
 `;
 
 const InsightCard = styled.div`
-    background: rgba(139, 92, 246, 0.08);
-    border: 1px solid rgba(139, 92, 246, 0.2);
+    background: ${props => props.theme.brand?.accent || '#8b5cf6'}14;
+    border: 1px solid ${props => props.theme.brand?.accent || '#8b5cf6'}33;
     border-radius: 14px;
     padding: 1.25rem;
     transition: all 0.2s ease;
 
     &:hover {
-        background: rgba(139, 92, 246, 0.12);
-        border-color: rgba(139, 92, 246, 0.4);
+        background: ${props => props.theme.brand?.accent || '#8b5cf6'}1F;
+        border-color: ${props => props.theme.brand?.accent || '#8b5cf6'}66;
         transform: translateY(-2px);
     }
 `;
@@ -312,41 +313,41 @@ const InsightIcon = styled.div`
     width: 36px;
     height: 36px;
     border-radius: 10px;
-    background: ${props => props.$bg || 'rgba(139, 92, 246, 0.2)'};
+    background: ${props => props.$bg || `${props.theme.brand?.accent || '#8b5cf6'}33`};
     display: flex;
     align-items: center;
     justify-content: center;
-    color: ${props => props.$color || '#a78bfa'};
+    color: ${props => props.$color || props.theme.brand?.accent || '#a78bfa'};
 `;
 
 const InsightTitle = styled.div`
     font-weight: 700;
-    color: #e0e6ed;
+    color: ${props => props.theme.text?.primary || '#e0e6ed'};
     font-size: 0.95rem;
 `;
 
 const InsightValue = styled.div`
     font-size: 1.5rem;
     font-weight: 800;
-    color: ${props => props.$color || '#a78bfa'};
+    color: ${props => props.$color || props.theme.brand?.accent || '#a78bfa'};
     margin-bottom: 0.25rem;
 `;
 
 const InsightDescription = styled.div`
     font-size: 0.85rem;
-    color: #94a3b8;
+    color: ${props => props.theme.text?.secondary || '#94a3b8'};
     line-height: 1.5;
 `;
 
 const RecommendationsList = styled.div`
     margin-top: 1.5rem;
     padding-top: 1.5rem;
-    border-top: 1px solid rgba(139, 92, 246, 0.2);
+    border-top: 1px solid ${props => props.theme.brand?.accent || '#8b5cf6'}33;
 `;
 
 const RecommendationsTitle = styled.h3`
     font-size: 1.1rem;
-    color: #a78bfa;
+    color: ${props => props.theme.brand?.accent || '#a78bfa'};
     margin-bottom: 1rem;
     display: flex;
     align-items: center;
@@ -358,7 +359,7 @@ const RecommendationItem = styled.div`
     align-items: flex-start;
     gap: 0.75rem;
     padding: 0.75rem 1rem;
-    background: rgba(139, 92, 246, 0.05);
+    background: ${props => props.theme.brand?.accent || '#8b5cf6'}0D;
     border-radius: 10px;
     margin-bottom: 0.5rem;
 
@@ -372,19 +373,19 @@ const RecIcon = styled.div`
     height: 24px;
     border-radius: 50%;
     background: ${props => {
-        if (props.$type === 'success') return 'rgba(16, 185, 129, 0.2)';
-        if (props.$type === 'warning') return 'rgba(251, 191, 36, 0.2)';
-        if (props.$type === 'danger') return 'rgba(239, 68, 68, 0.2)';
-        return 'rgba(139, 92, 246, 0.2)';
+        if (props.$type === 'success') return `${props.theme.success || '#10b981'}33`;
+        if (props.$type === 'warning') return `${props.theme.warning || '#fbbf24'}33`;
+        if (props.$type === 'danger') return `${props.theme.error || '#ef4444'}33`;
+        return `${props.theme.brand?.accent || '#8b5cf6'}33`;
     }};
     display: flex;
     align-items: center;
     justify-content: center;
     color: ${props => {
-        if (props.$type === 'success') return '#10b981';
-        if (props.$type === 'warning') return '#fbbf24';
-        if (props.$type === 'danger') return '#ef4444';
-        return '#a78bfa';
+        if (props.$type === 'success') return props.theme.success || '#10b981';
+        if (props.$type === 'warning') return props.theme.warning || '#fbbf24';
+        if (props.$type === 'danger') return props.theme.error || '#ef4444';
+        return props.theme.brand?.accent || '#a78bfa';
     }};
     flex-shrink: 0;
     margin-top: 0.1rem;
@@ -392,7 +393,7 @@ const RecIcon = styled.div`
 
 const RecText = styled.div`
     font-size: 0.9rem;
-    color: #e0e6ed;
+    color: ${props => props.theme.text?.primary || '#e0e6ed'};
     line-height: 1.5;
 `;
 
@@ -411,7 +412,7 @@ const MainGrid = styled.div`
 // ============ HOLDINGS TABLE ============
 const HoldingsSection = styled.div`
     background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
-    border: 1px solid rgba(0, 173, 237, 0.2);
+    border: 1px solid ${props => props.theme.brand?.primary || '#00adef'}33;
     border-radius: 20px;
     padding: 1.5rem;
     animation: ${fadeIn} 0.6s ease-out;
@@ -428,7 +429,7 @@ const HoldingsHeader = styled.div`
 
 const HoldingsTitle = styled.h2`
     font-size: 1.3rem;
-    color: #00adef;
+    color: ${props => props.theme.brand?.primary || '#00adef'};
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -446,20 +447,20 @@ const SearchWrapper = styled.div`
 const SearchInput = styled.input`
     width: 100%;
     padding: 0.6rem 1rem 0.6rem 2.5rem;
-    background: rgba(0, 173, 237, 0.05);
-    border: 1px solid rgba(0, 173, 237, 0.3);
+    background: ${props => props.theme.brand?.primary || '#00adef'}0D;
+    border: 1px solid ${props => props.theme.brand?.primary || '#00adef'}4D;
     border-radius: 10px;
-    color: #e0e6ed;
+    color: ${props => props.theme.text?.primary || '#e0e6ed'};
     font-size: 0.9rem;
 
     &:focus {
         outline: none;
-        border-color: #00adef;
-        background: rgba(0, 173, 237, 0.1);
+        border-color: ${props => props.theme.brand?.primary || '#00adef'};
+        background: ${props => props.theme.brand?.primary || '#00adef'}1A;
     }
 
     &::placeholder {
-        color: #64748b;
+        color: ${props => props.theme.text?.tertiary || '#64748b'};
     }
 `;
 
@@ -468,7 +469,7 @@ const SearchIconStyled = styled(Search)`
     left: 0.75rem;
     top: 50%;
     transform: translateY(-50%);
-    color: #64748b;
+    color: ${props => props.theme.text?.tertiary || '#64748b'};
     width: 16px;
     height: 16px;
 `;
@@ -485,25 +486,25 @@ const Table = styled.table`
 const Th = styled.th`
     text-align: left;
     padding: 1rem 0.75rem;
-    color: #64748b;
+    color: ${props => props.theme.text?.tertiary || '#64748b'};
     font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    border-bottom: 1px solid rgba(0, 173, 237, 0.1);
+    border-bottom: 1px solid ${props => props.theme.brand?.primary || '#00adef'}1A;
 `;
 
 const Tr = styled.tr`
     transition: all 0.2s ease;
 
     &:hover {
-        background: rgba(0, 173, 237, 0.05);
+        background: ${props => props.theme.brand?.primary || '#00adef'}0D;
     }
 `;
 
 const Td = styled.td`
     padding: 1rem 0.75rem;
-    border-bottom: 1px solid rgba(0, 173, 237, 0.05);
+    border-bottom: 1px solid ${props => props.theme.brand?.primary || '#00adef'}0D;
     vertical-align: middle;
 `;
 
@@ -517,31 +518,31 @@ const SymbolIcon = styled.div`
     width: 40px;
     height: 40px;
     border-radius: 10px;
-    background: linear-gradient(135deg, rgba(0, 173, 237, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%);
+    background: linear-gradient(135deg, ${props => props.theme.brand?.primary || '#00adef'}33 0%, ${props => props.theme.brand?.accent || '#8b5cf6'}33 100%);
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: 800;
     font-size: 0.9rem;
-    color: #00adef;
+    color: ${props => props.theme.brand?.primary || '#00adef'};
 `;
 
 const SymbolInfo = styled.div``;
 
 const SymbolName = styled.div`
     font-weight: 700;
-    color: #e0e6ed;
+    color: ${props => props.theme.text?.primary || '#e0e6ed'};
     font-size: 1rem;
 `;
 
 const SymbolType = styled.div`
     font-size: 0.75rem;
-    color: #64748b;
+    color: ${props => props.theme.text?.tertiary || '#64748b'};
 `;
 
 const PriceCell = styled.div`
     font-weight: 600;
-    color: #e0e6ed;
+    color: ${props => props.theme.text?.primary || '#e0e6ed'};
 `;
 
 const ChangeCell = styled.div`
@@ -549,12 +550,12 @@ const ChangeCell = styled.div`
     align-items: center;
     gap: 0.25rem;
     font-weight: 700;
-    color: ${props => props.$positive ? '#10b981' : '#ef4444'};
+    color: ${props => props.$positive ? props.theme.success || '#10b981' : props.theme.error || '#ef4444'};
 `;
 
 const ValueCell = styled.div`
     font-weight: 700;
-    color: #e0e6ed;
+    color: ${props => props.theme.text?.primary || '#e0e6ed'};
 `;
 
 const ActionCell = styled.div`
@@ -566,9 +567,9 @@ const SmallButton = styled.button`
     width: 32px;
     height: 32px;
     border-radius: 8px;
-    background: ${props => props.$danger ? 'rgba(239, 68, 68, 0.1)' : 'rgba(0, 173, 237, 0.1)'};
-    border: 1px solid ${props => props.$danger ? 'rgba(239, 68, 68, 0.3)' : 'rgba(0, 173, 237, 0.3)'};
-    color: ${props => props.$danger ? '#ef4444' : '#00adef'};
+    background: ${props => props.$danger ? `${props.theme.error || '#ef4444'}1A` : `${props.theme.brand?.primary || '#00adef'}1A`};
+    border: 1px solid ${props => props.$danger ? `${props.theme.error || '#ef4444'}4D` : `${props.theme.brand?.primary || '#00adef'}4D`};
+    color: ${props => props.$danger ? props.theme.error || '#ef4444' : props.theme.brand?.primary || '#00adef'};
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -576,7 +577,7 @@ const SmallButton = styled.button`
     transition: all 0.2s ease;
 
     &:hover {
-        background: ${props => props.$danger ? 'rgba(239, 68, 68, 0.2)' : 'rgba(0, 173, 237, 0.2)'};
+        background: ${props => props.$danger ? `${props.theme.error || '#ef4444'}33` : `${props.theme.brand?.primary || '#00adef'}33`};
         transform: scale(1.05);
     }
 `;
@@ -590,7 +591,7 @@ const Sidebar = styled.div`
 
 const ChartCard = styled.div`
     background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
-    border: 1px solid rgba(0, 173, 237, 0.2);
+    border: 1px solid ${props => props.theme.brand?.primary || '#00adef'}33;
     border-radius: 16px;
     padding: 1.5rem;
     animation: ${fadeIn} 0.6s ease-out;
@@ -598,7 +599,7 @@ const ChartCard = styled.div`
 
 const ChartTitle = styled.h3`
     font-size: 1.1rem;
-    color: #00adef;
+    color: ${props => props.theme.brand?.primary || '#00adef'};
     margin-bottom: 1rem;
     display: flex;
     align-items: center;
@@ -624,7 +625,7 @@ const Modal = styled.div`
 
 const ModalContent = styled.div`
     background: linear-gradient(135deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.98) 100%);
-    border: 1px solid rgba(0, 173, 237, 0.3);
+    border: 1px solid ${props => props.theme.brand?.primary || '#00adef'}4D;
     border-radius: 20px;
     padding: 2rem;
     max-width: 450px;
@@ -641,16 +642,16 @@ const ModalHeader = styled.div`
 
 const ModalTitle = styled.h2`
     font-size: 1.5rem;
-    color: #00adef;
+    color: ${props => props.theme.brand?.primary || '#00adef'};
 `;
 
 const CloseButton = styled.button`
     width: 36px;
     height: 36px;
     border-radius: 10px;
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    color: #ef4444;
+    background: ${props => props.theme.error || '#ef4444'}1A;
+    border: 1px solid ${props => props.theme.error || '#ef4444'}4D;
+    color: ${props => props.theme.error || '#ef4444'};
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -658,7 +659,7 @@ const CloseButton = styled.button`
     transition: all 0.2s ease;
 
     &:hover {
-        background: rgba(239, 68, 68, 0.2);
+        background: ${props => props.theme.error || '#ef4444'}33;
     }
 `;
 
@@ -672,7 +673,7 @@ const FormGroup = styled.div``;
 
 const Label = styled.label`
     display: block;
-    color: #94a3b8;
+    color: ${props => props.theme.text?.secondary || '#94a3b8'};
     font-size: 0.85rem;
     font-weight: 600;
     margin-bottom: 0.5rem;
@@ -681,27 +682,27 @@ const Label = styled.label`
 const Input = styled.input`
     width: 100%;
     padding: 0.75rem 1rem;
-    background: rgba(0, 173, 237, 0.05);
-    border: 1px solid rgba(0, 173, 237, 0.3);
+    background: ${props => props.theme.brand?.primary || '#00adef'}0D;
+    border: 1px solid ${props => props.theme.brand?.primary || '#00adef'}4D;
     border-radius: 10px;
-    color: #e0e6ed;
+    color: ${props => props.theme.text?.primary || '#e0e6ed'};
     font-size: 1rem;
 
     &:focus {
         outline: none;
-        border-color: #00adef;
-        background: rgba(0, 173, 237, 0.1);
+        border-color: ${props => props.theme.brand?.primary || '#00adef'};
+        background: ${props => props.theme.brand?.primary || '#00adef'}1A;
     }
 
     &::placeholder {
-        color: #64748b;
+        color: ${props => props.theme.text?.tertiary || '#64748b'};
     }
 `;
 
 const SubmitButton = styled.button`
     width: 100%;
     padding: 0.875rem;
-    background: linear-gradient(135deg, #00adef 0%, #0088cc 100%);
+    background: ${props => props.theme.brand?.gradient || `linear-gradient(135deg, ${props.theme.brand?.primary || '#00adef'} 0%, ${props.theme.brand?.secondary || '#0088cc'} 100%)`};
     border: none;
     border-radius: 10px;
     color: white;
@@ -712,7 +713,7 @@ const SubmitButton = styled.button`
 
     &:hover:not(:disabled) {
         transform: translateY(-2px);
-        box-shadow: 0 8px 24px rgba(0, 173, 237, 0.4);
+        box-shadow: 0 8px 24px ${props => props.theme.brand?.primary || '#00adef'}66;
     }
 
     &:disabled {
@@ -731,27 +732,24 @@ const EmptyIcon = styled.div`
     width: 100px;
     height: 100px;
     margin: 0 auto 1.5rem;
-    background: linear-gradient(135deg, rgba(0, 173, 237, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%);
+    background: linear-gradient(135deg, ${props => props.theme.brand?.primary || '#00adef'}33 0%, ${props => props.theme.brand?.accent || '#8b5cf6'}33 100%);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px dashed rgba(0, 173, 237, 0.3);
+    border: 2px dashed ${props => props.theme.brand?.primary || '#00adef'}4D;
 `;
 
 const EmptyTitle = styled.h2`
-    color: #00adef;
+    color: ${props => props.theme.brand?.primary || '#00adef'};
     font-size: 1.5rem;
     margin-bottom: 0.5rem;
 `;
 
 const EmptyText = styled.p`
-    color: #94a3b8;
+    color: ${props => props.theme.text?.secondary || '#94a3b8'};
     margin-bottom: 2rem;
 `;
-
-// ============ COLORS ============
-const COLORS = ['#00adef', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
 
 // ============ LOCAL AI ANALYSIS FUNCTIONS ============
 const analyzePortfolio = (holdings, stats) => {
@@ -878,6 +876,7 @@ const analyzePortfolio = (holdings, stats) => {
 const PortfolioPage = () => {
     const { api } = useAuth();
     const toast = useToast();
+    const { theme } = useTheme();
     const navigate = useNavigate();
 
     // State
@@ -890,6 +889,18 @@ const PortfolioPage = () => {
     const [showEditModal, setShowEditModal] = useState(false);
     const [selectedHolding, setSelectedHolding] = useState(null);
     const [formData, setFormData] = useState({ symbol: '', shares: '', averagePrice: '' });
+
+    // Dynamic colors from theme
+    const COLORS = [
+        theme.brand?.primary || '#00adef',
+        theme.success || '#10b981',
+        theme.warning || '#f59e0b',
+        theme.error || '#ef4444',
+        theme.brand?.accent || '#8b5cf6',
+        theme.info || '#ec4899',
+        theme.brand?.secondary || '#06b6d4',
+        '#84cc16'
+    ];
 
     // Fetch portfolio on mount
     useEffect(() => {
@@ -1094,11 +1105,11 @@ const PortfolioPage = () => {
 
     if (loading) {
         return (
-            <PageContainer>
+            <PageContainer theme={theme}>
                 <ContentWrapper>
                     <div style={{ textAlign: 'center', padding: '4rem' }}>
-                        <SpinningIcon><Activity size={64} color="#00adef" /></SpinningIcon>
-                        <h2 style={{ marginTop: '1rem', color: '#00adef' }}>Loading Portfolio...</h2>
+                        <SpinningIcon><Activity size={64} color={theme.brand?.primary || '#00adef'} /></SpinningIcon>
+                        <h2 style={{ marginTop: '1rem', color: theme.brand?.primary || '#00adef' }}>Loading Portfolio...</h2>
                     </div>
                 </ContentWrapper>
             </PageContainer>
@@ -1107,19 +1118,19 @@ const PortfolioPage = () => {
 
     if (holdings.length === 0) {
         return (
-            <PageContainer>
+            <PageContainer theme={theme}>
                 <ContentWrapper>
                     <Header>
-                        <Title>My Portfolio</Title>
-                        <Subtitle>Track your investments with AI-powered insights</Subtitle>
+                        <Title theme={theme}>My Portfolio</Title>
+                        <Subtitle theme={theme}>Track your investments with AI-powered insights</Subtitle>
                     </Header>
                     <EmptyState>
-                        <EmptyIcon>
-                            <PieChart size={48} color="#00adef" />
+                        <EmptyIcon theme={theme}>
+                            <PieChart size={48} color={theme.brand?.primary || '#00adef'} />
                         </EmptyIcon>
-                        <EmptyTitle>Your Portfolio is Empty</EmptyTitle>
-                        <EmptyText>Add your first holding to start tracking your investments</EmptyText>
-                        <ActionButton $primary onClick={() => setShowAddModal(true)}>
+                        <EmptyTitle theme={theme}>Your Portfolio is Empty</EmptyTitle>
+                        <EmptyText theme={theme}>Add your first holding to start tracking your investments</EmptyText>
+                        <ActionButton theme={theme} $primary onClick={() => setShowAddModal(true)}>
                             <Plus size={20} />
                             Add Your First Holding
                         </ActionButton>
@@ -1128,17 +1139,18 @@ const PortfolioPage = () => {
 
                 {showAddModal && (
                     <Modal onClick={() => setShowAddModal(false)}>
-                        <ModalContent onClick={e => e.stopPropagation()}>
+                        <ModalContent theme={theme} onClick={e => e.stopPropagation()}>
                             <ModalHeader>
-                                <ModalTitle>Add Holding</ModalTitle>
-                                <CloseButton onClick={() => setShowAddModal(false)}>
+                                <ModalTitle theme={theme}>Add Holding</ModalTitle>
+                                <CloseButton theme={theme} onClick={() => setShowAddModal(false)}>
                                     <X size={18} />
                                 </CloseButton>
                             </ModalHeader>
                             <Form onSubmit={addHolding}>
                                 <FormGroup>
-                                    <Label>Symbol</Label>
+                                    <Label theme={theme}>Symbol</Label>
                                     <Input
+                                        theme={theme}
                                         type="text"
                                         placeholder="AAPL"
                                         value={formData.symbol}
@@ -1148,8 +1160,9 @@ const PortfolioPage = () => {
                                     />
                                 </FormGroup>
                                 <FormGroup>
-                                    <Label>Shares</Label>
+                                    <Label theme={theme}>Shares</Label>
                                     <Input
+                                        theme={theme}
                                         type="number"
                                         step="0.01"
                                         placeholder="10"
@@ -1159,8 +1172,9 @@ const PortfolioPage = () => {
                                     />
                                 </FormGroup>
                                 <FormGroup>
-                                    <Label>Average Price</Label>
+                                    <Label theme={theme}>Average Price</Label>
                                     <Input
+                                        theme={theme}
                                         type="number"
                                         step="0.01"
                                         placeholder="150.00"
@@ -1169,7 +1183,7 @@ const PortfolioPage = () => {
                                         required
                                     />
                                 </FormGroup>
-                                <SubmitButton type="submit">Add Holding</SubmitButton>
+                                <SubmitButton theme={theme} type="submit">Add Holding</SubmitButton>
                             </Form>
                         </ModalContent>
                     </Modal>
@@ -1179,25 +1193,25 @@ const PortfolioPage = () => {
     }
 
     return (
-        <PageContainer>
+        <PageContainer theme={theme}>
             <ContentWrapper>
                 {/* Header */}
                 <Header>
                     <HeaderTop>
                         <div>
-                            <Title>My Portfolio</Title>
-                            <Subtitle>{holdings.length} holdings • AI-powered insights</Subtitle>
+                            <Title theme={theme}>My Portfolio</Title>
+                            <Subtitle theme={theme}>{holdings.length} holdings • AI-powered insights</Subtitle>
                         </div>
                         <HeaderActions>
-                            <ActionButton onClick={handleRefresh} disabled={refreshing} $spinning={refreshing}>
+                            <ActionButton theme={theme} onClick={handleRefresh} disabled={refreshing} $spinning={refreshing}>
                                 <RefreshCw size={18} />
                                 Refresh
                             </ActionButton>
-                            <ActionButton onClick={handleExportCSV}>
+                            <ActionButton theme={theme} onClick={handleExportCSV}>
                                 <Download size={18} />
                                 Export
                             </ActionButton>
-                            <ActionButton $primary onClick={() => setShowAddModal(true)}>
+                            <ActionButton theme={theme} $primary onClick={() => setShowAddModal(true)}>
                                 <Plus size={18} />
                                 Add Holding
                             </ActionButton>
@@ -1208,137 +1222,137 @@ const PortfolioPage = () => {
                 {/* Stats Hero */}
                 {stats && (
                     <StatsHero>
-                        <MainStatCard>
-                            <MainStatLabel>Total Portfolio Value</MainStatLabel>
-                            <MainStatValue>
+                        <MainStatCard theme={theme}>
+                            <MainStatLabel theme={theme}>Total Portfolio Value</MainStatLabel>
+                            <MainStatValue theme={theme}>
                                 ${stats.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </MainStatValue>
-                            <MainStatChange $positive={stats.totalGain >= 0}>
+                            <MainStatChange theme={theme} $positive={stats.totalGain >= 0}>
                                 {stats.totalGain >= 0 ? <ArrowUpRight size={20} /> : <ArrowDownRight size={20} />}
                                 {stats.totalGain >= 0 ? '+' : ''}${Math.abs(stats.totalGain).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                 ({stats.totalGain >= 0 ? '+' : ''}{stats.totalGainPercent.toFixed(2)}%)
                             </MainStatChange>
                         </MainStatCard>
 
-                        <StatCard $delay="0.1s">
-                            <StatIcon $bg="rgba(16, 185, 129, 0.15)" $color="#10b981">
+                        <StatCard theme={theme} $delay="0.1s">
+                            <StatIcon theme={theme} $bg={`${theme.success || '#10b981'}26`} $color={theme.success || '#10b981'}>
                                 <TrendingUp size={22} />
                             </StatIcon>
-                            <StatLabel>Total Gain/Loss</StatLabel>
-                            <StatValue $color={stats.totalGain >= 0 ? '#10b981' : '#ef4444'}>
+                            <StatLabel theme={theme}>Total Gain/Loss</StatLabel>
+                            <StatValue theme={theme} $color={stats.totalGain >= 0 ? theme.success || '#10b981' : theme.error || '#ef4444'}>
                                 {stats.totalGain >= 0 ? '+' : ''}{stats.totalGainPercent.toFixed(2)}%
                             </StatValue>
                         </StatCard>
 
-                        <StatCard $delay="0.2s">
-                            <StatIcon $bg="rgba(139, 92, 246, 0.15)" $color="#a78bfa">
+                        <StatCard theme={theme} $delay="0.2s">
+                            <StatIcon theme={theme} $bg={`${theme.brand?.accent || '#8b5cf6'}26`} $color={theme.brand?.accent || '#a78bfa'}>
                                 <Target size={22} />
                             </StatIcon>
-                            <StatLabel>Cost Basis</StatLabel>
-                            <StatValue>
+                            <StatLabel theme={theme}>Cost Basis</StatLabel>
+                            <StatValue theme={theme}>
                                 ${stats.totalCost.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                             </StatValue>
                         </StatCard>
 
-                        <StatCard $delay="0.3s">
-                            <StatIcon $bg="rgba(251, 191, 36, 0.15)" $color="#fbbf24">
+                        <StatCard theme={theme} $delay="0.3s">
+                            <StatIcon theme={theme} $bg={`${theme.warning || '#fbbf24'}26`} $color={theme.warning || '#fbbf24'}>
                                 <BarChart3 size={22} />
                             </StatIcon>
-                            <StatLabel>Holdings</StatLabel>
-                            <StatValue>{stats.holdingsCount}</StatValue>
+                            <StatLabel theme={theme}>Holdings</StatLabel>
+                            <StatValue theme={theme}>{stats.holdingsCount}</StatValue>
                         </StatCard>
                     </StatsHero>
                 )}
 
                 {/* AI Analysis Section */}
                 {aiAnalysis && (
-                    <AISection>
+                    <AISection theme={theme}>
                         <AISectionHeader>
-                            <AITitle>
+                            <AITitle theme={theme}>
                                 <Brain size={28} />
                                 AI Portfolio Analysis
                             </AITitle>
-                            <AIBadge>
+                            <AIBadge theme={theme}>
                                 <Zap size={14} />
                                 Powered by Nexus AI
                             </AIBadge>
                         </AISectionHeader>
 
                         <AIGrid>
-                            <InsightCard>
+                            <InsightCard theme={theme}>
                                 <InsightHeader>
-                                    <InsightIcon $bg="rgba(16, 185, 129, 0.2)" $color="#10b981">
+                                    <InsightIcon theme={theme} $bg={`${theme.success || '#10b981'}33`} $color={theme.success || '#10b981'}>
                                         <Shield size={18} />
                                     </InsightIcon>
-                                    <InsightTitle>Diversification Score</InsightTitle>
+                                    <InsightTitle theme={theme}>Diversification Score</InsightTitle>
                                 </InsightHeader>
-                                <InsightValue $color={
-                                    aiAnalysis.diversificationScore >= 70 ? '#10b981' :
-                                    aiAnalysis.diversificationScore >= 40 ? '#fbbf24' : '#ef4444'
+                                <InsightValue theme={theme} $color={
+                                    aiAnalysis.diversificationScore >= 70 ? theme.success || '#10b981' :
+                                    aiAnalysis.diversificationScore >= 40 ? theme.warning || '#fbbf24' : theme.error || '#ef4444'
                                 }>
                                     {aiAnalysis.diversificationScore}/100
                                 </InsightValue>
-                                <InsightDescription>
+                                <InsightDescription theme={theme}>
                                     {aiAnalysis.diversificationScore >= 70 ? 'Well diversified portfolio' :
                                      aiAnalysis.diversificationScore >= 40 ? 'Moderate diversification' :
                                      'Consider adding more positions'}
                                 </InsightDescription>
                             </InsightCard>
 
-                            <InsightCard>
+                            <InsightCard theme={theme}>
                                 <InsightHeader>
-                                    <InsightIcon $bg={
-                                        aiAnalysis.riskLevel === 'Low' ? 'rgba(16, 185, 129, 0.2)' :
-                                        aiAnalysis.riskLevel === 'Moderate' ? 'rgba(251, 191, 36, 0.2)' :
-                                        'rgba(239, 68, 68, 0.2)'
+                                    <InsightIcon theme={theme} $bg={
+                                        aiAnalysis.riskLevel === 'Low' ? `${theme.success || '#10b981'}33` :
+                                        aiAnalysis.riskLevel === 'Moderate' ? `${theme.warning || '#fbbf24'}33` :
+                                        `${theme.error || '#ef4444'}33`
                                     } $color={
-                                        aiAnalysis.riskLevel === 'Low' ? '#10b981' :
-                                        aiAnalysis.riskLevel === 'Moderate' ? '#fbbf24' : '#ef4444'
+                                        aiAnalysis.riskLevel === 'Low' ? theme.success || '#10b981' :
+                                        aiAnalysis.riskLevel === 'Moderate' ? theme.warning || '#fbbf24' : theme.error || '#ef4444'
                                     }>
                                         <AlertTriangle size={18} />
                                     </InsightIcon>
-                                    <InsightTitle>Risk Level</InsightTitle>
+                                    <InsightTitle theme={theme}>Risk Level</InsightTitle>
                                 </InsightHeader>
-                                <InsightValue $color={
-                                    aiAnalysis.riskLevel === 'Low' ? '#10b981' :
-                                    aiAnalysis.riskLevel === 'Moderate' ? '#fbbf24' : '#ef4444'
+                                <InsightValue theme={theme} $color={
+                                    aiAnalysis.riskLevel === 'Low' ? theme.success || '#10b981' :
+                                    aiAnalysis.riskLevel === 'Moderate' ? theme.warning || '#fbbf24' : theme.error || '#ef4444'
                                 }>
                                     {aiAnalysis.riskLevel}
                                 </InsightValue>
-                                <InsightDescription>
+                                <InsightDescription theme={theme}>
                                     Based on concentration and diversification
                                 </InsightDescription>
                             </InsightCard>
 
                             {aiAnalysis.topPerformer && (
-                                <InsightCard>
+                                <InsightCard theme={theme}>
                                     <InsightHeader>
-                                        <InsightIcon $bg="rgba(16, 185, 129, 0.2)" $color="#10b981">
+                                        <InsightIcon theme={theme} $bg={`${theme.success || '#10b981'}33`} $color={theme.success || '#10b981'}>
                                             <Star size={18} />
                                         </InsightIcon>
-                                        <InsightTitle>Top Performer</InsightTitle>
+                                        <InsightTitle theme={theme}>Top Performer</InsightTitle>
                                     </InsightHeader>
-                                    <InsightValue $color="#10b981">
+                                    <InsightValue theme={theme} $color={theme.success || '#10b981'}>
                                         {aiAnalysis.topPerformer.symbol}
                                     </InsightValue>
-                                    <InsightDescription>
+                                    <InsightDescription theme={theme}>
                                         Up {aiAnalysis.topPerformer.gainPercent.toFixed(1)}% from cost basis
                                     </InsightDescription>
                                 </InsightCard>
                             )}
 
                             {aiAnalysis.worstPerformer && (
-                                <InsightCard>
+                                <InsightCard theme={theme}>
                                     <InsightHeader>
-                                        <InsightIcon $bg="rgba(239, 68, 68, 0.2)" $color="#ef4444">
+                                        <InsightIcon theme={theme} $bg={`${theme.error || '#ef4444'}33`} $color={theme.error || '#ef4444'}>
                                             <Flame size={18} />
                                         </InsightIcon>
-                                        <InsightTitle>Needs Attention</InsightTitle>
+                                        <InsightTitle theme={theme}>Needs Attention</InsightTitle>
                                     </InsightHeader>
-                                    <InsightValue $color="#ef4444">
+                                    <InsightValue theme={theme} $color={theme.error || '#ef4444'}>
                                         {aiAnalysis.worstPerformer.symbol}
                                     </InsightValue>
-                                    <InsightDescription>
+                                    <InsightDescription theme={theme}>
                                         {aiAnalysis.worstPerformer.gainPercent >= 0 ? 'Up' : 'Down'} {Math.abs(aiAnalysis.worstPerformer.gainPercent).toFixed(1)}% from cost basis
                                     </InsightDescription>
                                 </InsightCard>
@@ -1346,20 +1360,20 @@ const PortfolioPage = () => {
                         </AIGrid>
 
                         {aiAnalysis.recommendations.length > 0 && (
-                            <RecommendationsList>
-                                <RecommendationsTitle>
+                            <RecommendationsList theme={theme}>
+                                <RecommendationsTitle theme={theme}>
                                     <Lightbulb size={20} />
                                     AI Recommendations
                                 </RecommendationsTitle>
                                 {aiAnalysis.recommendations.map((rec, i) => (
-                                    <RecommendationItem key={i}>
-                                        <RecIcon $type={rec.type}>
+                                    <RecommendationItem theme={theme} key={i}>
+                                        <RecIcon theme={theme} $type={rec.type}>
                                             {rec.type === 'success' && <CheckCircle size={14} />}
                                             {rec.type === 'warning' && <AlertTriangle size={14} />}
                                             {rec.type === 'danger' && <TrendingDown size={14} />}
                                             {rec.type === 'info' && <Lightbulb size={14} />}
                                         </RecIcon>
-                                        <RecText>{rec.text}</RecText>
+                                        <RecText theme={theme}>{rec.text}</RecText>
                                     </RecommendationItem>
                                 ))}
                             </RecommendationsList>
@@ -1370,15 +1384,16 @@ const PortfolioPage = () => {
                 {/* Main Content */}
                 <MainGrid>
                     {/* Holdings Table */}
-                    <HoldingsSection>
+                    <HoldingsSection theme={theme}>
                         <HoldingsHeader>
-                            <HoldingsTitle>
+                            <HoldingsTitle theme={theme}>
                                 <Eye size={22} />
                                 Your Holdings
                             </HoldingsTitle>
                             <SearchWrapper>
-                                <SearchIconStyled />
+                                <SearchIconStyled theme={theme} />
                                 <SearchInput
+                                    theme={theme}
                                     type="text"
                                     placeholder="Search holdings..."
                                     value={searchQuery}
@@ -1391,13 +1406,13 @@ const PortfolioPage = () => {
                             <Table>
                                 <thead>
                                     <tr>
-                                        <Th>Symbol</Th>
-                                        <Th>Shares</Th>
-                                        <Th>Avg Price</Th>
-                                        <Th>Current</Th>
-                                        <Th>Value</Th>
-                                        <Th>Gain/Loss</Th>
-                                        <Th></Th>
+                                        <Th theme={theme}>Symbol</Th>
+                                        <Th theme={theme}>Shares</Th>
+                                        <Th theme={theme}>Avg Price</Th>
+                                        <Th theme={theme}>Current</Th>
+                                        <Th theme={theme}>Value</Th>
+                                        <Th theme={theme}>Gain/Loss</Th>
+                                        <Th theme={theme}></Th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -1414,40 +1429,40 @@ const PortfolioPage = () => {
                                         const positive = gain >= 0;
 
                                         return (
-                                            <Tr key={holding._id || holding.symbol}>
-                                                <Td>
+                                            <Tr theme={theme} key={holding._id || holding.symbol}>
+                                                <Td theme={theme}>
                                                     <SymbolCell>
-                                                        <SymbolIcon>{holding.symbol?.substring(0, 2)}</SymbolIcon>
+                                                        <SymbolIcon theme={theme}>{holding.symbol?.substring(0, 2)}</SymbolIcon>
                                                         <SymbolInfo>
-                                                            <SymbolName>{holding.symbol}</SymbolName>
-                                                            <SymbolType>Stock</SymbolType>
+                                                            <SymbolName theme={theme}>{holding.symbol}</SymbolName>
+                                                            <SymbolType theme={theme}>Stock</SymbolType>
                                                         </SymbolInfo>
                                                     </SymbolCell>
                                                 </Td>
-                                                <Td>
-                                                    <PriceCell>{shares}</PriceCell>
+                                                <Td theme={theme}>
+                                                    <PriceCell theme={theme}>{shares}</PriceCell>
                                                 </Td>
-                                                <Td>
-                                                    <PriceCell>${avgPrice.toFixed(2)}</PriceCell>
+                                                <Td theme={theme}>
+                                                    <PriceCell theme={theme}>${avgPrice.toFixed(2)}</PriceCell>
                                                 </Td>
-                                                <Td>
-                                                    <PriceCell>${currentPrice.toFixed(2)}</PriceCell>
+                                                <Td theme={theme}>
+                                                    <PriceCell theme={theme}>${currentPrice.toFixed(2)}</PriceCell>
                                                 </Td>
-                                                <Td>
-                                                    <ValueCell>${value.toLocaleString(undefined, { minimumFractionDigits: 2 })}</ValueCell>
+                                                <Td theme={theme}>
+                                                    <ValueCell theme={theme}>${value.toLocaleString(undefined, { minimumFractionDigits: 2 })}</ValueCell>
                                                 </Td>
-                                                <Td>
-                                                    <ChangeCell $positive={positive}>
+                                                <Td theme={theme}>
+                                                    <ChangeCell theme={theme} $positive={positive}>
                                                         {positive ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
                                                         {positive ? '+' : ''}{gainPercent.toFixed(2)}%
                                                     </ChangeCell>
                                                 </Td>
-                                                <Td>
+                                                <Td theme={theme}>
                                                     <ActionCell>
-                                                        <SmallButton onClick={() => handleEdit(holding)}>
+                                                        <SmallButton theme={theme} onClick={() => handleEdit(holding)}>
                                                             <Edit size={14} />
                                                         </SmallButton>
-                                                        <SmallButton $danger onClick={() => deleteHolding(holding._id, holding.symbol)}>
+                                                        <SmallButton theme={theme} $danger onClick={() => deleteHolding(holding._id, holding.symbol)}>
                                                             <Trash2 size={14} />
                                                         </SmallButton>
                                                     </ActionCell>
@@ -1462,8 +1477,8 @@ const PortfolioPage = () => {
 
                     {/* Sidebar Charts */}
                     <Sidebar>
-                        <ChartCard>
-                            <ChartTitle>
+                        <ChartCard theme={theme}>
+                            <ChartTitle theme={theme}>
                                 <PieChart size={20} />
                                 Allocation
                             </ChartTitle>
@@ -1486,7 +1501,7 @@ const PortfolioPage = () => {
                                         formatter={(value) => `$${value.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
                                         contentStyle={{
                                             background: '#1e293b',
-                                            border: '1px solid rgba(0, 173, 237, 0.3)',
+                                            border: `1px solid ${theme.brand?.primary || '#00adef'}4D`,
                                             borderRadius: '8px'
                                         }}
                                     />
@@ -1496,33 +1511,33 @@ const PortfolioPage = () => {
                                 {pieData.slice(0, 6).map((entry, index) => (
                                     <div key={entry.name} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem' }}>
                                         <div style={{ width: 8, height: 8, borderRadius: 2, background: COLORS[index % COLORS.length] }} />
-                                        <span style={{ color: '#94a3b8' }}>{entry.name}</span>
+                                        <span style={{ color: theme.text?.secondary || '#94a3b8' }}>{entry.name}</span>
                                     </div>
                                 ))}
                             </div>
                         </ChartCard>
 
-                        <ChartCard>
-                            <ChartTitle>
+                        <ChartCard theme={theme}>
+                            <ChartTitle theme={theme}>
                                 <BarChart3 size={20} />
                                 Performance
                             </ChartTitle>
                             <ResponsiveContainer width="100%" height={220}>
                                 <BarChart data={performanceData.slice(0, 6)} layout="vertical">
-                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.1)" />
-                                    <XAxis type="number" stroke="#64748b" tickFormatter={v => `${v}%`} />
-                                    <YAxis type="category" dataKey="symbol" stroke="#64748b" width={50} />
+                                    <CartesianGrid strokeDasharray="3 3" stroke={`${theme.text?.secondary || '#94a3b8'}1A`} />
+                                    <XAxis type="number" stroke={theme.text?.tertiary || '#64748b'} tickFormatter={v => `${v}%`} />
+                                    <YAxis type="category" dataKey="symbol" stroke={theme.text?.tertiary || '#64748b'} width={50} />
                                     <Tooltip
                                         formatter={(value) => `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`}
                                         contentStyle={{
                                             background: '#1e293b',
-                                            border: '1px solid rgba(0, 173, 237, 0.3)',
+                                            border: `1px solid ${theme.brand?.primary || '#00adef'}4D`,
                                             borderRadius: '8px'
                                         }}
                                     />
                                     <Bar dataKey="gain" radius={[0, 4, 4, 0]}>
                                         {performanceData.slice(0, 6).map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.gain >= 0 ? '#10b981' : '#ef4444'} />
+                                            <Cell key={`cell-${index}`} fill={entry.gain >= 0 ? theme.success || '#10b981' : theme.error || '#ef4444'} />
                                         ))}
                                     </Bar>
                                 </BarChart>
@@ -1535,17 +1550,18 @@ const PortfolioPage = () => {
             {/* Add Modal */}
             {showAddModal && (
                 <Modal onClick={() => setShowAddModal(false)}>
-                    <ModalContent onClick={e => e.stopPropagation()}>
+                    <ModalContent theme={theme} onClick={e => e.stopPropagation()}>
                         <ModalHeader>
-                            <ModalTitle>Add Holding</ModalTitle>
-                            <CloseButton onClick={() => setShowAddModal(false)}>
+                            <ModalTitle theme={theme}>Add Holding</ModalTitle>
+                            <CloseButton theme={theme} onClick={() => setShowAddModal(false)}>
                                 <X size={18} />
                             </CloseButton>
                         </ModalHeader>
                         <Form onSubmit={addHolding}>
                             <FormGroup>
-                                <Label>Symbol</Label>
+                                <Label theme={theme}>Symbol</Label>
                                 <Input
+                                    theme={theme}
                                     type="text"
                                     placeholder="AAPL"
                                     value={formData.symbol}
@@ -1555,8 +1571,9 @@ const PortfolioPage = () => {
                                 />
                             </FormGroup>
                             <FormGroup>
-                                <Label>Shares</Label>
+                                <Label theme={theme}>Shares</Label>
                                 <Input
+                                    theme={theme}
                                     type="number"
                                     step="0.01"
                                     placeholder="10"
@@ -1566,8 +1583,9 @@ const PortfolioPage = () => {
                                 />
                             </FormGroup>
                             <FormGroup>
-                                <Label>Average Price</Label>
+                                <Label theme={theme}>Average Price</Label>
                                 <Input
+                                    theme={theme}
                                     type="number"
                                     step="0.01"
                                     placeholder="150.00"
@@ -1576,7 +1594,7 @@ const PortfolioPage = () => {
                                     required
                                 />
                             </FormGroup>
-                            <SubmitButton type="submit">Add Holding</SubmitButton>
+                            <SubmitButton theme={theme} type="submit">Add Holding</SubmitButton>
                         </Form>
                     </ModalContent>
                 </Modal>
@@ -1585,17 +1603,18 @@ const PortfolioPage = () => {
             {/* Edit Modal */}
             {showEditModal && selectedHolding && (
                 <Modal onClick={() => setShowEditModal(false)}>
-                    <ModalContent onClick={e => e.stopPropagation()}>
+                    <ModalContent theme={theme} onClick={e => e.stopPropagation()}>
                         <ModalHeader>
-                            <ModalTitle>Edit {selectedHolding.symbol}</ModalTitle>
-                            <CloseButton onClick={() => setShowEditModal(false)}>
+                            <ModalTitle theme={theme}>Edit {selectedHolding.symbol}</ModalTitle>
+                            <CloseButton theme={theme} onClick={() => setShowEditModal(false)}>
                                 <X size={18} />
                             </CloseButton>
                         </ModalHeader>
                         <Form onSubmit={updateHolding}>
                             <FormGroup>
-                                <Label>Shares</Label>
+                                <Label theme={theme}>Shares</Label>
                                 <Input
+                                    theme={theme}
                                     type="number"
                                     step="0.01"
                                     value={formData.shares}
@@ -1605,8 +1624,9 @@ const PortfolioPage = () => {
                                 />
                             </FormGroup>
                             <FormGroup>
-                                <Label>Average Price</Label>
+                                <Label theme={theme}>Average Price</Label>
                                 <Input
+                                    theme={theme}
                                     type="number"
                                     step="0.01"
                                     value={formData.averagePrice}
@@ -1614,7 +1634,7 @@ const PortfolioPage = () => {
                                     required
                                 />
                             </FormGroup>
-                            <SubmitButton type="submit">Update Holding</SubmitButton>
+                            <SubmitButton theme={theme} type="submit">Update Holding</SubmitButton>
                         </Form>
                     </ModalContent>
                 </Modal>

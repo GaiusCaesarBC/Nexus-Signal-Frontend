@@ -1,5 +1,5 @@
 // client/src/components/gamification/NavbarGamification.js
-// Shows gamification stats with dropdown panel + EQUIPPED BADGES
+// Shows gamification stats with dropdown panel + EQUIPPED BADGES - THEMED VERSION
 
 import React, { useState, useRef, useEffect } from 'react';
 import styled, { keyframes, css } from 'styled-components';
@@ -11,6 +11,7 @@ import {
 import { useGamification } from '../../context/GamificationContext';
 import { useAuth } from '../../context/AuthContext';
 import { useVault } from '../../context/VaultContext';
+import { useTheme } from '../../context/ThemeContext';
 
 // ============ BADGE DEFINITIONS (synced with backend) ============
 const BADGE_ICONS = {
@@ -111,11 +112,11 @@ const Container = styled.button`
     gap: 0.75rem;
     padding: 0.5rem 0.75rem;
     background: ${props => props.$open 
-        ? 'rgba(0, 173, 239, 0.15)' 
+        ? `${props.theme.brand?.primary}26` 
         : 'rgba(15, 23, 42, 0.6)'};
     border: 1px solid ${props => props.$open 
-        ? 'rgba(0, 173, 239, 0.4)' 
-        : 'rgba(0, 173, 239, 0.2)'};
+        ? `${props.theme.brand?.primary}66` 
+        : `${props.theme.brand?.primary}33`};
     border-radius: 50px;
     backdrop-filter: blur(10px);
     cursor: pointer;
@@ -124,8 +125,8 @@ const Container = styled.button`
     font-family: inherit;
 
     &:hover {
-        background: rgba(0, 173, 239, 0.15);
-        border-color: rgba(0, 173, 239, 0.4);
+        background: ${props => props.theme.brand?.primary}26;
+        border-color: ${props => props.theme.brand?.primary}66;
         transform: translateY(-1px);
     }
 
@@ -178,7 +179,7 @@ const AvatarImg = styled.img`
 const AvatarInitials = styled.div`
     font-size: 14px;
     font-weight: 700;
-    background: linear-gradient(135deg, #00adef 0%, #00ff88 100%);
+    background: ${props => props.theme.brand?.gradient || `linear-gradient(135deg, ${props.theme.brand?.primary} 0%, ${props.theme.brand?.accent || props.theme.success} 100%)`};
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -199,12 +200,12 @@ const StatChip = styled.div`
     display: flex;
     align-items: center;
     gap: 0.3rem;
-    color: ${props => props.$color || '#94a3b8'};
+    color: ${props => props.$color || props.theme.text?.secondary};
     font-size: 0.8rem;
     font-weight: 600;
 
     svg {
-        color: ${props => props.$iconColor || props.$color || '#94a3b8'};
+        color: ${props => props.$iconColor || props.$color || props.theme.text?.secondary};
     }
 `;
 
@@ -218,9 +219,9 @@ const CoinChip = styled(StatChip)`
 `;
 
 const LevelChip = styled.div`
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.3) 0%, rgba(59, 130, 246, 0.3) 100%);
-    border: 1px solid rgba(139, 92, 246, 0.5);
-    color: #a78bfa;
+    background: linear-gradient(135deg, ${props => props.theme.brand?.primary}4D 0%, ${props => props.theme.brand?.accent || props.theme.brand?.secondary}4D 100%);
+    border: 1px solid ${props => props.theme.brand?.primary}80;
+    color: ${props => props.theme.brand?.primary};
     font-size: 0.7rem;
     font-weight: 700;
     padding: 0.15rem 0.5rem;
@@ -306,11 +307,11 @@ const MoreBadges = styled.div`
     justify-content: center;
     font-size: 0.6rem;
     font-weight: 700;
-    color: #94a3b8;
+    color: ${props => props.theme.text?.secondary};
 `;
 
 const DropdownIcon = styled(ChevronDown)`
-    color: #64748b;
+    color: ${props => props.theme.text?.tertiary};
     transition: transform 0.3s ease;
     transform: ${props => props.$open ? 'rotate(180deg)' : 'rotate(0)'};
 
@@ -327,7 +328,7 @@ const DropdownPanel = styled.div`
     width: 340px;
     background: rgba(15, 23, 42, 0.98);
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(0, 173, 239, 0.3);
+    border: 1px solid ${props => props.theme.brand?.primary}4D;
     border-radius: 16px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
     animation: ${slideDown} 0.3s ease-out;
@@ -342,8 +343,8 @@ const DropdownPanel = styled.div`
 
 const PanelHeader = styled.div`
     padding: 1.25rem;
-    background: linear-gradient(135deg, rgba(0, 173, 239, 0.15) 0%, rgba(139, 92, 246, 0.1) 100%);
-    border-bottom: 1px solid rgba(0, 173, 239, 0.2);
+    background: linear-gradient(135deg, ${props => props.theme.brand?.primary}26 0%, ${props => props.theme.brand?.accent || props.theme.brand?.secondary}1a 100%);
+    border-bottom: 1px solid ${props => props.theme.brand?.primary}33;
     display: flex;
     align-items: center;
     gap: 1rem;
@@ -398,7 +399,7 @@ const HeaderRank = styled.div`
 `;
 
 const RankBadge = styled.span`
-    background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+    background: ${props => props.theme.brand?.gradient || `linear-gradient(135deg, ${props.theme.brand?.primary} 0%, ${props.theme.brand?.accent || props.theme.brand?.secondary} 100%)`};
     color: white;
     font-size: 0.7rem;
     font-weight: 700;
@@ -407,14 +408,14 @@ const RankBadge = styled.span`
 `;
 
 const RankTitle = styled.span`
-    color: #94a3b8;
+    color: ${props => props.theme.text?.secondary};
     font-size: 0.8rem;
 `;
 
 // Badges Section in Dropdown
 const BadgesSection = styled.div`
     padding: 0.75rem 1.25rem;
-    border-bottom: 1px solid rgba(0, 173, 239, 0.1);
+    border-bottom: 1px solid ${props => props.theme.brand?.primary}1a;
 `;
 
 const BadgesSectionHeader = styled.div`
@@ -425,7 +426,7 @@ const BadgesSectionHeader = styled.div`
 `;
 
 const BadgesSectionTitle = styled.span`
-    color: #94a3b8;
+    color: ${props => props.theme.text?.secondary};
     font-size: 0.8rem;
     font-weight: 600;
 `;
@@ -433,7 +434,7 @@ const BadgesSectionTitle = styled.span`
 const BadgesSectionLink = styled.button`
     background: none;
     border: none;
-    color: #00adef;
+    color: ${props => props.theme.brand?.primary};
     font-size: 0.75rem;
     font-weight: 600;
     cursor: pointer;
@@ -478,7 +479,7 @@ const DropdownBadge = styled.div`
 `;
 
 const EmptyBadgesText = styled.div`
-    color: #64748b;
+    color: ${props => props.theme.text?.tertiary};
     font-size: 0.8rem;
     font-style: italic;
 `;
@@ -486,7 +487,7 @@ const EmptyBadgesText = styled.div`
 // XP Progress Section
 const XPSection = styled.div`
     padding: 1rem 1.25rem;
-    border-bottom: 1px solid rgba(0, 173, 239, 0.1);
+    border-bottom: 1px solid ${props => props.theme.brand?.primary}1a;
 `;
 
 const XPHeader = styled.div`
@@ -497,20 +498,20 @@ const XPHeader = styled.div`
 `;
 
 const XPLabel = styled.span`
-    color: #94a3b8;
+    color: ${props => props.theme.text?.secondary};
     font-size: 0.8rem;
     font-weight: 600;
 `;
 
 const XPValue = styled.span`
-    color: #a78bfa;
+    color: ${props => props.theme.brand?.primary};
     font-size: 0.8rem;
     font-weight: 700;
 `;
 
 const XPBarTrack = styled.div`
     height: 8px;
-    background: rgba(100, 116, 139, 0.3);
+    background: ${props => props.theme.text?.tertiary}4D;
     border-radius: 4px;
     overflow: hidden;
 `;
@@ -518,7 +519,7 @@ const XPBarTrack = styled.div`
 const XPBarFill = styled.div`
     height: 100%;
     width: ${props => props.$percent || 0}%;
-    background: linear-gradient(90deg, #8b5cf6 0%, #06b6d4 100%);
+    background: ${props => props.theme.brand?.gradient || `linear-gradient(90deg, ${props.theme.brand?.primary} 0%, ${props.theme.brand?.accent || props.theme.brand?.secondary} 100%)`};
     border-radius: 4px;
     transition: width 0.5s ease;
     position: relative;
@@ -538,12 +539,12 @@ const StatsGrid = styled.div`
     grid-template-columns: 1fr 1fr;
     gap: 0.75rem;
     padding: 1rem 1.25rem;
-    border-bottom: 1px solid rgba(0, 173, 239, 0.1);
+    border-bottom: 1px solid ${props => props.theme.brand?.primary}1a;
 `;
 
 const StatCard = styled.div`
     background: rgba(30, 41, 59, 0.5);
-    border: 1px solid rgba(100, 116, 139, 0.2);
+    border: 1px solid ${props => props.theme.text?.tertiary}33;
     border-radius: 12px;
     padding: 0.75rem;
     display: flex;
@@ -555,11 +556,11 @@ const StatIcon = styled.div`
     width: 36px;
     height: 36px;
     border-radius: 10px;
-    background: ${props => props.$bg || 'rgba(0, 173, 239, 0.15)'};
+    background: ${props => props.$bg || `${props.theme.brand?.primary}26`};
     display: flex;
     align-items: center;
     justify-content: center;
-    color: ${props => props.$color || '#00adef'};
+    color: ${props => props.$color || props.theme.brand?.primary};
 `;
 
 const StatInfo = styled.div``;
@@ -572,7 +573,7 @@ const StatValue = styled.div`
 
 const StatLabel = styled.div`
     font-size: 0.7rem;
-    color: #64748b;
+    color: ${props => props.theme.text?.tertiary};
 `;
 
 // Quick Links
@@ -600,8 +601,8 @@ const QuickLink = styled.button`
     font-family: inherit;
 
     &:hover {
-        background: rgba(0, 173, 239, 0.1);
-        color: #00adef;
+        background: ${props => props.theme.brand?.primary}1a;
+        color: ${props => props.theme.brand?.primary};
         padding-left: 1.25rem;
     }
 `;
@@ -616,11 +617,11 @@ const QuickLinkIcon = styled.div`
     width: 32px;
     height: 32px;
     border-radius: 8px;
-    background: ${props => props.$bg || 'rgba(0, 173, 239, 0.15)'};
+    background: ${props => props.$bg || `${props.theme.brand?.primary}26`};
     display: flex;
     align-items: center;
     justify-content: center;
-    color: ${props => props.$color || '#00adef'};
+    color: ${props => props.$color || props.theme.brand?.primary};
 `;
 
 // ============ SINGLE BADGE WITH TOOLTIP ============
@@ -654,6 +655,7 @@ const NavBadge = ({ badgeId, size = 22 }) => {
 const NavbarGamification = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
+    const { theme } = useTheme();
     const { gamificationData, loading, vault } = useGamification();
     const { equippedBadges } = useVault();
     const [isOpen, setIsOpen] = useState(false);
@@ -678,7 +680,6 @@ const NavbarGamification = () => {
     const achievements = gamificationData?.achievements || [];
 
     // 🔥 AUTO-CALCULATE LEVEL FROM XP (1000 XP per level)
-    // This ensures navbar always shows correct level regardless of backend sync
     const getRankForLevel = (lvl) => {
         if (lvl >= 100) return 'Wall Street Titan';
         if (lvl >= 75) return 'Market Mogul';
@@ -700,14 +701,14 @@ const NavbarGamification = () => {
     const xpForCurrentLevel = (level - 1) * 1000;
     const xpForNextLevel = level * 1000;
     const xpInLevel = totalXp - xpForCurrentLevel;
-    const xpNeeded = xpForNextLevel - xpForCurrentLevel; // Always 1000
+    const xpNeeded = xpForNextLevel - xpForCurrentLevel;
     const xpProgress = xpNeeded > 0 ? (xpInLevel / xpNeeded) * 100 : 0;
 
     // Get border style
     const borderId = vault?.equippedBorder || 'border-bronze';
     const borderStyle = BORDER_COLORS[borderId] || BORDER_COLORS['border-bronze'];
 
-    // Get equipped badges (max 3 shown in navbar, 5 in dropdown)
+    // Get equipped badges
     const badges = equippedBadges || [];
     const navbarBadges = badges.slice(0, 3);
     const remainingBadges = badges.length - 3;
@@ -761,7 +762,6 @@ const NavbarGamification = () => {
                 <QuickStats>
                     <LevelChip>Lv.{level}</LevelChip>
                     
-                    {/* 🏆 EQUIPPED BADGES */}
                     {navbarBadges.length > 0 && (
                         <BadgesContainer>
                             {navbarBadges.map(badgeId => (
@@ -777,7 +777,7 @@ const NavbarGamification = () => {
                         <Coins size={14} />
                         <span>{nexusCoins.toLocaleString()}</span>
                     </CoinChip>
-                    <StatChip $color={loginStreak > 0 ? '#f97316' : '#64748b'}>
+                    <StatChip $color={loginStreak > 0 ? '#f97316' : undefined}>
                         <Flame size={14} />
                         <span>{loginStreak}</span>
                     </StatChip>
@@ -817,7 +817,7 @@ const NavbarGamification = () => {
                         </HeaderInfo>
                     </PanelHeader>
 
-                    {/* 🏆 BADGES SECTION IN DROPDOWN */}
+                    {/* Badges Section */}
                     <BadgesSection>
                         <BadgesSectionHeader>
                             <BadgesSectionTitle>Equipped Badges</BadgesSectionTitle>
@@ -859,10 +859,10 @@ const NavbarGamification = () => {
                         </XPBarTrack>
                     </XPSection>
 
-                    {/* Stats Grid */}
+                    {/* Stats Grid - Uses theme colors */}
                     <StatsGrid>
                         <StatCard>
-                            <StatIcon $bg="rgba(245, 158, 11, 0.15)" $color="#f59e0b">
+                            <StatIcon $bg={`${theme.warning}26`} $color={theme.warning}>
                                 <Coins size={18} />
                             </StatIcon>
                             <StatInfo>
@@ -882,7 +882,7 @@ const NavbarGamification = () => {
                         </StatCard>
 
                         <StatCard>
-                            <StatIcon $bg="rgba(139, 92, 246, 0.15)" $color="#8b5cf6">
+                            <StatIcon $bg={`${theme.brand?.accent || theme.brand?.primary}26`} $color={theme.brand?.accent || theme.brand?.primary}>
                                 <Trophy size={18} />
                             </StatIcon>
                             <StatInfo>
@@ -892,7 +892,7 @@ const NavbarGamification = () => {
                         </StatCard>
 
                         <StatCard>
-                            <StatIcon $bg="rgba(16, 185, 129, 0.15)" $color="#10b981">
+                            <StatIcon $bg={`${theme.success}26`} $color={theme.success}>
                                 <TrendingUp size={18} />
                             </StatIcon>
                             <StatInfo>
@@ -902,11 +902,11 @@ const NavbarGamification = () => {
                         </StatCard>
                     </StatsGrid>
 
-                    {/* Quick Links */}
+                    {/* Quick Links - Uses theme colors */}
                     <QuickLinks>
                         <QuickLink onClick={() => handleNavigate('/dashboard')}>
                             <QuickLinkLeft>
-                                <QuickLinkIcon $bg="rgba(0, 173, 239, 0.15)" $color="#00adef">
+                                <QuickLinkIcon $bg={`${theme.brand?.primary}26`} $color={theme.brand?.primary}>
                                     <BarChart2 size={16} />
                                 </QuickLinkIcon>
                                 <span>Dashboard</span>
@@ -916,7 +916,7 @@ const NavbarGamification = () => {
 
                         <QuickLink onClick={() => handleNavigate('/vault')}>
                             <QuickLinkLeft>
-                                <QuickLinkIcon $bg="rgba(245, 158, 11, 0.15)" $color="#f59e0b">
+                                <QuickLinkIcon $bg={`${theme.warning}26`} $color={theme.warning}>
                                     <DollarSign size={16} />
                                 </QuickLinkIcon>
                                 <span>The Vault</span>
@@ -926,7 +926,7 @@ const NavbarGamification = () => {
 
                         <QuickLink onClick={() => handleNavigate('/achievements/browse')}>
                             <QuickLinkLeft>
-                                <QuickLinkIcon $bg="rgba(139, 92, 246, 0.15)" $color="#8b5cf6">
+                                <QuickLinkIcon $bg={`${theme.brand?.accent || theme.brand?.primary}26`} $color={theme.brand?.accent || theme.brand?.primary}>
                                     <Award size={16} />
                                 </QuickLinkIcon>
                                 <span>Achievements</span>
@@ -936,7 +936,7 @@ const NavbarGamification = () => {
 
                         <QuickLink onClick={() => handleNavigate('/leaderboard')}>
                             <QuickLinkLeft>
-                                <QuickLinkIcon $bg="rgba(16, 185, 129, 0.15)" $color="#10b981">
+                                <QuickLinkIcon $bg={`${theme.success}26`} $color={theme.success}>
                                     <Trophy size={16} />
                                 </QuickLinkIcon>
                                 <span>Leaderboard</span>

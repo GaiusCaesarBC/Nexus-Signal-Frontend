@@ -1,4 +1,4 @@
-// client/src/components/AdvancedChart.js - Professional Trading Charts
+// client/src/components/AdvancedChart.js - Professional Trading Charts - THEMED VERSION
 
 import React, { useEffect, useRef, useState } from 'react';
 import { createChart } from 'lightweight-charts';
@@ -12,12 +12,13 @@ import {
     calculateEMA,
     calculateBollingerBands
 } from '../utils/indicators';
+import { useTheme } from '../context/ThemeContext';
 
 // ============ STYLED COMPONENTS ============
 
 const ChartContainer = styled.div`
     background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
-    border: 1px solid rgba(0, 173, 237, 0.2);
+    border: 1px solid ${props => props.theme.brand?.primary}33;
     border-radius: 16px;
     padding: 1.5rem;
     position: relative;
@@ -47,7 +48,7 @@ const ChartTitle = styled.div`
 const Symbol = styled.h2`
     font-size: 2rem;
     font-weight: 900;
-    background: linear-gradient(135deg, #00d9ff 0%, #8b5cf6 50%, #ec4899 100%);
+    background: ${props => props.theme.brand?.gradient || `linear-gradient(135deg, ${props.theme.brand?.primary} 0%, ${props.theme.brand?.accent || props.theme.brand?.secondary} 50%, ${props.theme.brand?.primary} 100%)`};
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     margin: 0;
@@ -56,12 +57,12 @@ const Symbol = styled.h2`
 const Price = styled.div`
     font-size: 1.5rem;
     font-weight: 700;
-    color: ${props => props.$positive ? '#10b981' : '#ef4444'};
+    color: ${props => props.$positive ? props.theme.success : props.theme.error};
 `;
 
 const PriceChange = styled.div`
     font-size: 1rem;
-    color: ${props => props.$positive ? '#10b981' : '#ef4444'};
+    color: ${props => props.$positive ? props.theme.success : props.theme.error};
     display: flex;
     align-items: center;
     gap: 0.25rem;
@@ -87,12 +88,12 @@ const ControlGroup = styled.div`
 const TimeframeButton = styled.button`
     padding: 0.5rem 1rem;
     background: ${props => props.$active ? 
-        'linear-gradient(135deg, rgba(0, 173, 237, 0.3) 0%, rgba(0, 173, 237, 0.2) 100%)' : 
-        'rgba(0, 173, 237, 0.05)'
+        `linear-gradient(135deg, ${props.theme.brand?.primary}4D 0%, ${props.theme.brand?.primary}33 100%)` : 
+        `${props.theme.brand?.primary}0d`
     };
-    border: 1px solid ${props => props.$active ? 'rgba(0, 173, 237, 0.5)' : 'rgba(0, 173, 237, 0.2)'};
+    border: 1px solid ${props => props.$active ? `${props.theme.brand?.primary}80` : `${props.theme.brand?.primary}33`};
     border-radius: 8px;
-    color: ${props => props.$active ? '#00adef' : '#94a3b8'};
+    color: ${props => props.$active ? props.theme.brand?.primary : props.theme.text?.secondary};
     font-weight: 600;
     font-size: 0.85rem;
     cursor: pointer;
@@ -100,21 +101,21 @@ const TimeframeButton = styled.button`
     white-space: nowrap;
 
     &:hover {
-        background: linear-gradient(135deg, rgba(0, 173, 237, 0.2) 0%, rgba(0, 173, 237, 0.1) 100%);
-        border-color: rgba(0, 173, 237, 0.5);
-        color: #00adef;
+        background: linear-gradient(135deg, ${props => props.theme.brand?.primary}33 0%, ${props => props.theme.brand?.primary}1a 100%);
+        border-color: ${props => props.theme.brand?.primary}80;
+        color: ${props => props.theme.brand?.primary};
     }
 `;
 
 const ChartTypeButton = styled.button`
     padding: 0.5rem;
     background: ${props => props.$active ? 
-        'linear-gradient(135deg, rgba(0, 173, 237, 0.3) 0%, rgba(0, 173, 237, 0.2) 100%)' : 
-        'rgba(0, 173, 237, 0.05)'
+        `linear-gradient(135deg, ${props.theme.brand?.primary}4D 0%, ${props.theme.brand?.primary}33 100%)` : 
+        `${props.theme.brand?.primary}0d`
     };
-    border: 1px solid ${props => props.$active ? 'rgba(0, 173, 237, 0.5)' : 'rgba(0, 173, 237, 0.2)'};
+    border: 1px solid ${props => props.$active ? `${props.theme.brand?.primary}80` : `${props.theme.brand?.primary}33`};
     border-radius: 8px;
-    color: ${props => props.$active ? '#00adef' : '#94a3b8'};
+    color: ${props => props.$active ? props.theme.brand?.primary : props.theme.text?.secondary};
     cursor: pointer;
     transition: all 0.2s ease;
     display: flex;
@@ -122,21 +123,21 @@ const ChartTypeButton = styled.button`
     justify-content: center;
 
     &:hover {
-        background: linear-gradient(135deg, rgba(0, 173, 237, 0.2) 0%, rgba(0, 173, 237, 0.1) 100%);
-        border-color: rgba(0, 173, 237, 0.5);
-        color: #00adef;
+        background: linear-gradient(135deg, ${props => props.theme.brand?.primary}33 0%, ${props => props.theme.brand?.primary}1a 100%);
+        border-color: ${props => props.theme.brand?.primary}80;
+        color: ${props => props.theme.brand?.primary};
     }
 `;
 
 const IndicatorButton = styled.button`
     padding: 0.5rem 1rem;
     background: ${props => props.$active ? 
-        'linear-gradient(135deg, rgba(139, 92, 246, 0.3) 0%, rgba(139, 92, 246, 0.2) 100%)' : 
-        'rgba(139, 92, 246, 0.05)'
+        `linear-gradient(135deg, ${props.theme.brand?.accent || props.theme.brand?.secondary}4D 0%, ${props.theme.brand?.accent || props.theme.brand?.secondary}33 100%)` : 
+        `${props.theme.brand?.accent || props.theme.brand?.secondary}0d`
     };
-    border: 1px solid ${props => props.$active ? 'rgba(139, 92, 246, 0.5)' : 'rgba(139, 92, 246, 0.2)'};
+    border: 1px solid ${props => props.$active ? `${props.theme.brand?.accent || props.theme.brand?.secondary}80` : `${props.theme.brand?.accent || props.theme.brand?.secondary}33`};
     border-radius: 8px;
-    color: ${props => props.$active ? '#a78bfa' : '#94a3b8'};
+    color: ${props => props.$active ? (props.theme.brand?.accent || props.theme.brand?.secondary) : props.theme.text?.secondary};
     font-weight: 600;
     font-size: 0.85rem;
     cursor: pointer;
@@ -147,18 +148,18 @@ const IndicatorButton = styled.button`
     white-space: nowrap;
 
     &:hover {
-        background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(139, 92, 246, 0.1) 100%);
-        border-color: rgba(139, 92, 246, 0.5);
-        color: #a78bfa;
+        background: linear-gradient(135deg, ${props => props.theme.brand?.accent || props.theme.brand?.secondary}33 0%, ${props => props.theme.brand?.accent || props.theme.brand?.secondary}1a 100%);
+        border-color: ${props => props.theme.brand?.accent || props.theme.brand?.secondary}80;
+        color: ${props => props.theme.brand?.accent || props.theme.brand?.secondary};
     }
 `;
 
 const ActionButton = styled.button`
     padding: 0.5rem;
-    background: rgba(0, 173, 237, 0.05);
-    border: 1px solid rgba(0, 173, 237, 0.2);
+    background: ${props => props.theme.brand?.primary}0d;
+    border: 1px solid ${props => props.theme.brand?.primary}33;
     border-radius: 8px;
-    color: #94a3b8;
+    color: ${props => props.theme.text?.secondary};
     cursor: pointer;
     transition: all 0.2s ease;
     display: flex;
@@ -166,9 +167,9 @@ const ActionButton = styled.button`
     justify-content: center;
 
     &:hover {
-        background: rgba(0, 173, 237, 0.15);
-        border-color: rgba(0, 173, 237, 0.5);
-        color: #00adef;
+        background: ${props => props.theme.brand?.primary}26;
+        border-color: ${props => props.theme.brand?.primary}80;
+        color: ${props => props.theme.brand?.primary};
         transform: translateY(-2px);
     }
 `;
@@ -191,6 +192,7 @@ const AdvancedChart = ({
     onTimeframeChange,
     onChartTypeChange
 }) => {
+    const { theme } = useTheme();
     const chartContainerRef = useRef(null);
     const chartRef = useRef(null);
     const candlestickSeriesRef = useRef(null);
@@ -206,12 +208,16 @@ const AdvancedChart = ({
     const timeframes = ['1m', '5m', '15m', '1h', '4h', '1D', '1W', '1M'];
     
     const indicators = [
-        { id: 'sma20', label: 'SMA 20', color: '#00adef' },
-        { id: 'sma50', label: 'SMA 50', color: '#10b981' },
-        { id: 'ema12', label: 'EMA 12', color: '#f59e0b' },
+        { id: 'sma20', label: 'SMA 20', color: theme.brand?.primary || '#00adef' },
+        { id: 'sma50', label: 'SMA 50', color: theme.success || '#10b981' },
+        { id: 'ema12', label: 'EMA 12', color: theme.warning || '#f59e0b' },
         { id: 'ema26', label: 'EMA 26', color: '#ec4899' },
-        { id: 'bb', label: 'Bollinger Bands', color: '#8b5cf6' },
+        { id: 'bb', label: 'Bollinger Bands', color: theme.brand?.accent || '#8b5cf6' },
     ];
+
+    // Get theme color for chart elements
+    const primaryColor = theme.brand?.primary || '#00adef';
+    const primaryColorRgb = primaryColor.replace('#', '');
 
     // Initialize chart
     useEffect(() => {
@@ -225,39 +231,39 @@ const AdvancedChart = ({
                 textColor: '#94a3b8',
             },
             grid: {
-                vertLines: { color: 'rgba(0, 173, 237, 0.1)' },
-                horzLines: { color: 'rgba(0, 173, 237, 0.1)' },
+                vertLines: { color: `${primaryColor}1a` },
+                horzLines: { color: `${primaryColor}1a` },
             },
             crosshair: {
                 mode: 1,
                 vertLine: {
-                    color: 'rgba(0, 173, 237, 0.5)',
-                    labelBackgroundColor: '#00adef',
+                    color: `${primaryColor}80`,
+                    labelBackgroundColor: primaryColor,
                 },
                 horzLine: {
-                    color: 'rgba(0, 173, 237, 0.5)',
-                    labelBackgroundColor: '#00adef',
+                    color: `${primaryColor}80`,
+                    labelBackgroundColor: primaryColor,
                 },
             },
             timeScale: {
-                borderColor: 'rgba(0, 173, 237, 0.2)',
+                borderColor: `${primaryColor}33`,
                 timeVisible: true,
                 secondsVisible: false,
             },
             rightPriceScale: {
-                borderColor: 'rgba(0, 173, 237, 0.2)',
+                borderColor: `${primaryColor}33`,
             },
         });
 
         chartRef.current = chart;
 
         const candlestickSeries = chart.addCandlestickSeries({
-            upColor: '#10b981',
-            downColor: '#ef4444',
-            borderUpColor: '#10b981',
-            borderDownColor: '#ef4444',
-            wickUpColor: '#10b981',
-            wickDownColor: '#ef4444',
+            upColor: theme.success || '#10b981',
+            downColor: theme.error || '#ef4444',
+            borderUpColor: theme.success || '#10b981',
+            borderDownColor: theme.error || '#ef4444',
+            wickUpColor: theme.success || '#10b981',
+            wickDownColor: theme.error || '#ef4444',
         });
 
         candlestickSeriesRef.current = candlestickSeries;
@@ -292,7 +298,7 @@ const AdvancedChart = ({
                 chartRef.current.remove();
             }
         };
-    }, [height]);
+    }, [height, theme]);
 
     // Update chart data
     useEffect(() => {
@@ -304,7 +310,7 @@ const AdvancedChart = ({
             const volumeData = data.map(d => ({
                 time: d.time,
                 value: d.volume || 0,
-                color: d.close >= d.open ? 'rgba(16, 185, 129, 0.5)' : 'rgba(239, 68, 68, 0.5)'
+                color: d.close >= d.open ? `${theme.success || '#10b981'}80` : `${theme.error || '#ef4444'}80`
             }));
             volumeSeriesRef.current.setData(volumeData);
 
@@ -324,7 +330,7 @@ const AdvancedChart = ({
         } catch (error) {
             console.error('Error updating chart data:', error);
         }
-    }, [data]);
+    }, [data, theme]);
 
     // Update indicators
     useEffect(() => {
@@ -359,7 +365,7 @@ const AdvancedChart = ({
                 if (indicatorId === 'sma20') {
                     const smaData = calculateSMA(data, 20);
                     const series = chartRef.current.addLineSeries({
-                        color: '#00adef',
+                        color: theme.brand?.primary || '#00adef',
                         lineWidth: 2,
                         title: 'SMA 20',
                     });
@@ -370,7 +376,7 @@ const AdvancedChart = ({
                 if (indicatorId === 'sma50') {
                     const smaData = calculateSMA(data, 50);
                     const series = chartRef.current.addLineSeries({
-                        color: '#10b981',
+                        color: theme.success || '#10b981',
                         lineWidth: 2,
                         title: 'SMA 50',
                     });
@@ -381,7 +387,7 @@ const AdvancedChart = ({
                 if (indicatorId === 'ema12') {
                     const emaData = calculateEMA(data, 12);
                     const series = chartRef.current.addLineSeries({
-                        color: '#f59e0b',
+                        color: theme.warning || '#f59e0b',
                         lineWidth: 2,
                         title: 'EMA 12',
                     });
@@ -402,9 +408,10 @@ const AdvancedChart = ({
                 
                 if (indicatorId === 'bb') {
                     const bbData = calculateBollingerBands(data, 20, 2);
+                    const bbColor = theme.brand?.accent || '#8b5cf6';
                     
                     const upperSeries = chartRef.current.addLineSeries({
-                        color: '#8b5cf6',
+                        color: bbColor,
                         lineWidth: 1,
                         title: 'BB Upper',
                         lineStyle: 2,
@@ -412,14 +419,14 @@ const AdvancedChart = ({
                     upperSeries.setData(bbData.upper);
                     
                     const middleSeries = chartRef.current.addLineSeries({
-                        color: '#8b5cf6',
+                        color: bbColor,
                         lineWidth: 1,
                         title: 'BB Middle',
                     });
                     middleSeries.setData(bbData.sma);
                     
                     const lowerSeries = chartRef.current.addLineSeries({
-                        color: '#8b5cf6',
+                        color: bbColor,
                         lineWidth: 1,
                         title: 'BB Lower',
                         lineStyle: 2,
@@ -438,7 +445,7 @@ const AdvancedChart = ({
                 console.error(`Error adding indicator ${indicatorId}:`, error);
             }
         });
-    }, [activeIndicators, data]);
+    }, [activeIndicators, data, theme]);
 
     // Sync internal timeframe with external prop
     useEffect(() => {
