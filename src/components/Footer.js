@@ -1,4 +1,4 @@
-// client/src/components/Footer.js - THE MOST LEGENDARY FOOTER
+// client/src/components/Footer.js - THE MOST LEGENDARY FOOTER - THEMED VERSION
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { Link } from 'react-router-dom';
@@ -7,6 +7,7 @@ import {
     TrendingUp, Zap, Brain, Sparkles, ChevronRight, Star,
     Instagram, Facebook, Youtube
 } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`
@@ -17,11 +18,6 @@ const fadeIn = keyframes`
 const float = keyframes`
     0%, 100% { transform: translateY(0px); }
     50% { transform: translateY(-10px); }
-`;
-
-const glow = keyframes`
-    0%, 100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.4); }
-    50% { box-shadow: 0 0 40px rgba(59, 130, 246, 0.8); }
 `;
 
 const shimmer = keyframes`
@@ -37,19 +33,6 @@ const pulse = keyframes`
 const particles = keyframes`
     0% { transform: translateY(0) translateX(0) scale(1); opacity: 1; }
     100% { transform: translateY(-100px) translateX(30px) scale(0); opacity: 0; }
-`;
-
-const neonGlow = keyframes`
-    0%, 100% {
-        text-shadow: 
-            0 0 10px rgba(59, 130, 246, 0.8),
-            0 0 20px rgba(59, 130, 246, 0.6);
-    }
-    50% {
-        text-shadow: 
-            0 0 20px rgba(59, 130, 246, 1),
-            0 0 40px rgba(59, 130, 246, 0.8);
-    }
 `;
 
 // ============ STYLED COMPONENTS ============
@@ -74,13 +57,13 @@ const ParticleContainer = styled.div`
 
 const Particle = styled.div`
     position: absolute;
-    width: ${props => props.size}px;
-    height: ${props => props.size}px;
-    background: ${props => props.color};
+    width: ${props => props.$size}px;
+    height: ${props => props.$size}px;
+    background: ${props => props.$color};
     border-radius: 50%;
-    animation: ${particles} ${props => props.duration}s linear infinite;
-    animation-delay: ${props => props.delay}s;
-    left: ${props => props.left}%;
+    animation: ${particles} ${props => props.$duration}s linear infinite;
+    animation-delay: ${props => props.$delay}s;
+    left: ${props => props.$left}%;
     bottom: 0;
     opacity: 0.4;
 `;
@@ -128,8 +111,10 @@ const Logo = styled.div`
     gap: 0.75rem;
     font-size: 1.8rem;
     font-weight: 900;
-    color: #3b82f6;
-    animation: ${neonGlow} 3s ease-in-out infinite;
+    color: ${props => props.theme.brand?.primary};
+    text-shadow: 
+        0 0 10px ${props => props.theme.brand?.primary}cc,
+        0 0 20px ${props => props.theme.brand?.primary}99;
     cursor: pointer;
     transition: transform 0.3s ease;
 
@@ -143,7 +128,7 @@ const LogoIcon = styled.div`
 `;
 
 const BrandText = styled.p`
-    color: #94a3b8;
+    color: ${props => props.theme.text?.secondary};
     line-height: 1.6;
     font-size: 0.95rem;
 `;
@@ -157,21 +142,21 @@ const SocialIcons = styled.div`
 const SocialIcon = styled.a`
     width: 44px;
     height: 44px;
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%);
-    border: 1px solid rgba(59, 130, 246, 0.3);
+    background: linear-gradient(135deg, ${props => props.theme.brand?.primary}33 0%, ${props => props.theme.brand?.accent || props.theme.brand?.secondary}33 100%);
+    border: 1px solid ${props => props.theme.brand?.primary}4D;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #3b82f6;
+    color: ${props => props.theme.brand?.primary};
     transition: all 0.3s ease;
     cursor: pointer;
 
     &:hover {
-        background: linear-gradient(135deg, rgba(59, 130, 246, 0.4) 0%, rgba(139, 92, 246, 0.4) 100%);
-        border-color: #3b82f6;
+        background: linear-gradient(135deg, ${props => props.theme.brand?.primary}66 0%, ${props => props.theme.brand?.accent || props.theme.brand?.secondary}66 100%);
+        border-color: ${props => props.theme.brand?.primary};
         transform: translateY(-5px) scale(1.1);
-        box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
+        box-shadow: 0 10px 25px ${props => props.theme.brand?.primary}66;
     }
 `;
 
@@ -183,10 +168,14 @@ const SectionTitle = styled.h3`
     display: flex;
     align-items: center;
     gap: 0.5rem;
+
+    svg {
+        color: ${props => props.theme.brand?.primary};
+    }
 `;
 
 const FooterLink = styled(Link)`
-    color: #94a3b8;
+    color: ${props => props.theme.text?.secondary};
     text-decoration: none;
     transition: all 0.3s ease;
     display: flex;
@@ -195,13 +184,13 @@ const FooterLink = styled(Link)`
     font-size: 0.95rem;
 
     &:hover {
-        color: #3b82f6;
+        color: ${props => props.theme.brand?.primary};
         transform: translateX(5px);
     }
 `;
 
 const ExternalLink = styled.a`
-    color: #94a3b8;
+    color: ${props => props.theme.text?.secondary};
     text-decoration: none;
     transition: all 0.3s ease;
     display: flex;
@@ -210,7 +199,7 @@ const ExternalLink = styled.a`
     font-size: 0.95rem;
 
     &:hover {
-        color: #3b82f6;
+        color: ${props => props.theme.brand?.primary};
         transform: translateX(5px);
     }
 `;
@@ -220,7 +209,7 @@ const NewsletterSection = styled(FooterSection)`
 `;
 
 const NewsletterText = styled.p`
-    color: #94a3b8;
+    color: ${props => props.theme.text?.secondary};
     font-size: 0.9rem;
     line-height: 1.5;
 `;
@@ -234,28 +223,28 @@ const NewsletterForm = styled.form`
 const EmailInput = styled.input`
     flex: 1;
     padding: 0.75rem 1rem;
-    background: rgba(59, 130, 246, 0.1);
-    border: 1px solid rgba(59, 130, 246, 0.3);
+    background: ${props => props.theme.brand?.primary}1a;
+    border: 1px solid ${props => props.theme.brand?.primary}4D;
     border-radius: 8px;
     color: #f8fafc;
     font-size: 0.95rem;
     transition: all 0.3s ease;
 
     &::placeholder {
-        color: #64748b;
+        color: ${props => props.theme.text?.tertiary};
     }
 
     &:focus {
         outline: none;
-        border-color: #3b82f6;
-        background: rgba(59, 130, 246, 0.15);
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        border-color: ${props => props.theme.brand?.primary};
+        background: ${props => props.theme.brand?.primary}26;
+        box-shadow: 0 0 0 3px ${props => props.theme.brand?.primary}33;
     }
 `;
 
 const SubscribeButton = styled.button`
     padding: 0.75rem 1.25rem;
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    background: ${props => props.theme.brand?.gradient || `linear-gradient(135deg, ${props.theme.brand?.primary} 0%, ${props.theme.brand?.accent || props.theme.brand?.secondary} 100%)`};
     border: none;
     border-radius: 8px;
     color: white;
@@ -282,7 +271,7 @@ const SubscribeButton = styled.button`
 
     &:hover {
         transform: translateY(-3px);
-        box-shadow: 0 8px 20px rgba(59, 130, 246, 0.5);
+        box-shadow: 0 8px 20px ${props => props.theme.brand?.primary}80;
     }
 
     &:active {
@@ -291,7 +280,7 @@ const SubscribeButton = styled.button`
 `;
 
 const FooterBottom = styled.div`
-    border-top: 1px solid rgba(59, 130, 246, 0.2);
+    border-top: 1px solid ${props => props.theme.brand?.primary}33;
     padding-top: 2rem;
     display: flex;
     justify-content: space-between;
@@ -306,7 +295,7 @@ const FooterBottom = styled.div`
 `;
 
 const Copyright = styled.p`
-    color: #94a3b8;
+    color: ${props => props.theme.text?.secondary};
     font-size: 0.9rem;
     margin: 0;
     display: flex;
@@ -333,13 +322,13 @@ const LegalLinks = styled.div`
 `;
 
 const LegalLink = styled(Link)`
-    color: #94a3b8;
+    color: ${props => props.theme.text?.secondary};
     text-decoration: none;
     font-size: 0.9rem;
     transition: all 0.3s ease;
 
     &:hover {
-        color: #3b82f6;
+        color: ${props => props.theme.brand?.primary};
     }
 `;
 
@@ -348,20 +337,20 @@ const Badge = styled.div`
     align-items: center;
     gap: 0.5rem;
     padding: 0.4rem 0.8rem;
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(5, 150, 105, 0.2) 100%);
-    border: 1px solid rgba(16, 185, 129, 0.4);
+    background: linear-gradient(135deg, ${props => props.theme.success}33 0%, ${props => props.theme.success}1a 100%);
+    border: 1px solid ${props => props.theme.success}66;
     border-radius: 20px;
-    color: #10b981;
+    color: ${props => props.theme.success};
     font-size: 0.85rem;
     font-weight: 600;
-    animation: ${glow} 3s ease-in-out infinite;
+    box-shadow: 0 0 20px ${props => props.theme.success}66;
 `;
 
 const FeatureHighlight = styled.div`
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    color: #cbd5e1;
+    color: ${props => props.theme.text?.secondary};
     font-size: 0.9rem;
     padding: 0.5rem 0;
     transition: all 0.3s ease;
@@ -372,28 +361,35 @@ const FeatureHighlight = styled.div`
     }
 
     svg {
-        color: #3b82f6;
+        color: ${props => props.theme.brand?.primary};
         min-width: 18px;
     }
 `;
 
 // ============ COMPONENT ============
 const Footer = () => {
+    const { theme } = useTheme();
     const [email, setEmail] = useState('');
-    const [particles, setParticles] = useState([]);
+    const [particleList, setParticleList] = useState([]);
 
-    // Generate background particles on mount
+    // Generate background particles on mount using theme colors
     useEffect(() => {
+        const colors = [
+            theme.brand?.primary || '#3b82f6',
+            theme.brand?.accent || theme.brand?.secondary || '#8b5cf6',
+            theme.success || '#10b981'
+        ];
+        
         const newParticles = Array.from({ length: 15 }, (_, i) => ({
             id: i,
             size: Math.random() * 3 + 2,
             left: Math.random() * 100,
             duration: Math.random() * 8 + 8,
             delay: Math.random() * 5,
-            color: ['#3b82f6', '#8b5cf6', '#10b981'][Math.floor(Math.random() * 3)]
+            color: colors[Math.floor(Math.random() * 3)]
         }));
-        setParticles(newParticles);
-    }, []);
+        setParticleList(newParticles);
+    }, [theme]);
 
     const handleSubscribe = (e) => {
         e.preventDefault();
@@ -409,14 +405,14 @@ const Footer = () => {
         <FooterContainer>
             {/* Animated Background Particles */}
             <ParticleContainer>
-                {particles.map(particle => (
+                {particleList.map(particle => (
                     <Particle
                         key={particle.id}
-                        size={particle.size}
-                        left={particle.left}
-                        duration={particle.duration}
-                        delay={particle.delay}
-                        color={particle.color}
+                        $size={particle.size}
+                        $left={particle.left}
+                        $duration={particle.duration}
+                        $delay={particle.delay}
+                        $color={particle.color}
                     />
                 ))}
             </ParticleContainer>

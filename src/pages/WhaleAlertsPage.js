@@ -1,10 +1,11 @@
-// src/pages/WhaleAlertsPage.js - Whale & Insider Trading Alerts
+// src/pages/WhaleAlertsPage.js - Whale & Insider Trading Alerts (THEMED)
 // Comprehensive view of insider trades, crypto whales, unusual options, and congress trades
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled, { keyframes, css } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import {
     TrendingUp, TrendingDown, Activity, DollarSign, 
     AlertTriangle, Eye, RefreshCw, Filter, Search,
@@ -30,11 +31,6 @@ const shimmer = keyframes`
     100% { background-position: 1000px 0; }
 `;
 
-const glow = keyframes`
-    0%, 100% { box-shadow: 0 0 20px rgba(0, 173, 237, 0.3); }
-    50% { box-shadow: 0 0 40px rgba(0, 173, 237, 0.6); }
-`;
-
 const waveAnimation = keyframes`
     0% { transform: translateX(0) translateY(0); }
     50% { transform: translateX(-5px) translateY(-5px); }
@@ -46,7 +42,7 @@ const PageContainer = styled.div`
     min-height: 100vh;
     padding: 100px 2rem 2rem;
     background: linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
-    color: #e0e6ed;
+    color: ${props => props.theme?.text?.primary || '#e0e6ed'};
 
     @media (max-width: 768px) {
         padding: 80px 1rem 1rem;
@@ -73,17 +69,16 @@ const HeaderLeft = styled.div``;
 const Title = styled.h1`
     font-size: 2.5rem;
     font-weight: 900;
-    background: linear-gradient(135deg, #00adef 0%, #f7931a 50%, #10b981 100%);
+    background: ${props => props.theme?.brand?.gradient || 'linear-gradient(135deg, #00adef 0%, #f7931a 50%, #10b981 100%)'};
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
     display: flex;
     align-items: center;
     gap: 1rem;
-    margin-bottom: 0.5rem;
 
     svg {
-        filter: drop-shadow(0 0 10px rgba(0, 173, 237, 0.5));
+        filter: drop-shadow(0 0 10px ${props => props.theme?.brand?.primary || '#00adef'}80);
     }
 
     @media (max-width: 768px) {
@@ -92,7 +87,7 @@ const Title = styled.h1`
 `;
 
 const Subtitle = styled.p`
-    color: #94a3b8;
+    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
     font-size: 1.1rem;
 `;
 
@@ -108,16 +103,16 @@ const RefreshButton = styled.button`
     align-items: center;
     gap: 0.5rem;
     padding: 0.75rem 1.5rem;
-    background: rgba(0, 173, 237, 0.1);
-    border: 1px solid rgba(0, 173, 237, 0.3);
+    background: ${props => props.theme?.brand?.primary || '#00adef'}1A;
+    border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}4D;
     border-radius: 10px;
-    color: #00adef;
+    color: ${props => props.theme?.brand?.primary || '#00adef'};
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
 
     &:hover {
-        background: rgba(0, 173, 237, 0.2);
+        background: ${props => props.theme?.brand?.primary || '#00adef'}33;
         transform: translateY(-2px);
     }
 
@@ -141,7 +136,7 @@ const RefreshButton = styled.button`
 `;
 
 const LastUpdated = styled.div`
-    color: #64748b;
+    color: ${props => props.theme?.text?.tertiary || '#64748b'};
     font-size: 0.85rem;
     display: flex;
     align-items: center;
@@ -165,8 +160,8 @@ const SummaryGrid = styled.div`
 `;
 
 const SummaryCard = styled.div`
-    background: linear-gradient(135deg, ${props => props.$bgStart || 'rgba(0, 173, 237, 0.1)'} 0%, ${props => props.$bgEnd || 'rgba(0, 173, 237, 0.05)'} 100%);
-    border: 1px solid ${props => props.$borderColor || 'rgba(0, 173, 237, 0.3)'};
+    background: linear-gradient(135deg, ${props => props.$bgStart || `${props.theme?.brand?.primary || '#00adef'}1A`} 0%, ${props => props.$bgEnd || `${props.theme?.brand?.primary || '#00adef'}0D`} 100%);
+    border: 1px solid ${props => props.$borderColor || `${props.theme?.brand?.primary || '#00adef'}4D`};
     border-radius: 16px;
     padding: 1.5rem;
     animation: ${fadeIn} 0.6s ease-out;
@@ -192,17 +187,17 @@ const SummaryIcon = styled.div`
     width: 50px;
     height: 50px;
     border-radius: 12px;
-    background: ${props => props.$bg || 'rgba(0, 173, 237, 0.2)'};
+    background: ${props => props.$bg || `${props.theme?.brand?.primary || '#00adef'}33`};
     display: flex;
     align-items: center;
     justify-content: center;
-    color: ${props => props.$color || '#00adef'};
+    color: ${props => props.$color || props.theme?.brand?.primary || '#00adef'};
     margin-bottom: 1rem;
     animation: ${waveAnimation} 3s ease-in-out infinite;
 `;
 
 const SummaryTitle = styled.div`
-    color: #94a3b8;
+    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
     font-size: 0.9rem;
     margin-bottom: 0.5rem;
     text-transform: uppercase;
@@ -212,7 +207,7 @@ const SummaryTitle = styled.div`
 const SummaryValue = styled.div`
     font-size: 1.8rem;
     font-weight: 800;
-    color: ${props => props.$color || '#e0e6ed'};
+    color: ${props => props.$color || props.theme?.text?.primary || '#e0e6ed'};
     margin-bottom: 0.25rem;
 `;
 
@@ -224,8 +219,12 @@ const SummarySentiment = styled.div`
     border-radius: 20px;
     font-size: 0.8rem;
     font-weight: 700;
-    background: ${props => props.$bullish ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'};
-    color: ${props => props.$bullish ? '#10b981' : '#ef4444'};
+    background: ${props => props.$bullish 
+        ? `${props.theme?.success || '#10b981'}33` 
+        : `${props.theme?.error || '#ef4444'}33`};
+    color: ${props => props.$bullish 
+        ? (props.theme?.success || '#10b981') 
+        : (props.theme?.error || '#ef4444')};
 `;
 
 // Tab Navigation
@@ -241,10 +240,16 @@ const TabNav = styled.div`
 
 const TabButton = styled.button`
     padding: 1rem 1.5rem;
-    background: ${props => props.$active ? 'linear-gradient(135deg, rgba(0, 173, 237, 0.3), rgba(139, 92, 246, 0.2))' : 'transparent'};
-    border: 1px solid ${props => props.$active ? 'rgba(0, 173, 237, 0.5)' : 'transparent'};
+    background: ${props => props.$active 
+        ? `linear-gradient(135deg, ${props.theme?.brand?.primary || '#00adef'}4D, ${props.theme?.brand?.accent || '#8b5cf6'}33)` 
+        : 'transparent'};
+    border: 1px solid ${props => props.$active 
+        ? `${props.theme?.brand?.primary || '#00adef'}80` 
+        : 'transparent'};
     border-radius: 10px;
-    color: ${props => props.$active ? '#00adef' : '#94a3b8'};
+    color: ${props => props.$active 
+        ? (props.theme?.brand?.primary || '#00adef') 
+        : (props.theme?.text?.secondary || '#94a3b8')};
     font-weight: 600;
     font-size: 0.95rem;
     cursor: pointer;
@@ -254,12 +259,14 @@ const TabButton = styled.button`
     gap: 0.5rem;
 
     &:hover {
-        background: ${props => props.$active ? '' : 'rgba(0, 173, 237, 0.1)'};
-        color: ${props => props.$active ? '' : '#00adef'};
+        background: ${props => props.$active ? '' : `${props.theme?.brand?.primary || '#00adef'}1A`};
+        color: ${props => props.$active ? '' : (props.theme?.brand?.primary || '#00adef')};
     }
 
     .count {
-        background: ${props => props.$active ? 'rgba(0, 173, 237, 0.3)' : 'rgba(100, 116, 139, 0.3)'};
+        background: ${props => props.$active 
+            ? `${props.theme?.brand?.primary || '#00adef'}4D` 
+            : `${props.theme?.text?.tertiary || '#64748b'}4D`};
         padding: 0.2rem 0.6rem;
         border-radius: 10px;
         font-size: 0.8rem;
@@ -284,18 +291,18 @@ const SearchInput = styled.div`
         width: 100%;
         padding: 0.75rem 1rem 0.75rem 2.5rem;
         background: rgba(0, 0, 0, 0.3);
-        border: 1px solid rgba(0, 173, 237, 0.2);
+        border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}33;
         border-radius: 10px;
-        color: #e0e6ed;
+        color: ${props => props.theme?.text?.primary || '#e0e6ed'};
         font-size: 0.95rem;
 
         &:focus {
             outline: none;
-            border-color: rgba(0, 173, 237, 0.5);
+            border-color: ${props => props.theme?.brand?.primary || '#00adef'}80;
         }
 
         &::placeholder {
-            color: #64748b;
+            color: ${props => props.theme?.text?.tertiary || '#64748b'};
         }
     }
 
@@ -304,16 +311,22 @@ const SearchInput = styled.div`
         left: 0.75rem;
         top: 50%;
         transform: translateY(-50%);
-        color: #64748b;
+        color: ${props => props.theme?.text?.tertiary || '#64748b'};
     }
 `;
 
 const FilterButton = styled.button`
     padding: 0.75rem 1rem;
-    background: ${props => props.$active ? 'rgba(0, 173, 237, 0.2)' : 'rgba(0, 0, 0, 0.3)'};
-    border: 1px solid ${props => props.$active ? 'rgba(0, 173, 237, 0.5)' : 'rgba(100, 116, 139, 0.3)'};
+    background: ${props => props.$active 
+        ? `${props.theme?.brand?.primary || '#00adef'}33` 
+        : 'rgba(0, 0, 0, 0.3)'};
+    border: 1px solid ${props => props.$active 
+        ? `${props.theme?.brand?.primary || '#00adef'}80` 
+        : `${props.theme?.text?.tertiary || '#64748b'}4D`};
     border-radius: 10px;
-    color: ${props => props.$active ? '#00adef' : '#94a3b8'};
+    color: ${props => props.$active 
+        ? (props.theme?.brand?.primary || '#00adef') 
+        : (props.theme?.text?.secondary || '#94a3b8')};
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -322,8 +335,8 @@ const FilterButton = styled.button`
     gap: 0.5rem;
 
     &:hover {
-        border-color: rgba(0, 173, 237, 0.5);
-        color: #00adef;
+        border-color: ${props => props.theme?.brand?.primary || '#00adef'}80;
+        color: ${props => props.theme?.brand?.primary || '#00adef'};
     }
 `;
 
@@ -337,9 +350,9 @@ const AlertsContainer = styled.div`
 const AlertCard = styled.div`
     background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
     border: 1px solid ${props => {
-        if (props.$significance === 'massive') return 'rgba(245, 158, 11, 0.5)';
-        if (props.$significance === 'high') return 'rgba(139, 92, 246, 0.4)';
-        return 'rgba(0, 173, 237, 0.2)';
+        if (props.$significance === 'massive') return `${props.theme?.warning || '#f59e0b'}80`;
+        if (props.$significance === 'high') return `${props.theme?.brand?.accent || '#8b5cf6'}66`;
+        return `${props.theme?.brand?.primary || '#00adef'}33`;
     }};
     border-radius: 16px;
     padding: 1.5rem;
@@ -351,11 +364,12 @@ const AlertCard = styled.div`
     overflow: hidden;
 
     ${props => props.$significance === 'massive' && css`
-        animation: ${glow} 2s ease-in-out infinite;
+        box-shadow: 0 0 20px ${props.theme?.warning || '#f59e0b'}40;
     `}
+
     &:hover {
         transform: translateY(-3px);
-        border-color: rgba(0, 173, 237, 0.5);
+        border-color: ${props => props.theme?.brand?.primary || '#00adef'}80;
     }
 
     &::before {
@@ -366,11 +380,11 @@ const AlertCard = styled.div`
         width: 4px;
         height: 100%;
         background: ${props => {
-            if (props.$type === 'BUY' || props.$bullish) return '#10b981';
-            if (props.$type === 'SELL' || props.$bearish) return '#ef4444';
-            if (props.$type === 'exchange_outflow') return '#10b981';
-            if (props.$type === 'exchange_inflow') return '#ef4444';
-            return '#00adef';
+            if (props.$type === 'BUY' || props.$bullish) return props.theme?.success || '#10b981';
+            if (props.$type === 'SELL' || props.$bearish) return props.theme?.error || '#ef4444';
+            if (props.$type === 'exchange_outflow') return props.theme?.success || '#10b981';
+            if (props.$type === 'exchange_inflow') return props.theme?.error || '#ef4444';
+            return props.theme?.brand?.primary || '#00adef';
         }};
     }
 `;
@@ -394,11 +408,11 @@ const AlertIcon = styled.div`
     width: 48px;
     height: 48px;
     border-radius: 12px;
-    background: ${props => props.$bg || 'rgba(0, 173, 237, 0.2)'};
+    background: ${props => props.$bg || `${props.theme?.brand?.primary || '#00adef'}33`};
     display: flex;
     align-items: center;
     justify-content: center;
-    color: ${props => props.$color || '#00adef'};
+    color: ${props => props.$color || props.theme?.brand?.primary || '#00adef'};
 `;
 
 const AlertInfo = styled.div``;
@@ -406,14 +420,15 @@ const AlertInfo = styled.div``;
 const AlertSymbol = styled.div`
     font-size: 1.3rem;
     font-weight: 800;
-    color: #00adef;
+    color: ${props => props.theme?.brand?.primary || '#00adef'};
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    flex-wrap: wrap;
 `;
 
 const AlertSubtitle = styled.div`
-    color: #94a3b8;
+    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
     font-size: 0.9rem;
 `;
 
@@ -424,14 +439,16 @@ const AlertRight = styled.div`
 const AlertValue = styled.div`
     font-size: 1.4rem;
     font-weight: 700;
-    color: ${props => props.$color || '#e0e6ed'};
+    color: ${props => props.$color || props.theme?.text?.primary || '#e0e6ed'};
 `;
 
 const AlertChange = styled.div`
     display: flex;
     align-items: center;
     gap: 0.25rem;
-    color: ${props => props.$positive ? '#10b981' : '#ef4444'};
+    color: ${props => props.$positive 
+        ? (props.theme?.success || '#10b981') 
+        : (props.theme?.error || '#ef4444')};
     font-weight: 600;
 `;
 
@@ -440,12 +457,12 @@ const AlertDetails = styled.div`
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 1rem;
     padding-top: 1rem;
-    border-top: 1px solid rgba(100, 116, 139, 0.2);
+    border-top: 1px solid ${props => props.theme?.text?.tertiary || '#64748b'}33;
 `;
 
 const AlertDetail = styled.div`
     .label {
-        color: #64748b;
+        color: ${props => props.theme?.text?.tertiary || '#64748b'};
         font-size: 0.8rem;
         margin-bottom: 0.25rem;
         text-transform: uppercase;
@@ -453,7 +470,7 @@ const AlertDetail = styled.div`
     }
 
     .value {
-        color: #e0e6ed;
+        color: ${props => props.theme?.text?.primary || '#e0e6ed'};
         font-weight: 600;
     }
 `;
@@ -467,25 +484,25 @@ const AlertBadge = styled.span`
     font-size: 0.75rem;
     font-weight: 700;
     background: ${props => {
-        if (props.$variant === 'buy') return 'rgba(16, 185, 129, 0.2)';
-        if (props.$variant === 'sell') return 'rgba(239, 68, 68, 0.2)';
-        if (props.$variant === 'bullish') return 'rgba(16, 185, 129, 0.2)';
-        if (props.$variant === 'bearish') return 'rgba(239, 68, 68, 0.2)';
-        if (props.$variant === 'massive') return 'rgba(245, 158, 11, 0.2)';
-        if (props.$variant === 'high') return 'rgba(139, 92, 246, 0.2)';
-        return 'rgba(0, 173, 237, 0.2)';
+        if (props.$variant === 'buy') return `${props.theme?.success || '#10b981'}33`;
+        if (props.$variant === 'sell') return `${props.theme?.error || '#ef4444'}33`;
+        if (props.$variant === 'bullish') return `${props.theme?.success || '#10b981'}33`;
+        if (props.$variant === 'bearish') return `${props.theme?.error || '#ef4444'}33`;
+        if (props.$variant === 'massive') return `${props.theme?.warning || '#f59e0b'}33`;
+        if (props.$variant === 'high') return `${props.theme?.brand?.accent || '#8b5cf6'}33`;
+        return `${props.theme?.brand?.primary || '#00adef'}33`;
     }};
     color: ${props => {
-        if (props.$variant === 'buy' || props.$variant === 'bullish') return '#10b981';
-        if (props.$variant === 'sell' || props.$variant === 'bearish') return '#ef4444';
-        if (props.$variant === 'massive') return '#f59e0b';
-        if (props.$variant === 'high') return '#a78bfa';
-        return '#00adef';
+        if (props.$variant === 'buy' || props.$variant === 'bullish') return props.theme?.success || '#10b981';
+        if (props.$variant === 'sell' || props.$variant === 'bearish') return props.theme?.error || '#ef4444';
+        if (props.$variant === 'massive') return props.theme?.warning || '#f59e0b';
+        if (props.$variant === 'high') return props.theme?.brand?.accent || '#a78bfa';
+        return props.theme?.brand?.primary || '#00adef';
     }};
 `;
 
 const AlertTime = styled.div`
-    color: #64748b;
+    color: ${props => props.theme?.text?.tertiary || '#64748b'};
     font-size: 0.85rem;
     display: flex;
     align-items: center;
@@ -500,11 +517,12 @@ const LoadingContainer = styled.div`
     align-items: center;
     justify-content: center;
     padding: 4rem;
-    color: #94a3b8;
+    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
 
     svg {
         animation: spin 1s linear infinite;
         margin-bottom: 1rem;
+        color: ${props => props.theme?.brand?.primary || '#00adef'};
     }
 
     @keyframes spin {
@@ -516,11 +534,17 @@ const LoadingContainer = styled.div`
 const EmptyState = styled.div`
     text-align: center;
     padding: 4rem;
-    color: #64748b;
+    color: ${props => props.theme?.text?.tertiary || '#64748b'};
 
     svg {
         margin-bottom: 1rem;
         opacity: 0.5;
+        color: ${props => props.theme?.brand?.primary || '#00adef'};
+    }
+
+    h3 {
+        color: ${props => props.theme?.text?.primary || '#e0e6ed'};
+        margin-bottom: 0.5rem;
     }
 `;
 
@@ -568,6 +592,16 @@ const getAlertIcon = (alertType) => {
 const WhaleAlertsPage = () => {
     const navigate = useNavigate();
     const { api } = useAuth();
+    const { theme } = useTheme();
+
+    // Theme colors
+    const primaryColor = theme?.brand?.primary || '#00adef';
+    const secondaryColor = theme?.brand?.secondary || '#0088cc';
+    const accentColor = theme?.brand?.accent || '#8b5cf6';
+    const successColor = theme?.success || '#10b981';
+    const errorColor = theme?.error || '#ef4444';
+    const warningColor = theme?.warning || '#f59e0b';
+    const infoColor = theme?.info || '#3b82f6';
 
     // State
     const [activeTab, setActiveTab] = useState('all');
@@ -711,57 +745,58 @@ const WhaleAlertsPage = () => {
                 return (
                     <AlertCard 
                         key={alert.id} 
+                        theme={theme}
                         $type={alert.transactionType}
                         $significance={alert.significance}
                         $delay={delay}
                     >
                         <AlertHeader>
                             <AlertLeft>
-                                <AlertIcon $bg="rgba(59, 130, 246, 0.2)" $color="#3b82f6">
+                                <AlertIcon theme={theme} $bg={`${infoColor}33`} $color={infoColor}>
                                     <Users size={24} />
                                 </AlertIcon>
                                 <AlertInfo>
-                                    <AlertSymbol>
+                                    <AlertSymbol theme={theme}>
                                         <TickerLink symbol={alert.symbol} bold />
-                                        <AlertBadge $variant={alert.transactionType?.toLowerCase()}>
+                                        <AlertBadge theme={theme} $variant={alert.transactionType?.toLowerCase()}>
                                             {alert.transactionType}
                                         </AlertBadge>
                                         {alert.significance === 'massive' && (
-                                            <AlertBadge $variant="massive">🔥 MASSIVE</AlertBadge>
+                                            <AlertBadge theme={theme} $variant="massive">🔥 MASSIVE</AlertBadge>
                                         )}
                                     </AlertSymbol>
-                                    <AlertSubtitle>{alert.companyName}</AlertSubtitle>
+                                    <AlertSubtitle theme={theme}>{alert.companyName}</AlertSubtitle>
                                 </AlertInfo>
                             </AlertLeft>
                             <AlertRight>
-                                <AlertValue $color={alert.transactionType === 'BUY' ? '#10b981' : '#ef4444'}>
+                                <AlertValue theme={theme} $color={alert.transactionType === 'BUY' ? successColor : errorColor}>
                                     {formatCurrency(alert.totalValue)}
                                 </AlertValue>
-                                <AlertChange $positive={alert.transactionType === 'BUY'}>
+                                <AlertChange theme={theme} $positive={alert.transactionType === 'BUY'}>
                                     {alert.transactionType === 'BUY' ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
                                     {formatNumber(alert.shares)} shares
                                 </AlertChange>
                             </AlertRight>
                         </AlertHeader>
-                        <AlertDetails>
-                            <AlertDetail>
+                        <AlertDetails theme={theme}>
+                            <AlertDetail theme={theme}>
                                 <div className="label">Insider</div>
                                 <div className="value">{alert.insiderName}</div>
                             </AlertDetail>
-                            <AlertDetail>
+                            <AlertDetail theme={theme}>
                                 <div className="label">Title</div>
                                 <div className="value">{alert.insiderTitle}</div>
                             </AlertDetail>
-                            <AlertDetail>
+                            <AlertDetail theme={theme}>
                                 <div className="label">Price</div>
                                 <div className="value">${alert.pricePerShare?.toFixed(2)}</div>
                             </AlertDetail>
-                            <AlertDetail>
+                            <AlertDetail theme={theme}>
                                 <div className="label">Source</div>
                                 <div className="value">{alert.source}</div>
                             </AlertDetail>
                         </AlertDetails>
-                        <AlertTime>
+                        <AlertTime theme={theme}>
                             <Clock size={14} />
                             {formatTimeAgo(alert.filingDate || alert.transactionDate)}
                         </AlertTime>
@@ -771,55 +806,56 @@ const WhaleAlertsPage = () => {
             case 'crypto':
                 return (
                     <AlertCard 
-                        key={alert.id} 
+                        key={alert.id}
+                        theme={theme}
                         $type={alert.type}
                         $significance={alert.significance}
                         $delay={delay}
                     >
                         <AlertHeader>
                             <AlertLeft>
-                                <AlertIcon $bg="rgba(247, 147, 26, 0.2)" $color="#f7931a">
+                                <AlertIcon theme={theme} $bg={`${warningColor}33`} $color={warningColor}>
                                     <Waves size={24} />
                                 </AlertIcon>
                                 <AlertInfo>
-                                    <AlertSymbol>
+                                    <AlertSymbol theme={theme}>
                                         <TickerLink symbol={alert.symbol} forceCrypto bold />
-                                        <AlertBadge $variant={alert.type === 'exchange_outflow' ? 'buy' : 'sell'}>
+                                        <AlertBadge theme={theme} $variant={alert.type === 'exchange_outflow' ? 'buy' : 'sell'}>
                                             {alert.type === 'exchange_outflow' ? '📤 OUTFLOW' : '📥 INFLOW'}
                                         </AlertBadge>
                                         {alert.significance === 'massive' && (
-                                            <AlertBadge $variant="massive">🐋 WHALE</AlertBadge>
+                                            <AlertBadge theme={theme} $variant="massive">🐋 WHALE</AlertBadge>
                                         )}
                                     </AlertSymbol>
-                                    <AlertSubtitle>{alert.blockchain}</AlertSubtitle>
+                                    <AlertSubtitle theme={theme}>{alert.blockchain}</AlertSubtitle>
                                 </AlertInfo>
                             </AlertLeft>
                             <AlertRight>
-                                <AlertValue $color={alert.type === 'exchange_outflow' ? '#10b981' : '#ef4444'}>
+                                <AlertValue theme={theme} $color={alert.type === 'exchange_outflow' ? successColor : errorColor}>
                                     {formatCurrency(alert.amountUsd)}
                                 </AlertValue>
-                                <AlertChange $positive={alert.type === 'exchange_outflow'}>
+                                <AlertChange theme={theme} $positive={alert.type === 'exchange_outflow'}>
                                     {formatNumber(alert.amount)} {alert.symbol}
                                 </AlertChange>
                             </AlertRight>
                         </AlertHeader>
-                        <AlertDetails>
-                            <AlertDetail>
+                        <AlertDetails theme={theme}>
+                            <AlertDetail theme={theme}>
                                 <div className="label">From</div>
                                 <div className="value">{alert.from?.name || 'Unknown'}</div>
                             </AlertDetail>
-                            <AlertDetail>
+                            <AlertDetail theme={theme}>
                                 <div className="label">To</div>
                                 <div className="value">{alert.to?.name || 'Unknown'}</div>
                             </AlertDetail>
-                            <AlertDetail>
+                            <AlertDetail theme={theme}>
                                 <div className="label">Signal</div>
-                                <div className="value" style={{ color: alert.type === 'exchange_outflow' ? '#10b981' : '#ef4444' }}>
+                                <div className="value" style={{ color: alert.type === 'exchange_outflow' ? successColor : errorColor }}>
                                     {alert.type === 'exchange_outflow' ? 'Accumulation' : 'Distribution'}
                                 </div>
                             </AlertDetail>
                         </AlertDetails>
-                        <AlertTime>
+                        <AlertTime theme={theme}>
                             <Clock size={14} />
                             {formatTimeAgo(alert.timestamp)}
                         </AlertTime>
@@ -829,7 +865,8 @@ const WhaleAlertsPage = () => {
             case 'options':
                 return (
                     <AlertCard 
-                        key={alert.id} 
+                        key={alert.id}
+                        theme={theme}
                         $bullish={alert.sentiment === 'BULLISH'}
                         $bearish={alert.sentiment === 'BEARISH'}
                         $significance={alert.significance}
@@ -837,50 +874,50 @@ const WhaleAlertsPage = () => {
                     >
                         <AlertHeader>
                             <AlertLeft>
-                                <AlertIcon $bg="rgba(139, 92, 246, 0.2)" $color="#a78bfa">
+                                <AlertIcon theme={theme} $bg={`${accentColor}33`} $color={accentColor}>
                                     <BarChart3 size={24} />
                                 </AlertIcon>
                                 <AlertInfo>
-                                    <AlertSymbol>
+                                    <AlertSymbol theme={theme}>
                                         <TickerLink symbol={alert.symbol} bold />
-                                        <AlertBadge $variant={alert.sentiment?.toLowerCase()}>
+                                        <AlertBadge theme={theme} $variant={alert.sentiment?.toLowerCase()}>
                                             {alert.optionType} - {alert.sentiment}
                                         </AlertBadge>
-                                        <AlertBadge $variant={alert.orderType === 'SWEEP' ? 'high' : 'default'}>
+                                        <AlertBadge theme={theme} $variant={alert.orderType === 'SWEEP' ? 'high' : 'default'}>
                                             {alert.orderType}
                                         </AlertBadge>
                                     </AlertSymbol>
-                                    <AlertSubtitle>{alert.companyName}</AlertSubtitle>
+                                    <AlertSubtitle theme={theme}>{alert.companyName}</AlertSubtitle>
                                 </AlertInfo>
                             </AlertLeft>
                             <AlertRight>
-                                <AlertValue $color="#a78bfa">
+                                <AlertValue theme={theme} $color={accentColor}>
                                     {formatCurrency(alert.premium)}
                                 </AlertValue>
-                                <AlertChange $positive={alert.sentiment === 'BULLISH'}>
+                                <AlertChange theme={theme} $positive={alert.sentiment === 'BULLISH'}>
                                     {alert.contracts?.toLocaleString()} contracts
                                 </AlertChange>
                             </AlertRight>
                         </AlertHeader>
-                        <AlertDetails>
-                            <AlertDetail>
+                        <AlertDetails theme={theme}>
+                            <AlertDetail theme={theme}>
                                 <div className="label">Strike</div>
                                 <div className="value">${alert.strike}</div>
                             </AlertDetail>
-                            <AlertDetail>
+                            <AlertDetail theme={theme}>
                                 <div className="label">Expiry</div>
                                 <div className="value">{alert.expiry}</div>
                             </AlertDetail>
-                            <AlertDetail>
+                            <AlertDetail theme={theme}>
                                 <div className="label">Vol/OI</div>
                                 <div className="value">{alert.volumeVsOI}</div>
                             </AlertDetail>
-                            <AlertDetail>
+                            <AlertDetail theme={theme}>
                                 <div className="label">Unusual Score</div>
                                 <div className="value">{alert.unusualScore}/100</div>
                             </AlertDetail>
                         </AlertDetails>
-                        <AlertTime>
+                        <AlertTime theme={theme}>
                             <Clock size={14} />
                             {formatTimeAgo(alert.timestamp)}
                         </AlertTime>
@@ -890,52 +927,53 @@ const WhaleAlertsPage = () => {
             case 'congress':
                 return (
                     <AlertCard 
-                        key={alert.id} 
+                        key={alert.id}
+                        theme={theme}
                         $type={alert.transactionType}
                         $significance={alert.significance}
                         $delay={delay}
                     >
                         <AlertHeader>
                             <AlertLeft>
-                                <AlertIcon $bg="rgba(16, 185, 129, 0.2)" $color="#10b981">
+                                <AlertIcon theme={theme} $bg={`${successColor}33`} $color={successColor}>
                                     <Landmark size={24} />
                                 </AlertIcon>
                                 <AlertInfo>
-                                    <AlertSymbol>
+                                    <AlertSymbol theme={theme}>
                                         <TickerLink symbol={alert.symbol} bold />
-                                        <AlertBadge $variant={alert.transactionType?.toLowerCase()}>
+                                        <AlertBadge theme={theme} $variant={alert.transactionType?.toLowerCase()}>
                                             {alert.transactionType}
                                         </AlertBadge>
-                                        <AlertBadge $variant={alert.party === 'D' ? 'default' : 'sell'}>
+                                        <AlertBadge theme={theme} $variant={alert.party === 'D' ? 'default' : 'sell'}>
                                             {alert.party === 'D' ? '🔵 DEM' : '🔴 REP'}
                                         </AlertBadge>
                                     </AlertSymbol>
-                                    <AlertSubtitle>{alert.companyName}</AlertSubtitle>
+                                    <AlertSubtitle theme={theme}>{alert.companyName}</AlertSubtitle>
                                 </AlertInfo>
                             </AlertLeft>
                             <AlertRight>
-                                <AlertValue>{alert.amountRange}</AlertValue>
+                                <AlertValue theme={theme}>{alert.amountRange}</AlertValue>
                             </AlertRight>
                         </AlertHeader>
-                        <AlertDetails>
-                            <AlertDetail>
+                        <AlertDetails theme={theme}>
+                            <AlertDetail theme={theme}>
                                 <div className="label">Politician</div>
                                 <div className="value">{alert.politicianName}</div>
                             </AlertDetail>
-                            <AlertDetail>
+                            <AlertDetail theme={theme}>
                                 <div className="label">Chamber</div>
                                 <div className="value">{alert.chamber}</div>
                             </AlertDetail>
-                            <AlertDetail>
+                            <AlertDetail theme={theme}>
                                 <div className="label">State</div>
                                 <div className="value">{alert.state}</div>
                             </AlertDetail>
-                            <AlertDetail>
+                            <AlertDetail theme={theme}>
                                 <div className="label">Owner</div>
                                 <div className="value">{alert.owner}</div>
                             </AlertDetail>
                         </AlertDetails>
-                        <AlertTime>
+                        <AlertTime theme={theme}>
                             <Clock size={14} />
                             Disclosed {formatTimeAgo(alert.disclosureDate)}
                         </AlertTime>
@@ -948,24 +986,25 @@ const WhaleAlertsPage = () => {
     };
 
     return (
-        <PageContainer>
+        <PageContainer theme={theme}>
             <ContentWrapper>
                 <Header>
                     <HeaderLeft>
-                        <Title>
-                            <Waves size={36} />
+                        <Title theme={theme}>
+                            <Waves size={36} color={primaryColor} />
                             Whale & Insider Alerts
                         </Title>
-                        <Subtitle>Track insider trades, crypto whales, unusual options, and congressional trades</Subtitle>
+                        <Subtitle theme={theme}>Track insider trades, crypto whales, unusual options, and congressional trades</Subtitle>
                     </HeaderLeft>
                     <HeaderRight>
                         {lastUpdated && (
-                            <LastUpdated>
+                            <LastUpdated theme={theme}>
                                 <Clock size={14} />
                                 Updated {formatTimeAgo(lastUpdated)}
                             </LastUpdated>
                         )}
                         <RefreshButton 
+                            theme={theme}
                             onClick={() => fetchData(true)} 
                             disabled={refreshing}
                             className={refreshing ? 'loading' : ''}
@@ -979,49 +1018,73 @@ const WhaleAlertsPage = () => {
                 {/* Summary Cards */}
                 {summary && (
                     <SummaryGrid>
-                        <SummaryCard $bgStart="rgba(59, 130, 246, 0.15)" $bgEnd="rgba(59, 130, 246, 0.05)" $borderColor="rgba(59, 130, 246, 0.3)" $delay="0.1s">
-                            <SummaryIcon $bg="rgba(59, 130, 246, 0.2)" $color="#3b82f6">
+                        <SummaryCard 
+                            theme={theme}
+                            $bgStart={`${infoColor}26`} 
+                            $bgEnd={`${infoColor}0D`} 
+                            $borderColor={`${infoColor}4D`} 
+                            $delay="0.1s"
+                        >
+                            <SummaryIcon theme={theme} $bg={`${infoColor}33`} $color={infoColor}>
                                 <Users size={24} />
                             </SummaryIcon>
-                            <SummaryTitle>Insider Trading</SummaryTitle>
-                            <SummaryValue>{summary.insider?.total || 0} Trades</SummaryValue>
-                            <SummarySentiment $bullish={summary.insider?.sentiment === 'BULLISH'}>
+                            <SummaryTitle theme={theme}>Insider Trading</SummaryTitle>
+                            <SummaryValue theme={theme}>{summary.insider?.total || 0} Trades</SummaryValue>
+                            <SummarySentiment theme={theme} $bullish={summary.insider?.sentiment === 'BULLISH'}>
                                 {summary.insider?.sentiment === 'BULLISH' ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
                                 {summary.insider?.buys || 0} Buys / {summary.insider?.sells || 0} Sells
                             </SummarySentiment>
                         </SummaryCard>
 
-                        <SummaryCard $bgStart="rgba(247, 147, 26, 0.15)" $bgEnd="rgba(247, 147, 26, 0.05)" $borderColor="rgba(247, 147, 26, 0.3)" $delay="0.2s">
-                            <SummaryIcon $bg="rgba(247, 147, 26, 0.2)" $color="#f7931a">
+                        <SummaryCard 
+                            theme={theme}
+                            $bgStart={`${warningColor}26`} 
+                            $bgEnd={`${warningColor}0D`} 
+                            $borderColor={`${warningColor}4D`} 
+                            $delay="0.2s"
+                        >
+                            <SummaryIcon theme={theme} $bg={`${warningColor}33`} $color={warningColor}>
                                 <Waves size={24} />
                             </SummaryIcon>
-                            <SummaryTitle>Crypto Whales</SummaryTitle>
-                            <SummaryValue>{summary.crypto?.total || 0} Movements</SummaryValue>
-                            <SummarySentiment $bullish={summary.crypto?.sentiment === 'ACCUMULATION'}>
+                            <SummaryTitle theme={theme}>Crypto Whales</SummaryTitle>
+                            <SummaryValue theme={theme}>{summary.crypto?.total || 0} Movements</SummaryValue>
+                            <SummarySentiment theme={theme} $bullish={summary.crypto?.sentiment === 'ACCUMULATION'}>
                                 {summary.crypto?.sentiment === 'ACCUMULATION' ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
                                 {summary.crypto?.sentiment || 'NEUTRAL'}
                             </SummarySentiment>
                         </SummaryCard>
 
-                        <SummaryCard $bgStart="rgba(139, 92, 246, 0.15)" $bgEnd="rgba(139, 92, 246, 0.05)" $borderColor="rgba(139, 92, 246, 0.3)" $delay="0.3s">
-                            <SummaryIcon $bg="rgba(139, 92, 246, 0.2)" $color="#a78bfa">
+                        <SummaryCard 
+                            theme={theme}
+                            $bgStart={`${accentColor}26`} 
+                            $bgEnd={`${accentColor}0D`} 
+                            $borderColor={`${accentColor}4D`} 
+                            $delay="0.3s"
+                        >
+                            <SummaryIcon theme={theme} $bg={`${accentColor}33`} $color={accentColor}>
                                 <BarChart3 size={24} />
                             </SummaryIcon>
-                            <SummaryTitle>Options Flow</SummaryTitle>
-                            <SummaryValue>{summary.options?.total || 0} Unusual</SummaryValue>
-                            <SummarySentiment $bullish={summary.options?.sentiment === 'BULLISH'}>
+                            <SummaryTitle theme={theme}>Options Flow</SummaryTitle>
+                            <SummaryValue theme={theme}>{summary.options?.total || 0} Unusual</SummaryValue>
+                            <SummarySentiment theme={theme} $bullish={summary.options?.sentiment === 'BULLISH'}>
                                 {summary.options?.sentiment === 'BULLISH' ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
                                 {summary.options?.bullish || 0} Bullish / {summary.options?.bearish || 0} Bearish
                             </SummarySentiment>
                         </SummaryCard>
 
-                        <SummaryCard $bgStart="rgba(16, 185, 129, 0.15)" $bgEnd="rgba(16, 185, 129, 0.05)" $borderColor="rgba(16, 185, 129, 0.3)" $delay="0.4s">
-                            <SummaryIcon $bg="rgba(16, 185, 129, 0.2)" $color="#10b981">
+                        <SummaryCard 
+                            theme={theme}
+                            $bgStart={`${successColor}26`} 
+                            $bgEnd={`${successColor}0D`} 
+                            $borderColor={`${successColor}4D`} 
+                            $delay="0.4s"
+                        >
+                            <SummaryIcon theme={theme} $bg={`${successColor}33`} $color={successColor}>
                                 <Landmark size={24} />
                             </SummaryIcon>
-                            <SummaryTitle>Congress Trades</SummaryTitle>
-                            <SummaryValue>{summary.congress?.total || 0} Trades</SummaryValue>
-                            <SummarySentiment $bullish={summary.congress?.buys > summary.congress?.sells}>
+                            <SummaryTitle theme={theme}>Congress Trades</SummaryTitle>
+                            <SummaryValue theme={theme}>{summary.congress?.total || 0} Trades</SummaryValue>
+                            <SummarySentiment theme={theme} $bullish={summary.congress?.buys > summary.congress?.sells}>
                                 {summary.congress?.buys > summary.congress?.sells ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
                                 {summary.congress?.buys || 0} Buys / {summary.congress?.sells || 0} Sells
                             </SummarySentiment>
@@ -1031,28 +1094,28 @@ const WhaleAlertsPage = () => {
 
                 {/* Tab Navigation */}
                 <TabNav>
-                    <TabButton $active={activeTab === 'all'} onClick={() => setActiveTab('all')}>
+                    <TabButton theme={theme} $active={activeTab === 'all'} onClick={() => setActiveTab('all')}>
                         <Activity size={18} />
                         All Alerts
                         <span className="count">{alerts.length}</span>
                     </TabButton>
-                    <TabButton $active={activeTab === 'insider'} onClick={() => setActiveTab('insider')}>
+                    <TabButton theme={theme} $active={activeTab === 'insider'} onClick={() => setActiveTab('insider')}>
                         <Users size={18} />
                         Insider
                     </TabButton>
-                    <TabButton $active={activeTab === 'crypto'} onClick={() => setActiveTab('crypto')}>
+                    <TabButton theme={theme} $active={activeTab === 'crypto'} onClick={() => setActiveTab('crypto')}>
                         <Waves size={18} />
                         Crypto Whales
                     </TabButton>
-                    <TabButton $active={activeTab === 'options'} onClick={() => setActiveTab('options')}>
+                    <TabButton theme={theme} $active={activeTab === 'options'} onClick={() => setActiveTab('options')}>
                         <BarChart3 size={18} />
                         Options Flow
                     </TabButton>
-                    <TabButton $active={activeTab === 'congress'} onClick={() => setActiveTab('congress')}>
+                    <TabButton theme={theme} $active={activeTab === 'congress'} onClick={() => setActiveTab('congress')}>
                         <Landmark size={18} />
                         Congress
                     </TabButton>
-                    <TabButton $active={activeTab === 'hedgefunds'} onClick={() => setActiveTab('hedgefunds')}>
+                    <TabButton theme={theme} $active={activeTab === 'hedgefunds'} onClick={() => setActiveTab('hedgefunds')}>
                         <Building2 size={18} />
                         Hedge Funds
                     </TabButton>
@@ -1060,7 +1123,7 @@ const WhaleAlertsPage = () => {
 
                 {/* Filters */}
                 <FiltersBar>
-                    <SearchInput>
+                    <SearchInput theme={theme}>
                         <Search size={18} />
                         <input 
                             type="text"
@@ -1070,12 +1133,14 @@ const WhaleAlertsPage = () => {
                         />
                     </SearchInput>
                     <FilterButton 
+                        theme={theme}
                         $active={transactionFilter === 'all'} 
                         onClick={() => setTransactionFilter('all')}
                     >
                         All
                     </FilterButton>
                     <FilterButton 
+                        theme={theme}
                         $active={transactionFilter === 'buy'} 
                         onClick={() => setTransactionFilter('buy')}
                     >
@@ -1083,6 +1148,7 @@ const WhaleAlertsPage = () => {
                         Bullish
                     </FilterButton>
                     <FilterButton 
+                        theme={theme}
                         $active={transactionFilter === 'sell'} 
                         onClick={() => setTransactionFilter('sell')}
                     >
@@ -1093,12 +1159,12 @@ const WhaleAlertsPage = () => {
 
                 {/* Alerts List */}
                 {loading ? (
-                    <LoadingContainer>
+                    <LoadingContainer theme={theme}>
                         <Activity size={48} />
                         <p>Loading whale alerts...</p>
                     </LoadingContainer>
                 ) : filteredAlerts.length === 0 ? (
-                    <EmptyState>
+                    <EmptyState theme={theme}>
                         <AlertTriangle size={64} />
                         <h3>No alerts found</h3>
                         <p>Try adjusting your filters or check back later</p>

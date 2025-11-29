@@ -1,9 +1,10 @@
-// client/src/pages/HeatmapPage.js - REVAMPED CLEAN HEATMAP
+// client/src/pages/HeatmapPage.js - THEMED HEATMAP WITH CLICKABLE CELLS
 
 import React, { useState, useEffect, useMemo } from 'react';
 import styled, { keyframes, css } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useTheme } from '../context/ThemeContext';
 import { useNavigate } from 'react-router-dom';
 import {
     TrendingUp, TrendingDown, BarChart3, Flame, RefreshCw,
@@ -27,7 +28,7 @@ const rotate = keyframes`
 const PageContainer = styled.div`
     min-height: 100vh;
     background: linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
-    color: #e0e6ed;
+    color: ${props => props.theme?.text?.primary || '#e0e6ed'};
     padding: 6rem 2rem 2rem;
 `;
 
@@ -54,7 +55,7 @@ const TitleSection = styled.div``;
 
 const Title = styled.h1`
     font-size: 2.5rem;
-    background: linear-gradient(135deg, #00adef 0%, #00ff88 100%);
+    background: ${props => props.theme?.brand?.gradient || 'linear-gradient(135deg, #00adef 0%, #00ff88 100%)'};
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -69,7 +70,7 @@ const Title = styled.h1`
 `;
 
 const Subtitle = styled.p`
-    color: #94a3b8;
+    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
     font-size: 1rem;
     margin-top: 0.25rem;
 `;
@@ -85,7 +86,7 @@ const HeaderActions = styled.div`
 const ModeToggle = styled.div`
     display: flex;
     background: rgba(30, 41, 59, 0.8);
-    border: 1px solid rgba(0, 173, 237, 0.2);
+    border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}33;
     border-radius: 12px;
     padding: 0.25rem;
 `;
@@ -96,26 +97,26 @@ const ModeButton = styled.button`
     gap: 0.5rem;
     padding: 0.6rem 1.25rem;
     background: ${props => props.$active 
-        ? 'linear-gradient(135deg, rgba(0, 173, 237, 0.3) 0%, rgba(0, 173, 237, 0.15) 100%)'
+        ? `linear-gradient(135deg, ${props.theme?.brand?.primary || '#00adef'}4D 0%, ${props.theme?.brand?.primary || '#00adef'}26 100%)`
         : 'transparent'};
     border: none;
     border-radius: 10px;
-    color: ${props => props.$active ? '#00adef' : '#64748b'};
+    color: ${props => props.$active ? (props.theme?.brand?.primary || '#00adef') : (props.theme?.text?.tertiary || '#64748b')};
     font-weight: 600;
     font-size: 0.9rem;
     cursor: pointer;
     transition: all 0.2s ease;
 
     &:hover {
-        color: #00adef;
-        background: rgba(0, 173, 237, 0.1);
+        color: ${props => props.theme?.brand?.primary || '#00adef'};
+        background: ${props => props.theme?.brand?.primary || '#00adef'}1A;
     }
 `;
 
 const ViewToggle = styled.div`
     display: flex;
     background: rgba(30, 41, 59, 0.8);
-    border: 1px solid rgba(0, 173, 237, 0.2);
+    border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}33;
     border-radius: 10px;
     overflow: hidden;
 `;
@@ -125,15 +126,15 @@ const ViewButton = styled.button`
     align-items: center;
     justify-content: center;
     padding: 0.6rem 0.9rem;
-    background: ${props => props.$active ? 'rgba(0, 173, 237, 0.2)' : 'transparent'};
+    background: ${props => props.$active ? `${props.theme?.brand?.primary || '#00adef'}33` : 'transparent'};
     border: none;
-    color: ${props => props.$active ? '#00adef' : '#64748b'};
+    color: ${props => props.$active ? (props.theme?.brand?.primary || '#00adef') : (props.theme?.text?.tertiary || '#64748b')};
     cursor: pointer;
     transition: all 0.2s ease;
 
     &:hover {
-        color: #00adef;
-        background: rgba(0, 173, 237, 0.1);
+        color: ${props => props.theme?.brand?.primary || '#00adef'};
+        background: ${props => props.theme?.brand?.primary || '#00adef'}1A;
     }
 `;
 
@@ -143,11 +144,11 @@ const ActionButton = styled.button`
     gap: 0.5rem;
     padding: 0.6rem 1.25rem;
     background: ${props => props.$primary 
-        ? 'linear-gradient(135deg, #00adef 0%, #0088cc 100%)'
-        : 'rgba(0, 173, 237, 0.1)'};
-    border: 1px solid ${props => props.$primary ? 'transparent' : 'rgba(0, 173, 237, 0.3)'};
+        ? `linear-gradient(135deg, ${props.theme?.brand?.primary || '#00adef'} 0%, ${props.theme?.brand?.secondary || '#0088cc'} 100%)`
+        : `${props.theme?.brand?.primary || '#00adef'}1A`};
+    border: 1px solid ${props => props.$primary ? 'transparent' : `${props.theme?.brand?.primary || '#00adef'}4D`};
     border-radius: 10px;
-    color: ${props => props.$primary ? 'white' : '#00adef'};
+    color: ${props => props.$primary ? 'white' : (props.theme?.brand?.primary || '#00adef')};
     font-weight: 600;
     font-size: 0.9rem;
     cursor: pointer;
@@ -155,7 +156,7 @@ const ActionButton = styled.button`
 
     &:hover:not(:disabled) {
         transform: translateY(-2px);
-        box-shadow: 0 8px 24px rgba(0, 173, 237, 0.3);
+        box-shadow: 0 8px 24px ${props => props.theme?.brand?.primary || '#00adef'}4D;
     }
 
     &:disabled {
@@ -191,7 +192,7 @@ const StatsBar = styled.div`
 
 const StatCard = styled.div`
     background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
-    border: 1px solid rgba(0, 173, 237, 0.2);
+    border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}33;
     border-radius: 14px;
     padding: 1.25rem;
     animation: ${fadeIn} 0.6s ease-out;
@@ -207,7 +208,7 @@ const StatCard = styled.div`
         left: 0;
         right: 0;
         height: 3px;
-        background: ${props => props.$color || 'linear-gradient(90deg, #00adef, #0088cc)'};
+        background: ${props => props.$color || props.theme?.brand?.gradient || 'linear-gradient(90deg, #00adef, #0088cc)'};
     }
 `;
 
@@ -222,15 +223,15 @@ const StatIcon = styled.div`
     width: 32px;
     height: 32px;
     border-radius: 8px;
-    background: ${props => props.$bg || 'rgba(0, 173, 237, 0.15)'};
+    background: ${props => props.$bg || `${props.theme?.brand?.primary || '#00adef'}26`};
     display: flex;
     align-items: center;
     justify-content: center;
-    color: ${props => props.$color || '#00adef'};
+    color: ${props => props.$color || props.theme?.brand?.primary || '#00adef'};
 `;
 
 const StatLabel = styled.div`
-    color: #64748b;
+    color: ${props => props.theme?.text?.tertiary || '#64748b'};
     font-size: 0.75rem;
     font-weight: 600;
     text-transform: uppercase;
@@ -240,19 +241,19 @@ const StatLabel = styled.div`
 const StatValue = styled.div`
     font-size: 1.5rem;
     font-weight: 800;
-    color: ${props => props.$color || '#e0e6ed'};
+    color: ${props => props.$color || props.theme?.text?.primary || '#e0e6ed'};
 `;
 
 const StatSubtext = styled.div`
     font-size: 0.8rem;
-    color: ${props => props.$color || '#64748b'};
+    color: ${props => props.$color || props.theme?.text?.tertiary || '#64748b'};
     margin-top: 0.25rem;
 `;
 
 // ============ HEATMAP CONTAINER ============
 const HeatmapContainer = styled.div`
     background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
-    border: 1px solid rgba(0, 173, 237, 0.2);
+    border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}33;
     border-radius: 20px;
     padding: 1.5rem;
     animation: ${fadeIn} 0.6s ease-out;
@@ -269,7 +270,7 @@ const HeatmapHeader = styled.div`
 
 const HeatmapTitle = styled.h2`
     font-size: 1.3rem;
-    color: #00adef;
+    color: ${props => props.theme?.brand?.primary || '#00adef'};
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -287,7 +288,7 @@ const LegendItem = styled.div`
     align-items: center;
     gap: 0.4rem;
     font-size: 0.8rem;
-    color: #94a3b8;
+    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
 `;
 
 const LegendColor = styled.div`
@@ -317,14 +318,18 @@ const GridContainer = styled.div`
 const GridCell = styled.div`
     background: ${props => {
         const change = props.$change;
-        if (change > 5) return 'linear-gradient(135deg, rgba(16, 185, 129, 0.35), rgba(5, 150, 105, 0.25))';
-        if (change > 2) return 'linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(5, 150, 105, 0.15))';
-        if (change > 0) return 'linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.08))';
-        if (change > -2) return 'linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 38, 0.08))';
-        if (change > -5) return 'linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(220, 38, 38, 0.15))';
-        return 'linear-gradient(135deg, rgba(239, 68, 68, 0.35), rgba(220, 38, 38, 0.25))';
+        const successColor = props.theme?.success || '#10b981';
+        const errorColor = props.theme?.error || '#ef4444';
+        if (change > 5) return `linear-gradient(135deg, ${successColor}59, ${successColor}40)`;
+        if (change > 2) return `linear-gradient(135deg, ${successColor}40, ${successColor}26)`;
+        if (change > 0) return `linear-gradient(135deg, ${successColor}26, ${successColor}14)`;
+        if (change > -2) return `linear-gradient(135deg, ${errorColor}26, ${errorColor}14)`;
+        if (change > -5) return `linear-gradient(135deg, ${errorColor}40, ${errorColor}26)`;
+        return `linear-gradient(135deg, ${errorColor}59, ${errorColor}40)`;
     }};
-    border: 1px solid ${props => props.$change >= 0 ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'};
+    border: 1px solid ${props => props.$change >= 0 
+        ? `${props.theme?.success || '#10b981'}4D` 
+        : `${props.theme?.error || '#ef4444'}4D`};
     border-radius: 12px;
     padding: 1.25rem;
     cursor: pointer;
@@ -339,26 +344,32 @@ const GridCell = styled.div`
         width: 3px;
         height: 100%;
         border-radius: 12px 0 0 12px;
-        background: ${props => props.$change >= 0 ? '#10b981' : '#ef4444'};
+        background: ${props => props.$change >= 0 
+            ? (props.theme?.success || '#10b981') 
+            : (props.theme?.error || '#ef4444')};
     }
 
     &:hover {
         transform: translateY(-4px);
-        box-shadow: 0 12px 32px ${props => props.$change >= 0 ? 'rgba(16, 185, 129, 0.25)' : 'rgba(239, 68, 68, 0.25)'};
-        border-color: ${props => props.$change >= 0 ? 'rgba(16, 185, 129, 0.5)' : 'rgba(239, 68, 68, 0.5)'};
+        box-shadow: 0 12px 32px ${props => props.$change >= 0 
+            ? `${props.theme?.success || '#10b981'}40` 
+            : `${props.theme?.error || '#ef4444'}40`};
+        border-color: ${props => props.$change >= 0 
+            ? `${props.theme?.success || '#10b981'}80` 
+            : `${props.theme?.error || '#ef4444'}80`};
     }
 `;
 
 const CellSymbol = styled.div`
     font-size: 1.2rem;
     font-weight: 800;
-    color: #e0e6ed;
+    color: ${props => props.theme?.text?.primary || '#e0e6ed'};
     margin-bottom: 0.25rem;
 `;
 
 const CellName = styled.div`
     font-size: 0.75rem;
-    color: #64748b;
+    color: ${props => props.theme?.text?.tertiary || '#64748b'};
     margin-bottom: 0.75rem;
     white-space: nowrap;
     overflow: hidden;
@@ -371,12 +382,14 @@ const CellChange = styled.div`
     gap: 0.35rem;
     font-size: 1.25rem;
     font-weight: 800;
-    color: ${props => props.$positive ? '#10b981' : '#ef4444'};
+    color: ${props => props.$positive 
+        ? (props.theme?.success || '#10b981') 
+        : (props.theme?.error || '#ef4444')};
 `;
 
 const CellPrice = styled.div`
     font-size: 0.85rem;
-    color: #94a3b8;
+    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
     margin-top: 0.5rem;
 `;
 
@@ -392,11 +405,11 @@ const LoadingContainer = styled.div`
 
 const SpinningIcon = styled.div`
     animation: ${rotate} 2s linear infinite;
-    color: #00adef;
+    color: ${props => props.theme?.brand?.primary || '#00adef'};
 `;
 
 const LoadingText = styled.div`
-    color: #94a3b8;
+    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
     font-size: 1rem;
 `;
 
@@ -410,28 +423,28 @@ const EmptyIcon = styled.div`
     width: 100px;
     height: 100px;
     margin: 0 auto 1.5rem;
-    background: linear-gradient(135deg, rgba(0, 173, 237, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%);
+    background: linear-gradient(135deg, ${props => props.theme?.brand?.primary || '#00adef'}33 0%, ${props => props.theme?.brand?.accent || '#8b5cf6'}33 100%);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px dashed rgba(0, 173, 237, 0.3);
+    border: 2px dashed ${props => props.theme?.brand?.primary || '#00adef'}4D;
 `;
 
 const EmptyTitle = styled.h2`
-    color: #00adef;
+    color: ${props => props.theme?.brand?.primary || '#00adef'};
     font-size: 1.5rem;
     margin-bottom: 0.5rem;
 `;
 
 const EmptyText = styled.p`
-    color: #94a3b8;
+    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
 `;
 
 // ============ CUSTOM TOOLTIP ============
 const TooltipContainer = styled.div`
     background: rgba(15, 23, 42, 0.95);
-    border: 1px solid rgba(0, 173, 237, 0.4);
+    border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}66;
     border-radius: 12px;
     padding: 1rem;
     min-width: 180px;
@@ -440,13 +453,13 @@ const TooltipContainer = styled.div`
 const TooltipSymbol = styled.div`
     font-size: 1.1rem;
     font-weight: 800;
-    color: #e0e6ed;
+    color: ${props => props.theme?.text?.primary || '#e0e6ed'};
     margin-bottom: 0.25rem;
 `;
 
 const TooltipName = styled.div`
     font-size: 0.8rem;
-    color: #64748b;
+    color: ${props => props.theme?.text?.tertiary || '#64748b'};
     margin-bottom: 0.75rem;
 `;
 
@@ -458,11 +471,11 @@ const TooltipRow = styled.div`
 `;
 
 const TooltipLabel = styled.span`
-    color: #64748b;
+    color: ${props => props.theme?.text?.tertiary || '#64748b'};
 `;
 
 const TooltipValue = styled.span`
-    color: ${props => props.$color || '#e0e6ed'};
+    color: ${props => props.$color || props.theme?.text?.primary || '#e0e6ed'};
     font-weight: 600;
 `;
 
@@ -470,6 +483,7 @@ const TooltipValue = styled.span`
 const HeatmapPage = () => {
     const { api, isAuthenticated } = useAuth();
     const toast = useToast();
+    const { theme } = useTheme();
     const navigate = useNavigate();
 
     const [loading, setLoading] = useState(true);
@@ -508,9 +522,11 @@ const HeatmapPage = () => {
 
     const handleCellClick = (item) => {
         if (mode === 'crypto') {
-            navigate(`/crypto/${item.symbol}`);
+            // Navigate to crypto detail page - use id for CoinGecko coins, fallback to lowercase symbol
+            navigate(`/crypto/${item.id || item.symbol.toLowerCase()}`);
         } else {
-            navigate(`/stocks/${item.symbol}`);
+            // Navigate to stock detail page with symbol (uppercase) - route is /stocks/:symbol
+            navigate(`/stocks/${item.symbol.toUpperCase()}`);
         }
     };
 
@@ -531,6 +547,19 @@ const HeatmapPage = () => {
         return { total: data.length, gainers, losers, avgChange, topGainer, topLoser };
     }, [data]);
 
+    // Get theme colors for treemap
+    const getTreemapColor = (change) => {
+        const successColor = theme?.success || '#10b981';
+        const errorColor = theme?.error || '#ef4444';
+        
+        if (change > 5) return `${successColor}d9`;
+        if (change > 2) return `${successColor}a6`;
+        if (change > 0) return `${successColor}73`;
+        if (change > -2) return `${errorColor}73`;
+        if (change > -5) return `${errorColor}a6`;
+        return `${errorColor}d9`;
+    };
+
     // Custom treemap content
     const renderTreemapContent = (props) => {
         const { x, y, width, height, name } = props;
@@ -539,12 +568,10 @@ const HeatmapPage = () => {
         if (!item || width < 60 || height < 40) return null;
 
         const change = item.change || 0;
-        const fillColor = change > 5 ? 'rgba(16, 185, 129, 0.85)' :
-                         change > 2 ? 'rgba(16, 185, 129, 0.65)' :
-                         change > 0 ? 'rgba(16, 185, 129, 0.45)' :
-                         change > -2 ? 'rgba(239, 68, 68, 0.45)' :
-                         change > -5 ? 'rgba(239, 68, 68, 0.65)' :
-                         'rgba(239, 68, 68, 0.85)';
+        const fillColor = getTreemapColor(change);
+        const strokeColor = change >= 0 
+            ? `${theme?.success || '#10b981'}99` 
+            : `${theme?.error || '#ef4444'}99`;
 
         const fontSize = Math.max(Math.min(width / 6, height / 3, 18), 10);
 
@@ -557,7 +584,7 @@ const HeatmapPage = () => {
                     height={height}
                     style={{
                         fill: fillColor,
-                        stroke: change >= 0 ? 'rgba(16, 185, 129, 0.6)' : 'rgba(239, 68, 68, 0.6)',
+                        stroke: strokeColor,
                         strokeWidth: 2,
                         cursor: 'pointer'
                     }}
@@ -597,23 +624,23 @@ const HeatmapPage = () => {
         if (!item) return null;
 
         return (
-            <TooltipContainer>
-                <TooltipSymbol>{item.symbol}</TooltipSymbol>
-                <TooltipName>{item.name}</TooltipName>
+            <TooltipContainer theme={theme}>
+                <TooltipSymbol theme={theme}>{item.symbol}</TooltipSymbol>
+                <TooltipName theme={theme}>{item.name}</TooltipName>
                 <TooltipRow>
-                    <TooltipLabel>Price</TooltipLabel>
-                    <TooltipValue>${item.price?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TooltipValue>
+                    <TooltipLabel theme={theme}>Price</TooltipLabel>
+                    <TooltipValue theme={theme}>${item.price?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TooltipValue>
                 </TooltipRow>
                 <TooltipRow>
-                    <TooltipLabel>Change</TooltipLabel>
-                    <TooltipValue $color={item.change >= 0 ? '#10b981' : '#ef4444'}>
+                    <TooltipLabel theme={theme}>Change</TooltipLabel>
+                    <TooltipValue theme={theme} $color={item.change >= 0 ? (theme?.success || '#10b981') : (theme?.error || '#ef4444')}>
                         {item.change >= 0 ? '+' : ''}{item.change?.toFixed(2)}%
                     </TooltipValue>
                 </TooltipRow>
                 {item.size && (
                     <TooltipRow>
-                        <TooltipLabel>Market Cap</TooltipLabel>
-                        <TooltipValue>${item.size?.toFixed(1)}B</TooltipValue>
+                        <TooltipLabel theme={theme}>Market Cap</TooltipLabel>
+                        <TooltipValue theme={theme}>${item.size?.toFixed(1)}B</TooltipValue>
                     </TooltipRow>
                 )}
             </TooltipContainer>
@@ -627,42 +654,47 @@ const HeatmapPage = () => {
         return `$${price.toFixed(4)}`;
     };
 
+    // Dynamic colors based on theme
+    const successColor = theme?.success || '#10b981';
+    const errorColor = theme?.error || '#ef4444';
+    const primaryColor = theme?.brand?.primary || '#00adef';
+
     return (
-        <PageContainer>
+        <PageContainer theme={theme}>
             <ContentWrapper>
                 {/* Header */}
                 <Header>
                     <HeaderTop>
                         <TitleSection>
-                            <Title>
-                                <Globe size={32} />
+                            <Title theme={theme}>
+                                <Globe size={32} color={primaryColor} />
                                 Market Heatmap
                             </Title>
-                            <Subtitle>Visual market performance • {data.length} {mode === 'stocks' ? 'stocks' : 'cryptocurrencies'}</Subtitle>
+                            <Subtitle theme={theme}>Visual market performance • {data.length} {mode === 'stocks' ? 'stocks' : 'cryptocurrencies'}</Subtitle>
                         </TitleSection>
 
                         <HeaderActions>
-                            <ModeToggle>
-                                <ModeButton $active={mode === 'stocks'} onClick={() => setMode('stocks')}>
+                            <ModeToggle theme={theme}>
+                                <ModeButton theme={theme} $active={mode === 'stocks'} onClick={() => setMode('stocks')}>
                                     <BarChart3 size={18} />
                                     Stocks
                                 </ModeButton>
-                                <ModeButton $active={mode === 'crypto'} onClick={() => setMode('crypto')}>
+                                <ModeButton theme={theme} $active={mode === 'crypto'} onClick={() => setMode('crypto')}>
                                     <Bitcoin size={18} />
                                     Crypto
                                 </ModeButton>
                             </ModeToggle>
 
-                            <ViewToggle>
-                                <ViewButton $active={view === 'treemap'} onClick={() => setView('treemap')}>
+                            <ViewToggle theme={theme}>
+                                <ViewButton theme={theme} $active={view === 'treemap'} onClick={() => setView('treemap')}>
                                     <Layers size={18} />
                                 </ViewButton>
-                                <ViewButton $active={view === 'grid'} onClick={() => setView('grid')}>
+                                <ViewButton theme={theme} $active={view === 'grid'} onClick={() => setView('grid')}>
                                     <LayoutGrid size={18} />
                                 </ViewButton>
                             </ViewToggle>
 
-                            <ActionButton onClick={handleRefresh} disabled={refreshing} $spinning={refreshing}>
+                            <ActionButton theme={theme} onClick={handleRefresh} disabled={refreshing} $spinning={refreshing}>
                                 <RefreshCw size={18} />
                                 Refresh
                             </ActionButton>
@@ -673,89 +705,89 @@ const HeatmapPage = () => {
                 {/* Stats Bar */}
                 {!loading && data.length > 0 && (
                     <StatsBar>
-                        <StatCard $delay="0s" $color="linear-gradient(90deg, #00adef, #0088cc)">
+                        <StatCard theme={theme} $delay="0s" $color={theme?.brand?.gradient || `linear-gradient(90deg, ${primaryColor}, ${theme?.brand?.secondary || '#0088cc'})`}>
                             <StatHeader>
-                                <StatIcon $bg="rgba(0, 173, 237, 0.15)" $color="#00adef">
+                                <StatIcon theme={theme} $bg={`${primaryColor}26`} $color={primaryColor}>
                                     <Eye size={16} />
                                 </StatIcon>
-                                <StatLabel>Total</StatLabel>
+                                <StatLabel theme={theme}>Total</StatLabel>
                             </StatHeader>
-                            <StatValue>{stats.total}</StatValue>
-                            <StatSubtext>{mode === 'stocks' ? 'stocks' : 'tokens'}</StatSubtext>
+                            <StatValue theme={theme}>{stats.total}</StatValue>
+                            <StatSubtext theme={theme}>{mode === 'stocks' ? 'stocks' : 'tokens'}</StatSubtext>
                         </StatCard>
 
-                        <StatCard $delay="0.1s" $color="linear-gradient(90deg, #10b981, #059669)">
+                        <StatCard theme={theme} $delay="0.1s" $color={`linear-gradient(90deg, ${successColor}, ${theme?.success || '#059669'})`}>
                             <StatHeader>
-                                <StatIcon $bg="rgba(16, 185, 129, 0.15)" $color="#10b981">
+                                <StatIcon theme={theme} $bg={`${successColor}26`} $color={successColor}>
                                     <TrendingUp size={16} />
                                 </StatIcon>
-                                <StatLabel>Gainers</StatLabel>
+                                <StatLabel theme={theme}>Gainers</StatLabel>
                             </StatHeader>
-                            <StatValue $color="#10b981">{stats.gainers}</StatValue>
-                            <StatSubtext $color="#10b981">up today</StatSubtext>
+                            <StatValue theme={theme} $color={successColor}>{stats.gainers}</StatValue>
+                            <StatSubtext theme={theme} $color={successColor}>up today</StatSubtext>
                         </StatCard>
 
-                        <StatCard $delay="0.2s" $color="linear-gradient(90deg, #ef4444, #dc2626)">
+                        <StatCard theme={theme} $delay="0.2s" $color={`linear-gradient(90deg, ${errorColor}, ${theme?.error || '#dc2626'})`}>
                             <StatHeader>
-                                <StatIcon $bg="rgba(239, 68, 68, 0.15)" $color="#ef4444">
+                                <StatIcon theme={theme} $bg={`${errorColor}26`} $color={errorColor}>
                                     <TrendingDown size={16} />
                                 </StatIcon>
-                                <StatLabel>Losers</StatLabel>
+                                <StatLabel theme={theme}>Losers</StatLabel>
                             </StatHeader>
-                            <StatValue $color="#ef4444">{stats.losers}</StatValue>
-                            <StatSubtext $color="#ef4444">down today</StatSubtext>
+                            <StatValue theme={theme} $color={errorColor}>{stats.losers}</StatValue>
+                            <StatSubtext theme={theme} $color={errorColor}>down today</StatSubtext>
                         </StatCard>
 
                         {stats.topGainer && (
-                            <StatCard $delay="0.3s" $color="linear-gradient(90deg, #10b981, #059669)">
+                            <StatCard theme={theme} $delay="0.3s" $color={`linear-gradient(90deg, ${successColor}, ${theme?.success || '#059669'})`}>
                                 <StatHeader>
-                                    <StatIcon $bg="rgba(16, 185, 129, 0.15)" $color="#10b981">
+                                    <StatIcon theme={theme} $bg={`${successColor}26`} $color={successColor}>
                                         <Flame size={16} />
                                     </StatIcon>
-                                    <StatLabel>Top Gainer</StatLabel>
+                                    <StatLabel theme={theme}>Top Gainer</StatLabel>
                                 </StatHeader>
-                                <StatValue $color="#10b981">{stats.topGainer.symbol}</StatValue>
-                                <StatSubtext $color="#10b981">+{stats.topGainer.change?.toFixed(2)}%</StatSubtext>
+                                <StatValue theme={theme} $color={successColor}>{stats.topGainer.symbol}</StatValue>
+                                <StatSubtext theme={theme} $color={successColor}>+{stats.topGainer.change?.toFixed(2)}%</StatSubtext>
                             </StatCard>
                         )}
 
                         {stats.topLoser && (
-                            <StatCard $delay="0.4s" $color="linear-gradient(90deg, #ef4444, #dc2626)">
+                            <StatCard theme={theme} $delay="0.4s" $color={`linear-gradient(90deg, ${errorColor}, ${theme?.error || '#dc2626'})`}>
                                 <StatHeader>
-                                    <StatIcon $bg="rgba(239, 68, 68, 0.15)" $color="#ef4444">
+                                    <StatIcon theme={theme} $bg={`${errorColor}26`} $color={errorColor}>
                                         <TrendingDown size={16} />
                                     </StatIcon>
-                                    <StatLabel>Top Loser</StatLabel>
+                                    <StatLabel theme={theme}>Top Loser</StatLabel>
                                 </StatHeader>
-                                <StatValue $color="#ef4444">{stats.topLoser.symbol}</StatValue>
-                                <StatSubtext $color="#ef4444">{stats.topLoser.change?.toFixed(2)}%</StatSubtext>
+                                <StatValue theme={theme} $color={errorColor}>{stats.topLoser.symbol}</StatValue>
+                                <StatSubtext theme={theme} $color={errorColor}>{stats.topLoser.change?.toFixed(2)}%</StatSubtext>
                             </StatCard>
                         )}
                     </StatsBar>
                 )}
 
                 {/* Heatmap */}
-                <HeatmapContainer>
+                <HeatmapContainer theme={theme}>
                     <HeatmapHeader>
-                        <HeatmapTitle>
+                        <HeatmapTitle theme={theme}>
                             <Layers size={22} />
                             {view === 'treemap' ? 'Treemap View' : 'Grid View'}
                         </HeatmapTitle>
                         <Legend>
-                            <LegendItem>
-                                <LegendColor $color="rgba(16, 185, 129, 0.85)" />
+                            <LegendItem theme={theme}>
+                                <LegendColor $color={`${successColor}d9`} />
                                 Strong Gain
                             </LegendItem>
-                            <LegendItem>
-                                <LegendColor $color="rgba(16, 185, 129, 0.45)" />
+                            <LegendItem theme={theme}>
+                                <LegendColor $color={`${successColor}73`} />
                                 Gain
                             </LegendItem>
-                            <LegendItem>
-                                <LegendColor $color="rgba(239, 68, 68, 0.45)" />
+                            <LegendItem theme={theme}>
+                                <LegendColor $color={`${errorColor}73`} />
                                 Loss
                             </LegendItem>
-                            <LegendItem>
-                                <LegendColor $color="rgba(239, 68, 68, 0.85)" />
+                            <LegendItem theme={theme}>
+                                <LegendColor $color={`${errorColor}d9`} />
                                 Strong Loss
                             </LegendItem>
                         </Legend>
@@ -763,10 +795,10 @@ const HeatmapPage = () => {
 
                     {loading ? (
                         <LoadingContainer>
-                            <SpinningIcon>
+                            <SpinningIcon theme={theme}>
                                 <Activity size={48} />
                             </SpinningIcon>
-                            <LoadingText>Loading {mode === 'stocks' ? 'stock' : 'crypto'} data...</LoadingText>
+                            <LoadingText theme={theme}>Loading {mode === 'stocks' ? 'stock' : 'crypto'} data...</LoadingText>
                         </LoadingContainer>
                     ) : data.length > 0 ? (
                         view === 'treemap' ? (
@@ -787,29 +819,31 @@ const HeatmapPage = () => {
                             <GridContainer>
                                 {data.map(item => (
                                     <GridCell 
-                                        key={item.symbol} 
+                                        theme={theme}
+                                        key={item.symbol || item.id} 
                                         $change={item.change}
                                         onClick={() => handleCellClick(item)}
+                                        title={`Click to view ${item.symbol} details`}
                                     >
-                                        <CellSymbol>{item.symbol}</CellSymbol>
-                                        <CellName>{item.name}</CellName>
-                                        <CellChange $positive={item.change >= 0}>
+                                        <CellSymbol theme={theme}>{item.symbol}</CellSymbol>
+                                        <CellName theme={theme}>{item.name}</CellName>
+                                        <CellChange theme={theme} $positive={item.change >= 0}>
                                             {item.change >= 0 ? <ArrowUpRight size={18} /> : <ArrowDownRight size={18} />}
                                             {item.change >= 0 ? '+' : ''}{item.change?.toFixed(2)}%
                                         </CellChange>
-                                        <CellPrice>{formatPrice(item.price)}</CellPrice>
+                                        <CellPrice theme={theme}>{formatPrice(item.price)}</CellPrice>
                                     </GridCell>
                                 ))}
                             </GridContainer>
                         )
                     ) : (
-                        <EmptyState>
-                            <EmptyIcon>
-                                <Globe size={48} color="#00adef" />
+                        <EmptyState theme={theme}>
+                            <EmptyIcon theme={theme}>
+                                <Globe size={48} color={primaryColor} />
                             </EmptyIcon>
-                            <EmptyTitle>No Data Available</EmptyTitle>
-                            <EmptyText>Unable to load market data. Please try refreshing.</EmptyText>
-                            <ActionButton $primary onClick={handleRefresh} style={{ marginTop: '1.5rem' }}>
+                            <EmptyTitle theme={theme}>No Data Available</EmptyTitle>
+                            <EmptyText theme={theme}>Unable to load market data. Please try refreshing.</EmptyText>
+                            <ActionButton theme={theme} $primary onClick={handleRefresh} style={{ marginTop: '1.5rem' }}>
                                 <RefreshCw size={18} />
                                 Try Again
                             </ActionButton>

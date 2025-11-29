@@ -1,10 +1,11 @@
 // src/components/WhaleAlertWidget.js - Dashboard Widget for Whale/Insider Alerts
-// Compact view of recent whale activity for the main dashboard
+// Compact view of recent whale activity for the main dashboard - WITH THEME SUPPORT
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import {
     TrendingUp, TrendingDown, Waves, Users, BarChart3,
     Landmark, ChevronRight, AlertTriangle, Activity, RefreshCw
@@ -29,8 +30,8 @@ const shimmer = keyframes`
 
 // ============ STYLED COMPONENTS ============
 const WidgetContainer = styled.div`
-    background: linear-gradient(135deg, rgba(247, 147, 26, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
-    border: 1px solid rgba(247, 147, 26, 0.3);
+    background: linear-gradient(135deg, ${props => props.theme.brand?.primary}1a 0%, ${props => props.theme.brand?.accent || props.theme.brand?.secondary}1a 100%);
+    border: 1px solid ${props => props.theme.brand?.primary}4D;
     border-radius: 16px;
     padding: 1.5rem;
     animation: ${fadeIn} 0.8s ease-out;
@@ -44,7 +45,7 @@ const WidgetContainer = styled.div`
         left: 0;
         width: 100%;
         height: 100%;
-        background: linear-gradient(45deg, transparent 30%, rgba(247, 147, 26, 0.05) 50%, transparent 70%);
+        background: linear-gradient(45deg, transparent 30%, ${props => props.theme.brand?.primary}0d 50%, transparent 70%);
         background-size: 200% 200%;
         animation: ${shimmer} 4s linear infinite;
         pointer-events: none;
@@ -63,7 +64,7 @@ const WidgetHeader = styled.div`
 const WidgetTitle = styled.h3`
     font-size: 1.2rem;
     font-weight: 700;
-    color: #f7931a;
+    color: ${props => props.theme.brand?.primary};
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -78,8 +79,8 @@ const LiveBadge = styled.span`
     display: flex;
     align-items: center;
     gap: 0.4rem;
-    background: rgba(16, 185, 129, 0.2);
-    color: #10b981;
+    background: ${props => props.theme.success}33;
+    color: ${props => props.theme.success};
     padding: 0.3rem 0.75rem;
     border-radius: 20px;
     font-size: 0.75rem;
@@ -90,7 +91,7 @@ const LiveBadge = styled.span`
         width: 6px;
         height: 6px;
         border-radius: 50%;
-        background: #10b981;
+        background: ${props => props.theme.success};
         animation: ${pulse} 1.5s ease-in-out infinite;
     }
 `;
@@ -112,9 +113,9 @@ const SummaryPill = styled.div`
     border-radius: 8px;
     font-size: 0.8rem;
     font-weight: 600;
-    background: ${props => props.$bg || 'rgba(0, 173, 237, 0.1)'};
-    color: ${props => props.$color || '#00adef'};
-    border: 1px solid ${props => props.$border || 'rgba(0, 173, 237, 0.2)'};
+    background: ${props => props.$bg || `${props.theme.brand?.primary}1a`};
+    color: ${props => props.$color || props.theme.brand?.primary};
+    border: 1px solid ${props => props.$border || `${props.theme.brand?.primary}33`};
 `;
 
 const AlertsList = styled.div`
@@ -131,12 +132,12 @@ const AlertsList = styled.div`
     }
 
     &::-webkit-scrollbar-track {
-        background: rgba(247, 147, 26, 0.1);
+        background: ${props => props.theme.brand?.primary}1a;
         border-radius: 2px;
     }
 
     &::-webkit-scrollbar-thumb {
-        background: rgba(247, 147, 26, 0.4);
+        background: ${props => props.theme.brand?.primary}66;
         border-radius: 2px;
     }
 `;
@@ -148,19 +149,19 @@ const AlertItem = styled.div`
     padding: 0.75rem;
     background: rgba(0, 0, 0, 0.2);
     border: 1px solid ${props => {
-        if (props.$significance === 'massive') return 'rgba(245, 158, 11, 0.4)';
-        if (props.$bullish) return 'rgba(16, 185, 129, 0.2)';
-        if (props.$bearish) return 'rgba(239, 68, 68, 0.2)';
-        return 'rgba(247, 147, 26, 0.1)';
+        if (props.$significance === 'massive') return `${props.theme.brand?.primary}66`;
+        if (props.$bullish) return `${props.theme.success}33`;
+        if (props.$bearish) return `${props.theme.error}33`;
+        return `${props.theme.brand?.primary}1a`;
     }};
     border-radius: 10px;
     cursor: pointer;
     transition: all 0.2s ease;
 
     &:hover {
-        background: rgba(247, 147, 26, 0.1);
+        background: ${props => props.theme.brand?.primary}1a;
         transform: translateX(4px);
-        border-color: rgba(247, 147, 26, 0.4);
+        border-color: ${props => props.theme.brand?.primary}66;
     }
 `;
 
@@ -171,8 +172,8 @@ const AlertIcon = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
-    background: ${props => props.$bg || 'rgba(247, 147, 26, 0.2)'};
-    color: ${props => props.$color || '#f7931a'};
+    background: ${props => props.$bg || `${props.theme.brand?.primary}33`};
+    color: ${props => props.$color || props.theme.brand?.primary};
     flex-shrink: 0;
 `;
 
@@ -190,7 +191,7 @@ const AlertTop = styled.div`
 
 const AlertSymbol = styled.span`
     font-weight: 700;
-    color: #e0e6ed;
+    color: ${props => props.theme.text?.primary};
     font-size: 0.95rem;
 `;
 
@@ -199,13 +200,13 @@ const AlertBadge = styled.span`
     font-weight: 700;
     padding: 0.15rem 0.5rem;
     border-radius: 4px;
-    background: ${props => props.$bullish ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'};
-    color: ${props => props.$bullish ? '#10b981' : '#ef4444'};
+    background: ${props => props.$bullish ? `${props.theme.success}33` : `${props.theme.error}33`};
+    color: ${props => props.$bullish ? props.theme.success : props.theme.error};
 `;
 
 const AlertDescription = styled.div`
     font-size: 0.8rem;
-    color: #94a3b8;
+    color: ${props => props.theme.text?.secondary};
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -219,22 +220,22 @@ const AlertValue = styled.div`
 const AlertAmount = styled.div`
     font-weight: 700;
     font-size: 0.95rem;
-    color: ${props => props.$bullish ? '#10b981' : props.$bearish ? '#ef4444' : '#e0e6ed'};
+    color: ${props => props.$bullish ? props.theme.success : props.$bearish ? props.theme.error : props.theme.text?.primary};
 `;
 
 const AlertTime = styled.div`
     font-size: 0.7rem;
-    color: #64748b;
+    color: ${props => props.theme.text?.tertiary};
 `;
 
 const ViewAllButton = styled.button`
     width: 100%;
     padding: 0.875rem;
     margin-top: 1rem;
-    background: linear-gradient(135deg, rgba(247, 147, 26, 0.2) 0%, rgba(247, 147, 26, 0.1) 100%);
-    border: 1px solid rgba(247, 147, 26, 0.3);
+    background: linear-gradient(135deg, ${props => props.theme.brand?.primary}33 0%, ${props => props.theme.brand?.primary}1a 100%);
+    border: 1px solid ${props => props.theme.brand?.primary}4D;
     border-radius: 10px;
-    color: #f7931a;
+    color: ${props => props.theme.brand?.primary};
     font-weight: 700;
     font-size: 0.9rem;
     cursor: pointer;
@@ -247,7 +248,7 @@ const ViewAllButton = styled.button`
     z-index: 1;
 
     &:hover {
-        background: linear-gradient(135deg, rgba(247, 147, 26, 0.3) 0%, rgba(247, 147, 26, 0.2) 100%);
+        background: linear-gradient(135deg, ${props => props.theme.brand?.primary}4D 0%, ${props => props.theme.brand?.primary}33 100%);
         transform: translateY(-2px);
     }
 `;
@@ -258,7 +259,7 @@ const LoadingState = styled.div`
     align-items: center;
     justify-content: center;
     padding: 2rem;
-    color: #94a3b8;
+    color: ${props => props.theme.text?.secondary};
 
     svg {
         animation: spin 1s linear infinite;
@@ -274,7 +275,7 @@ const LoadingState = styled.div`
 const EmptyState = styled.div`
     text-align: center;
     padding: 2rem;
-    color: #64748b;
+    color: ${props => props.theme.text?.tertiary};
 
     svg {
         margin-bottom: 0.5rem;
@@ -303,24 +304,26 @@ const formatTimeAgo = (timestamp) => {
     return `${Math.floor(seconds / 86400)}d`;
 };
 
-const getAlertIcon = (type) => {
-    switch (type) {
-        case 'insider': return { icon: <Users size={16} />, bg: 'rgba(59, 130, 246, 0.2)', color: '#3b82f6' };
-        case 'crypto': return { icon: <Waves size={16} />, bg: 'rgba(247, 147, 26, 0.2)', color: '#f7931a' };
-        case 'options': return { icon: <BarChart3 size={16} />, bg: 'rgba(139, 92, 246, 0.2)', color: '#a78bfa' };
-        case 'congress': return { icon: <Landmark size={16} />, bg: 'rgba(16, 185, 129, 0.2)', color: '#10b981' };
-        default: return { icon: <AlertTriangle size={16} />, bg: 'rgba(247, 147, 26, 0.2)', color: '#f7931a' };
-    }
-};
-
 // ============ COMPONENT ============
 const WhaleAlertWidget = () => {
     const navigate = useNavigate();
     const { api } = useAuth();
+    const { theme } = useTheme();
     
     const [alerts, setAlerts] = useState([]);
     const [summary, setSummary] = useState(null);
     const [loading, setLoading] = useState(true);
+
+    // Get themed icon colors
+    const getAlertIcon = (type) => {
+        switch (type) {
+            case 'insider': return { icon: <Users size={16} />, bg: `${theme.brand?.secondary || theme.brand?.primary}33`, color: theme.brand?.secondary || theme.brand?.primary };
+            case 'crypto': return { icon: <Waves size={16} />, bg: `${theme.brand?.primary}33`, color: theme.brand?.primary };
+            case 'options': return { icon: <BarChart3 size={16} />, bg: `${theme.brand?.accent || theme.brand?.primary}33`, color: theme.brand?.accent || theme.brand?.primary };
+            case 'congress': return { icon: <Landmark size={16} />, bg: `${theme.success}33`, color: theme.success };
+            default: return { icon: <AlertTriangle size={16} />, bg: `${theme.brand?.primary}33`, color: theme.brand?.primary };
+        }
+    };
 
     useEffect(() => {
         const fetchWhaleData = async () => {
@@ -450,25 +453,25 @@ const WhaleAlertWidget = () => {
             {summary && (
                 <SummaryRow>
                     <SummaryPill 
-                        $bg="rgba(59, 130, 246, 0.1)" 
-                        $color="#3b82f6"
-                        $border="rgba(59, 130, 246, 0.2)"
+                        $bg={`${theme.brand?.secondary || theme.brand?.primary}1a`}
+                        $color={theme.brand?.secondary || theme.brand?.primary}
+                        $border={`${theme.brand?.secondary || theme.brand?.primary}33`}
                     >
                         <Users size={12} />
                         {summary.insider?.total || 0} Insider
                     </SummaryPill>
                     <SummaryPill 
-                        $bg="rgba(247, 147, 26, 0.1)" 
-                        $color="#f7931a"
-                        $border="rgba(247, 147, 26, 0.2)"
+                        $bg={`${theme.brand?.primary}1a`}
+                        $color={theme.brand?.primary}
+                        $border={`${theme.brand?.primary}33`}
                     >
                         <Waves size={12} />
                         {summary.crypto?.total || 0} Whale
                     </SummaryPill>
                     <SummaryPill 
-                        $bg={summary.overallSentiment === 'BULLISH' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)'} 
-                        $color={summary.overallSentiment === 'BULLISH' ? '#10b981' : '#ef4444'}
-                        $border={summary.overallSentiment === 'BULLISH' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}
+                        $bg={summary.overallSentiment === 'BULLISH' ? `${theme.success}1a` : `${theme.error}1a`}
+                        $color={summary.overallSentiment === 'BULLISH' ? theme.success : theme.error}
+                        $border={summary.overallSentiment === 'BULLISH' ? `${theme.success}33` : `${theme.error}33`}
                     >
                         {summary.overallSentiment === 'BULLISH' ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
                         {summary.overallSentiment}

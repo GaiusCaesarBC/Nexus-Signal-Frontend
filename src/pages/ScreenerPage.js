@@ -1,9 +1,11 @@
-// client/src/pages/ScreenerPage.js - THE MOST LEGENDARY STOCK & CRYPTO SCREENER EVER
+// client/src/pages/ScreenerPage.js - THEMED STOCK & CRYPTO SCREENER WITH CLICKABLE ROWS
 
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useTheme } from '../context/ThemeContext';
+import { useNavigate } from 'react-router-dom';
 import {
     Search, Filter, TrendingUp, TrendingDown, DollarSign, BarChart3,
     ArrowUpDown, Star, Eye, Plus, Check, X, Settings, Download,
@@ -30,8 +32,8 @@ const pulse = keyframes`
 `;
 
 const glow = keyframes`
-    0%, 100% { box-shadow: 0 0 20px rgba(0, 173, 237, 0.4); }
-    50% { box-shadow: 0 0 40px rgba(0, 173, 237, 0.8); }
+    0%, 100% { box-shadow: 0 0 20px ${props => props.theme?.brand?.primary || '#00adef'}66; }
+    50% { box-shadow: 0 0 40px ${props => props.theme?.brand?.primary || '#00adef'}cc; }
 `;
 
 const shimmer = keyframes`
@@ -52,13 +54,13 @@ const float = keyframes`
 const neonGlow = keyframes`
     0%, 100% {
         text-shadow: 
-            0 0 10px rgba(0, 173, 237, 0.8),
-            0 0 20px rgba(0, 173, 237, 0.6);
+            0 0 10px ${props => props.theme?.brand?.primary || '#00adef'}cc,
+            0 0 20px ${props => props.theme?.brand?.primary || '#00adef'}99;
     }
     50% {
         text-shadow: 
-            0 0 20px rgba(0, 173, 237, 1),
-            0 0 40px rgba(0, 173, 237, 0.8);
+            0 0 20px ${props => props.theme?.brand?.primary || '#00adef'},
+            0 0 40px ${props => props.theme?.brand?.primary || '#00adef'}cc;
     }
 `;
 
@@ -67,7 +69,7 @@ const PageContainer = styled.div`
     min-height: 100vh;
     padding-top: 80px;
     background: linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
-    color: #e0e6ed;
+    color: ${props => props.theme?.text?.primary || '#e0e6ed'};
     padding-left: 2rem;
     padding-right: 2rem;
     padding-bottom: 2rem;
@@ -84,7 +86,7 @@ const Header = styled.div`
 
 const Title = styled.h1`
     font-size: 3.5rem;
-    background: linear-gradient(135deg, #00adef 0%, #00ff88 100%);
+    background: ${props => props.theme?.brand?.gradient || 'linear-gradient(135deg, #00adef 0%, #00ff88 100%)'};
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -94,7 +96,6 @@ const Title = styled.h1`
     align-items: center;
     justify-content: center;
     gap: 1rem;
-    animation: ${neonGlow} 2s ease-in-out infinite;
 
     @media (max-width: 768px) {
         font-size: 2.5rem;
@@ -107,7 +108,7 @@ const TitleIcon = styled.div`
 `;
 
 const Subtitle = styled.p`
-    color: #94a3b8;
+    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
     font-size: 1.2rem;
     margin-bottom: 1.5rem;
 `;
@@ -117,12 +118,11 @@ const PoweredBy = styled.div`
     align-items: center;
     gap: 0.5rem;
     padding: 0.5rem 1rem;
-    background: linear-gradient(135deg, rgba(0, 173, 237, 0.2) 0%, rgba(0, 255, 136, 0.2) 100%);
-    border: 1px solid rgba(0, 173, 237, 0.4);
+    background: linear-gradient(135deg, ${props => props.theme?.brand?.primary || '#00adef'}33 0%, ${props => props.theme?.success || '#00ff88'}33 100%);
+    border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}66;
     border-radius: 20px;
     font-size: 0.9rem;
-    color: #00adef;
-    animation: ${glow} 3s ease-in-out infinite;
+    color: ${props => props.theme?.brand?.primary || '#00adef'};
 `;
 
 // ============ MODE TOGGLE ============
@@ -137,12 +137,12 @@ const ModeToggle = styled.div`
 const ModeButton = styled.button`
     padding: 1rem 2rem;
     background: ${props => props.$active ? 
-        'linear-gradient(135deg, rgba(0, 173, 237, 0.3) 0%, rgba(0, 173, 237, 0.15) 100%)' :
+        `linear-gradient(135deg, ${props.theme?.brand?.primary || '#00adef'}4D 0%, ${props.theme?.brand?.primary || '#00adef'}26 100%)` :
         'rgba(30, 41, 59, 0.5)'
     };
-    border: 2px solid ${props => props.$active ? 'rgba(0, 173, 237, 0.5)' : 'rgba(100, 116, 139, 0.3)'};
+    border: 2px solid ${props => props.$active ? `${props.theme?.brand?.primary || '#00adef'}80` : 'rgba(100, 116, 139, 0.3)'};
     border-radius: 12px;
-    color: ${props => props.$active ? '#00adef' : '#94a3b8'};
+    color: ${props => props.$active ? (props.theme?.brand?.primary || '#00adef') : (props.theme?.text?.secondary || '#94a3b8')};
     font-weight: 700;
     font-size: 1.1rem;
     cursor: pointer;
@@ -152,11 +152,11 @@ const ModeButton = styled.button`
     gap: 0.75rem;
 
     &:hover {
-        background: linear-gradient(135deg, rgba(0, 173, 237, 0.3) 0%, rgba(0, 173, 237, 0.15) 100%);
-        border-color: rgba(0, 173, 237, 0.5);
-        color: #00adef;
+        background: linear-gradient(135deg, ${props => props.theme?.brand?.primary || '#00adef'}4D 0%, ${props => props.theme?.brand?.primary || '#00adef'}26 100%);
+        border-color: ${props => props.theme?.brand?.primary || '#00adef'}80;
+        color: ${props => props.theme?.brand?.primary || '#00adef'};
         transform: translateY(-3px);
-        box-shadow: 0 10px 30px rgba(0, 173, 237, 0.3);
+        box-shadow: 0 10px 30px ${props => props.theme?.brand?.primary || '#00adef'}4D;
     }
 `;
 
@@ -166,7 +166,7 @@ const FiltersContainer = styled.div`
     margin: 0 auto 2rem;
     background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(0, 173, 237, 0.3);
+    border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}4D;
     border-radius: 16px;
     padding: 2rem;
     animation: ${fadeIn} 0.6s ease-out;
@@ -180,7 +180,7 @@ const FiltersContainer = styled.div`
         left: 0;
         width: 100%;
         height: 3px;
-        background: linear-gradient(90deg, #00adef, #00ff88);
+        background: ${props => props.theme?.brand?.gradient || 'linear-gradient(90deg, #00adef, #00ff88)'};
     }
 `;
 
@@ -198,7 +198,7 @@ const FiltersHeader = styled.div`
 `;
 
 const FiltersTitle = styled.h2`
-    color: #00adef;
+    color: ${props => props.theme?.brand?.primary || '#00adef'};
     font-size: 1.5rem;
     font-weight: 700;
     display: flex;
@@ -219,12 +219,12 @@ const FilterActions = styled.div`
 const ActionButton = styled.button`
     padding: 0.75rem 1.5rem;
     background: ${props => props.$primary ? 
-        'linear-gradient(135deg, #00adef 0%, #0088cc 100%)' :
-        'rgba(0, 173, 237, 0.1)'
+        `linear-gradient(135deg, ${props.theme?.brand?.primary || '#00adef'} 0%, ${props.theme?.brand?.secondary || '#0088cc'} 100%)` :
+        `${props.theme?.brand?.primary || '#00adef'}1A`
     };
-    border: 1px solid rgba(0, 173, 237, 0.3);
+    border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}4D;
     border-radius: 10px;
-    color: ${props => props.$primary ? 'white' : '#00adef'};
+    color: ${props => props.$primary ? 'white' : (props.theme?.brand?.primary || '#00adef')};
     font-weight: 600;
     cursor: pointer;
     display: flex;
@@ -234,11 +234,11 @@ const ActionButton = styled.button`
 
     &:hover {
         background: ${props => props.$primary ? 
-            'linear-gradient(135deg, #00adef 0%, #0088cc 100%)' :
-            'rgba(0, 173, 237, 0.2)'
+            `linear-gradient(135deg, ${props.theme?.brand?.primary || '#00adef'} 0%, ${props.theme?.brand?.secondary || '#0088cc'} 100%)` :
+            `${props.theme?.brand?.primary || '#00adef'}33`
         };
         transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(0, 173, 237, 0.3);
+        box-shadow: 0 8px 20px ${props => props.theme?.brand?.primary || '#00adef'}4D;
     }
 
     &:disabled {
@@ -265,7 +265,7 @@ const FilterGroup = styled.div`
 `;
 
 const FilterLabel = styled.label`
-    color: #94a3b8;
+    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
     font-size: 0.9rem;
     font-weight: 600;
     display: flex;
@@ -275,44 +275,44 @@ const FilterLabel = styled.label`
 
 const SearchInput = styled.input`
     padding: 0.875rem 1rem;
-    background: rgba(0, 173, 237, 0.05);
-    border: 1px solid rgba(0, 173, 237, 0.3);
+    background: ${props => props.theme?.brand?.primary || '#00adef'}0D;
+    border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}4D;
     border-radius: 10px;
-    color: #e0e6ed;
+    color: ${props => props.theme?.text?.primary || '#e0e6ed'};
     font-size: 1rem;
     transition: all 0.2s ease;
 
     &:focus {
         outline: none;
-        border-color: #00adef;
-        background: rgba(0, 173, 237, 0.1);
-        box-shadow: 0 0 0 3px rgba(0, 173, 237, 0.2);
+        border-color: ${props => props.theme?.brand?.primary || '#00adef'};
+        background: ${props => props.theme?.brand?.primary || '#00adef'}1A;
+        box-shadow: 0 0 0 3px ${props => props.theme?.brand?.primary || '#00adef'}33;
     }
 
     &::placeholder {
-        color: #64748b;
+        color: ${props => props.theme?.text?.tertiary || '#64748b'};
     }
 `;
 
 const Select = styled.select`
     padding: 0.875rem 1rem;
-    background: rgba(0, 173, 237, 0.05);
-    border: 1px solid rgba(0, 173, 237, 0.3);
+    background: ${props => props.theme?.brand?.primary || '#00adef'}0D;
+    border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}4D;
     border-radius: 10px;
-    color: #e0e6ed;
+    color: ${props => props.theme?.text?.primary || '#e0e6ed'};
     font-size: 1rem;
     cursor: pointer;
     transition: all 0.2s ease;
 
     &:focus {
         outline: none;
-        border-color: #00adef;
-        background: rgba(0, 173, 237, 0.1);
+        border-color: ${props => props.theme?.brand?.primary || '#00adef'};
+        background: ${props => props.theme?.brand?.primary || '#00adef'}1A;
     }
 
     option {
         background: #1a1f3a;
-        color: #e0e6ed;
+        color: ${props => props.theme?.text?.primary || '#e0e6ed'};
     }
 `;
 
@@ -325,26 +325,26 @@ const RangeContainer = styled.div`
 const RangeInput = styled.input`
     flex: 1;
     padding: 0.875rem 1rem;
-    background: rgba(0, 173, 237, 0.05);
-    border: 1px solid rgba(0, 173, 237, 0.3);
+    background: ${props => props.theme?.brand?.primary || '#00adef'}0D;
+    border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}4D;
     border-radius: 10px;
-    color: #e0e6ed;
+    color: ${props => props.theme?.text?.primary || '#e0e6ed'};
     font-size: 1rem;
     transition: all 0.2s ease;
 
     &:focus {
         outline: none;
-        border-color: #00adef;
-        background: rgba(0, 173, 237, 0.1);
+        border-color: ${props => props.theme?.brand?.primary || '#00adef'};
+        background: ${props => props.theme?.brand?.primary || '#00adef'}1A;
     }
 
     &::placeholder {
-        color: #64748b;
+        color: ${props => props.theme?.text?.tertiary || '#64748b'};
     }
 `;
 
 const RangeSeparator = styled.span`
-    color: #94a3b8;
+    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
     font-weight: 600;
 `;
 
@@ -354,21 +354,21 @@ const QuickFilters = styled.div`
     gap: 0.75rem;
     flex-wrap: wrap;
     padding-top: 1rem;
-    border-top: 1px solid rgba(0, 173, 237, 0.2);
+    border-top: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}33;
 `;
 
 const QuickFilterChip = styled.button`
     padding: 0.5rem 1rem;
     background: ${props => props.$active ? 
-        'rgba(0, 173, 237, 0.2)' :
-        'rgba(0, 173, 237, 0.05)'
+        `${props.theme?.brand?.primary || '#00adef'}33` :
+        `${props.theme?.brand?.primary || '#00adef'}0D`
     };
     border: 1px solid ${props => props.$active ? 
-        'rgba(0, 173, 237, 0.5)' :
-        'rgba(0, 173, 237, 0.2)'
+        `${props.theme?.brand?.primary || '#00adef'}80` :
+        `${props.theme?.brand?.primary || '#00adef'}33`
     };
     border-radius: 20px;
-    color: ${props => props.$active ? '#00adef' : '#94a3b8'};
+    color: ${props => props.$active ? (props.theme?.brand?.primary || '#00adef') : (props.theme?.text?.secondary || '#94a3b8')};
     font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
@@ -378,9 +378,9 @@ const QuickFilterChip = styled.button`
     transition: all 0.2s ease;
 
     &:hover {
-        background: rgba(0, 173, 237, 0.2);
-        border-color: rgba(0, 173, 237, 0.5);
-        color: #00adef;
+        background: ${props => props.theme?.brand?.primary || '#00adef'}33;
+        border-color: ${props => props.theme?.brand?.primary || '#00adef'}80;
+        color: ${props => props.theme?.brand?.primary || '#00adef'};
         transform: translateY(-2px);
     }
 `;
@@ -405,11 +405,11 @@ const ResultsHeader = styled.div`
 `;
 
 const ResultsInfo = styled.div`
-    color: #94a3b8;
+    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
     font-size: 1rem;
 
     span {
-        color: #00adef;
+        color: ${props => props.theme?.brand?.primary || '#00adef'};
         font-weight: 700;
         font-size: 1.2rem;
     }
@@ -428,15 +428,15 @@ const SortButtons = styled.div`
 const SortButton = styled.button`
     padding: 0.5rem 1rem;
     background: ${props => props.$active ? 
-        'rgba(0, 173, 237, 0.2)' :
+        `${props.theme?.brand?.primary || '#00adef'}33` :
         'rgba(30, 41, 59, 0.5)'
     };
     border: 1px solid ${props => props.$active ? 
-        'rgba(0, 173, 237, 0.5)' :
+        `${props.theme?.brand?.primary || '#00adef'}80` :
         'rgba(100, 116, 139, 0.3)'
     };
     border-radius: 10px;
-    color: ${props => props.$active ? '#00adef' : '#94a3b8'};
+    color: ${props => props.$active ? (props.theme?.brand?.primary || '#00adef') : (props.theme?.text?.secondary || '#94a3b8')};
     font-weight: 600;
     font-size: 0.9rem;
     cursor: pointer;
@@ -447,9 +447,9 @@ const SortButton = styled.button`
     transition: all 0.2s ease;
 
     &:hover {
-        background: rgba(0, 173, 237, 0.2);
-        border-color: rgba(0, 173, 237, 0.5);
-        color: #00adef;
+        background: ${props => props.theme?.brand?.primary || '#00adef'}33;
+        border-color: ${props => props.theme?.brand?.primary || '#00adef'}80;
+        color: ${props => props.theme?.brand?.primary || '#00adef'};
     }
 `;
 
@@ -457,7 +457,7 @@ const SortButton = styled.button`
 const ResultsTable = styled.div`
     background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(0, 173, 237, 0.3);
+    border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}4D;
     border-radius: 16px;
     overflow: hidden;
     animation: ${fadeIn} 0.6s ease-out;
@@ -468,10 +468,10 @@ const TableHeader = styled.div`
     grid-template-columns: 50px 120px 1fr 120px 120px 120px 120px 100px;
     gap: 1rem;
     padding: 1.25rem 1.5rem;
-    background: rgba(0, 173, 237, 0.1);
-    border-bottom: 1px solid rgba(0, 173, 237, 0.3);
+    background: ${props => props.theme?.brand?.primary || '#00adef'}1A;
+    border-bottom: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}4D;
     font-weight: 700;
-    color: #00adef;
+    color: ${props => props.theme?.brand?.primary || '#00adef'};
     font-size: 0.9rem;
 
     @media (max-width: 1200px) {
@@ -501,7 +501,7 @@ const TableHeaderCell = styled.div`
     transition: all 0.2s ease;
 
     &:hover {
-        color: #00ff88;
+        color: ${props => props.theme?.success || '#00ff88'};
     }
 `;
 
@@ -514,15 +514,15 @@ const TableBody = styled.div`
     }
 
     &::-webkit-scrollbar-track {
-        background: rgba(0, 173, 237, 0.1);
+        background: ${props => props.theme?.brand?.primary || '#00adef'}1A;
     }
 
     &::-webkit-scrollbar-thumb {
-        background: rgba(0, 173, 237, 0.5);
+        background: ${props => props.theme?.brand?.primary || '#00adef'}80;
         border-radius: 4px;
 
         &:hover {
-            background: rgba(0, 173, 237, 0.7);
+            background: ${props => props.theme?.brand?.primary || '#00adef'}B3;
         }
     }
 `;
@@ -532,13 +532,13 @@ const TableRow = styled.div`
     grid-template-columns: 50px 120px 1fr 120px 120px 120px 120px 100px;
     gap: 1rem;
     padding: 1.25rem 1.5rem;
-    border-bottom: 1px solid rgba(0, 173, 237, 0.1);
+    border-bottom: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}1A;
     transition: all 0.2s ease;
     cursor: pointer;
     animation: ${fadeIn} 0.4s ease-out;
 
     &:hover {
-        background: rgba(0, 173, 237, 0.05);
+        background: ${props => props.theme?.brand?.primary || '#00adef'}0D;
         transform: translateX(5px);
     }
 
@@ -567,7 +567,7 @@ const TableRow = styled.div`
 const TableCell = styled.div`
     display: flex;
     align-items: center;
-    color: #e0e6ed;
+    color: ${props => props.theme?.text?.primary || '#e0e6ed'};
     font-size: 0.95rem;
 `;
 
@@ -576,14 +576,14 @@ const WatchlistButton = styled.button`
     height: 32px;
     border-radius: 8px;
     background: ${props => props.$active ? 
-        'rgba(245, 158, 11, 0.2)' :
-        'rgba(0, 173, 237, 0.1)'
+        `${props.theme?.warning || '#f59e0b'}33` :
+        `${props.theme?.brand?.primary || '#00adef'}1A`
     };
     border: 1px solid ${props => props.$active ? 
-        'rgba(245, 158, 11, 0.3)' :
-        'rgba(0, 173, 237, 0.3)'
+        `${props.theme?.warning || '#f59e0b'}4D` :
+        `${props.theme?.brand?.primary || '#00adef'}4D`
     };
-    color: ${props => props.$active ? '#f59e0b' : '#00adef'};
+    color: ${props => props.$active ? (props.theme?.warning || '#f59e0b') : (props.theme?.brand?.primary || '#00adef')};
     display: flex;
     align-items: center;
     justify-content: center;
@@ -592,8 +592,8 @@ const WatchlistButton = styled.button`
 
     &:hover {
         background: ${props => props.$active ? 
-            'rgba(245, 158, 11, 0.3)' :
-            'rgba(0, 173, 237, 0.2)'
+            `${props.theme?.warning || '#f59e0b'}4D` :
+            `${props.theme?.brand?.primary || '#00adef'}33`
         };
         transform: scale(1.1);
     }
@@ -607,17 +607,23 @@ const SymbolCell = styled.div`
 const Symbol = styled.span`
     font-weight: 900;
     font-size: 1.1rem;
-    color: #00adef;
+    color: ${props => props.theme?.brand?.primary || '#00adef'};
+    transition: all 0.2s ease;
+
+    &:hover {
+        color: ${props => props.theme?.success || '#00ff88'};
+    }
 `;
 
 const Name = styled.span`
     font-size: 0.85rem;
-    color: #64748b;
+    color: ${props => props.theme?.text?.tertiary || '#64748b'};
 `;
 
 const PriceCell = styled.div`
     font-weight: 700;
     font-size: 1.05rem;
+    color: ${props => props.theme?.text?.primary || '#e0e6ed'};
 `;
 
 const ChangeCell = styled.div`
@@ -626,37 +632,37 @@ const ChangeCell = styled.div`
     gap: 0.5rem;
     padding: 0.4rem 0.75rem;
     background: ${props => props.$positive ? 
-        'rgba(16, 185, 129, 0.2)' :
-        'rgba(239, 68, 68, 0.2)'
+        `${props.theme?.success || '#10b981'}33` :
+        `${props.theme?.error || '#ef4444'}33`
     };
     border-radius: 8px;
-    color: ${props => props.$positive ? '#10b981' : '#ef4444'};
+    color: ${props => props.$positive ? (props.theme?.success || '#10b981') : (props.theme?.error || '#ef4444')};
     font-weight: 700;
     width: fit-content;
 `;
 
 const VolumeCell = styled.div`
     font-size: 0.9rem;
-    color: #94a3b8;
+    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
 `;
 
 const BadgeCell = styled.div`
     padding: 0.4rem 0.75rem;
     background: ${props => {
-        if (props.$type === 'hot') return 'rgba(239, 68, 68, 0.2)';
-        if (props.$type === 'trending') return 'rgba(245, 158, 11, 0.2)';
-        return 'rgba(0, 173, 237, 0.2)';
+        if (props.$type === 'hot') return `${props.theme?.error || '#ef4444'}33`;
+        if (props.$type === 'trending') return `${props.theme?.warning || '#f59e0b'}33`;
+        return `${props.theme?.brand?.primary || '#00adef'}33`;
     }};
     border: 1px solid ${props => {
-        if (props.$type === 'hot') return 'rgba(239, 68, 68, 0.3)';
-        if (props.$type === 'trending') return 'rgba(245, 158, 11, 0.3)';
-        return 'rgba(0, 173, 237, 0.3)';
+        if (props.$type === 'hot') return `${props.theme?.error || '#ef4444'}4D`;
+        if (props.$type === 'trending') return `${props.theme?.warning || '#f59e0b'}4D`;
+        return `${props.theme?.brand?.primary || '#00adef'}4D`;
     }};
     border-radius: 12px;
     color: ${props => {
-        if (props.$type === 'hot') return '#ef4444';
-        if (props.$type === 'trending') return '#f59e0b';
-        return '#00adef';
+        if (props.$type === 'hot') return props.theme?.error || '#ef4444';
+        if (props.$type === 'trending') return props.theme?.warning || '#f59e0b';
+        return props.theme?.brand?.primary || '#00adef';
     }};
     font-size: 0.8rem;
     font-weight: 700;
@@ -678,23 +684,23 @@ const EmptyIcon = styled.div`
     width: 150px;
     height: 150px;
     margin: 0 auto 2rem;
-    background: linear-gradient(135deg, rgba(0, 173, 237, 0.2) 0%, rgba(0, 173, 237, 0.05) 100%);
+    background: linear-gradient(135deg, ${props => props.theme?.brand?.primary || '#00adef'}33 0%, ${props => props.theme?.brand?.primary || '#00adef'}0D 100%);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 3px dashed rgba(0, 173, 237, 0.4);
+    border: 3px dashed ${props => props.theme?.brand?.primary || '#00adef'}66;
     animation: ${float} 3s ease-in-out infinite;
 `;
 
 const EmptyTitle = styled.h2`
-    color: #00adef;
+    color: ${props => props.theme?.brand?.primary || '#00adef'};
     font-size: 2rem;
     margin-bottom: 1rem;
 `;
 
 const EmptyText = styled.p`
-    color: #94a3b8;
+    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
     font-size: 1.2rem;
 `;
 
@@ -710,11 +716,11 @@ const LoadingContainer = styled.div`
 
 const LoadingSpinner = styled(Sparkles)`
     animation: ${spin} 1s linear infinite;
-    color: #00adef;
+    color: ${props => props.theme?.brand?.primary || '#00adef'};
 `;
 
 const LoadingText = styled.div`
-    color: #94a3b8;
+    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
     font-size: 1.1rem;
 `;
 
@@ -722,6 +728,9 @@ const LoadingText = styled.div`
 const ScreenerPage = () => {
     const { api, isAuthenticated } = useAuth();
     const toast = useToast();
+    const { theme } = useTheme();
+    const navigate = useNavigate();
+    
     const [mode, setMode] = useState('stocks'); // 'stocks' or 'crypto'
     const [loading, setLoading] = useState(false);
     const [results, setResults] = useState([]);
@@ -744,92 +753,60 @@ const ScreenerPage = () => {
     // Quick filters
     const [activeQuickFilters, setActiveQuickFilters] = useState([]);
 
-   useEffect(() => {
-    if (isAuthenticated) {
-        fetchResults();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [mode, isAuthenticated]);
+    useEffect(() => {
+        if (isAuthenticated) {
+            fetchResults();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [mode, isAuthenticated]);
 
     const fetchResults = async () => {
-    setLoading(true);
-    try {
-        const endpoint = mode === 'stocks' ? '/screener/stocks' : '/screener/crypto';
-        
-        // Build query params from filters
-        const params = new URLSearchParams();
-        if (minPrice) params.append('minPrice', minPrice);
-        if (maxPrice) params.append('maxPrice', maxPrice);
-        if (minVolume) params.append('minVolume', minVolume);
-        if (minMarketCap) params.append('minMarketCap', minMarketCap);
-        if (maxMarketCap) params.append('maxMarketCap', maxMarketCap);
-        if (changeFilter && changeFilter !== 'all') {
-            params.append('changeFilter', changeFilter);
+        setLoading(true);
+        try {
+            const endpoint = mode === 'stocks' ? '/screener/stocks' : '/screener/crypto';
+            
+            // Build query params from filters
+            const params = new URLSearchParams();
+            if (minPrice) params.append('minPrice', minPrice);
+            if (maxPrice) params.append('maxPrice', maxPrice);
+            if (minVolume) params.append('minVolume', minVolume);
+            if (minMarketCap) params.append('minMarketCap', minMarketCap);
+            if (maxMarketCap) params.append('maxMarketCap', maxMarketCap);
+            if (changeFilter && changeFilter !== 'all') {
+                params.append('changeFilter', changeFilter);
+            }
+            if (sortBy) params.append('sortBy', sortBy);
+
+            const response = await api.get(`${endpoint}?${params.toString()}`);
+            console.log('Screener response:', response.data);
+            
+            setResults(response.data || []);
+            toast.success(`Found ${response.data?.length || 0} results`, 'Screener Updated');
+        } catch (error) {
+            console.error('Error fetching screener data:', error);
+            toast.error('Failed to load screener data', 'Error');
+            setResults([]);
+        } finally {
+            setLoading(false);
         }
-        if (sortBy) params.append('sortBy', sortBy);
-
-        const response = await api.get(`${endpoint}?${params.toString()}`);
-        console.log('Screener response:', response.data);
-        
-        setResults(response.data || []);
-        toast.success(`Found ${response.data?.length || 0} results`, 'Screener Updated');
-    } catch (error) {
-        console.error('Error fetching screener data:', error);
-        toast.error('Failed to load screener data', 'Error');
-        setResults([]);
-    } finally {
-        setLoading(false);
-    }
-};
-
-    const generateMockStocks = () => {
-        const stocks = [
-            { symbol: 'AAPL', name: 'Apple Inc.', price: 182.50, change: 2.35, changePercent: 1.30, volume: 52000000, marketCap: 2850000000000, sector: 'Technology', badge: 'hot' },
-            { symbol: 'MSFT', name: 'Microsoft Corp.', price: 378.90, change: 5.20, changePercent: 1.39, volume: 28000000, marketCap: 2810000000000, sector: 'Technology', badge: 'trending' },
-            { symbol: 'GOOGL', name: 'Alphabet Inc.', price: 139.25, change: -1.50, changePercent: -1.07, volume: 31000000, marketCap: 1750000000000, sector: 'Technology', badge: null },
-            { symbol: 'AMZN', name: 'Amazon.com Inc.', price: 145.80, change: 3.75, changePercent: 2.64, volume: 45000000, marketCap: 1510000000000, sector: 'Consumer', badge: 'hot' },
-            { symbol: 'TSLA', name: 'Tesla Inc.', price: 248.50, change: 12.30, changePercent: 5.21, volume: 125000000, marketCap: 785000000000, sector: 'Automotive', badge: 'hot' },
-            { symbol: 'NVDA', name: 'NVIDIA Corp.', price: 482.75, change: 8.90, changePercent: 1.88, volume: 48000000, marketCap: 1190000000000, sector: 'Technology', badge: 'trending' },
-            { symbol: 'META', name: 'Meta Platforms', price: 338.15, change: -2.40, changePercent: -0.71, volume: 22000000, marketCap: 855000000000, sector: 'Technology', badge: null },
-            { symbol: 'JPM', name: 'JPMorgan Chase', price: 158.90, change: 1.25, changePercent: 0.79, volume: 12000000, marketCap: 458000000000, sector: 'Finance', badge: null },
-            { symbol: 'V', name: 'Visa Inc.', price: 252.30, change: 3.10, changePercent: 1.24, volume: 8000000, marketCap: 512000000000, sector: 'Finance', badge: 'trending' },
-            { symbol: 'WMT', name: 'Walmart Inc.', price: 165.75, change: 0.85, changePercent: 0.52, volume: 9000000, marketCap: 440000000000, sector: 'Retail', badge: null },
-        ];
-        return stocks;
-    };
-
-    const generateMockCrypto = () => {
-        const crypto = [
-            { symbol: 'BTC', name: 'Bitcoin', price: 42580.50, change: 1250.30, changePercent: 3.03, volume: 28500000000, marketCap: 832000000000, sector: 'Crypto', badge: 'hot' },
-            { symbol: 'ETH', name: 'Ethereum', price: 2245.75, change: 82.15, changePercent: 3.80, volume: 15200000000, marketCap: 270000000000, sector: 'Crypto', badge: 'hot' },
-            { symbol: 'BNB', name: 'Binance Coin', price: 312.40, change: -5.80, changePercent: -1.82, volume: 1200000000, marketCap: 48000000000, sector: 'Crypto', badge: null },
-            { symbol: 'SOL', name: 'Solana', price: 98.65, change: 12.45, changePercent: 14.45, volume: 2400000000, marketCap: 42000000000, sector: 'Crypto', badge: 'hot' },
-            { symbol: 'XRP', name: 'Ripple', price: 0.62, change: 0.05, changePercent: 8.77, volume: 1800000000, marketCap: 33000000000, sector: 'Crypto', badge: 'trending' },
-            { symbol: 'ADA', name: 'Cardano', price: 0.48, change: 0.03, changePercent: 6.67, volume: 850000000, marketCap: 17000000000, sector: 'Crypto', badge: 'trending' },
-            { symbol: 'DOGE', name: 'Dogecoin', price: 0.085, change: -0.002, changePercent: -2.30, volume: 620000000, marketCap: 12000000000, sector: 'Crypto', badge: null },
-            { symbol: 'AVAX', name: 'Avalanche', price: 36.80, change: 2.15, changePercent: 6.20, volume: 480000000, marketCap: 13500000000, sector: 'Crypto', badge: 'hot' },
-            { symbol: 'MATIC', name: 'Polygon', price: 0.82, change: 0.06, changePercent: 7.89, volume: 390000000, marketCap: 7600000000, sector: 'Crypto', badge: 'trending' },
-            { symbol: 'DOT', name: 'Polkadot', price: 6.45, change: -0.18, changePercent: -2.72, volume: 280000000, marketCap: 8200000000, sector: 'Crypto', badge: null },
-        ];
-        return crypto;
     };
 
     const formatNumber = (num) => {
-    if (!num || num === undefined) return '$0';
-    if (num >= 1000000000000) return `$${(num / 1000000000000).toFixed(2)}T`;
-    if (num >= 1000000000) return `$${(num / 1000000000).toFixed(2)}B`;
-    if (num >= 1000000) return `$${(num / 1000000).toFixed(2)}M`;
-    if (num >= 1000) return `$${(num / 1000).toFixed(2)}K`;
-    return `$${num.toFixed(2)}`;
-};
+        if (!num || num === undefined) return '$0';
+        if (num >= 1000000000000) return `$${(num / 1000000000000).toFixed(2)}T`;
+        if (num >= 1000000000) return `$${(num / 1000000000).toFixed(2)}B`;
+        if (num >= 1000000) return `$${(num / 1000000).toFixed(2)}M`;
+        if (num >= 1000) return `$${(num / 1000).toFixed(2)}K`;
+        return `$${num.toFixed(2)}`;
+    };
 
-const formatVolume = (vol) => {
-    if (!vol || vol === undefined) return '0';
-    if (vol >= 1000000000) return `${(vol / 1000000000).toFixed(2)}B`;
-    if (vol >= 1000000) return `${(vol / 1000000).toFixed(2)}M`;
-    if (vol >= 1000) return `${(vol / 1000000).toFixed(2)}K`;
-    return vol.toLocaleString();
-};
+    const formatVolume = (vol) => {
+        if (!vol || vol === undefined) return '0';
+        if (vol >= 1000000000) return `${(vol / 1000000000).toFixed(2)}B`;
+        if (vol >= 1000000) return `${(vol / 1000000).toFixed(2)}M`;
+        if (vol >= 1000) return `${(vol / 1000).toFixed(2)}K`;
+        return vol.toLocaleString();
+    };
 
     const handleSort = (field) => {
         if (sortBy === field) {
@@ -840,7 +817,8 @@ const formatVolume = (vol) => {
         }
     };
 
-    const handleToggleWatchlist = (symbol) => {
+    const handleToggleWatchlist = (symbol, e) => {
+        e.stopPropagation(); // Prevent row click navigation
         let updated;
         if (watchlist.includes(symbol)) {
             updated = watchlist.filter(s => s !== symbol);
@@ -858,6 +836,17 @@ const formatVolume = (vol) => {
             setActiveQuickFilters(activeQuickFilters.filter(f => f !== filterType));
         } else {
             setActiveQuickFilters([...activeQuickFilters, filterType]);
+        }
+    };
+
+    // Navigate to stock or crypto detail page
+    const handleRowClick = (item) => {
+        if (mode === 'crypto') {
+            // Navigate to crypto page - use id for CoinGecko coins, fallback to lowercase symbol
+            navigate(`/crypto/${item.id || item.symbol.toLowerCase()}`);
+        } else {
+            // Navigate to stock page with the symbol (uppercase) - route is /stocks/:symbol
+            navigate(`/stocks/${item.symbol.toUpperCase()}`);
         }
     };
 
@@ -922,8 +911,8 @@ const formatVolume = (vol) => {
             let bVal = b[sortBy];
             
             if (sortBy === 'symbol' || sortBy === 'name') {
-                aVal = aVal.toLowerCase();
-                bVal = bVal.toLowerCase();
+                aVal = aVal?.toLowerCase() || '';
+                bVal = bVal?.toLowerCase() || '';
             }
             
             if (sortOrder === 'asc') {
@@ -952,6 +941,8 @@ const formatVolume = (vol) => {
     };
 
     const handleExport = () => {
+        if (filteredResults.length === 0) return;
+        
         const data = filteredResults.map(item => ({
             Symbol: item.symbol,
             Name: item.name,
@@ -977,16 +968,16 @@ const formatVolume = (vol) => {
     };
 
     return (
-        <PageContainer>
+        <PageContainer theme={theme}>
             <Header>
-                <Title>
+                <Title theme={theme}>
                     <TitleIcon>
-                        <Filter size={56} color="#00adef" />
+                        <Filter size={56} color={theme?.brand?.primary || '#00adef'} />
                     </TitleIcon>
                     Market Screener
                 </Title>
-                <Subtitle>Discover the best stocks and cryptocurrencies in real-time</Subtitle>
-                <PoweredBy>
+                <Subtitle theme={theme}>Discover the best stocks and cryptocurrencies in real-time</Subtitle>
+                <PoweredBy theme={theme}>
                     <Zap size={18} />
                     Real-Time Market Data
                 </PoweredBy>
@@ -995,6 +986,7 @@ const formatVolume = (vol) => {
             {/* Mode Toggle */}
             <ModeToggle>
                 <ModeButton 
+                    theme={theme}
                     $active={mode === 'stocks'}
                     onClick={() => setMode('stocks')}
                 >
@@ -1002,6 +994,7 @@ const formatVolume = (vol) => {
                     Stocks
                 </ModeButton>
                 <ModeButton 
+                    theme={theme}
                     $active={mode === 'crypto'}
                     onClick={() => setMode('crypto')}
                 >
@@ -1011,21 +1004,21 @@ const formatVolume = (vol) => {
             </ModeToggle>
 
             {/* Filters */}
-            <FiltersContainer>
+            <FiltersContainer theme={theme}>
                 <FiltersHeader>
-                    <FiltersTitle>
+                    <FiltersTitle theme={theme}>
                         <Filter size={24} />
                         Filters
                     </FiltersTitle>
                     <FilterActions>
-                        <ActionButton onClick={handleReset}>
+                        <ActionButton theme={theme} onClick={handleReset}>
                             <RefreshCw size={18} />
                             Reset
                         </ActionButton>
-                        <ActionButton $primary onClick={fetchResults} disabled={loading}>
+                        <ActionButton theme={theme} $primary onClick={fetchResults} disabled={loading}>
                             {loading ? (
                                 <>
-                                    <LoadingSpinner size={18} />
+                                    <LoadingSpinner theme={theme} size={18} />
                                     Scanning...
                                 </>
                             ) : (
@@ -1035,7 +1028,7 @@ const formatVolume = (vol) => {
                                 </>
                             )}
                         </ActionButton>
-                        <ActionButton onClick={handleExport} disabled={filteredResults.length === 0}>
+                        <ActionButton theme={theme} onClick={handleExport} disabled={filteredResults.length === 0}>
                             <Download size={18} />
                             Export
                         </ActionButton>
@@ -1044,11 +1037,12 @@ const formatVolume = (vol) => {
 
                 <FiltersGrid>
                     <FilterGroup>
-                        <FilterLabel>
+                        <FilterLabel theme={theme}>
                             <Search size={16} />
                             Search {mode === 'stocks' ? 'Stock' : 'Crypto'}
                         </FilterLabel>
                         <SearchInput
+                            theme={theme}
                             type="text"
                             placeholder="Symbol or name..."
                             value={searchTerm}
@@ -1058,11 +1052,11 @@ const formatVolume = (vol) => {
 
                     {mode === 'stocks' && (
                         <FilterGroup>
-                            <FilterLabel>
+                            <FilterLabel theme={theme}>
                                 <Target size={16} />
                                 Sector
                             </FilterLabel>
-                            <Select value={sector} onChange={(e) => setSector(e.target.value)}>
+                            <Select theme={theme} value={sector} onChange={(e) => setSector(e.target.value)}>
                                 <option value="all">All Sectors</option>
                                 <option value="Technology">Technology</option>
                                 <option value="Finance">Finance</option>
@@ -1076,19 +1070,21 @@ const formatVolume = (vol) => {
                     )}
 
                     <FilterGroup>
-                        <FilterLabel>
+                        <FilterLabel theme={theme}>
                             <DollarSign size={16} />
                             Price Range
                         </FilterLabel>
                         <RangeContainer>
                             <RangeInput
+                                theme={theme}
                                 type="number"
                                 placeholder="Min"
                                 value={minPrice}
                                 onChange={(e) => setMinPrice(e.target.value)}
                             />
-                            <RangeSeparator>—</RangeSeparator>
+                            <RangeSeparator theme={theme}>—</RangeSeparator>
                             <RangeInput
+                                theme={theme}
                                 type="number"
                                 placeholder="Max"
                                 value={maxPrice}
@@ -1098,11 +1094,12 @@ const formatVolume = (vol) => {
                     </FilterGroup>
 
                     <FilterGroup>
-                        <FilterLabel>
+                        <FilterLabel theme={theme}>
                             <Volume2 size={16} />
                             Min Volume (M)
                         </FilterLabel>
                         <RangeInput
+                            theme={theme}
                             type="number"
                             placeholder="e.g., 10"
                             value={minVolume}
@@ -1111,19 +1108,21 @@ const formatVolume = (vol) => {
                     </FilterGroup>
 
                     <FilterGroup>
-                        <FilterLabel>
+                        <FilterLabel theme={theme}>
                             <BarChart3 size={16} />
                             Market Cap (B)
                         </FilterLabel>
                         <RangeContainer>
                             <RangeInput
+                                theme={theme}
                                 type="number"
                                 placeholder="Min"
                                 value={minMarketCap}
                                 onChange={(e) => setMinMarketCap(e.target.value)}
                             />
-                            <RangeSeparator>—</RangeSeparator>
+                            <RangeSeparator theme={theme}>—</RangeSeparator>
                             <RangeInput
+                                theme={theme}
                                 type="number"
                                 placeholder="Max"
                                 value={maxMarketCap}
@@ -1133,11 +1132,11 @@ const formatVolume = (vol) => {
                     </FilterGroup>
 
                     <FilterGroup>
-                        <FilterLabel>
+                        <FilterLabel theme={theme}>
                             <Percent size={16} />
                             Change
                         </FilterLabel>
-                        <Select value={changeFilter} onChange={(e) => setChangeFilter(e.target.value)}>
+                        <Select theme={theme} value={changeFilter} onChange={(e) => setChangeFilter(e.target.value)}>
                             <option value="all">All</option>
                             <option value="gainers">Gainers Only</option>
                             <option value="losers">Losers Only</option>
@@ -1145,8 +1144,9 @@ const formatVolume = (vol) => {
                     </FilterGroup>
                 </FiltersGrid>
 
-                <QuickFilters>
+                <QuickFilters theme={theme}>
                     <QuickFilterChip 
+                        theme={theme}
                         $active={activeQuickFilters.includes('hot')}
                         onClick={() => handleQuickFilter('hot')}
                     >
@@ -1154,6 +1154,7 @@ const formatVolume = (vol) => {
                         Hot {mode === 'stocks' ? 'Stocks' : 'Coins'}
                     </QuickFilterChip>
                     <QuickFilterChip 
+                        theme={theme}
                         $active={activeQuickFilters.includes('trending')}
                         onClick={() => handleQuickFilter('trending')}
                     >
@@ -1161,6 +1162,7 @@ const formatVolume = (vol) => {
                         Trending
                     </QuickFilterChip>
                     <QuickFilterChip 
+                        theme={theme}
                         $active={activeQuickFilters.includes('highVolume')}
                         onClick={() => handleQuickFilter('highVolume')}
                     >
@@ -1173,17 +1175,18 @@ const formatVolume = (vol) => {
             {/* Results */}
             {loading ? (
                 <LoadingContainer>
-                    <LoadingSpinner size={64} />
-                    <LoadingText>Scanning {mode === 'stocks' ? 'stocks' : 'cryptocurrencies'}...</LoadingText>
+                    <LoadingSpinner theme={theme} size={64} />
+                    <LoadingText theme={theme}>Scanning {mode === 'stocks' ? 'stocks' : 'cryptocurrencies'}...</LoadingText>
                 </LoadingContainer>
             ) : filteredResults.length > 0 ? (
                 <ResultsContainer>
                     <ResultsHeader>
-                        <ResultsInfo>
+                        <ResultsInfo theme={theme}>
                             Showing <span>{filteredResults.length}</span> results
                         </ResultsInfo>
                         <SortButtons>
                             <SortButton 
+                                theme={theme}
                                 $active={sortBy === 'symbol'}
                                 onClick={() => handleSort('symbol')}
                             >
@@ -1191,6 +1194,7 @@ const formatVolume = (vol) => {
                                 {sortBy === 'symbol' && (sortOrder === 'asc' ? <ChevronUp size={16} /> : <ChevronDown size={16} />)}
                             </SortButton>
                             <SortButton 
+                                theme={theme}
                                 $active={sortBy === 'price'}
                                 onClick={() => handleSort('price')}
                             >
@@ -1198,6 +1202,7 @@ const formatVolume = (vol) => {
                                 {sortBy === 'price' && (sortOrder === 'asc' ? <ChevronUp size={16} /> : <ChevronDown size={16} />)}
                             </SortButton>
                             <SortButton 
+                                theme={theme}
                                 $active={sortBy === 'changePercent'}
                                 onClick={() => handleSort('changePercent')}
                             >
@@ -1205,6 +1210,7 @@ const formatVolume = (vol) => {
                                 {sortBy === 'changePercent' && (sortOrder === 'asc' ? <ChevronUp size={16} /> : <ChevronDown size={16} />)}
                             </SortButton>
                             <SortButton 
+                                theme={theme}
                                 $active={sortBy === 'volume'}
                                 onClick={() => handleSort('volume')}
                             >
@@ -1212,6 +1218,7 @@ const formatVolume = (vol) => {
                                 {sortBy === 'volume' && (sortOrder === 'asc' ? <ChevronUp size={16} /> : <ChevronDown size={16} />)}
                             </SortButton>
                             <SortButton 
+                                theme={theme}
                                 $active={sortBy === 'marketCap'}
                                 onClick={() => handleSort('marketCap')}
                             >
@@ -1221,83 +1228,86 @@ const formatVolume = (vol) => {
                         </SortButtons>
                     </ResultsHeader>
 
-                    <ResultsTable>
-                        <TableHeader>
-                            <TableHeaderCell>
+                    <ResultsTable theme={theme}>
+                        <TableHeader theme={theme}>
+                            <TableHeaderCell theme={theme}>
                                 <Star size={16} />
                             </TableHeaderCell>
-                            <TableHeaderCell onClick={() => handleSort('symbol')}>
+                            <TableHeaderCell theme={theme} onClick={() => handleSort('symbol')}>
                                 Symbol
                                 {sortBy === 'symbol' && (sortOrder === 'asc' ? <SortAsc size={16} /> : <SortDesc size={16} />)}
                             </TableHeaderCell>
-                            <TableHeaderCell>Name</TableHeaderCell>
-                            <TableHeaderCell onClick={() => handleSort('price')}>
+                            <TableHeaderCell theme={theme}>Name</TableHeaderCell>
+                            <TableHeaderCell theme={theme} onClick={() => handleSort('price')}>
                                 Price
                                 {sortBy === 'price' && (sortOrder === 'asc' ? <SortAsc size={16} /> : <SortDesc size={16} />)}
                             </TableHeaderCell>
-                            <TableHeaderCell onClick={() => handleSort('changePercent')}>
+                            <TableHeaderCell theme={theme} onClick={() => handleSort('changePercent')}>
                                 24h Change
                                 {sortBy === 'changePercent' && (sortOrder === 'asc' ? <SortAsc size={16} /> : <SortDesc size={16} />)}
                             </TableHeaderCell>
-                            <TableHeaderCell onClick={() => handleSort('volume')}>
+                            <TableHeaderCell theme={theme} onClick={() => handleSort('volume')}>
                                 Volume
                                 {sortBy === 'volume' && (sortOrder === 'asc' ? <SortAsc size={16} /> : <SortDesc size={16} />)}
                             </TableHeaderCell>
-                            <TableHeaderCell onClick={() => handleSort('marketCap')}>
+                            <TableHeaderCell theme={theme} onClick={() => handleSort('marketCap')}>
                                 Market Cap
                                 {sortBy === 'marketCap' && (sortOrder === 'asc' ? <SortAsc size={16} /> : <SortDesc size={16} />)}
                             </TableHeaderCell>
-                            <TableHeaderCell>Status</TableHeaderCell>
+                            <TableHeaderCell theme={theme}>Status</TableHeaderCell>
                         </TableHeader>
 
-                        <TableBody>
+                        <TableBody theme={theme}>
                             {filteredResults.map((item, index) => (
-                                <TableRow key={item.symbol}>
-                                    <TableCell>
+                                <TableRow 
+                                    theme={theme} 
+                                    key={item.symbol || item.id || index}
+                                    onClick={() => handleRowClick(item)}
+                                    title={`Click to view ${item.symbol} details`}
+                                >
+                                    <TableCell theme={theme}>
                                         <WatchlistButton
+                                            theme={theme}
                                             $active={watchlist.includes(item.symbol)}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleToggleWatchlist(item.symbol);
-                                            }}
+                                            onClick={(e) => handleToggleWatchlist(item.symbol, e)}
                                         >
                                             {watchlist.includes(item.symbol) ? (
-                                                <Star size={16} fill="#f59e0b" />
+                                                <Star size={16} fill={theme?.warning || '#f59e0b'} />
                                             ) : (
                                                 <Star size={16} />
                                             )}
                                         </WatchlistButton>
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell theme={theme}>
                                         <SymbolCell>
-                                            <Symbol>{item.symbol}</Symbol>
+                                            <Symbol theme={theme}>{item.symbol}</Symbol>
                                         </SymbolCell>
                                     </TableCell>
-                                    <TableCell>
-                                        <Name>{item.name}</Name>
+                                    <TableCell theme={theme}>
+                                        <Name theme={theme}>{item.name}</Name>
                                     </TableCell>
-                                    <TableCell>
-    <PriceCell>${(item.price || 0).toLocaleString()}</PriceCell>
-</TableCell>
-<TableCell>
-    <ChangeCell $positive={(item.changePercent || 0) > 0}>
-        {(item.changePercent || 0) > 0 ? (
-            <TrendingUp size={16} />
-        ) : (
-            <TrendingDown size={16} />
-        )}
-        {(item.changePercent || 0) >= 0 ? '+' : ''}{(item.changePercent || 0).toFixed(2)}%
-    </ChangeCell>
-</TableCell>
-<TableCell>
-    <VolumeCell>{formatVolume(item.volume || 0)}</VolumeCell>
-</TableCell>
-<TableCell>
-    <VolumeCell>{formatNumber(item.marketCap || 0)}</VolumeCell>
-</TableCell>
-                                    <TableCell>
+                                    <TableCell theme={theme}>
+                                        <PriceCell theme={theme}>${(item.price || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: item.price < 1 ? 6 : 2 })}</PriceCell>
+                                    </TableCell>
+                                    <TableCell theme={theme}>
+                                        <ChangeCell theme={theme} $positive={(item.changePercent || 0) > 0}>
+                                            {(item.changePercent || 0) > 0 ? (
+                                                <TrendingUp size={16} />
+                                            ) : (
+                                                <TrendingDown size={16} />
+                                            )}
+                                            {(item.changePercent || 0) >= 0 ? '+' : ''}{(item.changePercent || 0).toFixed(2)}%
+                                        </ChangeCell>
+                                    </TableCell>
+                                    <TableCell theme={theme}>
+                                        <VolumeCell theme={theme}>{formatVolume(item.volume || 0)}</VolumeCell>
+                                    </TableCell>
+                                    <TableCell theme={theme}>
+                                        <VolumeCell theme={theme}>{formatNumber(item.marketCap || 0)}</VolumeCell>
+                                    </TableCell>
+                                    <TableCell theme={theme}>
                                         {item.badge && (
-                                            <BadgeCell $type={item.badge}>
+                                            <BadgeCell theme={theme} $type={item.badge}>
                                                 {item.badge === 'hot' && <Flame size={14} />}
                                                 {item.badge === 'trending' && <Rocket size={14} />}
                                                 {item.badge.toUpperCase()}
@@ -1310,12 +1320,12 @@ const formatVolume = (vol) => {
                     </ResultsTable>
                 </ResultsContainer>
             ) : (
-                <EmptyState>
-                    <EmptyIcon>
-                        <Search size={80} color="#00adef" />
+                <EmptyState theme={theme}>
+                    <EmptyIcon theme={theme}>
+                        <Search size={80} color={theme?.brand?.primary || '#00adef'} />
                     </EmptyIcon>
-                    <EmptyTitle>No Results Found</EmptyTitle>
-                    <EmptyText>
+                    <EmptyTitle theme={theme}>No Results Found</EmptyTitle>
+                    <EmptyText theme={theme}>
                         Try adjusting your filters or search criteria
                     </EmptyText>
                 </EmptyState>

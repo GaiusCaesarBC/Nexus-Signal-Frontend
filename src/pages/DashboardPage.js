@@ -1,4 +1,4 @@
-// src/pages/DashboardPage.js - REVAMPED CLEAN DASHBOARD
+// src/pages/DashboardPage.js - REVAMPED CLEAN DASHBOARD WITH THEME SUPPORT
 // Layout: Header → Ticker Tapes → Chart → Paper Trading → Widgets (Leaderboard | Whale | Social) → Achievements
 
 import React, { useState, useEffect } from 'react';
@@ -55,17 +55,19 @@ const bounce = keyframes`
     50% { transform: translateY(-10px); }
 `;
 
+// Note: rankGlow uses theme colors via the component's box-shadow override
 const rankGlow = keyframes`
     0%, 100% { 
-        box-shadow: 0 0 20px rgba(251, 191, 36, 0.4);
+        opacity: 1;
         transform: scale(1);
     }
     50% { 
-        box-shadow: 0 0 40px rgba(251, 191, 36, 0.8);
+        opacity: 0.8;
         transform: scale(1.05);
     }
 `;
 
+// Dynamic glow animation using theme
 const glowPulse = keyframes`
     0%, 100% { box-shadow: 0 0 10px rgba(139, 92, 246, 0.3); }
     50% { box-shadow: 0 0 25px rgba(139, 92, 246, 0.6); }
@@ -75,8 +77,8 @@ const glowPulse = keyframes`
 const PageContainer = styled.div`
     min-height: 100vh;
     padding-top: 80px;
-    background: ${props => props.theme?.colors?.bg?.primary || 'linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%)'};
-    color: ${props => props.theme?.colors?.text?.primary || '#e0e6ed'};
+    background: ${props => props.theme.bg?.page || 'linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%)'};
+    color: ${props => props.theme.text?.primary || '#e0e6ed'};
     padding-left: 2rem;
     padding-right: 2rem;
     padding-bottom: 2rem;
@@ -116,13 +118,13 @@ const StaticLogo = styled.img`
     width: 70px;
     height: 70px;
     object-fit: contain;
-    filter: drop-shadow(0 0 20px rgba(0, 217, 255, 0.7))
+    filter: drop-shadow(0 0 20px ${props => props.theme.brand?.primary || '#00adef'}99)
             drop-shadow(0 0 35px rgba(139, 92, 246, 0.6));
     transition: all 0.3s ease;
     flex-shrink: 0;
 
     &:hover {
-        filter: drop-shadow(0 0 30px rgba(0, 217, 255, 0.9))
+        filter: drop-shadow(0 0 30px ${props => props.theme.brand?.primary || '#00adef'}cc)
                 drop-shadow(0 0 50px rgba(139, 92, 246, 0.8));
         transform: scale(1.05);
     }
@@ -139,7 +141,7 @@ const HeaderContent = styled.div`
 
 const Title = styled.h1`
     font-size: 2.5rem;
-    background: linear-gradient(135deg, #00adef 0%, #00ff88 100%);
+    background: ${props => props.theme.brand?.gradient || 'linear-gradient(135deg, #00adef 0%, #00ff88 100%)'};
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -152,7 +154,7 @@ const Title = styled.h1`
 `;
 
 const Subtitle = styled.p`
-    color: #94a3b8;
+    color: ${props => props.theme.text?.secondary || '#94a3b8'};
     font-size: 1rem;
     display: flex;
     align-items: center;
@@ -172,8 +174,8 @@ const HeaderRight = styled.div`
 `;
 
 const LiveClock = styled.div`
-    background: rgba(0, 173, 237, 0.1);
-    border: 1px solid rgba(0, 173, 237, 0.3);
+    background: ${props => props.theme.brand?.primary || '#00adef'}1a;
+    border: 1px solid ${props => props.theme.border?.primary || 'rgba(0, 173, 237, 0.3)'};
     border-radius: 12px;
     padding: 0.75rem 1.25rem;
     display: flex;
@@ -184,17 +186,17 @@ const LiveClock = styled.div`
 const ClockTime = styled.div`
     font-size: 1.25rem;
     font-weight: 700;
-    color: #00adef;
+    color: ${props => props.theme.brand?.primary || '#00adef'};
 `;
 
 const ClockDate = styled.div`
     font-size: 0.8rem;
-    color: #94a3b8;
+    color: ${props => props.theme.text?.secondary || '#94a3b8'};
 `;
 
 const MarketStatus = styled.div`
-    background: ${props => props.$open ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)'};
-    border: 1px solid ${props => props.$open ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'};
+    background: ${props => props.$open ? `${props.theme.success || '#10b981'}1a` : `${props.theme.error || '#ef4444'}1a`};
+    border: 1px solid ${props => props.$open ? `${props.theme.success || '#10b981'}4D` : `${props.theme.error || '#ef4444'}4D`};
     border-radius: 12px;
     padding: 0.75rem 1.25rem;
     display: flex;
@@ -206,15 +208,15 @@ const StatusDot = styled.div`
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background: ${props => props.$open ? '#10b981' : '#ef4444'};
+    background: ${props => props.$open ? (props.theme.success || '#10b981') : (props.theme.error || '#ef4444')};
     animation: ${pulse} 2s ease-in-out infinite;
-    box-shadow: 0 0 10px ${props => props.$open ? '#10b981' : '#ef4444'};
+    box-shadow: 0 0 10px ${props => props.$open ? (props.theme.success || '#10b981') : (props.theme.error || '#ef4444')};
 `;
 
 const StatusText = styled.div`
     font-weight: 600;
     font-size: 0.9rem;
-    color: ${props => props.$open ? '#10b981' : '#ef4444'};
+    color: ${props => props.$open ? (props.theme.success || '#10b981') : (props.theme.error || '#ef4444')};
 `;
 
 // ============ TICKER TAPES ============
@@ -233,11 +235,11 @@ const TickerWrapper = styled.div`
 
 const TickerLabel = styled.div`
     background: ${props => props.$variant === 'movers' 
-        ? 'linear-gradient(135deg, rgba(251, 191, 36, 0.25) 0%, rgba(251, 191, 36, 0.15) 100%)' 
-        : 'linear-gradient(135deg, rgba(0, 173, 237, 0.25) 0%, rgba(0, 173, 237, 0.15) 100%)'};
+        ? `linear-gradient(135deg, ${props.theme.brand?.secondary || props.theme.brand?.primary}40 0%, ${props.theme.brand?.secondary || props.theme.brand?.primary}26 100%)` 
+        : `linear-gradient(135deg, ${props.theme.brand?.primary || '#00adef'}40 0%, ${props.theme.brand?.primary || '#00adef'}26 100%)`};
     border: 1px solid ${props => props.$variant === 'movers' 
-        ? 'rgba(251, 191, 36, 0.4)' 
-        : 'rgba(0, 173, 237, 0.4)'};
+        ? `${props.theme.brand?.secondary || props.theme.brand?.primary}66` 
+        : props.theme.border?.hover || 'rgba(0, 173, 237, 0.4)'};
     border-right: none;
     border-radius: 10px 0 0 10px;
     padding: 0 1rem;
@@ -248,7 +250,7 @@ const TickerLabel = styled.div`
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 1.5px;
-    color: ${props => props.$variant === 'movers' ? '#fbbf24' : '#00adef'};
+    color: ${props => props.$variant === 'movers' ? (props.theme.brand?.secondary || props.theme.brand?.primary) : (props.theme.brand?.primary || '#00adef')};
     white-space: nowrap;
     min-width: 100px;
     justify-content: center;
@@ -263,11 +265,11 @@ const TickerLabel = styled.div`
 const TickerContainer = styled.div`
     flex: 1;
     background: ${props => props.$variant === 'movers' 
-        ? 'rgba(251, 191, 36, 0.06)' 
-        : 'rgba(0, 173, 237, 0.06)'};
+        ? `${props.theme.brand?.secondary || props.theme.brand?.primary}0f` 
+        : `${props.theme.brand?.primary || '#00adef'}0f`};
     border: 1px solid ${props => props.$variant === 'movers' 
-        ? 'rgba(251, 191, 36, 0.2)' 
-        : 'rgba(0, 173, 237, 0.2)'};
+        ? `${props.theme.brand?.secondary || props.theme.brand?.primary}33` 
+        : props.theme.border?.secondary || 'rgba(0, 173, 237, 0.2)'};
     border-left: none;
     border-radius: 0 10px 10px 0;
     overflow: hidden;
@@ -297,7 +299,7 @@ const TickerItem = styled.div`
 `;
 
 const TickerSymbolClickable = styled.span`
-    color: ${props => props.$variant === 'movers' ? '#fbbf24' : '#00adef'};
+    color: ${props => props.$variant === 'movers' ? (props.theme.brand?.secondary || props.theme.brand?.primary) : (props.theme.brand?.primary || '#00adef')};
     font-weight: 700;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -309,11 +311,11 @@ const TickerSymbolClickable = styled.span`
 `;
 
 const TickerPrice = styled.span`
-    color: #e0e6ed;
+    color: ${props => props.theme.text?.primary || '#e0e6ed'};
 `;
 
 const TickerChange = styled.span`
-    color: ${props => props.$positive ? '#10b981' : '#ef4444'};
+    color: ${props => props.$positive ? (props.theme.success || '#10b981') : (props.theme.error || '#ef4444')};
     display: flex;
     align-items: center;
     gap: 0.25rem;
@@ -338,33 +340,33 @@ const SearchInput = styled.input`
     flex: 1;
     min-width: 250px;
     padding: 0.75rem 1.25rem;
-    background: rgba(0, 173, 237, 0.05);
-    border: 1px solid rgba(0, 173, 237, 0.3);
+    background: ${props => props.theme.brand?.primary || '#00adef'}0d;
+    border: 1px solid ${props => props.theme.border?.primary || 'rgba(0, 173, 237, 0.3)'};
     border-radius: 10px;
-    color: #e0e6ed;
+    color: ${props => props.theme.text?.primary || '#e0e6ed'};
     font-size: 1rem;
     font-weight: 600;
     transition: all 0.2s ease;
 
     &:focus {
         outline: none;
-        background: rgba(0, 173, 237, 0.1);
-        border-color: rgba(0, 217, 255, 0.5);
-        box-shadow: 0 0 20px rgba(0, 217, 255, 0.2);
+        background: ${props => props.theme.brand?.primary || '#00adef'}1a;
+        border-color: ${props => props.theme.border?.hover || 'rgba(0, 217, 255, 0.5)'};
+        box-shadow: 0 0 20px ${props => props.theme.brand?.primary || '#00adef'}33;
     }
 
     &::placeholder {
-        color: #64748b;
+        color: ${props => props.theme.text?.tertiary || '#64748b'};
         font-weight: 500;
     }
 `;
 
 const SearchButton = styled.button`
     padding: 0.75rem 1.5rem;
-    background: linear-gradient(135deg, rgba(0, 217, 255, 0.3) 0%, rgba(139, 92, 246, 0.2) 100%);
-    border: 1px solid rgba(0, 217, 255, 0.5);
+    background: linear-gradient(135deg, ${props => props.theme.brand?.primary || '#00adef'}4D 0%, ${props => props.theme.brand?.accent || '#8b5cf6'}33 100%);
+    border: 1px solid ${props => props.theme.border?.hover || 'rgba(0, 217, 255, 0.5)'};
     border-radius: 10px;
-    color: #00d9ff;
+    color: ${props => props.theme.brand?.primary || '#00adef'};
     font-weight: 700;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -373,7 +375,7 @@ const SearchButton = styled.button`
     gap: 0.5rem;
 
     &:hover {
-        background: linear-gradient(135deg, rgba(0, 217, 255, 0.4) 0%, rgba(139, 92, 246, 0.3) 100%);
+        background: linear-gradient(135deg, ${props => props.theme.brand?.primary || '#00adef'}66 0%, ${props => props.theme.brand?.accent || '#8b5cf6'}4D 100%);
         transform: translateY(-2px);
     }
 
@@ -393,26 +395,26 @@ const SymbolSelector = styled.div`
 const SymbolButton = styled.button`
     padding: 0.5rem 1rem;
     background: ${props => props.$active 
-        ? 'linear-gradient(135deg, rgba(0, 217, 255, 0.3) 0%, rgba(139, 92, 246, 0.2) 100%)' 
-        : 'rgba(0, 173, 237, 0.05)'};
-    border: 1px solid ${props => props.$active ? 'rgba(0, 217, 255, 0.5)' : 'rgba(0, 173, 237, 0.2)'};
+        ? `linear-gradient(135deg, ${props.theme.brand?.primary || '#00adef'}4D 0%, ${props.theme.brand?.accent || '#8b5cf6'}33 100%)` 
+        : `${props.theme.brand?.primary || '#00adef'}0d`};
+    border: 1px solid ${props => props.$active ? (props.theme.border?.hover || 'rgba(0, 217, 255, 0.5)') : (props.theme.border?.secondary || 'rgba(0, 173, 237, 0.2)')};
     border-radius: 8px;
-    color: ${props => props.$active ? '#00d9ff' : '#94a3b8'};
+    color: ${props => props.$active ? (props.theme.brand?.primary || '#00adef') : (props.theme.text?.secondary || '#94a3b8')};
     font-weight: 600;
     font-size: 0.85rem;
     cursor: pointer;
     transition: all 0.2s ease;
 
     &:hover {
-        background: linear-gradient(135deg, rgba(0, 217, 255, 0.2) 0%, rgba(139, 92, 246, 0.15) 100%);
-        border-color: rgba(0, 217, 255, 0.5);
-        color: #00d9ff;
+        background: linear-gradient(135deg, ${props => props.theme.brand?.primary || '#00adef'}33 0%, ${props => props.theme.brand?.accent || '#8b5cf6'}26 100%);
+        border-color: ${props => props.theme.border?.hover || 'rgba(0, 217, 255, 0.5)'};
+        color: ${props => props.theme.brand?.primary || '#00adef'};
     }
 `;
 
 const LoadingChartPlaceholder = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
-    border: 1px solid rgba(0, 173, 237, 0.2);
+    background: ${props => props.theme.bg?.card || 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%)'};
+    border: 1px solid ${props => props.theme.border?.secondary || 'rgba(0, 173, 237, 0.2)'};
     border-radius: 16px;
     padding: 4rem;
     display: flex;
@@ -424,12 +426,13 @@ const LoadingChartPlaceholder = styled.div`
 
 const LoadingSpinner = styled.div`
     animation: ${rotate} 2s linear infinite;
+    color: ${props => props.theme.brand?.primary || '#00adef'};
 `;
 
 // ============ PAPER TRADING HERO ============
 const PaperTradingHero = styled.div`
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(0, 173, 237, 0.12) 50%, rgba(139, 92, 246, 0.12) 100%);
-    border: 1px solid rgba(16, 185, 129, 0.35);
+    background: linear-gradient(135deg, ${props => props.theme.success || '#10b981'}1f 0%, ${props => props.theme.brand?.primary || '#00adef'}1f 50%, ${props => props.theme.brand?.accent || '#8b5cf6'}1f 100%);
+    border: 1px solid ${props => props.theme.success || '#10b981'}59;
     border-radius: 16px;
     padding: 1.5rem 2rem;
     margin-bottom: 2rem;
@@ -457,7 +460,7 @@ const PaperTradingTitle = styled.div`
 `;
 
 const PaperTradingLabel = styled.div`
-    color: #10b981;
+    color: ${props => props.theme.success || '#10b981'};
     font-size: 0.8rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -475,7 +478,7 @@ const PaperTradingLabel = styled.div`
 const PaperTradingValue = styled.div`
     font-size: 2rem;
     font-weight: 900;
-    color: ${props => props.$color || '#e0e6ed'};
+    color: ${props => props.$color || props.theme.text?.primary || '#e0e6ed'};
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -488,7 +491,7 @@ const PaperTradingValue = styled.div`
 
 const PaperTradingChange = styled.div`
     font-size: 0.9rem;
-    color: ${props => props.$positive ? '#10b981' : '#ef4444'};
+    color: ${props => props.$positive ? (props.theme.success || '#10b981') : (props.theme.error || '#ef4444')};
     font-weight: 600;
     display: flex;
     align-items: center;
@@ -514,10 +517,10 @@ const RankNumber = styled.div`
     height: 70px;
     border-radius: 50%;
     background: ${props => {
-        if (props.$rank === 1) return 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)';
-        if (props.$rank === 2) return 'linear-gradient(135deg, #94a3b8 0%, #64748b 100%)';
-        if (props.$rank === 3) return 'linear-gradient(135deg, #fb923c 0%, #f97316 100%)';
-        return 'linear-gradient(135deg, #00adef 0%, #0088cc 100%)';
+        if (props.$rank === 1) return `linear-gradient(135deg, ${props.theme.brand?.primary} 0%, ${props.theme.brand?.secondary || props.theme.brand?.primary} 100%)`;
+        if (props.$rank === 2) return `linear-gradient(135deg, ${props.theme.brand?.accent || props.theme.brand?.primary}99 0%, ${props.theme.brand?.accent || props.theme.brand?.primary}66 100%)`;
+        if (props.$rank === 3) return `linear-gradient(135deg, ${props.theme.brand?.secondary || props.theme.brand?.primary} 0%, ${props.theme.brand?.primary}cc 100%)`;
+        return `linear-gradient(135deg, ${props.theme.brand?.primary || '#00adef'} 0%, ${props.theme.brand?.secondary || '#0088cc'} 100%)`;
     }};
     display: flex;
     align-items: center;
@@ -525,19 +528,25 @@ const RankNumber = styled.div`
     font-size: 1.5rem;
     font-weight: 900;
     color: white;
+    box-shadow: ${props => props.$rank <= 3 ? `0 0 20px ${props.theme.brand?.primary}66` : '0 8px 25px rgba(0, 0, 0, 0.3)'};
     animation: ${props => props.$rank <= 3 ? css`${rankGlow} 2s ease-in-out infinite` : 'none'};
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    
+    ${props => props.$rank <= 3 && css`
+        &:hover {
+            box-shadow: 0 0 40px ${props.theme.brand?.primary}99;
+        }
+    `}
 `;
 
 const RankLabel = styled.div`
-    color: #94a3b8;
+    color: ${props => props.theme.text?.secondary || '#94a3b8'};
     font-size: 0.8rem;
     font-weight: 600;
 `;
 
 const ViewTradingButton = styled.button`
     padding: 1rem 1.75rem;
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    background: linear-gradient(135deg, ${props => props.theme.success || '#10b981'} 0%, #059669 100%);
     border: none;
     border-radius: 10px;
     color: white;
@@ -553,7 +562,7 @@ const ViewTradingButton = styled.button`
 
     &:hover {
         transform: translateY(-3px);
-        box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4);
+        box-shadow: 0 10px 30px ${props => props.theme.success || '#10b981'}66;
     }
 
     @media (max-width: 768px) {
@@ -579,8 +588,8 @@ const WidgetsGrid = styled.div`
 `;
 
 const Widget = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
-    border: 1px solid ${props => props.$borderColor || 'rgba(0, 173, 237, 0.2)'};
+    background: ${props => props.theme.bg?.card || 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%)'};
+    border: 1px solid ${props => props.$borderColor || props.theme.border?.secondary || 'rgba(0, 173, 237, 0.2)'};
     border-radius: 14px;
     padding: 1.25rem;
     animation: ${fadeIn} 0.8s ease-out;
@@ -597,7 +606,7 @@ const WidgetHeader = styled.div`
 
 const WidgetTitle = styled.h3`
     font-size: 1.1rem;
-    color: ${props => props.$color || '#00adef'};
+    color: ${props => props.$color || props.theme.brand?.primary || '#00adef'};
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -605,8 +614,8 @@ const WidgetTitle = styled.h3`
 `;
 
 const Badge = styled.span`
-    background: ${props => props.$variant === 'success' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(0, 173, 237, 0.2)'};
-    color: ${props => props.$variant === 'success' ? '#10b981' : '#00adef'};
+    background: ${props => props.$variant === 'success' ? `${props.theme.success || '#10b981'}33` : `${props.theme.brand?.primary || '#00adef'}33`};
+    color: ${props => props.$variant === 'success' ? (props.theme.success || '#10b981') : (props.theme.brand?.primary || '#00adef')};
     padding: 0.2rem 0.6rem;
     border-radius: 20px;
     font-size: 0.75rem;
@@ -629,12 +638,12 @@ const WidgetContent = styled.div`
     }
 
     &::-webkit-scrollbar-track {
-        background: rgba(0, 173, 237, 0.1);
+        background: ${props => props.theme.brand?.primary || '#00adef'}1a;
         border-radius: 3px;
     }
 
     &::-webkit-scrollbar-thumb {
-        background: rgba(0, 173, 237, 0.3);
+        background: ${props => props.theme.brand?.primary || '#00adef'}4D;
         border-radius: 3px;
     }
 `;
@@ -642,10 +651,10 @@ const WidgetContent = styled.div`
 const ViewAllButton = styled.button`
     width: 100%;
     padding: 0.75rem;
-    background: ${props => props.$bg || 'linear-gradient(135deg, rgba(0, 173, 237, 0.15) 0%, rgba(0, 173, 237, 0.05) 100%)'};
-    border: 1px solid ${props => props.$borderColor || 'rgba(0, 173, 237, 0.25)'};
+    background: ${props => props.$bg || `linear-gradient(135deg, ${props.theme.brand?.primary || '#00adef'}26 0%, ${props.theme.brand?.primary || '#00adef'}0d 100%)`};
+    border: 1px solid ${props => props.$borderColor || props.theme.border?.primary || 'rgba(0, 173, 237, 0.25)'};
     border-radius: 8px;
-    color: ${props => props.$color || '#00adef'};
+    color: ${props => props.$color || props.theme.brand?.primary || '#00adef'};
     font-weight: 700;
     font-size: 0.85rem;
     cursor: pointer;
@@ -658,7 +667,7 @@ const ViewAllButton = styled.button`
 
     &:hover {
         transform: translateY(-2px);
-        background: ${props => props.$hoverBg || 'linear-gradient(135deg, rgba(0, 173, 237, 0.25) 0%, rgba(0, 173, 237, 0.1) 100%)'};
+        background: ${props => props.$hoverBg || `linear-gradient(135deg, ${props.theme.brand?.primary || '#00adef'}40 0%, ${props.theme.brand?.primary || '#00adef'}1a 100%)`};
     }
 `;
 
@@ -667,7 +676,7 @@ const ProfileAvatar = styled.div`
     width: ${props => props.$size || '40px'};
     height: ${props => props.$size || '40px'};
     border-radius: 50%;
-    background: ${props => props.$hasImage ? 'transparent' : 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)'};
+    background: ${props => props.$hasImage ? 'transparent' : `linear-gradient(135deg, ${props.theme.brand?.primary} 0%, ${props.theme.brand?.accent || props.theme.brand?.secondary} 100%)`};
     display: flex;
     align-items: center;
     justify-content: center;
@@ -682,7 +691,7 @@ const ProfileAvatar = styled.div`
 
     &:hover {
         transform: scale(1.08);
-        box-shadow: 0 0 15px rgba(139, 92, 246, 0.5);
+        box-shadow: 0 0 15px ${props => props.theme.brand?.primary}80;
     }
 
     img {
@@ -698,8 +707,8 @@ const LeaderboardItem = styled.div`
     align-items: center;
     gap: 0.75rem;
     padding: 0.75rem;
-    background: ${props => props.$isUser ? 'rgba(0, 173, 237, 0.12)' : 'rgba(251, 191, 36, 0.04)'};
-    border: 1px solid ${props => props.$isUser ? 'rgba(0, 173, 237, 0.3)' : 'rgba(251, 191, 36, 0.1)'};
+    background: ${props => props.$isUser ? `${props.theme.brand?.primary || '#00adef'}1f` : 'rgba(251, 191, 36, 0.04)'};
+    border: 1px solid ${props => props.$isUser ? props.theme.border?.primary || 'rgba(0, 173, 237, 0.3)' : 'rgba(251, 191, 36, 0.1)'};
     border-radius: 10px;
     transition: all 0.2s ease;
 
@@ -714,16 +723,16 @@ const LeaderboardRank = styled.div`
     height: 32px;
     border-radius: 8px;
     background: ${props => {
-        if (props.$rank === 1) return 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)';
-        if (props.$rank === 2) return 'linear-gradient(135deg, #94a3b8 0%, #64748b 100%)';
-        if (props.$rank === 3) return 'linear-gradient(135deg, #fb923c 0%, #f97316 100%)';
-        return 'rgba(0, 173, 237, 0.2)';
+        if (props.$rank === 1) return `linear-gradient(135deg, ${props.theme.brand?.primary} 0%, ${props.theme.brand?.secondary || props.theme.brand?.primary}cc 100%)`;
+        if (props.$rank === 2) return `linear-gradient(135deg, ${props.theme.brand?.accent || props.theme.brand?.primary}99 0%, ${props.theme.brand?.accent || props.theme.brand?.primary}66 100%)`;
+        if (props.$rank === 3) return `linear-gradient(135deg, ${props.theme.brand?.secondary || props.theme.brand?.primary} 0%, ${props.theme.brand?.primary}99 100%)`;
+        return `${props.theme.brand?.primary || '#00adef'}33`;
     }};
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: 900;
-    color: ${props => props.$rank <= 3 ? 'white' : '#00adef'};
+    color: ${props => props.$rank <= 3 ? 'white' : (props.theme.brand?.primary || '#00adef')};
     font-size: 0.9rem;
     flex-shrink: 0;
 `;
@@ -734,7 +743,7 @@ const LeaderboardInfo = styled.div`
 `;
 
 const LeaderboardName = styled.div`
-    color: #e0e6ed;
+    color: ${props => props.theme.text?.primary || '#e0e6ed'};
     font-weight: 700;
     font-size: 0.9rem;
     white-space: nowrap;
@@ -743,12 +752,12 @@ const LeaderboardName = styled.div`
 `;
 
 const LeaderboardStats = styled.div`
-    color: #64748b;
+    color: ${props => props.theme.text?.tertiary || '#64748b'};
     font-size: 0.75rem;
 `;
 
 const LeaderboardReturn = styled.div`
-    color: ${props => props.$positive ? '#10b981' : '#ef4444'};
+    color: ${props => props.$positive ? (props.theme.success || '#10b981') : (props.theme.error || '#ef4444')};
     font-weight: 700;
     font-size: 0.95rem;
     flex-shrink: 0;
@@ -757,14 +766,14 @@ const LeaderboardReturn = styled.div`
 // ============ SOCIAL FEED ============
 const SocialPost = styled.div`
     padding: 0.75rem;
-    background: rgba(59, 130, 246, 0.04);
-    border: 1px solid rgba(59, 130, 246, 0.1);
+    background: ${props => props.theme.brand?.primary}0a;
+    border: 1px solid ${props => props.theme.brand?.primary}1a;
     border-radius: 10px;
     transition: all 0.2s ease;
 
     &:hover {
-        background: rgba(59, 130, 246, 0.08);
-        border-color: rgba(59, 130, 246, 0.25);
+        background: ${props => props.theme.brand?.primary}14;
+        border-color: ${props => props.theme.brand?.primary}40;
     }
 `;
 
@@ -781,23 +790,23 @@ const PostUserInfo = styled.div`
 `;
 
 const PostUsername = styled.div`
-    color: #e0e6ed;
+    color: ${props => props.theme.text?.primary || '#e0e6ed'};
     font-weight: 700;
     font-size: 0.85rem;
     cursor: pointer;
     
     &:hover {
-        color: #00adef;
+        color: ${props => props.theme.brand?.primary || '#00adef'};
     }
 `;
 
 const PostTime = styled.div`
-    color: #64748b;
+    color: ${props => props.theme.text?.tertiary || '#64748b'};
     font-size: 0.7rem;
 `;
 
 const PostContent = styled.div`
-    color: #94a3b8;
+    color: ${props => props.theme.text?.secondary || '#94a3b8'};
     font-size: 0.85rem;
     line-height: 1.4;
     margin-bottom: 0.5rem;
@@ -815,7 +824,7 @@ const PostActions = styled.div`
 const PostAction = styled.button`
     background: none;
     border: none;
-    color: #64748b;
+    color: ${props => props.theme.text?.tertiary || '#64748b'};
     font-size: 0.75rem;
     cursor: pointer;
     display: flex;
@@ -825,14 +834,14 @@ const PostAction = styled.button`
     padding: 0;
 
     &:hover {
-        color: ${props => props.$color || '#3b82f6'};
+        color: ${props => props.$color || props.theme.brand?.primary};
     }
 `;
 
 const EmptyState = styled.div`
     text-align: center;
     padding: 2rem 1rem;
-    color: #64748b;
+    color: ${props => props.theme.text?.tertiary || '#64748b'};
 
     svg {
         margin-bottom: 0.75rem;
@@ -846,8 +855,8 @@ const EmptyState = styled.div`
 
 // ============ ACHIEVEMENTS ============
 const AchievementsSection = styled.div`
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.08) 0%, rgba(59, 130, 246, 0.08) 100%);
-    border: 1px solid rgba(139, 92, 246, 0.25);
+    background: linear-gradient(135deg, ${props => props.theme.brand?.primary}14 0%, ${props => props.theme.brand?.accent || props.theme.brand?.secondary}14 100%);
+    border: 1px solid ${props => props.theme.brand?.primary}40;
     border-radius: 14px;
     padding: 1.25rem;
     animation: ${fadeIn} 0.8s ease-out 0.2s backwards;
@@ -864,7 +873,7 @@ const AchievementsHeader = styled.div`
 
 const AchievementsTitle = styled.h3`
     font-size: 1.1rem;
-    color: #a78bfa;
+    color: ${props => props.theme.brand?.accent || props.theme.brand?.primary};
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -880,7 +889,7 @@ const AchievementsProgress = styled.div`
 const ProgressBar = styled.div`
     width: 180px;
     height: 8px;
-    background: rgba(139, 92, 246, 0.2);
+    background: ${props => props.theme.brand?.primary}33;
     border-radius: 4px;
     overflow: hidden;
 
@@ -892,13 +901,13 @@ const ProgressBar = styled.div`
 const ProgressFill = styled.div`
     height: 100%;
     width: ${props => props.$progress}%;
-    background: linear-gradient(90deg, #8b5cf6, #a78bfa);
+    background: linear-gradient(90deg, ${props => props.theme.brand?.primary}, ${props => props.theme.brand?.accent || props.theme.brand?.secondary});
     border-radius: 4px;
     transition: width 1s ease-out;
 `;
 
 const ProgressText = styled.span`
-    color: #a78bfa;
+    color: ${props => props.theme.brand?.accent || props.theme.brand?.primary};
     font-weight: 700;
     font-size: 0.85rem;
     white-space: nowrap;
@@ -912,18 +921,18 @@ const AchievementsGrid = styled.div`
 
 const AchievementBadge = styled.div`
     background: ${props => props.$unlocked 
-        ? props.$rarity === 'legendary' ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(217, 119, 6, 0.1) 100%)'
-        : props.$rarity === 'epic' ? 'linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(124, 58, 237, 0.1) 100%)'
-        : props.$rarity === 'rare' ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(37, 99, 235, 0.1) 100%)'
-        : 'linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(5, 150, 105, 0.1) 100%)'
+        ? props.$rarity === 'legendary' ? `linear-gradient(135deg, ${props.theme.brand?.primary}33 0%, ${props.theme.brand?.secondary || props.theme.brand?.primary}1a 100%)`
+        : props.$rarity === 'epic' ? `linear-gradient(135deg, ${props.theme.brand?.accent || props.theme.brand?.primary}33 0%, ${props.theme.brand?.primary}1a 100%)`
+        : props.$rarity === 'rare' ? `linear-gradient(135deg, ${props.theme.brand?.secondary || props.theme.brand?.primary}33 0%, ${props.theme.brand?.primary}1a 100%)`
+        : `linear-gradient(135deg, ${props.theme.brand?.primary}33 0%, ${props.theme.brand?.accent || props.theme.brand?.primary}1a 100%)`
         : 'rgba(100, 116, 139, 0.08)'
     };
     border: 2px solid ${props => {
         if (!props.$unlocked) return 'rgba(100, 116, 139, 0.15)';
-        if (props.$rarity === 'legendary') return 'rgba(245, 158, 11, 0.5)';
-        if (props.$rarity === 'epic') return 'rgba(139, 92, 246, 0.5)';
-        if (props.$rarity === 'rare') return 'rgba(59, 130, 246, 0.5)';
-        return 'rgba(16, 185, 129, 0.5)';
+        if (props.$rarity === 'legendary') return `${props.theme.brand?.primary}80`;
+        if (props.$rarity === 'epic') return `${props.theme.brand?.accent || props.theme.brand?.primary}80`;
+        if (props.$rarity === 'rare') return `${props.theme.brand?.secondary || props.theme.brand?.primary}80`;
+        return `${props.theme.brand?.primary}80`;
     }};
     border-radius: 10px;
     padding: 1rem 0.5rem;
@@ -952,7 +961,7 @@ const BadgeIcon = styled.div`
 
 const BadgeLabel = styled.div`
     font-size: 0.7rem;
-    color: ${props => props.$unlocked ? '#e0e6ed' : '#64748b'};
+    color: ${props => props.$unlocked ? (props.theme.text?.primary || '#e0e6ed') : (props.theme.text?.tertiary || '#64748b')};
     font-weight: 600;
     line-height: 1.2;
 `;
@@ -961,7 +970,7 @@ const BadgeLock = styled.div`
     position: absolute;
     top: 0.4rem;
     right: 0.4rem;
-    color: #64748b;
+    color: ${props => props.theme.text?.tertiary || '#64748b'};
     opacity: 0.6;
 `;
 
@@ -973,10 +982,10 @@ const RarityDot = styled.div`
     height: 8px;
     border-radius: 50%;
     background: ${props => {
-        if (props.$rarity === 'legendary') return 'linear-gradient(135deg, #fbbf24, #f59e0b)';
-        if (props.$rarity === 'epic') return 'linear-gradient(135deg, #a78bfa, #8b5cf6)';
-        if (props.$rarity === 'rare') return 'linear-gradient(135deg, #60a5fa, #3b82f6)';
-        return 'linear-gradient(135deg, #34d399, #10b981)';
+        if (props.$rarity === 'legendary') return `linear-gradient(135deg, ${props.theme.brand?.primary}, ${props.theme.brand?.secondary || props.theme.brand?.primary})`;
+        if (props.$rarity === 'epic') return `linear-gradient(135deg, ${props.theme.brand?.accent || props.theme.brand?.primary}, ${props.theme.brand?.primary})`;
+        if (props.$rarity === 'rare') return `linear-gradient(135deg, ${props.theme.brand?.secondary || props.theme.brand?.primary}, ${props.theme.brand?.primary})`;
+        return `linear-gradient(135deg, ${props.theme.brand?.accent || props.theme.brand?.primary}, ${props.theme.success || '#10b981'})`;
     }};
 `;
 
@@ -984,7 +993,7 @@ const RarityDot = styled.div`
 const DashboardPage = () => {
     const navigate = useNavigate();
     const { api, isAuthenticated, user } = useAuth();
-    const { theme } = useTheme();
+    const { theme, primary } = useTheme();
     const toast = useToast();
 
     // Core states
@@ -1278,15 +1287,15 @@ const DashboardPage = () => {
         return (
             <PageContainer>
                 <div style={{ textAlign: 'center', padding: '4rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-                    <LoadingSpinner><Activity size={64} color="#00adef" /></LoadingSpinner>
-                    <h2 style={{ color: '#00adef' }}>Loading Dashboard...</h2>
+                    <LoadingSpinner><Activity size={64} /></LoadingSpinner>
+                    <h2 style={{ color: primary }}>Loading Dashboard...</h2>
                 </div>
             </PageContainer>
         );
     }
 
     return (
-        <PageContainer theme={theme}>
+        <PageContainer>
             <ContentWrapper>
                 {/* HEADER */}
                 <Header>
@@ -1347,7 +1356,7 @@ const DashboardPage = () => {
                             <TickerTrack $reverse $duration="40s">
                                 {[...moversTicker, ...moversTicker].map((stock, index) => (
                                     <TickerItem key={index}>
-                                        <TickerLink symbol={stock.symbol} bold style={{ color: '#fbbf24' }}>
+                                        <TickerLink symbol={stock.symbol} bold>
                                             {stock.symbol}
                                         </TickerLink>
                                         <TickerPrice>${stock.price?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TickerPrice>
@@ -1386,8 +1395,8 @@ const DashboardPage = () => {
 
                     {loadingChart ? (
                         <LoadingChartPlaceholder>
-                            <LoadingSpinner><Activity size={64} color="#00adef" /></LoadingSpinner>
-                            <p style={{ color: '#94a3b8', marginTop: '1rem' }}>Loading {selectedSymbol} chart...</p>
+                            <LoadingSpinner><Activity size={64} /></LoadingSpinner>
+                            <p style={{ color: theme.text?.secondary, marginTop: '1rem' }}>Loading {selectedSymbol} chart...</p>
                         </LoadingChartPlaceholder>
                     ) : (
                         <>
@@ -1417,7 +1426,7 @@ const DashboardPage = () => {
 
                     <PaperTradingTitle>
                         <PaperTradingLabel><Percent size={16} /> Win Rate</PaperTradingLabel>
-                        <PaperTradingValue $color={paperTradingStats?.winRate >= 50 ? '#10b981' : '#f59e0b'}>
+                        <PaperTradingValue $color={paperTradingStats?.winRate >= 50 ? theme.success : theme.warning}>
                             {(paperTradingStats?.winRate || 0).toFixed(1)}%
                         </PaperTradingValue>
                         <PaperTradingChange $positive>{paperTradingStats?.totalTrades || 0} trades</PaperTradingChange>
@@ -1426,9 +1435,9 @@ const DashboardPage = () => {
                     <PaperTradingTitle>
                         <PaperTradingLabel><Target size={16} /> W/L Record</PaperTradingLabel>
                         <PaperTradingValue>
-                            <span style={{ color: '#10b981' }}>{paperTradingStats?.winningTrades || 0}</span>
-                            <span style={{ color: '#64748b' }}>/</span>
-                            <span style={{ color: '#ef4444' }}>{paperTradingStats?.losingTrades || 0}</span>
+                            <span style={{ color: theme.success }}>{paperTradingStats?.winningTrades || 0}</span>
+                            <span style={{ color: theme.text?.tertiary }}>/</span>
+                            <span style={{ color: theme.error }}>{paperTradingStats?.losingTrades || 0}</span>
                         </PaperTradingValue>
                         <PaperTradingChange $positive>Wins / Losses</PaperTradingChange>
                     </PaperTradingTitle>
@@ -1448,9 +1457,9 @@ const DashboardPage = () => {
                 {/* THREE COLUMN WIDGETS */}
                 <WidgetsGrid>
                     {/* LEADERBOARD */}
-                    <Widget $borderColor="rgba(251, 191, 36, 0.25)">
+                    <Widget>
                         <WidgetHeader>
-                            <WidgetTitle $color="#fbbf24"><Crown size={20} /> Top Traders</WidgetTitle>
+                            <WidgetTitle><Crown size={20} /> Top Traders</WidgetTitle>
                             <Badge $variant="success"><Activity size={12} /> Live</Badge>
                         </WidgetHeader>
                         <WidgetContent>
@@ -1464,7 +1473,7 @@ const DashboardPage = () => {
                                             $size="36px"
                                             $fontSize="0.85rem"
                                             $hasImage={!!avatar}
-                                            $borderColor={trader.rank <= 3 ? '#fbbf24' : 'transparent'}
+                                            $borderColor={trader.rank <= 3 ? theme.brand?.primary : 'transparent'}
                                             onClick={() => goToProfile(username)}
                                         >
                                             {avatar ? <img src={avatar} alt={initials} /> : initials}
@@ -1487,9 +1496,6 @@ const DashboardPage = () => {
                         </WidgetContent>
                         <ViewAllButton
                             onClick={() => navigate('/leaderboard')}
-                            $bg="linear-gradient(135deg, rgba(251, 191, 36, 0.15) 0%, rgba(251, 191, 36, 0.05) 100%)"
-                            $borderColor="rgba(251, 191, 36, 0.25)"
-                            $color="#fbbf24"
                         >
                             View Leaderboard <ChevronRight size={16} />
                         </ViewAllButton>
@@ -1499,9 +1505,9 @@ const DashboardPage = () => {
                     <WhaleAlertWidget />
 
                     {/* SOCIAL FEED */}
-                    <Widget $borderColor="rgba(59, 130, 246, 0.25)">
+                    <Widget>
                         <WidgetHeader>
-                            <WidgetTitle $color="#3b82f6"><MessageSquare size={20} /> Social Feed</WidgetTitle>
+                            <WidgetTitle><MessageSquare size={20} /> Social Feed</WidgetTitle>
                             <Badge><Users size={12} /> Community</Badge>
                         </WidgetHeader>
                         <WidgetContent>
@@ -1532,7 +1538,7 @@ const DashboardPage = () => {
                                                 <TickerText text={post.content || post.text || ''} />
                                             </PostContent>
                                             <PostActions>
-                                                <PostAction $color="#ef4444"><ThumbsUp size={14} /> {post.likes?.length || 0}</PostAction>
+                                                <PostAction><ThumbsUp size={14} /> {post.likes?.length || 0}</PostAction>
                                                 <PostAction><MessageSquare size={14} /> {post.comments?.length || 0}</PostAction>
                                                 <PostAction><Share2 size={14} /></PostAction>
                                             </PostActions>
@@ -1548,9 +1554,6 @@ const DashboardPage = () => {
                         </WidgetContent>
                         <ViewAllButton
                             onClick={() => navigate('/social')}
-                            $bg="linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.05) 100%)"
-                            $borderColor="rgba(59, 130, 246, 0.25)"
-                            $color="#3b82f6"
                         >
                             {socialFeed.length > 0 ? 'View All Posts' : 'Create Post'} <ChevronRight size={16} />
                         </ViewAllButton>
@@ -1586,9 +1589,6 @@ const DashboardPage = () => {
                             </AchievementsGrid>
                             <ViewAllButton
                                 onClick={() => navigate('/achievements')}
-                                $bg="linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(139, 92, 246, 0.05) 100%)"
-                                $borderColor="rgba(139, 92, 246, 0.25)"
-                                $color="#a78bfa"
                                 style={{ marginTop: '1rem' }}
                             >
                                 View All {totalAchievements} Achievements <ChevronRight size={16} />

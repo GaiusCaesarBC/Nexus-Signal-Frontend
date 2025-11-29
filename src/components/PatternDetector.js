@@ -1,13 +1,14 @@
-// client/src/components/PatternDetector.js - PATTERN VISUALIZATION COMPONENT
+// client/src/components/PatternDetector.js - PATTERN VISUALIZATION COMPONENT WITH THEME SUPPORT
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useTheme } from '../context/ThemeContext';
 import {
     TrendingUp, TrendingDown, Target, AlertCircle, Info, 
-    Zap, CheckCircle, XCircle, Eye, Brain, Star, Award,
-    ChevronDown, ChevronUp, RefreshCw,DollarSign
+    Zap, CheckCircle, Eye, Brain, Star,
+    ChevronDown, ChevronUp, RefreshCw, DollarSign
 } from 'lucide-react';
 
 // ============ ANIMATIONS ============
@@ -39,10 +40,10 @@ const Container = styled.div`
 
 const ScanButton = styled.button`
     padding: 0.75rem 1.5rem;
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.3) 0%, rgba(59, 130, 246, 0.2) 100%);
-    border: 2px solid rgba(139, 92, 246, 0.5);
+    background: linear-gradient(135deg, ${props => props.theme.brand?.primary}4D 0%, ${props => props.theme.brand?.accent || props.theme.brand?.secondary}33 100%);
+    border: 2px solid ${props => props.theme.brand?.primary}80;
     border-radius: 12px;
-    color: #a78bfa;
+    color: ${props => props.theme.brand?.primary};
     font-weight: 700;
     font-size: 1rem;
     cursor: pointer;
@@ -53,9 +54,9 @@ const ScanButton = styled.button`
     margin-bottom: 1.5rem;
 
     &:hover:not(:disabled) {
-        background: linear-gradient(135deg, rgba(139, 92, 246, 0.4) 0%, rgba(59, 130, 246, 0.3) 100%);
+        background: linear-gradient(135deg, ${props => props.theme.brand?.primary}66 0%, ${props => props.theme.brand?.accent || props.theme.brand?.secondary}4D 100%);
         transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
+        box-shadow: 0 8px 25px ${props => props.theme.brand?.primary}66;
     }
 
     &:disabled {
@@ -78,13 +79,13 @@ const PatternsGrid = styled.div`
 const PatternCard = styled.div`
     background: linear-gradient(135deg, 
         ${props => props.$type === 'bullish' ? 
-            'rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%' :
-            'rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0.05) 100%'
+            `${props.theme.success}1a 0%, ${props.theme.success}0d 100%` :
+            `${props.theme.error}1a 0%, ${props.theme.error}0d 100%`
         }
     );
     border: 2px solid ${props => props.$type === 'bullish' ? 
-        'rgba(16, 185, 129, 0.4)' : 
-        'rgba(239, 68, 68, 0.4)'
+        `${props.theme.success}66` : 
+        `${props.theme.error}66`
     };
     border-radius: 16px;
     padding: 1.5rem;
@@ -96,8 +97,8 @@ const PatternCard = styled.div`
     &:hover {
         transform: translateY(-5px);
         box-shadow: 0 10px 30px ${props => props.$type === 'bullish' ? 
-            'rgba(16, 185, 129, 0.3)' : 
-            'rgba(239, 68, 68, 0.3)'
+            `${props.theme.success}4D` : 
+            `${props.theme.error}4D`
         };
     }
 
@@ -109,8 +110,8 @@ const PatternCard = styled.div`
         width: 100%;
         height: 3px;
         background: ${props => props.$type === 'bullish' ? 
-            'linear-gradient(90deg, #10b981, #059669)' :
-            'linear-gradient(90deg, #ef4444, #dc2626)'
+            `linear-gradient(90deg, ${props.theme.success}, ${props.theme.success}cc)` :
+            `linear-gradient(90deg, ${props.theme.error}, ${props.theme.error}cc)`
         };
     }
 
@@ -123,8 +124,8 @@ const PatternCard = styled.div`
         height: 100%;
         background: linear-gradient(45deg, transparent 30%, 
             ${props => props.$type === 'bullish' ? 
-                'rgba(16, 185, 129, 0.1)' :
-                'rgba(239, 68, 68, 0.1)'
+                `${props.theme.success}1a` :
+                `${props.theme.error}1a`
             } 50%, transparent 70%
         );
         background-size: 200% 200%;
@@ -142,7 +143,7 @@ const PatternHeader = styled.div`
 `;
 
 const PatternName = styled.h3`
-    color: ${props => props.$type === 'bullish' ? '#10b981' : '#ef4444'};
+    color: ${props => props.$type === 'bullish' ? props.theme.success : props.theme.error};
     font-size: 1.3rem;
     font-weight: 900;
     display: flex;
@@ -152,7 +153,7 @@ const PatternName = styled.h3`
 `;
 
 const PatternType = styled.div`
-    color: #94a3b8;
+    color: ${props => props.theme.text?.secondary};
     font-size: 0.85rem;
     text-transform: uppercase;
     letter-spacing: 1px;
@@ -161,15 +162,15 @@ const PatternType = styled.div`
 const StatusBadge = styled.div`
     padding: 0.4rem 0.75rem;
     background: ${props => props.$confirmed ? 
-        'rgba(16, 185, 129, 0.2)' :
-        'rgba(245, 158, 11, 0.2)'
+        `${props.theme.success}33` :
+        `${props.theme.warning}33`
     };
     border: 1px solid ${props => props.$confirmed ?
-        'rgba(16, 185, 129, 0.4)' :
-        'rgba(245, 158, 11, 0.4)'
+        `${props.theme.success}66` :
+        `${props.theme.warning}66`
     };
     border-radius: 20px;
-    color: ${props => props.$confirmed ? '#10b981' : '#f59e0b'};
+    color: ${props => props.$confirmed ? props.theme.success : props.theme.warning};
     font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -193,16 +194,16 @@ const ConfidenceLabel = styled.div`
 `;
 
 const ConfidenceText = styled.span`
-    color: #94a3b8;
+    color: ${props => props.theme.text?.secondary};
     font-size: 0.9rem;
     font-weight: 600;
 `;
 
 const ConfidenceValue = styled.span`
     color: ${props => {
-        if (props.$value >= 80) return '#10b981';
-        if (props.$value >= 60) return '#f59e0b';
-        return '#ef4444';
+        if (props.$value >= 80) return props.theme.success;
+        if (props.$value >= 60) return props.theme.warning;
+        return props.theme.error;
     }};
     font-size: 1.1rem;
     font-weight: 900;
@@ -211,7 +212,7 @@ const ConfidenceValue = styled.span`
 const ConfidenceBar = styled.div`
     width: 100%;
     height: 10px;
-    background: rgba(100, 116, 139, 0.2);
+    background: ${props => props.theme.text?.tertiary}33;
     border-radius: 5px;
     overflow: hidden;
     position: relative;
@@ -221,9 +222,9 @@ const ConfidenceFill = styled.div`
     height: 100%;
     width: ${props => props.$value}%;
     background: ${props => {
-        if (props.$value >= 80) return 'linear-gradient(90deg, #10b981, #059669)';
-        if (props.$value >= 60) return 'linear-gradient(90deg, #f59e0b, #d97706)';
-        return 'linear-gradient(90deg, #ef4444, #dc2626)';
+        if (props.$value >= 80) return `linear-gradient(90deg, ${props.theme.success}, ${props.theme.success}cc)`;
+        if (props.$value >= 60) return `linear-gradient(90deg, ${props.theme.warning}, ${props.theme.warning}cc)`;
+        return `linear-gradient(90deg, ${props.theme.error}, ${props.theme.error}cc)`;
     }};
     border-radius: 5px;
     transition: width 1s ease-out;
@@ -251,14 +252,14 @@ const MetricsGrid = styled.div`
 `;
 
 const MetricBox = styled.div`
-    background: rgba(0, 173, 237, 0.05);
-    border: 1px solid rgba(0, 173, 237, 0.2);
+    background: ${props => props.theme.brand?.primary}0d;
+    border: 1px solid ${props => props.theme.brand?.primary}33;
     border-radius: 10px;
     padding: 1rem;
 `;
 
 const MetricLabel = styled.div`
-    color: #64748b;
+    color: ${props => props.theme.text?.tertiary};
     font-size: 0.8rem;
     margin-bottom: 0.4rem;
     text-transform: uppercase;
@@ -266,7 +267,7 @@ const MetricLabel = styled.div`
 `;
 
 const MetricValue = styled.div`
-    color: ${props => props.$color || '#e0e6ed'};
+    color: ${props => props.$color || props.theme.text?.primary};
     font-size: 1.2rem;
     font-weight: 700;
     display: flex;
@@ -277,7 +278,7 @@ const MetricValue = styled.div`
 const DetailsSection = styled.div`
     margin-top: 1rem;
     padding-top: 1rem;
-    border-top: 1px solid rgba(0, 173, 237, 0.2);
+    border-top: 1px solid ${props => props.theme.brand?.primary}33;
     position: relative;
     z-index: 1;
 `;
@@ -287,11 +288,11 @@ const DetailRow = styled.div`
     justify-content: space-between;
     align-items: center;
     padding: 0.5rem 0;
-    color: #94a3b8;
+    color: ${props => props.theme.text?.secondary};
     font-size: 0.9rem;
 
     span:last-child {
-        color: #e0e6ed;
+        color: ${props => props.theme.text?.primary};
         font-weight: 600;
     }
 `;
@@ -299,10 +300,10 @@ const DetailRow = styled.div`
 const ExpandButton = styled.button`
     width: 100%;
     padding: 0.75rem;
-    background: rgba(0, 173, 237, 0.1);
-    border: 1px solid rgba(0, 173, 237, 0.3);
+    background: ${props => props.theme.brand?.primary}1a;
+    border: 1px solid ${props => props.theme.brand?.primary}4D;
     border-radius: 10px;
-    color: #00adef;
+    color: ${props => props.theme.brand?.primary};
     font-weight: 600;
     cursor: pointer;
     display: flex;
@@ -315,7 +316,7 @@ const ExpandButton = styled.button`
     z-index: 1;
 
     &:hover {
-        background: rgba(0, 173, 237, 0.2);
+        background: ${props => props.theme.brand?.primary}33;
         transform: translateY(-2px);
     }
 `;
@@ -323,14 +324,14 @@ const ExpandButton = styled.button`
 const EmptyState = styled.div`
     text-align: center;
     padding: 3rem 2rem;
-    color: #64748b;
+    color: ${props => props.theme.text?.tertiary};
 `;
 
 const EmptyIcon = styled.div`
     width: 80px;
     height: 80px;
     margin: 0 auto 1rem;
-    background: rgba(139, 92, 246, 0.1);
+    background: ${props => props.theme.brand?.primary}1a;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -339,18 +340,18 @@ const EmptyIcon = styled.div`
 
 const EmptyText = styled.div`
     font-size: 1.1rem;
-    color: #94a3b8;
+    color: ${props => props.theme.text?.secondary};
     margin-bottom: 0.5rem;
 `;
 
 const EmptyHint = styled.div`
     font-size: 0.9rem;
-    color: #64748b;
+    color: ${props => props.theme.text?.tertiary};
 `;
 
 const InfoBox = styled.div`
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
-    border: 1px solid rgba(59, 130, 246, 0.3);
+    background: linear-gradient(135deg, ${props => props.theme.brand?.primary}1a 0%, ${props => props.theme.brand?.accent || props.theme.brand?.secondary}1a 100%);
+    border: 1px solid ${props => props.theme.brand?.primary}4D;
     border-radius: 12px;
     padding: 1.25rem;
     margin-bottom: 1.5rem;
@@ -363,12 +364,12 @@ const InfoIcon = styled.div`
     width: 40px;
     height: 40px;
     border-radius: 10px;
-    background: rgba(59, 130, 246, 0.2);
+    background: ${props => props.theme.brand?.primary}33;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    color: #3b82f6;
+    color: ${props => props.theme.brand?.primary};
 `;
 
 const InfoContent = styled.div`
@@ -376,14 +377,14 @@ const InfoContent = styled.div`
 `;
 
 const InfoTitle = styled.div`
-    color: #3b82f6;
+    color: ${props => props.theme.brand?.primary};
     font-weight: 700;
     font-size: 1rem;
     margin-bottom: 0.5rem;
 `;
 
 const InfoText = styled.div`
-    color: #94a3b8;
+    color: ${props => props.theme.text?.secondary};
     font-size: 0.9rem;
     line-height: 1.5;
 `;
@@ -394,8 +395,8 @@ const RiskRewardBox = styled.div`
     gap: 1rem;
     margin: 1rem 0;
     padding: 1rem;
-    background: rgba(0, 173, 237, 0.05);
-    border: 1px solid rgba(0, 173, 237, 0.2);
+    background: ${props => props.theme.brand?.primary}0d;
+    border: 1px solid ${props => props.theme.brand?.primary}33;
     border-radius: 12px;
     position: relative;
     z-index: 1;
@@ -406,7 +407,7 @@ const RiskRewardItem = styled.div`
 `;
 
 const RiskRewardLabel = styled.div`
-    color: #64748b;
+    color: ${props => props.theme.text?.tertiary};
     font-size: 0.8rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -414,7 +415,7 @@ const RiskRewardLabel = styled.div`
 `;
 
 const RiskRewardValue = styled.div`
-    color: ${props => props.$type === 'risk' ? '#ef4444' : '#10b981'};
+    color: ${props => props.$type === 'risk' ? props.theme.error : props.theme.success};
     font-size: 1.5rem;
     font-weight: 900;
 `;
@@ -422,7 +423,7 @@ const RiskRewardValue = styled.div`
 const RatioLabel = styled.div`
     text-align: center;
     margin-top: 0.5rem;
-    color: #94a3b8;
+    color: ${props => props.theme.text?.secondary};
     font-size: 0.85rem;
 `;
 
@@ -430,6 +431,7 @@ const RatioLabel = styled.div`
 const PatternDetector = ({ symbol, chartData }) => {
     const { api } = useAuth();
     const toast = useToast();
+    const { theme } = useTheme();
 
     const [patterns, setPatterns] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -562,7 +564,7 @@ const PatternDetector = ({ symbol, chartData }) => {
 
                                 <MetricBox>
                                     <MetricLabel>Price Target</MetricLabel>
-                                    <MetricValue $color={pattern.type === 'bullish' ? '#10b981' : '#ef4444'}>
+                                    <MetricValue $color={pattern.type === 'bullish' ? theme.success : theme.error}>
                                         <Target size={18} />
                                         {formatCurrency(pattern.target)}
                                     </MetricValue>
@@ -570,7 +572,7 @@ const PatternDetector = ({ symbol, chartData }) => {
 
                                 <MetricBox>
                                     <MetricLabel>Potential Move</MetricLabel>
-                                    <MetricValue $color={parseFloat(pattern.potentialMove) >= 0 ? '#10b981' : '#ef4444'}>
+                                    <MetricValue $color={parseFloat(pattern.potentialMove) >= 0 ? theme.success : theme.error}>
                                         {parseFloat(pattern.potentialMove) >= 0 ? <TrendingUp size={18} /> : <TrendingDown size={18} />}
                                         {formatPercent(pattern.potentialMove)}
                                     </MetricValue>
@@ -578,7 +580,7 @@ const PatternDetector = ({ symbol, chartData }) => {
 
                                 <MetricBox>
                                     <MetricLabel>Reliability</MetricLabel>
-                                    <MetricValue $color="#a78bfa">
+                                    <MetricValue $color={theme.brand?.accent || theme.brand?.primary}>
                                         <Star size={18} />
                                         {(pattern.reliability * 100).toFixed(0)}%
                                     </MetricValue>
@@ -638,7 +640,7 @@ const PatternDetector = ({ symbol, chartData }) => {
             ) : !loading && (
                 <EmptyState>
                     <EmptyIcon>
-                        <Eye size={40} color="#8b5cf6" />
+                        <Eye size={40} style={{ color: theme.brand?.primary }} />
                     </EmptyIcon>
                     <EmptyText>No patterns detected yet</EmptyText>
                     <EmptyHint>Click "Scan for Patterns" to analyze the chart</EmptyHint>
