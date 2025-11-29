@@ -272,22 +272,28 @@ const LandingPage = () => {
     };
 
     const fetchTopTraders = async () => { 
+    // Try both possible endpoints
+    const endpoints = [
+        `${API_URL}/paper-trading/leaderboard?limit=10`,
+        `${API_URL}/leaderboard/top`
+    ];
+    
+    for (const url of endpoints) {
         try { 
-            const res = await fetch(`${API_URL}/paper-trading/leaderboard?limit=10`); 
+            const res = await fetch(url); 
             if (res.ok) { 
-                const data = await res.json(); 
-                const traders = data.leaderboard || [];
-                setTopTraders(traders);
-                
-                // Update top performer return in stats if we have traders
+                const data = await res.json();
+                const traders = data.leaderboard || data.traders || data || [];
                 if (traders.length > 0) {
-                    const topReturn = traders[0]?.profitLossPercent ?? traders[0]?.totalProfitLossPercent ?? 0;
+                    setTopTraders(traders);
+                    const topReturn = traders[0]?.profitLossPercent ?? traders[0]?.totalReturnPercent ?? 0;
                     setStats(prev => ({ ...prev, topPerformerReturn: topReturn }));
+                    return;
                 }
             } 
-        } catch (err) { console.log('Top traders fetch failed'); } 
-    };
-
+        } catch (err) { console.log(`Endpoint ${url} failed`); }
+    }
+};
     const fetchRecentActivity = async () => {
         try {
             const res = await fetch(`${API_URL}/posts?limit=8`);
