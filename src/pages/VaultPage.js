@@ -1,12 +1,12 @@
-// client/src/pages/VaultPage.js - NEXUS VAULT SHOP - FIXED THEME SWITCHING
+// client/src/pages/VaultPage.js - NEXUS VAULT SHOP - FULLY THEMED
 // Browse, Purchase, and Equip: Avatar Borders, Profile Themes, Badges, and Perks
 
 import React, { useState, useEffect } from 'react';
-import styled, { keyframes, css } from 'styled-components';
+import styled, { keyframes, css, useTheme as useStyledTheme } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useGamification } from '../context/GamificationContext';
 import { useToast } from '../context/ToastContext';
-import { useTheme } from '../context/ThemeContext'; // ✅ ADD THIS
+import { useTheme as useThemeContext } from '../context/ThemeContext';
 import {
     Store, Sparkles, Crown, Shield, Palette, Award, Zap,
     Lock, Check, ChevronRight, Star, Diamond, Gem,
@@ -72,15 +72,64 @@ const epicGlow = keyframes`
 // ============ STYLED COMPONENTS ============
 const PageContainer = styled.div`
     min-height: 100vh;
-    background: linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
-    color: #e0e6ed;
+    background: ${({ theme }) => theme.bg?.page || 'linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%)'};
+    color: ${({ theme }) => theme.text?.primary || '#e0e6ed'};
     padding: 2rem;
     padding-top: 100px;
+    position: relative;
+    overflow-x: hidden;
+`;
+
+const BackgroundOrbs = styled.div`
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 0;
+`;
+
+const Orb = styled.div`
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.3;
+    animation: ${float} ${props => props.$duration || '20s'} ease-in-out infinite;
+    
+    &:nth-child(1) {
+        width: 400px;
+        height: 400px;
+        background: ${({ theme }) => `radial-gradient(circle, ${theme.warning || '#fbbf24'}66 0%, transparent 70%)`};
+        top: 10%;
+        left: -100px;
+    }
+    
+    &:nth-child(2) {
+        width: 300px;
+        height: 300px;
+        background: ${({ theme }) => `radial-gradient(circle, ${theme.brand?.accent || '#8b5cf6'}66 0%, transparent 70%)`};
+        top: 50%;
+        right: -50px;
+        animation-delay: -5s;
+    }
+    
+    &:nth-child(3) {
+        width: 350px;
+        height: 350px;
+        background: ${({ theme }) => `radial-gradient(circle, ${theme.brand?.primary || '#00adef'}4D 0%, transparent 70%)`};
+        bottom: 10%;
+        left: 30%;
+        animation-delay: -10s;
+    }
 `;
 
 const ContentWrapper = styled.div`
     max-width: 1600px;
     margin: 0 auto;
+    position: relative;
+    z-index: 1;
 `;
 
 const Header = styled.div`
@@ -91,7 +140,7 @@ const Header = styled.div`
 
 const Title = styled.h1`
     font-size: 3.5rem;
-    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #fbbf24 100%);
+    background: ${({ theme }) => theme.brand?.gradient || 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #fbbf24 100%)'};
     background-size: 200% auto;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -110,7 +159,7 @@ const Title = styled.h1`
 `;
 
 const Subtitle = styled.p`
-    color: #94a3b8;
+    color: ${({ theme }) => theme.text?.secondary || '#94a3b8'};
     font-size: 1.2rem;
     margin-bottom: 1.5rem;
 `;
@@ -120,8 +169,8 @@ const CoinBalance = styled.div`
     align-items: center;
     gap: 0.75rem;
     padding: 1rem 2rem;
-    background: linear-gradient(135deg, rgba(251, 191, 36, 0.2) 0%, rgba(245, 158, 11, 0.1) 100%);
-    border: 2px solid rgba(251, 191, 36, 0.5);
+    background: ${({ theme }) => `linear-gradient(135deg, ${theme.warning || '#fbbf24'}33 0%, ${theme.warning || '#f59e0b'}1A 100%)`};
+    border: 2px solid ${({ theme }) => `${theme.warning || '#fbbf24'}80`};
     border-radius: 50px;
     animation: ${glow} 3s ease-in-out infinite;
 `;
@@ -129,7 +178,7 @@ const CoinBalance = styled.div`
 const CoinIcon = styled.div`
     width: 40px;
     height: 40px;
-    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    background: ${({ theme }) => `linear-gradient(135deg, ${theme.warning || '#fbbf24'} 0%, ${theme.warning || '#f59e0b'} 100%)`};
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -140,12 +189,12 @@ const CoinIcon = styled.div`
 const CoinAmount = styled.div`
     font-size: 1.8rem;
     font-weight: 900;
-    color: #fbbf24;
+    color: ${({ theme }) => theme.warning || '#fbbf24'};
 `;
 
 const CoinLabel = styled.div`
     font-size: 0.85rem;
-    color: #94a3b8;
+    color: ${({ theme }) => theme.text?.secondary || '#94a3b8'};
     font-weight: 600;
 `;
 
@@ -161,13 +210,13 @@ const CategoryTabs = styled.div`
 
 const CategoryTab = styled.button`
     padding: 1rem 2rem;
-    background: ${props => props.$active 
-        ? 'linear-gradient(135deg, rgba(0, 173, 237, 0.3) 0%, rgba(139, 92, 246, 0.2) 100%)'
-        : 'rgba(30, 41, 59, 0.5)'
+    background: ${({ $active, theme }) => $active 
+        ? `linear-gradient(135deg, ${theme.brand?.primary || '#00adef'}4D 0%, ${theme.brand?.accent || '#8b5cf6'}33 100%)`
+        : theme.bg?.card || 'rgba(30, 41, 59, 0.5)'
     };
-    border: 2px solid ${props => props.$active ? 'rgba(0, 173, 237, 0.6)' : 'rgba(100, 116, 139, 0.3)'};
+    border: 2px solid ${({ $active, theme }) => $active ? `${theme.brand?.primary || '#00adef'}99` : theme.border?.primary || 'rgba(100, 116, 139, 0.3)'};
     border-radius: 12px;
-    color: ${props => props.$active ? '#00adef' : '#94a3b8'};
+    color: ${({ $active, theme }) => $active ? theme.brand?.primary || '#00adef' : theme.text?.secondary || '#94a3b8'};
     font-weight: 700;
     font-size: 1rem;
     cursor: pointer;
@@ -177,19 +226,19 @@ const CategoryTab = styled.button`
     gap: 0.5rem;
 
     &:hover {
-        background: linear-gradient(135deg, rgba(0, 173, 237, 0.2) 0%, rgba(139, 92, 246, 0.15) 100%);
-        border-color: rgba(0, 173, 237, 0.5);
-        color: #00adef;
+        background: ${({ theme }) => `linear-gradient(135deg, ${theme.brand?.primary || '#00adef'}33 0%, ${theme.brand?.accent || '#8b5cf6'}26 100%)`};
+        border-color: ${({ theme }) => `${theme.brand?.primary || '#00adef'}80`};
+        color: ${({ theme }) => theme.brand?.primary || '#00adef'};
         transform: translateY(-3px);
     }
 
     ${props => props.$active && css`
-        box-shadow: 0 5px 20px rgba(0, 173, 237, 0.3);
+        box-shadow: ${({ theme }) => `0 5px 20px ${theme.brand?.primary || '#00adef'}4D`};
     `}
 `;
 
 const TabCount = styled.span`
-    background: ${props => props.$active ? 'rgba(0, 173, 237, 0.3)' : 'rgba(100, 116, 139, 0.2)'};
+    background: ${({ $active, theme }) => $active ? `${theme.brand?.primary || '#00adef'}4D` : theme.border?.secondary || 'rgba(100, 116, 139, 0.2)'};
     padding: 0.2rem 0.5rem;
     border-radius: 8px;
     font-size: 0.8rem;
@@ -202,8 +251,8 @@ const FilterBar = styled.div`
     align-items: center;
     margin-bottom: 2rem;
     padding: 1rem 1.5rem;
-    background: rgba(30, 41, 59, 0.5);
-    border: 1px solid rgba(0, 173, 237, 0.2);
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.5)'};
+    border: 1px solid ${({ theme }) => `${theme.brand?.primary || '#00adef'}33`};
     border-radius: 12px;
     flex-wrap: wrap;
     gap: 1rem;
@@ -216,26 +265,26 @@ const FilterGroup = styled.div`
 `;
 
 const FilterLabel = styled.span`
-    color: #94a3b8;
+    color: ${({ theme }) => theme.text?.secondary || '#94a3b8'};
     font-size: 0.9rem;
     font-weight: 600;
 `;
 
 const FilterButton = styled.button`
     padding: 0.5rem 1rem;
-    background: ${props => props.$active ? 'rgba(0, 173, 237, 0.2)' : 'transparent'};
-    border: 1px solid ${props => props.$active ? 'rgba(0, 173, 237, 0.5)' : 'rgba(100, 116, 139, 0.3)'};
+    background: ${({ $active, theme }) => $active ? `${theme.brand?.primary || '#00adef'}33` : 'transparent'};
+    border: 1px solid ${({ $active, theme }) => $active ? `${theme.brand?.primary || '#00adef'}80` : theme.border?.primary || 'rgba(100, 116, 139, 0.3)'};
     border-radius: 8px;
-    color: ${props => props.$active ? '#00adef' : '#94a3b8'};
+    color: ${({ $active, theme }) => $active ? theme.brand?.primary || '#00adef' : theme.text?.secondary || '#94a3b8'};
     font-size: 0.85rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
 
     &:hover {
-        background: rgba(0, 173, 237, 0.15);
-        border-color: rgba(0, 173, 237, 0.4);
-        color: #00adef;
+        background: ${({ theme }) => `${theme.brand?.primary || '#00adef'}26`};
+        border-color: ${({ theme }) => `${theme.brand?.primary || '#00adef'}66`};
+        color: ${({ theme }) => theme.brand?.primary || '#00adef'};
     }
 `;
 
@@ -249,13 +298,13 @@ const ItemsGrid = styled.div`
 
 // Item Card
 const ItemCard = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
-    border: 2px solid ${props => {
-        if (props.$equipped) return 'rgba(16, 185, 129, 0.6)';
-        if (props.$rarity === 'legendary') return 'rgba(251, 191, 36, 0.5)';
-        if (props.$rarity === 'epic') return 'rgba(139, 92, 246, 0.5)';
-        if (props.$rarity === 'rare') return 'rgba(59, 130, 246, 0.5)';
-        return 'rgba(100, 116, 139, 0.3)';
+    background: ${({ theme }) => theme.bg?.card || 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%)'};
+    border: 2px solid ${({ $equipped, $rarity, theme }) => {
+        if ($equipped) return `${theme.success || '#10b981'}99`;
+        if ($rarity === 'legendary') return `${theme.warning || '#fbbf24'}80`;
+        if ($rarity === 'epic') return `${theme.brand?.accent || '#8b5cf6'}80`;
+        if ($rarity === 'rare') return `${theme.info || '#3b82f6'}80`;
+        return theme.border?.primary || 'rgba(100, 116, 139, 0.3)';
     }};
     border-radius: 16px;
     overflow: hidden;
@@ -279,11 +328,11 @@ const ItemCard = styled.div`
 
 const ItemRarityBanner = styled.div`
     height: 4px;
-    background: ${props => {
-        if (props.$rarity === 'legendary') return 'linear-gradient(90deg, #fbbf24, #f59e0b, #fbbf24)';
-        if (props.$rarity === 'epic') return 'linear-gradient(90deg, #8b5cf6, #a78bfa, #8b5cf6)';
-        if (props.$rarity === 'rare') return 'linear-gradient(90deg, #3b82f6, #60a5fa, #3b82f6)';
-        return 'linear-gradient(90deg, #64748b, #94a3b8, #64748b)';
+    background: ${({ $rarity, theme }) => {
+        if ($rarity === 'legendary') return `linear-gradient(90deg, ${theme.warning || '#fbbf24'}, ${theme.warning || '#f59e0b'}, ${theme.warning || '#fbbf24'})`;
+        if ($rarity === 'epic') return `linear-gradient(90deg, ${theme.brand?.accent || '#8b5cf6'}, ${theme.brand?.accent || '#a78bfa'}, ${theme.brand?.accent || '#8b5cf6'})`;
+        if ($rarity === 'rare') return `linear-gradient(90deg, ${theme.info || '#3b82f6'}, ${theme.info || '#60a5fa'}, ${theme.info || '#3b82f6'})`;
+        return `linear-gradient(90deg, ${theme.text?.tertiary || '#64748b'}, ${theme.text?.secondary || '#94a3b8'}, ${theme.text?.tertiary || '#64748b'})`;
     }};
     background-size: 200% 100%;
     animation: ${shimmer} 2s linear infinite;
@@ -295,7 +344,7 @@ const ItemPreview = styled.div`
     align-items: center;
     justify-content: center;
     position: relative;
-    background: ${props => props.$background || 'rgba(0, 173, 237, 0.05)'};
+    background: ${({ $background, theme }) => $background || `${theme.brand?.primary || '#00adef'}0D`};
     overflow: hidden;
 `;
 
@@ -321,7 +370,7 @@ const BorderInner = styled.div`
     width: 100%;
     height: 100%;
     border-radius: 50%;
-    background: linear-gradient(135deg, #1a1f3a 0%, #0a0e27 100%);
+    background: ${({ theme }) => theme.bg?.page || 'linear-gradient(135deg, #1a1f3a 0%, #0a0e27 100%)'};
     display: flex;
     align-items: center;
     justify-content: center;
@@ -373,7 +422,7 @@ const ItemHeader = styled.div`
 const ItemName = styled.h3`
     font-size: 1.1rem;
     font-weight: 700;
-    color: #e0e6ed;
+    color: ${({ theme }) => theme.text?.primary || '#e0e6ed'};
     margin: 0;
 `;
 
@@ -384,28 +433,28 @@ const RarityBadge = styled.span`
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    background: ${props => {
-        if (props.$rarity === 'legendary') return 'rgba(251, 191, 36, 0.2)';
-        if (props.$rarity === 'epic') return 'rgba(139, 92, 246, 0.2)';
-        if (props.$rarity === 'rare') return 'rgba(59, 130, 246, 0.2)';
-        return 'rgba(100, 116, 139, 0.2)';
+    background: ${({ $rarity, theme }) => {
+        if ($rarity === 'legendary') return `${theme.warning || '#fbbf24'}33`;
+        if ($rarity === 'epic') return `${theme.brand?.accent || '#8b5cf6'}33`;
+        if ($rarity === 'rare') return `${theme.info || '#3b82f6'}33`;
+        return `${theme.text?.tertiary || '#64748b'}33`;
     }};
-    color: ${props => {
-        if (props.$rarity === 'legendary') return '#fbbf24';
-        if (props.$rarity === 'epic') return '#a78bfa';
-        if (props.$rarity === 'rare') return '#60a5fa';
-        return '#94a3b8';
+    color: ${({ $rarity, theme }) => {
+        if ($rarity === 'legendary') return theme.warning || '#fbbf24';
+        if ($rarity === 'epic') return theme.brand?.accent || '#a78bfa';
+        if ($rarity === 'rare') return theme.info || '#60a5fa';
+        return theme.text?.secondary || '#94a3b8';
     }};
-    border: 1px solid ${props => {
-        if (props.$rarity === 'legendary') return 'rgba(251, 191, 36, 0.4)';
-        if (props.$rarity === 'epic') return 'rgba(139, 92, 246, 0.4)';
-        if (props.$rarity === 'rare') return 'rgba(59, 130, 246, 0.4)';
-        return 'rgba(100, 116, 139, 0.3)';
+    border: 1px solid ${({ $rarity, theme }) => {
+        if ($rarity === 'legendary') return `${theme.warning || '#fbbf24'}66`;
+        if ($rarity === 'epic') return `${theme.brand?.accent || '#8b5cf6'}66`;
+        if ($rarity === 'rare') return `${theme.info || '#3b82f6'}66`;
+        return theme.border?.primary || 'rgba(100, 116, 139, 0.3)';
     }};
 `;
 
 const ItemDescription = styled.p`
-    color: #94a3b8;
+    color: ${({ theme }) => theme.text?.secondary || '#94a3b8'};
     font-size: 0.9rem;
     margin-bottom: 1rem;
     line-height: 1.4;
@@ -414,28 +463,28 @@ const ItemDescription = styled.p`
 
 const ItemEffect = styled.div`
     padding: 0.75rem;
-    background: rgba(16, 185, 129, 0.1);
-    border: 1px solid rgba(16, 185, 129, 0.3);
+    background: ${({ theme }) => `${theme.success || '#10b981'}1A`};
+    border: 1px solid ${({ theme }) => `${theme.success || '#10b981'}4D`};
     border-radius: 8px;
     margin-bottom: 1rem;
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    color: #10b981;
+    color: ${({ theme }) => theme.success || '#10b981'};
     font-size: 0.85rem;
     font-weight: 600;
 `;
 
 const ItemRequirement = styled.div`
     padding: 0.6rem;
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.3);
+    background: ${({ theme }) => `${theme.error || '#ef4444'}1A`};
+    border: 1px solid ${({ theme }) => `${theme.error || '#ef4444'}4D`};
     border-radius: 8px;
     margin-bottom: 1rem;
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    color: #f87171;
+    color: ${({ theme }) => theme.error || '#f87171'};
     font-size: 0.8rem;
     font-weight: 600;
 `;
@@ -445,7 +494,7 @@ const ItemFooter = styled.div`
     justify-content: space-between;
     align-items: center;
     padding-top: 1rem;
-    border-top: 1px solid rgba(0, 173, 237, 0.2);
+    border-top: 1px solid ${({ theme }) => `${theme.brand?.primary || '#00adef'}33`};
 `;
 
 const ItemPrice = styled.div`
@@ -457,7 +506,7 @@ const ItemPrice = styled.div`
 const PriceIcon = styled.div`
     width: 24px;
     height: 24px;
-    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    background: ${({ theme }) => `linear-gradient(135deg, ${theme.warning || '#fbbf24'} 0%, ${theme.warning || '#f59e0b'} 100%)`};
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -468,13 +517,13 @@ const PriceIcon = styled.div`
 const PriceValue = styled.span`
     font-size: 1.2rem;
     font-weight: 900;
-    color: ${props => props.$canAfford ? '#fbbf24' : '#ef4444'};
+    color: ${({ $canAfford, theme }) => $canAfford ? theme.warning || '#fbbf24' : theme.error || '#ef4444'};
 `;
 
 const PriceFree = styled.span`
     font-size: 1rem;
     font-weight: 700;
-    color: #10b981;
+    color: ${({ theme }) => theme.success || '#10b981'};
 `;
 
 const ActionButton = styled.button`
@@ -488,49 +537,49 @@ const ActionButton = styled.button`
     align-items: center;
     gap: 0.4rem;
 
-    ${props => props.$variant === 'purchase' && css`
-        background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    ${({ $variant, theme }) => $variant === 'purchase' && css`
+        background: linear-gradient(135deg, ${theme.warning || '#fbbf24'} 0%, ${theme.warning || '#f59e0b'} 100%);
         border: none;
         color: #0a0e27;
 
         &:hover:not(:disabled) {
             transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(251, 191, 36, 0.4);
+            box-shadow: 0 5px 20px ${theme.warning || '#fbbf24'}66;
         }
     `}
 
-    ${props => props.$variant === 'equip' && css`
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    ${({ $variant, theme }) => $variant === 'equip' && css`
+        background: linear-gradient(135deg, ${theme.success || '#10b981'} 0%, ${theme.success || '#059669'} 100%);
         border: none;
         color: white;
 
         &:hover:not(:disabled) {
             transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(16, 185, 129, 0.4);
+            box-shadow: 0 5px 20px ${theme.success || '#10b981'}66;
         }
     `}
 
-    ${props => props.$variant === 'equipped' && css`
-        background: rgba(16, 185, 129, 0.2);
-        border: 2px solid rgba(16, 185, 129, 0.5);
-        color: #10b981;
+    ${({ $variant, theme }) => $variant === 'equipped' && css`
+        background: ${theme.success || '#10b981'}33;
+        border: 2px solid ${theme.success || '#10b981'}80;
+        color: ${theme.success || '#10b981'};
         cursor: default;
     `}
 
-    ${props => props.$variant === 'unequip' && css`
-        background: rgba(239, 68, 68, 0.2);
-        border: 2px solid rgba(239, 68, 68, 0.4);
-        color: #f87171;
+    ${({ $variant, theme }) => $variant === 'unequip' && css`
+        background: ${theme.error || '#ef4444'}33;
+        border: 2px solid ${theme.error || '#ef4444'}66;
+        color: ${theme.error || '#f87171'};
 
         &:hover:not(:disabled) {
-            background: rgba(239, 68, 68, 0.3);
+            background: ${theme.error || '#ef4444'}4D;
         }
     `}
 
-    ${props => props.$variant === 'locked' && css`
-        background: rgba(100, 116, 139, 0.2);
-        border: 2px solid rgba(100, 116, 139, 0.3);
-        color: #64748b;
+    ${({ $variant, theme }) => $variant === 'locked' && css`
+        background: ${theme.text?.tertiary || '#64748b'}33;
+        border: 2px solid ${theme.border?.primary || 'rgba(100, 116, 139, 0.3)'};
+        color: ${theme.text?.tertiary || '#64748b'};
         cursor: not-allowed;
     `}
 
@@ -545,7 +594,7 @@ const EquippedBadge = styled.div`
     top: 1rem;
     right: 1rem;
     padding: 0.4rem 0.75rem;
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    background: ${({ theme }) => `linear-gradient(135deg, ${theme.success || '#10b981'} 0%, ${theme.success || '#059669'} 100%)`};
     border-radius: 20px;
     color: white;
     font-size: 0.75rem;
@@ -561,10 +610,10 @@ const OwnedBadge = styled.div`
     top: 1rem;
     left: 1rem;
     padding: 0.4rem 0.75rem;
-    background: rgba(0, 173, 237, 0.2);
-    border: 1px solid rgba(0, 173, 237, 0.4);
+    background: ${({ theme }) => `${theme.brand?.primary || '#00adef'}33`};
+    border: 1px solid ${({ theme }) => `${theme.brand?.primary || '#00adef'}66`};
     border-radius: 20px;
-    color: #00adef;
+    color: ${({ theme }) => theme.brand?.primary || '#00adef'};
     font-size: 0.75rem;
     font-weight: 700;
     display: flex;
@@ -589,12 +638,12 @@ const LockedOverlay = styled.div`
 const LockIcon = styled.div`
     width: 60px;
     height: 60px;
-    background: rgba(100, 116, 139, 0.3);
+    background: ${({ theme }) => `${theme.text?.tertiary || '#64748b'}4D`};
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #64748b;
+    color: ${({ theme }) => theme.text?.tertiary || '#64748b'};
 `;
 
 // Modal
@@ -613,12 +662,12 @@ const ModalOverlay = styled.div`
 `;
 
 const ModalContent = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.98) 100%);
-    border: 2px solid ${props => {
-        if (props.$rarity === 'legendary') return 'rgba(251, 191, 36, 0.5)';
-        if (props.$rarity === 'epic') return 'rgba(139, 92, 246, 0.5)';
-        if (props.$rarity === 'rare') return 'rgba(59, 130, 246, 0.5)';
-        return 'rgba(0, 173, 237, 0.5)';
+    background: ${({ theme }) => theme.bg?.card || 'linear-gradient(135deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.98) 100%)'};
+    border: 2px solid ${({ $rarity, theme }) => {
+        if ($rarity === 'legendary') return `${theme.warning || '#fbbf24'}80`;
+        if ($rarity === 'epic') return `${theme.brand?.accent || '#8b5cf6'}80`;
+        if ($rarity === 'rare') return `${theme.info || '#3b82f6'}80`;
+        return `${theme.brand?.primary || '#00adef'}80`;
     }};
     border-radius: 20px;
     padding: 2rem;
@@ -639,7 +688,7 @@ const ModalHeader = styled.div`
 const ModalTitle = styled.h2`
     font-size: 1.5rem;
     font-weight: 900;
-    color: #e0e6ed;
+    color: ${({ theme }) => theme.text?.primary || '#e0e6ed'};
     display: flex;
     align-items: center;
     gap: 0.75rem;
@@ -648,10 +697,10 @@ const ModalTitle = styled.h2`
 const CloseButton = styled.button`
     width: 40px;
     height: 40px;
-    background: rgba(239, 68, 68, 0.2);
-    border: 1px solid rgba(239, 68, 68, 0.4);
+    background: ${({ theme }) => `${theme.error || '#ef4444'}33`};
+    border: 1px solid ${({ theme }) => `${theme.error || '#ef4444'}66`};
     border-radius: 10px;
-    color: #f87171;
+    color: ${({ theme }) => theme.error || '#f87171'};
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -659,15 +708,15 @@ const CloseButton = styled.button`
     transition: all 0.2s ease;
 
     &:hover {
-        background: rgba(239, 68, 68, 0.3);
+        background: ${({ theme }) => `${theme.error || '#ef4444'}4D`};
         transform: scale(1.05);
     }
 `;
 
 const ModalPreview = styled.div`
     height: 180px;
-    background: rgba(0, 173, 237, 0.05);
-    border: 1px solid rgba(0, 173, 237, 0.2);
+    background: ${({ theme }) => `${theme.brand?.primary || '#00adef'}0D`};
+    border: 1px solid ${({ theme }) => `${theme.brand?.primary || '#00adef'}33`};
     border-radius: 12px;
     display: flex;
     align-items: center;
@@ -676,15 +725,15 @@ const ModalPreview = styled.div`
 `;
 
 const ModalDescription = styled.p`
-    color: #94a3b8;
+    color: ${({ theme }) => theme.text?.secondary || '#94a3b8'};
     font-size: 1rem;
     line-height: 1.6;
     margin-bottom: 1.5rem;
 `;
 
 const ModalDetails = styled.div`
-    background: rgba(0, 173, 237, 0.05);
-    border: 1px solid rgba(0, 173, 237, 0.2);
+    background: ${({ theme }) => `${theme.brand?.primary || '#00adef'}0D`};
+    border: 1px solid ${({ theme }) => `${theme.brand?.primary || '#00adef'}33`};
     border-radius: 12px;
     padding: 1rem;
     margin-bottom: 1.5rem;
@@ -695,7 +744,7 @@ const DetailRow = styled.div`
     justify-content: space-between;
     align-items: center;
     padding: 0.5rem 0;
-    border-bottom: 1px solid rgba(0, 173, 237, 0.1);
+    border-bottom: 1px solid ${({ theme }) => `${theme.brand?.primary || '#00adef'}1A`};
 
     &:last-child {
         border-bottom: none;
@@ -703,12 +752,12 @@ const DetailRow = styled.div`
 `;
 
 const DetailLabel = styled.span`
-    color: #64748b;
+    color: ${({ theme }) => theme.text?.tertiary || '#64748b'};
     font-size: 0.9rem;
 `;
 
 const DetailValue = styled.span`
-    color: #e0e6ed;
+    color: ${({ theme }) => theme.text?.primary || '#e0e6ed'};
     font-weight: 600;
 `;
 
@@ -730,24 +779,24 @@ const ModalButton = styled.button`
     justify-content: center;
     gap: 0.5rem;
 
-    ${props => props.$primary && css`
-        background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    ${({ $primary, theme }) => $primary && css`
+        background: linear-gradient(135deg, ${theme.warning || '#fbbf24'} 0%, ${theme.warning || '#f59e0b'} 100%);
         border: none;
         color: #0a0e27;
 
         &:hover:not(:disabled) {
             transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(251, 191, 36, 0.4);
+            box-shadow: 0 10px 30px ${theme.warning || '#fbbf24'}66;
         }
     `}
 
-    ${props => props.$secondary && css`
-        background: rgba(100, 116, 139, 0.2);
-        border: 2px solid rgba(100, 116, 139, 0.4);
-        color: #94a3b8;
+    ${({ $secondary, theme }) => $secondary && css`
+        background: ${theme.text?.tertiary || '#64748b'}33;
+        border: 2px solid ${theme.border?.primary || 'rgba(100, 116, 139, 0.4)'};
+        color: ${theme.text?.secondary || '#94a3b8'};
 
         &:hover {
-            background: rgba(100, 116, 139, 0.3);
+            background: ${theme.text?.tertiary || '#64748b'}4D;
         }
     `}
 
@@ -761,14 +810,14 @@ const ModalButton = styled.button`
 const EmptyState = styled.div`
     text-align: center;
     padding: 4rem 2rem;
-    color: #64748b;
+    color: ${({ theme }) => theme.text?.tertiary || '#64748b'};
 `;
 
 const EmptyIcon = styled.div`
     width: 100px;
     height: 100px;
     margin: 0 auto 1.5rem;
-    background: rgba(0, 173, 237, 0.1);
+    background: ${({ theme }) => `${theme.brand?.primary || '#00adef'}1A`};
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -800,8 +849,8 @@ const StatsBar = styled.div`
 `;
 
 const StatCard = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
-    border: 1px solid rgba(0, 173, 237, 0.2);
+    background: ${({ theme }) => theme.bg?.card || 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%)'};
+    border: 1px solid ${({ theme }) => `${theme.brand?.primary || '#00adef'}33`};
     border-radius: 12px;
     padding: 1.25rem;
     display: flex;
@@ -825,12 +874,12 @@ const StatInfo = styled.div``;
 const StatValue = styled.div`
     font-size: 1.5rem;
     font-weight: 900;
-    color: #e0e6ed;
+    color: ${({ theme }) => theme.text?.primary || '#e0e6ed'};
 `;
 
 const StatLabel = styled.div`
     font-size: 0.85rem;
-    color: #64748b;
+    color: ${({ theme }) => theme.text?.tertiary || '#64748b'};
 `;
 
 // ============ MAIN COMPONENT ============
@@ -838,7 +887,8 @@ const VaultPage = () => {
     const { api, user } = useAuth();
     const { gamificationData, refreshGamification } = useGamification();
     const toast = useToast();
-    const { setProfileTheme } = useTheme(); // ✅ ADD THIS
+    const { setProfileTheme, profileThemeId } = useThemeContext();
+    const theme = useStyledTheme();
 
     // State
     const [loading, setLoading] = useState(true);
@@ -852,12 +902,12 @@ const VaultPage = () => {
     const [userLevel, setUserLevel] = useState(1);
     const [equipped, setEquipped] = useState({});
     const [activeCategory, setActiveCategory] = useState('avatarBorders');
-    const [filter, setFilter] = useState('all'); // all, owned, locked
+    const [filter, setFilter] = useState('all');
     const [rarityFilter, setRarityFilter] = useState('all');
     const [selectedItem, setSelectedItem] = useState(null);
     const [purchasing, setPurchasing] = useState(false);
 
-    // ✅ SYNC with GamificationContext (same source as navbar)
+    // Sync with GamificationContext
     useEffect(() => {
         if (gamificationData) {
             setUserCoins(gamificationData.nexusCoins || 0);
@@ -893,7 +943,6 @@ const VaultPage = () => {
             console.log('[VaultPage] API Response:', response.data);
             
             if (response.data.success) {
-                // Set items with fallback to empty arrays
                 setItems({
                     avatarBorders: response.data.items?.avatarBorders || [],
                     perks: response.data.items?.perks || [],
@@ -901,7 +950,6 @@ const VaultPage = () => {
                     badges: response.data.items?.badges || []
                 });
                 
-                // Set equipped items from API
                 setEquipped(response.data.vault || {
                     equippedBorder: 'border-bronze',
                     equippedTheme: 'theme-default',
@@ -909,8 +957,6 @@ const VaultPage = () => {
                     activePerks: []
                 });
                 
-                // ✅ Use GamificationContext for coins/level (same as navbar)
-                // These are already set by the useEffect above
                 console.log('[VaultPage] Items loaded successfully');
             } else {
                 console.error('[VaultPage] API returned success: false');
@@ -935,7 +981,6 @@ const VaultPage = () => {
             if (response.data.success) {
                 toast.success(response.data.message, '🎉 Purchased!');
                 
-                // Update item in state
                 setItems(prev => {
                     const category = Object.keys(prev).find(cat => 
                         prev[cat].some(i => i.id === item.id)
@@ -950,7 +995,6 @@ const VaultPage = () => {
                     };
                 });
                 
-                // ✅ Refresh gamification data to update navbar coins
                 if (refreshGamification) {
                     await refreshGamification();
                 }
@@ -973,13 +1017,12 @@ const VaultPage = () => {
                 toast.success(response.data.message, '✅ Equipped!');
                 setEquipped(response.data.equipped);
                 
-                // ✅ UPDATE LOCAL THEME IMMEDIATELY IF IT'S A THEME
+                // Update local theme immediately if it's a theme
                 if (item.type === 'profile-theme') {
                     setProfileTheme(item.id);
                     console.log('🎨 Theme updated locally:', item.id);
                 }
                 
-                // Update items state
                 fetchVaultData();
             }
         } catch (error) {
@@ -1010,14 +1053,12 @@ const VaultPage = () => {
     const getFilteredItems = () => {
         let filtered = items[activeCategory] || [];
         
-        // Status filter
         if (filter === 'owned') {
             filtered = filtered.filter(item => item.owned);
         } else if (filter === 'locked') {
             filtered = filtered.filter(item => !item.canUnlock);
         }
         
-        // Rarity filter
         if (rarityFilter !== 'all') {
             filtered = filtered.filter(item => item.rarity === rarityFilter);
         }
@@ -1055,7 +1096,7 @@ const VaultPage = () => {
                         style={{ width: size, height: size }}
                     >
                         <BorderInner>
-                            <Crown size={large ? 40 : 28} color="#fbbf24" />
+                            <Crown size={large ? 40 : 28} color={theme?.warning || '#fbbf24'} />
                         </BorderInner>
                     </BorderPreview>
                 );
@@ -1097,7 +1138,6 @@ const VaultPage = () => {
     const renderActionButton = (item) => {
         const isEquipped = isItemEquipped(item);
         
-        // If locked (doesn't meet requirements and not owned)
         if (!item.canUnlock && !item.owned) {
             return (
                 <ActionButton $variant="locked" disabled>
@@ -1107,7 +1147,6 @@ const VaultPage = () => {
             );
         }
         
-        // If not owned yet
         if (!item.owned) {
             if (item.cost === 0) {
                 return (
@@ -1129,7 +1168,6 @@ const VaultPage = () => {
             );
         }
         
-        // If owned and equipped
         if (isEquipped) {
             if (item.type === 'badge' || item.type === 'perk') {
                 return (
@@ -1147,7 +1185,6 @@ const VaultPage = () => {
             );
         }
         
-        // Owned but not equipped
         return (
             <ActionButton $variant="equip" onClick={() => handleEquip(item)}>
                 <Check size={16} />
@@ -1174,11 +1211,16 @@ const VaultPage = () => {
     if (loading) {
         return (
             <PageContainer>
+                <BackgroundOrbs>
+                    <Orb $duration="25s" />
+                    <Orb $duration="30s" />
+                    <Orb $duration="20s" />
+                </BackgroundOrbs>
                 <LoadingContainer>
                     <Spinner>
-                        <Store size={64} color="#fbbf24" />
+                        <Store size={64} color={theme?.warning || '#fbbf24'} />
                     </Spinner>
-                    <h2 style={{ color: '#fbbf24' }}>Loading Vault...</h2>
+                    <h2 style={{ color: theme?.warning || '#fbbf24' }}>Loading Vault...</h2>
                 </LoadingContainer>
             </PageContainer>
         );
@@ -1190,6 +1232,12 @@ const VaultPage = () => {
 
     return (
         <PageContainer>
+            <BackgroundOrbs>
+                <Orb $duration="25s" />
+                <Orb $duration="30s" />
+                <Orb $duration="20s" />
+            </BackgroundOrbs>
+
             <ContentWrapper>
                 <Header>
                     <Title>
@@ -1212,7 +1260,7 @@ const VaultPage = () => {
 
                 <StatsBar>
                     <StatCard>
-                        <StatIcon $bg="rgba(251, 191, 36, 0.2)" $color="#fbbf24">
+                        <StatIcon $bg={`${theme?.warning || '#fbbf24'}33`} $color={theme?.warning || '#fbbf24'}>
                             <Package size={24} />
                         </StatIcon>
                         <StatInfo>
@@ -1221,7 +1269,7 @@ const VaultPage = () => {
                         </StatInfo>
                     </StatCard>
                     <StatCard>
-                        <StatIcon $bg="rgba(139, 92, 246, 0.2)" $color="#a78bfa">
+                        <StatIcon $bg={`${theme?.brand?.accent || '#8b5cf6'}33`} $color={theme?.brand?.accent || '#a78bfa'}>
                             <TrendingUp size={24} />
                         </StatIcon>
                         <StatInfo>
@@ -1230,7 +1278,7 @@ const VaultPage = () => {
                         </StatInfo>
                     </StatCard>
                     <StatCard>
-                        <StatIcon $bg="rgba(16, 185, 129, 0.2)" $color="#10b981">
+                        <StatIcon $bg={`${theme?.success || '#10b981'}33`} $color={theme?.success || '#10b981'}>
                             <BadgeCheck size={24} />
                         </StatIcon>
                         <StatInfo>
@@ -1239,7 +1287,7 @@ const VaultPage = () => {
                         </StatInfo>
                     </StatCard>
                     <StatCard>
-                        <StatIcon $bg="rgba(239, 68, 68, 0.2)" $color="#f87171">
+                        <StatIcon $bg={`${theme?.error || '#ef4444'}33`} $color={theme?.error || '#f87171'}>
                             <Gem size={24} />
                         </StatIcon>
                         <StatInfo>
@@ -1396,9 +1444,9 @@ const VaultPage = () => {
                 ) : (
                     <EmptyState>
                         <EmptyIcon>
-                            <Package size={50} color="#64748b" />
+                            <Package size={50} color={theme?.text?.tertiary || '#64748b'} />
                         </EmptyIcon>
-                        <h3 style={{ color: '#94a3b8', marginBottom: '0.5rem' }}>No items found</h3>
+                        <h3 style={{ color: theme?.text?.secondary || '#94a3b8', marginBottom: '0.5rem' }}>No items found</h3>
                         <p>Try adjusting your filters</p>
                     </EmptyState>
                 )}
@@ -1426,7 +1474,7 @@ const VaultPage = () => {
                         </ModalPreview>
                         
                         <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-                            <h3 style={{ color: '#e0e6ed', marginBottom: '0.5rem' }}>
+                            <h3 style={{ color: theme?.text?.primary || '#e0e6ed', marginBottom: '0.5rem' }}>
                                 {selectedItem.name}
                             </h3>
                             <RarityBadge $rarity={selectedItem.rarity} style={{ display: 'inline-block' }}>
@@ -1450,14 +1498,14 @@ const VaultPage = () => {
                         <ModalDetails>
                             <DetailRow>
                                 <DetailLabel>Item Cost</DetailLabel>
-                                <DetailValue style={{ color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <DetailValue style={{ color: theme?.warning || '#fbbf24', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                     <Coins size={16} />
                                     {formatNumber(selectedItem.cost)}
                                 </DetailValue>
                             </DetailRow>
                             <DetailRow>
                                 <DetailLabel>Your Balance</DetailLabel>
-                                <DetailValue style={{ color: userCoins >= selectedItem.cost ? '#10b981' : '#ef4444' }}>
+                                <DetailValue style={{ color: userCoins >= selectedItem.cost ? theme?.success || '#10b981' : theme?.error || '#ef4444' }}>
                                     {formatNumber(userCoins)} coins
                                 </DetailValue>
                             </DetailRow>

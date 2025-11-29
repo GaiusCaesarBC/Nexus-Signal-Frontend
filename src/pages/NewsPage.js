@@ -1,7 +1,8 @@
 // client/src/pages/NewsPage.js - LEGENDARY NEWS FEED WITH AI SENTIMENT ANALYSIS
+// THEMED VERSION - Uses ThemeContext for dynamic styling
 
 import React, { useState, useEffect, useCallback } from 'react';
-import styled, { keyframes, css } from 'styled-components';
+import styled, { keyframes, css, useTheme } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useNavigate } from 'react-router-dom';
@@ -39,11 +40,16 @@ const pulse = keyframes`
     50% { opacity: 0.6; }
 `;
 
+const float = keyframes`
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+`;
+
 // ============ LAYOUT ============
 const PageContainer = styled.div`
     min-height: 100vh;
-    background: #080b16;
-    color: #e0e6ed;
+    background: ${({ theme }) => theme.bg?.page || '#080b16'};
+    color: ${({ theme }) => theme.text?.primary || '#e0e6ed'};
     padding: 5.5rem 1.5rem 3rem;
 `;
 
@@ -72,26 +78,26 @@ const TitleSection = styled.div``;
 const Title = styled.h1`
     font-size: 2.25rem;
     font-weight: 800;
-    color: #fff;
+    color: ${({ theme }) => theme.text?.primary || '#fff'};
     display: flex;
     align-items: center;
     gap: 0.75rem;
     margin-bottom: 0.25rem;
 
     svg {
-        color: #00adef;
+        color: ${({ theme }) => theme.brand?.primary || '#00adef'};
     }
 `;
 
 const Subtitle = styled.p`
-    color: #64748b;
+    color: ${({ theme }) => theme.text?.secondary || '#64748b'};
     font-size: 0.95rem;
     display: flex;
     align-items: center;
     gap: 0.5rem;
 
     svg {
-        color: #8b5cf6;
+        color: ${({ theme }) => theme.brand?.accent || '#8b5cf6'};
     }
 `;
 
@@ -106,7 +112,7 @@ const RefreshButton = styled.button`
     align-items: center;
     gap: 0.5rem;
     padding: 0.7rem 1.25rem;
-    background: linear-gradient(135deg, #00adef 0%, #0088cc 100%);
+    background: ${({ theme }) => theme.brand?.gradient || 'linear-gradient(135deg, #00adef 0%, #0088cc 100%)'};
     border: none;
     border-radius: 10px;
     color: white;
@@ -117,7 +123,7 @@ const RefreshButton = styled.button`
 
     &:hover:not(:disabled) {
         transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(0, 173, 237, 0.35);
+        box-shadow: ${({ theme }) => theme.glow?.primary || '0 8px 20px rgba(0, 173, 237, 0.35)'};
     }
 
     &:disabled {
@@ -148,8 +154,8 @@ const StatsBar = styled.div`
 `;
 
 const StatCard = styled.div`
-    background: rgba(15, 23, 42, 0.6);
-    border: 1px solid rgba(100, 116, 139, 0.15);
+    background: ${({ theme }) => theme.bg?.card || 'rgba(15, 23, 42, 0.6)'};
+    border: 1px solid ${({ theme }) => theme.border?.primary || 'rgba(100, 116, 139, 0.15)'};
     border-radius: 12px;
     padding: 1rem 1.25rem;
     display: flex;
@@ -173,12 +179,12 @@ const StatContent = styled.div``;
 const StatValue = styled.div`
     font-size: 1.5rem;
     font-weight: 800;
-    color: #fff;
+    color: ${({ theme }) => theme.text?.primary || '#fff'};
 `;
 
 const StatLabel = styled.div`
     font-size: 0.8rem;
-    color: #64748b;
+    color: ${({ theme }) => theme.text?.secondary || '#64748b'};
     text-transform: uppercase;
     letter-spacing: 0.5px;
 `;
@@ -205,28 +211,28 @@ const SearchIcon = styled.div`
     left: 1rem;
     top: 50%;
     transform: translateY(-50%);
-    color: #64748b;
+    color: ${({ theme }) => theme.text?.secondary || '#64748b'};
     pointer-events: none;
 `;
 
 const SearchInput = styled.input`
     width: 100%;
     padding: 0.85rem 1rem 0.85rem 2.75rem;
-    background: rgba(15, 23, 42, 0.7);
-    border: 1px solid rgba(100, 116, 139, 0.2);
+    background: ${({ theme }) => theme.bg?.input || 'rgba(15, 23, 42, 0.7)'};
+    border: 1px solid ${({ theme }) => theme.border?.primary || 'rgba(100, 116, 139, 0.2)'};
     border-radius: 10px;
-    color: #e0e6ed;
+    color: ${({ theme }) => theme.text?.primary || '#e0e6ed'};
     font-size: 0.95rem;
     transition: all 0.2s ease;
 
     &:focus {
         outline: none;
-        border-color: #00adef;
-        box-shadow: 0 0 0 3px rgba(0, 173, 237, 0.1);
+        border-color: ${({ theme }) => theme.brand?.primary || '#00adef'};
+        box-shadow: 0 0 0 3px ${({ theme }) => `${theme.brand?.primary}15` || 'rgba(0, 173, 237, 0.1)'};
     }
 
     &::placeholder {
-        color: #475569;
+        color: ${({ theme }) => theme.text?.tertiary || '#475569'};
     }
 `;
 
@@ -241,11 +247,15 @@ const FilterPill = styled.button`
     gap: 0.4rem;
     padding: 0.7rem 1rem;
     background: ${props => props.$active 
-        ? 'linear-gradient(135deg, rgba(0, 173, 237, 0.25) 0%, rgba(0, 173, 237, 0.1) 100%)'
-        : 'rgba(15, 23, 42, 0.7)'};
-    border: 1px solid ${props => props.$active ? 'rgba(0, 173, 237, 0.4)' : 'rgba(100, 116, 139, 0.2)'};
+        ? `linear-gradient(135deg, ${props.theme.brand?.primary || '#00adef'}25 0%, ${props.theme.brand?.primary || '#00adef'}10 100%)`
+        : props.theme.bg?.input || 'rgba(15, 23, 42, 0.7)'};
+    border: 1px solid ${props => props.$active 
+        ? `${props.theme.brand?.primary || '#00adef'}40` 
+        : props.theme.border?.primary || 'rgba(100, 116, 139, 0.2)'};
     border-radius: 10px;
-    color: ${props => props.$active ? '#00adef' : '#94a3b8'};
+    color: ${props => props.$active 
+        ? props.theme.brand?.primary || '#00adef' 
+        : props.theme.text?.secondary || '#94a3b8'};
     font-weight: 600;
     font-size: 0.85rem;
     cursor: pointer;
@@ -253,32 +263,32 @@ const FilterPill = styled.button`
     white-space: nowrap;
 
     &:hover {
-        border-color: rgba(0, 173, 237, 0.4);
-        color: #00adef;
+        border-color: ${({ theme }) => `${theme.brand?.primary || '#00adef'}40`};
+        color: ${({ theme }) => theme.brand?.primary || '#00adef'};
     }
 `;
 
 const SentimentPill = styled(FilterPill)`
     background: ${props => {
-        if (!props.$active) return 'rgba(15, 23, 42, 0.7)';
+        if (!props.$active) return props.theme.bg?.input || 'rgba(15, 23, 42, 0.7)';
         if (props.$sentiment === 'bullish') return 'rgba(16, 185, 129, 0.2)';
         if (props.$sentiment === 'bearish') return 'rgba(239, 68, 68, 0.2)';
         if (props.$sentiment === 'neutral') return 'rgba(245, 158, 11, 0.2)';
-        return 'rgba(0, 173, 237, 0.2)';
+        return `${props.theme.brand?.primary || '#00adef'}20`;
     }};
     border-color: ${props => {
-        if (!props.$active) return 'rgba(100, 116, 139, 0.2)';
+        if (!props.$active) return props.theme.border?.primary || 'rgba(100, 116, 139, 0.2)';
         if (props.$sentiment === 'bullish') return 'rgba(16, 185, 129, 0.4)';
         if (props.$sentiment === 'bearish') return 'rgba(239, 68, 68, 0.4)';
         if (props.$sentiment === 'neutral') return 'rgba(245, 158, 11, 0.4)';
-        return 'rgba(0, 173, 237, 0.4)';
+        return `${props.theme.brand?.primary || '#00adef'}40`;
     }};
     color: ${props => {
-        if (!props.$active) return '#94a3b8';
+        if (!props.$active) return props.theme.text?.secondary || '#94a3b8';
         if (props.$sentiment === 'bullish') return '#10b981';
         if (props.$sentiment === 'bearish') return '#ef4444';
         if (props.$sentiment === 'neutral') return '#f59e0b';
-        return '#00adef';
+        return props.theme.brand?.primary || '#00adef';
     }};
 `;
 
@@ -287,7 +297,7 @@ const CategoryTabs = styled.div`
     display: flex;
     gap: 0.25rem;
     margin-bottom: 2rem;
-    border-bottom: 1px solid rgba(100, 116, 139, 0.15);
+    border-bottom: 1px solid ${({ theme }) => theme.border?.primary || 'rgba(100, 116, 139, 0.15)'};
     padding-bottom: 0;
     overflow-x: auto;
     animation: ${fadeIn} 0.5s ease-out 0.2s backwards;
@@ -304,8 +314,12 @@ const CategoryTab = styled.button`
     padding: 0.9rem 1.25rem;
     background: transparent;
     border: none;
-    border-bottom: 2px solid ${props => props.$active ? '#00adef' : 'transparent'};
-    color: ${props => props.$active ? '#00adef' : '#64748b'};
+    border-bottom: 2px solid ${props => props.$active 
+        ? props.theme.brand?.primary || '#00adef' 
+        : 'transparent'};
+    color: ${props => props.$active 
+        ? props.theme.brand?.primary || '#00adef' 
+        : props.theme.text?.secondary || '#64748b'};
     font-weight: 600;
     font-size: 0.9rem;
     cursor: pointer;
@@ -314,7 +328,7 @@ const CategoryTab = styled.button`
     margin-bottom: -1px;
 
     &:hover {
-        color: #00adef;
+        color: ${({ theme }) => theme.brand?.primary || '#00adef'};
     }
 
     svg {
@@ -324,10 +338,14 @@ const CategoryTab = styled.button`
 
 const TabBadge = styled.span`
     padding: 0.2rem 0.5rem;
-    background: ${props => props.$active ? 'rgba(0, 173, 237, 0.2)' : 'rgba(100, 116, 139, 0.2)'};
+    background: ${props => props.$active 
+        ? `${props.theme.brand?.primary || '#00adef'}20` 
+        : props.theme.bg?.accent || 'rgba(100, 116, 139, 0.2)'};
     border-radius: 6px;
     font-size: 0.75rem;
-    color: ${props => props.$active ? '#00adef' : '#64748b'};
+    color: ${props => props.$active 
+        ? props.theme.brand?.primary || '#00adef' 
+        : props.theme.text?.secondary || '#64748b'};
 `;
 
 // ============ NEWS LAYOUT ============
@@ -352,8 +370,8 @@ const Sidebar = styled.aside`
 
 // ============ FEATURED ARTICLE ============
 const FeaturedCard = styled.article`
-    background: linear-gradient(135deg, rgba(20, 27, 45, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
-    border: 1px solid rgba(100, 116, 139, 0.15);
+    background: ${({ theme }) => theme.bg?.card || 'linear-gradient(135deg, rgba(20, 27, 45, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%)'};
+    border: 1px solid ${({ theme }) => theme.border?.primary || 'rgba(100, 116, 139, 0.15)'};
     border-radius: 16px;
     overflow: hidden;
     margin-bottom: 1.5rem;
@@ -362,7 +380,7 @@ const FeaturedCard = styled.article`
     position: relative;
 
     &:hover {
-        border-color: rgba(0, 173, 237, 0.3);
+        border-color: ${({ theme }) => `${theme.brand?.primary || '#00adef'}30`};
         transform: translateY(-4px);
         box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
     }
@@ -386,7 +404,7 @@ const FeaturedImage = styled.div`
     height: 280px;
     background: ${props => props.$src 
         ? `linear-gradient(180deg, transparent 0%, rgba(15, 23, 42, 0.95) 100%), url(${props.$src}) center/cover`
-        : 'linear-gradient(135deg, rgba(0, 173, 237, 0.15) 0%, rgba(139, 92, 246, 0.1) 100%)'
+        : `linear-gradient(135deg, ${props.theme.brand?.primary || '#00adef'}15 0%, ${props.theme.brand?.accent || '#8b5cf6'}10 100%)`
     };
     display: flex;
     align-items: flex-end;
@@ -455,7 +473,7 @@ const SourceBadge = styled.div`
     align-items: center;
     gap: 0.4rem;
     font-size: 0.8rem;
-    color: #94a3b8;
+    color: ${({ theme }) => theme.text?.secondary || '#94a3b8'};
     font-weight: 600;
 `;
 
@@ -463,7 +481,7 @@ const SourceLogo = styled.div`
     width: 22px;
     height: 22px;
     border-radius: 6px;
-    background: linear-gradient(135deg, #00adef 0%, #0088cc 100%);
+    background: ${({ theme }) => theme.brand?.gradient || 'linear-gradient(135deg, #00adef 0%, #0088cc 100%)'};
     display: flex;
     align-items: center;
     justify-content: center;
@@ -477,7 +495,7 @@ const TimeBadge = styled.div`
     align-items: center;
     gap: 0.35rem;
     font-size: 0.8rem;
-    color: #64748b;
+    color: ${({ theme }) => theme.text?.tertiary || '#64748b'};
 `;
 
 const CategoryBadge = styled.div`
@@ -498,13 +516,13 @@ const CategoryBadge = styled.div`
 const FeaturedTitle = styled.h2`
     font-size: 1.5rem;
     font-weight: 800;
-    color: #fff;
+    color: ${({ theme }) => theme.text?.primary || '#fff'};
     line-height: 1.35;
     margin-bottom: 0.75rem;
 `;
 
 const FeaturedDescription = styled.p`
-    color: #94a3b8;
+    color: ${({ theme }) => theme.text?.secondary || '#94a3b8'};
     font-size: 0.95rem;
     line-height: 1.6;
     margin-bottom: 1rem;
@@ -528,17 +546,17 @@ const TickerList = styled.div`
 
 const TickerChip = styled.span`
     padding: 0.3rem 0.6rem;
-    background: rgba(0, 173, 237, 0.15);
-    border: 1px solid rgba(0, 173, 237, 0.25);
+    background: ${({ theme }) => `${theme.brand?.primary || '#00adef'}15`};
+    border: 1px solid ${({ theme }) => `${theme.brand?.primary || '#00adef'}25`};
     border-radius: 6px;
     font-size: 0.8rem;
     font-weight: 700;
-    color: #00adef;
+    color: ${({ theme }) => theme.brand?.primary || '#00adef'};
     cursor: pointer;
     transition: all 0.2s ease;
 
     &:hover {
-        background: rgba(0, 173, 237, 0.25);
+        background: ${({ theme }) => `${theme.brand?.primary || '#00adef'}25`};
         transform: translateY(-1px);
     }
 `;
@@ -548,13 +566,13 @@ const ConfidenceMeter = styled.div`
     align-items: center;
     gap: 0.5rem;
     font-size: 0.85rem;
-    color: #64748b;
+    color: ${({ theme }) => theme.text?.tertiary || '#64748b'};
 `;
 
 const ConfidenceBar = styled.div`
     width: 60px;
     height: 6px;
-    background: rgba(100, 116, 139, 0.2);
+    background: ${({ theme }) => theme.bg?.accent || 'rgba(100, 116, 139, 0.2)'};
     border-radius: 3px;
     overflow: hidden;
 `;
@@ -580,8 +598,8 @@ const NewsList = styled.div`
 const NewsCard = styled.article`
     display: flex;
     gap: 1rem;
-    background: rgba(15, 23, 42, 0.5);
-    border: 1px solid rgba(100, 116, 139, 0.12);
+    background: ${({ theme }) => theme.bg?.card || 'rgba(15, 23, 42, 0.5)'};
+    border: 1px solid ${({ theme }) => theme.border?.primary || 'rgba(100, 116, 139, 0.12)'};
     border-radius: 12px;
     padding: 1rem;
     cursor: pointer;
@@ -589,8 +607,8 @@ const NewsCard = styled.article`
     position: relative;
 
     &:hover {
-        background: rgba(20, 30, 50, 0.6);
-        border-color: rgba(0, 173, 237, 0.25);
+        background: ${({ theme }) => theme.bg?.cardHover || 'rgba(20, 30, 50, 0.6)'};
+        border-color: ${({ theme }) => `${theme.brand?.primary || '#00adef'}25`};
         transform: translateX(4px);
     }
 
@@ -616,13 +634,13 @@ const NewsThumb = styled.div`
     border-radius: 8px;
     background: ${props => props.$src 
         ? `url(${props.$src}) center/cover`
-        : 'linear-gradient(135deg, rgba(0, 173, 237, 0.2) 0%, rgba(139, 92, 246, 0.1) 100%)'
+        : `linear-gradient(135deg, ${props.theme.brand?.primary || '#00adef'}20 0%, ${props.theme.brand?.accent || '#8b5cf6'}10 100%)`
     };
     flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #475569;
+    color: ${({ theme }) => theme.text?.tertiary || '#475569'};
 `;
 
 const NewsInfo = styled.div`
@@ -643,7 +661,7 @@ const NewsCardMeta = styled.div`
 const NewsCardTitle = styled.h3`
     font-size: 0.95rem;
     font-weight: 700;
-    color: #e0e6ed;
+    color: ${({ theme }) => theme.text?.primary || '#e0e6ed'};
     line-height: 1.4;
     margin-bottom: 0.4rem;
     display: -webkit-box;
@@ -665,11 +683,11 @@ const NewsCardTickers = styled.div`
 
 const MiniTicker = styled.span`
     padding: 0.15rem 0.4rem;
-    background: rgba(0, 173, 237, 0.1);
+    background: ${({ theme }) => `${theme.brand?.primary || '#00adef'}10`};
     border-radius: 4px;
     font-size: 0.7rem;
     font-weight: 700;
-    color: #00adef;
+    color: ${({ theme }) => theme.brand?.primary || '#00adef'};
 `;
 
 const NewsCardActions = styled.div`
@@ -681,9 +699,13 @@ const IconButton = styled.button`
     width: 28px;
     height: 28px;
     border-radius: 6px;
-    background: ${props => props.$active ? 'rgba(245, 158, 11, 0.15)' : 'rgba(100, 116, 139, 0.1)'};
+    background: ${props => props.$active 
+        ? 'rgba(245, 158, 11, 0.15)' 
+        : props.theme.bg?.accent || 'rgba(100, 116, 139, 0.1)'};
     border: none;
-    color: ${props => props.$active ? '#f59e0b' : '#64748b'};
+    color: ${props => props.$active 
+        ? '#f59e0b' 
+        : props.theme.text?.tertiary || '#64748b'};
     display: flex;
     align-items: center;
     justify-content: center;
@@ -691,15 +713,15 @@ const IconButton = styled.button`
     transition: all 0.2s ease;
 
     &:hover {
-        background: rgba(0, 173, 237, 0.15);
-        color: #00adef;
+        background: ${({ theme }) => `${theme.brand?.primary || '#00adef'}15`};
+        color: ${({ theme }) => theme.brand?.primary || '#00adef'};
     }
 `;
 
 // ============ SIDEBAR COMPONENTS ============
 const SidebarSection = styled.section`
-    background: rgba(15, 23, 42, 0.5);
-    border: 1px solid rgba(100, 116, 139, 0.12);
+    background: ${({ theme }) => theme.bg?.card || 'rgba(15, 23, 42, 0.5)'};
+    border: 1px solid ${({ theme }) => theme.border?.primary || 'rgba(100, 116, 139, 0.12)'};
     border-radius: 14px;
     padding: 1.25rem;
     margin-bottom: 1.5rem;
@@ -708,14 +730,14 @@ const SidebarSection = styled.section`
 const SidebarTitle = styled.h3`
     font-size: 1rem;
     font-weight: 700;
-    color: #fff;
+    color: ${({ theme }) => theme.text?.primary || '#fff'};
     margin-bottom: 1rem;
     display: flex;
     align-items: center;
     gap: 0.5rem;
 
     svg {
-        color: #00adef;
+        color: ${({ theme }) => theme.brand?.primary || '#00adef'};
     }
 `;
 
@@ -730,13 +752,13 @@ const TrendingItem = styled.div`
     align-items: center;
     gap: 0.75rem;
     padding: 0.65rem;
-    background: rgba(100, 116, 139, 0.08);
+    background: ${({ theme }) => theme.bg?.accent || 'rgba(100, 116, 139, 0.08)'};
     border-radius: 10px;
     cursor: pointer;
     transition: all 0.2s ease;
 
     &:hover {
-        background: rgba(0, 173, 237, 0.1);
+        background: ${({ theme }) => `${theme.brand?.primary || '#00adef'}10`};
         transform: translateX(4px);
     }
 `;
@@ -749,7 +771,7 @@ const TrendingRank = styled.div`
         if (props.$rank === 1) return 'linear-gradient(135deg, #f59e0b, #d97706)';
         if (props.$rank === 2) return 'linear-gradient(135deg, #94a3b8, #64748b)';
         if (props.$rank === 3) return 'linear-gradient(135deg, #b45309, #92400e)';
-        return 'rgba(100, 116, 139, 0.2)';
+        return props.theme.bg?.accent || 'rgba(100, 116, 139, 0.2)';
     }};
     display: flex;
     align-items: center;
@@ -767,12 +789,12 @@ const TrendingInfo = styled.div`
 const TrendingTicker = styled.div`
     font-size: 0.9rem;
     font-weight: 700;
-    color: #fff;
+    color: ${({ theme }) => theme.text?.primary || '#fff'};
 `;
 
 const TrendingMentions = styled.div`
     font-size: 0.75rem;
-    color: #64748b;
+    color: ${({ theme }) => theme.text?.tertiary || '#64748b'};
 `;
 
 const TrendingChange = styled.div`
@@ -811,7 +833,7 @@ const SentimentLabel = styled.div`
 const SentimentBarBg = styled.div`
     flex: 1;
     height: 8px;
-    background: rgba(100, 116, 139, 0.15);
+    background: ${({ theme }) => theme.bg?.accent || 'rgba(100, 116, 139, 0.15)'};
     border-radius: 4px;
     overflow: hidden;
 `;
@@ -833,7 +855,7 @@ const SentimentPercent = styled.div`
     text-align: right;
     font-size: 0.85rem;
     font-weight: 700;
-    color: #94a3b8;
+    color: ${({ theme }) => theme.text?.secondary || '#94a3b8'};
 `;
 
 // ============ MODAL ============
@@ -854,8 +876,8 @@ const ModalOverlay = styled.div`
 `;
 
 const ModalContent = styled.div`
-    background: linear-gradient(145deg, #141b2d 0%, #0f172a 100%);
-    border: 1px solid rgba(100, 116, 139, 0.2);
+    background: ${({ theme }) => theme.bg?.card || 'linear-gradient(145deg, #141b2d 0%, #0f172a 100%)'};
+    border: 1px solid ${({ theme }) => theme.border?.primary || 'rgba(100, 116, 139, 0.2)'};
     border-radius: 20px;
     padding: 2rem;
     max-width: 720px;
@@ -870,11 +892,11 @@ const ModalContent = styled.div`
     }
 
     &::-webkit-scrollbar-track {
-        background: rgba(100, 116, 139, 0.1);
+        background: ${({ theme }) => theme.bg?.accent || 'rgba(100, 116, 139, 0.1)'};
     }
 
     &::-webkit-scrollbar-thumb {
-        background: rgba(100, 116, 139, 0.3);
+        background: ${({ theme }) => theme.border?.secondary || 'rgba(100, 116, 139, 0.3)'};
         border-radius: 3px;
     }
 `;
@@ -917,13 +939,13 @@ const ModalMeta = styled.div`
 const ModalTitle = styled.h2`
     font-size: 1.5rem;
     font-weight: 800;
-    color: #fff;
+    color: ${({ theme }) => theme.text?.primary || '#fff'};
     line-height: 1.35;
 `;
 
 const ModalAISection = styled.div`
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.12) 0%, rgba(139, 92, 246, 0.05) 100%);
-    border: 1px solid rgba(139, 92, 246, 0.25);
+    background: linear-gradient(135deg, ${({ theme }) => `${theme.brand?.accent || '#8b5cf6'}12`} 0%, ${({ theme }) => `${theme.brand?.accent || '#8b5cf6'}05`} 100%);
+    border: 1px solid ${({ theme }) => `${theme.brand?.accent || '#8b5cf6'}25`};
     border-radius: 12px;
     padding: 1.25rem;
     margin-bottom: 1.5rem;
@@ -932,7 +954,7 @@ const ModalAISection = styled.div`
 const ModalAITitle = styled.h4`
     font-size: 0.9rem;
     font-weight: 700;
-    color: #a78bfa;
+    color: ${({ theme }) => theme.brand?.accent || '#a78bfa'};
     margin-bottom: 0.75rem;
     display: flex;
     align-items: center;
@@ -940,13 +962,13 @@ const ModalAITitle = styled.h4`
 `;
 
 const ModalAIText = styled.p`
-    color: #c4b5fd;
+    color: ${({ theme }) => `${theme.brand?.accent || '#c4b5fd'}cc`};
     font-size: 0.9rem;
     line-height: 1.7;
 `;
 
 const ModalBody = styled.div`
-    color: #94a3b8;
+    color: ${({ theme }) => theme.text?.secondary || '#94a3b8'};
     font-size: 0.95rem;
     line-height: 1.8;
     margin-bottom: 1.5rem;
@@ -957,7 +979,7 @@ const ModalFooter = styled.div`
     gap: 0.75rem;
     flex-wrap: wrap;
     padding-top: 1.25rem;
-    border-top: 1px solid rgba(100, 116, 139, 0.15);
+    border-top: 1px solid ${({ theme }) => theme.border?.primary || 'rgba(100, 116, 139, 0.15)'};
 `;
 
 const ModalButton = styled.button`
@@ -965,11 +987,15 @@ const ModalButton = styled.button`
     min-width: 120px;
     padding: 0.75rem 1rem;
     background: ${props => props.$primary 
-        ? 'linear-gradient(135deg, #00adef 0%, #0088cc 100%)'
-        : 'rgba(100, 116, 139, 0.1)'};
-    border: 1px solid ${props => props.$primary ? 'transparent' : 'rgba(100, 116, 139, 0.2)'};
+        ? props.theme.brand?.gradient || 'linear-gradient(135deg, #00adef 0%, #0088cc 100%)'
+        : props.theme.bg?.accent || 'rgba(100, 116, 139, 0.1)'};
+    border: 1px solid ${props => props.$primary 
+        ? 'transparent' 
+        : props.theme.border?.primary || 'rgba(100, 116, 139, 0.2)'};
     border-radius: 10px;
-    color: ${props => props.$primary ? 'white' : '#94a3b8'};
+    color: ${props => props.$primary 
+        ? 'white' 
+        : props.theme.text?.secondary || '#94a3b8'};
     font-weight: 600;
     font-size: 0.85rem;
     cursor: pointer;
@@ -981,7 +1007,7 @@ const ModalButton = styled.button`
 
     &:hover {
         transform: translateY(-2px);
-        ${props => !props.$primary && 'background: rgba(100, 116, 139, 0.15);'}
+        ${props => !props.$primary && `background: ${props.theme.bg?.cardHover || 'rgba(100, 116, 139, 0.15)'};`}
     }
 `;
 
@@ -998,14 +1024,14 @@ const LoadingContainer = styled.div`
 const LoadingSpinner = styled.div`
     width: 48px;
     height: 48px;
-    border: 3px solid rgba(0, 173, 237, 0.2);
-    border-top-color: #00adef;
+    border: 3px solid ${({ theme }) => `${theme.brand?.primary || '#00adef'}20`};
+    border-top-color: ${({ theme }) => theme.brand?.primary || '#00adef'};
     border-radius: 50%;
     animation: ${rotate} 0.8s linear infinite;
 `;
 
 const LoadingText = styled.div`
-    color: #64748b;
+    color: ${({ theme }) => theme.text?.tertiary || '#64748b'};
     font-size: 0.95rem;
 `;
 
@@ -1018,30 +1044,31 @@ const EmptyIcon = styled.div`
     width: 100px;
     height: 100px;
     margin: 0 auto 1.5rem;
-    background: rgba(100, 116, 139, 0.1);
+    background: ${({ theme }) => theme.bg?.accent || 'rgba(100, 116, 139, 0.1)'};
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #475569;
+    color: ${({ theme }) => theme.text?.tertiary || '#475569'};
+    animation: ${float} 3s ease-in-out infinite;
 `;
 
 const EmptyTitle = styled.h3`
     font-size: 1.25rem;
     font-weight: 700;
-    color: #94a3b8;
+    color: ${({ theme }) => theme.text?.secondary || '#94a3b8'};
     margin-bottom: 0.5rem;
 `;
 
 const EmptyText = styled.p`
-    color: #64748b;
+    color: ${({ theme }) => theme.text?.tertiary || '#64748b'};
     font-size: 0.95rem;
 `;
 
 // ============ SKELETON LOADING ============
 const SkeletonCard = styled.div`
-    background: rgba(15, 23, 42, 0.5);
-    border: 1px solid rgba(100, 116, 139, 0.12);
+    background: ${({ theme }) => theme.bg?.card || 'rgba(15, 23, 42, 0.5)'};
+    border: 1px solid ${({ theme }) => theme.border?.primary || 'rgba(100, 116, 139, 0.12)'};
     border-radius: 12px;
     padding: 1rem;
     display: flex;
@@ -1052,7 +1079,10 @@ const SkeletonThumb = styled.div`
     width: 100px;
     height: 80px;
     border-radius: 8px;
-    background: linear-gradient(90deg, rgba(100, 116, 139, 0.1) 0%, rgba(100, 116, 139, 0.2) 50%, rgba(100, 116, 139, 0.1) 100%);
+    background: linear-gradient(90deg, 
+        ${({ theme }) => theme.bg?.accent || 'rgba(100, 116, 139, 0.1)'} 0%, 
+        ${({ theme }) => theme.bg?.cardHover || 'rgba(100, 116, 139, 0.2)'} 50%, 
+        ${({ theme }) => theme.bg?.accent || 'rgba(100, 116, 139, 0.1)'} 100%);
     background-size: 200% 100%;
     animation: ${shimmer} 1.5s ease-in-out infinite;
 `;
@@ -1065,7 +1095,10 @@ const SkeletonLine = styled.div`
     height: ${props => props.$height || '14px'};
     width: ${props => props.$width || '100%'};
     border-radius: 4px;
-    background: linear-gradient(90deg, rgba(100, 116, 139, 0.1) 0%, rgba(100, 116, 139, 0.2) 50%, rgba(100, 116, 139, 0.1) 100%);
+    background: linear-gradient(90deg, 
+        ${({ theme }) => theme.bg?.accent || 'rgba(100, 116, 139, 0.1)'} 0%, 
+        ${({ theme }) => theme.bg?.cardHover || 'rgba(100, 116, 139, 0.2)'} 50%, 
+        ${({ theme }) => theme.bg?.accent || 'rgba(100, 116, 139, 0.1)'} 100%);
     background-size: 200% 100%;
     animation: ${shimmer} 1.5s ease-in-out infinite;
     margin-bottom: ${props => props.$mb || '0.5rem'};
@@ -1076,6 +1109,7 @@ const NewsPage = () => {
     const { api, isAuthenticated } = useAuth();
     const toast = useToast();
     const navigate = useNavigate();
+    const theme = useTheme();
 
     const [loading, setLoading] = useState(true);
     const [newsArticles, setNewsArticles] = useState([]);
@@ -1283,6 +1317,10 @@ const NewsPage = () => {
     const featuredArticle = filteredNews.find(a => a.trending) || filteredNews[0];
     const remainingArticles = filteredNews.filter(a => a.id !== featuredArticle?.id);
 
+    // Get dynamic colors from theme
+    const primaryColor = theme?.brand?.primary || '#00adef';
+    const accentColor = theme?.brand?.accent || '#8b5cf6';
+
     return (
         <PageContainer>
             <ContentWrapper>
@@ -1310,7 +1348,7 @@ const NewsPage = () => {
                     {/* Stats Bar */}
                     <StatsBar>
                         <StatCard>
-                            <StatIcon $bg="rgba(0, 173, 237, 0.15)" $color="#00adef">
+                            <StatIcon $bg={`${primaryColor}15`} $color={primaryColor}>
                                 <Newspaper size={20} />
                             </StatIcon>
                             <StatContent>
@@ -1632,12 +1670,15 @@ const NewsPage = () => {
                             </SidebarSection>
 
                             {/* AI Insights Card */}
-                            <SidebarSection style={{ background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(15, 23, 42, 0.5) 100%)', borderColor: 'rgba(139, 92, 246, 0.2)' }}>
-                                <SidebarTitle style={{ color: '#a78bfa' }}>
+                            <SidebarSection style={{ 
+                                background: `linear-gradient(135deg, ${accentColor}10 0%, ${theme?.bg?.card || 'rgba(15, 23, 42, 0.5)'} 100%)`, 
+                                borderColor: `${accentColor}20` 
+                            }}>
+                                <SidebarTitle style={{ color: accentColor }}>
                                     <Sparkles size={18} />
                                     AI Insights
                                 </SidebarTitle>
-                                <p style={{ color: '#94a3b8', fontSize: '0.85rem', lineHeight: 1.6 }}>
+                                <p style={{ color: theme?.text?.secondary || '#94a3b8', fontSize: '0.85rem', lineHeight: 1.6 }}>
                                     {sentimentBreakdown.bullish > sentimentBreakdown.bearish 
                                         ? `Market sentiment is currently leaning bullish with ${sentimentBreakdown.bullish}% positive coverage. ${trendingTickers[0]?.ticker || 'Key assets'} seeing the most attention.`
                                         : sentimentBreakdown.bearish > sentimentBreakdown.bullish
@@ -1706,7 +1747,7 @@ const NewsPage = () => {
 
                         {selectedArticle.tickers?.length > 0 && (
                             <div style={{ marginBottom: '1.5rem' }}>
-                                <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                <div style={{ fontSize: '0.8rem', color: theme?.text?.tertiary || '#64748b', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                                     Related Tickers
                                 </div>
                                 <TickerList>

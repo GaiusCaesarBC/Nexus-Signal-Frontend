@@ -1,9 +1,10 @@
-// client/src/pages/JournalPage.js - THE MOST LEGENDARY TRADING JOURNAL EVER
+// client/src/pages/JournalPage.js - THEMED TRADING JOURNAL
 
 import React, { useState, useEffect } from 'react';
-import styled, { keyframes, css } from 'styled-components';
+import styled, { keyframes, css, useTheme as useStyledTheme } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useTheme as useThemeContext } from '../context/ThemeContext';
 import {
     BookOpen, Plus, Edit2, Trash2, Search, Filter, Calendar,
     TrendingUp, TrendingDown, DollarSign, Percent, Target, Clock,
@@ -77,8 +78,8 @@ const bounceIn = keyframes`
 const PageContainer = styled.div`
     min-height: 100vh;
     padding-top: 80px;
-    background: linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
-    color: #e0e6ed;
+    background: ${({ theme }) => theme.bg?.page || 'linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%)'};
+    color: ${({ theme }) => theme.text?.primary || '#e0e6ed'};
     padding-left: 2rem;
     padding-right: 2rem;
     padding-bottom: 2rem;
@@ -86,16 +87,63 @@ const PageContainer = styled.div`
     overflow-x: hidden;
 `;
 
+const BackgroundOrbs = styled.div`
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 0;
+`;
+
+const Orb = styled.div`
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.3;
+    animation: ${float} ${props => props.$duration || '20s'} ease-in-out infinite;
+    
+    &:nth-child(1) {
+        width: 400px;
+        height: 400px;
+        background: ${({ theme }) => `radial-gradient(circle, ${theme.brand?.primary || '#00adef'}66 0%, transparent 70%)`};
+        top: 10%;
+        left: -100px;
+    }
+    
+    &:nth-child(2) {
+        width: 300px;
+        height: 300px;
+        background: ${({ theme }) => `radial-gradient(circle, ${theme.brand?.accent || '#8b5cf6'}66 0%, transparent 70%)`};
+        top: 50%;
+        right: -50px;
+        animation-delay: -5s;
+    }
+    
+    &:nth-child(3) {
+        width: 350px;
+        height: 350px;
+        background: ${({ theme }) => `radial-gradient(circle, ${theme.success || '#10b981'}4D 0%, transparent 70%)`};
+        bottom: 10%;
+        left: 30%;
+        animation-delay: -10s;
+    }
+`;
+
 const Header = styled.div`
     max-width: 1600px;
     margin: 0 auto 3rem;
     animation: ${fadeIn} 0.8s ease-out;
     text-align: center;
+    position: relative;
+    z-index: 1;
 `;
 
 const Title = styled.h1`
     font-size: 3.5rem;
-    background: linear-gradient(135deg, #00adef 0%, #00ff88 100%);
+    background: ${({ theme }) => theme.brand?.gradient || 'linear-gradient(135deg, #00adef 0%, #00ff88 100%)'};
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -118,7 +166,7 @@ const TitleIcon = styled.div`
 `;
 
 const Subtitle = styled.p`
-    color: #94a3b8;
+    color: ${({ theme }) => theme.text?.secondary || '#94a3b8'};
     font-size: 1.2rem;
     margin-bottom: 1.5rem;
 `;
@@ -128,11 +176,11 @@ const PoweredBy = styled.div`
     align-items: center;
     gap: 0.5rem;
     padding: 0.5rem 1rem;
-    background: linear-gradient(135deg, rgba(0, 173, 237, 0.2) 0%, rgba(0, 255, 136, 0.2) 100%);
-    border: 1px solid rgba(0, 173, 237, 0.4);
+    background: ${({ theme }) => `linear-gradient(135deg, ${theme.brand?.primary || '#00adef'}33 0%, ${theme.success || '#00ff88'}33 100%)`};
+    border: 1px solid ${({ theme }) => `${theme.brand?.primary || '#00adef'}66`};
     border-radius: 20px;
     font-size: 0.9rem;
-    color: #00adef;
+    color: ${({ theme }) => theme.brand?.primary || '#00adef'};
     animation: ${glow} 3s ease-in-out infinite;
 `;
 
@@ -142,19 +190,21 @@ const TabsContainer = styled.div`
     margin: 0 auto 2rem;
     display: flex;
     gap: 1rem;
-    border-bottom: 2px solid rgba(0, 173, 237, 0.2);
+    border-bottom: 2px solid ${({ theme }) => `${theme.brand?.primary || '#00adef'}33`};
     overflow-x: auto;
+    position: relative;
+    z-index: 1;
 
     &::-webkit-scrollbar {
         height: 4px;
     }
 
     &::-webkit-scrollbar-track {
-        background: rgba(0, 173, 237, 0.1);
+        background: ${({ theme }) => `${theme.brand?.primary || '#00adef'}1A`};
     }
 
     &::-webkit-scrollbar-thumb {
-        background: rgba(0, 173, 237, 0.5);
+        background: ${({ theme }) => `${theme.brand?.primary || '#00adef'}80`};
         border-radius: 2px;
     }
 `;
@@ -163,8 +213,8 @@ const Tab = styled.button`
     padding: 1rem 1.5rem;
     background: transparent;
     border: none;
-    border-bottom: 3px solid ${props => props.$active ? '#00adef' : 'transparent'};
-    color: ${props => props.$active ? '#00adef' : '#94a3b8'};
+    border-bottom: 3px solid ${({ $active, theme }) => $active ? theme.brand?.primary || '#00adef' : 'transparent'};
+    color: ${({ $active, theme }) => $active ? theme.brand?.primary || '#00adef' : theme.text?.secondary || '#94a3b8'};
     font-weight: 700;
     font-size: 1rem;
     cursor: pointer;
@@ -175,7 +225,7 @@ const Tab = styled.button`
     gap: 0.5rem;
 
     &:hover {
-        color: #00adef;
+        color: ${({ theme }) => theme.brand?.primary || '#00adef'};
     }
 `;
 
@@ -188,6 +238,8 @@ const ControlsContainer = styled.div`
     align-items: center;
     gap: 1rem;
     flex-wrap: wrap;
+    position: relative;
+    z-index: 1;
 `;
 
 const SearchBar = styled.div`
@@ -203,21 +255,21 @@ const SearchBar = styled.div`
 const SearchInput = styled.input`
     width: 100%;
     padding: 1rem 1rem 1rem 3rem;
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
-    border: 1px solid rgba(0, 173, 237, 0.3);
+    background: ${({ theme }) => theme.bg?.card || 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%)'};
+    border: 1px solid ${({ theme }) => `${theme.brand?.primary || '#00adef'}4D`};
     border-radius: 12px;
-    color: #e0e6ed;
+    color: ${({ theme }) => theme.text?.primary || '#e0e6ed'};
     font-size: 1rem;
     transition: all 0.3s ease;
 
     &:focus {
         outline: none;
-        border-color: #00adef;
-        box-shadow: 0 0 0 3px rgba(0, 173, 237, 0.2);
+        border-color: ${({ theme }) => theme.brand?.primary || '#00adef'};
+        box-shadow: ${({ theme }) => `0 0 0 3px ${theme.brand?.primary || '#00adef'}33`};
     }
 
     &::placeholder {
-        color: #64748b;
+        color: ${({ theme }) => theme.text?.tertiary || '#64748b'};
     }
 `;
 
@@ -226,7 +278,7 @@ const SearchIcon = styled(Search)`
     left: 1rem;
     top: 50%;
     transform: translateY(-50%);
-    color: #64748b;
+    color: ${({ theme }) => theme.text?.tertiary || '#64748b'};
     pointer-events: none;
 `;
 
@@ -242,7 +294,7 @@ const ButtonGroup = styled.div`
 
 const PrimaryButton = styled.button`
     padding: 1rem 1.5rem;
-    background: linear-gradient(135deg, #00adef 0%, #0088cc 100%);
+    background: ${({ theme }) => theme.brand?.gradient || 'linear-gradient(135deg, #00adef 0%, #0088cc 100%)'};
     border: none;
     border-radius: 12px;
     color: white;
@@ -269,17 +321,21 @@ const PrimaryButton = styled.button`
 
     &:hover {
         transform: translateY(-2px);
-        box-shadow: 0 10px 30px rgba(0, 173, 237, 0.4);
+        box-shadow: ${({ theme }) => `0 10px 30px ${theme.brand?.primary || '#00adef'}66`};
     }
 `;
 
 const SecondaryButton = styled(PrimaryButton)`
-    background: rgba(0, 173, 237, 0.1);
-    border: 1px solid rgba(0, 173, 237, 0.3);
-    color: #00adef;
+    background: ${({ theme }) => `${theme.brand?.primary || '#00adef'}1A`};
+    border: 1px solid ${({ theme }) => `${theme.brand?.primary || '#00adef'}4D`};
+    color: ${({ theme }) => theme.brand?.primary || '#00adef'};
+
+    &::before {
+        display: none;
+    }
 
     &:hover {
-        background: rgba(0, 173, 237, 0.2);
+        background: ${({ theme }) => `${theme.brand?.primary || '#00adef'}33`};
     }
 `;
 
@@ -290,11 +346,13 @@ const StatsContainer = styled.div`
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 1.5rem;
+    position: relative;
+    z-index: 1;
 `;
 
 const StatCard = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
-    border: 1px solid rgba(0, 173, 237, 0.3);
+    background: ${({ theme }) => theme.bg?.card || 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%)'};
+    border: 1px solid ${({ theme }) => `${theme.brand?.primary || '#00adef'}4D`};
     border-radius: 16px;
     padding: 1.5rem;
     transition: all 0.3s ease;
@@ -309,18 +367,18 @@ const StatCard = styled.div`
         left: 0;
         width: 100%;
         height: 3px;
-        background: ${props => {
-            if (props.$type === 'success') return 'linear-gradient(90deg, #10b981, #059669)';
-            if (props.$type === 'danger') return 'linear-gradient(90deg, #ef4444, #dc2626)';
-            if (props.$type === 'warning') return 'linear-gradient(90deg, #f59e0b, #d97706)';
-            return 'linear-gradient(90deg, #00adef, #0088cc)';
+        background: ${({ $type, theme }) => {
+            if ($type === 'success') return `linear-gradient(90deg, ${theme.success || '#10b981'}, ${theme.success || '#059669'})`;
+            if ($type === 'danger') return `linear-gradient(90deg, ${theme.error || '#ef4444'}, ${theme.error || '#dc2626'})`;
+            if ($type === 'warning') return `linear-gradient(90deg, ${theme.warning || '#f59e0b'}, ${theme.warning || '#d97706'})`;
+            return `linear-gradient(90deg, ${theme.brand?.primary || '#00adef'}, ${theme.brand?.accent || '#0088cc'})`;
         }};
     }
 
     &:hover {
         transform: translateY(-5px);
-        box-shadow: 0 10px 30px rgba(0, 173, 237, 0.3);
-        border-color: rgba(0, 173, 237, 0.5);
+        box-shadow: ${({ theme }) => `0 10px 30px ${theme.brand?.primary || '#00adef'}4D`};
+        border-color: ${({ theme }) => `${theme.brand?.primary || '#00adef'}80`};
     }
 `;
 
@@ -328,17 +386,17 @@ const StatIcon = styled.div`
     width: 48px;
     height: 48px;
     margin-bottom: 1rem;
-    background: ${props => {
-        if (props.$type === 'success') return 'rgba(16, 185, 129, 0.2)';
-        if (props.$type === 'danger') return 'rgba(239, 68, 68, 0.2)';
-        if (props.$type === 'warning') return 'rgba(245, 158, 11, 0.2)';
-        return 'rgba(0, 173, 237, 0.2)';
+    background: ${({ $type, theme }) => {
+        if ($type === 'success') return `${theme.success || '#10b981'}33`;
+        if ($type === 'danger') return `${theme.error || '#ef4444'}33`;
+        if ($type === 'warning') return `${theme.warning || '#f59e0b'}33`;
+        return `${theme.brand?.primary || '#00adef'}33`;
     }};
-    color: ${props => {
-        if (props.$type === 'success') return '#10b981';
-        if (props.$type === 'danger') return '#ef4444';
-        if (props.$type === 'warning') return '#f59e0b';
-        return '#00adef';
+    color: ${({ $type, theme }) => {
+        if ($type === 'success') return theme.success || '#10b981';
+        if ($type === 'danger') return theme.error || '#ef4444';
+        if ($type === 'warning') return theme.warning || '#f59e0b';
+        return theme.brand?.primary || '#00adef';
     }};
     border-radius: 12px;
     display: flex;
@@ -347,7 +405,7 @@ const StatIcon = styled.div`
 `;
 
 const StatLabel = styled.div`
-    color: #64748b;
+    color: ${({ theme }) => theme.text?.tertiary || '#64748b'};
     font-size: 0.9rem;
     margin-bottom: 0.5rem;
 `;
@@ -355,11 +413,11 @@ const StatLabel = styled.div`
 const StatValue = styled.div`
     font-size: 2rem;
     font-weight: 900;
-    color: ${props => {
-        if (props.$type === 'success') return '#10b981';
-        if (props.$type === 'danger') return '#ef4444';
-        if (props.$type === 'warning') return '#f59e0b';
-        return '#00adef';
+    color: ${({ $type, theme }) => {
+        if ($type === 'success') return theme.success || '#10b981';
+        if ($type === 'danger') return theme.error || '#ef4444';
+        if ($type === 'warning') return theme.warning || '#f59e0b';
+        return theme.brand?.primary || '#00adef';
     }};
 `;
 
@@ -367,6 +425,8 @@ const StatValue = styled.div`
 const TradesContainer = styled.div`
     max-width: 1600px;
     margin: 0 auto;
+    position: relative;
+    z-index: 1;
 `;
 
 const TradesList = styled.div`
@@ -376,9 +436,9 @@ const TradesList = styled.div`
 `;
 
 const TradeCard = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    background: ${({ theme }) => theme.bg?.card || 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%)'};
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(0, 173, 237, 0.3);
+    border: 1px solid ${({ theme }) => `${theme.brand?.primary || '#00adef'}4D`};
     border-radius: 16px;
     padding: 1.5rem;
     transition: all 0.3s ease;
@@ -394,13 +454,13 @@ const TradeCard = styled.div`
         top: 0;
         width: 4px;
         height: 100%;
-        background: ${props => props.$profit >= 0 ? '#10b981' : '#ef4444'};
+        background: ${({ $profit, theme }) => $profit >= 0 ? theme.success || '#10b981' : theme.error || '#ef4444'};
     }
 
     &:hover {
         transform: translateX(10px);
-        border-color: rgba(0, 173, 237, 0.6);
-        box-shadow: 0 10px 30px rgba(0, 173, 237, 0.3);
+        border-color: ${({ theme }) => `${theme.brand?.primary || '#00adef'}80`};
+        box-shadow: ${({ theme }) => `0 10px 30px ${theme.brand?.primary || '#00adef'}4D`};
     }
 `;
 
@@ -423,7 +483,7 @@ const TradeInfo = styled.div`
 const TradeSymbol = styled.div`
     font-size: 1.5rem;
     font-weight: 900;
-    color: #00adef;
+    color: ${({ theme }) => theme.brand?.primary || '#00adef'};
     margin-bottom: 0.5rem;
     display: flex;
     align-items: center;
@@ -432,23 +492,26 @@ const TradeSymbol = styled.div`
 
 const TradeType = styled.span`
     padding: 0.25rem 0.75rem;
-    background: ${props => props.$type === 'long' ? 
-        'rgba(16, 185, 129, 0.2)' : 
-        'rgba(239, 68, 68, 0.2)'
+    background: ${({ $type, theme }) => $type === 'long' ? 
+        `${theme.success || '#10b981'}33` : 
+        `${theme.error || '#ef4444'}33`
     };
-    border: 1px solid ${props => props.$type === 'long' ? 
-        'rgba(16, 185, 129, 0.3)' : 
-        'rgba(239, 68, 68, 0.3)'
+    border: 1px solid ${({ $type, theme }) => $type === 'long' ? 
+        `${theme.success || '#10b981'}4D` : 
+        `${theme.error || '#ef4444'}4D`
     };
     border-radius: 12px;
-    color: ${props => props.$type === 'long' ? '#10b981' : '#ef4444'};
+    color: ${({ $type, theme }) => $type === 'long' ? theme.success || '#10b981' : theme.error || '#ef4444'};
     font-size: 0.85rem;
     font-weight: 700;
     text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
 `;
 
 const TradeDate = styled.div`
-    color: #64748b;
+    color: ${({ theme }) => theme.text?.tertiary || '#64748b'};
     font-size: 0.9rem;
     display: flex;
     align-items: center;
@@ -464,9 +527,9 @@ const ActionButton = styled.button`
     width: 36px;
     height: 36px;
     border-radius: 8px;
-    background: rgba(0, 173, 237, 0.1);
-    border: 1px solid rgba(0, 173, 237, 0.3);
-    color: #00adef;
+    background: ${({ theme }) => `${theme.brand?.primary || '#00adef'}1A`};
+    border: 1px solid ${({ theme }) => `${theme.brand?.primary || '#00adef'}4D`};
+    color: ${({ theme }) => theme.brand?.primary || '#00adef'};
     display: flex;
     align-items: center;
     justify-content: center;
@@ -474,7 +537,7 @@ const ActionButton = styled.button`
     transition: all 0.2s ease;
 
     &:hover {
-        background: rgba(0, 173, 237, 0.2);
+        background: ${({ theme }) => `${theme.brand?.primary || '#00adef'}33`};
         transform: scale(1.1);
     }
 `;
@@ -493,12 +556,12 @@ const MetricItem = styled.div`
 `;
 
 const MetricLabel = styled.span`
-    color: #64748b;
+    color: ${({ theme }) => theme.text?.tertiary || '#64748b'};
     font-size: 0.85rem;
 `;
 
 const MetricValue = styled.span`
-    color: #e0e6ed;
+    color: ${({ theme }) => theme.text?.primary || '#e0e6ed'};
     font-weight: 700;
     font-size: 1rem;
 `;
@@ -508,30 +571,30 @@ const ProfitLoss = styled.div`
     align-items: center;
     gap: 0.5rem;
     padding: 0.75rem 1rem;
-    background: ${props => props.$profit >= 0 ? 
-        'rgba(16, 185, 129, 0.2)' : 
-        'rgba(239, 68, 68, 0.2)'
+    background: ${({ $profit, theme }) => $profit >= 0 ? 
+        `${theme.success || '#10b981'}33` : 
+        `${theme.error || '#ef4444'}33`
     };
-    border: 1px solid ${props => props.$profit >= 0 ? 
-        'rgba(16, 185, 129, 0.3)' : 
-        'rgba(239, 68, 68, 0.3)'
+    border: 1px solid ${({ $profit, theme }) => $profit >= 0 ? 
+        `${theme.success || '#10b981'}4D` : 
+        `${theme.error || '#ef4444'}4D`
     };
     border-radius: 12px;
-    color: ${props => props.$profit >= 0 ? '#10b981' : '#ef4444'};
+    color: ${({ $profit, theme }) => $profit >= 0 ? theme.success || '#10b981' : theme.error || '#ef4444'};
     font-weight: 900;
     font-size: 1.2rem;
 `;
 
 const TradeNotes = styled.div`
-    background: rgba(0, 173, 237, 0.05);
-    border: 1px solid rgba(0, 173, 237, 0.2);
+    background: ${({ theme }) => `${theme.brand?.primary || '#00adef'}0D`};
+    border: 1px solid ${({ theme }) => `${theme.brand?.primary || '#00adef'}33`};
     border-radius: 12px;
     padding: 1rem;
     margin-bottom: 1rem;
 `;
 
 const NotesLabel = styled.div`
-    color: #00adef;
+    color: ${({ theme }) => theme.brand?.primary || '#00adef'};
     font-weight: 700;
     font-size: 0.9rem;
     margin-bottom: 0.5rem;
@@ -541,7 +604,7 @@ const NotesLabel = styled.div`
 `;
 
 const NotesText = styled.p`
-    color: #94a3b8;
+    color: ${({ theme }) => theme.text?.secondary || '#94a3b8'};
     line-height: 1.6;
     margin: 0;
 `;
@@ -551,9 +614,9 @@ const EmotionIndicator = styled.div`
     align-items: center;
     gap: 0.5rem;
     padding: 0.5rem 1rem;
-    background: rgba(0, 173, 237, 0.1);
+    background: ${({ theme }) => `${theme.brand?.primary || '#00adef'}1A`};
     border-radius: 12px;
-    color: #00adef;
+    color: ${({ theme }) => theme.brand?.primary || '#00adef'};
     font-weight: 600;
 `;
 
@@ -576,8 +639,8 @@ const ModalOverlay = styled.div`
 `;
 
 const ModalContent = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.98) 100%);
-    border: 2px solid rgba(0, 173, 237, 0.5);
+    background: ${({ theme }) => theme.bg?.card || 'linear-gradient(135deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.98) 100%)'};
+    border: 2px solid ${({ theme }) => `${theme.brand?.primary || '#00adef'}80`};
     border-radius: 20px;
     padding: 2.5rem;
     max-width: 800px;
@@ -592,11 +655,11 @@ const ModalContent = styled.div`
     }
 
     &::-webkit-scrollbar-track {
-        background: rgba(0, 173, 237, 0.1);
+        background: ${({ theme }) => `${theme.brand?.primary || '#00adef'}1A`};
     }
 
     &::-webkit-scrollbar-thumb {
-        background: rgba(0, 173, 237, 0.5);
+        background: ${({ theme }) => `${theme.brand?.primary || '#00adef'}80`};
         border-radius: 4px;
     }
 `;
@@ -608,9 +671,9 @@ const CloseButton = styled.button`
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: rgba(239, 68, 68, 0.2);
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    color: #ef4444;
+    background: ${({ theme }) => `${theme.error || '#ef4444'}33`};
+    border: 1px solid ${({ theme }) => `${theme.error || '#ef4444'}4D`};
+    color: ${({ theme }) => theme.error || '#ef4444'};
     display: flex;
     align-items: center;
     justify-content: center;
@@ -618,13 +681,13 @@ const CloseButton = styled.button`
     transition: all 0.2s ease;
 
     &:hover {
-        background: rgba(239, 68, 68, 0.3);
+        background: ${({ theme }) => `${theme.error || '#ef4444'}4D`};
         transform: scale(1.1);
     }
 `;
 
 const ModalTitle = styled.h2`
-    color: #00adef;
+    color: ${({ theme }) => theme.brand?.primary || '#00adef'};
     font-size: 2rem;
     font-weight: 900;
     margin-bottom: 2rem;
@@ -645,7 +708,7 @@ const FormField = styled.div`
 `;
 
 const Label = styled.label`
-    color: #94a3b8;
+    color: ${({ theme }) => theme.text?.secondary || '#94a3b8'};
     font-size: 0.9rem;
     font-weight: 600;
     display: flex;
@@ -655,52 +718,52 @@ const Label = styled.label`
 
 const Input = styled.input`
     padding: 0.875rem;
-    background: rgba(0, 173, 237, 0.05);
-    border: 1px solid rgba(0, 173, 237, 0.3);
+    background: ${({ theme }) => `${theme.brand?.primary || '#00adef'}0D`};
+    border: 1px solid ${({ theme }) => `${theme.brand?.primary || '#00adef'}4D`};
     border-radius: 10px;
-    color: #e0e6ed;
+    color: ${({ theme }) => theme.text?.primary || '#e0e6ed'};
     font-size: 1rem;
     transition: all 0.2s ease;
 
     &:focus {
         outline: none;
-        border-color: #00adef;
-        background: rgba(0, 173, 237, 0.1);
+        border-color: ${({ theme }) => theme.brand?.primary || '#00adef'};
+        background: ${({ theme }) => `${theme.brand?.primary || '#00adef'}1A`};
     }
 
     &::placeholder {
-        color: #64748b;
+        color: ${({ theme }) => theme.text?.tertiary || '#64748b'};
     }
 `;
 
 const Select = styled.select`
     padding: 0.875rem;
-    background: rgba(0, 173, 237, 0.05);
-    border: 1px solid rgba(0, 173, 237, 0.3);
+    background: ${({ theme }) => `${theme.brand?.primary || '#00adef'}0D`};
+    border: 1px solid ${({ theme }) => `${theme.brand?.primary || '#00adef'}4D`};
     border-radius: 10px;
-    color: #e0e6ed;
+    color: ${({ theme }) => theme.text?.primary || '#e0e6ed'};
     font-size: 1rem;
     cursor: pointer;
     transition: all 0.2s ease;
 
     &:focus {
         outline: none;
-        border-color: #00adef;
-        background: rgba(0, 173, 237, 0.1);
+        border-color: ${({ theme }) => theme.brand?.primary || '#00adef'};
+        background: ${({ theme }) => `${theme.brand?.primary || '#00adef'}1A`};
     }
 
     option {
-        background: #1a1f3a;
-        color: #e0e6ed;
+        background: ${({ theme }) => theme.bg?.page || '#1a1f3a'};
+        color: ${({ theme }) => theme.text?.primary || '#e0e6ed'};
     }
 `;
 
 const TextArea = styled.textarea`
     padding: 0.875rem;
-    background: rgba(0, 173, 237, 0.05);
-    border: 1px solid rgba(0, 173, 237, 0.3);
+    background: ${({ theme }) => `${theme.brand?.primary || '#00adef'}0D`};
+    border: 1px solid ${({ theme }) => `${theme.brand?.primary || '#00adef'}4D`};
     border-radius: 10px;
-    color: #e0e6ed;
+    color: ${({ theme }) => theme.text?.primary || '#e0e6ed'};
     font-size: 1rem;
     resize: vertical;
     min-height: 120px;
@@ -709,12 +772,12 @@ const TextArea = styled.textarea`
 
     &:focus {
         outline: none;
-        border-color: #00adef;
-        background: rgba(0, 173, 237, 0.1);
+        border-color: ${({ theme }) => theme.brand?.primary || '#00adef'};
+        background: ${({ theme }) => `${theme.brand?.primary || '#00adef'}1A`};
     }
 
     &::placeholder {
-        color: #64748b;
+        color: ${({ theme }) => theme.text?.tertiary || '#64748b'};
     }
 `;
 
@@ -728,16 +791,16 @@ const EmotionButton = styled.button`
     flex: 1;
     min-width: 100px;
     padding: 1rem;
-    background: ${props => props.$active ? 
-        'rgba(0, 173, 237, 0.3)' : 
-        'rgba(0, 173, 237, 0.1)'
+    background: ${({ $active, theme }) => $active ? 
+        `${theme.brand?.primary || '#00adef'}4D` : 
+        `${theme.brand?.primary || '#00adef'}1A`
     };
-    border: 1px solid ${props => props.$active ? 
-        'rgba(0, 173, 237, 0.5)' : 
-        'rgba(0, 173, 237, 0.3)'
+    border: 1px solid ${({ $active, theme }) => $active ? 
+        `${theme.brand?.primary || '#00adef'}80` : 
+        `${theme.brand?.primary || '#00adef'}4D`
     };
     border-radius: 12px;
-    color: ${props => props.$active ? '#00adef' : '#94a3b8'};
+    color: ${({ $active, theme }) => $active ? theme.brand?.primary || '#00adef' : theme.text?.secondary || '#94a3b8'};
     cursor: pointer;
     display: flex;
     flex-direction: column;
@@ -746,9 +809,9 @@ const EmotionButton = styled.button`
     transition: all 0.2s ease;
 
     &:hover {
-        background: rgba(0, 173, 237, 0.2);
-        border-color: rgba(0, 173, 237, 0.5);
-        color: #00adef;
+        background: ${({ theme }) => `${theme.brand?.primary || '#00adef'}33`};
+        border-color: ${({ theme }) => `${theme.brand?.primary || '#00adef'}80`};
+        color: ${({ theme }) => theme.brand?.primary || '#00adef'};
     }
 `;
 
@@ -769,6 +832,8 @@ const AnalyticsContainer = styled.div`
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 2rem;
+    position: relative;
+    z-index: 1;
 
     @media (max-width: 1024px) {
         grid-template-columns: 1fr;
@@ -776,15 +841,15 @@ const AnalyticsContainer = styled.div`
 `;
 
 const ChartCard = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
-    border: 1px solid rgba(0, 173, 237, 0.3);
+    background: ${({ theme }) => theme.bg?.card || 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%)'};
+    border: 1px solid ${({ theme }) => `${theme.brand?.primary || '#00adef'}4D`};
     border-radius: 16px;
     padding: 2rem;
     animation: ${fadeIn} 0.6s ease-out;
 `;
 
 const ChartTitle = styled.h3`
-    color: #00adef;
+    color: ${({ theme }) => theme.brand?.primary || '#00adef'};
     font-size: 1.3rem;
     font-weight: 700;
     margin-bottom: 1.5rem;
@@ -804,23 +869,23 @@ const EmptyIcon = styled.div`
     width: 150px;
     height: 150px;
     margin: 0 auto 2rem;
-    background: linear-gradient(135deg, rgba(0, 173, 237, 0.2) 0%, rgba(0, 173, 237, 0.05) 100%);
+    background: ${({ theme }) => `linear-gradient(135deg, ${theme.brand?.primary || '#00adef'}33 0%, ${theme.brand?.primary || '#00adef'}0D 100%)`};
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 3px dashed rgba(0, 173, 237, 0.4);
+    border: 3px dashed ${({ theme }) => `${theme.brand?.primary || '#00adef'}66`};
     animation: ${float} 3s ease-in-out infinite;
 `;
 
 const EmptyTitle = styled.h2`
-    color: #00adef;
+    color: ${({ theme }) => theme.brand?.primary || '#00adef'};
     font-size: 2rem;
     margin-bottom: 1rem;
 `;
 
 const EmptyText = styled.p`
-    color: #94a3b8;
+    color: ${({ theme }) => theme.text?.secondary || '#94a3b8'};
     font-size: 1.2rem;
     margin-bottom: 2rem;
 `;
@@ -829,7 +894,10 @@ const EmptyText = styled.p`
 const JournalPage = () => {
     const { api } = useAuth();
     const toast = useToast();
-    const [activeTab, setActiveTab] = useState('trades'); // trades, analytics, calendar
+    const theme = useStyledTheme();
+    const { profileThemeId } = useThemeContext();
+    
+    const [activeTab, setActiveTab] = useState('trades');
     const [showModal, setShowModal] = useState(false);
     const [editingTrade, setEditingTrade] = useState(null);
     const [trades, setTrades] = useState([]);
@@ -857,7 +925,6 @@ const JournalPage = () => {
     });
 
     useEffect(() => {
-        // Load trades from localStorage
         const savedTrades = JSON.parse(localStorage.getItem('trades') || '[]');
         setTrades(savedTrades);
         calculateStats(savedTrades);
@@ -1016,8 +1083,8 @@ const JournalPage = () => {
         }));
 
     const winLossData = [
-        { name: 'Wins', value: trades.filter(t => t.profit >= 0).length, color: '#10b981' },
-        { name: 'Losses', value: trades.filter(t => t.profit < 0).length, color: '#ef4444' }
+        { name: 'Wins', value: trades.filter(t => t.profit >= 0).length, color: theme?.success || '#10b981' },
+        { name: 'Losses', value: trades.filter(t => t.profit < 0).length, color: theme?.error || '#ef4444' }
     ];
 
     const emotionData = [
@@ -1027,12 +1094,24 @@ const JournalPage = () => {
         { name: 'Excited', value: trades.filter(t => t.emotion === 'excited').length }
     ];
 
+    // Theme-aware chart colors
+    const chartPrimaryColor = theme?.brand?.primary || '#00adef';
+    const chartAccentColor = theme?.brand?.accent || '#8b5cf6';
+    const chartBgColor = theme?.bg?.card || 'rgba(15, 23, 42, 0.95)';
+    const chartTextColor = theme?.text?.secondary || '#94a3b8';
+
     return (
         <PageContainer>
+            <BackgroundOrbs>
+                <Orb $duration="25s" />
+                <Orb $duration="30s" />
+                <Orb $duration="20s" />
+            </BackgroundOrbs>
+
             <Header>
                 <Title>
                     <TitleIcon>
-                        <BookOpen size={56} color="#00adef" />
+                        <BookOpen size={56} color={theme?.brand?.primary || '#00adef'} />
                     </TitleIcon>
                     Trading Journal
                 </Title>
@@ -1209,7 +1288,7 @@ const JournalPage = () => {
                     ) : (
                         <EmptyState>
                             <EmptyIcon>
-                                <BookOpen size={80} color="#00adef" />
+                                <BookOpen size={80} color={theme?.brand?.primary || '#00adef'} />
                             </EmptyIcon>
                             <EmptyTitle>No Trades Yet</EmptyTitle>
                             <EmptyText>
@@ -1235,19 +1314,19 @@ const JournalPage = () => {
                                 </ChartTitle>
                                 <ResponsiveContainer width="100%" height={300}>
                                     <BarChart data={profitChartData}>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(0, 173, 237, 0.2)" />
-                                        <XAxis dataKey="name" stroke="#94a3b8" />
-                                        <YAxis stroke="#94a3b8" />
+                                        <CartesianGrid strokeDasharray="3 3" stroke={`${chartPrimaryColor}33`} />
+                                        <XAxis dataKey="name" stroke={chartTextColor} />
+                                        <YAxis stroke={chartTextColor} />
                                         <Tooltip
                                             contentStyle={{
-                                                background: 'rgba(15, 23, 42, 0.95)',
-                                                border: '1px solid rgba(0, 173, 237, 0.5)',
+                                                background: chartBgColor,
+                                                border: `1px solid ${chartPrimaryColor}80`,
                                                 borderRadius: '8px',
-                                                color: '#e0e6ed'
+                                                color: theme?.text?.primary || '#e0e6ed'
                                             }}
                                             formatter={(value) => ['$' + value.toFixed(2), 'Profit/Loss']}
                                         />
-                                        <Bar dataKey="profit" fill="#00adef" />
+                                        <Bar dataKey="profit" fill={chartPrimaryColor} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </ChartCard>
@@ -1275,10 +1354,10 @@ const JournalPage = () => {
                                         </Pie>
                                         <Tooltip
                                             contentStyle={{
-                                                background: 'rgba(15, 23, 42, 0.95)',
-                                                border: '1px solid rgba(0, 173, 237, 0.5)',
+                                                background: chartBgColor,
+                                                border: `1px solid ${chartPrimaryColor}80`,
                                                 borderRadius: '8px',
-                                                color: '#e0e6ed'
+                                                color: theme?.text?.primary || '#e0e6ed'
                                             }}
                                         />
                                     </RechartsPie>
@@ -1292,18 +1371,18 @@ const JournalPage = () => {
                                 </ChartTitle>
                                 <ResponsiveContainer width="100%" height={300}>
                                     <BarChart data={emotionData}>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(0, 173, 237, 0.2)" />
-                                        <XAxis dataKey="name" stroke="#94a3b8" />
-                                        <YAxis stroke="#94a3b8" />
+                                        <CartesianGrid strokeDasharray="3 3" stroke={`${chartPrimaryColor}33`} />
+                                        <XAxis dataKey="name" stroke={chartTextColor} />
+                                        <YAxis stroke={chartTextColor} />
                                         <Tooltip
                                             contentStyle={{
-                                                background: 'rgba(15, 23, 42, 0.95)',
-                                                border: '1px solid rgba(0, 173, 237, 0.5)',
+                                                background: chartBgColor,
+                                                border: `1px solid ${chartPrimaryColor}80`,
                                                 borderRadius: '8px',
-                                                color: '#e0e6ed'
+                                                color: theme?.text?.primary || '#e0e6ed'
                                             }}
                                         />
-                                        <Bar dataKey="value" fill="#8b5cf6" />
+                                        <Bar dataKey="value" fill={chartAccentColor} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </ChartCard>
@@ -1320,26 +1399,26 @@ const JournalPage = () => {
                                     }))}>
                                         <defs>
                                             <linearGradient id="colorCumulative" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="#00adef" stopOpacity={0.8}/>
-                                                <stop offset="95%" stopColor="#00adef" stopOpacity={0.1}/>
+                                                <stop offset="5%" stopColor={chartPrimaryColor} stopOpacity={0.8}/>
+                                                <stop offset="95%" stopColor={chartPrimaryColor} stopOpacity={0.1}/>
                                             </linearGradient>
                                         </defs>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(0, 173, 237, 0.2)" />
-                                        <XAxis dataKey="name" stroke="#94a3b8" />
-                                        <YAxis stroke="#94a3b8" />
+                                        <CartesianGrid strokeDasharray="3 3" stroke={`${chartPrimaryColor}33`} />
+                                        <XAxis dataKey="name" stroke={chartTextColor} />
+                                        <YAxis stroke={chartTextColor} />
                                         <Tooltip
                                             contentStyle={{
-                                                background: 'rgba(15, 23, 42, 0.95)',
-                                                border: '1px solid rgba(0, 173, 237, 0.5)',
+                                                background: chartBgColor,
+                                                border: `1px solid ${chartPrimaryColor}80`,
                                                 borderRadius: '8px',
-                                                color: '#e0e6ed'
+                                                color: theme?.text?.primary || '#e0e6ed'
                                             }}
                                             formatter={(value) => ['$' + value.toFixed(2), 'Cumulative P/L']}
                                         />
                                         <Area
                                             type="monotone"
                                             dataKey="cumulative"
-                                            stroke="#00adef"
+                                            stroke={chartPrimaryColor}
                                             strokeWidth={3}
                                             fillOpacity={1}
                                             fill="url(#colorCumulative)"
@@ -1351,7 +1430,7 @@ const JournalPage = () => {
                     ) : (
                         <EmptyState style={{ gridColumn: '1 / -1' }}>
                             <EmptyIcon>
-                                <BarChart3 size={80} color="#00adef" />
+                                <BarChart3 size={80} color={theme?.brand?.primary || '#00adef'} />
                             </EmptyIcon>
                             <EmptyTitle>No Analytics Yet</EmptyTitle>
                             <EmptyText>

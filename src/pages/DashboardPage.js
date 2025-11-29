@@ -19,6 +19,41 @@ import PatternDetector from '../components/PatternDetector';
 import TickerLink, { TickerText } from '../components/TickerLink';
 import WhaleAlertWidget from '../components/WhaleAlertWidget';
 
+// ============ BORDER COLORS FOR AVATAR FRAMES ============
+const BORDER_COLORS = {
+    'border-default': { color: '#00adef', glow: 'rgba(0, 173, 239, 0.5)' },
+    'border-ruby': { color: '#ef4444', glow: 'rgba(239, 68, 68, 0.5)' },
+    'border-sapphire': { color: '#3b82f6', glow: 'rgba(59, 130, 246, 0.5)' },
+    'border-emerald': { color: '#10b981', glow: 'rgba(16, 185, 129, 0.5)' },
+    'border-amethyst': { color: '#8b5cf6', glow: 'rgba(139, 92, 246, 0.5)' },
+    'border-gold': { color: '#f59e0b', glow: 'rgba(245, 158, 11, 0.5)' },
+    'border-platinum': { color: '#e2e8f0', glow: 'rgba(226, 232, 240, 0.5)' },
+    'border-obsidian': { color: '#1e293b', glow: 'rgba(30, 41, 59, 0.8)' },
+    'border-rose': { color: '#f43f5e', glow: 'rgba(244, 63, 94, 0.5)' },
+    'border-cyan': { color: '#06b6d4', glow: 'rgba(6, 182, 212, 0.5)' },
+    'border-sunset': { color: '#fb923c', glow: 'rgba(251, 146, 60, 0.5)' },
+    'border-cosmic': { color: '#a855f7', glow: 'rgba(168, 85, 247, 0.6)' },
+    // Fallbacks without prefix
+    'default': { color: '#00adef', glow: 'rgba(0, 173, 239, 0.5)' },
+    'ruby': { color: '#ef4444', glow: 'rgba(239, 68, 68, 0.5)' },
+    'sapphire': { color: '#3b82f6', glow: 'rgba(59, 130, 246, 0.5)' },
+    'emerald': { color: '#10b981', glow: 'rgba(16, 185, 129, 0.5)' },
+    'amethyst': { color: '#8b5cf6', glow: 'rgba(139, 92, 246, 0.5)' },
+    'gold': { color: '#f59e0b', glow: 'rgba(245, 158, 11, 0.5)' },
+    'platinum': { color: '#e2e8f0', glow: 'rgba(226, 232, 240, 0.5)' },
+    'obsidian': { color: '#1e293b', glow: 'rgba(30, 41, 59, 0.8)' },
+    'rose': { color: '#f43f5e', glow: 'rgba(244, 63, 94, 0.5)' },
+    'cyan': { color: '#06b6d4', glow: 'rgba(6, 182, 212, 0.5)' },
+    'sunset': { color: '#fb923c', glow: 'rgba(251, 146, 60, 0.5)' },
+    'cosmic': { color: '#a855f7', glow: 'rgba(168, 85, 247, 0.6)' }
+};
+
+// Helper to get border color from equipped border ID
+const getBorderStyle = (equippedBorder) => {
+    if (!equippedBorder) return BORDER_COLORS['border-default'];
+    return BORDER_COLORS[equippedBorder] || BORDER_COLORS[`border-${equippedBorder}`] || BORDER_COLORS['border-default'];
+};
+
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`
     from { opacity: 0; transform: translateY(20px); }
@@ -687,11 +722,12 @@ const ProfileAvatar = styled.div`
     transition: all 0.2s ease;
     overflow: hidden;
     border: 2px solid ${props => props.$borderColor || 'transparent'};
+    box-shadow: ${props => props.$glow ? `0 0 12px ${props.$glow}` : 'none'};
     flex-shrink: 0;
 
     &:hover {
         transform: scale(1.08);
-        box-shadow: 0 0 15px ${props => props.theme.brand?.primary}80;
+        box-shadow: ${props => props.$glow ? `0 0 20px ${props.$glow}` : `0 0 15px ${props.theme.brand?.primary}80`};
     }
 
     img {
@@ -1079,33 +1115,108 @@ const DashboardPage = () => {
 
     const fetchTickerData = async () => {
         try {
-            // Watchlist ticker
+            // Watchlist ticker - the API already returns real prices!
             const watchlistRes = await api.get('/watchlist');
-            if (watchlistRes.data && watchlistRes.data.length > 0) {
-                setWatchlistTicker(watchlistRes.data.slice(0, 10).map(item => ({
+            
+            console.log('Watchlist API response:', watchlistRes.data);
+            
+            // API returns: { success: true, watchlist: [...], totalStocks, totalCrypto }
+            const watchlistData = watchlistRes.data?.watchlist || [];
+            
+            if (watchlistData && watchlistData.length > 0) {
+                // Map the watchlist items - API already provides currentPrice and changePercent
+                const tickerItems = watchlistData.slice(0, 10).map(item => ({
                     symbol: item.symbol,
-                    price: item.currentPrice || item.price || 0,
-                    change: item.changePercent || item.change || 0
-                })));
+                    price: item.currentPrice || 0,
+                    change: item.changePercent || 0
+                }));
+                
+                console.log('Ticker items from API:', tickerItems);
+                
+                // Filter out items with no price (API couldn't fetch)
+                const validItems = tickerItems.filter(item => item.price > 0);
+                
+                if (validItems.length > 0) {
+                    setWatchlistTicker(validItems);
+                } else {
+                    // Prices are 0 - might be stock API issue, show symbols anyway
+                    console.log('No valid prices from watchlist API, showing symbols with 0 price');
+                    setWatchlistTicker(tickerItems);
+                }
             } else {
-                setWatchlistTicker([
-                    { symbol: 'AAPL', price: 175.50, change: 2.5 },
-                    { symbol: 'TSLA', price: 242.80, change: -1.2 },
-                    { symbol: 'NVDA', price: 495.20, change: 5.8 },
-                    { symbol: 'BTC', price: 97250.00, change: 3.2 },
-                    { symbol: 'ETH', price: 3380.00, change: 4.1 },
-                ]);
+                // Empty watchlist
+                console.log('Watchlist is empty');
+                setWatchlistTicker([]);
             }
 
             // Market movers ticker
-            const screenRes = await api.get('/screener/stocks?changeFilter=gainers&limit=10');
-            if (screenRes.data && screenRes.data.length > 0) {
-                setMoversTicker(screenRes.data.slice(0, 10).map(stock => ({
-                    symbol: stock.symbol,
-                    price: stock.price,
-                    change: stock.changePercent
-                })));
+            try {
+                const screenRes = await api.get('/screener/stocks?changeFilter=gainers&limit=10');
+                
+                console.log('Screener API response:', screenRes.data);
+                
+                let screenData = [];
+                if (Array.isArray(screenRes.data)) {
+                    screenData = screenRes.data;
+                } else if (screenRes.data?.stocks && Array.isArray(screenRes.data.stocks)) {
+                    screenData = screenRes.data.stocks;
+                } else if (screenRes.data?.data && Array.isArray(screenRes.data.data)) {
+                    screenData = screenRes.data.data;
+                }
+                
+                if (screenData && screenData.length > 0) {
+                    const moversWithPrices = screenData.slice(0, 10).map(stock => ({
+                        symbol: stock.symbol,
+                        price: stock.price || stock.currentPrice || stock.latestPrice || stock.regularMarketPrice || 0,
+                        change: stock.changePercent || stock.percentChange || stock.change || stock.regularMarketChangePercent || 0
+                    }));
+                    
+                    setMoversTicker(moversWithPrices);
+                } else {
+                    await fetchDefaultMovers();
+                }
+            } catch (screenError) {
+                console.error('Error fetching movers:', screenError);
+                await fetchDefaultMovers();
+            }
+        } catch (error) {
+            console.error('Error fetching ticker data:', error);
+            setWatchlistTicker([]);
+            await fetchDefaultMovers();
+        }
+    };
+
+    // Fetch default market movers
+    const fetchDefaultMovers = async () => {
+        const moverSymbols = ['NVDA', 'AMD', 'SMCI', 'PLTR', 'MSTR'];
+        try {
+            console.log('Fetching default movers for symbols:', moverSymbols);
+            
+            const pricePromises = moverSymbols.map(async (symbol) => {
+                try {
+                    const res = await api.get(`/stocks/${symbol}/quote`);
+                    const data = res.data;
+                    const quote = data?.quote || data;
+                    return {
+                        symbol,
+                        price: quote?.price || quote?.latestPrice || quote?.regularMarketPrice || quote?.currentPrice || quote?.c || 0,
+                        change: quote?.changePercent || quote?.percentChange || quote?.regularMarketChangePercent || quote?.dp || 0
+                    };
+                } catch {
+                    return { symbol, price: 0, change: 0 };
+                }
+            });
+            
+            const prices = await Promise.all(pricePromises);
+            const validPrices = prices.filter(p => p.price > 0);
+            
+            console.log('Default movers prices:', validPrices);
+            
+            if (validPrices.length > 0) {
+                setMoversTicker(validPrices);
             } else {
+                // Fallback placeholder data
+                console.log('Using placeholder movers data');
                 setMoversTicker([
                     { symbol: 'NVDA', price: 495.20, change: 5.8 },
                     { symbol: 'AMD', price: 142.70, change: 4.5 },
@@ -1114,13 +1225,8 @@ const DashboardPage = () => {
                 ]);
             }
         } catch (error) {
-            console.error('Error fetching ticker data:', error);
-            // Set defaults
-            setWatchlistTicker([
-                { symbol: 'AAPL', price: 175.50, change: 2.5 },
-                { symbol: 'TSLA', price: 242.80, change: -1.2 },
-                { symbol: 'NVDA', price: 495.20, change: 5.8 },
-            ]);
+            console.error('Error fetching default movers:', error);
+            // Fallback
             setMoversTicker([
                 { symbol: 'NVDA', price: 495.20, change: 5.8 },
                 { symbol: 'AMD', price: 142.70, change: 4.5 },
@@ -1256,12 +1362,20 @@ const DashboardPage = () => {
         }
     };
 
-    // Get user avatar or initials
+    // Get user avatar or initials with equipped border
     const getAvatar = (userData) => {
         const avatar = userData?.profile?.avatar || userData?.avatar;
         const name = userData?.profile?.displayName || userData?.name || userData?.username || 'A';
         const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
-        return { avatar, initials };
+        
+        // Get equipped border from user's vault
+        const equippedBorder = userData?.vault?.equippedBorder || 
+                               userData?.profile?.equippedBorder || 
+                               userData?.equippedBorder ||
+                               'border-default';
+        const borderStyle = getBorderStyle(equippedBorder);
+        
+        return { avatar, initials, borderColor: borderStyle.color, borderGlow: borderStyle.glow };
     };
 
     const getDisplayName = (trader) => {
@@ -1333,18 +1447,30 @@ const DashboardPage = () => {
                         <TickerLabel><Eye size={14} /> Watchlist</TickerLabel>
                         <TickerContainer>
                             <TickerTrack $duration="35s">
-                                {[...watchlistTicker, ...watchlistTicker].map((stock, index) => (
-                                    <TickerItem key={index}>
-                                        <TickerLink symbol={stock.symbol} bold>
-                                            {stock.symbol}
-                                        </TickerLink>
-                                        <TickerPrice>${stock.price?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TickerPrice>
-                                        <TickerChange $positive={stock.change >= 0}>
-                                            {stock.change >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                                            {stock.change >= 0 ? '+' : ''}{stock.change?.toFixed(2)}%
-                                        </TickerChange>
+                                {watchlistTicker.length > 0 ? (
+                                    [...watchlistTicker, ...watchlistTicker].map((stock, index) => (
+                                        <TickerItem key={index}>
+                                            <TickerLink symbol={stock.symbol} bold>
+                                                {stock.symbol}
+                                            </TickerLink>
+                                            {stock.price > 0 ? (
+                                                <>
+                                                    <TickerPrice>${stock.price?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TickerPrice>
+                                                    <TickerChange $positive={stock.change >= 0}>
+                                                        {stock.change >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                                                        {stock.change >= 0 ? '+' : ''}{stock.change?.toFixed(2)}%
+                                                    </TickerChange>
+                                                </>
+                                            ) : (
+                                                <TickerPrice style={{ color: theme.text?.tertiary }}>Loading...</TickerPrice>
+                                            )}
+                                        </TickerItem>
+                                    ))
+                                ) : (
+                                    <TickerItem>
+                                        <span style={{ color: theme.text?.tertiary }}>Add stocks to your watchlist to see them here</span>
                                     </TickerItem>
-                                ))}
+                                )}
                             </TickerTrack>
                         </TickerContainer>
                     </TickerWrapper>
@@ -1354,18 +1480,30 @@ const DashboardPage = () => {
                         <TickerLabel $variant="movers"><Flame size={14} /> Movers</TickerLabel>
                         <TickerContainer $variant="movers">
                             <TickerTrack $reverse $duration="40s">
-                                {[...moversTicker, ...moversTicker].map((stock, index) => (
-                                    <TickerItem key={index}>
-                                        <TickerLink symbol={stock.symbol} bold>
-                                            {stock.symbol}
-                                        </TickerLink>
-                                        <TickerPrice>${stock.price?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TickerPrice>
-                                        <TickerChange $positive={stock.change >= 0}>
-                                            {stock.change >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                                            {stock.change >= 0 ? '+' : ''}{stock.change?.toFixed(2)}%
-                                        </TickerChange>
+                                {moversTicker.length > 0 ? (
+                                    [...moversTicker, ...moversTicker].map((stock, index) => (
+                                        <TickerItem key={index}>
+                                            <TickerLink symbol={stock.symbol} bold>
+                                                {stock.symbol}
+                                            </TickerLink>
+                                            {stock.price > 0 ? (
+                                                <>
+                                                    <TickerPrice>${stock.price?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TickerPrice>
+                                                    <TickerChange $positive={stock.change >= 0}>
+                                                        {stock.change >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                                                        {stock.change >= 0 ? '+' : ''}{stock.change?.toFixed(2)}%
+                                                    </TickerChange>
+                                                </>
+                                            ) : (
+                                                <TickerPrice style={{ color: theme.text?.tertiary }}>Loading...</TickerPrice>
+                                            )}
+                                        </TickerItem>
+                                    ))
+                                ) : (
+                                    <TickerItem>
+                                        <span style={{ color: theme.text?.tertiary }}>Loading market movers...</span>
                                     </TickerItem>
-                                ))}
+                                )}
                             </TickerTrack>
                         </TickerContainer>
                     </TickerWrapper>
@@ -1464,7 +1602,7 @@ const DashboardPage = () => {
                         </WidgetHeader>
                         <WidgetContent>
                             {leaderboard.slice(0, 5).map((trader, index) => {
-                                const { avatar, initials } = getAvatar(trader.user);
+                                const { avatar, initials, borderColor, borderGlow } = getAvatar(trader.user);
                                 const username = trader.user?.username;
                                 return (
                                     <LeaderboardItem key={trader.user?._id || index} $isUser={trader.user?._id === user?._id}>
@@ -1473,7 +1611,8 @@ const DashboardPage = () => {
                                             $size="36px"
                                             $fontSize="0.85rem"
                                             $hasImage={!!avatar}
-                                            $borderColor={trader.rank <= 3 ? theme.brand?.primary : 'transparent'}
+                                            $borderColor={borderColor}
+                                            $glow={borderGlow}
                                             onClick={() => goToProfile(username)}
                                         >
                                             {avatar ? <img src={avatar} alt={initials} /> : initials}
@@ -1514,7 +1653,7 @@ const DashboardPage = () => {
                             {socialFeed.length > 0 ? (
                                 socialFeed.map((post) => {
                                     const postUser = post.user || post.author;
-                                    const { avatar, initials } = getAvatar(postUser);
+                                    const { avatar, initials, borderColor, borderGlow } = getAvatar(postUser);
                                     const username = postUser?.username;
                                     return (
                                         <SocialPost key={post._id}>
@@ -1523,6 +1662,8 @@ const DashboardPage = () => {
                                                     $size="34px"
                                                     $fontSize="0.8rem"
                                                     $hasImage={!!avatar}
+                                                    $borderColor={borderColor}
+                                                    $glow={borderGlow}
                                                     onClick={() => goToProfile(username)}
                                                 >
                                                     {avatar ? <img src={avatar} alt={initials} /> : initials}
