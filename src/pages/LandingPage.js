@@ -11,6 +11,9 @@ import {
     Users, Activity, Trophy, DollarSign, MessageSquare, Coins
 } from 'lucide-react';
 
+// API URL for production - same pattern as AboutPage
+const API_URL = process.env.REACT_APP_API_URL || process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
+
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); }`;
 const fadeInUp = keyframes`from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); }`;
@@ -178,43 +181,44 @@ const LandingPage = () => {
         await Promise.all([fetchPlatformStats(), fetchTopTraders(), fetchRecentActivity(), fetchRecentPredictions(), fetchMarketData(), fetchRecentWinners(), fetchHotStocks()]);
     };
 
+    // FIXED: Use full API_URL instead of relative paths for production
     const fetchPlatformStats = async () => {
-    let statsData = { totalUsers: 0, totalTrades: 0, totalPredictions: 0, predictionAccuracy: 0, resolvedPredictions: 0, correctPredictions: 0, avgWinRate: 0, topPerformerReturn: 0 };
-    
-    // Use /predictions/platform-stats - same endpoint as PredictionsPage (has correct 52.4% accuracy)
-    try {
-        const res = await fetch('/api/predictions/platform-stats');
-        if (res.ok) {
-            const data = await res.json();
-            if (data.success) {
-                statsData.predictionAccuracy = data.accuracy || 0;
-                statsData.totalPredictions = data.totalPredictions || 0;
-                statsData.correctPredictions = data.correctPredictions || 0;
+        let statsData = { totalUsers: 0, totalTrades: 0, totalPredictions: 0, predictionAccuracy: 0, resolvedPredictions: 0, correctPredictions: 0, avgWinRate: 0, topPerformerReturn: 0 };
+        
+        // Use /predictions/platform-stats - same endpoint as PredictionsPage (has correct accuracy!)
+        try {
+            const res = await fetch(`${API_URL}/predictions/platform-stats`);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    statsData.predictionAccuracy = data.accuracy || 0;
+                    statsData.totalPredictions = data.totalPredictions || 0;
+                    statsData.correctPredictions = data.correctPredictions || 0;
+                }
             }
-        }
-    } catch (err) { console.log('Platform stats endpoint failed'); }
-    
-    // Get user/trade counts from leaderboard
-    try {
-        const leaderboardRes = await fetch('/api/paper-trading/leaderboard?limit=100');
-        if (leaderboardRes.ok) {
-            const data = await leaderboardRes.json();
-            const traders = data.leaderboard || [];
-            if (traders.length > 0) {
-                statsData.totalUsers = traders.length;
-                statsData.totalTrades = traders.reduce((sum, t) => sum + (t.totalTrades || 0), 0);
-                statsData.avgWinRate = traders.reduce((sum, t) => sum + (t.winRate || 0), 0) / traders.length;
-                statsData.topPerformerReturn = traders[0]?.profitLossPercent || traders[0]?.totalProfitLossPercent || 0;
+        } catch (err) { console.log('Platform stats endpoint failed:', err); }
+        
+        // Get user/trade counts from leaderboard
+        try {
+            const leaderboardRes = await fetch(`${API_URL}/paper-trading/leaderboard?limit=100`);
+            if (leaderboardRes.ok) {
+                const data = await leaderboardRes.json();
+                const traders = data.leaderboard || [];
+                if (traders.length > 0) {
+                    statsData.totalUsers = traders.length;
+                    statsData.totalTrades = traders.reduce((sum, t) => sum + (t.totalTrades || 0), 0);
+                    statsData.avgWinRate = traders.reduce((sum, t) => sum + (t.winRate || 0), 0) / traders.length;
+                    statsData.topPerformerReturn = traders[0]?.profitLossPercent || traders[0]?.totalProfitLossPercent || 0;
+                }
             }
-        }
-    } catch (err) { console.log('Leaderboard fetch failed'); }
-    
-    setStats(statsData);
-};
+        } catch (err) { console.log('Leaderboard fetch failed:', err); }
+        
+        setStats(statsData);
+    };
 
     const fetchRecentWinners = async () => {
         try {
-            const res = await fetch('/api/paper-trading/leaderboard?limit=10');
+            const res = await fetch(`${API_URL}/paper-trading/leaderboard?limit=10`);
             if (res.ok) {
                 const data = await res.json();
                 const traders = data.leaderboard || [];
@@ -233,13 +237,13 @@ const LandingPage = () => {
     const fetchHotStocks = async () => {
         // Try public endpoint first
         try {
-            const res = await fetch('/api/public/hot-stocks');
+            const res = await fetch(`${API_URL}/public/hot-stocks`);
             if (res.ok) { const data = await res.json(); if (data.success && data.stocks?.length > 0) { setHotStocks(data.stocks); return; } }
         } catch (err) { console.log('Public hot stocks not available'); }
         
         // Try screener endpoint
         try {
-            const res = await fetch('/api/screener/stocks?changeFilter=gainers&limit=4');
+            const res = await fetch(`${API_URL}/screener/stocks?changeFilter=gainers&limit=4`);
             if (res.ok) { 
                 const data = await res.json(); 
                 const stocks = Array.isArray(data) ? data : data.stocks || [];
@@ -252,7 +256,7 @@ const LandingPage = () => {
         
         // Try heatmap data as last resort
         try {
-            const res = await fetch('/api/heatmap/stocks');
+            const res = await fetch(`${API_URL}/heatmap/stocks`);
             if (res.ok) {
                 const data = await res.json();
                 const stocks = Array.isArray(data) ? data : data.stocks || [];
@@ -269,14 +273,13 @@ const LandingPage = () => {
 
     const fetchTopTraders = async () => { 
         try { 
-            const res = await fetch('/api/paper-trading/leaderboard?limit=10'); 
+            const res = await fetch(`${API_URL}/paper-trading/leaderboard?limit=10`); 
             if (res.ok) { 
                 const data = await res.json(); 
                 const traders = data.leaderboard || [];
                 setTopTraders(traders);
                 
                 // Update top performer return in stats if we have traders
-                // Handle both possible field names: profitLossPercent or totalProfitLossPercent
                 if (traders.length > 0) {
                     const topReturn = traders[0]?.profitLossPercent ?? traders[0]?.totalProfitLossPercent ?? 0;
                     setStats(prev => ({ ...prev, topPerformerReturn: topReturn }));
@@ -287,7 +290,7 @@ const LandingPage = () => {
 
     const fetchRecentActivity = async () => {
         try {
-            const res = await fetch('/api/posts?limit=8');
+            const res = await fetch(`${API_URL}/posts?limit=8`);
             if (res.ok) {
                 const posts = await res.json();
                 const postsArray = Array.isArray(posts) ? posts : posts.posts || [];
@@ -297,12 +300,22 @@ const LandingPage = () => {
         } catch (err) { console.log('Activity fetch failed'); }
     };
 
-    const fetchRecentPredictions = async () => { try { const res = await fetch('/api/predictions/recent?limit=5'); if (res.ok) { const predictions = await res.json(); if (Array.isArray(predictions)) { setRecentPredictions(predictions.slice(0, 4)); } } } catch (err) { console.log('Predictions fetch failed'); } };
+    const fetchRecentPredictions = async () => { 
+        try { 
+            const res = await fetch(`${API_URL}/predictions/recent?limit=5`); 
+            if (res.ok) { 
+                const predictions = await res.json(); 
+                if (Array.isArray(predictions)) { 
+                    setRecentPredictions(predictions.slice(0, 4)); 
+                } 
+            } 
+        } catch (err) { console.log('Predictions fetch failed'); } 
+    };
 
     const fetchMarketData = async () => {
         // Try new public endpoint first
         try { 
-            const res = await fetch('/api/public/market-ticker'); 
+            const res = await fetch(`${API_URL}/public/market-ticker`); 
             if (res.ok) { 
                 const data = await res.json(); 
                 if (data.success && data.ticker?.length > 0) { 
@@ -315,8 +328,8 @@ const LandingPage = () => {
         // Try to build ticker from heatmap data
         try {
             const [stockRes, cryptoRes] = await Promise.all([
-                fetch('/api/heatmap/stocks').catch(() => null),
-                fetch('/api/heatmap/crypto').catch(() => null)
+                fetch(`${API_URL}/heatmap/stocks`).catch(() => null),
+                fetch(`${API_URL}/heatmap/crypto`).catch(() => null)
             ]);
             
             const results = [];
