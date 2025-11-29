@@ -1,10 +1,12 @@
-// client/src/pages/LeaderboardPage.js - ENHANCED LEADERBOARD WITH BETTER REFRESH/UPDATES
+// client/src/pages/LeaderboardPage.js - THEMED LEADERBOARD WITH AVATAR BORDERS 🏆
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import styled, { keyframes, css } from 'styled-components';
+import styled, { keyframes, css, useTheme as useStyledTheme } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useTheme as useThemeContext } from '../context/ThemeContext';
+import { useVault } from '../context/VaultContext';
 import {
     Trophy, Medal, Award, Crown, TrendingUp, TrendingDown,
     User, Users, Eye, Target, BarChart3, Flame, Star,
@@ -15,6 +17,23 @@ import {
     Calendar, Clock, Copy, Sparkles, Shield, Rocket,
     Brain, TrendingUp as Trending, Gift, Heart, Wifi, WifiOff
 } from 'lucide-react';
+
+// ============ BORDER COLORS MAP (for Avatar Frames) ============
+// This is for equippedBorder - the avatar FRAME style
+const BORDER_COLORS = {
+    'border-bronze': { color: '#CD7F32', glow: 'rgba(205, 127, 50, 0.5)' },
+    'border-silver': { color: '#C0C0C0', glow: 'rgba(192, 192, 192, 0.5)' },
+    'border-gold': { color: '#FFD700', glow: 'rgba(255, 215, 0, 0.6)' },
+    'border-emerald': { color: '#10b981', glow: 'rgba(16, 185, 129, 0.6)' },
+    'border-ruby': { color: '#ef4444', glow: 'rgba(239, 68, 68, 0.7)' },
+    'border-platinum': { color: '#E5E4E2', glow: 'rgba(229, 228, 226, 0.7)' },
+    'border-sapphire': { color: '#3b82f6', glow: 'rgba(59, 130, 246, 0.7)' },
+    'border-amethyst': { color: '#8b5cf6', glow: 'rgba(139, 92, 246, 0.7)' },
+    'border-diamond': { color: '#00D4FF', glow: 'rgba(0, 212, 255, 0.8)' },
+    'border-rainbow': { color: '#8b5cf6', glow: 'rgba(139, 92, 246, 0.9)' },
+    'border-nexus': { color: '#00adef', glow: 'rgba(0, 173, 237, 1)' },
+    'default': { color: '#00adef', glow: 'rgba(0, 173, 239, 0.5)' }
+};
 
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`
@@ -71,17 +90,6 @@ const crownFloat = keyframes`
     50% { transform: translateY(-8px) rotate(5deg); }
 `;
 
-const confetti = keyframes`
-    0% { transform: translateY(0) rotate(0deg); opacity: 1; }
-    100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
-`;
-
-const rankUp = keyframes`
-    0% { transform: scale(1); }
-    50% { transform: scale(1.2); }
-    100% { transform: scale(1); }
-`;
-
 const blink = keyframes`
     0%, 100% { opacity: 1; }
     50% { opacity: 0.5; }
@@ -91,8 +99,8 @@ const blink = keyframes`
 const PageContainer = styled.div`
     min-height: 100vh;
     padding-top: 80px;
-    background: linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
-    color: #e0e6ed;
+    background: ${({ theme }) => theme.bg?.page || 'linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%)'};
+    color: ${({ theme }) => theme.text?.primary || '#e0e6ed'};
     padding-left: 2rem;
     padding-right: 2rem;
     padding-bottom: 2rem;
@@ -100,16 +108,63 @@ const PageContainer = styled.div`
     overflow-x: hidden;
 `;
 
+const BackgroundOrbs = styled.div`
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 0;
+`;
+
+const Orb = styled.div`
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.3;
+    animation: ${float} ${props => props.$duration || '20s'} ease-in-out infinite;
+    
+    &:nth-child(1) {
+        width: 400px;
+        height: 400px;
+        background: ${({ theme }) => `radial-gradient(circle, ${theme.brand?.primary || '#ffd700'}66 0%, transparent 70%)`};
+        top: 10%;
+        left: -100px;
+    }
+    
+    &:nth-child(2) {
+        width: 300px;
+        height: 300px;
+        background: ${({ theme }) => `radial-gradient(circle, ${theme.brand?.accent || '#8b5cf6'}66 0%, transparent 70%)`};
+        top: 50%;
+        right: -50px;
+        animation-delay: -5s;
+    }
+    
+    &:nth-child(3) {
+        width: 350px;
+        height: 350px;
+        background: ${({ theme }) => `radial-gradient(circle, ${theme.success || '#10b981'}4D 0%, transparent 70%)`};
+        bottom: 10%;
+        left: 30%;
+        animation-delay: -10s;
+    }
+`;
+
 const Header = styled.div`
     max-width: 1400px;
     margin: 0 auto 2rem;
     animation: ${fadeIn} 0.8s ease-out;
     text-align: center;
+    position: relative;
+    z-index: 1;
 `;
 
 const Title = styled.h1`
     font-size: 3.5rem;
-    background: linear-gradient(135deg, #ffd700 0%, #ffed4e 50%, #ffd700 100%);
+    background: ${({ theme }) => theme.brand?.gradient || 'linear-gradient(135deg, #ffd700 0%, #ffed4e 50%, #ffd700 100%)'};
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -131,7 +186,7 @@ const TitleIcon = styled.div`
 `;
 
 const Subtitle = styled.p`
-    color: #94a3b8;
+    color: ${({ theme }) => theme.text?.secondary || '#94a3b8'};
     font-size: 1.2rem;
     margin-bottom: 1.5rem;
 `;
@@ -148,10 +203,10 @@ const StatBadge = styled.div`
     align-items: center;
     gap: 0.5rem;
     padding: 0.5rem 1rem;
-    background: linear-gradient(135deg, rgba(255, 215, 0, 0.2) 0%, rgba(255, 215, 0, 0.1) 100%);
-    border: 1px solid rgba(255, 215, 0, 0.4);
+    background: ${({ theme }) => `linear-gradient(135deg, ${theme.brand?.primary || '#ffd700'}33 0%, ${theme.brand?.primary || '#ffd700'}1A 100%)`};
+    border: 1px solid ${({ theme }) => `${theme.brand?.primary || '#ffd700'}66`};
     border-radius: 20px;
-    color: #ffd700;
+    color: ${({ theme }) => theme.brand?.primary || '#ffd700'};
     font-weight: 600;
 `;
 
@@ -160,16 +215,16 @@ const LiveIndicator = styled.div`
     align-items: center;
     gap: 0.5rem;
     padding: 0.5rem 1rem;
-    background: ${props => props.$connected ? 
-        'linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.1) 100%)' :
-        'linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0.1) 100%)'
+    background: ${({ $connected, theme }) => $connected ? 
+        `linear-gradient(135deg, ${theme.success || '#10b981'}33 0%, ${theme.success || '#10b981'}1A 100%)` :
+        `linear-gradient(135deg, ${theme.error || '#ef4444'}33 0%, ${theme.error || '#ef4444'}1A 100%)`
     };
-    border: 1px solid ${props => props.$connected ? 
-        'rgba(16, 185, 129, 0.4)' :
-        'rgba(239, 68, 68, 0.4)'
+    border: 1px solid ${({ $connected, theme }) => $connected ? 
+        `${theme.success || '#10b981'}66` :
+        `${theme.error || '#ef4444'}66`
     };
     border-radius: 20px;
-    color: ${props => props.$connected ? '#10b981' : '#ef4444'};
+    color: ${({ $connected, theme }) => $connected ? theme.success || '#10b981' : theme.error || '#ef4444'};
     font-weight: 600;
 `;
 
@@ -177,13 +232,13 @@ const LiveDot = styled.div`
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: ${props => props.$connected ? '#10b981' : '#ef4444'};
+    background: ${({ $connected, theme }) => $connected ? theme.success || '#10b981' : theme.error || '#ef4444'};
     animation: ${props => props.$connected ? css`${blink} 1.5s ease-in-out infinite` : 'none'};
 `;
 
 const LastUpdated = styled.span`
     font-size: 0.85rem;
-    color: #64748b;
+    color: ${({ theme }) => theme.text?.tertiary || '#64748b'};
     margin-left: 0.5rem;
 `;
 
@@ -192,6 +247,8 @@ const PodiumSection = styled.div`
     max-width: 900px;
     margin: 0 auto 3rem;
     animation: ${fadeIn} 1s ease-out;
+    position: relative;
+    z-index: 1;
 `;
 
 const PodiumContainer = styled.div`
@@ -229,20 +286,23 @@ const PodiumAvatar = styled.div`
         props.$place === 2 ? 'linear-gradient(135deg, #c0c0c0, #e8e8e8)' :
         'linear-gradient(135deg, #cd7f32, #e5a55d)'
     };
-    border: 4px solid ${props => 
+    border: 4px solid ${props => props.$borderColor || (
         props.$place === 1 ? '#ffd700' :
         props.$place === 2 ? '#c0c0c0' :
         '#cd7f32'
-    };
+    )};
     display: flex;
     align-items: center;
     justify-content: center;
     position: relative;
     overflow: hidden;
-    box-shadow: 0 10px 40px ${props => 
-        props.$place === 1 ? 'rgba(255, 215, 0, 0.5)' :
-        props.$place === 2 ? 'rgba(192, 192, 192, 0.5)' :
-        'rgba(205, 127, 50, 0.5)'
+    box-shadow: ${props => props.$glow ? 
+        `0 10px 40px ${props.$glow}, 0 0 20px ${props.$glow}` :
+        `0 10px 40px ${
+            props.$place === 1 ? 'rgba(255, 215, 0, 0.5)' :
+            props.$place === 2 ? 'rgba(192, 192, 192, 0.5)' :
+            'rgba(205, 127, 50, 0.5)'
+        }`
     };
     animation: ${props => props.$place === 1 ? css`${bounce} 2s ease-in-out infinite` : 'none'};
     margin-bottom: 1rem;
@@ -280,7 +340,7 @@ const PodiumCrown = styled.div`
 const PodiumName = styled.div`
     font-size: ${props => props.$place === 1 ? '1.3rem' : '1.1rem'};
     font-weight: 700;
-    color: #e0e6ed;
+    color: ${({ theme }) => theme.text?.primary || '#e0e6ed'};
     text-align: center;
     margin-bottom: 0.5rem;
     max-width: 150px;
@@ -360,8 +420,8 @@ const PodiumRank = styled.div`
 const YourRankCard = styled.div`
     max-width: 1400px;
     margin: 0 auto 2rem;
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(139, 92, 246, 0.05) 100%);
-    border: 2px solid rgba(139, 92, 246, 0.5);
+    background: ${({ theme }) => `linear-gradient(135deg, ${theme.brand?.accent || '#8b5cf6'}33 0%, ${theme.brand?.accent || '#8b5cf6'}0D 100%)`};
+    border: 2px solid ${({ theme }) => `${theme.brand?.accent || '#8b5cf6'}80`};
     border-radius: 16px;
     padding: 1.5rem 2rem;
     display: flex;
@@ -370,6 +430,8 @@ const YourRankCard = styled.div`
     gap: 2rem;
     animation: ${fadeIn} 0.6s ease-out;
     flex-wrap: wrap;
+    position: relative;
+    z-index: 1;
 
     @media (max-width: 768px) {
         flex-direction: column;
@@ -388,21 +450,21 @@ const YourRankBadge = styled.div`
     width: 70px;
     height: 70px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+    background: ${({ theme }) => `linear-gradient(135deg, ${theme.brand?.accent || '#8b5cf6'}, ${theme.brand?.accent || '#6d28d9'})`};
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 1.5rem;
     font-weight: 900;
     color: white;
-    border: 3px solid rgba(139, 92, 246, 0.5);
-    box-shadow: 0 0 30px rgba(139, 92, 246, 0.5);
+    border: 3px solid ${({ theme }) => `${theme.brand?.accent || '#8b5cf6'}80`};
+    box-shadow: ${({ theme }) => `0 0 30px ${theme.brand?.accent || '#8b5cf6'}80`};
 `;
 
 const YourRankInfo = styled.div``;
 
 const YourRankLabel = styled.div`
-    color: #a78bfa;
+    color: ${({ theme }) => theme.brand?.accent || '#a78bfa'};
     font-size: 0.9rem;
     font-weight: 600;
     margin-bottom: 0.25rem;
@@ -411,18 +473,10 @@ const YourRankLabel = styled.div`
 const YourRankValue = styled.div`
     font-size: 1.8rem;
     font-weight: 900;
-    color: #e0e6ed;
+    color: ${({ theme }) => theme.text?.primary || '#e0e6ed'};
     display: flex;
     align-items: center;
     gap: 0.5rem;
-`;
-
-const YourRankChange = styled.span`
-    font-size: 1rem;
-    color: ${props => props.$up ? '#10b981' : '#ef4444'};
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
 `;
 
 const YourRankStats = styled.div`
@@ -439,17 +493,17 @@ const YourRankStat = styled.div`
 const YourRankStatValue = styled.div`
     font-size: 1.5rem;
     font-weight: 700;
-    color: #a78bfa;
+    color: ${({ theme }) => theme.brand?.accent || '#a78bfa'};
 `;
 
 const YourRankStatLabel = styled.div`
-    color: #94a3b8;
+    color: ${({ theme }) => theme.text?.secondary || '#94a3b8'};
     font-size: 0.85rem;
 `;
 
 const ClimbButton = styled.button`
     padding: 0.75rem 1.5rem;
-    background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+    background: ${({ theme }) => `linear-gradient(135deg, ${theme.brand?.accent || '#8b5cf6'} 0%, ${theme.brand?.accent || '#6d28d9'} 100%)`};
     border: none;
     border-radius: 12px;
     color: white;
@@ -462,7 +516,7 @@ const ClimbButton = styled.button`
 
     &:hover {
         transform: translateY(-2px);
-        box-shadow: 0 10px 30px rgba(139, 92, 246, 0.5);
+        box-shadow: ${({ theme }) => `0 10px 30px ${theme.brand?.accent || '#8b5cf6'}80`};
     }
 `;
 
@@ -474,17 +528,22 @@ const CategoryTabsContainer = styled.div`
     gap: 0.75rem;
     justify-content: center;
     flex-wrap: wrap;
+    position: relative;
+    z-index: 1;
 `;
 
 const CategoryTab = styled.button`
     padding: 0.6rem 1.2rem;
-    background: ${props => props.$active ? 
-        'linear-gradient(135deg, rgba(255, 215, 0, 0.3) 0%, rgba(255, 215, 0, 0.15) 100%)' :
-        'rgba(30, 41, 59, 0.5)'
+    background: ${({ $active, theme }) => $active ? 
+        `linear-gradient(135deg, ${theme.brand?.primary || '#ffd700'}4D 0%, ${theme.brand?.primary || '#ffd700'}26 100%)` :
+        theme.bg?.card || 'rgba(30, 41, 59, 0.5)'
     };
-    border: 1px solid ${props => props.$active ? 'rgba(255, 215, 0, 0.5)' : 'rgba(100, 116, 139, 0.3)'};
+    border: 1px solid ${({ $active, theme }) => $active ? 
+        `${theme.brand?.primary || '#ffd700'}80` : 
+        theme.border?.primary || 'rgba(100, 116, 139, 0.3)'
+    };
     border-radius: 10px;
-    color: ${props => props.$active ? '#ffd700' : '#94a3b8'};
+    color: ${({ $active, theme }) => $active ? theme.brand?.primary || '#ffd700' : theme.text?.secondary || '#94a3b8'};
     font-weight: 600;
     font-size: 0.9rem;
     cursor: pointer;
@@ -495,9 +554,9 @@ const CategoryTab = styled.button`
     white-space: nowrap;
 
     &:hover {
-        background: linear-gradient(135deg, rgba(255, 215, 0, 0.3) 0%, rgba(255, 215, 0, 0.15) 100%);
-        border-color: rgba(255, 215, 0, 0.5);
-        color: #ffd700;
+        background: ${({ theme }) => `linear-gradient(135deg, ${theme.brand?.primary || '#ffd700'}4D 0%, ${theme.brand?.primary || '#ffd700'}26 100%)`};
+        border-color: ${({ theme }) => `${theme.brand?.primary || '#ffd700'}80`};
+        color: ${({ theme }) => theme.brand?.primary || '#ffd700'};
         transform: translateY(-2px);
     }
 `;
@@ -510,29 +569,31 @@ const TimePeriodContainer = styled.div`
     gap: 0.5rem;
     justify-content: center;
     flex-wrap: wrap;
+    position: relative;
+    z-index: 1;
 `;
 
 const TimePeriodTab = styled.button`
     padding: 0.5rem 1rem;
-    background: ${props => props.$active ? 
-        'rgba(255, 215, 0, 0.2)' :
-        'rgba(255, 215, 0, 0.05)'
+    background: ${({ $active, theme }) => $active ? 
+        `${theme.brand?.primary || '#ffd700'}33` :
+        `${theme.brand?.primary || '#ffd700'}0D`
     };
-    border: 1px solid ${props => props.$active ? 
-        'rgba(255, 215, 0, 0.5)' :
-        'rgba(255, 215, 0, 0.2)'
+    border: 1px solid ${({ $active, theme }) => $active ? 
+        `${theme.brand?.primary || '#ffd700'}80` :
+        `${theme.brand?.primary || '#ffd700'}33`
     };
     border-radius: 8px;
-    color: ${props => props.$active ? '#ffd700' : '#94a3b8'};
+    color: ${({ $active, theme }) => $active ? theme.brand?.primary || '#ffd700' : theme.text?.secondary || '#94a3b8'};
     font-weight: 600;
     font-size: 0.85rem;
     cursor: pointer;
     transition: all 0.2s ease;
 
     &:hover {
-        background: rgba(255, 215, 0, 0.2);
-        border-color: rgba(255, 215, 0, 0.5);
-        color: #ffd700;
+        background: ${({ theme }) => `${theme.brand?.primary || '#ffd700'}33`};
+        border-color: ${({ theme }) => `${theme.brand?.primary || '#ffd700'}80`};
+        color: ${({ theme }) => theme.brand?.primary || '#ffd700'};
     }
 `;
 
@@ -544,6 +605,8 @@ const ControlsContainer = styled.div`
     gap: 1rem;
     align-items: center;
     flex-wrap: wrap;
+    position: relative;
+    z-index: 1;
 `;
 
 const SearchBar = styled.div`
@@ -555,22 +618,22 @@ const SearchBar = styled.div`
 const SearchInput = styled.input`
     width: 100%;
     padding: 0.75rem 1rem 0.75rem 3rem;
-    background: rgba(255, 215, 0, 0.05);
-    border: 1px solid rgba(255, 215, 0, 0.3);
+    background: ${({ theme }) => theme.bg?.input || 'rgba(255, 215, 0, 0.05)'};
+    border: 1px solid ${({ theme }) => `${theme.brand?.primary || '#ffd700'}4D`};
     border-radius: 12px;
-    color: #e0e6ed;
+    color: ${({ theme }) => theme.text?.primary || '#e0e6ed'};
     font-size: 1rem;
     transition: all 0.2s ease;
 
     &:focus {
         outline: none;
-        border-color: #ffd700;
-        background: rgba(255, 215, 0, 0.1);
-        box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.2);
+        border-color: ${({ theme }) => theme.brand?.primary || '#ffd700'};
+        background: ${({ theme }) => `${theme.brand?.primary || '#ffd700'}1A`};
+        box-shadow: ${({ theme }) => `0 0 0 3px ${theme.brand?.primary || '#ffd700'}33`};
     }
 
     &::placeholder {
-        color: #64748b;
+        color: ${({ theme }) => theme.text?.tertiary || '#64748b'};
     }
 `;
 
@@ -579,15 +642,15 @@ const SearchIcon = styled(Search)`
     left: 1rem;
     top: 50%;
     transform: translateY(-50%);
-    color: #ffd700;
+    color: ${({ theme }) => theme.brand?.primary || '#ffd700'};
 `;
 
 const RefreshButton = styled.button`
     padding: 0.75rem 1.25rem;
-    background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+    background: ${({ theme }) => theme.brand?.gradient || 'linear-gradient(135deg, #ffd700 0%, #ffed4e 100%)'};
     border: none;
     border-radius: 12px;
-    color: #0a0e27;
+    color: ${({ theme }) => theme.bg?.page || '#0a0e27'};
     font-weight: 700;
     cursor: pointer;
     display: flex;
@@ -597,7 +660,7 @@ const RefreshButton = styled.button`
 
     &:hover:not(:disabled) {
         transform: translateY(-2px);
-        box-shadow: 0 8px 24px rgba(255, 215, 0, 0.4);
+        box-shadow: ${({ theme }) => `0 8px 24px ${theme.brand?.primary || '#ffd700'}66`};
     }
 
     &:disabled {
@@ -614,16 +677,16 @@ const RefreshButton = styled.button`
 
 const AutoRefreshToggle = styled.button`
     padding: 0.75rem 1rem;
-    background: ${props => props.$active ? 
-        'rgba(16, 185, 129, 0.2)' : 
-        'rgba(100, 116, 139, 0.2)'
+    background: ${({ $active, theme }) => $active ? 
+        `${theme.success || '#10b981'}33` : 
+        `${theme.text?.tertiary || '#64748b'}33`
     };
-    border: 1px solid ${props => props.$active ? 
-        'rgba(16, 185, 129, 0.5)' : 
-        'rgba(100, 116, 139, 0.3)'
+    border: 1px solid ${({ $active, theme }) => $active ? 
+        `${theme.success || '#10b981'}80` : 
+        `${theme.text?.tertiary || '#64748b'}4D`
     };
     border-radius: 12px;
-    color: ${props => props.$active ? '#10b981' : '#94a3b8'};
+    color: ${({ $active, theme }) => $active ? theme.success || '#10b981' : theme.text?.secondary || '#94a3b8'};
     font-weight: 600;
     font-size: 0.85rem;
     cursor: pointer;
@@ -633,9 +696,9 @@ const AutoRefreshToggle = styled.button`
     transition: all 0.2s ease;
 
     &:hover {
-        background: rgba(16, 185, 129, 0.3);
-        border-color: rgba(16, 185, 129, 0.5);
-        color: #10b981;
+        background: ${({ theme }) => `${theme.success || '#10b981'}4D`};
+        border-color: ${({ theme }) => `${theme.success || '#10b981'}80`};
+        color: ${({ theme }) => theme.success || '#10b981'};
     }
 `;
 
@@ -643,6 +706,8 @@ const AutoRefreshToggle = styled.button`
 const LeaderboardContainer = styled.div`
     max-width: 1400px;
     margin: 0 auto;
+    position: relative;
+    z-index: 1;
 `;
 
 const LeaderboardHeader = styled.div`
@@ -650,11 +715,11 @@ const LeaderboardHeader = styled.div`
     grid-template-columns: 80px 60px 1fr 120px 120px 120px 140px;
     gap: 1.5rem;
     padding: 1rem 1.5rem;
-    background: rgba(255, 215, 0, 0.1);
-    border: 1px solid rgba(255, 215, 0, 0.2);
+    background: ${({ theme }) => `${theme.brand?.primary || '#ffd700'}1A`};
+    border: 1px solid ${({ theme }) => `${theme.brand?.primary || '#ffd700'}33`};
     border-radius: 12px;
     margin-bottom: 1rem;
-    color: #ffd700;
+    color: ${({ theme }) => theme.brand?.primary || '#ffd700'};
     font-weight: 600;
     font-size: 0.85rem;
     text-transform: uppercase;
@@ -672,20 +737,20 @@ const LeaderboardList = styled.div`
 `;
 
 const LeaderCard = styled.div`
-    background: ${props => {
-        if (props.$rank === 1) return 'linear-gradient(135deg, rgba(255, 215, 0, 0.15) 0%, rgba(255, 215, 0, 0.05) 100%)';
-        if (props.$rank === 2) return 'linear-gradient(135deg, rgba(192, 192, 192, 0.15) 0%, rgba(192, 192, 192, 0.05) 100%)';
-        if (props.$rank === 3) return 'linear-gradient(135deg, rgba(205, 127, 50, 0.15) 0%, rgba(205, 127, 50, 0.05) 100%)';
-        if (props.$isYou) return 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(139, 92, 246, 0.05) 100%)';
-        return 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%)';
+    background: ${({ $rank, $isYou, theme }) => {
+        if ($rank === 1) return `linear-gradient(135deg, ${theme.brand?.primary || '#ffd700'}26 0%, ${theme.brand?.primary || '#ffd700'}0D 100%)`;
+        if ($rank === 2) return 'linear-gradient(135deg, rgba(192, 192, 192, 0.15) 0%, rgba(192, 192, 192, 0.05) 100%)';
+        if ($rank === 3) return 'linear-gradient(135deg, rgba(205, 127, 50, 0.15) 0%, rgba(205, 127, 50, 0.05) 100%)';
+        if ($isYou) return `linear-gradient(135deg, ${theme.brand?.accent || '#8b5cf6'}26 0%, ${theme.brand?.accent || '#8b5cf6'}0D 100%)`;
+        return theme.bg?.card || 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%)';
     }};
     backdrop-filter: blur(10px);
-    border: 2px solid ${props => {
-        if (props.$rank === 1) return 'rgba(255, 215, 0, 0.4)';
-        if (props.$rank === 2) return 'rgba(192, 192, 192, 0.4)';
-        if (props.$rank === 3) return 'rgba(205, 127, 50, 0.4)';
-        if (props.$isYou) return 'rgba(139, 92, 246, 0.4)';
-        return 'rgba(255, 215, 0, 0.15)';
+    border: 2px solid ${({ $rank, $isYou, theme }) => {
+        if ($rank === 1) return `${theme.brand?.primary || '#ffd700'}66`;
+        if ($rank === 2) return 'rgba(192, 192, 192, 0.4)';
+        if ($rank === 3) return 'rgba(205, 127, 50, 0.4)';
+        if ($isYou) return `${theme.brand?.accent || '#8b5cf6'}66`;
+        return theme.border?.primary || 'rgba(255, 215, 0, 0.15)';
     }};
     border-radius: 14px;
     padding: 1.25rem 1.5rem;
@@ -701,19 +766,19 @@ const LeaderCard = styled.div`
 
     &:hover {
         transform: translateX(8px);
-        border-color: ${props => {
-            if (props.$rank === 1) return 'rgba(255, 215, 0, 0.8)';
-            if (props.$rank === 2) return 'rgba(192, 192, 192, 0.8)';
-            if (props.$rank === 3) return 'rgba(205, 127, 50, 0.8)';
-            if (props.$isYou) return 'rgba(139, 92, 246, 0.8)';
-            return 'rgba(255, 215, 0, 0.5)';
+        border-color: ${({ $rank, $isYou, theme }) => {
+            if ($rank === 1) return theme.brand?.primary || '#ffd700';
+            if ($rank === 2) return 'rgba(192, 192, 192, 0.8)';
+            if ($rank === 3) return 'rgba(205, 127, 50, 0.8)';
+            if ($isYou) return theme.brand?.accent || '#8b5cf6';
+            return `${theme.brand?.primary || '#ffd700'}80`;
         }};
-        box-shadow: 0 8px 30px ${props => {
-            if (props.$rank === 1) return 'rgba(255, 215, 0, 0.3)';
-            if (props.$rank === 2) return 'rgba(192, 192, 192, 0.3)';
-            if (props.$rank === 3) return 'rgba(205, 127, 50, 0.3)';
-            if (props.$isYou) return 'rgba(139, 92, 246, 0.3)';
-            return 'rgba(255, 215, 0, 0.15)';
+        box-shadow: ${({ $rank, $isYou, theme }) => {
+            if ($rank === 1) return `0 8px 30px ${theme.brand?.primary || '#ffd700'}4D`;
+            if ($rank === 2) return '0 8px 30px rgba(192, 192, 192, 0.3)';
+            if ($rank === 3) return '0 8px 30px rgba(205, 127, 50, 0.3)';
+            if ($isYou) return `0 8px 30px ${theme.brand?.accent || '#8b5cf6'}4D`;
+            return `0 8px 30px ${theme.brand?.primary || '#ffd700'}26`;
         }};
     }
 
@@ -742,23 +807,23 @@ const RankBadge = styled.div`
     width: 55px;
     height: 55px;
     border-radius: 50%;
-    background: ${props => {
-        if (props.$rank === 1) return 'linear-gradient(135deg, #ffd700, #ffed4e)';
-        if (props.$rank === 2) return 'linear-gradient(135deg, #c0c0c0, #e8e8e8)';
-        if (props.$rank === 3) return 'linear-gradient(135deg, #cd7f32, #e5a55d)';
-        return 'linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 215, 0, 0.1))';
+    background: ${({ $rank, theme }) => {
+        if ($rank === 1) return 'linear-gradient(135deg, #ffd700, #ffed4e)';
+        if ($rank === 2) return 'linear-gradient(135deg, #c0c0c0, #e8e8e8)';
+        if ($rank === 3) return 'linear-gradient(135deg, #cd7f32, #e5a55d)';
+        return `linear-gradient(135deg, ${theme.brand?.primary || '#ffd700'}33, ${theme.brand?.primary || '#ffd700'}1A)`;
     }};
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 1.3rem;
     font-weight: 900;
-    color: ${props => props.$rank <= 3 ? '#0a0e27' : '#ffd700'};
-    border: 3px solid ${props => {
-        if (props.$rank === 1) return '#ffd700';
-        if (props.$rank === 2) return '#c0c0c0';
-        if (props.$rank === 3) return '#cd7f32';
-        return 'rgba(255, 215, 0, 0.3)';
+    color: ${({ $rank, theme }) => $rank <= 3 ? '#0a0e27' : theme.brand?.primary || '#ffd700'};
+    border: 3px solid ${({ $rank, theme }) => {
+        if ($rank === 1) return '#ffd700';
+        if ($rank === 2) return '#c0c0c0';
+        if ($rank === 3) return '#cd7f32';
+        return `${theme.brand?.primary || '#ffd700'}4D`;
     }};
     position: relative;
     flex-shrink: 0;
@@ -785,7 +850,7 @@ const Avatar = styled.div`
     height: 50px;
     border-radius: 50%;
     background: ${props => props.$hasImage ? 'transparent' : 'linear-gradient(135deg, #ffd700, #ffed4e)'};
-    border: 2px solid rgba(255, 215, 0, 0.5);
+    border: 3px solid ${props => props.$borderColor || 'rgba(255, 215, 0, 0.5)'};
     display: flex;
     align-items: center;
     justify-content: center;
@@ -795,6 +860,13 @@ const Avatar = styled.div`
     position: relative;
     overflow: hidden;
     flex-shrink: 0;
+    box-shadow: ${props => props.$glow ? `0 0 15px ${props.$glow}` : 'none'};
+    transition: all 0.3s ease;
+
+    &:hover {
+        transform: scale(1.05);
+        box-shadow: ${props => `0 0 20px ${props.$glow || 'rgba(255, 215, 0, 0.5)'}`};
+    }
 
     @media (max-width: 768px) {
         width: 40px;
@@ -826,7 +898,7 @@ const UserInfo = styled.div`
 const DisplayName = styled.div`
     font-size: 1.1rem;
     font-weight: 700;
-    color: #e0e6ed;
+    color: ${({ theme }) => theme.text?.primary || '#e0e6ed'};
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -839,19 +911,19 @@ const DisplayName = styled.div`
 
 const LevelBadge = styled.span`
     padding: 0.15rem 0.5rem;
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(139, 92, 246, 0.1));
-    border: 1px solid rgba(139, 92, 246, 0.5);
+    background: ${({ theme }) => `linear-gradient(135deg, ${theme.brand?.accent || '#8b5cf6'}4D, ${theme.brand?.accent || '#8b5cf6'}1A)`};
+    border: 1px solid ${({ theme }) => `${theme.brand?.accent || '#8b5cf6'}80`};
     border-radius: 6px;
     font-size: 0.7rem;
     font-weight: 700;
-    color: #a78bfa;
+    color: ${({ theme }) => theme.brand?.accent || '#a78bfa'};
 `;
 
 const UserMeta = styled.div`
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    color: #94a3b8;
+    color: ${({ theme }) => theme.text?.tertiary || '#94a3b8'};
     font-size: 0.85rem;
     flex-wrap: wrap;
 
@@ -866,10 +938,10 @@ const StreakBadge = styled.span`
     align-items: center;
     gap: 0.25rem;
     padding: 0.15rem 0.5rem;
-    background: rgba(239, 68, 68, 0.15);
-    border: 1px solid rgba(239, 68, 68, 0.4);
+    background: ${({ theme }) => `${theme.error || '#ef4444'}26`};
+    border: 1px solid ${({ theme }) => `${theme.error || '#ef4444'}66`};
     border-radius: 6px;
-    color: #ef4444;
+    color: ${({ theme }) => theme.error || '#ef4444'};
     font-size: 0.75rem;
     font-weight: 600;
 `;
@@ -879,7 +951,7 @@ const StatColumn = styled.div`
 `;
 
 const StatLabel = styled.div`
-    color: #64748b;
+    color: ${({ theme }) => theme.text?.tertiary || '#64748b'};
     font-size: 0.75rem;
     margin-bottom: 0.2rem;
     text-transform: uppercase;
@@ -888,10 +960,10 @@ const StatLabel = styled.div`
 const StatValue = styled.div`
     font-size: 1.15rem;
     font-weight: 700;
-    color: ${props => {
-        if (props.$positive) return '#10b981';
-        if (props.$negative) return '#ef4444';
-        return '#ffd700';
+    color: ${({ $positive, $negative, theme }) => {
+        if ($positive) return theme.success || '#10b981';
+        if ($negative) return theme.error || '#ef4444';
+        return theme.brand?.primary || '#ffd700';
     }};
     display: flex;
     align-items: center;
@@ -910,16 +982,16 @@ const ActionButtons = styled.div`
 
 const FollowButton = styled.button`
     padding: 0.6rem 1rem;
-    background: ${props => props.$following ? 
-        'rgba(239, 68, 68, 0.1)' :
-        'linear-gradient(135deg, #ffd700 0%, #ffed4e 100%)'
+    background: ${({ $following, theme }) => $following ? 
+        `${theme.error || '#ef4444'}1A` :
+        theme.brand?.gradient || 'linear-gradient(135deg, #ffd700 0%, #ffed4e 100%)'
     };
-    border: 1px solid ${props => props.$following ? 
-        'rgba(239, 68, 68, 0.3)' :
+    border: 1px solid ${({ $following, theme }) => $following ? 
+        `${theme.error || '#ef4444'}4D` :
         'transparent'
     };
     border-radius: 8px;
-    color: ${props => props.$following ? '#ef4444' : '#0a0e27'};
+    color: ${({ $following, theme }) => $following ? theme.error || '#ef4444' : theme.bg?.page || '#0a0e27'};
     font-weight: 700;
     font-size: 0.85rem;
     cursor: pointer;
@@ -933,9 +1005,9 @@ const FollowButton = styled.button`
 
     &:hover {
         transform: translateY(-2px);
-        box-shadow: 0 6px 16px ${props => props.$following ? 
-            'rgba(239, 68, 68, 0.3)' :
-            'rgba(255, 215, 0, 0.4)'
+        box-shadow: ${({ $following, theme }) => $following ? 
+            `0 6px 16px ${theme.error || '#ef4444'}4D` :
+            `0 6px 16px ${theme.brand?.primary || '#ffd700'}66`
         };
     }
 
@@ -953,10 +1025,10 @@ const FollowButton = styled.button`
 
 const CopyButton = styled.button`
     padding: 0.6rem;
-    background: rgba(16, 185, 129, 0.1);
-    border: 1px solid rgba(16, 185, 129, 0.3);
+    background: ${({ theme }) => `${theme.success || '#10b981'}1A`};
+    border: 1px solid ${({ theme }) => `${theme.success || '#10b981'}4D`};
     border-radius: 8px;
-    color: #10b981;
+    color: ${({ theme }) => theme.success || '#10b981'};
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -964,7 +1036,7 @@ const CopyButton = styled.button`
     transition: all 0.2s ease;
 
     &:hover {
-        background: rgba(16, 185, 129, 0.2);
+        background: ${({ theme }) => `${theme.success || '#10b981'}33`};
         transform: translateY(-2px);
     }
 
@@ -978,29 +1050,31 @@ const EmptyState = styled.div`
     text-align: center;
     padding: 4rem 2rem;
     animation: ${fadeIn} 0.5s ease-out;
+    position: relative;
+    z-index: 1;
 `;
 
 const EmptyIcon = styled.div`
     width: 150px;
     height: 150px;
     margin: 0 auto 2rem;
-    background: linear-gradient(135deg, rgba(255, 215, 0, 0.2) 0%, rgba(255, 215, 0, 0.05) 100%);
+    background: ${({ theme }) => `linear-gradient(135deg, ${theme.brand?.primary || '#ffd700'}33 0%, ${theme.brand?.primary || '#ffd700'}0D 100%)`};
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 3px dashed rgba(255, 215, 0, 0.4);
+    border: 3px dashed ${({ theme }) => `${theme.brand?.primary || '#ffd700'}66`};
     animation: ${float} 3s ease-in-out infinite;
 `;
 
 const EmptyTitle = styled.h2`
-    color: #ffd700;
+    color: ${({ theme }) => theme.brand?.primary || '#ffd700'};
     font-size: 2rem;
     margin-bottom: 1rem;
 `;
 
 const EmptyText = styled.p`
-    color: #94a3b8;
+    color: ${({ theme }) => theme.text?.secondary || '#94a3b8'};
     font-size: 1.2rem;
 `;
 
@@ -1011,21 +1085,23 @@ const LoadingContainer = styled.div`
     justify-content: center;
     padding: 4rem 2rem;
     gap: 1rem;
+    position: relative;
+    z-index: 1;
 `;
 
 const LoadingSpinner = styled(Trophy)`
     animation: ${spin} 1s linear infinite;
-    color: #ffd700;
+    color: ${({ theme }) => theme.brand?.primary || '#ffd700'};
 `;
 
 const LoadingText = styled.div`
-    color: #94a3b8;
+    color: ${({ theme }) => theme.text?.secondary || '#94a3b8'};
     font-size: 1.1rem;
 `;
 
 const SkeletonCard = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
-    border: 2px solid rgba(255, 215, 0, 0.15);
+    background: ${({ theme }) => theme.bg?.card || 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%)'};
+    border: 2px solid ${({ theme }) => theme.border?.primary || 'rgba(255, 215, 0, 0.15)'};
     border-radius: 14px;
     padding: 1.25rem 1.5rem;
     display: grid;
@@ -1034,12 +1110,12 @@ const SkeletonCard = styled.div`
     align-items: center;
     animation: ${shimmer} 1.5s ease-in-out infinite;
     background-size: 200% 100%;
-    background-image: linear-gradient(
+    background-image: ${({ theme }) => `linear-gradient(
         90deg,
-        rgba(30, 41, 59, 0.9) 0%,
-        rgba(50, 61, 79, 0.9) 50%,
-        rgba(30, 41, 59, 0.9) 100%
-    );
+        ${theme.bg?.card || 'rgba(30, 41, 59, 0.9)'} 0%,
+        ${theme.bg?.cardHover || 'rgba(50, 61, 79, 0.9)'} 50%,
+        ${theme.bg?.card || 'rgba(30, 41, 59, 0.9)'} 100%
+    )`};
 
     @media (max-width: 1200px) {
         grid-template-columns: 60px 50px 1fr 100px 100px;
@@ -1054,25 +1130,28 @@ const SkeletonCircle = styled.div`
     width: ${props => props.$size || '50px'};
     height: ${props => props.$size || '50px'};
     border-radius: 50%;
-    background: rgba(100, 116, 139, 0.3);
+    background: ${({ theme }) => theme.border?.primary || 'rgba(100, 116, 139, 0.3)'};
 `;
 
 const SkeletonLine = styled.div`
     height: ${props => props.$height || '16px'};
     width: ${props => props.$width || '100%'};
     border-radius: 4px;
-    background: rgba(100, 116, 139, 0.3);
+    background: ${({ theme }) => theme.border?.primary || 'rgba(100, 116, 139, 0.3)'};
 `;
 
 // ============ CONSTANTS ============
-const REFRESH_INTERVAL = 30000; // 30 seconds for auto-refresh
-const DEBOUNCE_DELAY = 300; // 300ms debounce for search
+const REFRESH_INTERVAL = 30000;
+const DEBOUNCE_DELAY = 300;
 
 // ============ COMPONENT ============
 const LeaderboardPage = () => {
     const { api, user } = useAuth();
     const toast = useToast();
     const navigate = useNavigate();
+    const theme = useStyledTheme();
+    const { profileThemeId } = useThemeContext();
+    const { equipped } = useVault();
     
     const [category, setCategory] = useState('returns');
     const [timePeriod, setTimePeriod] = useState('all');
@@ -1089,10 +1168,31 @@ const LeaderboardPage = () => {
     const [isOnline, setIsOnline] = useState(navigator.onLine);
     const [error, setError] = useState(null);
     
-    // Refs for cleanup
     const refreshIntervalRef = useRef(null);
     const searchTimeoutRef = useRef(null);
     const isMountedRef = useRef(true);
+
+    // ============ HELPER FUNCTIONS ============
+    
+    // Get avatar border color from equippedBorder (avatar FRAME, not theme)
+    const getAvatarBorderStyle = useCallback((borderId) => {
+        if (!borderId) return BORDER_COLORS['default'];
+        // Handle both 'border-gold' and 'gold' formats
+        const normalizedId = borderId.startsWith('border-') ? borderId : `border-${borderId}`;
+        return BORDER_COLORS[normalizedId] || BORDER_COLORS[borderId] || BORDER_COLORS['default'];
+    }, []);
+
+    // Current user's border from vault
+    const currentUserBorder = useMemo(() => {
+        const userBorder = equipped?.border || 'default';
+        return getAvatarBorderStyle(userBorder);
+    }, [equipped?.border, getAvatarBorderStyle]);
+
+    // Get initials
+    const getInitials = useCallback((trader) => {
+        const name = trader?.displayName || trader?.username || 'T';
+        return name.charAt(0).toUpperCase();
+    }, []);
 
     // Online/offline detection
     useEffect(() => {
@@ -1159,6 +1259,8 @@ const LeaderboardPage = () => {
             totalTrades: trader.totalTrades || trader.stats?.totalTrades || 0,
             currentStreak: trader.currentStreak || trader.stats?.currentStreak || 0,
             followersCount: trader.social?.followersCount || 0,
+            // FIXED: Use equippedBorder for avatar frames, not equippedTheme
+            equippedBorder: trader.equippedBorder || trader.vault?.equippedBorder || 'default',
         }));
     }, []);
 
@@ -1177,7 +1279,6 @@ const LeaderboardPage = () => {
             setLeaderboard(mappedData);
             setLastUpdated(new Date());
             
-            // Find user's rank
             if (user) {
                 const userEntry = mappedData.find(t => t.userId === user.id);
                 setUserRank(userEntry || null);
@@ -1262,7 +1363,6 @@ const LeaderboardPage = () => {
     const handleFollow = async (userId) => {
         if (followingLoading.has(userId)) return;
         
-        // Optimistic update
         const isCurrentlyFollowing = following.has(userId);
         const newFollowing = new Set(following);
         
@@ -1284,7 +1384,6 @@ const LeaderboardPage = () => {
                 toast.success('Following user!', 'Success');
             }
             
-            // Update follower count in leaderboard
             setLeaderboard(prev => prev.map(trader => {
                 if (trader.userId === userId) {
                     return {
@@ -1296,7 +1395,6 @@ const LeaderboardPage = () => {
             }));
         } catch (err) {
             console.error('Error following/unfollowing:', err);
-            // Revert optimistic update
             if (isCurrentlyFollowing) {
                 newFollowing.add(userId);
             } else {
@@ -1326,11 +1424,6 @@ const LeaderboardPage = () => {
         if (rank === 2) return <Medal size={20} color="#c0c0c0" />;
         if (rank === 3) return <Award size={20} color="#cd7f32" />;
         return null;
-    };
-
-    const getInitials = (trader) => {
-        const name = trader.displayName || trader.username || 'T';
-        return name.charAt(0).toUpperCase();
     };
 
     const getMainStatValue = (trader) => {
@@ -1373,7 +1466,7 @@ const LeaderboardPage = () => {
         return true;
     });
 
-    // Get top 3 for podium (only show if we have data and not searching)
+    // Get top 3 for podium
     const top3 = !debouncedSearch && filteredLeaderboard.length >= 3 ? filteredLeaderboard.slice(0, 3) : [];
     const restOfLeaderboard = debouncedSearch ? filteredLeaderboard : filteredLeaderboard.slice(3);
 
@@ -1400,10 +1493,15 @@ const LeaderboardPage = () => {
     if (loading) {
         return (
             <PageContainer>
+                <BackgroundOrbs>
+                    <Orb $duration="25s" />
+                    <Orb $duration="30s" />
+                    <Orb $duration="20s" />
+                </BackgroundOrbs>
                 <Header>
                     <Title>
                         <TitleIcon>
-                            <Trophy size={56} color="#ffd700" />
+                            <Trophy size={56} color={theme?.brand?.primary || '#ffd700'} />
                         </TitleIcon>
                         Global Leaderboard
                     </Title>
@@ -1420,10 +1518,16 @@ const LeaderboardPage = () => {
 
     return (
         <PageContainer>
+            <BackgroundOrbs>
+                <Orb $duration="25s" />
+                <Orb $duration="30s" />
+                <Orb $duration="20s" />
+            </BackgroundOrbs>
+
             <Header>
                 <Title>
                     <TitleIcon>
-                        <Trophy size={56} color="#ffd700" />
+                        <Trophy size={56} color={theme?.brand?.primary || '#ffd700'} />
                     </TitleIcon>
                     Global Leaderboard
                 </Title>
@@ -1518,13 +1622,23 @@ const LeaderboardPage = () => {
                     <PodiumContainer>
                         {/* 2nd Place */}
                         <PodiumPlace onClick={() => handleCardClick(top3[1])}>
-                            <PodiumAvatar $place={2} $hasImage={!!top3[1].avatar}>
-                                {top3[1].avatar ? (
-                                    <PodiumAvatarImage src={top3[1].avatar} alt={top3[1].displayName} />
-                                ) : (
-                                    <PodiumAvatarInitials $place={2}>{getInitials(top3[1])}</PodiumAvatarInitials>
-                                )}
-                            </PodiumAvatar>
+                            {(() => {
+                                const borderStyle = getAvatarBorderStyle(top3[1].equippedBorder);
+                                return (
+                                    <PodiumAvatar 
+                                        $place={2} 
+                                        $hasImage={!!top3[1].avatar}
+                                        $borderColor={borderStyle.color}
+                                        $glow={borderStyle.glow}
+                                    >
+                                        {top3[1].avatar ? (
+                                            <PodiumAvatarImage src={top3[1].avatar} alt={top3[1].displayName} />
+                                        ) : (
+                                            <PodiumAvatarInitials $place={2}>{getInitials(top3[1])}</PodiumAvatarInitials>
+                                        )}
+                                    </PodiumAvatar>
+                                );
+                            })()}
                             <PodiumName $place={2}>{top3[1].displayName}</PodiumName>
                             <PodiumStats $place={2}>{getMainStatValue(top3[1]).value}</PodiumStats>
                             <PodiumStand $place={2}>
@@ -1534,16 +1648,26 @@ const LeaderboardPage = () => {
 
                         {/* 1st Place */}
                         <PodiumPlace onClick={() => handleCardClick(top3[0])}>
-                            <PodiumAvatar $place={1} $hasImage={!!top3[0].avatar}>
-                                <PodiumCrown>
-                                    <Crown size={40} color="#ffd700" />
-                                </PodiumCrown>
-                                {top3[0].avatar ? (
-                                    <PodiumAvatarImage src={top3[0].avatar} alt={top3[0].displayName} />
-                                ) : (
-                                    <PodiumAvatarInitials $place={1}>{getInitials(top3[0])}</PodiumAvatarInitials>
-                                )}
-                            </PodiumAvatar>
+                            {(() => {
+                                const borderStyle = getAvatarBorderStyle(top3[0].equippedBorder);
+                                return (
+                                    <PodiumAvatar 
+                                        $place={1} 
+                                        $hasImage={!!top3[0].avatar}
+                                        $borderColor={borderStyle.color}
+                                        $glow={borderStyle.glow}
+                                    >
+                                        <PodiumCrown>
+                                            <Crown size={40} color="#ffd700" />
+                                        </PodiumCrown>
+                                        {top3[0].avatar ? (
+                                            <PodiumAvatarImage src={top3[0].avatar} alt={top3[0].displayName} />
+                                        ) : (
+                                            <PodiumAvatarInitials $place={1}>{getInitials(top3[0])}</PodiumAvatarInitials>
+                                        )}
+                                    </PodiumAvatar>
+                                );
+                            })()}
                             <PodiumName $place={1}>{top3[0].displayName}</PodiumName>
                             <PodiumStats $place={1}>{getMainStatValue(top3[0]).value}</PodiumStats>
                             <PodiumStand $place={1}>
@@ -1553,13 +1677,23 @@ const LeaderboardPage = () => {
 
                         {/* 3rd Place */}
                         <PodiumPlace onClick={() => handleCardClick(top3[2])}>
-                            <PodiumAvatar $place={3} $hasImage={!!top3[2].avatar}>
-                                {top3[2].avatar ? (
-                                    <PodiumAvatarImage src={top3[2].avatar} alt={top3[2].displayName} />
-                                ) : (
-                                    <PodiumAvatarInitials $place={3}>{getInitials(top3[2])}</PodiumAvatarInitials>
-                                )}
-                            </PodiumAvatar>
+                            {(() => {
+                                const borderStyle = getAvatarBorderStyle(top3[2].equippedBorder);
+                                return (
+                                    <PodiumAvatar 
+                                        $place={3} 
+                                        $hasImage={!!top3[2].avatar}
+                                        $borderColor={borderStyle.color}
+                                        $glow={borderStyle.glow}
+                                    >
+                                        {top3[2].avatar ? (
+                                            <PodiumAvatarImage src={top3[2].avatar} alt={top3[2].displayName} />
+                                        ) : (
+                                            <PodiumAvatarInitials $place={3}>{getInitials(top3[2])}</PodiumAvatarInitials>
+                                        )}
+                                    </PodiumAvatar>
+                                );
+                            })()}
                             <PodiumName $place={3}>{top3[2].displayName}</PodiumName>
                             <PodiumStats $place={3}>{getMainStatValue(top3[2]).value}</PodiumStats>
                             <PodiumStand $place={3}>
@@ -1570,7 +1704,7 @@ const LeaderboardPage = () => {
                 </PodiumSection>
             )}
 
-            {/* Your Rank Card - persists even during search */}
+            {/* Your Rank Card */}
             {userRank && userRank.rank > 3 && (
                 <YourRankCard>
                     <YourRankLeft>
@@ -1644,9 +1778,9 @@ const LeaderboardPage = () => {
             {error && (
                 <EmptyState>
                     <EmptyIcon>
-                        <WifiOff size={80} color="#ef4444" />
+                        <WifiOff size={80} color={theme?.error || '#ef4444'} />
                     </EmptyIcon>
-                    <EmptyTitle style={{ color: '#ef4444' }}>{error}</EmptyTitle>
+                    <EmptyTitle style={{ color: theme?.error || '#ef4444' }}>{error}</EmptyTitle>
                     <EmptyText>
                         {isOnline ? 'Please try again' : 'Check your internet connection'}
                     </EmptyText>
@@ -1685,6 +1819,8 @@ const LeaderboardPage = () => {
                             const mainStat = getMainStatValue(trader);
                             const isYou = trader.userId === user?.id;
                             const isFollowLoading = followingLoading.has(trader.userId);
+                            // FIXED: Use equippedBorder for avatar frame styling
+                            const traderBorderStyle = getAvatarBorderStyle(trader.equippedBorder);
                             
                             return (
                                 <LeaderCard 
@@ -1703,7 +1839,11 @@ const LeaderboardPage = () => {
                                         )}
                                     </RankBadge>
 
-                                    <Avatar $hasImage={!!trader.avatar}>
+                                    <Avatar 
+                                        $hasImage={!!trader.avatar}
+                                        $borderColor={traderBorderStyle.color}
+                                        $glow={traderBorderStyle.glow}
+                                    >
                                         {trader.avatar ? (
                                             <AvatarImage 
                                                 src={trader.avatar} 
@@ -1720,7 +1860,7 @@ const LeaderboardPage = () => {
                                             {trader.displayName}
                                             {isYou && <LevelBadge>You</LevelBadge>}
                                             <LevelBadge>Lv {trader.level}</LevelBadge>
-                                            {trader.badges?.includes('verified') && <Check size={16} color="#10b981" />}
+                                            {trader.badges?.includes('verified') && <Check size={16} color={theme?.success || '#10b981'} />}
                                         </DisplayName>
                                         <UserMeta>
                                             <span>@{trader.username}</span>
@@ -1809,7 +1949,7 @@ const LeaderboardPage = () => {
             ) : !error && (
                 <EmptyState>
                     <EmptyIcon>
-                        <Trophy size={80} color="#ffd700" />
+                        <Trophy size={80} color={theme?.brand?.primary || '#ffd700'} />
                     </EmptyIcon>
                     <EmptyTitle>No Traders Found</EmptyTitle>
                     <EmptyText>

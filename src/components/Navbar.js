@@ -1,4 +1,6 @@
-// client/src/components/Navbar.js - WITH SEARCH BAR & CONSOLIDATED NAV - THEMED VERSION
+
+
+// client/src/components/Navbar.js - FULLY THEMED NAVBAR
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import styled, { keyframes, css } from 'styled-components';
@@ -46,11 +48,29 @@ const NavContainer = styled.nav`
     left: 0;
     right: 0;
     z-index: 1000;
-    background: rgba(10, 14, 39, 0.95);
+    background: ${props => {
+        // Create a semi-transparent version based on the theme's page background
+        // Extract the darkest color from the theme and make it slightly transparent
+        const primary = props.theme.brand?.primary || '#00adef';
+        return `linear-gradient(135deg, rgba(10, 14, 30, 0.95) 0%, rgba(15, 20, 40, 0.95) 100%)`;
+    }};
     backdrop-filter: blur(20px);
-    border-bottom: 1px solid ${props => props.theme.brand?.primary}33;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    border-bottom: 1px solid ${props => `${props.theme.brand?.primary || '#00adef'}40`};
+    box-shadow: 
+        0 4px 20px rgba(0, 0, 0, 0.5),
+        0 1px 0 ${props => `${props.theme.brand?.primary || '#00adef'}1a`} inset;
     animation: ${fadeIn} 0.5s ease-out;
+    
+    /* Subtle theme-colored glow at bottom */
+    &::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: ${props => `linear-gradient(90deg, transparent, ${props.theme.brand?.primary || '#00adef'}66, transparent)`};
+    }
 `;
 
 const NavInner = styled.div`
@@ -95,17 +115,17 @@ const LogoIcon = styled.div`
     position: relative;
     transition: all 0.3s ease;
 
-    filter: drop-shadow(0 0 5px ${props => props.theme.brand?.primary}b3)
-            drop-shadow(0 0 10px ${props => props.theme.brand?.accent || props.theme.success}80)
-            drop-shadow(0 0 15px ${props => props.theme.brand?.primary}4D);
+    filter: drop-shadow(0 0 5px ${props => `${props.theme.brand?.primary || '#00adef'}b3`})
+            drop-shadow(0 0 10px ${props => `${props.theme.brand?.accent || props.theme.success || '#10b981'}80`})
+            drop-shadow(0 0 15px ${props => `${props.theme.brand?.primary || '#00adef'}4D`});
 
     &::before {
         content: '';
         position: absolute;
         inset: 0px;
         background: radial-gradient(circle, 
-            ${props => props.theme.brand?.primary}33 0%, 
-            ${props => props.theme.brand?.accent || props.theme.success}1a 40%, 
+            ${props => `${props.theme.brand?.primary || '#00adef'}33`} 0%, 
+            ${props => `${props.theme.brand?.accent || props.theme.success || '#10b981'}1a`} 40%, 
             transparent 70%);
         border-radius: 50%;
         z-index: -1;
@@ -114,9 +134,9 @@ const LogoIcon = styled.div`
     }
 
     &:hover {
-        filter: drop-shadow(0 0 10px ${props => props.theme.brand?.primary}e6)
-                drop-shadow(0 0 20px ${props => props.theme.brand?.accent || props.theme.success}b3)
-                drop-shadow(0 0 35px ${props => props.theme.brand?.primary}80);
+        filter: drop-shadow(0 0 10px ${props => `${props.theme.brand?.primary || '#00adef'}e6`})
+                drop-shadow(0 0 20px ${props => `${props.theme.brand?.accent || props.theme.success || '#10b981'}b3`})
+                drop-shadow(0 0 35px ${props => `${props.theme.brand?.primary || '#00adef'}80`});
         transform: translateY(-3px) scale(1.08);
     }
 
@@ -139,17 +159,17 @@ const LogoText = styled.span`
     font-size: 1rem;
     font-weight: 800;
     
-    background: ${props => props.theme.brand?.gradient || `linear-gradient(135deg, ${props.theme.brand?.primary} 0%, ${props.theme.brand?.accent || props.theme.success} 50%, ${props.theme.brand?.primary} 100%)`};
+    background: ${props => props.theme.brand?.gradient || `linear-gradient(135deg, ${props.theme.brand?.primary || '#00adef'} 0%, ${props.theme.brand?.accent || props.theme.success || '#10b981'} 50%, ${props.theme.brand?.primary || '#00adef'} 100%)`};
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
     
-    filter: drop-shadow(0 0 10px ${props => props.theme.brand?.primary}80);
+    filter: drop-shadow(0 0 10px ${props => `${props.theme.brand?.primary || '#00adef'}80`});
     
     transition: all 0.3s ease;
 
     &:hover {
-        filter: drop-shadow(0 0 15px ${props => props.theme.brand?.primary}b3);
+        filter: drop-shadow(0 0 15px ${props => `${props.theme.brand?.primary || '#00adef'}b3`});
     }
 
     @media (max-width: 768px) {
@@ -181,7 +201,7 @@ const SearchInputWrapper = styled.div`
 const SearchIconStyled = styled(Search)`
     position: absolute;
     left: 0.75rem;
-    color: ${props => props.theme.text?.tertiary};
+    color: ${props => props.theme.text?.tertiary || '#64748b'};
     width: 16px;
     height: 16px;
     pointer-events: none;
@@ -190,22 +210,22 @@ const SearchIconStyled = styled(Search)`
 const SearchInput = styled.input`
     width: 100%;
     padding: 0.5rem 1rem 0.5rem 2.25rem;
-    background: rgba(30, 41, 59, 0.6);
-    border: 1px solid ${props => props.theme.text?.tertiary}4D;
+    background: ${props => `${props.theme.brand?.primary || '#00adef'}15`};
+    border: 1px solid ${props => `${props.theme.brand?.primary || '#00adef'}33`};
     border-radius: 20px;
-    color: #f8fafc;
+    color: ${props => props.theme.text?.primary || '#f8fafc'};
     font-size: 0.8rem;
     transition: all 0.2s ease;
     
     &::placeholder {
-        color: ${props => props.theme.text?.tertiary};
+        color: ${props => props.theme.text?.tertiary || '#64748b'};
     }
     
     &:focus {
         outline: none;
-        border-color: ${props => props.theme.brand?.primary};
-        background: rgba(30, 41, 59, 0.8);
-        box-shadow: 0 0 0 3px ${props => props.theme.brand?.primary}1a;
+        border-color: ${props => props.theme.brand?.primary || '#00adef'};
+        background: ${props => `${props.theme.brand?.primary || '#00adef'}25`};
+        box-shadow: 0 0 0 3px ${props => `${props.theme.brand?.primary || '#00adef'}1a`};
     }
 `;
 
@@ -214,8 +234,8 @@ const SearchResults = styled.div`
     top: calc(100% + 8px);
     left: 0;
     right: 0;
-    background: rgba(15, 23, 42, 0.98);
-    border: 1px solid ${props => props.theme.brand?.primary}4D;
+    background: ${props => props.theme.bg?.cardSolid || 'rgba(15, 23, 42, 0.98)'};
+    border: 1px solid ${props => `${props.theme.brand?.primary || '#00adef'}4D`};
     border-radius: 12px;
     max-height: 350px;
     overflow-y: auto;
@@ -229,10 +249,10 @@ const SearchResultsHeader = styled.div`
     padding: 0.6rem 1rem;
     font-size: 0.7rem;
     font-weight: 600;
-    color: ${props => props.theme.text?.tertiary};
+    color: ${props => props.theme.text?.tertiary || '#64748b'};
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    border-bottom: 1px solid ${props => props.theme.text?.tertiary}33;
+    border-bottom: 1px solid ${props => `${props.theme.brand?.primary || '#00adef'}33`};
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -245,8 +265,8 @@ const SearchResultItem = styled.div`
     padding: 0.8rem 1rem;
     cursor: pointer;
     transition: all 0.15s ease;
-    border-bottom: 1px solid ${props => props.theme.text?.tertiary}1a;
-    -webkit-tap-highlight-color: ${props => props.theme.brand?.primary}33;
+    border-bottom: 1px solid ${props => `${props.theme.brand?.primary || '#00adef'}1a`};
+    -webkit-tap-highlight-color: ${props => `${props.theme.brand?.primary || '#00adef'}33`};
     touch-action: manipulation;
     user-select: none;
     
@@ -255,11 +275,11 @@ const SearchResultItem = styled.div`
     }
     
     &:hover, &:active {
-        background: ${props => props.theme.brand?.primary}1a;
+        background: ${props => `${props.theme.brand?.primary || '#00adef'}1a`};
     }
     
     ${props => props.$selected && css`
-        background: ${props => props.theme.brand?.primary}26;
+        background: ${props => `${props.theme.brand?.primary || '#00adef'}26`};
     `}
 `;
 
@@ -267,11 +287,11 @@ const SearchResultIconBox = styled.div`
     width: 32px;
     height: 32px;
     border-radius: 6px;
-    background: ${props => props.$crypto ? `${props.theme.warning}33` : `${props.theme.brand?.primary}33`};
+    background: ${props => props.$crypto ? `${props.theme.warning || '#f59e0b'}33` : `${props.theme.brand?.primary || '#00adef'}33`};
     display: flex;
     align-items: center;
     justify-content: center;
-    color: ${props => props.$crypto ? props.theme.warning : props.theme.brand?.primary};
+    color: ${props => props.$crypto ? props.theme.warning || '#f59e0b' : props.theme.brand?.primary || '#00adef'};
     font-weight: 600;
     font-size: 0.7rem;
 `;
@@ -283,13 +303,13 @@ const SearchResultInfo = styled.div`
 
 const SearchResultSymbol = styled.div`
     font-weight: 600;
-    color: #f8fafc;
+    color: ${props => props.theme.text?.primary || '#f8fafc'};
     font-size: 0.85rem;
 `;
 
 const SearchResultName = styled.div`
     font-size: 0.7rem;
-    color: ${props => props.theme.text?.tertiary};
+    color: ${props => props.theme.text?.tertiary || '#64748b'};
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -299,8 +319,8 @@ const SearchResultType = styled.span`
     font-size: 0.6rem;
     padding: 0.15rem 0.4rem;
     border-radius: 4px;
-    background: ${props => props.$crypto ? `${props.theme.warning}33` : `${props.theme.brand?.primary}33`};
-    color: ${props => props.$crypto ? props.theme.warning : props.theme.brand?.primary};
+    background: ${props => props.$crypto ? `${props.theme.warning || '#f59e0b'}33` : `${props.theme.brand?.primary || '#00adef'}33`};
+    color: ${props => props.$crypto ? props.theme.warning || '#f59e0b' : props.theme.brand?.primary || '#00adef'};
     font-weight: 500;
     flex-shrink: 0;
 `;
@@ -308,14 +328,14 @@ const SearchResultType = styled.span`
 const NoResults = styled.div`
     padding: 1.5rem 1rem;
     text-align: center;
-    color: ${props => props.theme.text?.tertiary};
+    color: ${props => props.theme.text?.tertiary || '#64748b'};
     font-size: 0.8rem;
 `;
 
 const SearchLoading = styled.div`
     padding: 1.5rem 1rem;
     text-align: center;
-    color: ${props => props.theme.text?.tertiary};
+    color: ${props => props.theme.text?.tertiary || '#64748b'};
     font-size: 0.8rem;
     display: flex;
     align-items: center;
@@ -326,8 +346,8 @@ const SearchLoading = styled.div`
         content: '';
         width: 16px;
         height: 16px;
-        border: 2px solid ${props => props.theme.brand?.primary}4D;
-        border-top-color: ${props => props.theme.brand?.primary};
+        border: 2px solid ${props => `${props.theme.brand?.primary || '#00adef'}4D`};
+        border-top-color: ${props => props.theme.brand?.primary || '#00adef'};
         border-radius: 50%;
         animation: ${pulse} 0.8s linear infinite;
     }
@@ -353,21 +373,21 @@ const NavLink = styled(Link)`
     align-items: center;
     gap: 0.4rem;
     padding: 0.6rem 0.75rem;
-    color: ${props => props.$active ? props.theme.brand?.primary : props.theme.text?.secondary};
+    color: ${props => props.$active ? props.theme.brand?.primary || '#00adef' : props.theme.text?.secondary || '#94a3b8'};
     text-decoration: none;
     font-weight: 600;
     font-size: 0.85rem;
     border-radius: 8px;
     position: relative;
     transition: all 0.3s ease;
-    background: ${props => props.$active ? `${props.theme.brand?.primary}26` : 'transparent'};
-    border: 1px solid ${props => props.$active ? `${props.theme.brand?.primary}4D` : 'transparent'};
+    background: ${props => props.$active ? `${props.theme.brand?.primary || '#00adef'}26` : 'transparent'};
+    border: 1px solid ${props => props.$active ? `${props.theme.brand?.primary || '#00adef'}4D` : 'transparent'};
     white-space: nowrap;
 
     &:hover {
-        color: ${props => props.theme.brand?.primary};
-        background: ${props => props.theme.brand?.primary}1a;
-        border-color: ${props => props.theme.brand?.primary}4D;
+        color: ${props => props.theme.brand?.primary || '#00adef'};
+        background: ${props => `${props.theme.brand?.primary || '#00adef'}1a`};
+        border-color: ${props => `${props.theme.brand?.primary || '#00adef'}4D`};
         transform: translateY(-2px);
     }
 `;
@@ -377,9 +397,9 @@ const DropdownTrigger = styled.button`
     align-items: center;
     gap: 0.4rem;
     padding: 0.6rem 0.75rem;
-    color: ${props => props.$active ? props.theme.brand?.primary : props.theme.text?.secondary};
-    background: ${props => props.$active ? `${props.theme.brand?.primary}26` : 'transparent'};
-    border: 1px solid ${props => props.$active ? `${props.theme.brand?.primary}4D` : 'transparent'};
+    color: ${props => props.$active ? props.theme.brand?.primary || '#00adef' : props.theme.text?.secondary || '#94a3b8'};
+    background: ${props => props.$active ? `${props.theme.brand?.primary || '#00adef'}26` : 'transparent'};
+    border: 1px solid ${props => props.$active ? `${props.theme.brand?.primary || '#00adef'}4D` : 'transparent'};
     border-radius: 8px;
     font-weight: 600;
     font-size: 0.85rem;
@@ -388,9 +408,9 @@ const DropdownTrigger = styled.button`
     white-space: nowrap;
 
     &:hover {
-        color: ${props => props.theme.brand?.primary};
-        background: ${props => props.theme.brand?.primary}1a;
-        border-color: ${props => props.theme.brand?.primary}4D;
+        color: ${props => props.theme.brand?.primary || '#00adef'};
+        background: ${props => `${props.theme.brand?.primary || '#00adef'}1a`};
+        border-color: ${props => `${props.theme.brand?.primary || '#00adef'}4D`};
         transform: translateY(-2px);
     }
 
@@ -404,9 +424,9 @@ const DropdownMenu = styled.div`
     position: absolute;
     top: calc(100% + 10px);
     left: 0;
-    background: rgba(15, 23, 42, 0.98);
+    background: ${props => props.theme.bg?.cardSolid || 'rgba(15, 23, 42, 0.98)'};
     backdrop-filter: blur(20px);
-    border: 1px solid ${props => props.theme.brand?.primary}4D;
+    border: 1px solid ${props => `${props.theme.brand?.primary || '#00adef'}4D`};
     border-radius: 12px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
     min-width: 220px;
@@ -420,27 +440,27 @@ const DropdownItem = styled(Link)`
     align-items: center;
     gap: 0.75rem;
     padding: 0.875rem 1.25rem;
-    color: ${props => props.$active ? props.theme.brand?.primary : '#f8fafc'};
+    color: ${props => props.$active ? props.theme.brand?.primary || '#00adef' : props.theme.text?.primary || '#f8fafc'};
     text-decoration: none;
     font-weight: 500;
     transition: all 0.2s ease;
-    border-bottom: 1px solid ${props => props.theme.brand?.primary}1a;
-    background: ${props => props.$active ? `${props.theme.brand?.primary}26` : 'transparent'};
+    border-bottom: 1px solid ${props => `${props.theme.brand?.primary || '#00adef'}1a`};
+    background: ${props => props.$active ? `${props.theme.brand?.primary || '#00adef'}26` : 'transparent'};
 
     &:last-child {
         border-bottom: none;
     }
 
     &:hover {
-        background: ${props => props.theme.brand?.primary}26;
-        color: ${props => props.theme.brand?.primary};
+        background: ${props => `${props.theme.brand?.primary || '#00adef'}26`};
+        color: ${props => props.theme.brand?.primary || '#00adef'};
         padding-left: 1.5rem;
     }
 `;
 
 const DropdownDivider = styled.div`
     height: 1px;
-    background: ${props => props.theme.brand?.primary}33;
+    background: ${props => `${props.theme.brand?.primary || '#00adef'}33`};
     margin: 0.25rem 0;
 `;
 
@@ -448,7 +468,7 @@ const DropdownLabel = styled.div`
     padding: 0.5rem 1.25rem 0.25rem;
     font-size: 0.65rem;
     font-weight: 700;
-    color: ${props => props.theme.text?.tertiary};
+    color: ${props => props.theme.text?.tertiary || '#64748b'};
     text-transform: uppercase;
     letter-spacing: 0.05em;
 `;
@@ -469,9 +489,9 @@ const UserSection = styled.div`
 
 const NotificationButton = styled.button`
     position: relative;
-    background: ${props => props.theme.brand?.primary}1a;
-    border: 1px solid ${props => props.theme.brand?.primary}4D;
-    color: ${props => props.theme.brand?.primary};
+    background: ${props => `${props.theme.brand?.primary || '#00adef'}1a`};
+    border: 1px solid ${props => `${props.theme.brand?.primary || '#00adef'}4D`};
+    color: ${props => props.theme.brand?.primary || '#00adef'};
     width: 36px;
     height: 36px;
     border-radius: 8px;
@@ -482,9 +502,9 @@ const NotificationButton = styled.button`
     transition: all 0.3s ease;
 
     &:hover {
-        background: ${props => props.theme.brand?.primary}33;
+        background: ${props => `${props.theme.brand?.primary || '#00adef'}33`};
         transform: translateY(-2px);
-        box-shadow: 0 4px 15px ${props => props.theme.brand?.primary}4D;
+        box-shadow: 0 4px 15px ${props => `${props.theme.brand?.primary || '#00adef'}4D`};
         
         svg {
             animation: ${shake} 0.5s ease-in-out;
@@ -500,7 +520,7 @@ const NotificationBadge = styled.span`
     position: absolute;
     top: -4px;
     right: -4px;
-    background: linear-gradient(135deg, ${props => props.theme.error} 0%, ${props => props.theme.error}cc 100%);
+    background: ${props => `linear-gradient(135deg, ${props.theme.error || '#ef4444'} 0%, ${props.theme.error || '#ef4444'}cc 100%)`};
     color: white;
     font-size: 0.7rem;
     font-weight: 700;
@@ -519,9 +539,9 @@ const NotificationPanel = styled.div`
     position: absolute;
     top: calc(100% + 10px);
     right: 0;
-    background: rgba(15, 23, 42, 0.98);
+    background: ${props => props.theme.bg?.cardSolid || 'rgba(15, 23, 42, 0.98)'};
     backdrop-filter: blur(20px);
-    border: 1px solid ${props => props.theme.brand?.primary}4D;
+    border: 1px solid ${props => `${props.theme.brand?.primary || '#00adef'}4D`};
     border-radius: 12px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
     width: 400px;
@@ -540,14 +560,14 @@ const NotificationPanel = styled.div`
 
 const NotificationHeader = styled.div`
     padding: 1rem 1.25rem;
-    border-bottom: 1px solid ${props => props.theme.brand?.primary}33;
+    border-bottom: 1px solid ${props => `${props.theme.brand?.primary || '#00adef'}33`};
     display: flex;
     justify-content: space-between;
     align-items: center;
 `;
 
 const NotificationTitle = styled.h3`
-    color: ${props => props.theme.brand?.primary};
+    color: ${props => props.theme.brand?.primary || '#00adef'};
     font-size: 1.1rem;
     font-weight: 700;
     margin: 0;
@@ -556,14 +576,14 @@ const NotificationTitle = styled.h3`
 const MarkAllRead = styled.button`
     background: transparent;
     border: none;
-    color: ${props => props.theme.text?.secondary};
+    color: ${props => props.theme.text?.secondary || '#94a3b8'};
     font-size: 0.85rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
 
     &:hover {
-        color: ${props => props.theme.brand?.primary};
+        color: ${props => props.theme.brand?.primary || '#00adef'};
     }
 `;
 
@@ -576,29 +596,29 @@ const NotificationList = styled.div`
     }
 
     &::-webkit-scrollbar-track {
-        background: ${props => props.theme.brand?.primary}0d;
+        background: ${props => `${props.theme.brand?.primary || '#00adef'}0d`};
     }
 
     &::-webkit-scrollbar-thumb {
-        background: ${props => props.theme.brand?.primary}4D;
+        background: ${props => `${props.theme.brand?.primary || '#00adef'}4D`};
         border-radius: 3px;
 
         &:hover {
-            background: ${props => props.theme.brand?.primary}80;
+            background: ${props => `${props.theme.brand?.primary || '#00adef'}80`};
         }
     }
 `;
 
 const NotificationItem = styled.div`
     padding: 1rem 1.25rem;
-    border-bottom: 1px solid ${props => props.theme.brand?.primary}1a;
+    border-bottom: 1px solid ${props => `${props.theme.brand?.primary || '#00adef'}1a`};
     cursor: pointer;
     transition: all 0.2s ease;
-    background: ${props => props.$unread ? `${props.theme.brand?.primary}0d` : 'transparent'};
+    background: ${props => props.$unread ? `${props.theme.brand?.primary || '#00adef'}0d` : 'transparent'};
     position: relative;
 
     &:hover {
-        background: ${props => props.theme.brand?.primary}1a;
+        background: ${props => `${props.theme.brand?.primary || '#00adef'}1a`};
     }
 
     &:last-child {
@@ -622,16 +642,16 @@ const NotificationIcon = styled.div`
     justify-content: center;
     flex-shrink: 0;
     background: ${props => {
-        if (props.$type === 'success') return `${props.theme.success}33`;
-        if (props.$type === 'warning') return `${props.theme.warning}33`;
-        if (props.$type === 'error') return `${props.theme.error}33`;
-        return `${props.theme.brand?.primary}33`;
+        if (props.$type === 'success') return `${props.theme.success || '#10b981'}33`;
+        if (props.$type === 'warning') return `${props.theme.warning || '#f59e0b'}33`;
+        if (props.$type === 'error') return `${props.theme.error || '#ef4444'}33`;
+        return `${props.theme.brand?.primary || '#00adef'}33`;
     }};
     color: ${props => {
-        if (props.$type === 'success') return props.theme.success;
-        if (props.$type === 'warning') return props.theme.warning;
-        if (props.$type === 'error') return props.theme.error;
-        return props.theme.brand?.primary;
+        if (props.$type === 'success') return props.theme.success || '#10b981';
+        if (props.$type === 'warning') return props.theme.warning || '#f59e0b';
+        if (props.$type === 'error') return props.theme.error || '#ef4444';
+        return props.theme.brand?.primary || '#00adef';
     }};
 `;
 
@@ -640,20 +660,20 @@ const NotificationContent = styled.div`
 `;
 
 const NotificationItemTitle = styled.div`
-    color: #f8fafc;
+    color: ${props => props.theme.text?.primary || '#f8fafc'};
     font-weight: 600;
     font-size: 0.95rem;
     margin-bottom: 0.25rem;
 `;
 
 const NotificationItemText = styled.div`
-    color: ${props => props.theme.text?.secondary};
+    color: ${props => props.theme.text?.secondary || '#94a3b8'};
     font-size: 0.85rem;
     line-height: 1.4;
 `;
 
 const NotificationTime = styled.div`
-    color: ${props => props.theme.text?.tertiary};
+    color: ${props => props.theme.text?.tertiary || '#64748b'};
     font-size: 0.75rem;
     margin-top: 0.5rem;
     display: flex;
@@ -665,7 +685,7 @@ const UnreadDot = styled.div`
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: ${props => props.theme.brand?.primary};
+    background: ${props => props.theme.brand?.primary || '#00adef'};
     position: absolute;
     top: 1.25rem;
     right: 1.25rem;
@@ -675,7 +695,7 @@ const UnreadDot = styled.div`
 const EmptyState = styled.div`
     padding: 3rem 2rem;
     text-align: center;
-    color: ${props => props.theme.text?.tertiary};
+    color: ${props => props.theme.text?.tertiary || '#64748b'};
 `;
 
 const EmptyStateIcon = styled.div`
@@ -683,16 +703,16 @@ const EmptyStateIcon = styled.div`
     height: 64px;
     margin: 0 auto 1rem;
     border-radius: 50%;
-    background: ${props => props.theme.brand?.primary}1a;
+    background: ${props => `${props.theme.brand?.primary || '#00adef'}1a`};
     display: flex;
     align-items: center;
     justify-content: center;
-    color: ${props => props.theme.brand?.primary};
+    color: ${props => props.theme.brand?.primary || '#00adef'};
 `;
 
 const EmptyStateText = styled.div`
     font-size: 0.95rem;
-    color: ${props => props.theme.text?.secondary};
+    color: ${props => props.theme.text?.secondary || '#94a3b8'};
 `;
 
 const UserMenuButton = styled.button`
@@ -700,10 +720,10 @@ const UserMenuButton = styled.button`
     align-items: center;
     gap: 0.5rem;
     padding: 0.4rem 0.75rem;
-    background: linear-gradient(135deg, ${props => props.theme.brand?.primary}26 0%, ${props => props.theme.brand?.primary}0d 100%);
-    border: 1px solid ${props => props.theme.brand?.primary}4D;
+    background: ${props => `linear-gradient(135deg, ${props.theme.brand?.primary || '#00adef'}26 0%, ${props.theme.brand?.primary || '#00adef'}0d 100%)`};
+    border: 1px solid ${props => `${props.theme.brand?.primary || '#00adef'}4D`};
     border-radius: 10px;
-    color: #f8fafc;
+    color: ${props => props.theme.text?.primary || '#f8fafc'};
     font-weight: 600;
     font-size: 0.85rem;
     cursor: pointer;
@@ -711,9 +731,9 @@ const UserMenuButton = styled.button`
     position: relative;
 
     &:hover {
-        background: linear-gradient(135deg, ${props => props.theme.brand?.primary}40 0%, ${props => props.theme.brand?.primary}1a 100%);
+        background: ${props => `linear-gradient(135deg, ${props.theme.brand?.primary || '#00adef'}40 0%, ${props.theme.brand?.primary || '#00adef'}1a 100%)`};
         transform: translateY(-2px);
-        box-shadow: 0 4px 15px ${props => props.theme.brand?.primary}4D;
+        box-shadow: 0 4px 15px ${props => `${props.theme.brand?.primary || '#00adef'}4D`};
     }
 
     @media (max-width: 768px) {
@@ -728,7 +748,7 @@ const UserAvatar = styled.div`
     border-radius: 8px;
     background: ${props => props.$src ? 
         `url(${props.$src}) center/cover` : 
-        props.theme.brand?.gradient || `linear-gradient(135deg, ${props.theme.brand?.primary} 0%, ${props.theme.brand?.accent || props.theme.success} 100%)`
+        props.theme.brand?.gradient || `linear-gradient(135deg, ${props.theme.brand?.primary || '#00adef'} 0%, ${props.theme.brand?.accent || props.theme.success || '#10b981'} 100%)`
     };
     display: flex;
     align-items: center;
@@ -736,7 +756,7 @@ const UserAvatar = styled.div`
     font-weight: 700;
     font-size: ${props => props.$src ? '0' : '0.85rem'};
     color: white;
-    box-shadow: 0 2px 10px ${props => props.theme.brand?.primary}66;
+    box-shadow: 0 2px 10px ${props => `${props.theme.brand?.primary || '#00adef'}66`};
     position: relative;
     overflow: hidden;
 `;
@@ -755,6 +775,8 @@ const AvatarInitials = styled.div`
 `;
 
 const UserName = styled.span`
+    color: ${props => props.theme.text?.primary || '#f8fafc'};
+    
     @media (max-width: 768px) {
         display: none;
     }
@@ -763,6 +785,7 @@ const UserName = styled.span`
 const DropdownIconStyled = styled(ChevronDown)`
     transition: transform 0.3s ease;
     transform: ${props => props.$open ? 'rotate(180deg)' : 'rotate(0)'};
+    color: ${props => props.theme.text?.secondary || '#94a3b8'};
 
     @media (max-width: 768px) {
         display: none;
@@ -774,9 +797,9 @@ const UserDropdownMenu = styled.div`
     position: absolute;
     top: calc(100% + 10px);
     right: 0;
-    background: rgba(15, 23, 42, 0.98);
+    background: ${props => props.theme.bg?.cardSolid || 'rgba(15, 23, 42, 0.98)'};
     backdrop-filter: blur(20px);
-    border: 1px solid ${props => props.theme.brand?.primary}4D;
+    border: 1px solid ${props => `${props.theme.brand?.primary || '#00adef'}4D`};
     border-radius: 12px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
     min-width: 220px;
@@ -790,7 +813,7 @@ const UserDropdownItem = styled.button`
     padding: 0.75rem 1.25rem;
     background: transparent;
     border: none;
-    color: #f8fafc;
+    color: ${props => props.theme.text?.primary || '#f8fafc'};
     text-align: left;
     font-weight: 500;
     cursor: pointer;
@@ -798,23 +821,23 @@ const UserDropdownItem = styled.button`
     align-items: center;
     gap: 0.75rem;
     transition: all 0.2s ease;
-    border-bottom: 1px solid ${props => props.theme.brand?.primary}1a;
+    border-bottom: 1px solid ${props => `${props.theme.brand?.primary || '#00adef'}1a`};
 
     &:last-child {
         border-bottom: none;
     }
 
     &:hover {
-        background: ${props => props.theme.brand?.primary}26;
-        color: ${props => props.theme.brand?.primary};
+        background: ${props => `${props.theme.brand?.primary || '#00adef'}26`};
+        color: ${props => props.theme.brand?.primary || '#00adef'};
         padding-left: 1.5rem;
     }
 
     &.danger {
-        color: ${props => props.theme.error};
+        color: ${props => props.theme.error || '#ef4444'};
 
         &:hover {
-            background: ${props => props.theme.error}26;
+            background: ${props => `${props.theme.error || '#ef4444'}26`};
         }
     }
 `;
@@ -822,9 +845,9 @@ const UserDropdownItem = styled.button`
 // ============ MOBILE MENU ============
 const MobileMenuButton = styled.button`
     display: none;
-    background: ${props => props.theme.brand?.primary}1a;
-    border: 1px solid ${props => props.theme.brand?.primary}4D;
-    color: ${props => props.theme.brand?.primary};
+    background: ${props => `${props.theme.brand?.primary || '#00adef'}1a`};
+    border: 1px solid ${props => `${props.theme.brand?.primary || '#00adef'}4D`};
+    color: ${props => props.theme.brand?.primary || '#00adef'};
     width: 36px;
     height: 36px;
     border-radius: 8px;
@@ -834,7 +857,7 @@ const MobileMenuButton = styled.button`
     transition: all 0.3s ease;
 
     &:hover {
-        background: ${props => props.theme.brand?.primary}33;
+        background: ${props => `${props.theme.brand?.primary || '#00adef'}33`};
         transform: translateY(-2px);
     }
 
@@ -850,13 +873,13 @@ const MobileMenu = styled.div`
     right: 0;
     bottom: 0;
     min-height: calc(100vh - 70px);
-    background: #0a0e27;
+    background: ${props => props.theme.bg?.page || 'linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%)'};
     backdrop-filter: blur(20px);
     z-index: 9999;
     animation: ${fadeIn} 0.3s ease-out;
     overflow-y: auto;
     display: ${props => props.$open ? 'block' : 'none'};
-    border-top: 2px solid ${props => props.theme.brand?.primary}4D;
+    border-top: 2px solid ${props => `${props.theme.brand?.primary || '#00adef'}4D`};
 
     @media (min-width: 1025px) {
         display: none !important;
@@ -869,7 +892,7 @@ const MobileNavLinks = styled.div`
     flex-direction: column;
     gap: 0.5rem;
     min-height: 100vh;
-    background: #0a0e27;
+    background: ${props => props.theme.bg?.page || 'linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%)'};
 `;
 
 const MobileNavCategory = styled.div`
@@ -877,7 +900,7 @@ const MobileNavCategory = styled.div`
 `;
 
 const MobileCategoryTitle = styled.div`
-    color: ${props => props.theme.text?.tertiary};
+    color: ${props => props.theme.text?.tertiary || '#64748b'};
     font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -894,20 +917,20 @@ const MobileNavLink = styled(Link)`
     align-items: center;
     gap: 1rem;
     padding: 1rem 1.5rem;
-    color: ${props => props.$active ? props.theme.brand?.primary : '#f8fafc'};
+    color: ${props => props.$active ? props.theme.brand?.primary || '#00adef' : props.theme.text?.primary || '#f8fafc'};
     text-decoration: none;
     font-weight: 600;
     font-size: 1rem;
     border-radius: 12px;
-    background: ${props => props.$active ? `${props.theme.brand?.primary}26` : 'rgba(30, 41, 59, 0.5)'};
-    border: 1px solid ${props => props.$active ? `${props.theme.brand?.primary}4D` : `${props.theme.text?.tertiary}4D`};
+    background: ${props => props.$active ? `${props.theme.brand?.primary || '#00adef'}26` : props.theme.bg?.card || 'rgba(30, 41, 59, 0.5)'};
+    border: 1px solid ${props => props.$active ? `${props.theme.brand?.primary || '#00adef'}4D` : `${props.theme.border?.tertiary || 'rgba(100, 116, 139, 0.3)'}`};
     transition: all 0.2s ease;
     min-height: 56px;
 
     &:hover {
-        color: ${props => props.theme.brand?.primary};
-        background: ${props => props.theme.brand?.primary}1a;
-        border-color: ${props => props.theme.brand?.primary}4D;
+        color: ${props => props.theme.brand?.primary || '#00adef'};
+        background: ${props => `${props.theme.brand?.primary || '#00adef'}1a`};
+        border-color: ${props => `${props.theme.brand?.primary || '#00adef'}4D`};
         transform: translateX(5px);
     }
 `;
@@ -920,7 +943,7 @@ const MobileSearchContainer = styled.div`
 
 const Divider = styled.div`
     height: 1px;
-    background: linear-gradient(90deg, transparent, ${props => props.theme.brand?.primary}4D, transparent);
+    background: ${props => `linear-gradient(90deg, transparent, ${props.theme.brand?.primary || '#00adef'}4D, transparent)`};
     margin: 1rem 0;
 `;
 
@@ -941,18 +964,18 @@ const LoginButton = styled(Link)`
     align-items: center;
     gap: 0.4rem;
     padding: 0.6rem 1.25rem;
-    color: ${props => props.theme.brand?.primary};
+    color: ${props => props.theme.brand?.primary || '#00adef'};
     text-decoration: none;
     font-weight: 600;
     font-size: 0.9rem;
     border-radius: 8px;
     background: transparent;
-    border: 1px solid ${props => props.theme.brand?.primary}4D;
+    border: 1px solid ${props => `${props.theme.brand?.primary || '#00adef'}4D`};
     transition: all 0.3s ease;
     
     &:hover {
-        background: ${props => props.theme.brand?.primary}1a;
-        border-color: ${props => props.theme.brand?.primary}80;
+        background: ${props => `${props.theme.brand?.primary || '#00adef'}1a`};
+        border-color: ${props => `${props.theme.brand?.primary || '#00adef'}80`};
         transform: translateY(-2px);
     }
     
@@ -972,13 +995,13 @@ const SignUpButton = styled(Link)`
     font-weight: 600;
     font-size: 0.9rem;
     border-radius: 8px;
-    background: ${props => props.theme.brand?.gradient || `linear-gradient(135deg, ${props.theme.brand?.primary} 0%, ${props.theme.brand?.accent || props.theme.success} 100%)`};
+    background: ${props => props.theme.brand?.gradient || `linear-gradient(135deg, ${props.theme.brand?.primary || '#00adef'} 0%, ${props.theme.brand?.accent || props.theme.success || '#10b981'} 100%)`};
     border: none;
     transition: all 0.3s ease;
     
     &:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 20px ${props => props.theme.brand?.primary}66;
+        box-shadow: 0 4px 20px ${props => `${props.theme.brand?.primary || '#00adef'}66`};
     }
     
     @media (max-width: 768px) {
@@ -1002,7 +1025,7 @@ const PublicNavLink = styled(Link)`
     align-items: center;
     gap: 0.4rem;
     padding: 0.6rem 0.75rem;
-    color: ${props => props.theme.text?.secondary};
+    color: ${props => props.theme.text?.secondary || '#94a3b8'};
     text-decoration: none;
     font-weight: 600;
     font-size: 0.85rem;
@@ -1010,8 +1033,8 @@ const PublicNavLink = styled(Link)`
     transition: all 0.3s ease;
     
     &:hover {
-        color: ${props => props.theme.brand?.primary};
-        background: ${props => props.theme.brand?.primary}1a;
+        color: ${props => props.theme.brand?.primary || '#00adef'};
+        background: ${props => `${props.theme.brand?.primary || '#00adef'}1a`};
     }
 `;
 

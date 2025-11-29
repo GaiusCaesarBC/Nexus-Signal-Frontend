@@ -1,16 +1,34 @@
-// src/pages/DiscoveryPage.js - User Search & Discovery (UPDATED WITH AVATARS)
+// src/pages/DiscoveryPage.js - User Search & Discovery (THEMED WITH AVATAR BORDERS)
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import styled, { keyframes, css } from 'styled-components';
+import styled, { keyframes, css, useTheme as useStyledTheme } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useTheme as useThemeContext } from '../context/ThemeContext';
+import { useVault } from '../context/VaultContext';
 import {
     Search, Users, TrendingUp, Flame, Star, Crown,
     UserPlus, UserMinus, Check, Award, Trophy,
     ArrowUpRight, ArrowDownRight, Filter, X,
     Sparkles, Target, Zap, Eye, Globe, RefreshCw
 } from 'lucide-react';
+
+// ============ BORDER COLORS MAP (for Avatar Frames) ============
+const BORDER_COLORS = {
+    'border-bronze': { color: '#CD7F32', glow: 'rgba(205, 127, 50, 0.5)' },
+    'border-silver': { color: '#C0C0C0', glow: 'rgba(192, 192, 192, 0.5)' },
+    'border-gold': { color: '#FFD700', glow: 'rgba(255, 215, 0, 0.6)' },
+    'border-emerald': { color: '#10b981', glow: 'rgba(16, 185, 129, 0.6)' },
+    'border-ruby': { color: '#ef4444', glow: 'rgba(239, 68, 68, 0.7)' },
+    'border-platinum': { color: '#E5E4E2', glow: 'rgba(229, 228, 226, 0.7)' },
+    'border-sapphire': { color: '#3b82f6', glow: 'rgba(59, 130, 246, 0.7)' },
+    'border-amethyst': { color: '#8b5cf6', glow: 'rgba(139, 92, 246, 0.7)' },
+    'border-diamond': { color: '#00D4FF', glow: 'rgba(0, 212, 255, 0.8)' },
+    'border-rainbow': { color: '#8b5cf6', glow: 'rgba(139, 92, 246, 0.9)' },
+    'border-nexus': { color: '#00adef', glow: 'rgba(0, 173, 237, 1)' },
+    'default': { color: '#00adef', glow: 'rgba(0, 173, 239, 0.5)' }
+};
 
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`
@@ -42,11 +60,56 @@ const float = keyframes`
 const PageContainer = styled.div`
     min-height: 100vh;
     padding-top: 80px;
-    background: linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
-    color: #e0e6ed;
+    background: ${({ theme }) => theme.bg?.page || 'linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%)'};
+    color: ${({ theme }) => theme.text?.primary || '#e0e6ed'};
     padding-left: 2rem;
     padding-right: 2rem;
     padding-bottom: 2rem;
+`;
+
+const BackgroundOrbs = styled.div`
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 0;
+`;
+
+const Orb = styled.div`
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.3;
+    animation: ${float} ${props => props.$duration || '20s'} ease-in-out infinite;
+    
+    &:nth-child(1) {
+        width: 400px;
+        height: 400px;
+        background: ${({ theme }) => `radial-gradient(circle, ${theme.brand?.primary || '#ffd700'}66 0%, transparent 70%)`};
+        top: 10%;
+        left: -100px;
+    }
+    
+    &:nth-child(2) {
+        width: 300px;
+        height: 300px;
+        background: ${({ theme }) => `radial-gradient(circle, ${theme.brand?.accent || '#8b5cf6'}66 0%, transparent 70%)`};
+        top: 50%;
+        right: -50px;
+        animation-delay: -5s;
+    }
+    
+    &:nth-child(3) {
+        width: 350px;
+        height: 350px;
+        background: ${({ theme }) => `radial-gradient(circle, ${theme.success || '#10b981'}4D 0%, transparent 70%)`};
+        bottom: 10%;
+        left: 30%;
+        animation-delay: -10s;
+    }
 `;
 
 const Header = styled.div`
@@ -54,11 +117,13 @@ const Header = styled.div`
     margin: 0 auto 3rem;
     text-align: center;
     animation: ${fadeIn} 0.8s ease-out;
+    position: relative;
+    z-index: 1;
 `;
 
 const Title = styled.h1`
     font-size: 3.5rem;
-    background: linear-gradient(135deg, #ffd700 0%, #ffed4e 50%, #ffd700 100%);
+    background: ${({ theme }) => theme.brand?.gradient || 'linear-gradient(135deg, #ffd700 0%, #ffed4e 50%, #ffd700 100%)'};
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -79,7 +144,7 @@ const TitleIcon = styled.div`
 `;
 
 const Subtitle = styled.p`
-    color: #94a3b8;
+    color: ${({ theme }) => theme.text?.secondary || '#94a3b8'};
     font-size: 1.2rem;
     margin-bottom: 2rem;
 `;
@@ -89,6 +154,7 @@ const SearchContainer = styled.div`
     max-width: 800px;
     margin: 0 auto 3rem;
     position: relative;
+    z-index: 1;
 `;
 
 const SearchWrapper = styled.div`
@@ -99,22 +165,22 @@ const SearchWrapper = styled.div`
 const SearchInput = styled.input`
     width: 100%;
     padding: 1.25rem 4rem 1.25rem 4rem;
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
-    border: 2px solid rgba(255, 215, 0, 0.3);
+    background: ${({ theme }) => theme.bg?.card || 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%)'};
+    border: 2px solid ${({ theme }) => `${theme.brand?.primary || '#ffd700'}4D`};
     border-radius: 16px;
-    color: #e0e6ed;
+    color: ${({ theme }) => theme.text?.primary || '#e0e6ed'};
     font-size: 1.1rem;
     transition: all 0.3s ease;
 
     &:focus {
         outline: none;
-        border-color: #ffd700;
-        box-shadow: 0 0 0 4px rgba(255, 215, 0, 0.2);
-        background: linear-gradient(135deg, rgba(30, 41, 59, 1) 0%, rgba(15, 23, 42, 1) 100%);
+        border-color: ${({ theme }) => theme.brand?.primary || '#ffd700'};
+        box-shadow: ${({ theme }) => `0 0 0 4px ${theme.brand?.primary || '#ffd700'}33`};
+        background: ${({ theme }) => theme.bg?.cardHover || 'linear-gradient(135deg, rgba(30, 41, 59, 1) 0%, rgba(15, 23, 42, 1) 100%)'};
     }
 
     &::placeholder {
-        color: #64748b;
+        color: ${({ theme }) => theme.text?.tertiary || '#64748b'};
     }
 `;
 
@@ -123,7 +189,7 @@ const SearchIcon = styled(Search)`
     left: 1.25rem;
     top: 50%;
     transform: translateY(-50%);
-    color: #ffd700;
+    color: ${({ theme }) => theme.brand?.primary || '#ffd700'};
 `;
 
 const ClearButton = styled.button`
@@ -131,20 +197,20 @@ const ClearButton = styled.button`
     right: 1.25rem;
     top: 50%;
     transform: translateY(-50%);
-    background: rgba(255, 215, 0, 0.1);
-    border: 1px solid rgba(255, 215, 0, 0.3);
+    background: ${({ theme }) => `${theme.brand?.primary || '#ffd700'}1A`};
+    border: 1px solid ${({ theme }) => `${theme.brand?.primary || '#ffd700'}4D`};
     border-radius: 50%;
     width: 32px;
     height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #ffd700;
+    color: ${({ theme }) => theme.brand?.primary || '#ffd700'};
     cursor: pointer;
     transition: all 0.2s ease;
 
     &:hover {
-        background: rgba(255, 215, 0, 0.2);
+        background: ${({ theme }) => `${theme.brand?.primary || '#ffd700'}33`};
         transform: translateY(-50%) scale(1.1);
     }
 `;
@@ -157,17 +223,22 @@ const FiltersContainer = styled.div`
     gap: 1rem;
     flex-wrap: wrap;
     justify-content: center;
+    position: relative;
+    z-index: 1;
 `;
 
 const FilterChip = styled.button`
     padding: 0.75rem 1.25rem;
-    background: ${props => props.$active ? 
-        'linear-gradient(135deg, rgba(255, 215, 0, 0.3) 0%, rgba(255, 215, 0, 0.15) 100%)' :
-        'rgba(30, 41, 59, 0.5)'
+    background: ${({ $active, theme }) => $active ? 
+        `linear-gradient(135deg, ${theme.brand?.primary || '#ffd700'}4D 0%, ${theme.brand?.primary || '#ffd700'}26 100%)` :
+        theme.bg?.card || 'rgba(30, 41, 59, 0.5)'
     };
-    border: 1px solid ${props => props.$active ? 'rgba(255, 215, 0, 0.5)' : 'rgba(100, 116, 139, 0.3)'};
+    border: 1px solid ${({ $active, theme }) => $active ? 
+        `${theme.brand?.primary || '#ffd700'}80` : 
+        theme.border?.primary || 'rgba(100, 116, 139, 0.3)'
+    };
     border-radius: 12px;
-    color: ${props => props.$active ? '#ffd700' : '#94a3b8'};
+    color: ${({ $active, theme }) => $active ? theme.brand?.primary || '#ffd700' : theme.text?.secondary || '#94a3b8'};
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -177,9 +248,9 @@ const FilterChip = styled.button`
     white-space: nowrap;
 
     &:hover {
-        background: linear-gradient(135deg, rgba(255, 215, 0, 0.3) 0%, rgba(255, 215, 0, 0.15) 100%);
-        border-color: rgba(255, 215, 0, 0.5);
-        color: #ffd700;
+        background: ${({ theme }) => `linear-gradient(135deg, ${theme.brand?.primary || '#ffd700'}4D 0%, ${theme.brand?.primary || '#ffd700'}26 100%)`};
+        border-color: ${({ theme }) => `${theme.brand?.primary || '#ffd700'}80`};
+        color: ${({ theme }) => theme.brand?.primary || '#ffd700'};
         transform: translateY(-2px);
     }
 `;
@@ -188,6 +259,8 @@ const FilterChip = styled.button`
 const Section = styled.div`
     max-width: 1400px;
     margin: 0 auto 3rem;
+    position: relative;
+    z-index: 1;
 `;
 
 const SectionHeader = styled.div`
@@ -198,7 +271,7 @@ const SectionHeader = styled.div`
 `;
 
 const SectionTitle = styled.h2`
-    color: #ffd700;
+    color: ${({ theme }) => theme.brand?.primary || '#ffd700'};
     font-size: 1.8rem;
     font-weight: 700;
     display: flex;
@@ -208,10 +281,10 @@ const SectionTitle = styled.h2`
 
 const RefreshButton = styled.button`
     padding: 0.75rem 1.25rem;
-    background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+    background: ${({ theme }) => theme.brand?.gradient || 'linear-gradient(135deg, #ffd700 0%, #ffed4e 100%)'};
     border: none;
     border-radius: 12px;
-    color: #0a0e27;
+    color: ${({ theme }) => theme.bg?.page || '#0a0e27'};
     font-weight: 700;
     cursor: pointer;
     display: flex;
@@ -221,7 +294,7 @@ const RefreshButton = styled.button`
 
     &:hover:not(:disabled) {
         transform: translateY(-2px);
-        box-shadow: 0 8px 24px rgba(255, 215, 0, 0.4);
+        box-shadow: ${({ theme }) => `0 8px 24px ${theme.brand?.primary || '#ffd700'}66`};
     }
 
     &:disabled {
@@ -230,7 +303,7 @@ const RefreshButton = styled.button`
     }
 
     svg {
-        animation: ${props => props.$loading ? spin : 'none'} 1s linear infinite;
+        animation: ${props => props.$loading ? css`${spin} 1s linear infinite` : 'none'};
     }
 `;
 
@@ -242,20 +315,21 @@ const TraderGrid = styled.div`
 `;
 
 const TraderCard = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    background: ${({ theme }) => theme.bg?.card || 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%)'};
     backdrop-filter: blur(10px);
-    border: 2px solid rgba(255, 215, 0, 0.2);
+    border: 2px solid ${({ theme }) => theme.border?.primary || 'rgba(255, 215, 0, 0.2)'};
     border-radius: 16px;
     padding: 1.5rem;
     transition: all 0.3s ease;
     cursor: pointer;
     animation: ${fadeIn} 0.6s ease-out;
     animation-delay: ${props => props.$index * 0.05}s;
+    animation-fill-mode: backwards;
 
     &:hover {
         transform: translateY(-8px);
-        border-color: rgba(255, 215, 0, 0.5);
-        box-shadow: 0 12px 40px rgba(255, 215, 0, 0.3);
+        border-color: ${({ theme }) => `${theme.brand?.primary || '#ffd700'}80`};
+        box-shadow: ${({ theme }) => `0 12px 40px ${theme.brand?.primary || '#ffd700'}4D`};
     }
 `;
 
@@ -265,13 +339,13 @@ const CardTop = styled.div`
     margin-bottom: 1rem;
 `;
 
-// ✅ UPDATED AVATAR COMPONENTS
+// ✅ THEMED AVATAR COMPONENTS WITH BORDER SUPPORT
 const Avatar = styled.div`
     width: 70px;
     height: 70px;
     border-radius: 50%;
     background: ${props => props.$hasImage ? 'transparent' : 'linear-gradient(135deg, #ffd700, #ffed4e)'};
-    border: 3px solid rgba(255, 215, 0, 0.5);
+    border: 3px solid ${props => props.$borderColor || 'rgba(255, 215, 0, 0.5)'};
     display: flex;
     align-items: center;
     justify-content: center;
@@ -281,6 +355,13 @@ const Avatar = styled.div`
     flex-shrink: 0;
     position: relative;
     overflow: hidden;
+    box-shadow: ${props => props.$glow ? `0 0 15px ${props.$glow}` : 'none'};
+    transition: all 0.3s ease;
+
+    &:hover {
+        transform: scale(1.05);
+        box-shadow: ${props => `0 0 20px ${props.$glow || 'rgba(255, 215, 0, 0.5)'}`};
+    }
 `;
 
 const AvatarImage = styled.img`
@@ -310,7 +391,7 @@ const RankBadge = styled.div`
         if (props.$rank === 3) return 'linear-gradient(135deg, #cd7f32, #e5a55d)';
         return 'linear-gradient(135deg, rgba(255, 215, 0, 0.3), rgba(255, 215, 0, 0.2))';
     }};
-    border: 2px solid #0a0e27;
+    border: 2px solid ${({ theme }) => theme.bg?.page || '#0a0e27'};
     display: flex;
     align-items: center;
     justify-content: center;
@@ -329,7 +410,7 @@ const UserInfo = styled.div`
 const DisplayName = styled.h3`
     font-size: 1.3rem;
     font-weight: 700;
-    color: #e0e6ed;
+    color: ${({ theme }) => theme.text?.primary || '#e0e6ed'};
     margin-bottom: 0.25rem;
     display: flex;
     align-items: center;
@@ -340,7 +421,7 @@ const DisplayName = styled.h3`
 `;
 
 const Username = styled.div`
-    color: #64748b;
+    color: ${({ theme }) => theme.text?.tertiary || '#64748b'};
     font-size: 0.9rem;
     margin-bottom: 0.5rem;
 `;
@@ -353,15 +434,15 @@ const BadgesRow = styled.div`
 
 const Badge = styled.span`
     padding: 0.25rem 0.5rem;
-    background: ${props => {
-        if (props.$type === 'gold') return 'rgba(255, 215, 0, 0.2)';
-        if (props.$type === 'fire') return 'rgba(239, 68, 68, 0.2)';
-        return 'rgba(0, 173, 237, 0.2)';
+    background: ${({ $type, theme }) => {
+        if ($type === 'gold') return `${theme.brand?.primary || '#ffd700'}33`;
+        if ($type === 'fire') return `${theme.error || '#ef4444'}33`;
+        return `${theme.brand?.accent || '#00adef'}33`;
     }};
-    border: 1px solid ${props => {
-        if (props.$type === 'gold') return 'rgba(255, 215, 0, 0.5)';
-        if (props.$type === 'fire') return 'rgba(239, 68, 68, 0.5)';
-        return 'rgba(0, 173, 237, 0.5)';
+    border: 1px solid ${({ $type, theme }) => {
+        if ($type === 'gold') return `${theme.brand?.primary || '#ffd700'}80`;
+        if ($type === 'fire') return `${theme.error || '#ef4444'}80`;
+        return `${theme.brand?.accent || '#00adef'}80`;
     }};
     border-radius: 8px;
     font-size: 0.7rem;
@@ -369,10 +450,10 @@ const Badge = styled.span`
     display: inline-flex;
     align-items: center;
     gap: 0.25rem;
-    color: ${props => {
-        if (props.$type === 'gold') return '#ffd700';
-        if (props.$type === 'fire') return '#ef4444';
-        return '#00adef';
+    color: ${({ $type, theme }) => {
+        if ($type === 'gold') return theme.brand?.primary || '#ffd700';
+        if ($type === 'fire') return theme.error || '#ef4444';
+        return theme.brand?.accent || '#00adef';
     }};
 `;
 
@@ -382,7 +463,7 @@ const StatsGrid = styled.div`
     gap: 1rem;
     margin: 1rem 0;
     padding-top: 1rem;
-    border-top: 1px solid rgba(255, 215, 0, 0.2);
+    border-top: 1px solid ${({ theme }) => theme.border?.primary || 'rgba(255, 215, 0, 0.2)'};
 `;
 
 const StatBox = styled.div`
@@ -390,7 +471,7 @@ const StatBox = styled.div`
 `;
 
 const StatLabel = styled.div`
-    color: #64748b;
+    color: ${({ theme }) => theme.text?.tertiary || '#64748b'};
     font-size: 0.75rem;
     margin-bottom: 0.25rem;
     text-transform: uppercase;
@@ -400,10 +481,10 @@ const StatLabel = styled.div`
 const StatValue = styled.div`
     font-size: 1.1rem;
     font-weight: 700;
-    color: ${props => {
-        if (props.$positive) return '#10b981';
-        if (props.$negative) return '#ef4444';
-        return '#ffd700';
+    color: ${({ $positive, $negative, theme }) => {
+        if ($positive) return theme.success || '#10b981';
+        if ($negative) return theme.error || '#ef4444';
+        return theme.brand?.primary || '#ffd700';
     }};
     display: flex;
     align-items: center;
@@ -414,16 +495,16 @@ const StatValue = styled.div`
 const FollowButton = styled.button`
     width: 100%;
     padding: 0.75rem;
-    background: ${props => props.$following ? 
-        'rgba(239, 68, 68, 0.1)' :
-        'linear-gradient(135deg, #ffd700 0%, #ffed4e 100%)'
+    background: ${({ $following, theme }) => $following ? 
+        `${theme.error || '#ef4444'}1A` :
+        theme.brand?.gradient || 'linear-gradient(135deg, #ffd700 0%, #ffed4e 100%)'
     };
-    border: 1px solid ${props => props.$following ? 
-        'rgba(239, 68, 68, 0.3)' :
+    border: 1px solid ${({ $following, theme }) => $following ? 
+        `${theme.error || '#ef4444'}4D` :
         'transparent'
     };
     border-radius: 10px;
-    color: ${props => props.$following ? '#ef4444' : '#0a0e27'};
+    color: ${({ $following, theme }) => $following ? theme.error || '#ef4444' : theme.bg?.page || '#0a0e27'};
     font-weight: 700;
     cursor: pointer;
     display: flex;
@@ -434,15 +515,16 @@ const FollowButton = styled.button`
 
     &:hover {
         transform: translateY(-2px);
-        box-shadow: 0 6px 16px ${props => props.$following ? 
-            'rgba(239, 68, 68, 0.3)' :
-            'rgba(255, 215, 0, 0.4)'
+        box-shadow: ${({ $following, theme }) => $following ? 
+            `0 6px 16px ${theme.error || '#ef4444'}4D` :
+            `0 6px 16px ${theme.brand?.primary || '#ffd700'}66`
         };
     }
 
     &:disabled {
         opacity: 0.6;
         cursor: not-allowed;
+        transform: none;
     }
 `;
 
@@ -457,23 +539,23 @@ const EmptyIcon = styled.div`
     width: 150px;
     height: 150px;
     margin: 0 auto 2rem;
-    background: linear-gradient(135deg, rgba(255, 215, 0, 0.2) 0%, rgba(255, 215, 0, 0.05) 100%);
+    background: ${({ theme }) => `linear-gradient(135deg, ${theme.brand?.primary || '#ffd700'}33 0%, ${theme.brand?.primary || '#ffd700'}0D 100%)`};
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 3px dashed rgba(255, 215, 0, 0.4);
+    border: 3px dashed ${({ theme }) => `${theme.brand?.primary || '#ffd700'}66`};
     animation: ${float} 3s ease-in-out infinite;
 `;
 
 const EmptyTitle = styled.h2`
-    color: #ffd700;
+    color: ${({ theme }) => theme.brand?.primary || '#ffd700'};
     font-size: 2rem;
     margin-bottom: 1rem;
 `;
 
 const EmptyText = styled.p`
-    color: #94a3b8;
+    color: ${({ theme }) => theme.text?.secondary || '#94a3b8'};
     font-size: 1.2rem;
 `;
 
@@ -488,7 +570,7 @@ const LoadingContainer = styled.div`
 
 const LoadingSpinner = styled(Search)`
     animation: ${spin} 1s linear infinite;
-    color: #ffd700;
+    color: ${({ theme }) => theme.brand?.primary || '#ffd700'};
 `;
 
 // ============ COMPONENT ============
@@ -496,6 +578,9 @@ const DiscoveryPage = () => {
     const { api, user } = useAuth();
     const toast = useToast();
     const navigate = useNavigate();
+    const theme = useStyledTheme();
+    const { profileThemeId } = useThemeContext();
+    const { equipped } = useVault();
     
     const [searchQuery, setSearchQuery] = useState('');
     const [activeFilter, setActiveFilter] = useState('suggested');
@@ -504,6 +589,27 @@ const DiscoveryPage = () => {
     const [loading, setLoading] = useState(true);
     const [searching, setSearching] = useState(false);
     const [following, setFollowing] = useState(new Set());
+
+    // ============ HELPER FUNCTIONS ============
+    
+    // Get avatar border style from equippedBorder
+    const getAvatarBorderStyle = useCallback((borderId) => {
+        if (!borderId) return BORDER_COLORS['default'];
+        const normalizedId = borderId.startsWith('border-') ? borderId : `border-${borderId}`;
+        return BORDER_COLORS[normalizedId] || BORDER_COLORS[borderId] || BORDER_COLORS['default'];
+    }, []);
+
+    // Current user's border
+    const currentUserBorder = useMemo(() => {
+        const userBorder = equipped?.border || 'default';
+        return getAvatarBorderStyle(userBorder);
+    }, [equipped?.border, getAvatarBorderStyle]);
+
+    // Get initials
+    const getInitials = useCallback((trader) => {
+        const name = trader.profile?.displayName || trader.displayName || trader.username || 'T';
+        return name.charAt(0).toUpperCase();
+    }, []);
 
     useEffect(() => {
         fetchSuggestedTraders();
@@ -526,7 +632,6 @@ const DiscoveryPage = () => {
     const fetchSuggestedTraders = async () => {
         setLoading(true);
         try {
-            // ✅ UPDATED: Use social/leaderboard endpoint
             const response = await api.get('/social/leaderboard?limit=20');
             setTraders(response.data || []);
         } catch (error) {
@@ -543,7 +648,6 @@ const DiscoveryPage = () => {
         
         setSearching(true);
         try {
-            // ✅ UPDATED: Use social/search endpoint
             const response = await api.get(`/social/search?q=${encodeURIComponent(searchQuery)}`);
             setSearchResults(response.data || []);
         } catch (error) {
@@ -557,7 +661,6 @@ const DiscoveryPage = () => {
 
     const fetchFollowing = async () => {
         try {
-            // ✅ UPDATED: Get current user data
             const response = await api.get('/auth/me');
             if (response.data.social?.following) {
                 setFollowing(new Set(response.data.social.following.map(id => id.toString())));
@@ -573,7 +676,6 @@ const DiscoveryPage = () => {
         try {
             const isFollowing = following.has(userId);
             
-            // ✅ UPDATED: Use social follow endpoints
             if (isFollowing) {
                 await api.post(`/social/unfollow/${userId}`);
                 const newFollowing = new Set(following);
@@ -602,15 +704,14 @@ const DiscoveryPage = () => {
         setSearchResults([]);
     };
 
-    // ✅ Helper to get initials
-    const getInitials = (trader) => {
-        const name = trader.profile?.displayName || trader.displayName || trader.username || 'T';
-        return name.charAt(0).toUpperCase();
-    };
-
     const renderTraderCard = (trader, index) => {
         const isOwnProfile = trader._id === user?.id || trader.userId === user?.id;
         const traderId = trader._id || trader.userId;
+        
+        // Get trader's equipped border for avatar frame
+        const traderBorderStyle = getAvatarBorderStyle(
+            trader.equippedBorder || trader.vault?.equippedBorder || 'default'
+        );
         
         return (
             <TraderCard 
@@ -619,8 +720,11 @@ const DiscoveryPage = () => {
                 onClick={() => handleCardClick(trader)}
             >
                 <CardTop>
-                    {/* ✅ UPDATED: Show real avatar or initials */}
-                    <Avatar $hasImage={!!(trader.profile?.avatar || trader.avatar)}>
+                    <Avatar 
+                        $hasImage={!!(trader.profile?.avatar || trader.avatar)}
+                        $borderColor={traderBorderStyle.color}
+                        $glow={traderBorderStyle.glow}
+                    >
                         {(trader.profile?.avatar || trader.avatar) ? (
                             <AvatarImage 
                                 src={trader.profile?.avatar || trader.avatar} 
@@ -644,8 +748,8 @@ const DiscoveryPage = () => {
                     <UserInfo>
                         <DisplayName>
                             {trader.profile?.displayName || trader.displayName || trader.username}
-                            {(trader.stats?.rank || trader.rank) === 1 && <Crown size={16} color="#ffd700" />}
-                            {trader.profile?.badges?.includes('verified') && <Check size={16} color="#10b981" />}
+                            {(trader.stats?.rank || trader.rank) === 1 && <Crown size={16} color={theme?.brand?.primary || '#ffd700'} />}
+                            {trader.profile?.badges?.includes('verified') && <Check size={16} color={theme?.success || '#10b981'} />}
                         </DisplayName>
                         <Username>@{trader.username}</Username>
                         <BadgesRow>
@@ -730,9 +834,14 @@ const DiscoveryPage = () => {
     if (loading && !searchQuery) {
         return (
             <PageContainer>
+                <BackgroundOrbs>
+                    <Orb $duration="25s" />
+                    <Orb $duration="30s" />
+                    <Orb $duration="20s" />
+                </BackgroundOrbs>
                 <LoadingContainer>
                     <LoadingSpinner size={64} />
-                    <div style={{ color: '#94a3b8', fontSize: '1.1rem' }}>Loading traders...</div>
+                    <div style={{ color: theme?.text?.secondary || '#94a3b8', fontSize: '1.1rem' }}>Loading traders...</div>
                 </LoadingContainer>
             </PageContainer>
         );
@@ -740,10 +849,16 @@ const DiscoveryPage = () => {
 
     return (
         <PageContainer>
+            <BackgroundOrbs>
+                <Orb $duration="25s" />
+                <Orb $duration="30s" />
+                <Orb $duration="20s" />
+            </BackgroundOrbs>
+
             <Header>
                 <Title>
                     <TitleIcon>
-                        <Sparkles size={56} color="#ffd700" />
+                        <Sparkles size={56} color={theme?.brand?.primary || '#ffd700'} />
                     </TitleIcon>
                     Discover Traders
                 </Title>
@@ -829,7 +944,7 @@ const DiscoveryPage = () => {
                 ) : (
                     <EmptyState>
                         <EmptyIcon>
-                            <Search size={80} color="#ffd700" />
+                            <Search size={80} color={theme?.brand?.primary || '#ffd700'} />
                         </EmptyIcon>
                         <EmptyTitle>
                             {searchQuery ? 'No Traders Found' : 'No Traders Available'}

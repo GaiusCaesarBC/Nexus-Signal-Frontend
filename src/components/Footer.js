@@ -1,4 +1,4 @@
-// client/src/components/Footer.js - THE MOST LEGENDARY FOOTER - THEMED VERSION
+// client/src/components/Footer.js - THE MOST LEGENDARY FOOTER - FULLY THEMED
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { Link } from 'react-router-dom';
@@ -38,9 +38,10 @@ const particles = keyframes`
 // ============ STYLED COMPONENTS ============
 const FooterContainer = styled.footer`
     width: 100%;
-    background: linear-gradient(180deg, #0a0e27 0%, #1a1f3a 100%);
+    background: ${props => props.theme.bg?.page || 'linear-gradient(180deg, #0a0e27 0%, #1a1f3a 100%)'};
     position: relative;
     overflow: hidden;
+    border-top: 1px solid ${props => `${props.theme.brand?.primary || '#00adef'}33`};
 `;
 
 // Animated background particles
@@ -111,10 +112,10 @@ const Logo = styled.div`
     gap: 0.75rem;
     font-size: 1.8rem;
     font-weight: 900;
-    color: ${props => props.theme.brand?.primary};
+    color: ${props => props.theme.brand?.primary || '#00adef'};
     text-shadow: 
-        0 0 10px ${props => props.theme.brand?.primary}cc,
-        0 0 20px ${props => props.theme.brand?.primary}99;
+        0 0 10px ${props => `${props.theme.brand?.primary || '#00adef'}cc`},
+        0 0 20px ${props => `${props.theme.brand?.primary || '#00adef'}99`};
     cursor: pointer;
     transition: transform 0.3s ease;
 
@@ -128,7 +129,7 @@ const LogoIcon = styled.div`
 `;
 
 const BrandText = styled.p`
-    color: ${props => props.theme.text?.secondary};
+    color: ${props => props.theme.text?.secondary || '#94a3b8'};
     line-height: 1.6;
     font-size: 0.95rem;
 `;
@@ -142,26 +143,26 @@ const SocialIcons = styled.div`
 const SocialIcon = styled.a`
     width: 44px;
     height: 44px;
-    background: linear-gradient(135deg, ${props => props.theme.brand?.primary}33 0%, ${props => props.theme.brand?.accent || props.theme.brand?.secondary}33 100%);
-    border: 1px solid ${props => props.theme.brand?.primary}4D;
+    background: linear-gradient(135deg, ${props => `${props.theme.brand?.primary || '#00adef'}33`} 0%, ${props => `${props.theme.brand?.accent || props.theme.brand?.secondary || '#8b5cf6'}33`} 100%);
+    border: 1px solid ${props => `${props.theme.brand?.primary || '#00adef'}4D`};
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: ${props => props.theme.brand?.primary};
+    color: ${props => props.theme.brand?.primary || '#00adef'};
     transition: all 0.3s ease;
     cursor: pointer;
 
     &:hover {
-        background: linear-gradient(135deg, ${props => props.theme.brand?.primary}66 0%, ${props => props.theme.brand?.accent || props.theme.brand?.secondary}66 100%);
-        border-color: ${props => props.theme.brand?.primary};
+        background: linear-gradient(135deg, ${props => `${props.theme.brand?.primary || '#00adef'}66`} 0%, ${props => `${props.theme.brand?.accent || props.theme.brand?.secondary || '#8b5cf6'}66`} 100%);
+        border-color: ${props => props.theme.brand?.primary || '#00adef'};
         transform: translateY(-5px) scale(1.1);
-        box-shadow: 0 10px 25px ${props => props.theme.brand?.primary}66;
+        box-shadow: 0 10px 25px ${props => `${props.theme.brand?.primary || '#00adef'}66`};
     }
 `;
 
 const SectionTitle = styled.h3`
-    color: #f8fafc;
+    color: ${props => props.theme.text?.primary || '#f8fafc'};
     font-size: 1.1rem;
     font-weight: 700;
     margin-bottom: 0.5rem;
@@ -170,12 +171,12 @@ const SectionTitle = styled.h3`
     gap: 0.5rem;
 
     svg {
-        color: ${props => props.theme.brand?.primary};
+        color: ${props => props.theme.brand?.primary || '#00adef'};
     }
 `;
 
 const FooterLink = styled(Link)`
-    color: ${props => props.theme.text?.secondary};
+    color: ${props => props.theme.text?.secondary || '#94a3b8'};
     text-decoration: none;
     transition: all 0.3s ease;
     display: flex;
@@ -184,13 +185,13 @@ const FooterLink = styled(Link)`
     font-size: 0.95rem;
 
     &:hover {
-        color: ${props => props.theme.brand?.primary};
+        color: ${props => props.theme.brand?.primary || '#00adef'};
         transform: translateX(5px);
     }
 `;
 
 const ExternalLink = styled.a`
-    color: ${props => props.theme.text?.secondary};
+    color: ${props => props.theme.text?.secondary || '#94a3b8'};
     text-decoration: none;
     transition: all 0.3s ease;
     display: flex;
@@ -199,7 +200,7 @@ const ExternalLink = styled.a`
     font-size: 0.95rem;
 
     &:hover {
-        color: ${props => props.theme.brand?.primary};
+        color: ${props => props.theme.brand?.primary || '#00adef'};
         transform: translateX(5px);
     }
 `;
@@ -209,7 +210,7 @@ const NewsletterSection = styled(FooterSection)`
 `;
 
 const NewsletterText = styled.p`
-    color: ${props => props.theme.text?.secondary};
+    color: ${props => props.theme.text?.secondary || '#94a3b8'};
     font-size: 0.9rem;
     line-height: 1.5;
 `;
@@ -223,28 +224,28 @@ const NewsletterForm = styled.form`
 const EmailInput = styled.input`
     flex: 1;
     padding: 0.75rem 1rem;
-    background: ${props => props.theme.brand?.primary}1a;
-    border: 1px solid ${props => props.theme.brand?.primary}4D;
+    background: ${props => `${props.theme.brand?.primary || '#00adef'}1a`};
+    border: 1px solid ${props => `${props.theme.brand?.primary || '#00adef'}4D`};
     border-radius: 8px;
-    color: #f8fafc;
+    color: ${props => props.theme.text?.primary || '#f8fafc'};
     font-size: 0.95rem;
     transition: all 0.3s ease;
 
     &::placeholder {
-        color: ${props => props.theme.text?.tertiary};
+        color: ${props => props.theme.text?.tertiary || '#64748b'};
     }
 
     &:focus {
         outline: none;
-        border-color: ${props => props.theme.brand?.primary};
-        background: ${props => props.theme.brand?.primary}26;
-        box-shadow: 0 0 0 3px ${props => props.theme.brand?.primary}33;
+        border-color: ${props => props.theme.brand?.primary || '#00adef'};
+        background: ${props => `${props.theme.brand?.primary || '#00adef'}26`};
+        box-shadow: 0 0 0 3px ${props => `${props.theme.brand?.primary || '#00adef'}33`};
     }
 `;
 
 const SubscribeButton = styled.button`
     padding: 0.75rem 1.25rem;
-    background: ${props => props.theme.brand?.gradient || `linear-gradient(135deg, ${props.theme.brand?.primary} 0%, ${props.theme.brand?.accent || props.theme.brand?.secondary} 100%)`};
+    background: ${props => props.theme.brand?.gradient || `linear-gradient(135deg, ${props.theme.brand?.primary || '#00adef'} 0%, ${props.theme.brand?.accent || props.theme.brand?.secondary || '#8b5cf6'} 100%)`};
     border: none;
     border-radius: 8px;
     color: white;
@@ -271,7 +272,7 @@ const SubscribeButton = styled.button`
 
     &:hover {
         transform: translateY(-3px);
-        box-shadow: 0 8px 20px ${props => props.theme.brand?.primary}80;
+        box-shadow: 0 8px 20px ${props => `${props.theme.brand?.primary || '#00adef'}80`};
     }
 
     &:active {
@@ -280,7 +281,7 @@ const SubscribeButton = styled.button`
 `;
 
 const FooterBottom = styled.div`
-    border-top: 1px solid ${props => props.theme.brand?.primary}33;
+    border-top: 1px solid ${props => `${props.theme.brand?.primary || '#00adef'}33`};
     padding-top: 2rem;
     display: flex;
     justify-content: space-between;
@@ -295,7 +296,7 @@ const FooterBottom = styled.div`
 `;
 
 const Copyright = styled.p`
-    color: ${props => props.theme.text?.secondary};
+    color: ${props => props.theme.text?.secondary || '#94a3b8'};
     font-size: 0.9rem;
     margin: 0;
     display: flex;
@@ -307,7 +308,7 @@ const MadeWithLove = styled.span`
     display: flex;
     align-items: center;
     gap: 0.3rem;
-    color: #ef4444;
+    color: ${props => props.theme.error || '#ef4444'};
     animation: ${pulse} 2s ease-in-out infinite;
 `;
 
@@ -322,13 +323,13 @@ const LegalLinks = styled.div`
 `;
 
 const LegalLink = styled(Link)`
-    color: ${props => props.theme.text?.secondary};
+    color: ${props => props.theme.text?.secondary || '#94a3b8'};
     text-decoration: none;
     font-size: 0.9rem;
     transition: all 0.3s ease;
 
     &:hover {
-        color: ${props => props.theme.brand?.primary};
+        color: ${props => props.theme.brand?.primary || '#00adef'};
     }
 `;
 
@@ -337,31 +338,31 @@ const Badge = styled.div`
     align-items: center;
     gap: 0.5rem;
     padding: 0.4rem 0.8rem;
-    background: linear-gradient(135deg, ${props => props.theme.success}33 0%, ${props => props.theme.success}1a 100%);
-    border: 1px solid ${props => props.theme.success}66;
+    background: linear-gradient(135deg, ${props => `${props.theme.success || '#10b981'}33`} 0%, ${props => `${props.theme.success || '#10b981'}1a`} 100%);
+    border: 1px solid ${props => `${props.theme.success || '#10b981'}66`};
     border-radius: 20px;
-    color: ${props => props.theme.success};
+    color: ${props => props.theme.success || '#10b981'};
     font-size: 0.85rem;
     font-weight: 600;
-    box-shadow: 0 0 20px ${props => props.theme.success}66;
+    box-shadow: 0 0 20px ${props => `${props.theme.success || '#10b981'}66`};
 `;
 
 const FeatureHighlight = styled.div`
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    color: ${props => props.theme.text?.secondary};
+    color: ${props => props.theme.text?.secondary || '#94a3b8'};
     font-size: 0.9rem;
     padding: 0.5rem 0;
     transition: all 0.3s ease;
 
     &:hover {
-        color: #f8fafc;
+        color: ${props => props.theme.text?.primary || '#f8fafc'};
         transform: translateX(5px);
     }
 
     svg {
-        color: ${props => props.theme.brand?.primary};
+        color: ${props => props.theme.brand?.primary || '#00adef'};
         min-width: 18px;
     }
 `;

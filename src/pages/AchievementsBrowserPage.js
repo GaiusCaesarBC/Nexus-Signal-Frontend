@@ -1,14 +1,16 @@
-// client/src/pages/AchievementsBrowserPage.js
+// client/src/pages/AchievementsBrowserPage.js - THEMED ACHIEVEMENTS BROWSER
 import React, { useState, useEffect } from 'react';
-import styled, { keyframes, css } from 'styled-components';
+import styled, { keyframes, css, useTheme as useStyledTheme } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useGamification } from '../context/GamificationContext';
+import { useTheme as useThemeContext } from '../context/ThemeContext';
 import { 
     Award, Lock, Star, TrendingUp, CheckCircle, Trophy, 
     Filter, Search, Grid, List, ChevronDown, Target,
     Zap, Users, Calendar, Sparkles, Brain, DollarSign
 } from 'lucide-react';
 
+// ============ ANIMATIONS ============
 const fadeIn = keyframes`
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
@@ -35,13 +37,19 @@ const rotate = keyframes`
     to { transform: rotate(360deg); }
 `;
 
+const float = keyframes`
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+`;
+
 // ============================================
 // MAIN CONTAINER
 // ============================================
 const PageContainer = styled.div`
     min-height: 100vh;
     padding: 6rem 2rem 2rem;
-    background: linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
+    background: ${({ theme }) => theme.bg?.page || 'linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%)'};
+    color: ${({ theme }) => theme.text?.primary || '#e0e6ed'};
     position: relative;
     overflow: hidden;
 
@@ -52,8 +60,53 @@ const PageContainer = styled.div`
         left: 0;
         right: 0;
         height: 300px;
-        background: radial-gradient(circle at 50% 0%, rgba(0, 173, 237, 0.15) 0%, transparent 70%);
+        background: ${({ theme }) => `radial-gradient(circle at 50% 0%, ${theme.brand?.primary || '#00adef'}26 0%, transparent 70%)`};
         pointer-events: none;
+    }
+`;
+
+const BackgroundOrbs = styled.div`
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 0;
+`;
+
+const Orb = styled.div`
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.3;
+    animation: ${float} ${props => props.$duration || '20s'} ease-in-out infinite;
+    
+    &:nth-child(1) {
+        width: 400px;
+        height: 400px;
+        background: ${({ theme }) => `radial-gradient(circle, ${theme.warning || '#f59e0b'}66 0%, transparent 70%)`};
+        top: 10%;
+        left: -100px;
+    }
+    
+    &:nth-child(2) {
+        width: 300px;
+        height: 300px;
+        background: ${({ theme }) => `radial-gradient(circle, ${theme.brand?.accent || '#8b5cf6'}66 0%, transparent 70%)`};
+        top: 50%;
+        right: -50px;
+        animation-delay: -5s;
+    }
+    
+    &:nth-child(3) {
+        width: 350px;
+        height: 350px;
+        background: ${({ theme }) => `radial-gradient(circle, ${theme.brand?.primary || '#00adef'}4D 0%, transparent 70%)`};
+        bottom: 10%;
+        left: 30%;
+        animation-delay: -10s;
     }
 `;
 
@@ -83,7 +136,7 @@ const TitleRow = styled.div`
 
 const Title = styled.h1`
     font-size: 3.5rem;
-    background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 50%, #f59e0b 100%);
+    background: ${({ theme }) => theme.brand?.gradient || 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 50%, #f59e0b 100%)'};
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -103,7 +156,7 @@ const TitleIcon = styled.div`
 `;
 
 const Subtitle = styled.p`
-    color: #94a3b8;
+    color: ${({ theme }) => theme.text?.secondary || '#94a3b8'};
     font-size: 1.2rem;
     margin: 0;
 `;
@@ -116,8 +169,8 @@ const StatsRow = styled.div`
 `;
 
 const StatCard = styled.div`
-    background: linear-gradient(135deg, rgba(0, 173, 237, 0.15) 0%, rgba(0, 173, 237, 0.05) 100%);
-    border: 2px solid rgba(0, 173, 237, 0.3);
+    background: ${({ theme }) => `linear-gradient(135deg, ${theme.brand?.primary || '#00adef'}26 0%, ${theme.brand?.primary || '#00adef'}0D 100%)`};
+    border: 2px solid ${({ theme }) => `${theme.brand?.primary || '#00adef'}4D`};
     border-radius: 16px;
     padding: 1.5rem 2rem;
     display: flex;
@@ -127,8 +180,8 @@ const StatCard = styled.div`
 
     &:hover {
         transform: translateY(-5px);
-        box-shadow: 0 10px 40px rgba(0, 173, 237, 0.3);
-        border-color: rgba(0, 173, 237, 0.5);
+        box-shadow: ${({ theme }) => `0 10px 40px ${theme.brand?.primary || '#00adef'}4D`};
+        border-color: ${({ theme }) => `${theme.brand?.primary || '#00adef'}80`};
     }
 `;
 
@@ -136,11 +189,11 @@ const StatIcon = styled.div`
     width: 50px;
     height: 50px;
     border-radius: 12px;
-    background: ${props => {
-        if (props.$variant === 'gold') return 'linear-gradient(135deg, #f59e0b, #d97706)';
-        if (props.$variant === 'blue') return 'linear-gradient(135deg, #3b82f6, #2563eb)';
-        if (props.$variant === 'green') return 'linear-gradient(135deg, #10b981, #059669)';
-        return 'linear-gradient(135deg, #8b5cf6, #7c3aed)';
+    background: ${({ $variant, theme }) => {
+        if ($variant === 'gold') return `linear-gradient(135deg, ${theme.warning || '#f59e0b'}, ${theme.warning || '#d97706'})`;
+        if ($variant === 'blue') return `linear-gradient(135deg, ${theme.info || '#3b82f6'}, ${theme.info || '#2563eb'})`;
+        if ($variant === 'green') return `linear-gradient(135deg, ${theme.success || '#10b981'}, ${theme.success || '#059669'})`;
+        return `linear-gradient(135deg, ${theme.brand?.accent || '#8b5cf6'}, ${theme.brand?.accent || '#7c3aed'})`;
     }};
     display: flex;
     align-items: center;
@@ -152,13 +205,13 @@ const StatIcon = styled.div`
 const StatInfo = styled.div``;
 
 const StatLabel = styled.div`
-    color: #94a3b8;
+    color: ${({ theme }) => theme.text?.secondary || '#94a3b8'};
     font-size: 0.85rem;
     margin-bottom: 0.25rem;
 `;
 
 const StatValue = styled.div`
-    color: #e0e6ed;
+    color: ${({ theme }) => theme.text?.primary || '#e0e6ed'};
     font-size: 1.8rem;
     font-weight: 900;
 `;
@@ -167,9 +220,9 @@ const StatValue = styled.div`
 // FILTERS & CONTROLS
 // ============================================
 const ControlsBar = styled.div`
-    background: rgba(30, 41, 59, 0.8);
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.8)'};
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(0, 173, 237, 0.2);
+    border: 1px solid ${({ theme }) => `${theme.brand?.primary || '#00adef'}33`};
     border-radius: 16px;
     padding: 1.5rem;
     margin-bottom: 2rem;
@@ -189,20 +242,20 @@ const SearchBox = styled.div`
 const SearchInput = styled.input`
     width: 100%;
     padding: 0.75rem 1rem 0.75rem 3rem;
-    background: rgba(15, 23, 42, 0.8);
-    border: 1px solid rgba(0, 173, 237, 0.3);
+    background: ${({ theme }) => theme.bg?.input || 'rgba(15, 23, 42, 0.8)'};
+    border: 1px solid ${({ theme }) => `${theme.brand?.primary || '#00adef'}4D`};
     border-radius: 10px;
-    color: #e0e6ed;
+    color: ${({ theme }) => theme.text?.primary || '#e0e6ed'};
     font-size: 0.95rem;
 
     &:focus {
         outline: none;
-        border-color: rgba(0, 173, 237, 0.5);
-        box-shadow: 0 0 20px rgba(0, 173, 237, 0.2);
+        border-color: ${({ theme }) => `${theme.brand?.primary || '#00adef'}80`};
+        box-shadow: ${({ theme }) => `0 0 20px ${theme.brand?.primary || '#00adef'}33`};
     }
 
     &::placeholder {
-        color: #64748b;
+        color: ${({ theme }) => theme.text?.tertiary || '#64748b'};
     }
 `;
 
@@ -211,7 +264,7 @@ const SearchIcon = styled(Search)`
     left: 1rem;
     top: 50%;
     transform: translateY(-50%);
-    color: #64748b;
+    color: ${({ theme }) => theme.text?.tertiary || '#64748b'};
     pointer-events: none;
 `;
 
@@ -223,13 +276,16 @@ const FilterGroup = styled.div`
 
 const FilterButton = styled.button`
     padding: 0.75rem 1.25rem;
-    background: ${props => props.$active ? 
-        'linear-gradient(135deg, rgba(0, 173, 237, 0.3) 0%, rgba(0, 173, 237, 0.15) 100%)' : 
-        'rgba(0, 173, 237, 0.05)'
+    background: ${({ $active, theme }) => $active ? 
+        `linear-gradient(135deg, ${theme.brand?.primary || '#00adef'}4D 0%, ${theme.brand?.primary || '#00adef'}26 100%)` : 
+        `${theme.brand?.primary || '#00adef'}0D`
     };
-    border: 1px solid ${props => props.$active ? 'rgba(0, 173, 237, 0.5)' : 'rgba(0, 173, 237, 0.2)'};
+    border: 1px solid ${({ $active, theme }) => $active ? 
+        `${theme.brand?.primary || '#00adef'}80` : 
+        `${theme.brand?.primary || '#00adef'}33`
+    };
     border-radius: 10px;
-    color: ${props => props.$active ? '#00adef' : '#94a3b8'};
+    color: ${({ $active, theme }) => $active ? theme.brand?.primary || '#00adef' : theme.text?.secondary || '#94a3b8'};
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -238,32 +294,32 @@ const FilterButton = styled.button`
     gap: 0.5rem;
 
     &:hover {
-        background: linear-gradient(135deg, rgba(0, 173, 237, 0.2) 0%, rgba(0, 173, 237, 0.1) 100%);
-        border-color: rgba(0, 173, 237, 0.5);
-        color: #00adef;
+        background: ${({ theme }) => `linear-gradient(135deg, ${theme.brand?.primary || '#00adef'}33 0%, ${theme.brand?.primary || '#00adef'}1A 100%)`};
+        border-color: ${({ theme }) => `${theme.brand?.primary || '#00adef'}80`};
+        color: ${({ theme }) => theme.brand?.primary || '#00adef'};
         transform: translateY(-2px);
     }
 `;
 
 const ViewToggle = styled.div`
     display: flex;
-    background: rgba(15, 23, 42, 0.8);
-    border: 1px solid rgba(0, 173, 237, 0.3);
+    background: ${({ theme }) => theme.bg?.input || 'rgba(15, 23, 42, 0.8)'};
+    border: 1px solid ${({ theme }) => `${theme.brand?.primary || '#00adef'}4D`};
     border-radius: 10px;
     overflow: hidden;
 `;
 
 const ViewButton = styled.button`
     padding: 0.75rem 1rem;
-    background: ${props => props.$active ? 'rgba(0, 173, 237, 0.2)' : 'transparent'};
+    background: ${({ $active, theme }) => $active ? `${theme.brand?.primary || '#00adef'}33` : 'transparent'};
     border: none;
-    color: ${props => props.$active ? '#00adef' : '#94a3b8'};
+    color: ${({ $active, theme }) => $active ? theme.brand?.primary || '#00adef' : theme.text?.secondary || '#94a3b8'};
     cursor: pointer;
     transition: all 0.2s ease;
 
     &:hover {
-        background: rgba(0, 173, 237, 0.1);
-        color: #00adef;
+        background: ${({ theme }) => `${theme.brand?.primary || '#00adef'}1A`};
+        color: ${({ theme }) => theme.brand?.primary || '#00adef'};
     }
 `;
 
@@ -279,24 +335,27 @@ const CategoryTabs = styled.div`
     }
 
     &::-webkit-scrollbar-track {
-        background: rgba(0, 173, 237, 0.1);
+        background: ${({ theme }) => `${theme.brand?.primary || '#00adef'}1A`};
     }
 
     &::-webkit-scrollbar-thumb {
-        background: rgba(0, 173, 237, 0.5);
+        background: ${({ theme }) => `${theme.brand?.primary || '#00adef'}80`};
         border-radius: 2px;
     }
 `;
 
 const CategoryTab = styled.button`
     padding: 0.75rem 1.5rem;
-    background: ${props => props.$active ? 
-        'linear-gradient(135deg, rgba(0, 173, 237, 0.3) 0%, rgba(0, 173, 237, 0.15) 100%)' : 
-        'rgba(30, 41, 59, 0.8)'
+    background: ${({ $active, theme }) => $active ? 
+        `linear-gradient(135deg, ${theme.brand?.primary || '#00adef'}4D 0%, ${theme.brand?.primary || '#00adef'}26 100%)` : 
+        theme.bg?.card || 'rgba(30, 41, 59, 0.8)'
     };
-    border: 1px solid ${props => props.$active ? 'rgba(0, 173, 237, 0.5)' : 'rgba(0, 173, 237, 0.2)'};
+    border: 1px solid ${({ $active, theme }) => $active ? 
+        `${theme.brand?.primary || '#00adef'}80` : 
+        `${theme.brand?.primary || '#00adef'}33`
+    };
     border-radius: 10px;
-    color: ${props => props.$active ? '#00adef' : '#94a3b8'};
+    color: ${({ $active, theme }) => $active ? theme.brand?.primary || '#00adef' : theme.text?.secondary || '#94a3b8'};
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -306,16 +365,16 @@ const CategoryTab = styled.button`
     gap: 0.5rem;
 
     &:hover {
-        background: linear-gradient(135deg, rgba(0, 173, 237, 0.2) 0%, rgba(0, 173, 237, 0.1) 100%);
-        border-color: rgba(0, 173, 237, 0.5);
-        color: #00adef;
+        background: ${({ theme }) => `linear-gradient(135deg, ${theme.brand?.primary || '#00adef'}33 0%, ${theme.brand?.primary || '#00adef'}1A 100%)`};
+        border-color: ${({ theme }) => `${theme.brand?.primary || '#00adef'}80`};
+        color: ${({ theme }) => theme.brand?.primary || '#00adef'};
     }
 `;
 
 // ============================================
 // ACHIEVEMENTS GRID
 // ============================================
-const AchievementsGrid = styled.div`
+const AchievementsGridContainer = styled.div`
     display: grid;
     grid-template-columns: ${props => props.$view === 'grid' ? 
         'repeat(auto-fill, minmax(320px, 1fr))' : 
@@ -330,19 +389,19 @@ const AchievementsGrid = styled.div`
 `;
 
 const AchievementCard = styled.div`
-    background: ${props => {
-        if (!props.$unlocked) return 'rgba(30, 41, 59, 0.5)';
-        if (props.$rarity === 'legendary') return 'linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(245, 158, 11, 0.05))';
-        if (props.$rarity === 'epic') return 'linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(139, 92, 246, 0.05))';
-        if (props.$rarity === 'rare') return 'linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(59, 130, 246, 0.05))';
-        return 'linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(16, 185, 129, 0.05))';
+    background: ${({ $unlocked, $rarity, theme }) => {
+        if (!$unlocked) return theme.bg?.card || 'rgba(30, 41, 59, 0.5)';
+        if ($rarity === 'legendary') return `linear-gradient(135deg, ${theme.warning || '#f59e0b'}26, ${theme.warning || '#f59e0b'}0D)`;
+        if ($rarity === 'epic') return `linear-gradient(135deg, ${theme.brand?.accent || '#8b5cf6'}26, ${theme.brand?.accent || '#8b5cf6'}0D)`;
+        if ($rarity === 'rare') return `linear-gradient(135deg, ${theme.info || '#3b82f6'}26, ${theme.info || '#3b82f6'}0D)`;
+        return `linear-gradient(135deg, ${theme.success || '#10b981'}26, ${theme.success || '#10b981'}0D)`;
     }};
-    border: 2px solid ${props => {
-        if (!props.$unlocked) return 'rgba(100, 116, 139, 0.3)';
-        if (props.$rarity === 'legendary') return 'rgba(245, 158, 11, 0.5)';
-        if (props.$rarity === 'epic') return 'rgba(139, 92, 246, 0.5)';
-        if (props.$rarity === 'rare') return 'rgba(59, 130, 246, 0.5)';
-        return 'rgba(16, 185, 129, 0.5)';
+    border: 2px solid ${({ $unlocked, $rarity, theme }) => {
+        if (!$unlocked) return theme.border?.secondary || 'rgba(100, 116, 139, 0.3)';
+        if ($rarity === 'legendary') return `${theme.warning || '#f59e0b'}80`;
+        if ($rarity === 'epic') return `${theme.brand?.accent || '#8b5cf6'}80`;
+        if ($rarity === 'rare') return `${theme.info || '#3b82f6'}80`;
+        return `${theme.success || '#10b981'}80`;
     }};
     border-radius: 16px;
     padding: ${props => props.$view === 'list' ? '1.5rem' : '2rem'};
@@ -357,31 +416,31 @@ const AchievementCard = styled.div`
 
     &:hover {
         transform: translateY(-5px);
-        box-shadow: 0 10px 40px ${props => {
-            if (!props.$unlocked) return 'rgba(100, 116, 139, 0.2)';
-            if (props.$rarity === 'legendary') return 'rgba(245, 158, 11, 0.4)';
-            if (props.$rarity === 'epic') return 'rgba(139, 92, 246, 0.4)';
-            if (props.$rarity === 'rare') return 'rgba(59, 130, 246, 0.4)';
-            return 'rgba(16, 185, 129, 0.4)';
+        box-shadow: ${({ $unlocked, $rarity, theme }) => {
+            if (!$unlocked) return `0 10px 40px ${theme.border?.secondary || 'rgba(100, 116, 139, 0.2)'}`;
+            if ($rarity === 'legendary') return `0 10px 40px ${theme.warning || '#f59e0b'}66`;
+            if ($rarity === 'epic') return `0 10px 40px ${theme.brand?.accent || '#8b5cf6'}66`;
+            if ($rarity === 'rare') return `0 10px 40px ${theme.info || '#3b82f6'}66`;
+            return `0 10px 40px ${theme.success || '#10b981'}66`;
         }};
-      ${props => !props.$unlocked && css`
-    animation: ${shake} 0.5s ease-in-out;
-`}
+        ${props => !props.$unlocked && css`
+            animation: ${shake} 0.5s ease-in-out;
+        `}
     }
 
-   ${props => props.$unlocked && css`
-    &::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.05) 50%, transparent 70%);
-        background-size: 200% 200%;
-        animation: ${shimmer} 3s linear infinite;
-    }
-`}
+    ${props => props.$unlocked && css`
+        &::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.05) 50%, transparent 70%);
+            background-size: 200% 200%;
+            animation: ${shimmer} 3s linear infinite;
+        }
+    `}
 `;
 
 const CardHeader = styled.div`
@@ -398,12 +457,12 @@ const IconContainer = styled.div`
     width: ${props => props.$view === 'list' ? '70px' : '80px'};
     height: ${props => props.$view === 'list' ? '70px' : '80px'};
     border-radius: 16px;
-    background: ${props => {
-        if (!props.$unlocked) return 'rgba(100, 116, 139, 0.3)';
-        if (props.$rarity === 'legendary') return 'linear-gradient(135deg, rgba(245, 158, 11, 0.3), rgba(245, 158, 11, 0.1))';
-        if (props.$rarity === 'epic') return 'linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(139, 92, 246, 0.1))';
-        if (props.$rarity === 'rare') return 'linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(59, 130, 246, 0.1))';
-        return 'linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(16, 185, 129, 0.1))';
+    background: ${({ $unlocked, $rarity, theme }) => {
+        if (!$unlocked) return theme.border?.secondary || 'rgba(100, 116, 139, 0.3)';
+        if ($rarity === 'legendary') return `linear-gradient(135deg, ${theme.warning || '#f59e0b'}4D, ${theme.warning || '#f59e0b'}1A)`;
+        if ($rarity === 'epic') return `linear-gradient(135deg, ${theme.brand?.accent || '#8b5cf6'}4D, ${theme.brand?.accent || '#8b5cf6'}1A)`;
+        if ($rarity === 'rare') return `linear-gradient(135deg, ${theme.info || '#3b82f6'}4D, ${theme.info || '#3b82f6'}1A)`;
+        return `linear-gradient(135deg, ${theme.success || '#10b981'}4D, ${theme.success || '#10b981'}1A)`;
     }};
     display: flex;
     align-items: center;
@@ -414,8 +473,8 @@ const IconContainer = styled.div`
     box-shadow: ${props => props.$unlocked ? '0 8px 32px rgba(0, 0, 0, 0.3)' : 'none'};
 
     ${props => props.$unlocked && css`
-    animation: ${pulse} 2s ease-in-out infinite;
-`}
+        animation: ${pulse} 2s ease-in-out infinite;
+    `}
 `;
 
 const LockedOverlay = styled.div`
@@ -438,7 +497,7 @@ const CardContent = styled.div`
 const CardTitle = styled.div`
     font-size: ${props => props.$view === 'list' ? '1.3rem' : '1.2rem'};
     font-weight: 900;
-    color: ${props => props.$unlocked ? '#e0e6ed' : '#64748b'};
+    color: ${({ $unlocked, theme }) => $unlocked ? theme.text?.primary || '#e0e6ed' : theme.text?.tertiary || '#64748b'};
     margin-bottom: 0.5rem;
     display: flex;
     align-items: center;
@@ -453,23 +512,23 @@ const RarityBadge = styled.span`
     text-transform: uppercase;
     letter-spacing: 0.5px;
     font-weight: 700;
-    background: ${props => {
-        if (props.$rarity === 'legendary') return 'rgba(245, 158, 11, 0.3)';
-        if (props.$rarity === 'epic') return 'rgba(139, 92, 246, 0.3)';
-        if (props.$rarity === 'rare') return 'rgba(59, 130, 246, 0.3)';
-        return 'rgba(16, 185, 129, 0.3)';
+    background: ${({ $rarity, theme }) => {
+        if ($rarity === 'legendary') return `${theme.warning || '#f59e0b'}4D`;
+        if ($rarity === 'epic') return `${theme.brand?.accent || '#8b5cf6'}4D`;
+        if ($rarity === 'rare') return `${theme.info || '#3b82f6'}4D`;
+        return `${theme.success || '#10b981'}4D`;
     }};
-    color: ${props => {
-        if (props.$rarity === 'legendary') return '#f59e0b';
-        if (props.$rarity === 'epic') return '#a78bfa';
-        if (props.$rarity === 'rare') return '#60a5fa';
-        return '#10b981';
+    color: ${({ $rarity, theme }) => {
+        if ($rarity === 'legendary') return theme.warning || '#f59e0b';
+        if ($rarity === 'epic') return theme.brand?.accent || '#a78bfa';
+        if ($rarity === 'rare') return theme.info || '#60a5fa';
+        return theme.success || '#10b981';
     }};
-    border: 1px solid ${props => {
-        if (props.$rarity === 'legendary') return 'rgba(245, 158, 11, 0.5)';
-        if (props.$rarity === 'epic') return 'rgba(139, 92, 246, 0.5)';
-        if (props.$rarity === 'rare') return 'rgba(59, 130, 246, 0.5)';
-        return 'rgba(16, 185, 129, 0.5)';
+    border: 1px solid ${({ $rarity, theme }) => {
+        if ($rarity === 'legendary') return `${theme.warning || '#f59e0b'}80`;
+        if ($rarity === 'epic') return `${theme.brand?.accent || '#8b5cf6'}80`;
+        if ($rarity === 'rare') return `${theme.info || '#3b82f6'}80`;
+        return `${theme.success || '#10b981'}80`;
     }};
 `;
 
@@ -480,14 +539,14 @@ const CategoryBadge = styled.span`
     text-transform: uppercase;
     letter-spacing: 0.5px;
     font-weight: 600;
-    background: rgba(0, 173, 237, 0.2);
-    color: #00adef;
-    border: 1px solid rgba(0, 173, 237, 0.3);
+    background: ${({ theme }) => `${theme.brand?.primary || '#00adef'}33`};
+    color: ${({ theme }) => theme.brand?.primary || '#00adef'};
+    border: 1px solid ${({ theme }) => `${theme.brand?.primary || '#00adef'}4D`};
 `;
 
 const CardDescription = styled.div`
     font-size: 0.95rem;
-    color: ${props => props.$unlocked ? '#94a3b8' : '#64748b'};
+    color: ${({ $unlocked, theme }) => $unlocked ? theme.text?.secondary || '#94a3b8' : theme.text?.tertiary || '#64748b'};
     line-height: 1.6;
     margin-bottom: 1rem;
 `;
@@ -505,17 +564,17 @@ const PointsBadge = styled.div`
     align-items: center;
     gap: 0.5rem;
     padding: 0.5rem 1rem;
-    background: rgba(245, 158, 11, 0.2);
-    border: 1px solid rgba(245, 158, 11, 0.4);
+    background: ${({ theme }) => `${theme.warning || '#f59e0b'}33`};
+    border: 1px solid ${({ theme }) => `${theme.warning || '#f59e0b'}66`};
     border-radius: 20px;
-    color: #f59e0b;
+    color: ${({ theme }) => theme.warning || '#f59e0b'};
     font-weight: 700;
     font-size: 0.9rem;
 `;
 
 const UnlockedDate = styled.div`
     font-size: 0.8rem;
-    color: #10b981;
+    color: ${({ theme }) => theme.success || '#10b981'};
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -524,7 +583,7 @@ const UnlockedDate = styled.div`
 
 const RequirementText = styled.div`
     font-size: 0.85rem;
-    color: #64748b;
+    color: ${({ theme }) => theme.text?.tertiary || '#64748b'};
     font-style: italic;
     display: flex;
     align-items: center;
@@ -537,7 +596,7 @@ const RequirementText = styled.div`
 const EmptyState = styled.div`
     text-align: center;
     padding: 5rem 2rem;
-    color: #64748b;
+    color: ${({ theme }) => theme.text?.tertiary || '#64748b'};
     animation: ${fadeIn} 0.6s ease-out;
 `;
 
@@ -546,22 +605,22 @@ const EmptyIcon = styled.div`
     height: 120px;
     margin: 0 auto 2rem;
     border-radius: 50%;
-    background: rgba(0, 173, 237, 0.1);
+    background: ${({ theme }) => `${theme.brand?.primary || '#00adef'}1A`};
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #00adef;
+    color: ${({ theme }) => theme.brand?.primary || '#00adef'};
 `;
 
 const EmptyText = styled.div`
     font-size: 1.2rem;
-    color: #94a3b8;
+    color: ${({ theme }) => theme.text?.secondary || '#94a3b8'};
     margin-bottom: 0.5rem;
 `;
 
 const EmptySubtext = styled.div`
     font-size: 0.95rem;
-    color: #64748b;
+    color: ${({ theme }) => theme.text?.tertiary || '#64748b'};
 `;
 
 // ============================================
@@ -570,6 +629,8 @@ const EmptySubtext = styled.div`
 const AchievementsBrowserPage = () => {
     const { api } = useAuth();
     const { gamificationData } = useGamification();
+    const theme = useStyledTheme();
+    const { profileThemeId } = useThemeContext();
     
     const [allAchievements, setAllAchievements] = useState([]);
     const [filteredAchievements, setFilteredAchievements] = useState([]);
@@ -620,7 +681,6 @@ const AchievementsBrowserPage = () => {
     const applyFilters = () => {
         let filtered = [...allAchievements];
 
-        // Search filter
         if (searchQuery) {
             filtered = filtered.filter(ach => 
                 ach.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -628,19 +688,16 @@ const AchievementsBrowserPage = () => {
             );
         }
 
-        // Rarity filter
         if (rarityFilter !== 'all') {
             filtered = filtered.filter(ach => ach.rarity === rarityFilter);
         }
 
-        // Status filter
         if (statusFilter === 'unlocked') {
             filtered = filtered.filter(ach => ach.unlocked);
         } else if (statusFilter === 'locked') {
             filtered = filtered.filter(ach => !ach.unlocked);
         }
 
-        // Category filter
         if (categoryFilter !== 'all') {
             filtered = filtered.filter(ach => ach.category === categoryFilter);
         }
@@ -663,6 +720,11 @@ const AchievementsBrowserPage = () => {
     if (loading) {
         return (
             <PageContainer>
+                <BackgroundOrbs>
+                    <Orb $duration="25s" />
+                    <Orb $duration="30s" />
+                    <Orb $duration="20s" />
+                </BackgroundOrbs>
                 <ContentWrapper>
                     <EmptyState>
                         <EmptyIcon>
@@ -677,12 +739,18 @@ const AchievementsBrowserPage = () => {
 
     return (
         <PageContainer>
+            <BackgroundOrbs>
+                <Orb $duration="25s" />
+                <Orb $duration="30s" />
+                <Orb $duration="20s" />
+            </BackgroundOrbs>
+
             <ContentWrapper>
                 <Header>
                     <TitleRow>
                         <Title>
                             <TitleIcon>
-                                <Trophy size={48} />
+                                <Trophy size={48} color={theme?.warning || '#f59e0b'} />
                             </TitleIcon>
                             Achievement Browser
                         </Title>
@@ -851,7 +919,7 @@ const AchievementsBrowserPage = () => {
                         <EmptySubtext>Try adjusting your filters</EmptySubtext>
                     </EmptyState>
                 ) : (
-                    <AchievementsGrid $view={viewMode}>
+                    <AchievementsGridContainer $view={viewMode}>
                         {filteredAchievements.map((achievement) => (
                             <AchievementCard
                                 key={achievement.id}
@@ -867,7 +935,7 @@ const AchievementsBrowserPage = () => {
                                     >
                                         {!achievement.unlocked && (
                                             <LockedOverlay>
-                                                <Lock size={32} color="#64748b" />
+                                                <Lock size={32} color={theme?.text?.tertiary || '#64748b'} />
                                             </LockedOverlay>
                                         )}
                                         {achievement.icon}
@@ -931,7 +999,7 @@ const AchievementsBrowserPage = () => {
                                 </CardContent>
                             </AchievementCard>
                         ))}
-                    </AchievementsGrid>
+                    </AchievementsGridContainer>
                 )}
             </ContentWrapper>
         </PageContainer>
