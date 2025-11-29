@@ -79,12 +79,13 @@ const LoginPageContainer = styled.div`
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    padding-top: 80px;
-    background: linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
-    color: #f8fafc;
+    padding-top: 100px;
+    background: transparent;
+    color: ${({ theme }) => theme.text?.primary || '#f8fafc'};
     position: relative;
     overflow: hidden;
     padding: 2rem;
+    z-index: 1;
 `;
 
 // Animated background particles

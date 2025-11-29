@@ -942,7 +942,9 @@ const VaultPage = () => {
             
             const response = await api.get('/vault/items');
             console.log('[VaultPage] API Response:', response.data);
-            
+            console.log('[VaultPage] THEMES COUNT:', response.data.items?.profileThemes?.length);
+console.log('[VaultPage] THEME NAMES:', response.data.items?.profileThemes?.map(t => t.name));
+
             if (response.data.success) {
                 setItems({
                     avatarBorders: response.data.items?.avatarBorders || [],
