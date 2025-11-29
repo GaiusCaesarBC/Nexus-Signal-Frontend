@@ -29,7 +29,7 @@ const borderGlow = keyframes`0%, 100% { border-color: rgba(0, 173, 237, 0.3); } 
 const slideUp = keyframes`from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); }`;
 
 // ============ STYLED COMPONENTS ============
-const LandingContainer = styled.div`min-height: 100vh; background: linear-gradient(145deg, #050816 0%, #0a0e27 30%, #1a1f3a 70%, #0a0e27 100%); color: #e0e6ed; position: relative; overflow-x: hidden;`;
+const LandingContainer = styled.div`min-height: 100vh; background: transparent; color: ${({ theme }) => theme.text?.primary || '#e0e6ed'}; position: relative; overflow-x: hidden; z-index: 1;`;
 const BackgroundEffects = styled.div`position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden;`;
 const GradientOrb = styled.div`position: absolute; width: ${p => p.$size}px; height: ${p => p.$size}px; background: ${p => p.$color}; border-radius: 50%; filter: blur(${p => p.$blur}px); opacity: ${p => p.$opacity}; top: ${p => p.$top}%; left: ${p => p.$left}%; animation: ${float} ${p => p.$duration}s ease-in-out infinite; animation-delay: ${p => p.$delay}s;`;
 const GridOverlay = styled.div`position: absolute; inset: 0; background-image: linear-gradient(rgba(0, 173, 237, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 173, 237, 0.03) 1px, transparent 1px); background-size: 60px 60px; mask-image: radial-gradient(ellipse at center, black 0%, transparent 70%);`;
@@ -373,10 +373,11 @@ const fetchTopTraders = async () => {
 
     return (
         <LandingContainer>
-            <BackgroundEffects>
-                <GridOverlay />
-                {orbs.map((orb, i) => (<GradientOrb key={i} {...Object.fromEntries(Object.entries(orb).map(([k,v]) => [`$${k}`, v]))} />))}
-            </BackgroundEffects>
+            
+<BackgroundEffects>
+    <GridOverlay />
+    {orbs.map((orb, i) => (<GradientOrb key={i} {...Object.fromEntries(Object.entries(orb).map(([k,v]) => [`$${k}`, v]))} />))}
+</BackgroundEffects>
 
             <ContentWrapper>
                 <Nav>
