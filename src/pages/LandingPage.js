@@ -199,40 +199,37 @@ const LandingPage = () => {
         } catch (err) { console.log('Platform stats endpoint failed:', err); }
         
         // Get user/trade counts from leaderboard
-        try {
-            const leaderboardRes = await fetch(`${API_URL}/paper-trading/leaderboard?limit=100`);
-            if (leaderboardRes.ok) {
-                const data = await leaderboardRes.json();
-                const traders = data.leaderboard || [];
-                if (traders.length > 0) {
-                    statsData.totalUsers = traders.length;
-                    statsData.totalTrades = traders.reduce((sum, t) => sum + (t.totalTrades || 0), 0);
-                    statsData.avgWinRate = traders.reduce((sum, t) => sum + (t.winRate || 0), 0) / traders.length;
-                    statsData.topPerformerReturn = traders[0]?.profitLossPercent || traders[0]?.totalProfitLossPercent || 0;
-                }
-            }
-        } catch (err) { console.log('Leaderboard fetch failed:', err); }
-        
+       try {
+    const leaderboardRes = await fetch(`${API_URL}/leaderboard/top`);
+    if (leaderboardRes.ok) {
+        const data = await leaderboardRes.json();
+        const traders = data.topTraders || [];
+        if (traders.length > 0) {
+            statsData.totalUsers = traders.length;
+            statsData.topPerformerReturn = traders[0]?.totalReturnPercent ?? 0;
+        }
+    }
+} catch (err) { console.log('Leaderboard fetch failed:', err); }
         setStats(statsData);
     };
 
-    const fetchRecentWinners = async () => {
-        try {
-            const res = await fetch(`${API_URL}/paper-trading/leaderboard?limit=10`);
-            if (res.ok) {
-                const data = await res.json();
-                const traders = data.leaderboard || [];
-                const winners = traders.filter(t => (t.profitLossPercent || 0) > 0).slice(0, 4).map(t => ({
-                    name: t.user?.profile?.displayName || t.user?.username || 'Trader',
-                    initials: getInitials(t.user?.profile?.displayName || t.user?.username || 'T'),
-                    trade: `${t.totalTrades || 0} trades`,
-                    profit: `+$${Math.abs(t.totalProfitLoss || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
-                }));
-                if (winners.length > 0) { setRecentWinners(winners); return; }
-            }
-        } catch (err) { console.log('Winners fetch failed'); }
-        setRecentWinners([]);
-    };
+  const fetchRecentWinners = async () => {
+    try {
+        const res = await fetch(`${API_URL}/leaderboard/winners`);
+        if (res.ok) {
+            const data = await res.json();
+            const traders = data.winners || data || [];
+            const winners = traders.slice(0, 4).map(t => ({
+                name: 'Anonymous',
+                initials: '?',
+                trade: `${t.totalTrades || 0} trades`,
+                profit: `+${(t.totalReturnPercent || 0).toFixed(1)}%`
+            }));
+            if (winners.length > 0) { setRecentWinners(winners); return; }
+        }
+    } catch (err) { console.log('Winners fetch failed'); }
+    setRecentWinners([]);
+};
 
     const fetchHotStocks = async () => {
         // Try public endpoint first
@@ -270,29 +267,18 @@ const LandingPage = () => {
         
         setHotStocks([]);
     };
-
-    const fetchTopTraders = async () => { 
-    // Try both possible endpoints
-    const endpoints = [
-        `${API_URL}/paper-trading/leaderboard?limit=10`,
-        `${API_URL}/leaderboard/top`
-    ];
-    
-    for (const url of endpoints) {
-        try { 
-            const res = await fetch(url); 
-            if (res.ok) { 
-                const data = await res.json();
-                const traders = data.leaderboard || data.traders || data || [];
-                if (traders.length > 0) {
-                    setTopTraders(traders);
-                    const topReturn = traders[0]?.profitLossPercent ?? traders[0]?.totalReturnPercent ?? 0;
-                    setStats(prev => ({ ...prev, topPerformerReturn: topReturn }));
-                    return;
-                }
-            } 
-        } catch (err) { console.log(`Endpoint ${url} failed`); }
-    }
+const fetchTopTraders = async () => { 
+    try { 
+        const res = await fetch(`${API_URL}/leaderboard/top`); 
+        if (res.ok) { 
+            const data = await res.json();
+            const traders = data.topTraders || [];
+            if (traders.length > 0) {
+                setTopTraders(traders);
+                setStats(prev => ({ ...prev, topPerformerReturn: traders[0]?.totalReturnPercent ?? 0 }));
+            }
+        } 
+    } catch (err) { console.log('Top traders fetch failed:', err); } 
 };
     const fetchRecentActivity = async () => {
         try {
@@ -405,7 +391,7 @@ const LandingPage = () => {
                         <AnnouncementHighlight $delay="0.1s">
                             <HighlightIcon $gradient="linear-gradient(135deg, #fbbf24, #f59e0b)"><Trophy size={24} /></HighlightIcon>
                             <HighlightText>
-                                <HighlightValue $color="#fbbf24">{(() => { const ret = topTraders[0]?.profitLossPercent ?? topTraders[0]?.totalProfitLossPercent ?? stats.topPerformerReturn; return ret !== undefined && ret !== null && ret !== 0 ? `${ret >= 0 ? '+' : ''}${Number(ret).toFixed(1)}%` : '—'; })()}</HighlightValue>
+                                <HighlightValue $color="#fbbf24">{(() => { const ret = topTraders[0]?.totalReturnPercent ?? stats.topPerformerReturn; return ret !== undefined && ret !== null && ret !== 0 ? `${ret >= 0 ? '+' : ''}${Number(ret).toFixed(1)}%` : '—'; })()}</HighlightValue>
                                 <HighlightLabel>Top Trader Return</HighlightLabel>
                             </HighlightText>
                         </AnnouncementHighlight>

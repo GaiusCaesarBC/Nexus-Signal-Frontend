@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
-import { ThemeProvider as StyledThemeProvider } from 'styled-components';
+import { ThemeProvider as StyledThemeProvider, createGlobalStyle } from 'styled-components';
 import { useAuth } from './context/AuthContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { Analytics } from '@vercel/analytics/react';
@@ -16,6 +16,7 @@ import LoadingScreen from './components/LoadingScreen';
 import SettingsPage from './components/SettingsPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import WhaleNotification from './components/WhaleNotification';
+import BackgroundEffects from './components/BackgroundEffects';
 
 // 🎮 Gamification imports
 import { GamificationProvider } from './context/GamificationContext';
@@ -67,16 +68,29 @@ import CryptoPage from './pages/CryptoPage';
 import WhaleAlertsPage from './pages/WhaleAlertsPage';
 import ComparisonPage from './pages/ComparisonPage';
 
+// Global styles to set the page background
+const GlobalStyle = createGlobalStyle`
+    html, body, #root {
+        min-height: 100vh;
+        margin: 0;
+        padding: 0;
+    }
+    
+    body {
+        background: ${props => props.theme.bg?.page || 'linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%)'};
+        color: ${props => props.theme.text?.primary || '#e0e6ed'};
+    }
+`;
+
 // Wraps content with styled-components theme
 function AppContent() {
-    const { theme } = useTheme(); // Get the complete theme object
+    const { theme } = useTheme();
     const { loading } = useAuth();
 
     if (loading) {
         return <LoadingScreen message="Loading your AI-powered trading platform..." />;
     }
 
-    // Ensure theme has the colors property before rendering
     console.log('🎨 Current theme:', theme);
     
     if (!theme || !theme.colors) {
@@ -86,6 +100,12 @@ function AppContent() {
 
     return (
         <StyledThemeProvider theme={theme}>
+            {/* Global styles for page background */}
+            <GlobalStyle />
+            
+            {/* 🎨 ANIMATED BACKGROUND EFFECTS - Epic/Legendary themes */}
+            <BackgroundEffects />
+            
             <ScrollToTop />
             <Navbar />
             <main style={{ flexGrow: 1, minHeight: 'calc(100vh - 120px)' }}>
