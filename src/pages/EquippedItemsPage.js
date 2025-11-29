@@ -1,4 +1,4 @@
-// client/src/pages/EquippedItemsPage.js
+// client/src/pages/EquippedItemsPage.js - FIXED: Updates theme when equipped
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes, css } from 'styled-components';
 import { 
@@ -8,6 +8,7 @@ import {
 import { useGamification } from '../context/GamificationContext';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useTheme } from '../context/ThemeContext'; // ✅ ADD THIS
 
 // Animations
 const fadeIn = keyframes`
@@ -340,6 +341,7 @@ const EquippedItemsPage = () => {
     const { gamification, refreshGamification } = useGamification();
     const { api } = useAuth();
     const toast = useToast();
+    const { setProfileTheme } = useTheme(); // ✅ ADD THIS
     
     const [allItems, setAllItems] = useState([]);
     const [vault, setVault] = useState({});
@@ -375,13 +377,20 @@ const EquippedItemsPage = () => {
         }
     };
 
-    const handleEquip = async (itemId) => {
+    const handleEquip = async (itemId, itemType) => {
         try {
             setActionLoading(itemId);
             const response = await api.post(`/vault/equip/${itemId}`);
             
             if (response.data.success) {
                 toast.success(response.data.message, '✅ Equipped!');
+                
+                // ✅ UPDATE LOCAL THEME IMMEDIATELY IF IT'S A THEME
+                if (itemType === 'profile-theme') {
+                    setProfileTheme(itemId);
+                    console.log('🎨 Theme updated locally:', itemId);
+                }
+                
                 await fetchItems();
                 if (refreshGamification) await refreshGamification();
             }
@@ -560,7 +569,7 @@ const EquippedItemsPage = () => {
                                         <ItemDescription>{item.description}</ItemDescription>
                                         <EquipButton
                                             $equipped={equipped}
-                                            onClick={() => equipped ? handleUnequip(item.id) : handleEquip(item.id)}
+                                            onClick={() => equipped ? handleUnequip(item.id) : handleEquip(item.id, item.type)}
                                             disabled={actionLoading === item.id}
                                         >
                                             {actionLoading === item.id ? (
@@ -616,7 +625,7 @@ const EquippedItemsPage = () => {
                                         <ItemDescription>{item.description}</ItemDescription>
                                         <EquipButton
                                             $equipped={equipped}
-                                            onClick={() => equipped ? handleUnequip(item.id) : handleEquip(item.id)}
+                                            onClick={() => equipped ? handleUnequip(item.id) : handleEquip(item.id, item.type)}
                                             disabled={actionLoading === item.id || (!equipped && equippedPerksList.length >= 3)}
                                         >
                                             {actionLoading === item.id ? (
@@ -679,7 +688,7 @@ const EquippedItemsPage = () => {
                                         <ItemDescription>{item.description}</ItemDescription>
                                         <EquipButton
                                             $equipped={equipped}
-                                            onClick={() => equipped ? null : handleEquip(item.id)}
+                                            onClick={() => equipped ? null : handleEquip(item.id, item.type)}
                                             disabled={actionLoading === item.id || equipped}
                                         >
                                             {actionLoading === item.id ? (
@@ -735,7 +744,7 @@ const EquippedItemsPage = () => {
                                         <ItemDescription>{item.description}</ItemDescription>
                                         <EquipButton
                                             $equipped={equipped}
-                                            onClick={() => equipped ? handleUnequip(item.id) : handleEquip(item.id)}
+                                            onClick={() => equipped ? handleUnequip(item.id) : handleEquip(item.id, item.type)}
                                             disabled={actionLoading === item.id || (!equipped && equippedBadgesList.length >= 5)}
                                         >
                                             {actionLoading === item.id ? (

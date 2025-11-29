@@ -1,8 +1,9 @@
-// client/src/pages/ChatPage.js - FIXED styled-components keyframe errors
+// client/src/pages/ChatPage.js - THEMED VERSION
 
 import React, { useState, useEffect, useRef } from 'react';
-import styled, { keyframes, css } from 'styled-components'; // ✅ Import css helper
+import styled, { keyframes, css } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { 
     Send, Brain, User, Sparkles, TrendingUp, AlertCircle, 
     Zap, MessageSquare, Stars, Rocket, Flame, ChevronDown,
@@ -30,11 +31,6 @@ const pulse = keyframes`
     50% { opacity: 0.5; }
 `;
 
-const glow = keyframes`
-    0%, 100% { box-shadow: 0 0 20px rgba(0, 173, 237, 0.4); }
-    50% { box-shadow: 0 0 40px rgba(0, 173, 237, 0.8); }
-`;
-
 const shimmer = keyframes`
     0% { background-position: -200% center; }
     100% { background-position: 200% center; }
@@ -55,21 +51,6 @@ const particles = keyframes`
     100% { transform: translateY(-100vh) translateX(50px) scale(0); opacity: 0; }
 `;
 
-const neonGlow = keyframes`
-    0%, 100% {
-        text-shadow: 
-            0 0 10px rgba(0, 173, 237, 0.8),
-            0 0 20px rgba(0, 173, 237, 0.6),
-            0 0 30px rgba(0, 173, 237, 0.4);
-    }
-    50% {
-        text-shadow: 
-            0 0 20px rgba(0, 173, 237, 1),
-            0 0 40px rgba(0, 173, 237, 0.8),
-            0 0 60px rgba(0, 173, 237, 0.6);
-    }
-`;
-
 // ============ STYLED COMPONENTS ============
 const PageContainer = styled.div`
     display: flex;
@@ -77,7 +58,7 @@ const PageContainer = styled.div`
     min-height: 100vh;
     padding-top: 80px;
     background: linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
-    color: #e0e6ed;
+    color: ${props => props.theme?.text?.primary || '#e0e6ed'};
     position: relative;
     overflow: hidden;
 `;
@@ -114,7 +95,7 @@ const Header = styled.div`
     text-align: center;
     background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
     backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(0, 173, 237, 0.2);
+    border-bottom: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}33;
     position: relative;
     z-index: 1;
     animation: ${fadeIn} 0.6s ease-out;
@@ -122,9 +103,9 @@ const Header = styled.div`
 
 const Title = styled.h1`
     font-size: 2.5rem;
-    color: #00adef;
+    color: ${props => props.theme?.brand?.primary || '#00adef'};
     margin-bottom: 0.5rem;
-    animation: ${neonGlow} 2s ease-in-out infinite;
+    text-shadow: 0 0 20px ${props => props.theme?.brand?.primary || '#00adef'}60;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -142,7 +123,7 @@ const TitleIcon = styled.div`
 `;
 
 const Subtitle = styled.p`
-    color: #94a3b8;
+    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
     font-size: 1.1rem;
 `;
 
@@ -151,13 +132,13 @@ const StatusBadge = styled.div`
     align-items: center;
     gap: 0.5rem;
     padding: 0.5rem 1rem;
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(5, 150, 105, 0.2) 100%);
-    border: 1px solid rgba(16, 185, 129, 0.4);
+    background: linear-gradient(135deg, ${props => props.theme?.success || '#10b981'}33 0%, ${props => props.theme?.success || '#059669'}33 100%);
+    border: 1px solid ${props => props.theme?.success || '#10b981'}66;
     border-radius: 20px;
     font-size: 0.9rem;
-    color: #10b981;
+    color: ${props => props.theme?.success || '#10b981'};
     margin-top: 1rem;
-    animation: ${glow} 3s ease-in-out infinite;
+    box-shadow: 0 0 20px ${props => props.theme?.success || '#10b981'}40;
 `;
 
 const ChatContainer = styled.div`
@@ -192,13 +173,13 @@ const MessagesArea = styled.div`
     }
 
     &::-webkit-scrollbar-thumb {
-        background: rgba(0, 173, 237, 0.3);
+        background: ${props => props.theme?.brand?.primary || '#00adef'}4D;
         border-radius: 4px;
         transition: background 0.3s ease;
     }
 
     &::-webkit-scrollbar-thumb:hover {
-        background: rgba(0, 173, 237, 0.5);
+        background: ${props => props.theme?.brand?.primary || '#00adef'}80;
     }
 `;
 
@@ -207,7 +188,7 @@ const Message = styled.div`
     gap: 1rem;
     align-items: flex-start;
     
-    ${props => props.isUser ? css`
+    ${props => props.$isUser ? css`
         flex-direction: row-reverse;
         animation: ${slideInRight} 0.5s ease-out;
     ` : css`
@@ -226,12 +207,12 @@ const Avatar = styled.div`
     position: relative;
     transition: transform 0.3s ease;
 
-    ${props => props.isUser ? css`
-        background: linear-gradient(135deg, #00adef 0%, #0088cc 100%);
-        box-shadow: 0 4px 15px rgba(0, 173, 237, 0.4);
+    ${props => props.$isUser ? css`
+        background: ${props.theme?.brand?.gradient || 'linear-gradient(135deg, #00adef 0%, #0088cc 100%)'};
+        box-shadow: 0 4px 15px ${props.theme?.brand?.primary || '#00adef'}66;
     ` : css`
-        background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
-        box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+        background: linear-gradient(135deg, ${props.theme?.brand?.accent || '#8b5cf6'} 0%, ${props.theme?.brand?.accent || '#6366f1'}cc 100%);
+        box-shadow: 0 4px 15px ${props.theme?.brand?.accent || '#8b5cf6'}66;
         animation: ${float} 3s ease-in-out infinite;
     `}
 
@@ -244,7 +225,7 @@ const Avatar = styled.div`
         position: absolute;
         width: 12px;
         height: 12px;
-        background: #10b981;
+        background: ${props => props.theme?.success || '#10b981'};
         border: 2px solid #0a0e27;
         border-radius: 50%;
         bottom: 0;
@@ -273,18 +254,18 @@ const MessageBubble = styled.div`
     position: relative;
     overflow: hidden;
 
-    ${props => props.isUser ? css`
-        background: linear-gradient(135deg, #00adef 0%, #0088cc 100%);
+    ${props => props.$isUser ? css`
+        background: ${props.theme?.brand?.gradient || 'linear-gradient(135deg, #00adef 0%, #0088cc 100%)'};
         color: white;
         border-bottom-right-radius: 4px;
-        box-shadow: 0 4px 15px rgba(0, 173, 237, 0.3);
+        box-shadow: 0 4px 15px ${props.theme?.brand?.primary || '#00adef'}4D;
     ` : css`
         background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
         backdrop-filter: blur(10px);
-        border: 1px solid rgba(0, 173, 237, 0.2);
-        color: #e0e6ed;
+        border: 1px solid ${props.theme?.brand?.primary || '#00adef'}33;
+        color: ${props.theme?.text?.primary || '#e0e6ed'};
         border-bottom-left-radius: 4px;
-        box-shadow: 0 4px 15px rgba(0, 173, 237, 0.2);
+        box-shadow: 0 4px 15px ${props.theme?.brand?.primary || '#00adef'}33;
     `}
 
     &::before {
@@ -301,10 +282,10 @@ const MessageBubble = styled.div`
 
     &:hover {
         transform: translateY(-2px);
-        ${props => props.isUser ? css`
-            box-shadow: 0 8px 25px rgba(0, 173, 237, 0.4);
+        ${props => props.$isUser ? css`
+            box-shadow: 0 8px 25px ${props.theme?.brand?.primary || '#00adef'}66;
         ` : css`
-            box-shadow: 0 8px 25px rgba(0, 173, 237, 0.3);
+            box-shadow: 0 8px 25px ${props.theme?.brand?.primary || '#00adef'}4D;
         `}
     }
 `;
@@ -322,10 +303,10 @@ const MessageActions = styled.div`
 
 const ActionButton = styled.button`
     padding: 0.4rem 0.8rem;
-    background: rgba(0, 173, 237, 0.1);
-    border: 1px solid rgba(0, 173, 237, 0.3);
+    background: ${props => props.theme?.brand?.primary || '#00adef'}1A;
+    border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}4D;
     border-radius: 6px;
-    color: #00adef;
+    color: ${props => props.theme?.brand?.primary || '#00adef'};
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -334,7 +315,7 @@ const ActionButton = styled.button`
     transition: all 0.2s ease;
 
     &:hover {
-        background: rgba(0, 173, 237, 0.2);
+        background: ${props => props.theme?.brand?.primary || '#00adef'}33;
         transform: translateY(-2px);
     }
 
@@ -348,15 +329,15 @@ const InputArea = styled.div`
     backdrop-filter: blur(10px);
     border-radius: 12px;
     padding: 1rem;
-    border: 2px solid rgba(0, 173, 237, 0.2);
+    border: 2px solid ${props => props.theme?.brand?.primary || '#00adef'}33;
     display: flex;
     gap: 1rem;
     align-items: center;
     transition: all 0.3s ease;
 
     &:focus-within {
-        border-color: rgba(0, 173, 237, 0.5);
-        box-shadow: 0 0 20px rgba(0, 173, 237, 0.3);
+        border-color: ${props => props.theme?.brand?.primary || '#00adef'}80;
+        box-shadow: 0 0 20px ${props => props.theme?.brand?.primary || '#00adef'}4D;
     }
 `;
 
@@ -364,27 +345,27 @@ const Input = styled.input`
     flex: 1;
     padding: 0.75rem 1rem;
     background: rgba(10, 14, 39, 0.8);
-    border: 1px solid rgba(0, 173, 237, 0.3);
+    border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}4D;
     border-radius: 8px;
-    color: #e0e6ed;
+    color: ${props => props.theme?.text?.primary || '#e0e6ed'};
     font-size: 1rem;
     transition: all 0.3s ease;
 
     &::placeholder {
-        color: #64748b;
+        color: ${props => props.theme?.text?.tertiary || '#64748b'};
     }
 
     &:focus {
         outline: none;
-        border-color: #00adef;
-        box-shadow: 0 0 0 3px rgba(0, 173, 237, 0.2);
+        border-color: ${props => props.theme?.brand?.primary || '#00adef'};
+        box-shadow: 0 0 0 3px ${props => props.theme?.brand?.primary || '#00adef'}33;
         transform: scale(1.01);
     }
 `;
 
 const SendButton = styled.button`
     padding: 0.75rem 1.5rem;
-    background: linear-gradient(135deg, #00adef 0%, #0088cc 100%);
+    background: ${props => props.theme?.brand?.gradient || 'linear-gradient(135deg, #00adef 0%, #0088cc 100%)'};
     border: none;
     border-radius: 8px;
     color: white;
@@ -411,7 +392,7 @@ const SendButton = styled.button`
 
     &:hover:not(:disabled) {
         transform: translateY(-3px);
-        box-shadow: 0 8px 20px rgba(0, 173, 237, 0.5);
+        box-shadow: 0 8px 20px ${props => props.theme?.brand?.primary || '#00adef'}80;
     }
 
     &:active:not(:disabled) {
@@ -430,7 +411,7 @@ const TypingIndicator = styled.div`
     padding: 1rem 1.25rem;
     background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(0, 173, 237, 0.2);
+    border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}33;
     border-radius: 12px;
     border-bottom-left-radius: 4px;
     max-width: 70%;
@@ -441,7 +422,7 @@ const Dot = styled.span`
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: #00adef;
+    background: ${props => props.theme?.brand?.primary || '#00adef'};
     
     ${props => css`
         animation: ${bounce} 1.4s ease-in-out infinite;
@@ -453,7 +434,7 @@ const ThinkingAnimation = styled.div`
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    color: #00adef;
+    color: ${props => props.theme?.brand?.primary || '#00adef'};
     font-size: 0.9rem;
 `;
 
@@ -472,10 +453,10 @@ const SuggestionChips = styled.div`
 
 const Chip = styled.button`
     padding: 0.6rem 1.2rem;
-    background: linear-gradient(135deg, rgba(0, 173, 237, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
-    border: 1px solid rgba(0, 173, 237, 0.3);
+    background: linear-gradient(135deg, ${props => props.theme?.brand?.primary || '#00adef'}1A 0%, ${props => props.theme?.brand?.accent || '#8b5cf6'}1A 100%);
+    border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}4D;
     border-radius: 20px;
-    color: #00adef;
+    color: ${props => props.theme?.brand?.primary || '#00adef'};
     font-size: 0.9rem;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -484,16 +465,16 @@ const Chip = styled.button`
     gap: 0.5rem;
 
     &:hover {
-        background: linear-gradient(135deg, rgba(0, 173, 237, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%);
+        background: linear-gradient(135deg, ${props => props.theme?.brand?.primary || '#00adef'}33 0%, ${props => props.theme?.brand?.accent || '#8b5cf6'}33 100%);
         transform: translateY(-3px);
-        box-shadow: 0 4px 15px rgba(0, 173, 237, 0.3);
+        box-shadow: 0 4px 15px ${props => props.theme?.brand?.primary || '#00adef'}4D;
     }
 `;
 
 const ErrorMessage = styled.div`
-    background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(220, 38, 38, 0.15) 100%);
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    color: #ef4444;
+    background: linear-gradient(135deg, ${props => props.theme?.error || '#ef4444'}26 0%, ${props => props.theme?.error || '#dc2626'}26 100%);
+    border: 1px solid ${props => props.theme?.error || '#ef4444'}4D;
+    color: ${props => props.theme?.error || '#ef4444'};
     padding: 1rem;
     border-radius: 8px;
     display: flex;
@@ -505,9 +486,9 @@ const ErrorMessage = styled.div`
 `;
 
 const WelcomeCard = styled.div`
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(59, 130, 246, 0.15) 100%);
+    background: linear-gradient(135deg, ${props => props.theme?.brand?.accent || '#8b5cf6'}26 0%, ${props => props.theme?.info || '#3b82f6'}26 100%);
     backdrop-filter: blur(10px);
-    border: 2px solid rgba(139, 92, 246, 0.3);
+    border: 2px solid ${props => props.theme?.brand?.accent || '#8b5cf6'}4D;
     border-radius: 16px;
     padding: 2rem;
     margin-bottom: 2rem;
@@ -517,17 +498,17 @@ const WelcomeCard = styled.div`
 
 const WelcomeTitle = styled.h2`
     font-size: 2rem;
-    color: #8b5cf6;
+    color: ${props => props.theme?.brand?.accent || '#8b5cf6'};
     margin-bottom: 1rem;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    animation: ${neonGlow} 2s ease-in-out infinite;
+    text-shadow: 0 0 20px ${props => props.theme?.brand?.accent || '#8b5cf6'}60;
 `;
 
 const WelcomeText = styled.p`
-    color: #94a3b8;
+    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
     font-size: 1.1rem;
     line-height: 1.6;
     margin-bottom: 1.5rem;
@@ -542,7 +523,7 @@ const FeatureGrid = styled.div`
 
 const FeatureCard = styled.div`
     background: rgba(15, 23, 42, 0.6);
-    border: 1px solid rgba(0, 173, 237, 0.2);
+    border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}33;
     border-radius: 12px;
     padding: 1rem;
     transition: all 0.3s ease;
@@ -550,8 +531,8 @@ const FeatureCard = styled.div`
 
     &:hover {
         transform: translateY(-5px);
-        border-color: rgba(0, 173, 237, 0.5);
-        box-shadow: 0 10px 30px rgba(0, 173, 237, 0.3);
+        border-color: ${props => props.theme?.brand?.primary || '#00adef'}80;
+        box-shadow: 0 10px 30px ${props => props.theme?.brand?.primary || '#00adef'}4D;
     }
 `;
 
@@ -568,13 +549,13 @@ const FeatureIcon = styled.div`
 `;
 
 const FeatureTitle = styled.h3`
-    color: #00adef;
+    color: ${props => props.theme?.brand?.primary || '#00adef'};
     font-size: 1rem;
     margin-bottom: 0.5rem;
 `;
 
 const FeatureDescription = styled.p`
-    color: #94a3b8;
+    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
     font-size: 0.85rem;
     line-height: 1.4;
 `;
@@ -585,7 +566,7 @@ const ScrollToBottom = styled.button`
     right: 2rem;
     width: 48px;
     height: 48px;
-    background: linear-gradient(135deg, #00adef 0%, #0088cc 100%);
+    background: ${props => props.theme?.brand?.gradient || 'linear-gradient(135deg, #00adef 0%, #0088cc 100%)'};
     border: none;
     border-radius: 50%;
     color: white;
@@ -593,17 +574,17 @@ const ScrollToBottom = styled.button`
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 15px rgba(0, 173, 237, 0.4);
+    box-shadow: 0 4px 15px ${props => props.theme?.brand?.primary || '#00adef'}66;
     transition: all 0.3s ease;
     z-index: 10;
     animation: ${bounce} 2s ease-in-out infinite;
 
     &:hover {
         transform: scale(1.1);
-        box-shadow: 0 6px 20px rgba(0, 173, 237, 0.6);
+        box-shadow: 0 6px 20px ${props => props.theme?.brand?.primary || '#00adef'}99;
     }
 
-    ${props => !props.show && css`
+    ${props => !props.$show && css`
         opacity: 0;
         pointer-events: none;
     `}
@@ -612,15 +593,21 @@ const ScrollToBottom = styled.button`
 // ============ COMPONENT ============
 const ChatPage = () => {
     const { api } = useAuth();
+    const { theme } = useTheme();
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [showScrollButton, setShowScrollButton] = useState(false);
-    const [particles, setParticles] = useState([]);
+    const [particlesData, setParticlesData] = useState([]);
     const [copiedIndex, setCopiedIndex] = useState(null);
     const messagesEndRef = useRef(null);
     const messagesAreaRef = useRef(null);
+
+    // Theme colors
+    const primaryColor = theme?.brand?.primary || '#00adef';
+    const accentColor = theme?.brand?.accent || '#8b5cf6';
+    const successColor = theme?.success || '#10b981';
 
     const suggestions = [
         { icon: TrendingUp, text: "Should I buy AAPL right now?" },
@@ -637,10 +624,10 @@ const ChatPage = () => {
             left: Math.random() * 100,
             duration: Math.random() * 10 + 10,
             delay: Math.random() * 5,
-            color: ['#00adef', '#8b5cf6', '#10b981'][Math.floor(Math.random() * 3)]
+            color: [primaryColor, accentColor, successColor][Math.floor(Math.random() * 3)]
         }));
-        setParticles(newParticles);
-    }, []);
+        setParticlesData(newParticles);
+    }, [primaryColor, accentColor, successColor]);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -683,17 +670,10 @@ const ChatPage = () => {
         try {
             const conversationHistory = messages.slice(-10);
 
-            console.log('📤 Sending to API:', {
-                message: userMessage,
-                historyLength: conversationHistory.length
-            });
-
             const response = await api.post('/chat/message', {
                 message: userMessage,
                 conversationHistory: conversationHistory
             });
-
-            console.log('✅ Response received:', response.data.response);
 
             setMessages(prev => [...prev, {
                 role: 'assistant',
@@ -727,9 +707,9 @@ const ChatPage = () => {
     };
 
     return (
-        <PageContainer>
+        <PageContainer theme={theme}>
             <ParticleContainer>
-                {particles.map(particle => (
+                {particlesData.map(particle => (
                     <Particle
                         key={particle.id}
                         size={particle.size}
@@ -741,16 +721,16 @@ const ChatPage = () => {
                 ))}
             </ParticleContainer>
 
-            <Header>
-                <Title>
+            <Header theme={theme}>
+                <Title theme={theme}>
                     <TitleIcon>
-                        <Brain size={40} />
+                        <Brain size={40} color={primaryColor} />
                     </TitleIcon>
                     AI Chat Assistant
-                    <Sparkles size={24} />
+                    <Sparkles size={24} color={primaryColor} />
                 </Title>
-                <Subtitle>Ask me anything about stocks, trading, and the market</Subtitle>
-                <StatusBadge>
+                <Subtitle theme={theme}>Ask me anything about stocks, trading, and the market</Subtitle>
+                <StatusBadge theme={theme}>
                     <Zap size={16} />
                     AI Online & Ready
                 </StatusBadge>
@@ -759,41 +739,41 @@ const ChatPage = () => {
             <ChatContainer>
                 {messages.length === 0 && (
                     <>
-                        <WelcomeCard>
-                            <WelcomeTitle>
-                                <Stars size={32} />
+                        <WelcomeCard theme={theme}>
+                            <WelcomeTitle theme={theme}>
+                                <Stars size={32} color={accentColor} />
                                 Welcome to Nexus AI
                             </WelcomeTitle>
-                            <WelcomeText>
+                            <WelcomeText theme={theme}>
                                 I'm your personal AI stock market assistant. I can help you analyze stocks, 
                                 understand market trends, explain trading concepts, and provide insights 
                                 to help you make better investment decisions.
                             </WelcomeText>
                             <FeatureGrid>
-                                <FeatureCard>
-                                    <FeatureIcon gradient="linear-gradient(135deg, #00adef, #0088cc)">
-                                        <TrendingUp size={24} />
+                                <FeatureCard theme={theme}>
+                                    <FeatureIcon gradient={theme?.brand?.gradient || `linear-gradient(135deg, ${primaryColor}, ${primaryColor}cc)`}>
+                                        <TrendingUp size={24} color="white" />
                                     </FeatureIcon>
-                                    <FeatureTitle>Stock Analysis</FeatureTitle>
-                                    <FeatureDescription>
+                                    <FeatureTitle theme={theme}>Stock Analysis</FeatureTitle>
+                                    <FeatureDescription theme={theme}>
                                         Get detailed analysis on any stock in real-time
                                     </FeatureDescription>
                                 </FeatureCard>
-                                <FeatureCard>
-                                    <FeatureIcon gradient="linear-gradient(135deg, #8b5cf6, #6366f1)">
-                                        <Brain size={24} />
+                                <FeatureCard theme={theme}>
+                                    <FeatureIcon gradient={`linear-gradient(135deg, ${accentColor}, ${accentColor}cc)`}>
+                                        <Brain size={24} color="white" />
                                     </FeatureIcon>
-                                    <FeatureTitle>Market Insights</FeatureTitle>
-                                    <FeatureDescription>
+                                    <FeatureTitle theme={theme}>Market Insights</FeatureTitle>
+                                    <FeatureDescription theme={theme}>
                                         Understand trends and market movements
                                     </FeatureDescription>
                                 </FeatureCard>
-                                <FeatureCard>
-                                    <FeatureIcon gradient="linear-gradient(135deg, #10b981, #059669)">
-                                        <Rocket size={24} />
+                                <FeatureCard theme={theme}>
+                                    <FeatureIcon gradient={`linear-gradient(135deg, ${successColor}, ${successColor}cc)`}>
+                                        <Rocket size={24} color="white" />
                                     </FeatureIcon>
-                                    <FeatureTitle>Trading Tips</FeatureTitle>
-                                    <FeatureDescription>
+                                    <FeatureTitle theme={theme}>Trading Tips</FeatureTitle>
+                                    <FeatureDescription theme={theme}>
                                         Learn strategies and best practices
                                     </FeatureDescription>
                                 </FeatureCard>
@@ -803,8 +783,8 @@ const ChatPage = () => {
                             {suggestions.map((suggestion, index) => {
                                 const Icon = suggestion.icon;
                                 return (
-                                    <Chip key={index} onClick={() => handleSuggestionClick(suggestion.text)}>
-                                        <Icon size={16} />
+                                    <Chip theme={theme} key={index} onClick={() => handleSuggestionClick(suggestion.text)}>
+                                        <Icon size={16} color={primaryColor} />
                                         {suggestion.text}
                                     </Chip>
                                 );
@@ -813,26 +793,26 @@ const ChatPage = () => {
                     </>
                 )}
 
-                <MessagesArea ref={messagesAreaRef}>
+                <MessagesArea theme={theme} ref={messagesAreaRef}>
                     {messages.map((message, index) => (
-                        <Message key={index} isUser={message.role === 'user'}>
-                            <Avatar isUser={message.role === 'user'}>
-                                {message.role === 'user' ? <User size={24} /> : <Brain size={24} />}
+                        <Message key={index} $isUser={message.role === 'user'}>
+                            <Avatar theme={theme} $isUser={message.role === 'user'}>
+                                {message.role === 'user' ? <User size={24} color="white" /> : <Brain size={24} color="white" />}
                             </Avatar>
                             <MessageContent>
-                                <MessageBubble isUser={message.role === 'user'}>
+                                <MessageBubble theme={theme} $isUser={message.role === 'user'}>
                                     {message.content}
                                 </MessageBubble>
                                 {message.role === 'assistant' && (
                                     <MessageActions>
-                                        <ActionButton onClick={() => copyToClipboard(message.content, index)}>
+                                        <ActionButton theme={theme} onClick={() => copyToClipboard(message.content, index)}>
                                             <Copy size={14} />
                                             {copiedIndex === index ? 'Copied!' : 'Copy'}
                                         </ActionButton>
-                                        <ActionButton>
+                                        <ActionButton theme={theme}>
                                             <ThumbsUp size={14} />
                                         </ActionButton>
-                                        <ActionButton>
+                                        <ActionButton theme={theme}>
                                             <ThumbsDown size={14} />
                                         </ActionButton>
                                     </MessageActions>
@@ -842,19 +822,19 @@ const ChatPage = () => {
                     ))}
 
                     {loading && (
-                        <Message isUser={false}>
-                            <Avatar isUser={false}>
-                                <BrainIcon size={24} />
+                        <Message $isUser={false}>
+                            <Avatar theme={theme} $isUser={false}>
+                                <BrainIcon size={24} color="white" />
                             </Avatar>
                             <MessageContent>
-                                <TypingIndicator>
-                                    <ThinkingAnimation>
-                                        <Sparkles size={16} />
+                                <TypingIndicator theme={theme}>
+                                    <ThinkingAnimation theme={theme}>
+                                        <Sparkles size={16} color={primaryColor} />
                                         Thinking
                                     </ThinkingAnimation>
-                                    <Dot delay={0} />
-                                    <Dot delay={0.2} />
-                                    <Dot delay={0.4} />
+                                    <Dot theme={theme} delay={0} />
+                                    <Dot theme={theme} delay={0.2} />
+                                    <Dot theme={theme} delay={0.4} />
                                 </TypingIndicator>
                             </MessageContent>
                         </Message>
@@ -863,19 +843,20 @@ const ChatPage = () => {
                     <div ref={messagesEndRef} />
                 </MessagesArea>
 
-                <ScrollToBottom show={showScrollButton} onClick={scrollToBottom}>
+                <ScrollToBottom theme={theme} $show={showScrollButton} onClick={scrollToBottom}>
                     <ChevronDown size={24} />
                 </ScrollToBottom>
 
                 {error && (
-                    <ErrorMessage>
+                    <ErrorMessage theme={theme}>
                         <AlertCircle size={20} />
                         {error}
                     </ErrorMessage>
                 )}
 
-                <InputArea>
+                <InputArea theme={theme}>
                     <Input
+                        theme={theme}
                         type="text"
                         placeholder="Ask me about stocks, market trends, or investing..."
                         value={input}
@@ -883,7 +864,7 @@ const ChatPage = () => {
                         onKeyPress={handleKeyPress}
                         disabled={loading}
                     />
-                    <SendButton onClick={() => handleSend()} disabled={loading || !input.trim()}>
+                    <SendButton theme={theme} onClick={() => handleSend()} disabled={loading || !input.trim()}>
                         <Send size={20} />
                         Send
                     </SendButton>
