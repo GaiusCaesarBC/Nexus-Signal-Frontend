@@ -8,6 +8,8 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import NavbarGamification from './gamification/NavbarGamification';
 import { useGamification } from '../context/GamificationContext';
+import { useVault } from '../context/VaultContext';
+import AvatarWithBorder from './vault/AvatarWithBorder';
 
 import {
     Home, TrendingUp, PieChart, Eye, Filter, MapPin, Newspaper, BookOpen, Brain, MessageSquare,
@@ -1054,6 +1056,7 @@ function debounce(func, wait) {
 // ============ COMPONENT ============
 const Navbar = () => {
     const { user, logout, isAuthenticated, api } = useAuth();
+    const { equippedBorder, loading: vaultLoading } = useVault();
     const { theme } = useTheme();
     const location = useLocation();
     const navigate = useNavigate();
@@ -1335,7 +1338,7 @@ const Navbar = () => {
                                 )}
                             </div>
                             <div style={{ position: 'relative' }} data-user-menu>
-                                <UserMenuButton onClick={() => { setUserDropdownOpen(!userDropdownOpen); setNotificationsOpen(false); setDropdowns({ trading: false, analysis: false, community: false }); }}><UserAvatar $src={user?.profile?.avatar}>{user?.profile?.avatar ? <AvatarImage src={user.profile.avatar} alt={user?.name || 'User'} onError={(e) => { e.target.style.display = 'none'; }} /> : <AvatarInitials>{getUserInitials()}</AvatarInitials>}</UserAvatar><UserName>{user?.name || 'User'}</UserName><DropdownIconStyled size={18} $open={userDropdownOpen} /></UserMenuButton>
+                                <UserMenuButton onClick={() => { setUserDropdownOpen(!userDropdownOpen); setNotificationsOpen(false); setDropdowns({ trading: false, analysis: false, community: false }); }}><AvatarWithBorder src={user?.profile?.avatar} name={user?.name} username={user?.username} size={32} borderId={vaultLoading ? 'border-bronze' : equippedBorder} /><UserName>{user?.name || 'User'}</UserName><DropdownIconStyled size={18} $open={userDropdownOpen} /></UserMenuButton>
                                 {userDropdownOpen && <UserDropdownMenu><UserDropdownItem onClick={() => { navigate('/profile'); setUserDropdownOpen(false); }}><User size={18} />Profile</UserDropdownItem><UserDropdownItem onClick={() => { navigate('/settings'); setUserDropdownOpen(false); }}><Settings size={18} />Settings</UserDropdownItem><UserDropdownItem className="danger" onClick={handleLogout}><LogOut size={18} />Logout</UserDropdownItem></UserDropdownMenu>}
                             </div>
                             <MobileMenuButton onClick={handleMobileMenuToggle}>{mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}</MobileMenuButton>

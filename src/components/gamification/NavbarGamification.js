@@ -12,6 +12,7 @@ import { useGamification } from '../../context/GamificationContext';
 import { useAuth } from '../../context/AuthContext';
 import { useVault } from '../../context/VaultContext';
 import { useTheme } from '../../context/ThemeContext';
+import AvatarWithBorder from '../vault/AvatarWithBorder';
 
 // ============ BADGE DEFINITIONS (synced with backend) ============
 const BADGE_ICONS = {
@@ -739,24 +740,14 @@ const NavbarGamification = () => {
         <Wrapper ref={wrapperRef}>
             <Container onClick={() => setIsOpen(!isOpen)} $open={isOpen}>
                 {/* Avatar with Border */}
-                <AvatarWrapper>
-                    <AvatarBorder 
-                        $gradient={borderStyle.gradient} 
-                        $glow={borderStyle.glow}
-                        $animated={borderStyle.animated}
-                    />
-                    <AvatarInner>
-                        {user?.profile?.avatar ? (
-                            <AvatarImg 
-                                src={user.profile.avatar} 
-                                alt={user?.name || 'User'}
-                                onError={(e) => { e.target.style.display = 'none'; }}
-                            />
-                        ) : (
-                            <AvatarInitials>{getInitials()}</AvatarInitials>
-                        )}
-                    </AvatarInner>
-                </AvatarWrapper>
+                <AvatarWithBorder
+                    src={user?.profile?.avatar}
+                    name={user?.name}
+                    username={user?.username}
+                    size={36}
+                    borderId={borderId}
+                    showParticles={false}
+                />
 
                 {/* Quick Stats */}
                 <QuickStats>
@@ -791,23 +782,14 @@ const NavbarGamification = () => {
                 <DropdownPanel>
                     {/* Header */}
                     <PanelHeader>
-                        <HeaderAvatar>
-                            <HeaderAvatarBorder 
-                                $gradient={borderStyle.gradient} 
-                                $glow={borderStyle.glow}
-                                $animated={borderStyle.animated}
-                            />
-                            <HeaderAvatarInner>
-                                {user?.profile?.avatar ? (
-                                    <AvatarImg 
-                                        src={user.profile.avatar} 
-                                        alt={user?.name || 'User'}
-                                    />
-                                ) : (
-                                    <AvatarInitials style={{ fontSize: '20px' }}>{getInitials()}</AvatarInitials>
-                                )}
-                            </HeaderAvatarInner>
-                        </HeaderAvatar>
+                        <AvatarWithBorder
+                            src={user?.profile?.avatar}
+                            name={user?.name}
+                            username={user?.username}
+                            size={56}
+                            borderId={borderId}
+                            showParticles={true}
+                        />
                         <HeaderInfo>
                             <HeaderName>{user?.name || 'Trader'}</HeaderName>
                             <HeaderRank>

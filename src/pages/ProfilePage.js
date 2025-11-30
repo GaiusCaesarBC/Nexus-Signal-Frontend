@@ -18,6 +18,8 @@ import {
     Hash, Bookmark, MoreHorizontal, ChevronDown, RefreshCw,
     Wifi, WifiOff, AlertCircle
 } from 'lucide-react';
+import AvatarWithBorder from '../components/vault/AvatarWithBorder';
+import { useVault } from '../context/VaultContext';
 import {
     LineChart, Line, AreaChart, Area, BarChart, Bar,
     XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -1149,6 +1151,7 @@ const ProfilePage = () => {
     const { userId } = useParams();
     const navigate = useNavigate();
     const { user: currentUser, api, isAuthenticated, refreshUser } = useAuth();
+    const { equippedBorder } = useVault();
     const toast = useToast();
 
     // Core state
@@ -1676,13 +1679,14 @@ setAchievements(achievementsData);
                     <ProfileContent>
                         <ProfileTop>
                             <AvatarSection>
-                                <Avatar $hasImage={!!displayUser?.profile?.avatar || !!avatarPreview}>
-                                    {(avatarPreview || displayUser?.profile?.avatar) ? (
-                                        <img src={avatarPreview || displayUser.profile.avatar} alt="Avatar" />
-                                    ) : (
-                                        getInitials(displayUser?.profile?.displayName || displayUser?.name)
-                                    )}
-                                </Avatar>
+                                <AvatarWithBorder
+                                    src={avatarPreview || displayUser?.profile?.avatar}
+                                    name={displayUser?.profile?.displayName || displayUser?.name}
+                                    username={displayUser?.username}
+                                    size={130}
+                                    borderId={equippedBorder || 'border-bronze'}
+                                    showParticles={true}
+                                />
                                 {stats?.rank > 0 && stats?.rank <= 100 && (
                                     <RankBadge $rank={stats.rank}>#{stats.rank}</RankBadge>
                                 )}
@@ -2113,13 +2117,14 @@ setAchievements(achievementsData);
                         </CloseButton>
                         <ModalTitle>Update Profile Picture</ModalTitle>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' }}>
-                            <Avatar $hasImage={!!avatarPreview} style={{ width: 150, height: 150 }}>
-                                {avatarPreview ? (
-                                    <img src={avatarPreview} alt="Preview" />
-                                ) : (
-                                    getInitials(displayUser?.profile?.displayName || displayUser?.name)
-                                )}
-                            </Avatar>
+                                <AvatarWithBorder
+                                    src={avatarPreview || displayUser?.profile?.avatar}
+                                    name={displayUser?.profile?.displayName || displayUser?.name}
+                                    username={displayUser?.username}
+                                    size={130}
+                                    borderId={equippedBorder || 'border-bronze'}
+                                    showParticles={true}
+                                />
 
                             <input
                                 type="file"
