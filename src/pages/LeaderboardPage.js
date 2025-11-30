@@ -18,6 +18,7 @@ import {
     Brain, TrendingUp as Trending, Gift, Heart, Wifi, WifiOff
 } from 'lucide-react';
 import AvatarWithBorder from '../components/vault/AvatarWithBorder';
+import { BadgeList } from '../components/BadgeDisplay';
 
 // ============ BORDER COLORS MAP (for Avatar Frames) ============
 // This is for equippedBorder - the avatar FRAME style
@@ -242,6 +243,13 @@ const LastUpdated = styled.span`
     font-size: 0.85rem;
     color: ${({ theme }) => theme.text?.tertiary || '#64748b'};
     margin-left: 0.5rem;
+`;
+
+const BadgesRow = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 4px;
 `;
 
 // ============ PODIUM SECTION ============
@@ -1263,6 +1271,7 @@ const LeaderboardPage = () => {
             followersCount: trader.social?.followersCount || 0,
             // FIXED: Use equippedBorder for avatar frames, not equippedTheme
             equippedBorder: trader.equippedBorder || trader.vault?.equippedBorder || 'default',
+            equippedBadges: trader.equippedBadges || trader.vault?.equippedBadges || [],
         }));
     }, []);
 
@@ -1618,93 +1627,124 @@ const LeaderboardPage = () => {
                 </TimePeriodTab>
             </TimePeriodContainer>
 
-            {/* Top 3 Podium */}
-            {top3.length === 3 && (
-                <PodiumSection>
-                    <PodiumContainer>
-                        {/* 2nd Place */}
-                        <PodiumPlace onClick={() => handleCardClick(top3[1])}>
-                            {(() => {
-                                const borderStyle = getAvatarBorderStyle(top3[1].equippedBorder);
-                                return (
-                                    <PodiumAvatar 
-                                        $place={2} 
-                                        $hasImage={!!top3[1].avatar}
-                                        $borderColor={borderStyle.color}
-                                        $glow={borderStyle.glow}
-                                    >
-                                        {top3[1].avatar ? (
-                                            <PodiumAvatarImage src={top3[1].avatar} alt={top3[1].displayName} />
-                                        ) : (
-                                            <PodiumAvatarInitials $place={2}>{getInitials(top3[1])}</PodiumAvatarInitials>
-                                        )}
-                                    </PodiumAvatar>
-                                );
-                            })()}
-                            <PodiumName $place={2}>{top3[1].displayName}</PodiumName>
-                            <PodiumStats $place={2}>{getMainStatValue(top3[1]).value}</PodiumStats>
-                            <PodiumStand $place={2}>
-                                <PodiumRank>2</PodiumRank>
-                            </PodiumStand>
-                        </PodiumPlace>
+          
+        {/* Top 3 Podium */}
+{top3.length === 3 && (
+    <PodiumSection>
+        <PodiumContainer>
+            {/* 2nd Place */}
+            <PodiumPlace onClick={() => handleCardClick(top3[1])}>
+                {(() => {
+                    const borderStyle = getAvatarBorderStyle(top3[1].equippedBorder);
+                    return (
+                        <PodiumAvatar 
+                            $place={2} 
+                            $hasImage={!!top3[1].avatar}
+                            $borderColor={borderStyle.color}
+                            $glow={borderStyle.glow}
+                        >
+                            {top3[1].avatar ? (
+                                <PodiumAvatarImage src={top3[1].avatar} alt={top3[1].displayName} />
+                            ) : (
+                                <PodiumAvatarInitials $place={2}>{getInitials(top3[1])}</PodiumAvatarInitials>
+                            )}
+                        </PodiumAvatar>
+                    );
+                })()}
+                <PodiumName $place={2}>{top3[1].displayName}</PodiumName>
+                <PodiumStats $place={2}>{getMainStatValue(top3[1]).value}</PodiumStats>
+                {top3[1].equippedBadges && top3[1].equippedBadges.length > 0 && (
+                    <div style={{ marginBottom: '0.5rem' }}>
+                        <BadgeList 
+                            badges={top3[1].equippedBadges} 
+                            size={22} 
+                            maxDisplay={3}
+                            showParticles={false}
+                        />
+                    </div>
+                )}
+                <PodiumStand $place={2}>
+                    <PodiumRank>2</PodiumRank>
+                </PodiumStand>
+            </PodiumPlace>
 
-                        {/* 1st Place */}
-                        <PodiumPlace onClick={() => handleCardClick(top3[0])}>
-                            {(() => {
-                                const borderStyle = getAvatarBorderStyle(top3[0].equippedBorder);
-                                return (
-                                    <PodiumAvatar 
-                                        $place={1} 
-                                        $hasImage={!!top3[0].avatar}
-                                        $borderColor={borderStyle.color}
-                                        $glow={borderStyle.glow}
-                                    >
-                                        <PodiumCrown>
-                                            <Crown size={40} color="#ffd700" />
-                                        </PodiumCrown>
-                                        {top3[0].avatar ? (
-                                            <PodiumAvatarImage src={top3[0].avatar} alt={top3[0].displayName} />
-                                        ) : (
-                                            <PodiumAvatarInitials $place={1}>{getInitials(top3[0])}</PodiumAvatarInitials>
-                                        )}
-                                    </PodiumAvatar>
-                                );
-                            })()}
-                            <PodiumName $place={1}>{top3[0].displayName}</PodiumName>
-                            <PodiumStats $place={1}>{getMainStatValue(top3[0]).value}</PodiumStats>
-                            <PodiumStand $place={1}>
-                                <PodiumRank>1</PodiumRank>
-                            </PodiumStand>
-                        </PodiumPlace>
+            {/* 1st Place */}
+            <PodiumPlace onClick={() => handleCardClick(top3[0])}>
+                {(() => {
+                    const borderStyle = getAvatarBorderStyle(top3[0].equippedBorder);
+                    return (
+                        <PodiumAvatar 
+                            $place={1} 
+                            $hasImage={!!top3[0].avatar}
+                            $borderColor={borderStyle.color}
+                            $glow={borderStyle.glow}
+                        >
+                            <PodiumCrown>
+                                <Crown size={40} color="#ffd700" />
+                            </PodiumCrown>
+                            {top3[0].avatar ? (
+                                <PodiumAvatarImage src={top3[0].avatar} alt={top3[0].displayName} />
+                            ) : (
+                                <PodiumAvatarInitials $place={1}>{getInitials(top3[0])}</PodiumAvatarInitials>
+                            )}
+                        </PodiumAvatar>
+                    );
+                })()}
+                <PodiumName $place={1}>{top3[0].displayName}</PodiumName>
+                <PodiumStats $place={1}>{getMainStatValue(top3[0]).value}</PodiumStats>
+                {top3[0].equippedBadges && top3[0].equippedBadges.length > 0 && (
+                    <div style={{ marginBottom: '0.5rem' }}>
+                        <BadgeList 
+                            badges={top3[0].equippedBadges} 
+                            size={26} 
+                            maxDisplay={3}
+                            showParticles={false}
+                        />
+                    </div>
+                )}
+                <PodiumStand $place={1}>
+                    <PodiumRank>1</PodiumRank>
+                </PodiumStand>
+            </PodiumPlace>
 
-                        {/* 3rd Place */}
-                        <PodiumPlace onClick={() => handleCardClick(top3[2])}>
-                            {(() => {
-                                const borderStyle = getAvatarBorderStyle(top3[2].equippedBorder);
-                                return (
-                                    <PodiumAvatar 
-                                        $place={3} 
-                                        $hasImage={!!top3[2].avatar}
-                                        $borderColor={borderStyle.color}
-                                        $glow={borderStyle.glow}
-                                    >
-                                        {top3[2].avatar ? (
-                                            <PodiumAvatarImage src={top3[2].avatar} alt={top3[2].displayName} />
-                                        ) : (
-                                            <PodiumAvatarInitials $place={3}>{getInitials(top3[2])}</PodiumAvatarInitials>
-                                        )}
-                                    </PodiumAvatar>
-                                );
-                            })()}
-                            <PodiumName $place={3}>{top3[2].displayName}</PodiumName>
-                            <PodiumStats $place={3}>{getMainStatValue(top3[2]).value}</PodiumStats>
-                            <PodiumStand $place={3}>
-                                <PodiumRank>3</PodiumRank>
-                            </PodiumStand>
-                        </PodiumPlace>
-                    </PodiumContainer>
-                </PodiumSection>
-            )}
+            {/* 3rd Place */}
+            <PodiumPlace onClick={() => handleCardClick(top3[2])}>
+                {(() => {
+                    const borderStyle = getAvatarBorderStyle(top3[2].equippedBorder);
+                    return (
+                        <PodiumAvatar 
+                            $place={3} 
+                            $hasImage={!!top3[2].avatar}
+                            $borderColor={borderStyle.color}
+                            $glow={borderStyle.glow}
+                        >
+                            {top3[2].avatar ? (
+                                <PodiumAvatarImage src={top3[2].avatar} alt={top3[2].displayName} />
+                            ) : (
+                                <PodiumAvatarInitials $place={3}>{getInitials(top3[2])}</PodiumAvatarInitials>
+                            )}
+                        </PodiumAvatar>
+                    );
+                })()}
+                <PodiumName $place={3}>{top3[2].displayName}</PodiumName>
+                <PodiumStats $place={3}>{getMainStatValue(top3[2]).value}</PodiumStats>
+                {top3[2].equippedBadges && top3[2].equippedBadges.length > 0 && (
+                    <div style={{ marginBottom: '0.5rem' }}>
+                        <BadgeList 
+                            badges={top3[2].equippedBadges} 
+                            size={20} 
+                            maxDisplay={3}
+                            showParticles={false}
+                        />
+                    </div>
+                )}
+                <PodiumStand $place={3}>
+                    <PodiumRank>3</PodiumRank>
+                </PodiumStand>
+            </PodiumPlace>
+        </PodiumContainer>
+    </PodiumSection>
+)}
 
             {/* Your Rank Card */}
             {userRank && userRank.rank > 3 && (
@@ -1850,23 +1890,37 @@ const LeaderboardPage = () => {
                                         showParticles={false}
                                     />
 
-                                    <UserInfo>
-                                        <DisplayName>
-                                            {trader.displayName}
-                                            {isYou && <LevelBadge>You</LevelBadge>}
-                                            <LevelBadge>Lv {trader.level}</LevelBadge>
-                                            {trader.badges?.includes('verified') && <Check size={16} color={theme?.success || '#10b981'} />}
-                                        </DisplayName>
-                                        <UserMeta>
-                                            <span>@{trader.username}</span>
-                                            {trader.currentStreak > 0 && (
-                                                <StreakBadge>
-                                                    <Flame size={12} />
-                                                    {trader.currentStreak}
-                                                </StreakBadge>
-                                            )}
-                                        </UserMeta>
-                                    </UserInfo>
+                                    {/* Inside the LeaderCard, after UserMeta */}
+<UserInfo>
+    <DisplayName>
+        {trader.displayName}
+        {isYou && <LevelBadge>You</LevelBadge>}
+        <LevelBadge>Lv {trader.level}</LevelBadge>
+        {trader.badges?.includes('verified') && <Check size={16} color={theme?.success || '#10b981'} />}
+    </DisplayName>
+    <UserMeta>
+        <span>@{trader.username}</span>
+        {trader.currentStreak > 0 && (
+            <StreakBadge>
+                <Flame size={12} />
+                {trader.currentStreak}
+            </StreakBadge>
+        )}
+    </UserMeta>
+    {/* NEW: Show equipped badges */}
+    {trader.equippedBadges && trader.equippedBadges.length > 0 && (
+        <BadgesRow>
+            <BadgeList 
+                badges={trader.equippedBadges} 
+                size={20} 
+                maxDisplay={3}
+                gap={4}
+                showTooltip={true}
+                showParticles={false}
+            />
+        </BadgesRow>
+    )}
+</UserInfo>
 
                                     <StatColumn>
                                         <StatLabel>

@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme as useThemeContext } from '../context/ThemeContext';
 import { useVault } from '../context/VaultContext';
+import BadgeIcon from './BadgeIcon';
 import { useToast } from '../context/ToastContext';
 import {
     Sparkles, TrendingUp, MessageCircle, Heart, Share2, Bookmark,
@@ -798,12 +799,11 @@ const MiniBadge = styled.span`
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
     border-radius: 5px;
-    background: ${props => props.$color ? `${props.$color}25` : 'rgba(100, 116, 139, 0.2)'};
-    border: 1.5px solid ${props => props.$color || '#64748b'};
-    font-size: 10px;
+    background: transparent;
+    border: none;
     cursor: pointer;
     transition: all 0.2s ease;
     
@@ -2079,19 +2079,18 @@ const LiveActivityPlaceholder = styled.div`
 // ============ HELPER COMPONENT: Author Badges ============
 const AuthorBadges = ({ badges, maxDisplay = 3 }) => {
     if (!badges || badges.length === 0) return null;
-    
+
     const displayBadges = badges.slice(0, maxDisplay);
     const remaining = badges.length - maxDisplay;
-    
+
     return (
         <BadgesContainer>
             {displayBadges.map(badgeId => (
-                <MiniBadge 
-                    key={badgeId} 
-                    $color={BADGE_COLORS[badgeId]}
+                <MiniBadge
+                    key={badgeId}
                     title={badgeId.replace('badge-', '').replace(/-/g, ' ')}
                 >
-                    {BADGE_ICONS[badgeId] || '?'}
+                    <BadgeIcon badgeId={badgeId} size={20} showParticles={false} />
                 </MiniBadge>
             ))}
             {remaining > 0 && (
@@ -2100,7 +2099,6 @@ const AuthorBadges = ({ badges, maxDisplay = 3 }) => {
         </BadgesContainer>
     );
 };
-
 // ============ MAIN COMPONENT ============
 const SocialFeed = () => {
     const { api, isAuthenticated, user } = useAuth();

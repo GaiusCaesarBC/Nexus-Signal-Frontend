@@ -13,6 +13,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useVault } from '../../context/VaultContext';
 import { useTheme } from '../../context/ThemeContext';
 import AvatarWithBorder from '../vault/AvatarWithBorder';
+import BadgeIcon from '../BadgeIcon';
 
 // ============ BADGE DEFINITIONS (synced with backend) ============
 const BADGE_ICONS = {
@@ -629,20 +630,17 @@ const QuickLinkIcon = styled.div`
 const NavBadge = ({ badgeId, size = 22 }) => {
     const [showTooltip, setShowTooltip] = useState(false);
     
-    const icon = BADGE_ICONS[badgeId] || '?';
     const color = BADGE_COLORS[badgeId] || '#64748b';
     const name = BADGE_NAMES[badgeId] || 'Unknown Badge';
-    const isLegendary = ['badge-founder', 'badge-whale', 'badge-level-100', 'badge-millionaire'].includes(badgeId);
     
     return (
         <BadgeItem
             $color={color}
-            $legendary={isLegendary}
             onMouseEnter={() => setShowTooltip(true)}
             onMouseLeave={() => setShowTooltip(false)}
-            style={{ width: size, height: size, fontSize: size * 0.55 }}
+            style={{ width: size + 4, height: size + 4, background: 'transparent', border: 'none' }}
         >
-            {icon}
+            <BadgeIcon badgeId={badgeId} size={size} showParticles={false} />
             {showTooltip && (
                 <BadgeTooltip $color={color}>
                     <BadgeTooltipName>{name}</BadgeTooltipName>
@@ -808,25 +806,20 @@ const NavbarGamification = () => {
                             </BadgesSectionLink>
                         </BadgesSectionHeader>
                         <BadgesGrid>
-                            {badges.length > 0 ? (
-                                badges.map(badgeId => {
-                                    const icon = BADGE_ICONS[badgeId] || '?';
-                                    const color = BADGE_COLORS[badgeId] || '#64748b';
-                                    const isLegendary = ['badge-founder', 'badge-whale', 'badge-level-100', 'badge-millionaire'].includes(badgeId);
-                                    return (
-                                        <DropdownBadge 
-                                            key={badgeId} 
-                                            $color={color}
-                                            $legendary={isLegendary}
-                                            title={BADGE_NAMES[badgeId]}
-                                        >
-                                            {icon}
-                                        </DropdownBadge>
-                                    );
-                                })
-                            ) : (
-                                <EmptyBadgesText>No badges equipped</EmptyBadgesText>
-                            )}
+                          {badges.length > 0 ? (
+    badges.map(badgeId => (
+        <DropdownBadge 
+            key={badgeId} 
+            $color={BADGE_COLORS[badgeId] || '#64748b'}
+            title={BADGE_NAMES[badgeId]}
+            style={{ background: 'transparent', border: 'none' }}
+        >
+            <BadgeIcon badgeId={badgeId} size={28} showParticles={false} />
+        </DropdownBadge>
+    ))
+) : (
+    <EmptyBadgesText>No badges equipped</EmptyBadgesText>
+)}
                         </BadgesGrid>
                     </BadgesSection>
 

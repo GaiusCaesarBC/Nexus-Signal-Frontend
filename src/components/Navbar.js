@@ -10,6 +10,7 @@ import NavbarGamification from './gamification/NavbarGamification';
 import { useGamification } from '../context/GamificationContext';
 import { useVault } from '../context/VaultContext';
 import AvatarWithBorder from './vault/AvatarWithBorder';
+import { SingleBadge } from '../components/BadgeDisplay';
 
 import {
     Home, TrendingUp, PieChart, Eye, Filter, MapPin, Newspaper, BookOpen, Brain, MessageSquare,
@@ -1075,6 +1076,7 @@ const Navbar = () => {
     const [showSearchResults, setShowSearchResults] = useState(false);
     const [selectedIndex, setSelectedIndex] = useState(-1);
     const [isSearching, setIsSearching] = useState(false);
+    const [equippedBadge, setEquippedBadge] = useState(null);
 
     const getIconForType = (type) => {
         switch (type) {
@@ -1114,12 +1116,21 @@ const Navbar = () => {
         }
     };
 
-    useEffect(() => {
+useEffect(() => {
+    const fetchEquippedBadge = async () => {
         if (!isAuthenticated || !user) return;
-        fetchNotifications();
-        const interval = setInterval(fetchNotifications, 30000);
-        return () => clearInterval(interval);
-    }, [isAuthenticated, user]);
+        try {
+            const response = await api.get('/vault/equipped');
+            if (response.data?.equipped?.badges?.[0]) {
+                // Get the first equipped badge
+                setEquippedBadge(response.data.equipped.badges[0]);
+            }
+        } catch (error) {
+            console.log('Failed to fetch equipped badge:', error);
+        }
+    };
+    fetchEquippedBadge();
+}, [isAuthenticated, user]);
 
     const unreadCount = notifications.filter(n => n.unread).length;
 
@@ -1338,7 +1349,19 @@ const Navbar = () => {
                                 )}
                             </div>
                             <div style={{ position: 'relative' }} data-user-menu>
-                                <UserMenuButton onClick={() => { setUserDropdownOpen(!userDropdownOpen); setNotificationsOpen(false); setDropdowns({ trading: false, analysis: false, community: false }); }}><AvatarWithBorder src={user?.profile?.avatar} name={user?.name} username={user?.username} size={32} borderId={vaultLoading ? 'border-bronze' : equippedBorder} /><UserName>{user?.name || 'User'}</UserName><DropdownIconStyled size={18} $open={userDropdownOpen} /></UserMenuButton>
+                               <UserMenuButton onClick={() => { setUserDropdownOpen(!userDropdownOpen); setNotificationsOpen(false); setDropdowns({ trading: false, analysis: false, community: false }); }}>
+    <AvatarWithBorder src={user?.profile?.avatar} name={user?.name} username={user?.username} size={32} borderId={vaultLoading ? 'border-bronze' : equippedBorder} />
+    <UserName>{user?.name || 'User'}</UserName>
+    {equippedBadge && (
+        <SingleBadge 
+            badge={equippedBadge} 
+            size={24} 
+            showTooltip={true}
+            showParticles={false}
+        />
+    )}
+    <DropdownIconStyled size={18} $open={userDropdownOpen} />
+</UserMenuButton>
                                 {userDropdownOpen && <UserDropdownMenu><UserDropdownItem onClick={() => { navigate('/profile'); setUserDropdownOpen(false); }}><User size={18} />Profile</UserDropdownItem><UserDropdownItem onClick={() => { navigate('/settings'); setUserDropdownOpen(false); }}><Settings size={18} />Settings</UserDropdownItem><UserDropdownItem className="danger" onClick={handleLogout}><LogOut size={18} />Logout</UserDropdownItem></UserDropdownMenu>}
                             </div>
                             <MobileMenuButton onClick={handleMobileMenuToggle}>{mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}</MobileMenuButton>

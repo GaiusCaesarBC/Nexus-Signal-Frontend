@@ -5,6 +5,7 @@
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes, css, useTheme as useStyledTheme } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
+import BadgeIcon from '../components/BadgeIcon';
 import { useGamification } from '../context/GamificationContext';
 import { useToast } from '../context/ToastContext';
 import { useTheme as useThemeContext } from '../context/ThemeContext';
@@ -1222,14 +1223,15 @@ const VaultPage = () => {
                     </ThemePreview>
                 );
             case 'badge':
-                return (
-                    <BadgePreview 
-                        $locked={!item.canUnlock && !item.owned}
-                        style={{ fontSize }}
-                    >
-                        {item.icon}
-                    </BadgePreview>
-                );
+    console.log('[VaultPage] Rendering badge:', item.id);  // ADD THIS LINE
+    return (
+        <BadgePreview 
+            $locked={!item.canUnlock && !item.owned}
+            style={{ fontSize }}
+        >
+            <BadgeIcon badgeId={item.id} size={large ? 80 : 56} showParticles={!large && item.owned} />
+        </BadgePreview>
+    );
             case 'perk':
                 return (
                     <PerkPreview 

@@ -1,4 +1,4 @@
-// client/src/pages/ProfilePage.js - ENHANCED PROFILE WITH BETTER REFRESH/UPDATES
+// client/src/pages/ProfilePage.js - ENHANCED PROFILE WITH BADGES
 // Supports viewing own profile AND other users' profiles
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import AvatarWithBorder from '../components/vault/AvatarWithBorder';
 import { useVault } from '../context/VaultContext';
+import { BadgeList, BadgeGridDisplay, FeaturedBadge } from '../components/BadgeDisplay';
 import {
     LineChart, Line, AreaChart, Area, BarChart, Bar,
     XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -366,6 +367,25 @@ const MetaItem = styled.div`
             text-decoration: underline;
         }
     }
+`;
+
+// ============ BADGES SECTION IN PROFILE ============
+const BadgesSection = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+
+    @media (max-width: 768px) {
+        justify-content: center;
+    }
+`;
+
+const BadgesLabel = styled.span`
+    color: #64748b;
+    font-size: 0.85rem;
+    font-weight: 600;
 `;
 
 const SocialStats = styled.div`
@@ -1172,6 +1192,8 @@ const ProfilePage = () => {
     const [trades, setTrades] = useState([]);
     const [predictions, setPredictions] = useState([]);
     const [achievements, setAchievements] = useState([]);
+    const [badges, setBadges] = useState([]); // NEW: User's earned badges
+    const [equippedBadge, setEquippedBadge] = useState(null); // NEW: Featured badge
     const [followers, setFollowers] = useState([]);
     const [followingList, setFollowingList] = useState([]);
 
@@ -1243,6 +1265,8 @@ const ProfilePage = () => {
             setTrades(res.data.trades || []);
             setPredictions(res.data.predictions || []);
             setAchievements(res.data.achievements || []);
+            setBadges(res.data.badges || res.data.user?.badges || []);
+            setEquippedBadge(res.data.equippedBadge || res.data.user?.equippedBadge || null);
             setFollowers(res.data.user?.social?.followers || []);
             setFollowingList(res.data.user?.social?.following || []);
             setLastUpdated(new Date());
@@ -1277,11 +1301,12 @@ const ProfilePage = () => {
             const signal = abortControllerRef.current.signal;
 
             // Parallel fetch for better performance
-            const [portfolioRes, watchlistRes, gamificationRes, socialStatsRes] = await Promise.allSettled([
+            const [portfolioRes, watchlistRes, gamificationRes, socialStatsRes, badgesRes] = await Promise.allSettled([
                 api.get('/portfolio', { signal }),
                 api.get('/watchlist', { signal }),
                 api.get('/gamification/stats', { signal }),
-                api.get('/social/me/stats', { signal })
+                api.get('/social/me/stats', { signal }),
+                api.get('/vault/badges', { signal }) // NEW: Fetch user's badges
             ]);
 
             if (!isMountedRef.current) return;
@@ -1325,6 +1350,16 @@ const ProfilePage = () => {
                 userStats = socialStatsRes.value.data;
             }
 
+            // Process badges
+            let userBadges = [];
+            let userEquippedBadge = null;
+            if (badgesRes.status === 'fulfilled' && badgesRes.value.data) {
+                userBadges = badgesRes.value.data.badges || badgesRes.value.data.ownedBadges || [];
+                userEquippedBadge = badgesRes.value.data.equippedBadge || null;
+            }
+            setBadges(userBadges);
+            setEquippedBadge(userEquippedBadge);
+
             // Fetch predictions separately
             let predictionsData = [];
             try {
@@ -1350,27 +1385,27 @@ const ProfilePage = () => {
 
             const social = currentUser?.social || {};
 
-         // Fetch real achievements from API
-let achievementsData = [];
-try {
-    const achievementsRes = await api.get('/gamification/achievements', { signal });
-    if (achievementsRes.data?.achievements) {
-        achievementsData = achievementsRes.data.achievements.map(a => ({
-            id: a.id,
-            name: a.name,
-            icon: a.icon,
-            desc: a.description,
-            rarity: a.rarity,
-            points: a.points,
-            unlocked: a.unlocked,
-            unlockedAt: a.unlockedAt
-        }));
-    }
-} catch (e) {
-    console.log('Failed to fetch achievements:', e.message);
-}
+            // Fetch real achievements from API
+            let achievementsData = [];
+            try {
+                const achievementsRes = await api.get('/gamification/achievements', { signal });
+                if (achievementsRes.data?.achievements) {
+                    achievementsData = achievementsRes.data.achievements.map(a => ({
+                        id: a.id,
+                        name: a.name,
+                        icon: a.icon,
+                        desc: a.description,
+                        rarity: a.rarity,
+                        points: a.points,
+                        unlocked: a.unlocked,
+                        unlockedAt: a.unlockedAt
+                    }));
+                }
+            } catch (e) {
+                console.log('Failed to fetch achievements:', e.message);
+            }
 
-setAchievements(achievementsData);
+            setAchievements(achievementsData);
 
             setStats({
                 portfolioValue: totalValue,
@@ -1714,6 +1749,19 @@ setAchievements(achievementsData);
                                     <UserBio>{displayUser.bio}</UserBio>
                                 )}
 
+                                {/* NEW: Badges Section */}
+                                {badges.length > 0 && (
+                                    <BadgesSection>
+                                        <BadgesLabel>Badges:</BadgesLabel>
+                                        <BadgeList 
+                                            badges={badges} 
+                                            size={36} 
+                                            maxDisplay={6} 
+                                            showParticles={false}
+                                        />
+                                    </BadgesSection>
+                                )}
+
                                 <UserMeta>
                                     {displayUser?.profile?.location && (
                                         <MetaItem><MapPin /> {displayUser.profile.location}</MetaItem>
@@ -1802,6 +1850,10 @@ setAchievements(achievementsData);
                         <Target size={18} /> Predictions
                         {predictions.length > 0 && <TabBadge>{predictions.length}</TabBadge>}
                     </Tab>
+                    <Tab $active={activeTab === 'badges'} onClick={() => setActiveTab('badges')}>
+                        <Award size={18} /> Badges
+                        {badges.length > 0 && <TabBadge>{badges.length}</TabBadge>}
+                    </Tab>
                     <Tab $active={activeTab === 'achievements'} onClick={() => setActiveTab('achievements')}>
                         <Trophy size={18} /> Achievements
                     </Tab>
@@ -1826,6 +1878,16 @@ setAchievements(achievementsData);
                                 <ProgressBar $progress={xpProgress} />
                             </ProgressBarContainer>
                         </LevelSection>
+
+                        {/* Featured Badge (if equipped) */}
+                        {equippedBadge && (
+                            <ChartCard>
+                                <ChartTitle><Award size={20} /> Featured Badge</ChartTitle>
+                                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                                    <FeaturedBadge badge={equippedBadge} size={80} />
+                                </div>
+                            </ChartCard>
+                        )}
 
                         {/* Stats Grid */}
                         <StatsGrid>
@@ -2018,6 +2080,32 @@ setAchievements(achievementsData);
                                 </EmptySubtext>
                             </EmptyState>
                         )}
+                    </ContentSection>
+                )}
+
+                {/* NEW: Badges Tab */}
+                {activeTab === 'badges' && (
+                    <ContentSection>
+                        <ChartCard>
+                            <ChartTitle><Award size={20} /> Earned Badges ({badges.length})</ChartTitle>
+                            {badges.length > 0 ? (
+                                <BadgeGridDisplay 
+                                    badges={badges}
+                                    ownedBadges={badges}
+                                    size={64}
+                                    showLocked={false}
+                                    showParticles={true}
+                                />
+                            ) : (
+                                <EmptyState>
+                                    <EmptyIcon><Award size={48} /></EmptyIcon>
+                                    <EmptyText>No badges earned yet</EmptyText>
+                                    <EmptySubtext>
+                                        {isOwnProfile ? 'Complete achievements to earn badges!' : 'This user hasn\'t earned any badges yet.'}
+                                    </EmptySubtext>
+                                </EmptyState>
+                            )}
+                        </ChartCard>
                     </ContentSection>
                 )}
 

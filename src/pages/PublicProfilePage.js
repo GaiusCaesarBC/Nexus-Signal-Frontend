@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import AvatarWithBorder from '../components/vault/AvatarWithBorder';
 import { useVault } from '../context/VaultContext';
+import BadgeIcon from '../components/BadgeIcon';
 
 // ============ BADGE DEFINITIONS (synced with backend vaultItems.js) ============
 const BADGE_DEFINITIONS = {
@@ -378,8 +379,10 @@ const EquippedBadge = styled.div`
     }
 `;
 
-const BadgeIcon = styled.span`
-    font-size: 1.1rem;
+const BadgeIconWrapper = styled.span`
+    display: flex;
+    align-items: center;
+    justify-content: center;
 `;
 
 const BadgeName = styled.span`
@@ -1022,19 +1025,20 @@ const PublicProfilePage = () => {
                             <TitleBadge><Sparkles size={14} /> {userTitle}</TitleBadge>
 
                             {equippedBadges.length > 0 && (
-                                <EquippedBadgesRow>
-                                    {equippedBadges.map(badgeId => {
-                                        const badge = BADGE_DEFINITIONS[badgeId];
-                                        if (!badge) return null;
-                                        return (
-                                            <EquippedBadge key={badgeId} $color={badge.color} $legendary={badge.rarity === 'legendary'}>
-                                                <BadgeIcon>{badge.icon}</BadgeIcon>
-                                                <BadgeName $color={badge.color}>{badge.name}</BadgeName>
-                                            </EquippedBadge>
-                                        );
-                                    })}
-                                </EquippedBadgesRow>
-                            )}
+    <EquippedBadgesRow>
+        {equippedBadges.map(badgeId => {
+            const badge = BADGE_DEFINITIONS[badgeId];
+            return (
+                <EquippedBadge key={badgeId} $color={badge?.color || '#64748b'} $legendary={badge?.rarity === 'legendary'}>
+                    <BadgeIconWrapper>
+                        <BadgeIcon badgeId={badgeId} size={24} showParticles={false} />
+                    </BadgeIconWrapper>
+                    <BadgeName $color={badge?.color || '#e0e6ed'}>{badge?.name || 'Badge'}</BadgeName>
+                </EquippedBadge>
+            );
+        })}
+    </EquippedBadgesRow>
+)}
 
                             <UserBio>{profile.profile?.bio || 'This trader lets their results speak for themselves.'}</UserBio>
                             
