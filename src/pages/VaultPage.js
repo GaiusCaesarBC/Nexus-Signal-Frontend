@@ -1,5 +1,6 @@
 // client/src/pages/VaultPage.js - NEXUS VAULT SHOP - FULLY THEMED
 // Browse, Purchase, and Equip: Avatar Borders, Profile Themes, Badges, and Perks
+// 🏛️ NOW WITH ORIGIN TIER - FOUNDERS ONLY 🏛️
 
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes, css, useTheme as useStyledTheme } from 'styled-components';
@@ -77,6 +78,16 @@ const mythicGlow = keyframes`
     50% { 
         box-shadow: 0 0 50px rgba(236, 72, 153, 0.9), 0 0 80px rgba(168, 85, 247, 0.6);
         filter: hue-rotate(15deg);
+    }
+`;
+
+// 🏛️ ORIGIN TIER - Sacred Geometry Glow
+const originGlow = keyframes`
+    0%, 100% { 
+        box-shadow: 0 0 25px rgba(212, 175, 55, 0.6), 0 0 50px rgba(248, 250, 252, 0.3), 0 0 75px rgba(10, 22, 40, 0.5);
+    }
+    50% { 
+        box-shadow: 0 0 40px rgba(212, 175, 55, 0.9), 0 0 70px rgba(248, 250, 252, 0.5), 0 0 100px rgba(10, 22, 40, 0.7);
     }
 `;
 
@@ -274,6 +285,7 @@ const FilterGroup = styled.div`
     display: flex;
     align-items: center;
     gap: 0.75rem;
+    flex-wrap: wrap;
 `;
 
 const FilterLabel = styled.span`
@@ -313,6 +325,7 @@ const ItemCard = styled.div`
     background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     border: 2px solid ${({ $equipped, $rarity, theme }) => {
         if ($equipped) return `${theme.success || '#10b981'}99`;
+        if ($rarity === 'origin') return 'rgba(212, 175, 55, 0.9)';
         if ($rarity === 'mythic') return `${theme.brand?.accent || '#ec4899'}99`;
         if ($rarity === 'legendary') return `${theme.warning || '#fbbf24'}80`;
         if ($rarity === 'epic') return `${theme.brand?.accent || '#8b5cf6'}80`;
@@ -324,6 +337,10 @@ const ItemCard = styled.div`
     transition: all 0.3s ease;
     position: relative;
     opacity: ${props => props.$locked ? 0.6 : 1};
+
+    ${props => props.$rarity === 'origin' && !props.$locked && css`
+        animation: ${originGlow} 3s ease-in-out infinite;
+    `}
 
     ${props => props.$rarity === 'legendary' && !props.$locked && css`
         animation: ${legendaryGlow} 3s ease-in-out infinite;
@@ -346,6 +363,7 @@ const ItemCard = styled.div`
 const ItemRarityBanner = styled.div`
     height: 4px;
     background: ${({ $rarity, theme }) => {
+        if ($rarity === 'origin') return 'linear-gradient(90deg, #0a1628 0%, #d4af37 25%, #f8fafc 50%, #d4af37 75%, #0a1628 100%)';
         if ($rarity === 'mythic') return `linear-gradient(90deg, #ec4899 0%, #a855f7 25%, #06b6d4 50%, #a855f7 75%, #ec4899 100%)`;
         if ($rarity === 'legendary') return `linear-gradient(90deg, ${theme.warning || '#fbbf24'}, ${theme.warning || '#f59e0b'}, ${theme.warning || '#fbbf24'})`;
         if ($rarity === 'epic') return `linear-gradient(90deg, ${theme.brand?.accent || '#8b5cf6'}, ${theme.brand?.accent || '#a78bfa'}, ${theme.brand?.accent || '#8b5cf6'})`;
@@ -381,6 +399,10 @@ const BorderPreview = styled.div`
     
     ${props => props.$animation === 'pulse-glow' && css`
         animation: ${pulse} 2s ease-in-out infinite;
+    `}
+
+    ${props => props.$animation === 'architect' && css`
+        animation: ${spin} 20s linear infinite;
     `}
 `;
 
@@ -452,6 +474,7 @@ const RarityBadge = styled.span`
     text-transform: uppercase;
     letter-spacing: 0.5px;
     background: ${({ $rarity, theme }) => {
+        if ($rarity === 'origin') return 'linear-gradient(135deg, rgba(212, 175, 55, 0.4) 0%, rgba(248, 250, 252, 0.2) 100%)';
         if ($rarity === 'mythic') return `linear-gradient(135deg, ${theme.brand?.accent || '#ec4899'}4D 0%, #a855f74D 100%)`;
         if ($rarity === 'legendary') return `${theme.warning || '#fbbf24'}33`;
         if ($rarity === 'epic') return `${theme.brand?.accent || '#8b5cf6'}33`;
@@ -459,6 +482,7 @@ const RarityBadge = styled.span`
         return `${theme.text?.tertiary || '#64748b'}33`;
     }};
     color: ${({ $rarity, theme }) => {
+        if ($rarity === 'origin') return '#d4af37';
         if ($rarity === 'mythic') return '#ec4899';
         if ($rarity === 'legendary') return theme.warning || '#fbbf24';
         if ($rarity === 'epic') return theme.brand?.accent || '#a78bfa';
@@ -466,6 +490,7 @@ const RarityBadge = styled.span`
         return theme.text?.secondary || '#94a3b8';
     }};
     border: 1px solid ${({ $rarity, theme }) => {
+        if ($rarity === 'origin') return 'rgba(212, 175, 55, 0.8)';
         if ($rarity === 'mythic') return `${theme.brand?.accent || '#ec4899'}80`;
         if ($rarity === 'legendary') return `${theme.warning || '#fbbf24'}66`;
         if ($rarity === 'epic') return `${theme.brand?.accent || '#8b5cf6'}66`;
@@ -510,6 +535,23 @@ const ItemRequirement = styled.div`
     font-weight: 600;
 `;
 
+// 🏛️ Origin Exclusive Badge
+const OriginExclusiveBadge = styled.div`
+    padding: 0.6rem;
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.2) 0%, rgba(10, 22, 40, 0.3) 100%);
+    border: 1px solid rgba(212, 175, 55, 0.6);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #d4af37;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+`;
+
 const ItemFooter = styled.div`
     display: flex;
     justify-content: space-between;
@@ -545,6 +587,15 @@ const PriceFree = styled.span`
     font-size: 1rem;
     font-weight: 700;
     color: ${({ theme }) => theme.success || '#10b981'};
+`;
+
+// 🏛️ Origin Exclusive Price Display
+const PriceExclusive = styled.span`
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #d4af37;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 `;
 
 const ActionButton = styled.button`
@@ -604,6 +655,14 @@ const ActionButton = styled.button`
         cursor: not-allowed;
     `}
 
+    /* 🏛️ Origin Exclusive - Unobtainable */
+    ${({ $variant }) => $variant === 'origin-exclusive' && css`
+        background: linear-gradient(135deg, rgba(212, 175, 55, 0.2) 0%, rgba(10, 22, 40, 0.3) 100%);
+        border: 2px solid rgba(212, 175, 55, 0.6);
+        color: #d4af37;
+        cursor: not-allowed;
+    `}
+
     &:disabled {
         opacity: 0.5;
         cursor: not-allowed;
@@ -641,6 +700,26 @@ const OwnedBadge = styled.div`
     align-items: center;
     gap: 0.3rem;
     z-index: 10;
+`;
+
+// 🏛️ Founder Badge for Origin items
+const FounderBadge = styled.div`
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    padding: 0.4rem 0.75rem;
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.3) 0%, rgba(10, 22, 40, 0.4) 100%);
+    border: 1px solid rgba(212, 175, 55, 0.8);
+    border-radius: 20px;
+    color: #d4af37;
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    z-index: 10;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 `;
 
 const LockedOverlay = styled.div`
@@ -685,6 +764,7 @@ const ModalOverlay = styled.div`
 const ModalContent = styled.div`
     background: ${({ theme }) => theme.bg?.cardSolid || 'rgba(15, 23, 42, 0.95)'};
     border: 2px solid ${({ $rarity, theme }) => {
+        if ($rarity === 'origin') return 'rgba(212, 175, 55, 0.8)';
         if ($rarity === 'legendary') return `${theme.warning || '#fbbf24'}80`;
         if ($rarity === 'epic') return `${theme.brand?.accent || '#8b5cf6'}80`;
         if ($rarity === 'rare') return `${theme.info || '#3b82f6'}80`;
@@ -963,7 +1043,7 @@ const VaultPage = () => {
             const response = await api.get('/vault/items');
             console.log('[VaultPage] API Response:', response.data);
             console.log('[VaultPage] THEMES COUNT:', response.data.items?.profileThemes?.length);
-console.log('[VaultPage] THEME NAMES:', response.data.items?.profileThemes?.map(t => t.name));
+            console.log('[VaultPage] THEME NAMES:', response.data.items?.profileThemes?.map(t => t.name));
 
             if (response.data.success) {
                 setItems({
@@ -996,6 +1076,12 @@ console.log('[VaultPage] THEME NAMES:', response.data.items?.profileThemes?.map(
 
     const handlePurchase = async (item) => {
         if (purchasing) return;
+        
+        // 🏛️ Prevent purchasing Origin items
+        if (item.rarity === 'origin') {
+            toast.error('This item is exclusive to founders', 'Unobtainable');
+            return;
+        }
         
         setPurchasing(true);
         try {
@@ -1119,7 +1205,7 @@ console.log('[VaultPage] THEME NAMES:', response.data.items?.profileThemes?.map(
                         style={{ width: size, height: size }}
                     >
                         <BorderInner>
-                            <Crown size={large ? 40 : 28} color={theme?.warning || '#fbbf24'} />
+                            <Crown size={large ? 40 : 28} color={item.rarity === 'origin' ? '#d4af37' : theme?.warning || '#fbbf24'} />
                         </BorderInner>
                     </BorderPreview>
                 );
@@ -1160,6 +1246,16 @@ console.log('[VaultPage] THEME NAMES:', response.data.items?.profileThemes?.map(
 
     const renderActionButton = (item) => {
         const isEquipped = isItemEquipped(item);
+        
+        // 🏛️ Origin tier - Founders only, unobtainable
+        if (item.rarity === 'origin' && !item.owned) {
+            return (
+                <ActionButton $variant="origin-exclusive" disabled>
+                    <Crown size={16} />
+                    Founders Only
+                </ActionButton>
+            );
+        }
         
         if (!item.canUnlock && !item.owned) {
             return (
@@ -1226,6 +1322,8 @@ console.log('[VaultPage] THEME NAMES:', response.data.items?.profileThemes?.map(
                 return `Requires ${req.stat}: ${formatNumber(req.value)}`;
             case 'special':
                 return `Special: ${req.value}`;
+            case 'founder':
+                return 'Exclusive to Nexus Signal Founders';
             default:
                 return 'Special requirement';
         }
@@ -1374,14 +1472,18 @@ console.log('[VaultPage] THEME NAMES:', response.data.items?.profileThemes?.map(
                         <FilterButton $active={rarityFilter === 'mythic'} onClick={() => setRarityFilter('mythic')}>
                             Mythic
                         </FilterButton>
+                        <FilterButton $active={rarityFilter === 'origin'} onClick={() => setRarityFilter('origin')}>
+                            🏛️ Origin
+                        </FilterButton>
                     </FilterGroup>
                 </FilterBar>
 
                 {filteredItems.length > 0 ? (
                     <ItemsGrid>
                         {filteredItems.map(item => {
-                            const isLocked = !item.canUnlock && !item.owned;
+                            const isLocked = !item.canUnlock && !item.owned && item.rarity !== 'origin';
                             const isEquipped = isItemEquipped(item);
+                            const isOriginUnobtainable = item.rarity === 'origin' && !item.owned;
                             
                             return (
                                 <ItemCard 
@@ -1399,7 +1501,15 @@ console.log('[VaultPage] THEME NAMES:', response.data.items?.profileThemes?.map(
                                         </EquippedBadge>
                                     )}
                                     
-                                    {item.owned && !isEquipped && (
+                                    {/* 🏛️ Founder badge for Origin items */}
+                                    {item.rarity === 'origin' && !isEquipped && (
+                                        <FounderBadge>
+                                            <Crown size={12} />
+                                            Founder
+                                        </FounderBadge>
+                                    )}
+                                    
+                                    {item.owned && !isEquipped && item.rarity !== 'origin' && (
                                         <OwnedBadge>
                                             <Package size={12} />
                                             Owned
@@ -1421,7 +1531,7 @@ console.log('[VaultPage] THEME NAMES:', response.data.items?.profileThemes?.map(
                                         <ItemHeader>
                                             <ItemName>{item.name}</ItemName>
                                             <RarityBadge $rarity={item.rarity}>
-                                                {item.rarity}
+                                                {item.rarity === 'origin' ? '🏛️ Origin' : item.rarity}
                                             </RarityBadge>
                                         </ItemHeader>
                                         
@@ -1438,6 +1548,14 @@ console.log('[VaultPage] THEME NAMES:', response.data.items?.profileThemes?.map(
                                             </ItemEffect>
                                         )}
                                         
+                                        {/* 🏛️ Origin Exclusive Message */}
+                                        {isOriginUnobtainable && (
+                                            <OriginExclusiveBadge>
+                                                <Crown size={14} />
+                                                Exclusive to Founders
+                                            </OriginExclusiveBadge>
+                                        )}
+                                        
                                         {isLocked && item.unlockRequirement && (
                                             <ItemRequirement>
                                                 <Lock size={14} />
@@ -1447,7 +1565,9 @@ console.log('[VaultPage] THEME NAMES:', response.data.items?.profileThemes?.map(
                                         
                                         <ItemFooter>
                                             <ItemPrice>
-                                                {item.cost === 0 ? (
+                                                {item.rarity === 'origin' ? (
+                                                    <PriceExclusive>Unobtainable</PriceExclusive>
+                                                ) : item.cost === 0 ? (
                                                     <PriceFree>FREE</PriceFree>
                                                 ) : (
                                                     <>

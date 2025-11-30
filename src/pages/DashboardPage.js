@@ -18,6 +18,8 @@ import AdvancedChart from '../components/AdvancedChart';
 import PatternDetector from '../components/PatternDetector';
 import TickerLink, { TickerText } from '../components/TickerLink';
 import WhaleAlertWidget from '../components/WhaleAlertWidget';
+import AvatarWithBorder from '../components/vault/AvatarWithBorder';
+import { useVault } from '../context/VaultContext';
 
 // ============ BORDER COLORS FOR AVATAR FRAMES ============
 const BORDER_COLORS = {
@@ -1608,16 +1610,15 @@ const DashboardPage = () => {
                                 return (
                                     <LeaderboardItem key={trader.user?._id || index} $isUser={trader.user?._id === user?._id}>
                                         <LeaderboardRank $rank={trader.rank}>{trader.rank}</LeaderboardRank>
-                                        <ProfileAvatar
-                                            $size="36px"
-                                            $fontSize="0.85rem"
-                                            $hasImage={!!avatar}
-                                            $borderColor={borderColor}
-                                            $glow={borderGlow}
+                                        <AvatarWithBorder
+                                            src={trader.user?.profile?.avatar || trader.user?.avatar}
+                                            name={trader.user?.profile?.displayName || trader.user?.name}
+                                            username={trader.user?.username}
+                                            size={36}
+                                            borderId={trader.user?.vault?.equippedBorder || trader.user?.equippedBorder || 'border-bronze'}
+                                            showParticles={false}
                                             onClick={() => goToProfile(username)}
-                                        >
-                                            {avatar ? <img src={avatar} alt={initials} /> : initials}
-                                        </ProfileAvatar>
+                                        />
                                         <LeaderboardInfo>
                                             <LeaderboardName 
                                                 onClick={() => goToProfile(username)}
@@ -1659,16 +1660,15 @@ const DashboardPage = () => {
                                     return (
                                         <SocialPost key={post._id}>
                                             <PostHeader>
-                                                <ProfileAvatar
-                                                    $size="34px"
-                                                    $fontSize="0.8rem"
-                                                    $hasImage={!!avatar}
-                                                    $borderColor={borderColor}
-                                                    $glow={borderGlow}
+                                                <AvatarWithBorder
+                                                    src={postUser?.profile?.avatar || postUser?.avatar}
+                                                    name={postUser?.profile?.displayName || postUser?.name}
+                                                    username={postUser?.username}
+                                                    size={34}
+                                                    borderId={postUser?.vault?.equippedBorder || postUser?.equippedBorder || 'border-bronze'}
+                                                    showParticles={false}
                                                     onClick={() => goToProfile(username)}
-                                                >
-                                                    {avatar ? <img src={avatar} alt={initials} /> : initials}
-                                                </ProfileAvatar>
+                                                />
                                                 <PostUserInfo>
                                                     <PostUsername onClick={() => goToProfile(username)}>
                                                         {postUser?.profile?.displayName || postUser?.name || postUser?.username || 'Anonymous'}

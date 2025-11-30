@@ -5,6 +5,8 @@ import {
     User, Zap, Star, Award, Palette, Frame, Shield, 
     Check, Lock, ChevronRight, Sparkles, Crown
 } from 'lucide-react';
+import AvatarWithBorder from '../components/vault/AvatarWithBorder';
+import { useVault } from '../context/VaultContext';
 import { useGamification } from '../context/GamificationContext';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -580,27 +582,14 @@ const EquippedItemsPage = () => {
                     <PreviewGrid>
                         <AvatarPreview>
                             <AvatarContainer>
-                                <AvatarBorder 
-                                    $gradient={equippedBorder?.gradient}
-                                    $animate={equippedBorder?.animation === 'pulse-glow'}
-                                    $shimmer={equippedBorder?.animation === 'shimmer'}
-                                >
-                                    <AvatarInner>
-                                        {user?.avatar ? (
-                                            <UserAvatarImage 
-                                                src={user.avatar} 
-                                                alt={user.username || 'User Avatar'}
-                                                onError={(e) => {
-                                                    e.target.style.display = 'none';
-                                                    e.target.nextSibling.style.display = 'flex';
-                                                }}
-                                            />
-                                        ) : null}
-                                        <UserAvatar style={{ display: user?.avatar ? 'none' : 'flex' }}>
-                                            {getInitials(user)}
-                                        </UserAvatar>
-                                    </AvatarInner>
-                                </AvatarBorder>
+                                <AvatarWithBorder
+                                    src={user?.avatar || user?.profile?.avatar}
+                                    name={user?.name || user?.profile?.displayName}
+                                    username={user?.username}
+                                    size={100}
+                                    borderId={equippedBorder?.id || 'border-bronze'}
+                                    showParticles={true}
+                                />
                             </AvatarContainer>
                             <StatValue>
                                 {equippedBorder?.name || 'No Border Equipped'}

@@ -13,6 +13,7 @@ import {
     ArrowUpRight, ArrowDownRight, Filter, X,
     Sparkles, Target, Zap, Eye, Globe, RefreshCw
 } from 'lucide-react';
+import AvatarWithBorder from '../components/vault/AvatarWithBorder';
 
 // ============ BORDER COLORS MAP (for Avatar Frames) ============
 const BORDER_COLORS = {

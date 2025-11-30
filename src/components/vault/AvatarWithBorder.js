@@ -1,6 +1,7 @@
 // client/src/components/vault/AvatarWithBorder.js
 // 🔥 THE MOST LEGENDARY ANIMATED AVATAR BORDER SYSTEM EVER 🔥
 // Supports: Flames, Lightning, Frost, Void, Rainbow, Dragon, and more!
+// 🏛️ NOW WITH ORIGIN TIER - FOUNDERS ONLY 🏛️
 
 import React, { useMemo } from 'react';
 import styled, { keyframes, css } from 'styled-components';
@@ -239,6 +240,50 @@ const particleFloat = keyframes`
 `;
 
 // ╔══════════════════════════════════════════════════════════════╗
+// ║              🏛️ ORIGIN TIER ANIMATIONS 🏛️                    ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+const architectRotate = keyframes`
+    0% {
+        transform: rotate(0deg);
+        filter: brightness(1) drop-shadow(0 0 8px rgba(212, 175, 55, 0.6));
+    }
+    25% {
+        filter: brightness(1.1) drop-shadow(0 0 12px rgba(212, 175, 55, 0.8));
+    }
+    50% {
+        filter: brightness(1.2) drop-shadow(0 0 15px rgba(212, 175, 55, 0.9));
+    }
+    75% {
+        filter: brightness(1.1) drop-shadow(0 0 12px rgba(212, 175, 55, 0.8));
+    }
+    100% {
+        transform: rotate(360deg);
+        filter: brightness(1) drop-shadow(0 0 8px rgba(212, 175, 55, 0.6));
+    }
+`;
+
+const architectPulse = keyframes`
+    0%, 100% {
+        box-shadow: 0 0 20px #d4af37, 0 0 40px rgba(212, 175, 55, 0.5), 0 0 60px rgba(10, 22, 40, 0.8);
+    }
+    50% {
+        box-shadow: 0 0 30px #d4af37, 0 0 60px rgba(212, 175, 55, 0.7), 0 0 90px rgba(248, 250, 252, 0.3);
+    }
+`;
+
+const originSignalPulse = keyframes`
+    0%, 100% {
+        opacity: 0.8;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.01);
+    }
+`;
+
+// ╔══════════════════════════════════════════════════════════════╗
 // ║                    🎨 BORDER DEFINITIONS                      ║
 // ╚══════════════════════════════════════════════════════════════╝
 
@@ -451,6 +496,15 @@ const BORDER_STYLES = {
         glow: 'rgba(251, 191, 36, 1)',
         animation: 'mythic',
         rarity: 'mythic'
+    },
+    // ╔══════════════════════════════════════════════════════════════╗
+    // ║        🏛️ ORIGIN - FOUNDERS ONLY (UNOBTAINABLE) 🏛️          ║
+    // ╚══════════════════════════════════════════════════════════════╝
+    'border-architects-ring': {
+        gradient: 'conic-gradient(from 0deg, #0a1628 0%, #d4af37 8%, #f8fafc 12%, #d4af37 16%, #0a1628 25%, #d4af37 33%, #f8fafc 37%, #d4af37 41%, #0a1628 50%, #d4af37 58%, #f8fafc 62%, #d4af37 66%, #0a1628 75%, #d4af37 83%, #f8fafc 87%, #d4af37 91%, #0a1628 100%)',
+        glow: 'rgba(212, 175, 55, 1)',
+        animation: 'architect',
+        rarity: 'origin'
     }
 };
 
@@ -560,6 +614,12 @@ const BorderRing = styled.div`
     ${props => props.$animation === 'ghost' && css`
         animation: ${voidPulse} 3s ease-in-out infinite, ${shimmer} 5s linear infinite;
         opacity: 0.9;
+    `}
+
+    /* 🏛️ ORIGIN TIER - Architect Animation */
+    ${props => props.$animation === 'architect' && css`
+        animation: ${architectRotate} 20s linear infinite, ${architectPulse} 4s ease-in-out infinite;
+        background-size: 100% 100%;
     `}
 
     transition: all 0.3s ease;
@@ -678,6 +738,13 @@ const RarityGlow = styled.div`
     ${props => props.$rarity === 'epic' && css`
         background: radial-gradient(circle, rgba(139, 92, 246, 0.3) 0%, transparent 70%);
     `}
+
+    /* 🏛️ ORIGIN TIER - Sacred Geometry Glow */
+    ${props => props.$rarity === 'origin' && css`
+        background: radial-gradient(circle, rgba(212, 175, 55, 0.6) 0%, rgba(248, 250, 252, 0.3) 40%, transparent 70%);
+        animation: ${originSignalPulse} 3s ease-in-out infinite;
+        opacity: 0.5;
+    `}
 `;
 
 // ╔══════════════════════════════════════════════════════════════╗
@@ -702,7 +769,10 @@ const AvatarWithBorder = ({
     const borderStyle = BORDER_STYLES[borderId] || BORDER_STYLES['border-bronze'];
 
     // Calculate border width based on size (thicker for larger avatars)
-    const borderWidth = Math.max(size * 0.07, 3);
+    // Origin tier gets slightly thicker border for prominence
+    const borderWidth = borderStyle.rarity === 'origin' 
+        ? Math.max(size * 0.09, 4) 
+        : Math.max(size * 0.07, 3);
 
     // Get initials from name or username
     const getInitials = () => {
@@ -721,7 +791,7 @@ const AvatarWithBorder = ({
 
     // Generate particles for fire/ember effects
     const particles = useMemo(() => {
-        const hasParticles = ['flames', 'dragon-fire', 'supernova', 'cosmic', 'mythic'].includes(borderStyle.animation);
+        const hasParticles = ['flames', 'dragon-fire', 'supernova', 'cosmic', 'mythic', 'architect'].includes(borderStyle.animation);
         if (!hasParticles || !showParticles || size < 40) return [];
         
         const colors = {
@@ -729,21 +799,25 @@ const AvatarWithBorder = ({
             'dragon-fire': ['#dc2626', '#f97316', '#fbbf24', '#ffffff'],
             'supernova': ['#f97316', '#6366f1', '#fbbf24', '#a855f7'],
             'cosmic': ['#6366f1', '#a855f7', '#ec4899', '#3b82f6'],
-            'mythic': ['#ec4899', '#a855f7', '#06b6d4', '#fbbf24']
+            'mythic': ['#ec4899', '#a855f7', '#06b6d4', '#fbbf24'],
+            'architect': ['#d4af37', '#f8fafc', '#b8962e', '#0a1628']
         };
         
         const particleColors = colors[borderStyle.animation] || colors['flames'];
-        const count = Math.min(Math.floor(size / 10), 8);
+        // Origin tier gets fewer, more refined particles
+        const count = borderStyle.rarity === 'origin' 
+            ? Math.min(Math.floor(size / 15), 5)
+            : Math.min(Math.floor(size / 10), 8);
         
         return Array.from({ length: count }, (_, i) => ({
             id: i,
-            size: Math.random() * 4 + 2,
+            size: borderStyle.rarity === 'origin' ? Math.random() * 3 + 1 : Math.random() * 4 + 2,
             left: Math.random() * 100,
-            duration: Math.random() * 2 + 2,
+            duration: borderStyle.rarity === 'origin' ? Math.random() * 3 + 3 : Math.random() * 2 + 2,
             delay: Math.random() * 2,
             color: particleColors[Math.floor(Math.random() * particleColors.length)]
         }));
-    }, [borderStyle.animation, showParticles, size]);
+    }, [borderStyle.animation, borderStyle.rarity, showParticles, size]);
 
     return (
         <AvatarContainer
@@ -753,7 +827,7 @@ const AvatarWithBorder = ({
             className={className}
         >
             {/* Rarity glow effect */}
-            {(borderStyle.rarity === 'legendary' || borderStyle.rarity === 'mythic' || borderStyle.rarity === 'epic') && (
+            {(borderStyle.rarity === 'legendary' || borderStyle.rarity === 'mythic' || borderStyle.rarity === 'epic' || borderStyle.rarity === 'origin') && (
                 <RarityGlow $size={size} $rarity={borderStyle.rarity} />
             )}
 

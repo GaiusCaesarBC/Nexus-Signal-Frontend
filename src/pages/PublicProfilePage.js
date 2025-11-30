@@ -14,6 +14,8 @@ import {
     Briefcase, Clock, Medal, ChevronLeft, RefreshCw, Shield,
     Gift, Coins, Sparkles
 } from 'lucide-react';
+import AvatarWithBorder from '../components/vault/AvatarWithBorder';
+import { useVault } from '../context/VaultContext';
 
 // ============ BADGE DEFINITIONS (synced with backend vaultItems.js) ============
 const BADGE_DEFINITIONS = {

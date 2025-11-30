@@ -17,6 +17,7 @@ import {
     Calendar, Clock, Copy, Sparkles, Shield, Rocket,
     Brain, TrendingUp as Trending, Gift, Heart, Wifi, WifiOff
 } from 'lucide-react';
+import AvatarWithBorder from '../components/vault/AvatarWithBorder';
 
 // ============ BORDER COLORS MAP (for Avatar Frames) ============
 // This is for equippedBorder - the avatar FRAME style
@@ -1840,21 +1841,14 @@ const LeaderboardPage = () => {
                                         )}
                                     </RankBadge>
 
-                                    <Avatar 
-                                        $hasImage={!!trader.avatar}
-                                        $borderColor={traderBorderStyle.color}
-                                        $glow={traderBorderStyle.glow}
-                                    >
-                                        {trader.avatar ? (
-                                            <AvatarImage 
-                                                src={trader.avatar} 
-                                                alt={trader.displayName}
-                                                onError={(e) => e.target.style.display = 'none'}
-                                            />
-                                        ) : (
-                                            <AvatarInitials>{getInitials(trader)}</AvatarInitials>
-                                        )}
-                                    </Avatar>
+                                    <AvatarWithBorder
+                                        src={trader.avatar}
+                                        name={trader.displayName}
+                                        username={trader.username}
+                                        size={50}
+                                        borderId={trader.equippedBorder || 'border-bronze'}
+                                        showParticles={false}
+                                    />
 
                                     <UserInfo>
                                         <DisplayName>
