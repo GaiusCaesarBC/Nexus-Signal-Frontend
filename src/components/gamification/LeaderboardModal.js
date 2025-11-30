@@ -41,7 +41,7 @@ const Overlay = styled.div`
 `;
 
 const Modal = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.98) 100%);
+    background: ${({ theme }) => theme.bg?.cardSolid || 'rgba(15, 23, 42, 0.95)'};
     border: 2px solid rgba(139, 92, 246, 0.4);
     border-radius: 20px;
     padding: 2rem;

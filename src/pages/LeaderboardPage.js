@@ -743,7 +743,7 @@ const LeaderCard = styled.div`
         if ($rank === 2) return 'linear-gradient(135deg, rgba(192, 192, 192, 0.15) 0%, rgba(192, 192, 192, 0.05) 100%)';
         if ($rank === 3) return 'linear-gradient(135deg, rgba(205, 127, 50, 0.15) 0%, rgba(205, 127, 50, 0.05) 100%)';
         if ($isYou) return `linear-gradient(135deg, ${theme.brand?.accent || '#8b5cf6'}26 0%, ${theme.brand?.accent || '#8b5cf6'}0D 100%)`;
-        return theme.bg?.card || 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%)';
+        return theme.bg?.card || 'rgba(30, 41, 59, 0.9)';
     }};
     backdrop-filter: blur(10px);
     border: 2px solid ${({ $rank, $isYou, theme }) => {
@@ -1101,7 +1101,7 @@ const LoadingText = styled.div`
 `;
 
 const SkeletonCard = styled.div`
-    background: ${({ theme }) => theme.bg?.card || 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%)'};
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     border: 2px solid ${({ theme }) => theme.border?.primary || 'rgba(255, 215, 0, 0.15)'};
     border-radius: 14px;
     padding: 1.25rem 1.5rem;

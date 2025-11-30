@@ -256,7 +256,7 @@ const SearchBar = styled.div`
 const SearchInput = styled.input`
     width: 100%;
     padding: 1rem 1rem 1rem 3rem;
-    background: ${({ theme }) => theme.bg?.card || 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%)'};
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     border: 1px solid ${({ theme }) => `${theme.brand?.primary || '#00adef'}4D`};
     border-radius: 12px;
     color: ${({ theme }) => theme.text?.primary || '#e0e6ed'};
@@ -352,7 +352,7 @@ const StatsContainer = styled.div`
 `;
 
 const StatCard = styled.div`
-    background: ${({ theme }) => theme.bg?.card || 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%)'};
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     border: 1px solid ${({ theme }) => `${theme.brand?.primary || '#00adef'}4D`};
     border-radius: 16px;
     padding: 1.5rem;
@@ -437,7 +437,7 @@ const TradesList = styled.div`
 `;
 
 const TradeCard = styled.div`
-    background: ${({ theme }) => theme.bg?.card || 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%)'};
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     backdrop-filter: blur(10px);
     border: 1px solid ${({ theme }) => `${theme.brand?.primary || '#00adef'}4D`};
     border-radius: 16px;
@@ -640,7 +640,7 @@ const ModalOverlay = styled.div`
 `;
 
 const ModalContent = styled.div`
-    background: ${({ theme }) => theme.bg?.card || 'linear-gradient(135deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.98) 100%)'};
+    background: ${({ theme }) => theme.bg?.cardSolid || 'rgba(15, 23, 42, 0.95)'};
     border: 2px solid ${({ theme }) => `${theme.brand?.primary || '#00adef'}80`};
     border-radius: 20px;
     padding: 2.5rem;
@@ -842,7 +842,7 @@ const AnalyticsContainer = styled.div`
 `;
 
 const ChartCard = styled.div`
-    background: ${({ theme }) => theme.bg?.card || 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%)'};
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     border: 1px solid ${({ theme }) => `${theme.brand?.primary || '#00adef'}4D`};
     border-radius: 16px;
     padding: 2rem;

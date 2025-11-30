@@ -44,7 +44,7 @@ const slideUp = keyframes`
 // ============ STYLED COMPONENTS ============
 const PageContainer = styled.div`
     min-height: 100vh;
-    background: linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
+    background: transparent;
     display: flex;
     align-items: center;
     justify-content: center;

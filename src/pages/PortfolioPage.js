@@ -54,7 +54,7 @@ const glow = keyframes`
 // ============ STYLED COMPONENTS ============
 const PageContainer = styled.div`
     min-height: 100vh;
-    background: linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
+    background: transparent;
     color: ${props => props.theme.text?.primary || '#e0e6ed'};
     padding: 6rem 2rem 2rem;
 `;
@@ -203,7 +203,7 @@ const MainStatChange = styled.div`
 `;
 
 const StatCard = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     border: 1px solid ${props => props.theme.brand?.primary || '#00adef'}33;
     border-radius: 16px;
     padding: 1.5rem;
@@ -411,7 +411,7 @@ const MainGrid = styled.div`
 
 // ============ HOLDINGS TABLE ============
 const HoldingsSection = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     border: 1px solid ${props => props.theme.brand?.primary || '#00adef'}33;
     border-radius: 20px;
     padding: 1.5rem;
@@ -590,7 +590,7 @@ const Sidebar = styled.div`
 `;
 
 const ChartCard = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     border: 1px solid ${props => props.theme.brand?.primary || '#00adef'}33;
     border-radius: 16px;
     padding: 1.5rem;
@@ -624,7 +624,7 @@ const Modal = styled.div`
 `;
 
 const ModalContent = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.98) 100%);
+    background: ${({ theme }) => theme.bg?.cardSolid || 'rgba(15, 23, 42, 0.95)'};
     border: 1px solid ${props => props.theme.brand?.primary || '#00adef'}4D;
     border-radius: 20px;
     padding: 2rem;

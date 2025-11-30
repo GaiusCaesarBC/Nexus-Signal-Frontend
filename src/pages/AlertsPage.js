@@ -23,7 +23,7 @@ const slideIn = keyframes`
 // Styled Components
 const PageContainer = styled.div`
     min-height: 100vh;
-    background: linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
+    background: transparent;
     color: #e0e6ed;
     padding: 6rem 2rem 2rem;
 `;
@@ -60,7 +60,7 @@ const StatsGrid = styled.div`
 `;
 
 const StatCard = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     border: 1px solid rgba(0, 173, 237, 0.2);
     border-radius: 16px;
     padding: 1.5rem;
@@ -153,7 +153,7 @@ const AlertsGrid = styled.div`
 `;
 
 const AlertCard = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     border: 1px solid ${props => {
         if (props.$status === 'triggered') return 'rgba(16, 185, 129, 0.5)';
         if (props.$status === 'expired') return 'rgba(239, 68, 68, 0.5)';
@@ -310,7 +310,7 @@ const Modal = styled.div`
 `;
 
 const ModalContent = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.98) 100%);
+    background: ${({ theme }) => theme.bg?.cardSolid || 'rgba(15, 23, 42, 0.95)'};
     border: 1px solid rgba(0, 173, 237, 0.3);
     border-radius: 16px;
     padding: 2rem;

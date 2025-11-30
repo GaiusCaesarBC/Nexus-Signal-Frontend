@@ -27,7 +27,7 @@ const shimmer = keyframes`
 // ============ STYLED COMPONENTS ============
 const PageContainer = styled.div`
     min-height: 100vh;
-    background: linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
+    background: transparent;
     color: #e0e6ed;
     padding: 6rem 2rem 4rem;
     position: relative;
@@ -113,7 +113,7 @@ const ContentWrapper = styled.div`
 `;
 
 const TableOfContents = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     backdrop-filter: blur(10px);
     border: 1px solid rgba(0, 173, 237, 0.3);
     border-radius: 16px;
@@ -166,7 +166,7 @@ const TOCItem = styled.li`
 `;
 
 const Section = styled.section`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     backdrop-filter: blur(10px);
     border: 1px solid rgba(0, 173, 237, 0.3);
     border-radius: 16px;
@@ -425,7 +425,7 @@ const DataTypeDescription = styled.div`
 `;
 
 const ContactSection = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     backdrop-filter: blur(10px);
     border: 1px solid rgba(0, 173, 237, 0.3);
     border-radius: 16px;

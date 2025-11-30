@@ -449,7 +449,7 @@ const SymbolButton = styled.button`
 `;
 
 const LoadingChartPlaceholder = styled.div`
-    background: ${props => props.theme.bg?.card || 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%)'};
+    background: ${props => props.theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     border: 1px solid ${props => props.theme.border?.secondary || 'rgba(0, 173, 237, 0.2)'};
     border-radius: 16px;
     padding: 4rem;
@@ -624,7 +624,7 @@ const WidgetsGrid = styled.div`
 `;
 
 const Widget = styled.div`
-    background: ${props => props.theme.bg?.card || 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%)'};
+    background: ${props => props.theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     border: 1px solid ${props => props.$borderColor || props.theme.border?.secondary || 'rgba(0, 173, 237, 0.2)'};
     border-radius: 14px;
     padding: 1.25rem;

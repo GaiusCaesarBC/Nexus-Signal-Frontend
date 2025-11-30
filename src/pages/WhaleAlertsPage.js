@@ -41,7 +41,7 @@ const waveAnimation = keyframes`
 const PageContainer = styled.div`
     min-height: 100vh;
     padding: 100px 2rem 2rem;
-    background: linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
+    background: transparent;
     color: ${props => props.theme?.text?.primary || '#e0e6ed'};
 
     @media (max-width: 768px) {
@@ -348,7 +348,7 @@ const AlertsContainer = styled.div`
 `;
 
 const AlertCard = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     border: 1px solid ${props => {
         if (props.$significance === 'massive') return `${props.theme?.warning || '#f59e0b'}80`;
         if (props.$significance === 'high') return `${props.theme?.brand?.accent || '#8b5cf6'}66`;

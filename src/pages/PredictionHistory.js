@@ -25,7 +25,7 @@ const spin = keyframes`
 const PageContainer = styled.div`
     min-height: 100vh;
     padding-top: 80px;
-    background: linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
+    background: transparent;
     color: #e0e6ed;
     padding-left: 2rem;
     padding-right: 2rem;

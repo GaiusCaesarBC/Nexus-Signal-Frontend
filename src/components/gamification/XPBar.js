@@ -19,7 +19,7 @@ const pulse = keyframes`
 
 // ============ STYLED COMPONENTS ============
 const Container = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);
+    background: linear-gradient(135deg, ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.8)'} 0%, rgba(15, 23, 42, 0.9) 100%);
     border: 1px solid rgba(139, 92, 246, 0.3);
     border-radius: 16px;
     padding: 1.5rem 2rem;

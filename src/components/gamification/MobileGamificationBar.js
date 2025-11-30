@@ -16,7 +16,7 @@ const Container = styled.div`
     bottom: 60px; // Above mobile nav
     left: 0;
     right: 0;
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.98) 100%);
+    background: ${({ theme }) => theme.bg?.cardSolid || 'rgba(15, 23, 42, 0.95)'};
     backdrop-filter: blur(10px);
     border-top: 2px solid rgba(139, 92, 246, 0.4);
     padding: 0.75rem 1rem;

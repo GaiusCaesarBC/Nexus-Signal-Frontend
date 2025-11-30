@@ -165,7 +165,7 @@ const SearchWrapper = styled.div`
 const SearchInput = styled.input`
     width: 100%;
     padding: 1.25rem 4rem 1.25rem 4rem;
-    background: ${({ theme }) => theme.bg?.card || 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%)'};
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     border: 2px solid ${({ theme }) => `${theme.brand?.primary || '#ffd700'}4D`};
     border-radius: 16px;
     color: ${({ theme }) => theme.text?.primary || '#e0e6ed'};
@@ -315,7 +315,7 @@ const TraderGrid = styled.div`
 `;
 
 const TraderCard = styled.div`
-    background: ${({ theme }) => theme.bg?.card || 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%)'};
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     backdrop-filter: blur(10px);
     border: 2px solid ${({ theme }) => theme.border?.primary || 'rgba(255, 215, 0, 0.2)'};
     border-radius: 16px;

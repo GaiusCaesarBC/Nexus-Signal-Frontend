@@ -26,7 +26,7 @@ const shake = keyframes`
 `;
 
 const Container = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     border: 1px solid rgba(0, 173, 237, 0.2);
     border-radius: 16px;
     padding: 2rem;

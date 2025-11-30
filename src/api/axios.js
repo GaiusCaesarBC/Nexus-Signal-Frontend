@@ -21,7 +21,7 @@ const getBaseURL = () => {
 };
 
 const API = axios.create({
-    baseURL: getBaseURL(),
+   baseURL: 'http://localhost:5000/api',
     withCredentials: true,
     headers: {
         'Content-Type': 'application/json',

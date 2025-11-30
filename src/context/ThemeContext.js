@@ -28,7 +28,7 @@ const vaultThemes = {
         primary: '#00adef',
         secondary: '#0891b2',
         accent: '#06b6d4',
-        background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%)',
+        background: 'rgba(30, 41, 59, 0.9)',
         pageBackground: 'linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%)',
         navbarBackground: 'linear-gradient(180deg, rgba(10, 14, 39, 0.98) 0%, rgba(10, 14, 39, 0.95) 100%)',
         effects: null
@@ -687,7 +687,7 @@ const buildTheme = (baseMode, profileThemeId) => {
         mode: 'dark',
         bg: {
             page: profileTheme.pageBackground || 'linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%)',
-            card: 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%)',
+            card: 'rgba(30, 41, 59, 0.9)',
             cardSolid: 'rgba(15, 23, 42, 0.95)',
             cardHover: 'rgba(30, 41, 59, 0.95)',
             input: 'rgba(15, 23, 42, 0.8)',
@@ -697,7 +697,7 @@ const buildTheme = (baseMode, profileThemeId) => {
             accent: profileTheme.background
         },
         text: {
-            primary: '#e0e6ed',
+             primary: '#f8fafc',  
             secondary: '#94a3b8',
             tertiary: '#64748b',
             inverse: '#0f172a'

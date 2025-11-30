@@ -32,7 +32,7 @@ const Overlay = styled.div`
 `;
 
 const Modal = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.98) 100%);
+    background: ${({ theme }) => theme.bg?.cardSolid || 'rgba(15, 23, 42, 0.95)'};
     border: 2px solid rgba(0, 173, 237, 0.3);
     border-radius: 24px;
     max-width: 600px;

@@ -121,7 +121,7 @@ const Subtitle = styled.p`
 
 // Preview Section
 const PreviewSection = styled.div`
-    background: ${({ theme }) => theme.bg?.card || 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%)'};
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     border: 2px solid ${({ theme }) => `${theme.brand?.primary || '#00adef'}4D`};
     border-radius: 24px;
     padding: 3rem;

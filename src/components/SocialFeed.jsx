@@ -711,7 +711,7 @@ const PostTypeButton = styled.button`
 
 // ============ POST CARD ============
 const PostCard = styled.article`
-    background: ${({ theme }) => theme.bg?.card || 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%)'};
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     backdrop-filter: blur(10px);
     border: 2px solid ${({ $highlighted, theme }) => $highlighted ? 
         `${theme.brand?.primary || '#ffd700'}66` : 
@@ -1579,7 +1579,7 @@ const ModalOverlay = styled.div`
 `;
 
 const Modal = styled.div`
-    background: ${({ theme }) => theme.bg?.card || 'linear-gradient(135deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.98) 100%)'};
+    background: ${({ theme }) => theme.bg?.cardSolid || 'rgba(15, 23, 42, 0.95)'};
     border: 2px solid ${({ theme }) => theme.border?.secondary || 'rgba(255, 215, 0, 0.3)'};
     border-radius: 24px;
     width: 100%;

@@ -1020,3 +1020,4 @@ const PredictionsShowcase = () => {
 };
 
 export default PredictionsShowcase;
+
