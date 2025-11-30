@@ -674,7 +674,8 @@ const rarityColors = {
     common: { color: '#94a3b8', glow: 'rgba(148, 163, 184, 0.3)', name: 'Common', icon: '○' },
     rare: { color: '#3b82f6', glow: 'rgba(59, 130, 246, 0.4)', name: 'Rare', icon: '◆' },
     epic: { color: '#a855f7', glow: 'rgba(168, 85, 247, 0.5)', name: 'Epic', icon: '★' },
-    legendary: { color: '#fbbf24', glow: 'rgba(251, 191, 36, 0.6)', name: 'Legendary', icon: '✦' }
+    legendary: { color: '#fbbf24', glow: 'rgba(251, 191, 36, 0.6)', name: 'Legendary', icon: '✦' },
+    mythic: { color: '#ec4899', glow: 'rgba(236, 72, 153, 0.8)', name: 'Mythic', icon: '✧', animated: true, rainbow: true }
 };
 
 // ===== 🏗️ BUILD COMPLETE THEME OBJECT =====

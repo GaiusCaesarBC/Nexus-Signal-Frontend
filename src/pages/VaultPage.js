@@ -69,6 +69,17 @@ const epicGlow = keyframes`
     }
 `;
 
+const mythicGlow = keyframes`
+    0%, 100% { 
+        box-shadow: 0 0 25px rgba(236, 72, 153, 0.6), 0 0 50px rgba(168, 85, 247, 0.4);
+        filter: hue-rotate(0deg);
+    }
+    50% { 
+        box-shadow: 0 0 50px rgba(236, 72, 153, 0.9), 0 0 80px rgba(168, 85, 247, 0.6);
+        filter: hue-rotate(15deg);
+    }
+`;
+
 // ============ STYLED COMPONENTS ============
 const PageContainer = styled.div`
     min-height: 100vh;
@@ -302,6 +313,7 @@ const ItemCard = styled.div`
     background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     border: 2px solid ${({ $equipped, $rarity, theme }) => {
         if ($equipped) return `${theme.success || '#10b981'}99`;
+        if ($rarity === 'mythic') return `${theme.brand?.accent || '#ec4899'}99`;
         if ($rarity === 'legendary') return `${theme.warning || '#fbbf24'}80`;
         if ($rarity === 'epic') return `${theme.brand?.accent || '#8b5cf6'}80`;
         if ($rarity === 'rare') return `${theme.info || '#3b82f6'}80`;
@@ -321,6 +333,10 @@ const ItemCard = styled.div`
         animation: ${epicGlow} 3s ease-in-out infinite;
     `}
 
+    ${props => props.$rarity === 'mythic' && !props.$locked && css`
+        animation: ${mythicGlow} 2.5s ease-in-out infinite;
+    `}
+
     &:hover {
         transform: ${props => props.$locked ? 'none' : 'translateY(-8px)'};
         box-shadow: ${props => props.$locked ? 'none' : '0 20px 40px rgba(0, 0, 0, 0.3)'};
@@ -330,6 +346,7 @@ const ItemCard = styled.div`
 const ItemRarityBanner = styled.div`
     height: 4px;
     background: ${({ $rarity, theme }) => {
+        if ($rarity === 'mythic') return `linear-gradient(90deg, #ec4899 0%, #a855f7 25%, #06b6d4 50%, #a855f7 75%, #ec4899 100%)`;
         if ($rarity === 'legendary') return `linear-gradient(90deg, ${theme.warning || '#fbbf24'}, ${theme.warning || '#f59e0b'}, ${theme.warning || '#fbbf24'})`;
         if ($rarity === 'epic') return `linear-gradient(90deg, ${theme.brand?.accent || '#8b5cf6'}, ${theme.brand?.accent || '#a78bfa'}, ${theme.brand?.accent || '#8b5cf6'})`;
         if ($rarity === 'rare') return `linear-gradient(90deg, ${theme.info || '#3b82f6'}, ${theme.info || '#60a5fa'}, ${theme.info || '#3b82f6'})`;
@@ -435,18 +452,21 @@ const RarityBadge = styled.span`
     text-transform: uppercase;
     letter-spacing: 0.5px;
     background: ${({ $rarity, theme }) => {
+        if ($rarity === 'mythic') return `linear-gradient(135deg, ${theme.brand?.accent || '#ec4899'}4D 0%, #a855f74D 100%)`;
         if ($rarity === 'legendary') return `${theme.warning || '#fbbf24'}33`;
         if ($rarity === 'epic') return `${theme.brand?.accent || '#8b5cf6'}33`;
         if ($rarity === 'rare') return `${theme.info || '#3b82f6'}33`;
         return `${theme.text?.tertiary || '#64748b'}33`;
     }};
     color: ${({ $rarity, theme }) => {
+        if ($rarity === 'mythic') return '#ec4899';
         if ($rarity === 'legendary') return theme.warning || '#fbbf24';
         if ($rarity === 'epic') return theme.brand?.accent || '#a78bfa';
         if ($rarity === 'rare') return theme.info || '#60a5fa';
         return theme.text?.secondary || '#94a3b8';
     }};
     border: 1px solid ${({ $rarity, theme }) => {
+        if ($rarity === 'mythic') return `${theme.brand?.accent || '#ec4899'}80`;
         if ($rarity === 'legendary') return `${theme.warning || '#fbbf24'}66`;
         if ($rarity === 'epic') return `${theme.brand?.accent || '#8b5cf6'}66`;
         if ($rarity === 'rare') return `${theme.info || '#3b82f6'}66`;
@@ -1350,6 +1370,9 @@ console.log('[VaultPage] THEME NAMES:', response.data.items?.profileThemes?.map(
                         </FilterButton>
                         <FilterButton $active={rarityFilter === 'legendary'} onClick={() => setRarityFilter('legendary')}>
                             Legendary
+                        </FilterButton>
+                        <FilterButton $active={rarityFilter === 'mythic'} onClick={() => setRarityFilter('mythic')}>
+                            Mythic
                         </FilterButton>
                     </FilterGroup>
                 </FilterBar>
