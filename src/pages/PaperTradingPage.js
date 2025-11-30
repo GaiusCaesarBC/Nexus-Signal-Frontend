@@ -84,7 +84,7 @@ const warningPulse = keyframes`
 const PageContainer = styled.div`
     min-height: 100vh;
     padding-top: 80px;
-    background: linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
+    background: transparent; 
     color: ${props => props.theme?.text?.primary || '#e0e6ed'};
     padding: 2rem;
     padding-top: 100px;
@@ -142,7 +142,7 @@ const PortfolioOverview = styled.div`
 `;
 
 const StatCard = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     border: 2px solid ${props => props.$borderColor || `${props.theme?.brand?.primary || '#00adef'}4D`};
     border-radius: 16px;
     padding: 1.5rem;
@@ -217,7 +217,7 @@ const ContentGrid = styled.div`
 `;
 
 const TradingPanel = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     border: 1px solid ${props => `${props.theme?.brand?.primary || '#00adef'}4D`};
     border-radius: 16px;
     padding: 2rem;
@@ -943,7 +943,7 @@ const Sidebar = styled.div`
 `;
 
 const StatsPanel = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     border: 1px solid ${props => `${props.theme?.brand?.primary || '#00adef'}4D`};
     border-radius: 16px;
     padding: 2rem;
@@ -1000,7 +1000,7 @@ const Badge = styled.div`
 `;
 
 const LeaderboardPreview = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     border: 1px solid ${props => `${props.theme?.brand?.primary || '#00adef'}4D`};
     border-radius: 16px;
     padding: 2rem;

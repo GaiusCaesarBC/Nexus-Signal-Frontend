@@ -83,7 +83,7 @@ export const AuthProvider = ({ children }) => {
         setLoading(true);
         setError(null);
         try {
-            // ✅ CAPTURE THE RESPONSE
+            // ✅ Use API instance (has correct baseURL with /api)
             const response = await API.post('/auth/login', { email, password });
             
             // ✅ SAVE TOKEN TO LOCALSTORAGE
@@ -132,7 +132,7 @@ export const AuthProvider = ({ children }) => {
         setLoading(true);
         setError(null);
         try {
-            // ✅ CAPTURE THE RESPONSE
+            // ✅ Use API instance (has correct baseURL with /api)
             const response = await API.post('/auth/register', userData);
             
             // ✅ SAVE TOKEN TO LOCALSTORAGE

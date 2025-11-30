@@ -148,7 +148,7 @@ const RefreshButton = styled.button`
 
 // ============ PROFILE HEADER ============
 const ProfileHeader = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     backdrop-filter: blur(10px);
     border: 1px solid rgba(0, 173, 237, 0.3);
     border-radius: 20px;
@@ -525,7 +525,7 @@ const StatsGrid = styled.div`
 `;
 
 const StatCard = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.8) 100%);
+    background: linear-gradient(135deg, ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.8)'} 0%, rgba(15, 23, 42, 0.8) 100%);
     border: 1px solid rgba(0, 173, 237, 0.2);
     border-radius: 12px;
     padding: 1.25rem;
@@ -639,7 +639,7 @@ const ProgressBar = styled.div`
 
 // ============ CHARTS ============
 const ChartCard = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.8) 100%);
+    background: linear-gradient(135deg, ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.8)'} 0%, rgba(15, 23, 42, 0.8) 100%);
     border: 1px solid rgba(0, 173, 237, 0.2);
     border-radius: 16px;
     padding: 1.5rem;
@@ -663,7 +663,7 @@ const PostsList = styled.div`
 `;
 
 const PostCard = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.8) 100%);
+    background: linear-gradient(135deg, ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.8)'} 0%, rgba(15, 23, 42, 0.8) 100%);
     border: 1px solid rgba(100, 116, 139, 0.2);
     border-radius: 16px;
     padding: 1.25rem;
@@ -750,7 +750,7 @@ const TradesList = styled.div`
 `;
 
 const TradeCard = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.8) 100%);
+    background: linear-gradient(135deg, ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.8)'} 0%, rgba(15, 23, 42, 0.8) 100%);
     border: 1px solid rgba(100, 116, 139, 0.2);
     border-left: 4px solid ${props => props.$positive ? '#10b981' : '#ef4444'};
     border-radius: 12px;
@@ -811,7 +811,7 @@ const PredictionsList = styled.div`
 `;
 
 const PredictionCard = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.8) 100%);
+    background: linear-gradient(135deg, ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.8)'} 0%, rgba(15, 23, 42, 0.8) 100%);
     border: 1px solid rgba(100, 116, 139, 0.2);
     border-radius: 12px;
     padding: 1rem 1.25rem;
@@ -982,7 +982,7 @@ const Modal = styled.div`
 `;
 
 const ModalContent = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.98) 100%);
+    background: ${({ theme }) => theme.bg?.cardSolid || 'rgba(15, 23, 42, 0.95)'};
     border: 1px solid rgba(0, 173, 237, 0.3);
     border-radius: 16px;
     padding: 2rem;

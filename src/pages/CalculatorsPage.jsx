@@ -150,7 +150,7 @@ const Subtitle = styled.p`
 `;
 
 const SelectorContainer = styled.div`
-    background: ${({ theme }) => theme.bg?.card || 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%)'};
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     backdrop-filter: blur(10px);
     border: 1px solid ${({ theme }) => theme.border?.primary || 'rgba(0, 173, 237, 0.2)'};
     border-radius: 20px;
@@ -268,7 +268,7 @@ const ContentGrid = styled.div`
 `;
 
 const Panel = styled.div`
-    background: ${({ theme }) => theme.bg?.card || 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%)'};
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     backdrop-filter: blur(10px);
     border: 1px solid ${({ theme }) => theme.border?.primary || 'rgba(0, 173, 237, 0.2)'};
     border-radius: 20px;

@@ -299,7 +299,7 @@ const ItemsGrid = styled.div`
 
 // Item Card
 const ItemCard = styled.div`
-    background: ${({ theme }) => theme.bg?.card || 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%)'};
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     border: 2px solid ${({ $equipped, $rarity, theme }) => {
         if ($equipped) return `${theme.success || '#10b981'}99`;
         if ($rarity === 'legendary') return `${theme.warning || '#fbbf24'}80`;
@@ -663,7 +663,7 @@ const ModalOverlay = styled.div`
 `;
 
 const ModalContent = styled.div`
-    background: ${({ theme }) => theme.bg?.card || 'linear-gradient(135deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.98) 100%)'};
+    background: ${({ theme }) => theme.bg?.cardSolid || 'rgba(15, 23, 42, 0.95)'};
     border: 2px solid ${({ $rarity, theme }) => {
         if ($rarity === 'legendary') return `${theme.warning || '#fbbf24'}80`;
         if ($rarity === 'epic') return `${theme.brand?.accent || '#8b5cf6'}80`;
@@ -850,7 +850,7 @@ const StatsBar = styled.div`
 `;
 
 const StatCard = styled.div`
-    background: ${({ theme }) => theme.bg?.card || 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%)'};
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     border: 1px solid ${({ theme }) => `${theme.brand?.primary || '#00adef'}33`};
     border-radius: 12px;
     padding: 1.25rem;

@@ -26,7 +26,7 @@ const likeAnimation = keyframes`
 
 // ============ STYLED COMPONENTS ============
 const CardContainer = styled.div`
-  background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+  background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
   backdrop-filter: blur(10px);
   border: 2px solid rgba(255, 215, 0, 0.2);
   border-radius: 20px;
@@ -469,7 +469,7 @@ const CommentInputWrapper = styled.div`
 const CommentInput = styled.input`
   flex: 1;
   padding: 0.75rem 1rem;
-  background: rgba(30, 41, 59, 0.8);
+  background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.8)'};
   border: 1px solid rgba(255, 215, 0, 0.2);
   border-radius: 10px;
   color: #e0e6ed;

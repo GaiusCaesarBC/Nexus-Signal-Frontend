@@ -76,7 +76,7 @@ const Dropdown = styled.div`
     right: 0;
     width: 420px;
     max-height: 600px;
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.98) 100%);
+    background: ${({ theme }) => theme.bg?.cardSolid || 'rgba(15, 23, 42, 0.95)'};
     backdrop-filter: blur(20px);
     border: 1px solid rgba(0, 173, 237, 0.3);
     border-radius: 16px;

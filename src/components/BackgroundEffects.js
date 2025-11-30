@@ -106,7 +106,7 @@ const EffectsContainer = styled.div`
     position: fixed;
     inset: 0;
     pointer-events: none;
-    z-index: 0;
+    z-index: -1;
     overflow: hidden;
 `;
 

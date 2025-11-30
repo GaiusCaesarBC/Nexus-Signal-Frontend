@@ -45,7 +45,7 @@ const rotate = keyframes`
 // ============ STYLED COMPONENTS ============
 const PageContainer = styled.div`
     min-height: 100vh;
-    background: linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
+    background: transparent;
     color: ${props => props.theme?.text?.primary || '#e0e6ed'};
     padding: 6rem 2rem 2rem;
 `;
@@ -95,7 +95,7 @@ const Subtitle = styled.p`
 
 // ============ ASSET SELECTOR ============
 const SelectorCard = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}33;
     border-radius: 16px;
     padding: 1.5rem;
@@ -291,7 +291,7 @@ const InsightsGrid = styled.div`
 `;
 
 const InsightCard = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}33;
     border-radius: 14px;
     padding: 1.25rem;
@@ -352,7 +352,7 @@ const InsightSubtext = styled.div`
 
 // ============ CHART SECTION ============
 const ChartCard = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}33;
     border-radius: 16px;
     padding: 1.5rem;
@@ -467,7 +467,7 @@ const ChartLoading = styled.div`
 
 // ============ COMPARISON TABLE ============
 const TableCard = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}33;
     border-radius: 16px;
     padding: 1.5rem;

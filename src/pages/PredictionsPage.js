@@ -292,7 +292,7 @@ const StatLabel = styled.div`
 const InputSection = styled.div`
     max-width: 800px;
     margin: 0 auto 3rem;
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     backdrop-filter: blur(10px);
     border: 1px solid ${props => props.theme?.brand?.accent || '#8b5cf6'}4D;
     border-radius: 20px;
@@ -848,7 +848,7 @@ const ModalOverlay = styled.div`
 `;
 
 const ModalContent = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.98) 100%);
+    background: ${({ theme }) => theme.bg?.cardSolid || 'rgba(15, 23, 42, 0.95)'};
     border: 2px solid ${props => props.theme?.brand?.accent || '#8b5cf6'}80;
     border-radius: 20px;
     padding: 2rem;
@@ -957,7 +957,7 @@ const SavedPredictionsGrid = styled.div`
 `;
 
 const SavedPredictionCard = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     border: 2px solid ${props => props.theme?.brand?.accent || '#8b5cf6'}4D;
     border-radius: 16px;
     padding: 1.5rem;

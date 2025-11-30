@@ -32,7 +32,7 @@ const countdown = keyframes`
 
 // ============ STYLED COMPONENTS ============
 const Card = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     backdrop-filter: blur(10px);
     border: 2px solid ${props => {
         if (props.$expired) return 'rgba(100, 116, 139, 0.4)';

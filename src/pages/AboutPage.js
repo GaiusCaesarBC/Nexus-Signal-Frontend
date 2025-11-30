@@ -76,7 +76,7 @@ const countUp = keyframes`
 const AboutContainer = styled.div`
     min-height: 100vh;
     padding-top: 80px;
-    background: linear-gradient(145deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
+    background: transparent;
     color: #ecf0f1;
     position: relative;
     overflow: hidden;
@@ -179,7 +179,7 @@ const StatsSection = styled.div`
 `;
 
 const StatCard = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     backdrop-filter: blur(10px);
     border: 2px solid rgba(59, 130, 246, 0.3);
     border-radius: 16px;
@@ -244,7 +244,7 @@ const ContentGrid = styled.div`
 `;
 
 const SectionCard = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     backdrop-filter: blur(10px);
     border: 2px solid rgba(59, 130, 246, 0.3);
     border-radius: 20px;
@@ -377,7 +377,7 @@ const ValuesGrid = styled.div`
 `;
 
 const ValueCard = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     backdrop-filter: blur(10px);
     border: 2px solid rgba(59, 130, 246, 0.3);
     border-radius: 16px;

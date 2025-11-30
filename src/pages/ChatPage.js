@@ -260,7 +260,7 @@ const MessageBubble = styled.div`
         border-bottom-right-radius: 4px;
         box-shadow: 0 4px 15px ${props.theme?.brand?.primary || '#00adef'}4D;
     ` : css`
-        background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+        background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
         backdrop-filter: blur(10px);
         border: 1px solid ${props.theme?.brand?.primary || '#00adef'}33;
         color: ${props.theme?.text?.primary || '#e0e6ed'};
@@ -325,7 +325,7 @@ const ActionButton = styled.button`
 `;
 
 const InputArea = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     backdrop-filter: blur(10px);
     border-radius: 12px;
     padding: 1rem;
@@ -409,7 +409,7 @@ const TypingIndicator = styled.div`
     display: flex;
     gap: 0.5rem;
     padding: 1rem 1.25rem;
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     backdrop-filter: blur(10px);
     border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}33;
     border-radius: 12px;
