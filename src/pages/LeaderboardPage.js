@@ -20,6 +20,7 @@ import {
 import AvatarWithBorder from '../components/vault/AvatarWithBorder';
 import { BadgeList } from '../components/BadgeDisplay';
 
+
 // ============ BORDER COLORS MAP (for Avatar Frames) ============
 // This is for equippedBorder - the avatar FRAME style
 const BORDER_COLORS = {
@@ -568,6 +569,55 @@ const CategoryTab = styled.button`
         border-color: ${({ theme }) => `${theme.brand?.primary || '#ffd700'}80`};
         color: ${({ theme }) => theme.brand?.primary || '#ffd700'};
         transform: translateY(-2px);
+    }
+`;
+
+const ToggleContainer = styled.div`
+    max-width: 1400px;
+    margin: 0 auto 2rem;
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    animation: ${fadeIn} 0.6s ease-out 0.4s both;
+`;
+
+const ToggleButton = styled.button`
+    padding: 1.25rem 2.5rem;
+    background: ${props => props.$active ? 
+        `linear-gradient(135deg, ${props.theme?.brand?.primary || '#ffd700'} 0%, ${props.theme?.brand?.accent || '#ffed4e'} 100%)` :
+        'rgba(30, 41, 59, 0.6)'
+    };
+    border: 2px solid ${props => props.$active ? 
+        `${props.theme?.brand?.primary || '#ffd700'}` :
+        'rgba(100, 116, 139, 0.3)'
+    };
+    border-radius: 16px;
+    color: ${props => props.$active ? '#0a0e27' : (props.theme?.text?.secondary || '#94a3b8')};
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    position: relative;
+    overflow: hidden;
+
+    ${props => props.$active && css`
+        box-shadow: 0 8px 30px ${props.theme?.brand?.primary || '#ffd700'}66;
+    `}
+
+    &:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 30px ${props => props.$active ? 
+            `${props.theme?.brand?.primary || '#ffd700'}66` :
+            'rgba(0, 0, 0, 0.2)'
+        };
+    }
+
+    @media (max-width: 768px) {
+        padding: 1rem 1.5rem;
+        font-size: 0.95rem;
     }
 `;
 
@@ -1162,6 +1212,7 @@ const LeaderboardPage = () => {
     const theme = useStyledTheme();
     const { profileThemeId } = useThemeContext();
     const { equipped } = useVault();
+    const [activeTab, setActiveTab] = useState('paper'); // 'paper' or 'real'
     
     const [category, setCategory] = useState('returns');
     const [timePeriod, setTimePeriod] = useState('all');
@@ -1276,38 +1327,60 @@ const LeaderboardPage = () => {
     }, []);
 
     const fetchLeaderboard = useCallback(async (showToast = false) => {
+    if (!isMountedRef.current) return;
+    
+    try {
+        setError(null);
+        const sortBy = getSortField();
+        
+        // Different endpoint based on activeTab
+        const endpoint = activeTab === 'paper' ? 
+            `/social/leaderboard?sortBy=${sortBy}&period=${timePeriod}&limit=100` :
+            `/leaderboard/real-portfolio?sortBy=${sortBy}&period=${timePeriod}&limit=100`;
+        
+        const response = await api.get(endpoint);
+        
         if (!isMountedRef.current) return;
         
-        try {
-            setError(null);
-            const sortBy = getSortField();
-            const response = await api.get(`/social/leaderboard?sortBy=${sortBy}&period=${timePeriod}&limit=100`);
-            
-            if (!isMountedRef.current) return;
-            
-            const mappedData = mapTraderData(response.data);
-            
-            setLeaderboard(mappedData);
-            setLastUpdated(new Date());
-            
-            if (user) {
-                const userEntry = mappedData.find(t => t.userId === user.id);
-                setUserRank(userEntry || null);
-            }
-            
-            if (showToast && mappedData.length > 0) {
-                toast.success(`Loaded ${mappedData.length} traders`, 'Leaderboard Updated');
-            }
-        } catch (err) {
-            console.error('Error fetching leaderboard:', err);
-            if (isMountedRef.current) {
-                setError('Failed to load leaderboard');
-                if (showToast) {
-                    toast.error('Failed to load leaderboard', 'Error');
-                }
+        // ✅ FIX: Handle different response structures
+        let tradersData;
+        if (Array.isArray(response.data)) {
+            // Backend returned array directly
+            tradersData = response.data;
+        } else if (response.data.leaderboard) {
+            // Backend returned { leaderboard: [...] }
+            tradersData = response.data.leaderboard;
+        } else if (response.data.data) {
+            // Backend returned { data: [...] }
+            tradersData = response.data.data;
+        } else {
+            console.error('Unexpected response structure:', response.data);
+            tradersData = [];
+        }
+        
+        const mappedData = mapTraderData(tradersData);
+        
+        setLeaderboard(mappedData);
+        setLastUpdated(new Date());
+        
+        if (user) {
+            const userEntry = mappedData.find(t => t.userId === user.id);
+            setUserRank(userEntry || null);
+        }
+        
+        if (showToast && mappedData.length > 0) {
+            toast.success(`Loaded ${mappedData.length} traders`, 'Leaderboard Updated');
+        }
+    } catch (err) {
+        console.error('Error fetching leaderboard:', err);
+        if (isMountedRef.current) {
+            setError('Failed to load leaderboard');
+            if (showToast) {
+                toast.error('Failed to load leaderboard', 'Error');
             }
         }
-    }, [api, getSortField, mapTraderData, timePeriod, toast, user]);
+    }
+}, [api, getSortField, mapTraderData, timePeriod, toast, user, activeTab]);
 
     const fetchFollowing = useCallback(async () => {
         try {
@@ -1341,7 +1414,7 @@ const LeaderboardPage = () => {
         if (!loading) {
             fetchLeaderboard(true);
         }
-    }, [category, timePeriod]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [category, timePeriod,  activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Auto-refresh interval
     useEffect(() => {
@@ -1516,7 +1589,11 @@ const LeaderboardPage = () => {
                         </TitleIcon>
                         Global Leaderboard
                     </Title>
-                    <Subtitle>Compete with the best traders worldwide</Subtitle>
+                    <Subtitle>
+    {activeTab === 'paper' 
+        ? 'Practice trading with virtual cash' 
+        : 'Real money portfolio rankings'}
+</Subtitle>
                 </Header>
                 <LeaderboardContainer>
                     <LeaderboardList>
@@ -1855,6 +1932,25 @@ const LeaderboardPage = () => {
                         <div style={{ textAlign: 'center' }}>Trades</div>
                         <div style={{ textAlign: 'center' }}>Actions</div>
                     </LeaderboardHeader>
+{/* Toggle Buttons - Place BEFORE Category Tabs */}
+<ToggleContainer>
+    <ToggleButton
+        theme={theme}
+        $active={activeTab === 'paper'}
+        onClick={() => setActiveTab('paper')}
+    >
+        <Trophy size={20} />
+        Paper Trading
+    </ToggleButton>
+    <ToggleButton
+        theme={theme}
+        $active={activeTab === 'real'}
+        onClick={() => setActiveTab('real')}
+    >
+        <Crown size={20} />
+        Real Portfolio
+    </ToggleButton>
+</ToggleContainer>
 
                     <LeaderboardList>
                         {restOfLeaderboard.map((trader, index) => {
