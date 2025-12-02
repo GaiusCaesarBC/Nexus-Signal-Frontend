@@ -20,6 +20,9 @@ import TickerLink, { TickerText } from '../components/TickerLink';
 import WhaleAlertWidget from '../components/WhaleAlertWidget';
 import AvatarWithBorder from '../components/vault/AvatarWithBorder';
 import { useVault } from '../context/VaultContext';
+import DailyRewardModal from '../components/DailyReward/DailyRewardModal';
+import DailyRewardButton from '../components/DailyReward/DailyRewardButton';
+
 
 // ============ BORDER COLORS FOR AVATAR FRAMES ============
 const BORDER_COLORS = {
@@ -1039,6 +1042,8 @@ const DashboardPage = () => {
     const [loading, setLoading] = useState(true);
     const [currentTime, setCurrentTime] = useState(new Date());
     const [marketOpen, setMarketOpen] = useState(false);
+    const [showDailyReward, setShowDailyReward] = useState(false);
+    const [rewardClaimed, setRewardClaimed] = useState(false);
 
     // Ticker data
     const [watchlistTicker, setWatchlistTicker] = useState([]);
@@ -1069,6 +1074,28 @@ const DashboardPage = () => {
         const timer = setInterval(() => setCurrentTime(new Date()), 1000);
         return () => clearInterval(timer);
     }, []);
+
+useEffect(() => {
+    const checkDailyReward = async () => {
+        try {
+            const response = await api.get('/gamification/daily-reward/status');
+            if (response.data.canClaim && !sessionStorage.getItem('dailyRewardShown')) {
+                // Auto-show after 2 seconds
+                setTimeout(() => {
+                    setShowDailyReward(true);
+                    sessionStorage.setItem('dailyRewardShown', 'true');
+                }, 2000);
+            }
+        } catch (err) {
+            console.error('Error checking daily reward:', err);
+        }
+    };
+
+    if (isAuthenticated) {
+        checkDailyReward();
+    }
+}, [isAuthenticated, api]);
+
 
     // Market status check
     useEffect(() => {
@@ -1358,6 +1385,38 @@ const DashboardPage = () => {
         }
     };
 
+
+    const handleRewardClaimed = async (reward) => {
+    console.log('Reward claimed:', reward);
+    setRewardClaimed(true);
+    
+    // Show success toast
+    if (toast) {
+        toast.success(
+            `Daily reward claimed! +${reward.xp} XP, +${reward.coins} coins` +
+            (reward.newItems?.length > 0 ? `, +${reward.newItems.length} items` : '')
+        );
+    }
+    
+    // Refresh achievements (they may have unlocked new ones)
+    try {
+        await fetchAchievements();
+    } catch (error) {
+        console.error('Error refreshing achievements:', error);
+    }
+};
+
+const handleCloseRewardModal = () => {
+    setShowDailyReward(false);
+};
+
+const handleOpenRewardModal = () => {
+    setShowDailyReward(true);
+};
+
+
+
+
     // Navigate to user profile
     const goToProfile = (username) => {
         if (username) {
@@ -1427,20 +1486,21 @@ const DashboardPage = () => {
                         </HeaderContent>
                     </HeaderLeft>
                     <HeaderRight>
-                        <LiveClock>
-                            <Clock size={20} />
-                            <div>
-                                <ClockTime>{formatTime(currentTime)}</ClockTime>
-                                <ClockDate>{formatDate(currentTime)}</ClockDate>
-                            </div>
-                        </LiveClock>
-                        <MarketStatus $open={marketOpen}>
-                            <StatusDot $open={marketOpen} />
-                            <StatusText $open={marketOpen}>
-                                {marketOpen ? 'Market Open' : 'Market Closed'}
-                            </StatusText>
-                        </MarketStatus>
-                    </HeaderRight>
+    <LiveClock>
+        <Clock size={20} />
+        <div>
+            <ClockTime>{formatTime(currentTime)}</ClockTime>
+            <ClockDate>{formatDate(currentTime)}</ClockDate>
+        </div>
+    </LiveClock>
+    <MarketStatus $open={marketOpen}>
+        <StatusDot $open={marketOpen} />
+        <StatusText $open={marketOpen}>
+            {marketOpen ? 'Market Open' : 'Market Closed'}
+        </StatusText>
+    </MarketStatus>
+    <DailyRewardButton onClick={handleOpenRewardModal} />
+</HeaderRight>
                 </Header>
 
                 {/* TICKER TAPES */}
@@ -1695,7 +1755,7 @@ const DashboardPage = () => {
                             )}
                         </WidgetContent>
                         <ViewAllButton
-                            onClick={() => navigate('/social')}
+                            onClick={() => navigate('/feed')}
                         >
                             {socialFeed.length > 0 ? 'View All Posts' : 'Create Post'} <ChevronRight size={16} />
                         </ViewAllButton>
@@ -1743,6 +1803,12 @@ const DashboardPage = () => {
                         </EmptyState>
                     )}
                 </AchievementsSection>
+                {/* DAILY REWARD MODAL */}
+                <DailyRewardModal
+                    isOpen={showDailyReward}
+                    onClose={handleCloseRewardModal}
+                    onClaimed={handleRewardClaimed}
+                />
             </ContentWrapper>
         </PageContainer>
     );

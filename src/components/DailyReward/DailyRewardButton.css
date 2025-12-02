@@ -1,0 +1,150 @@
+/* client/src/components/DailyReward/DailyRewardButton.css */
+
+.daily-reward-button {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    overflow: hidden;
+}
+
+.daily-reward-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+}
+
+.daily-reward-button.claimed {
+    background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+    opacity: 0.8;
+    box-shadow: 0 2px 8px rgba(108, 117, 125, 0.3);
+}
+
+.daily-reward-button.claimed:hover {
+    transform: none;
+    box-shadow: 0 2px 8px rgba(108, 117, 125, 0.3);
+}
+
+.reward-icon {
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    backdrop-filter: blur(10px);
+}
+
+.daily-reward-button.available .reward-icon {
+    animation: bounce 2s infinite;
+}
+
+.reward-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+}
+
+.reward-label {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}
+
+.reward-streak {
+    font-size: 12px;
+    opacity: 0.9;
+}
+
+/* Pulse ring for available rewards */
+.pulse-ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    border: 2px solid rgba(255, 255, 255, 0.6);
+    border-radius: 12px;
+    animation: pulse-ring 2s infinite;
+}
+
+/* Animations */
+@keyframes bounce {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-5px);
+    }
+}
+
+@keyframes pulse-ring {
+    0% {
+        width: 100%;
+        height: 100%;
+        opacity: 1;
+    }
+    100% {
+        width: 120%;
+        height: 120%;
+        opacity: 0;
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .daily-reward-button {
+        padding: 10px 16px;
+        gap: 10px;
+    }
+
+    .reward-icon {
+        width: 35px;
+        height: 35px;
+        font-size: 20px;
+    }
+
+    .reward-label {
+        font-size: 13px;
+    }
+
+    .reward-streak {
+        font-size: 11px;
+    }
+}
+
+/* Compact version for small spaces */
+.daily-reward-button.compact {
+    padding: 8px 12px;
+    border-radius: 8px;
+}
+
+.daily-reward-button.compact .reward-icon {
+    width: 30px;
+    height: 30px;
+    font-size: 18px;
+}
+
+.daily-reward-button.compact .reward-info {
+    gap: 0;
+}
+
+.daily-reward-button.compact .reward-label {
+    font-size: 12px;
+}
+
+.daily-reward-button.compact .reward-streak {
+    font-size: 10px;
+}

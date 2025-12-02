@@ -1,0 +1,383 @@
+/* src/components/DailyReward/DailyRewardModal.css */
+
+.daily-reward-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    animation: fadeIn 0.3s ease-in;
+}
+
+.daily-reward-modal {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 20px;
+    padding: 40px;
+    max-width: 500px;
+    width: 90%;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    animation: slideUp 0.4s ease-out;
+    color: white;
+}
+
+.close-button {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    font-size: 28px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.close-button:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: rotate(90deg);
+}
+
+.reward-content {
+    text-align: center;
+}
+
+.reward-content h2 {
+    font-size: 32px;
+    margin-bottom: 20px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.reward-content h3 {
+    font-size: 20px;
+    margin-bottom: 15px;
+    opacity: 0.9;
+}
+
+.reward-loading {
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.spinner {
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-top: 4px solid white;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 20px;
+}
+
+.reward-error {
+    text-align: center;
+    padding: 20px;
+}
+
+.reward-error h2 {
+    color: #ff6b6b;
+}
+
+.streak-info {
+    margin: 25px 0;
+}
+
+.streak-display {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 15px 30px;
+    border-radius: 50px;
+    backdrop-filter: blur(10px);
+}
+
+.streak-display.large {
+    padding: 20px 40px;
+    font-size: 24px;
+}
+
+.streak-icon {
+    font-size: 32px;
+    margin-right: 10px;
+    animation: flicker 2s infinite;
+}
+
+.streak-count {
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.reward-preview {
+    background: rgba(255, 255, 255, 0.15);
+    padding: 25px;
+    border-radius: 15px;
+    margin: 20px 0;
+    backdrop-filter: blur(10px);
+}
+
+.preview-items {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-top: 15px;
+}
+
+.preview-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 15px 25px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    min-width: 100px;
+}
+
+.item-icon {
+    font-size: 32px;
+    margin-bottom: 8px;
+}
+
+.item-value {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.milestone-badge,
+.jackpot-badge {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    padding: 12px 24px;
+    border-radius: 25px;
+    margin-top: 15px;
+    font-weight: bold;
+    font-size: 16px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    animation: pulse 2s infinite;
+}
+
+.jackpot-badge {
+    background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+    color: #333;
+}
+
+.next-milestone {
+    margin-top: 20px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    font-size: 14px;
+}
+
+.milestone-name {
+    font-weight: bold;
+    font-size: 16px;
+    margin-top: 5px;
+}
+
+.claim-button {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    border: none;
+    padding: 15px 40px;
+    font-size: 18px;
+    font-weight: bold;
+    border-radius: 50px;
+    cursor: pointer;
+    margin-top: 25px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.claim-button:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.claim-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.reward-claimed {
+    animation: zoomIn 0.5s ease-out;
+}
+
+.claimed-items {
+    margin: 30px 0;
+}
+
+.claimed-item {
+    background: rgba(255, 255, 255, 0.15);
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 15px;
+    backdrop-filter: blur(10px);
+}
+
+.claimed-item .item-icon {
+    font-size: 40px;
+    display: block;
+    margin-bottom: 10px;
+}
+
+.claimed-item .item-label {
+    display: block;
+    font-size: 14px;
+    opacity: 0.8;
+    margin-bottom: 5px;
+}
+
+.claimed-item .item-value {
+    display: block;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.items-section .unlocked-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 10px;
+}
+
+.unlocked-item {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.milestone-celebration,
+.jackpot-celebration {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    padding: 20px;
+    border-radius: 15px;
+    margin: 20px 0;
+    animation: pulse 2s infinite;
+}
+
+.jackpot-celebration {
+    background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+    color: #333;
+}
+
+.claim-message {
+    font-size: 16px;
+    margin-top: 20px;
+    opacity: 0.9;
+}
+
+.confetti-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.confetti-piece {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    top: -10px;
+    opacity: 0;
+    animation: confettiFall 3s linear forwards;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes zoomIn {
+    from {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+@keyframes flicker {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+}
+
+@keyframes confettiFall {
+    0% {
+        opacity: 1;
+        top: -10px;
+    }
+    100% {
+        opacity: 0;
+        top: 100%;
+        transform: translateX(100px) rotate(360deg);
+    }
+}
+
+@media (max-width: 600px) {
+    .daily-reward-modal {
+        padding: 30px 20px;
+        max-width: 95%;
+    }
+
+    .reward-content h2 {
+        font-size: 24px;
+    }
+
+    .streak-count {
+        font-size: 20px;
+    }
+
+    .preview-items {
+        gap: 10px;
+    }
+
+    .preview-item {
+        min-width: 80px;
+        padding: 10px 15px;
+    }
+
+    .claim-button {
+        padding: 12px 30px;
+        font-size: 16px;
+    }
+}
