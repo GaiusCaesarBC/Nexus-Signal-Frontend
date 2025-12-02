@@ -142,7 +142,6 @@ function AppContent() {
                     <Route path="/discover" element={<ProtectedRoute><DiscoveryPage /></ProtectedRoute>} />
                     <Route path="/feed" element={<SocialFeed />} />
                     <Route path="/achievements/browse" element={<ProtectedRoute><AchievementsBrowserPage /></ProtectedRoute>} />
-
                     <Route path="/vault" element={<ProtectedRoute><VaultPage /></ProtectedRoute>} />
                     <Route path="/equipped" element={<ProtectedRoute><EquippedItemsPage /></ProtectedRoute>} />
                     <Route path="/dev/price-test" element={<PriceServiceTester />} />
@@ -150,7 +149,6 @@ function AppContent() {
                     <Route path="/predictions-showcase" element={<PredictionsShowcase />} />
                     <Route path="/crypto/:symbol" element={<ProtectedRoute><CryptoPage /></ProtectedRoute>} />
                     <Route path="/whale-alerts" element={<ProtectedRoute><WhaleAlertsPage /></ProtectedRoute>} />
-                    <Route path="/trader/:username" element={<ProtectedRoute><PublicProfilePage /></ProtectedRoute>} />
                     <Route path="/profile/:username" element={<ProtectedRoute><PublicProfilePage /></ProtectedRoute>} />
                     <Route path="/compare" element={<ComparisonPage />} />
                     <Route path="/prediction-history" element={<PredictionHistoryPage />} />
@@ -158,8 +156,9 @@ function AppContent() {
                     {/* 🎮 GAMIFICATION ROUTES */}
                     <Route path="/achievements" element={<ProtectedRoute><AchievementsPage /></ProtectedRoute>} />
 
-                    {/* Stock Details Page Route */}
-                   <Route path="/stock/:symbol" element={<ProtectedRoute><StockPage /></ProtectedRoute>} />
+                    {/* Stock Details Page Routes - supports both /stocks/:symbol and /stock/:symbol */}
+                    <Route path="/stocks/:symbol" element={<StockPage />} />
+                    <Route path="/stock/:symbol" element={<StockPage />} />
 
                     {/* Catch-all for 404 Not Found pages */}
                     <Route path="*" element={<NotFoundPage />} />
