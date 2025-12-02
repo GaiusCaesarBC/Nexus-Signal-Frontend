@@ -1,6 +1,7 @@
-// client/src/pages/PredictionsPage.js - THEMED VERSION WITH ALL EFFECTS PRESERVED
+// client/src/pages/PredictionsPage.js - IMPROVED VERSION WITH INDICATORS & DYNAMIC CONFIDENCE
+// PART 1 - Copy this first, then Part 2
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
 import { useTheme } from '../context/ThemeContext';
@@ -11,17 +12,17 @@ import {
     Brain, TrendingUp, TrendingDown, Target, Zap, Activity,
     Calendar, DollarSign, Percent, ArrowRight,
     Star, Award, Sparkles, ChevronRight, BarChart3,
-    Rocket, Trophy, ArrowUpDown, Flame, History, Share2, Download,
-    X, Eye, RefreshCw, GitCompare, BookmarkPlus, Bookmark, Twitter,
-    Facebook, Linkedin, Copy, Clock, Globe, Trash2, ExternalLink
+    Rocket, Trophy, Flame, Share2, Download,
+    X, Eye, RefreshCw, BookmarkPlus, Bookmark, Twitter,
+    Facebook, Linkedin, Copy, Clock, Trash2, AlertTriangle,
+    CheckCircle, XCircle, ArrowUp, ArrowDown, Users, Radio
 } from 'lucide-react';
 import {
     ComposedChart, Bar, XAxis, YAxis, CartesianGrid,
-    Tooltip, ResponsiveContainer, ReferenceLine, Cell,
-    Rectangle
+    Tooltip, ResponsiveContainer, ReferenceLine, Rectangle
 } from 'recharts';
 
-// ============ ANIMATIONS (PRESERVED) ============
+// ============ ANIMATIONS ============
 const fadeIn = keyframes`
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
@@ -57,12 +58,6 @@ const float = keyframes`
     50% { transform: translateY(-15px); }
 `;
 
-const shake = keyframes`
-    0%, 100% { transform: translateX(0); }
-    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-    20%, 40%, 60%, 80% { transform: translateX(5px); }
-`;
-
 const bounceIn = keyframes`
     0% { transform: scale(0); opacity: 0; }
     50% { transform: scale(1.1); }
@@ -82,6 +77,16 @@ const rocketLaunch = keyframes`
 const rocketCrash = keyframes`
     0% { transform: translateY(-1000px) rotate(135deg); }
     100% { transform: translateY(100vh) translateX(-300px) rotate(135deg); }
+`;
+
+const glowPulse = keyframes`
+    0%, 100% { box-shadow: 0 0 20px currentColor; }
+    50% { box-shadow: 0 0 40px currentColor, 0 0 60px currentColor; }
+`;
+
+const countdownPulse = keyframes`
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); }
 `;
 
 // ============ STYLED COMPONENTS ============
@@ -142,14 +147,6 @@ const Title = styled.h1`
     align-items: center;
     justify-content: center;
     gap: 1rem;
-    text-shadow: 0 0 30px ${props => props.theme?.brand?.accent || '#8b5cf6'}60;
-    cursor: pointer;
-    transition: transform 0.3s ease;
-
-    &:hover {
-        transform: scale(1.05);
-        animation: ${shake} 0.5s ease-in-out;
-    }
 
     @media (max-width: 768px) {
         font-size: 2rem;
@@ -176,14 +173,6 @@ const PoweredBy = styled.div`
     border-radius: 20px;
     font-size: 0.9rem;
     color: ${props => props.theme?.brand?.accent || '#a78bfa'};
-    box-shadow: 0 0 20px ${props => props.theme?.brand?.accent || '#8b5cf6'}40;
-    cursor: pointer;
-    transition: all 0.3s ease;
-
-    &:hover {
-        transform: translateY(-3px);
-        background: linear-gradient(135deg, ${props => props.theme?.brand?.accent || '#8b5cf6'}66 0%, ${props => props.theme?.info || '#3b82f6'}66 100%);
-    }
 `;
 
 const TabsContainer = styled.div`
@@ -195,19 +184,6 @@ const TabsContainer = styled.div`
     z-index: 1;
     overflow-x: auto;
     padding-bottom: 0.5rem;
-
-    &::-webkit-scrollbar {
-        height: 4px;
-    }
-
-    &::-webkit-scrollbar-track {
-        background: ${props => props.theme?.brand?.accent || '#8b5cf6'}1A;
-    }
-
-    &::-webkit-scrollbar-thumb {
-        background: ${props => props.theme?.brand?.accent || '#8b5cf6'}80;
-        border-radius: 2px;
-    }
 `;
 
 const Tab = styled.button`
@@ -301,11 +277,6 @@ const InputSection = styled.div`
     box-shadow: 0 10px 40px ${props => props.theme?.brand?.accent || '#8b5cf6'}33;
     position: relative;
     z-index: 1;
-
-    &:hover {
-        border-color: ${props => props.theme?.brand?.accent || '#8b5cf6'}80;
-        box-shadow: 0 15px 50px ${props => props.theme?.brand?.accent || '#8b5cf6'}4D;
-    }
 `;
 
 const InputForm = styled.form`
@@ -355,7 +326,6 @@ const Input = styled.input`
         border-color: ${props => props.theme?.brand?.accent || '#8b5cf6'};
         background: ${props => props.theme?.brand?.accent || '#8b5cf6'}1A;
         box-shadow: 0 0 0 4px ${props => props.theme?.brand?.accent || '#8b5cf6'}33;
-        transform: scale(1.02);
     }
 
     &::placeholder {
@@ -380,7 +350,6 @@ const Select = styled.select`
         border-color: ${props => props.theme?.brand?.accent || '#8b5cf6'};
         background: ${props => props.theme?.brand?.accent || '#8b5cf6'}1A;
         box-shadow: 0 0 0 4px ${props => props.theme?.brand?.accent || '#8b5cf6'}33;
-        transform: scale(1.02);
     }
 
     option {
@@ -424,10 +393,6 @@ const PredictButton = styled.button`
         box-shadow: 0 15px 40px ${props => props.theme?.brand?.accent || '#8b5cf6'}80;
     }
 
-    &:active:not(:disabled) {
-        transform: translateY(-1px) scale(0.98);
-    }
-
     &:disabled {
         opacity: 0.6;
         cursor: not-allowed;
@@ -439,6 +404,185 @@ const LoadingSpinner = styled(Sparkles)`
     animation: ${spin} 1s linear infinite;
 `;
 
+// ============ LIVE COUNTDOWN SECTION ============
+const LiveStatusCard = styled.div`
+    background: linear-gradient(135deg, ${props => props.theme?.brand?.accent || '#8b5cf6'}1A 0%, ${props => props.theme?.info || '#3b82f6'}1A 100%);
+    border: 2px solid ${props => props.theme?.brand?.accent || '#8b5cf6'}4D;
+    border-radius: 20px;
+    padding: 1.5rem 2rem;
+    margin-bottom: 2rem;
+    animation: ${countdownPulse} 2s ease-in-out infinite;
+`;
+
+const LiveStatusHeader = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+`;
+
+const LiveStatusTitle = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: ${props => props.theme?.brand?.accent || '#a78bfa'};
+`;
+
+const LiveDot = styled.div`
+    width: 12px;
+    height: 12px;
+    background: ${props => props.theme?.success || '#10b981'};
+    border-radius: 50%;
+    animation: ${pulse} 1s ease-in-out infinite;
+    box-shadow: 0 0 10px ${props => props.theme?.success || '#10b981'};
+`;
+
+const CountdownDisplay = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+`;
+
+const CountdownUnit = styled.div`
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: rgba(15, 23, 42, 0.8);
+    border-radius: 12px;
+    border: 1px solid ${props => props.$urgent ? props.theme?.error || '#ef4444' : props.theme?.brand?.accent || '#8b5cf6'}4D;
+    min-width: 70px;
+`;
+
+const CountdownValue = styled.div`
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: ${props => props.$urgent ? props.theme?.error || '#ef4444' : props.theme?.text?.primary || '#e0e6ed'};
+`;
+
+const CountdownLabel = styled.div`
+    font-size: 0.7rem;
+    color: ${props => props.theme?.text?.tertiary || '#64748b'};
+    text-transform: uppercase;
+    letter-spacing: 1px;
+`;
+
+const CountdownSeparator = styled.span`
+    font-size: 1.5rem;
+    color: ${props => props.theme?.text?.tertiary || '#64748b'};
+    font-weight: 700;
+`;
+
+// ============ DYNAMIC CONFIDENCE SECTION ============
+const DynamicConfidenceCard = styled.div`
+    background: linear-gradient(135deg, 
+        ${props => props.$trend === 'up' 
+            ? `${props.theme?.success || '#10b981'}1A` 
+            : props.$trend === 'down' 
+                ? `${props.theme?.error || '#ef4444'}1A` 
+                : `${props.theme?.brand?.accent || '#8b5cf6'}1A`} 0%, 
+        rgba(15, 23, 42, 0.8) 100%);
+    border: 2px solid ${props => props.$trend === 'up' 
+        ? `${props.theme?.success || '#10b981'}4D` 
+        : props.$trend === 'down' 
+            ? `${props.theme?.error || '#ef4444'}4D` 
+            : `${props.theme?.brand?.accent || '#8b5cf6'}4D`};
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+`;
+
+const ConfidenceHeader = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+`;
+
+const ConfidenceTitle = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: ${props => props.theme?.brand?.accent || '#a78bfa'};
+`;
+
+const ConfidenceValueLarge = styled.div`
+    font-size: 2.5rem;
+    font-weight: 900;
+    color: ${props => {
+        if (props.$value >= 70) return props.theme?.success || '#10b981';
+        if (props.$value >= 50) return props.theme?.warning || '#f59e0b';
+        return props.theme?.error || '#ef4444';
+    }};
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+`;
+
+const ConfidenceChange = styled.span`
+    font-size: 1rem;
+    font-weight: 600;
+    color: ${props => props.$positive ? props.theme?.success || '#10b981' : props.theme?.error || '#ef4444'};
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+`;
+
+const ConfidenceBarLarge = styled.div`
+    width: 100%;
+    height: 16px;
+    background: rgba(15, 23, 42, 0.6);
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+`;
+
+const ConfidenceBarFill = styled.div`
+    height: 100%;
+    width: ${props => props.$value || 0}%;
+    background: ${props => {
+        if (props.$value >= 70) return `linear-gradient(90deg, ${props.theme?.success || '#10b981'}, ${props.theme?.success || '#059669'})`;
+        if (props.$value >= 50) return `linear-gradient(90deg, ${props.theme?.warning || '#f59e0b'}, ${props.theme?.warning || '#d97706'})`;
+        return `linear-gradient(90deg, ${props.theme?.error || '#ef4444'}, ${props.theme?.error || '#dc2626'})`;
+    }};
+    border-radius: 8px;
+    transition: width 0.5s ease-out, background 0.5s ease;
+    position: relative;
+
+    &::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        animation: ${shimmer} 2s linear infinite;
+    }
+`;
+
+const ConfidenceMessage = styled.div`
+    margin-top: 1rem;
+    padding: 0.75rem 1rem;
+    background: rgba(15, 23, 42, 0.6);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+`;
+
+// END OF PART 1 - Continue with Part 2
+// PART 2 - Add this after Part 1 in your PredictionsPage.js
+
+// ============ PREDICTION CARD STYLED COMPONENTS ============
 const ResultsContainer = styled.div`
     max-width: 1400px;
     margin: 0 auto;
@@ -457,18 +601,6 @@ const PredictionCard = styled.div`
     position: relative;
     overflow: hidden;
     box-shadow: 0 20px 60px ${props => props.theme?.brand?.accent || '#8b5cf6'}4D;
-
-    &::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(45deg, transparent 30%, ${props => props.theme?.brand?.accent || '#8b5cf6'}1A 50%, transparent 70%);
-        background-size: 200% 200%;
-        animation: ${shimmer} 4s linear infinite;
-    }
 `;
 
 const PredictionHeader = styled.div`
@@ -497,7 +629,6 @@ const StockSymbol = styled.h2`
     display: flex;
     align-items: center;
     gap: 1rem;
-    text-shadow: 0 0 30px ${props => props.theme?.brand?.accent || '#8b5cf6'}60;
 `;
 
 const CompanyName = styled.div`
@@ -570,11 +701,69 @@ const DirectionBadge = styled.div`
     color: ${props => props.$up ? (props.theme?.success || '#10b981') : (props.theme?.error || '#ef4444')};
     font-size: 1.5rem;
     font-weight: 900;
-    box-shadow: ${props => props.$up ? 
-        `0 10px 30px ${props.theme?.success || '#10b981'}4D` : 
-        `0 10px 30px ${props.theme?.error || '#ef4444'}4D`
-    };
     animation: ${slideInRight} 0.6s ease-out, ${pulse} 2s ease-in-out infinite 1s;
+`;
+
+// ============ SHARED PREDICTION BADGE ============
+const SharedPredictionBanner = styled.div`
+    background: linear-gradient(135deg, ${props => props.theme?.error || '#ef4444'}1A 0%, ${props => props.theme?.warning || '#f59e0b'}1A 100%);
+    border: 2px solid ${props => props.theme?.error || '#ef4444'}66;
+    border-radius: 16px;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    animation: ${fadeIn} 0.5s ease-out;
+`;
+
+const SharedBadgeLeft = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+`;
+
+const LiveDotLarge = styled.div`
+    width: 16px;
+    height: 16px;
+    background: ${props => props.theme?.error || '#ef4444'};
+    border-radius: 50%;
+    animation: ${pulse} 1s ease-in-out infinite;
+    box-shadow: 0 0 15px ${props => props.theme?.error || '#ef4444'};
+`;
+
+const SharedText = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+`;
+
+const SharedTitle = styled.span`
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: ${props => props.theme?.error || '#ef4444'};
+`;
+
+const SharedSubtitle = styled.span`
+    font-size: 0.85rem;
+    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
+`;
+
+const ViewerCount = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: rgba(15, 23, 42, 0.6);
+    border-radius: 20px;
+    font-size: 0.9rem;
+    color: ${props => props.theme?.text?.primary || '#e0e6ed'};
+    
+    svg {
+        color: ${props => props.theme?.brand?.accent || '#8b5cf6'};
+    }
 `;
 
 const MetricsGrid = styled.div`
@@ -594,12 +783,10 @@ const MetricCard = styled.div`
     padding: 1.5rem;
     transition: all 0.3s ease;
     animation: ${fadeIn} 0.6s ease-out;
-    animation-delay: ${props => props.$index * 0.1}s;
 
     &:hover {
         transform: translateY(-5px) scale(1.03);
         border-color: ${props => props.theme?.brand?.accent || '#8b5cf6'}99;
-        box-shadow: 0 10px 30px ${props => props.theme?.brand?.accent || '#8b5cf6'}4D;
     }
 `;
 
@@ -623,11 +810,6 @@ const MetricIcon = styled.div`
     align-items: center;
     justify-content: center;
     margin-bottom: 1rem;
-    transition: transform 0.3s ease;
-
-    ${MetricCard}:hover & {
-        transform: scale(1.2) rotate(360deg);
-    }
 `;
 
 const MetricLabel = styled.div`
@@ -647,63 +829,7 @@ const MetricValue = styled.div`
     }};
 `;
 
-const ConfidenceSection = styled.div`
-    margin-bottom: 2rem;
-    position: relative;
-    z-index: 1;
-`;
-
-const ConfidenceLabel = styled.div`
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-`;
-
-const ConfidenceText = styled.span`
-    color: ${props => props.theme?.brand?.accent || '#a78bfa'};
-    font-size: 1.1rem;
-    font-weight: 600;
-`;
-
-const ConfidenceValue = styled.span`
-    color: ${props => props.theme?.success || '#10b981'};
-    font-size: 1.5rem;
-    font-weight: 900;
-    animation: ${pulse} 2s ease-in-out infinite;
-`;
-
-const ConfidenceBar = styled.div`
-    width: 100%;
-    height: 20px;
-    background: ${props => props.theme?.brand?.accent || '#8b5cf6'}33;
-    border-radius: 10px;
-    overflow: hidden;
-    border: 1px solid ${props => props.theme?.brand?.accent || '#8b5cf6'}4D;
-`;
-
-const ConfidenceFill = styled.div`
-    height: 100%;
-    width: ${props => props.$value || 0}%;
-    background: linear-gradient(90deg, ${props => props.theme?.success || '#10b981'}, ${props => props.theme?.brand?.accent || '#8b5cf6'}, ${props => props.theme?.brand?.primary || '#00adef'});
-    border-radius: 10px;
-    transition: width 1.5s ease-out;
-    position: relative;
-    overflow: hidden;
-
-    &::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.3) 50%, transparent 70%);
-        background-size: 200% 200%;
-        animation: ${shimmer} 2s linear infinite;
-    }
-`;
-
+// ============ INDICATORS SECTION ============
 const IndicatorsSection = styled.div`
     margin-bottom: 2rem;
     position: relative;
@@ -727,7 +853,11 @@ const IndicatorsGrid = styled.div`
 
 const IndicatorItem = styled.div`
     background: rgba(15, 23, 42, 0.6);
-    border: 1px solid ${props => props.theme?.brand?.accent || '#8b5cf6'}33;
+    border: 1px solid ${props => {
+        if (props.$signal === 'BUY') return `${props.theme?.success || '#10b981'}4D`;
+        if (props.$signal === 'SELL') return `${props.theme?.error || '#ef4444'}4D`;
+        return `${props.theme?.brand?.accent || '#8b5cf6'}33`;
+    }};
     border-radius: 12px;
     padding: 1rem;
     display: flex;
@@ -737,26 +867,61 @@ const IndicatorItem = styled.div`
 
     &:hover {
         background: rgba(15, 23, 42, 0.8);
-        border-color: ${props => props.theme?.brand?.accent || '#8b5cf6'}66;
         transform: translateX(5px);
     }
 `;
 
-const IndicatorName = styled.span`
-    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
-    font-size: 0.9rem;
+const IndicatorInfo = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 `;
 
-const IndicatorValue = styled.span`
+const IndicatorName = styled.span`
+    color: ${props => props.theme?.text?.primary || '#e0e6ed'};
+    font-size: 0.95rem;
+    font-weight: 600;
+`;
+
+const IndicatorNumericValue = styled.span`
+    color: ${props => props.theme?.text?.tertiary || '#64748b'};
+    font-size: 0.8rem;
+`;
+
+const IndicatorSignal = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    background: ${props => {
+        if (props.$signal === 'BUY') return `${props.theme?.success || '#10b981'}26`;
+        if (props.$signal === 'SELL') return `${props.theme?.error || '#ef4444'}26`;
+        return `${props.theme?.warning || '#f59e0b'}26`;
+    }};
     color: ${props => {
         if (props.$signal === 'BUY') return props.theme?.success || '#10b981';
         if (props.$signal === 'SELL') return props.theme?.error || '#ef4444';
         return props.theme?.warning || '#f59e0b';
     }};
-    font-weight: 700;
-    font-size: 0.95rem;
 `;
 
+const NoIndicatorsMessage = styled.div`
+    padding: 1.5rem;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px dashed ${props => props.theme?.brand?.accent || '#8b5cf6'}4D;
+    border-radius: 12px;
+    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+`;
+
+// ============ CHART SECTION ============
 const ChartSection = styled.div`
     background: rgba(15, 23, 42, 0.8);
     backdrop-filter: blur(10px);
@@ -765,13 +930,7 @@ const ChartSection = styled.div`
     padding: 2rem;
     position: relative;
     z-index: 1;
-    transition: all 0.3s ease;
     margin-bottom: 2rem;
-
-    &:hover {
-        border-color: ${props => props.theme?.brand?.accent || '#8b5cf6'}99;
-        box-shadow: 0 20px 60px ${props => props.theme?.brand?.accent || '#8b5cf6'}4D;
-    }
 `;
 
 const ChartTitle = styled.h3`
@@ -783,6 +942,32 @@ const ChartTitle = styled.h3`
     gap: 0.5rem;
 `;
 
+const ChartLegend = styled.div`
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-top: 1rem;
+`;
+
+const LegendItem = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+`;
+
+const LegendColor = styled.div`
+    width: 20px;
+    height: 20px;
+    background: ${props => props.color};
+    border-radius: 4px;
+`;
+
+const LegendText = styled.span`
+    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
+    font-size: 0.9rem;
+`;
+
+// ============ EMPTY STATE ============
 const EmptyState = styled.div`
     text-align: center;
     padding: 4rem 2rem;
@@ -802,13 +987,6 @@ const EmptyIcon = styled.div`
     justify-content: center;
     border: 3px dashed ${props => props.theme?.brand?.accent || '#8b5cf6'}66;
     animation: ${float} 3s ease-in-out infinite;
-    cursor: pointer;
-    transition: all 0.3s ease;
-
-    &:hover {
-        transform: scale(1.1) rotate(5deg);
-        border-color: ${props => props.theme?.brand?.accent || '#8b5cf6'}CC;
-    }
 `;
 
 const EmptyTitle = styled.h2`
@@ -822,6 +1000,7 @@ const EmptyText = styled.p`
     font-size: 1.2rem;
 `;
 
+// ============ ROCKET ANIMATION ============
 const RocketContainer = styled.div`
     position: fixed;
     ${props => props.$crash ? 'top: -100px;' : 'bottom: -100px;'}
@@ -831,6 +1010,7 @@ const RocketContainer = styled.div`
     pointer-events: none;
 `;
 
+// ============ MODAL ============
 const ModalOverlay = styled.div`
     position: fixed;
     top: 0;
@@ -848,7 +1028,7 @@ const ModalOverlay = styled.div`
 `;
 
 const ModalContent = styled.div`
-    background: ${({ theme }) => theme.bg?.cardSolid || 'rgba(15, 23, 42, 0.95)'};
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.98) 100%);
     border: 2px solid ${props => props.theme?.brand?.accent || '#8b5cf6'}80;
     border-radius: 20px;
     padding: 2rem;
@@ -911,7 +1091,6 @@ const ShareOption = styled.button`
 
     &:hover {
         background: ${props => props.theme?.brand?.accent || '#8b5cf6'}33;
-        border-color: ${props => props.theme?.brand?.accent || '#8b5cf6'}80;
         transform: translateY(-3px);
     }
 `;
@@ -929,19 +1108,10 @@ const WatchlistStar = styled.button`
     
     &:hover {
         transform: scale(1.2);
-        filter: drop-shadow(0 0 10px ${props => props.theme?.warning || '#f59e0b'}CC);
-    }
-
-    &:active {
-        transform: scale(0.9);
-    }
-
-    svg {
-        transition: all 0.3s ease;
     }
 `;
 
-// ============ SAVED PREDICTIONS STYLED COMPONENTS ============
+// ============ SAVED PREDICTIONS ============
 const SavedPredictionsContainer = styled.div`
     max-width: 1400px;
     margin: 0 auto;
@@ -968,7 +1138,6 @@ const SavedPredictionCard = styled.div`
     &:hover {
         transform: translateY(-5px);
         border-color: ${props => props.theme?.brand?.accent || '#8b5cf6'}99;
-        box-shadow: 0 15px 40px ${props => props.theme?.brand?.accent || '#8b5cf6'}4D;
     }
 
     &::before {
@@ -1082,10 +1251,6 @@ const SavedActionButton = styled.button`
     transition: all 0.2s ease;
 
     &:hover {
-        background: ${props => props.$danger ? 
-            `${props.theme?.error || '#ef4444'}33` : 
-            `${props.theme?.brand?.accent || '#8b5cf6'}33`
-        };
         transform: scale(1.1);
     }
 `;
@@ -1106,11 +1271,14 @@ const ClearAllButton = styled.button`
 
     &:hover {
         background: ${props => props.theme?.error || '#ef4444'}33;
-        border-color: ${props => props.theme?.error || '#ef4444'}80;
     }
 `;
 
-// ============ COMPONENT ============
+// END OF PART 2 - Continue with Part 3 for the component logic
+// PART 3 - Add this after Part 2 in your PredictionsPage.js
+// This contains the main component logic
+
+// ============ MAIN COMPONENT ============
 const PredictionsPage = () => {
     const { api } = useAuth();
     const toast = useToast();
@@ -1129,6 +1297,14 @@ const PredictionsPage = () => {
     const [savedPredictions, setSavedPredictions] = useState([]);
     const [watchlist, setWatchlist] = useState([]);
 
+    // Dynamic confidence state
+    const [dynamicConfidence, setDynamicConfidence] = useState(null);
+    const [confidenceChange, setConfidenceChange] = useState(0);
+    const [confidenceTrend, setConfidenceTrend] = useState('neutral');
+
+    // Countdown state
+    const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+
     // Theme colors
     const accentColor = theme?.brand?.accent || '#8b5cf6';
     const primaryColor = theme?.brand?.primary || '#00adef';
@@ -1143,6 +1319,7 @@ const PredictionsPage = () => {
         loading: true
     });
 
+    // Fetch platform stats
     useEffect(() => {
         const fetchPlatformStats = async () => {
             try {
@@ -1165,6 +1342,7 @@ const PredictionsPage = () => {
         return () => clearInterval(interval);
     }, [api]);
 
+    // Initialize particles and load saved predictions
     useEffect(() => {
         const newParticles = Array.from({ length: 30 }, (_, i) => ({
             id: i,
@@ -1192,6 +1370,7 @@ const PredictionsPage = () => {
         fetchWatchlist();
     }, [api, accentColor, primaryColor, successColor, warningColor]);
 
+    // Live data polling
     useEffect(() => {
         const predId = prediction?._id || prediction?.predictionId;
         if (!predId) return;
@@ -1201,8 +1380,27 @@ const PredictionsPage = () => {
         const fetchLiveData = async () => {
             try {
                 const response = await api.get(`/predictions/live/${predId}`);
-                setLiveData(response.data.prediction);
-                return response.data.prediction.timeRemaining;
+                const data = response.data.prediction;
+                setLiveData(data);
+                
+                // Update dynamic confidence
+                if (data.liveConfidence !== undefined) {
+                    setDynamicConfidence(prev => {
+                        if (prev !== null) {
+                            const change = data.liveConfidence - prev;
+                            setConfidenceChange(change);
+                            setConfidenceTrend(change > 0 ? 'up' : change < 0 ? 'down' : 'neutral');
+                        }
+                        return data.liveConfidence;
+                    });
+                }
+                
+                // Also store currentPrice from livePrice
+                if (data.livePrice !== undefined) {
+                    data.currentPrice = data.livePrice;
+                }
+                
+                return data.timeRemaining;
             } catch (error) {
                 console.error('Error fetching live data:', error);
                 return null;
@@ -1210,64 +1408,59 @@ const PredictionsPage = () => {
         };
 
         fetchLiveData();
-
-        const startPolling = () => {
-            const updateInterval = async () => {
-                const timeRemaining = await fetchLiveData();
-                if (timeRemaining) {
-                    const hoursRemaining = timeRemaining / (1000 * 60 * 60);
-                    if (currentInterval) clearInterval(currentInterval);
-                    if (hoursRemaining < 0.25) currentInterval = setInterval(fetchLiveData, 3000);
-                    else if (hoursRemaining < 1) currentInterval = setInterval(fetchLiveData, 5000);
-                    else if (hoursRemaining < 6) currentInterval = setInterval(fetchLiveData, 10000);
-                    else currentInterval = setInterval(fetchLiveData, 15000);
-                }
-            };
-            currentInterval = setInterval(updateInterval, 15000);
-            updateInterval();
-        };
-
-        startPolling();
+        currentInterval = setInterval(fetchLiveData, 10000);
+        
         return () => { if (currentInterval) clearInterval(currentInterval); };
     }, [prediction?._id, prediction?.predictionId, api]);
 
-    const formatTimeRemaining = (ms) => {
-        const d = Math.floor(ms / (1000 * 60 * 60 * 24));
-        const h = Math.floor((ms % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const m = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
-        if (d > 0) return `${d}d ${h}h`;
-        if (h > 0) return `${h}h ${m}m`;
-        return `${m}m`;
-    };
-
-    const fetchPrediction = async (e) => {
-        e.preventDefault();
-        if (!symbol) { toast.warning('Please enter a symbol', 'Missing Symbol'); return; }
-
-        setLoading(true);
-        setPrediction(null);
-        setLiveData(null);
-        
-        try {
-            const response = await api.post('/predictions/predict', { symbol: symbol.toUpperCase(), days: parseInt(days) });
-            const chartData = generateChartData(response.data.current_price, response.data.prediction.target_price, parseInt(days));
-            setPrediction({ ...response.data, chartData, timestamp: new Date().toISOString() });
-            toast.success(`Prediction generated for ${symbol.toUpperCase()}`, 'Success');
-
-            const isGoingUp = response.data.prediction.direction === 'UP';
-            setShowRocket(isGoingUp ? 'up' : 'down');
-            setTimeout(() => setShowRocket(false), 3000);
-        } catch (error) {
-            toast.error(error.response?.data?.error || 'Failed to generate prediction', 'Error');
-        } finally {
-            setLoading(false);
+    // Initialize countdown from shared prediction data (before liveData loads)
+    useEffect(() => {
+        if (prediction?.timeRemaining && prediction.timeRemaining > 0 && !liveData) {
+            const remaining = prediction.timeRemaining;
+            const d = Math.floor(remaining / (1000 * 60 * 60 * 24));
+            const h = Math.floor((remaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const m = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+            const s = Math.floor((remaining % (1000 * 60)) / 1000);
+            setCountdown({ days: d, hours: h, minutes: m, seconds: s });
         }
-    };
+    }, [prediction?.timeRemaining, liveData]);
 
+    // Countdown timer
+    useEffect(() => {
+        if (!liveData?.timeRemaining || liveData.timeRemaining <= 0) return;
+
+        // Store the timestamp when we received the data
+        const fetchedAt = Date.now();
+        const initialRemaining = liveData.timeRemaining;
+
+        const updateCountdown = () => {
+            // Calculate how much time has passed since we fetched
+            const elapsed = Date.now() - fetchedAt;
+            const remaining = Math.max(0, initialRemaining - elapsed);
+            
+            if (remaining <= 0) {
+                setCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+                return;
+            }
+
+            const d = Math.floor(remaining / (1000 * 60 * 60 * 24));
+            const h = Math.floor((remaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const m = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+            const s = Math.floor((remaining % (1000 * 60)) / 1000);
+            
+            setCountdown({ days: d, hours: h, minutes: m, seconds: s });
+        };
+
+        updateCountdown();
+        const interval = setInterval(updateCountdown, 1000);
+        return () => clearInterval(interval);
+    }, [liveData?.timeRemaining]);
+
+    // Generate chart data
     const generateChartData = (currentPrice, targetPrice, days) => {
         const data = [];
         const priceChange = targetPrice - currentPrice;
-        const volatility = currentPrice * 0.025; // 2.5% daily volatility
+        const volatility = currentPrice * 0.025;
         
         let prevClose = currentPrice;
         
@@ -1275,7 +1468,6 @@ const PredictionsPage = () => {
             const progress = i / days;
             const trendPrice = currentPrice + (priceChange * progress);
             
-            // Generate realistic OHLC data
             const randomFactor = (Math.random() - 0.5) * 2;
             const open = i === 0 ? currentPrice : prevClose;
             const close = trendPrice + (randomFactor * volatility * 0.5);
@@ -1290,7 +1482,6 @@ const PredictionsPage = () => {
                 high: parseFloat(high.toFixed(2)),
                 low: parseFloat(low.toFixed(2)),
                 close: parseFloat(close.toFixed(2)),
-                // For candlestick rendering
                 openClose: [parseFloat(open.toFixed(2)), parseFloat(close.toFixed(2))],
                 highLow: [parseFloat(low.toFixed(2)), parseFloat(high.toFixed(2))],
                 isUp: close >= open
@@ -1299,6 +1490,66 @@ const PredictionsPage = () => {
         return data;
     };
 
+    // Fetch prediction
+    const fetchPrediction = async (e) => {
+        e.preventDefault();
+        if (!symbol) { toast.warning('Please enter a symbol', 'Missing Symbol'); return; }
+
+        setLoading(true);
+        setPrediction(null);
+        setLiveData(null);
+        setDynamicConfidence(null);
+        
+        try {
+            const response = await api.post('/predictions/predict', { 
+                symbol: symbol.toUpperCase(), 
+                days: parseInt(days) 
+            });
+            
+            console.log('API Response:', response.data);
+            console.log('Indicators:', response.data.indicators);
+            
+            const chartData = generateChartData(
+                response.data.current_price, 
+                response.data.prediction.target_price, 
+                parseInt(days)
+            );
+            
+            setPrediction({ 
+                ...response.data, 
+                chartData, 
+                timestamp: new Date().toISOString() 
+            });
+            
+            // Set initial dynamic confidence (use liveConfidence if shared, otherwise confidence)
+            setDynamicConfidence(response.data.liveConfidence || response.data.prediction.confidence);
+            
+            // Show different toast for shared vs new predictions
+            if (response.data.isShared) {
+                toast.info(`Joined live prediction for ${symbol.toUpperCase()}! ${response.data.viewCount || 1} users watching`, 'Live Prediction');
+            } else {
+                toast.success(`New prediction created for ${symbol.toUpperCase()}`, 'Success');
+            }
+
+            const isGoingUp = response.data.prediction.direction === 'UP';
+            setShowRocket(isGoingUp ? 'up' : 'down');
+            setTimeout(() => setShowRocket(false), 3000);
+        } catch (error) {
+            const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Failed to generate prediction';
+            const errorType = error.response?.data?.error;
+            
+            // Show specific error for invalid symbols
+            if (errorType === 'Invalid symbol') {
+                toast.warning(errorMessage, 'Symbol Not Found');
+            } else {
+                toast.error(errorMessage, 'Error');
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Watchlist toggle
     const handleWatchlistToggle = async (sym) => {
         if (!sym) return;
         const s = sym.toUpperCase();
@@ -1317,6 +1568,7 @@ const PredictionsPage = () => {
         }
     };
 
+    // Save prediction
     const handleSavePrediction = () => {
         if (!prediction) return;
         if (savedPredictions.some(p => p.symbol === prediction.symbol && p.prediction?.target_price === prediction.prediction?.target_price)) {
@@ -1329,6 +1581,7 @@ const PredictionsPage = () => {
         toast.success('Prediction saved!', 'Saved');
     };
 
+    // Delete saved prediction
     const handleDeleteSavedPrediction = (id) => {
         const updated = savedPredictions.filter(p => p.id !== id);
         setSavedPredictions(updated);
@@ -1336,6 +1589,7 @@ const PredictionsPage = () => {
         toast.success('Prediction removed', 'Deleted');
     };
 
+    // Clear all saved
     const handleClearAllSaved = () => {
         if (window.confirm('Clear all saved predictions?')) {
             setSavedPredictions([]);
@@ -1344,11 +1598,13 @@ const PredictionsPage = () => {
         }
     };
 
+    // View saved prediction
     const handleViewSavedPrediction = (saved) => {
         setPrediction(saved);
         setActiveTab('predict');
     };
 
+    // Share
     const handleShare = (platform) => {
         if (!prediction) return;
         const text = `AI prediction: ${prediction.symbol} ${prediction.prediction.direction} to $${prediction.prediction.target_price.toFixed(2)}`;
@@ -1357,361 +1613,119 @@ const PredictionsPage = () => {
         if (platform === 'twitter') shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
         else if (platform === 'facebook') shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
         else if (platform === 'linkedin') shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
-        else if (platform === 'copy') { navigator.clipboard.writeText(`${text}\n${url}`); toast.success('Copied!', 'Copied'); setShowShareModal(false); return; }
+        else if (platform === 'copy') { 
+            navigator.clipboard.writeText(`${text}\n${url}`); 
+            toast.success('Copied!', 'Copied'); 
+            setShowShareModal(false); 
+            return; 
+        }
         if (shareUrl) { window.open(shareUrl, '_blank'); setShowShareModal(false); }
     };
 
+    // Export
     const handleExport = () => {
         if (!prediction) return;
-        const blob = new Blob([JSON.stringify({ symbol: prediction.symbol, currentPrice: prediction.current_price, targetPrice: prediction.prediction.target_price, direction: prediction.prediction.direction, change: prediction.prediction.price_change_percent, confidence: prediction.prediction.confidence, days, timestamp: new Date().toISOString() }, null, 2)], { type: 'application/json' });
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${prediction.symbol}_prediction.json`; a.click();
+        const blob = new Blob([JSON.stringify({
+            symbol: prediction.symbol,
+            currentPrice: prediction.current_price,
+            targetPrice: prediction.prediction.target_price,
+            direction: prediction.prediction.direction,
+            change: prediction.prediction.price_change_percent,
+            confidence: prediction.prediction.confidence,
+            indicators: prediction.indicators,
+            days,
+            timestamp: new Date().toISOString()
+        }, null, 2)], { type: 'application/json' });
+        const a = document.createElement('a'); 
+        a.href = URL.createObjectURL(blob); 
+        a.download = `${prediction.symbol}_prediction.json`; 
+        a.click();
         toast.success('Exported!', 'Exported');
     };
 
-    const formatSavedDate = (dateString) => new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    // Format date
+    const formatSavedDate = (dateString) => new Date(dateString).toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric', 
+        year: 'numeric', 
+        hour: '2-digit', 
+        minute: '2-digit' 
+    });
+
+    // Get confidence message
+    const getConfidenceMessage = (confidence) => {
+        if (confidence >= 80) return { icon: CheckCircle, text: 'Very high confidence - Strong signal detected', color: successColor };
+        if (confidence >= 65) return { icon: CheckCircle, text: 'Good confidence - Favorable conditions', color: successColor };
+        if (confidence >= 50) return { icon: AlertTriangle, text: 'Moderate confidence - Mixed signals', color: warningColor };
+        return { icon: XCircle, text: 'Low confidence - Proceed with caution', color: errorColor };
+    };
+
+    // Render indicators
+    const renderIndicators = () => {
+        if (!prediction?.indicators || Object.keys(prediction.indicators).length === 0) {
+            return (
+                <NoIndicatorsMessage theme={theme}>
+                    <AlertTriangle size={20} />
+                    No technical indicators available for this prediction
+                </NoIndicatorsMessage>
+            );
+        }
+
+        return (
+            <IndicatorsGrid>
+                {Object.entries(prediction.indicators).map(([name, data]) => {
+                    const signal = data?.signal ? String(data.signal).toUpperCase() : 'NEUTRAL';
+                    const value = data?.value !== undefined && data?.value !== null ? data.value : '—';
+                    
+                    return (
+                        <IndicatorItem key={name} theme={theme} $signal={signal}>
+                            <IndicatorInfo>
+                                <IndicatorName theme={theme}>{name}</IndicatorName>
+                                <IndicatorNumericValue theme={theme}>
+                                    {typeof value === 'number' ? value.toFixed(2) : value}
+                                </IndicatorNumericValue>
+                            </IndicatorInfo>
+                            <IndicatorSignal theme={theme} $signal={signal}>
+                                {signal === 'BUY' ? <ArrowUp size={14} /> : signal === 'SELL' ? <ArrowDown size={14} /> : <ArrowRight size={14} />}
+                                {signal === 'BUY' ? 'Bullish' : signal === 'SELL' ? 'Bearish' : 'Neutral'}
+                            </IndicatorSignal>
+                        </IndicatorItem>
+                    );
+                })}
+            </IndicatorsGrid>
+        );
+    };
+
+    const isUrgent = countdown.days === 0 && countdown.hours < 6;
+    const confidenceMsg = dynamicConfidence !== null ? getConfidenceMessage(dynamicConfidence) : null;
+
+    // END OF PART 3 - Continue with Part 4 for the JSX return
+// PART 4 - Add this after Part 3 in your PredictionsPage.js
+// This contains the JSX return statement
 
     return (
         <PageContainer theme={theme}>
+            {/* Particle Background */}
             <ParticleContainer>
-                {particlesData.map(p => <Particle key={p.id} size={p.size} left={p.left} duration={p.duration} delay={p.delay} color={p.color} />)}
+                {particlesData.map(p => (
+                    <Particle key={p.id} size={p.size} left={p.left} duration={p.duration} delay={p.delay} color={p.color} />
+                ))}
             </ParticleContainer>
 
+            {/* Rocket Animation */}
             {showRocket && (
-                <RocketContainer left={Math.random() * 80 + 10} $crash={showRocket === 'down'}>
-                    <Rocket size={64} color={showRocket === 'down' ? errorColor : accentColor} />
+                <RocketContainer left={Math.random() * 60 + 20} $crash={showRocket === 'down'}>
+                    <Rocket size={48} color={showRocket === 'up' ? successColor : errorColor} />
                 </RocketContainer>
             )}
 
-            <Header>
-                <Title theme={theme}>
-                    <TitleIcon><Brain size={56} color={accentColor} /></TitleIcon>
-                    AI Stock & Crypto Predictor
-                </Title>
-                <Subtitle theme={theme}>Advanced machine learning powered price predictions</Subtitle>
-                <PoweredBy theme={theme}><Sparkles size={18} />Powered by Neural Networks</PoweredBy>
-            </Header>
-
-            <TabsContainer theme={theme}>
-                <Tab theme={theme} $active={activeTab === 'predict'} onClick={() => setActiveTab('predict')}><Zap size={18} />Predict</Tab>
-                <Tab theme={theme} $active={activeTab === 'saved'} onClick={() => setActiveTab('saved')}><Bookmark size={18} />Saved ({savedPredictions.length})</Tab>
-            </TabsContainer>
-
-            {activeTab === 'predict' && (
-                <>
-                    <StatsBanner>
-                        <StatCard theme={theme} delay={0}>
-                            <StatIcon gradient={`linear-gradient(135deg, ${accentColor}, ${accentColor}cc)`}><Trophy size={32} color="white" /></StatIcon>
-                            <StatLabel theme={theme}>ACCURACY RATE</StatLabel>
-                            <StatValue theme={theme}>{platformStats.loading ? '...' : `${platformStats.accuracy.toFixed(1)}%`}</StatValue>
-                        </StatCard>
-                        <StatCard theme={theme} delay={0.1}>
-                            <StatIcon gradient={`linear-gradient(135deg, ${successColor}, ${successColor}cc)`}><TrendingUp size={32} color="white" /></StatIcon>
-                            <StatLabel theme={theme}>PREDICTIONS MADE</StatLabel>
-                            <StatValue theme={theme}>{platformStats.loading ? '...' : platformStats.totalPredictions.toLocaleString()}</StatValue>
-                        </StatCard>
-                        <StatCard theme={theme} delay={0.2}>
-                            <StatIcon gradient={`linear-gradient(135deg, ${warningColor}, ${warningColor}cc)`}><Flame size={32} color="white" /></StatIcon>
-                            <StatValue theme={theme}>24/7</StatValue>
-                            <StatLabel theme={theme}>REAL-TIME ANALYSIS</StatLabel>
-                        </StatCard>
-                        <StatCard theme={theme} delay={0.3}>
-                            <StatIcon gradient={`linear-gradient(135deg, ${errorColor}, ${errorColor}cc)`}><Rocket size={32} color="white" /></StatIcon>
-                            <StatValue theme={theme}>Lightning</StatValue>
-                            <StatLabel theme={theme}>FAST RESULTS</StatLabel>
-                        </StatCard>
-                    </StatsBanner>
-
-                    <InputSection theme={theme}>
-                        <InputForm onSubmit={fetchPrediction}>
-                            <InputGroup>
-                                <FormField>
-                                    <Label theme={theme}><Target size={18} />Stock Symbol</Label>
-                                    <Input theme={theme} placeholder="e.g., AAPL, TSLA, BTC" value={symbol} onChange={(e) => setSymbol(e.target.value.toUpperCase())} />
-                                </FormField>
-                                <FormField>
-                                    <Label theme={theme}><Calendar size={18} />Prediction Period</Label>
-                                    <Select theme={theme} value={days} onChange={(e) => setDays(e.target.value)}>
-                                        <option value="1">1 Day</option>
-                                        <option value="3">3 Days</option>
-                                        <option value="7">7 Days</option>
-                                        <option value="14">14 Days</option>
-                                        <option value="30">30 Days</option>
-                                    </Select>
-                                </FormField>
-                            </InputGroup>
-                            <PredictButton theme={theme} type="submit" disabled={loading}>
-                                {loading ? <><LoadingSpinner size={24} />Analyzing...</> : <><Zap size={24} />Generate Prediction<ChevronRight size={24} /></>}
-                            </PredictButton>
-                        </InputForm>
-                    </InputSection>
-
-                    {prediction ? (
-                        <ResultsContainer>
-                            <PredictionCard theme={theme}>
-                                <PredictionHeader>
-                                    <StockInfo>
-                                        <StockSymbol theme={theme}>
-                                            {prediction.symbol}
-                                            <WatchlistStar theme={theme} onClick={() => handleWatchlistToggle(prediction.symbol)}>
-                                                <Star size={36} color={warningColor} fill={watchlist.includes(prediction.symbol?.toUpperCase()) ? warningColor : 'none'} />
-                                            </WatchlistStar>
-                                        </StockSymbol>
-                                        <CompanyName theme={theme}>{getAssetName(prediction.symbol)}</CompanyName>
-                                        <CurrentPriceSection>
-                                            <CurrentPriceLabel theme={theme}>Current:</CurrentPriceLabel>
-                                            <CurrentPriceValue theme={theme}>${prediction.current_price?.toFixed(2)}</CurrentPriceValue>
-                                        </CurrentPriceSection>
-                                    </StockInfo>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                        <DirectionBadge theme={theme} $up={prediction.prediction.direction === 'UP'}>
-                                            {prediction.prediction.direction === 'UP' ? <TrendingUp size={32} /> : <TrendingDown size={32} />}
-                                            {prediction.prediction.direction}
-                                        </DirectionBadge>
-                                        <ActionButtons>
-                                            <ActionButton theme={theme} onClick={handleSavePrediction}><BookmarkPlus size={18} /></ActionButton>
-                                            <ActionButton theme={theme} onClick={() => setShowShareModal(true)}><Share2 size={18} /></ActionButton>
-                                            <ActionButton theme={theme} onClick={handleExport}><Download size={18} /></ActionButton>
-                                        </ActionButtons>
-                                    </div>
-                                </PredictionHeader>
-
-                                {liveData && liveData.timeRemaining > 0 && (
-                                    <div style={{ padding: '1.5rem', background: `${accentColor}1A`, borderRadius: '16px', border: `2px solid ${accentColor}4D`, marginBottom: '1.5rem' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                            <div style={{ color: accentColor, fontSize: '1.1rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Clock size={24} />Time Remaining</div>
-                                            <div style={{ fontSize: '2rem', fontWeight: '900', color: liveData.timeRemaining < 3600000 ? errorColor : liveData.timeRemaining < 86400000 ? warningColor : successColor }}>{formatTimeRemaining(liveData.timeRemaining)}</div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {liveData && liveData.livePrice && (
-                                    <div style={{ padding: '1.5rem', background: 'rgba(15, 23, 42, 0.6)', borderRadius: '16px', border: `2px solid ${accentColor}4D`, marginBottom: '1.5rem' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                                            <div style={{ color: theme?.text?.secondary || '#94a3b8' }}>💰 Live Price</div>
-                                            <div style={{ fontSize: '2rem', fontWeight: '900', color: liveData.liveChange >= 0 ? successColor : errorColor }}>${liveData.livePrice.toFixed(2)}</div>
-                                        </div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                            <div style={{ color: theme?.text?.secondary || '#94a3b8' }}>Change from Start</div>
-                                            <div style={{ fontSize: '1.3rem', fontWeight: '700', color: liveData.liveChange >= 0 ? successColor : errorColor }}>{liveData.liveChange >= 0 ? '+' : ''}{liveData.liveChangePercent.toFixed(2)}%</div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                <MetricsGrid>
-                                    <MetricCard theme={theme} $index={0}>
-                                        <MetricIcon theme={theme} $variant={prediction.prediction.direction === 'UP' ? 'success' : 'danger'}><DollarSign size={24} /></MetricIcon>
-                                        <MetricLabel theme={theme}>Target Price</MetricLabel>
-                                        <MetricValue theme={theme} $variant={prediction.prediction.direction === 'UP' ? 'success' : 'danger'}>${prediction.prediction.target_price?.toFixed(2)}</MetricValue>
-                                    </MetricCard>
-                                    <MetricCard theme={theme} $index={1}>
-                                        <MetricIcon theme={theme} $variant={prediction.prediction.price_change_percent >= 0 ? 'success' : 'danger'}><Percent size={24} /></MetricIcon>
-                                        <MetricLabel theme={theme}>Expected Change</MetricLabel>
-                                        <MetricValue theme={theme} $variant={prediction.prediction.price_change_percent >= 0 ? 'success' : 'danger'}>{prediction.prediction.price_change_percent >= 0 ? '+' : ''}{prediction.prediction.price_change_percent?.toFixed(2)}%</MetricValue>
-                                    </MetricCard>
-                                    <MetricCard theme={theme} $index={2}>
-                                        <MetricIcon theme={theme}><Activity size={24} /></MetricIcon>
-                                        <MetricLabel theme={theme}>Price Movement</MetricLabel>
-                                        <MetricValue theme={theme}>${Math.abs(prediction.prediction.target_price - prediction.current_price).toFixed(2)}</MetricValue>
-                                    </MetricCard>
-                                    <MetricCard theme={theme} $index={3}>
-                                        <MetricIcon theme={theme} $variant="warning"><Calendar size={24} /></MetricIcon>
-                                        <MetricLabel theme={theme}>Timeframe</MetricLabel>
-                                        <MetricValue theme={theme} $variant="warning">{days} {parseInt(days) === 1 ? 'Day' : 'Days'}</MetricValue>
-                                    </MetricCard>
-                                </MetricsGrid>
-
-                                <ConfidenceSection>
-                                    <ConfidenceLabel>
-                                        <ConfidenceText theme={theme}><Award size={20} style={{ marginRight: '0.5rem' }} />AI Confidence</ConfidenceText>
-                                        <ConfidenceValue theme={theme}>{prediction.prediction.confidence?.toFixed(1)}%</ConfidenceValue>
-                                    </ConfidenceLabel>
-                                    <ConfidenceBar theme={theme}><ConfidenceFill theme={theme} $value={prediction.prediction.confidence} /></ConfidenceBar>
-                                </ConfidenceSection>
-
-                                {prediction.indicators && (
-                                    <IndicatorsSection>
-                                        <IndicatorsTitle theme={theme}><BarChart3 size={24} />Technical Indicators</IndicatorsTitle>
-                                        <IndicatorsGrid>
-                                            {Object.entries(prediction.indicators).map(([name, data]) => (
-                                                <IndicatorItem theme={theme} key={name}>
-                                                    <IndicatorName theme={theme}>{name}</IndicatorName>
-                                                    <IndicatorValue theme={theme} $signal={data.signal}>{data.value} ({data.signal})</IndicatorValue>
-                                                </IndicatorItem>
-                                            ))}
-                                        </IndicatorsGrid>
-                                    </IndicatorsSection>
-                                )}
-
-                                <ChartSection theme={theme}>
-                                    <ChartTitle theme={theme}><BarChart3 size={24} />Predicted Price Movement</ChartTitle>
-                                    <ResponsiveContainer width="100%" height={400}>
-                                        <ComposedChart data={prediction.chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                                            <CartesianGrid strokeDasharray="3 3" stroke={`${accentColor}33`} />
-                                            <XAxis dataKey="day" stroke={theme?.text?.secondary || '#94a3b8'} tick={{ fill: theme?.text?.secondary || '#94a3b8' }} />
-                                            <YAxis 
-                                                stroke={theme?.text?.secondary || '#94a3b8'} 
-                                                tick={{ fill: theme?.text?.secondary || '#94a3b8' }}
-                                                domain={['dataMin - 5', 'dataMax + 5']}
-                                                tickFormatter={(value) => `$${value.toFixed(0)}`}
-                                            />
-                                            <Tooltip 
-                                                content={({ active, payload, label }) => {
-                                                    if (active && payload && payload.length) {
-                                                        const data = payload[0].payload;
-                                                        return (
-                                                            <div style={{
-                                                                background: 'rgba(15, 23, 42, 0.95)',
-                                                                border: `1px solid ${accentColor}80`,
-                                                                borderRadius: '12px',
-                                                                padding: '1rem',
-                                                                boxShadow: `0 4px 20px ${accentColor}40`
-                                                            }}>
-                                                                <div style={{ color: accentColor, fontWeight: '700', marginBottom: '0.5rem', fontSize: '1rem' }}>{label}</div>
-                                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.9rem' }}>
-                                                                    <span style={{ color: theme?.text?.secondary || '#94a3b8' }}>Open:</span>
-                                                                    <span style={{ color: theme?.text?.primary || '#e0e6ed', fontWeight: '600' }}>${data.open?.toFixed(2)}</span>
-                                                                    <span style={{ color: theme?.text?.secondary || '#94a3b8' }}>High:</span>
-                                                                    <span style={{ color: successColor, fontWeight: '600' }}>${data.high?.toFixed(2)}</span>
-                                                                    <span style={{ color: theme?.text?.secondary || '#94a3b8' }}>Low:</span>
-                                                                    <span style={{ color: errorColor, fontWeight: '600' }}>${data.low?.toFixed(2)}</span>
-                                                                    <span style={{ color: theme?.text?.secondary || '#94a3b8' }}>Close:</span>
-                                                                    <span style={{ color: data.isUp ? successColor : errorColor, fontWeight: '600' }}>${data.close?.toFixed(2)}</span>
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    }
-                                                    return null;
-                                                }}
-                                            />
-                                            <ReferenceLine y={prediction.current_price} stroke={primaryColor} strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Entry', fill: primaryColor, fontSize: 12 }} />
-                                            <ReferenceLine y={prediction.prediction.target_price} stroke={prediction.prediction.direction === 'UP' ? successColor : errorColor} strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Target', fill: prediction.prediction.direction === 'UP' ? successColor : errorColor, fontSize: 12 }} />
-                                            
-                                            {/* Wick (High-Low line) */}
-                                            <Bar dataKey="highLow" barSize={2} shape={(props) => {
-                                                const { x, y, width, height, payload } = props;
-                                                const wickColor = payload.isUp ? successColor : errorColor;
-                                                return (
-                                                    <Rectangle
-                                                        x={x + width / 2 - 1}
-                                                        y={y}
-                                                        width={2}
-                                                        height={height}
-                                                        fill={wickColor}
-                                                    />
-                                                );
-                                            }} />
-                                            
-                                            {/* Candle Body (Open-Close) */}
-                                            <Bar dataKey="openClose" barSize={20} shape={(props) => {
-                                                const { x, y, width, height, payload } = props;
-                                                const bodyColor = payload.isUp ? successColor : errorColor;
-                                                const glowColor = payload.isUp ? `${successColor}40` : `${errorColor}40`;
-                                                return (
-                                                    <g>
-                                                        {/* Glow effect */}
-                                                        <Rectangle
-                                                            x={x - 2}
-                                                            y={y - 2}
-                                                            width={width + 4}
-                                                            height={Math.abs(height) + 4}
-                                                            fill={glowColor}
-                                                            rx={4}
-                                                            ry={4}
-                                                        />
-                                                        {/* Main body */}
-                                                        <Rectangle
-                                                            x={x}
-                                                            y={y}
-                                                            width={width}
-                                                            height={Math.abs(height) || 3}
-                                                            fill={bodyColor}
-                                                            rx={3}
-                                                            ry={3}
-                                                            style={{ filter: `drop-shadow(0 0 8px ${bodyColor})` }}
-                                                        />
-                                                    </g>
-                                                );
-                                            }} />
-                                        </ComposedChart>
-                                    </ResponsiveContainer>
-                                    <div style={{ display: 'flex', justifyContent: 'center', gap: '2rem', marginTop: '1rem' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                            <div style={{ width: '20px', height: '20px', background: successColor, borderRadius: '4px' }} />
-                                            <span style={{ color: theme?.text?.secondary || '#94a3b8', fontSize: '0.9rem' }}>Bullish (Close {'>'} Open)</span>
-                                        </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                            <div style={{ width: '20px', height: '20px', background: errorColor, borderRadius: '4px' }} />
-                                            <span style={{ color: theme?.text?.secondary || '#94a3b8', fontSize: '0.9rem' }}>Bearish (Close {'<'} Open)</span>
-                                        </div>
-                                    </div>
-                                </ChartSection>
-                            </PredictionCard>
-                        </ResultsContainer>
-                    ) : (
-                        <EmptyState>
-                            <EmptyIcon theme={theme}><Brain size={80} color={accentColor} /></EmptyIcon>
-                            <EmptyTitle theme={theme}>Ready to Predict</EmptyTitle>
-                            <EmptyText theme={theme}>Enter a stock or crypto symbol to generate AI-powered predictions</EmptyText>
-                        </EmptyState>
-                    )}
-                </>
-            )}
-
-            {activeTab === 'saved' && (
-                <SavedPredictionsContainer>
-                    {savedPredictions.length > 0 ? (
-                        <>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                                <h2 style={{ color: accentColor, fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Bookmark size={24} />Your Saved Predictions</h2>
-                                <ClearAllButton theme={theme} onClick={handleClearAllSaved}><Trash2 size={18} />Clear All</ClearAllButton>
-                            </div>
-                            <SavedPredictionsGrid>
-                                {savedPredictions.map((saved) => (
-                                    <SavedPredictionCard theme={theme} key={saved.id} $up={saved.prediction?.direction === 'UP'}>
-                                        <SavedCardHeader>
-                                            <div>
-                                                <SavedSymbol theme={theme}>{saved.symbol}</SavedSymbol>
-                                                <div style={{ color: theme?.text?.secondary || '#94a3b8', fontSize: '0.85rem' }}>{getAssetName(saved.symbol)}</div>
-                                            </div>
-                                            <SavedDirection theme={theme} $up={saved.prediction?.direction === 'UP'}>
-                                                {saved.prediction?.direction === 'UP' ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
-                                                {saved.prediction?.direction}
-                                            </SavedDirection>
-                                        </SavedCardHeader>
-                                        <SavedCardBody>
-                                            <SavedMetric theme={theme}><SavedMetricLabel theme={theme}>Entry</SavedMetricLabel><SavedMetricValue theme={theme}>${saved.current_price?.toFixed(2)}</SavedMetricValue></SavedMetric>
-                                            <SavedMetric theme={theme}><SavedMetricLabel theme={theme}>Target</SavedMetricLabel><SavedMetricValue theme={theme} style={{ color: saved.prediction?.direction === 'UP' ? successColor : errorColor }}>${saved.prediction?.target_price?.toFixed(2)}</SavedMetricValue></SavedMetric>
-                                            <SavedMetric theme={theme}><SavedMetricLabel theme={theme}>Change</SavedMetricLabel><SavedMetricValue theme={theme} style={{ color: saved.prediction?.price_change_percent >= 0 ? successColor : errorColor }}>{saved.prediction?.price_change_percent >= 0 ? '+' : ''}{saved.prediction?.price_change_percent?.toFixed(2)}%</SavedMetricValue></SavedMetric>
-                                            <SavedMetric theme={theme}><SavedMetricLabel theme={theme}>Confidence</SavedMetricLabel><SavedMetricValue theme={theme} style={{ color: accentColor }}>{saved.prediction?.confidence?.toFixed(1)}%</SavedMetricValue></SavedMetric>
-                                        </SavedCardBody>
-                                        <SavedCardFooter theme={theme}>
-                                            <SavedDate theme={theme}><Clock size={14} />{formatSavedDate(saved.savedAt || saved.timestamp)}</SavedDate>
-                                            <SavedActions>
-                                                <SavedActionButton theme={theme} onClick={() => handleViewSavedPrediction(saved)}><Eye size={16} /></SavedActionButton>
-                                                <SavedActionButton theme={theme} $danger onClick={() => handleDeleteSavedPrediction(saved.id)}><Trash2 size={16} /></SavedActionButton>
-                                            </SavedActions>
-                                        </SavedCardFooter>
-                                    </SavedPredictionCard>
-                                ))}
-                            </SavedPredictionsGrid>
-                        </>
-                    ) : (
-                        <EmptyState>
-                            <EmptyIcon theme={theme}><Bookmark size={80} color={accentColor} /></EmptyIcon>
-                            <EmptyTitle theme={theme}>No Saved Predictions</EmptyTitle>
-                            <EmptyText theme={theme}>Generate a prediction and bookmark it to save</EmptyText>
-                            <PredictButton theme={theme} onClick={() => setActiveTab('predict')} style={{ marginTop: '2rem', maxWidth: '300px', margin: '2rem auto 0' }}><Zap size={20} />Make a Prediction</PredictButton>
-                        </EmptyState>
-                    )}
-                </SavedPredictionsContainer>
-            )}
-
+            {/* Share Modal */}
             {showShareModal && (
                 <ModalOverlay onClick={() => setShowShareModal(false)}>
-                    <ModalContent theme={theme} onClick={(e) => e.stopPropagation()}>
+                    <ModalContent theme={theme} onClick={e => e.stopPropagation()}>
                         <ModalHeader>
                             <ModalTitle theme={theme}>Share Prediction</ModalTitle>
-                            <CloseButton theme={theme} onClick={() => setShowShareModal(false)}><X size={20} /></CloseButton>
+                            <CloseButton theme={theme} onClick={() => setShowShareModal(false)}><X size={18} /></CloseButton>
                         </ModalHeader>
                         <ShareOptions>
                             <ShareOption theme={theme} onClick={() => handleShare('twitter')}><Twitter size={24} />Twitter</ShareOption>
@@ -1721,6 +1735,370 @@ const PredictionsPage = () => {
                         </ShareOptions>
                     </ModalContent>
                 </ModalOverlay>
+            )}
+
+            {/* Header */}
+            <Header>
+                <Title theme={theme}>
+                    <TitleIcon><Brain size={48} /></TitleIcon>
+                    AI Price Predictions
+                </Title>
+                <Subtitle theme={theme}>Advanced machine learning predictions for stocks & crypto</Subtitle>
+                <PoweredBy theme={theme}>
+                    <Sparkles size={16} /> Powered by Neural Networks & Technical Analysis
+                </PoweredBy>
+            </Header>
+
+            {/* Tabs */}
+            <TabsContainer>
+                <Tab theme={theme} $active={activeTab === 'predict'} onClick={() => setActiveTab('predict')}>
+                    <Brain size={18} /> New Prediction
+                </Tab>
+                <Tab theme={theme} $active={activeTab === 'saved'} onClick={() => setActiveTab('saved')}>
+                    <Bookmark size={18} /> Saved ({savedPredictions.length})
+                </Tab>
+                <Tab theme={theme} $active={activeTab === 'history'} onClick={() => navigate('/prediction-history')}>
+                    <Clock size={18} /> History
+                </Tab>
+            </TabsContainer>
+
+            {/* Stats Banner */}
+            <StatsBanner>
+                <StatCard theme={theme} delay={0}>
+                    <StatIcon gradient={`linear-gradient(135deg, ${successColor}, ${successColor}99)`}>
+                        <Target size={28} color="#fff" />
+                    </StatIcon>
+                    <StatValue theme={theme}>{platformStats.loading ? '...' : `${platformStats.accuracy.toFixed(1)}%`}</StatValue>
+                    <StatLabel theme={theme}>Platform Accuracy</StatLabel>
+                </StatCard>
+                <StatCard theme={theme} delay={0.1}>
+                    <StatIcon gradient={`linear-gradient(135deg, ${accentColor}, ${accentColor}99)`}>
+                        <Activity size={28} color="#fff" />
+                    </StatIcon>
+                    <StatValue theme={theme}>{platformStats.loading ? '...' : platformStats.totalPredictions.toLocaleString()}</StatValue>
+                    <StatLabel theme={theme}>Total Predictions</StatLabel>
+                </StatCard>
+                <StatCard theme={theme} delay={0.2}>
+                    <StatIcon gradient={`linear-gradient(135deg, ${primaryColor}, ${primaryColor}99)`}>
+                        <Zap size={28} color="#fff" />
+                    </StatIcon>
+                    <StatValue theme={theme}>{platformStats.loading ? '...' : platformStats.correctPredictions.toLocaleString()}</StatValue>
+                    <StatLabel theme={theme}>Correct Predictions</StatLabel>
+                </StatCard>
+            </StatsBanner>
+
+            {/* PREDICT TAB */}
+            {activeTab === 'predict' && (
+                <>
+                    <InputSection theme={theme}>
+                        <InputForm onSubmit={fetchPrediction}>
+                            <InputGroup>
+                                <FormField>
+                                    <Label theme={theme}><BarChart3 size={18} /> Symbol</Label>
+                                    <Input 
+                                        theme={theme} 
+                                        value={symbol} 
+                                        onChange={e => setSymbol(e.target.value.toUpperCase())} 
+                                        placeholder="AAPL, BTC, ETH..." 
+                                    />
+                                </FormField>
+                                <FormField>
+                                    <Label theme={theme}><Calendar size={18} /> Timeframe</Label>
+                                    <Select theme={theme} value={days} onChange={e => setDays(e.target.value)}>
+                                        <option value="1">1 Day</option>
+                                        <option value="3">3 Days</option>
+                                        <option value="7">7 Days</option>
+                                        <option value="14">14 Days</option>
+                                        <option value="30">30 Days</option>
+                                    </Select>
+                                </FormField>
+                            </InputGroup>
+                            <PredictButton theme={theme} type="submit" disabled={loading || !symbol}>
+                                {loading ? <><LoadingSpinner size={24} /> Analyzing...</> : <><Brain size={24} /> Generate Prediction</>}
+                            </PredictButton>
+                        </InputForm>
+                    </InputSection>
+
+                    {/* Prediction Results */}
+                    {prediction && (
+                        <ResultsContainer>
+                            <PredictionCard theme={theme}>
+                                {/* ✅ SHARED PREDICTION BANNER */}
+                                {prediction.isShared && (
+                                    <SharedPredictionBanner theme={theme}>
+                                        <SharedBadgeLeft>
+                                            <LiveDotLarge theme={theme} />
+                                            <SharedText>
+                                                <SharedTitle theme={theme}>
+                                                    <Radio size={16} style={{ marginRight: '0.5rem' }} />
+                                                    Live Prediction In Progress
+                                                </SharedTitle>
+                                                <SharedSubtitle theme={theme}>
+                                                    {prediction.sharedMessage || 'You joined an active prediction for this symbol'}
+                                                </SharedSubtitle>
+                                            </SharedText>
+                                        </SharedBadgeLeft>
+                                        <ViewerCount theme={theme}>
+                                            <Users size={18} />
+                                            {prediction.viewCount || 1} watching
+                                        </ViewerCount>
+                                    </SharedPredictionBanner>
+                                )}
+
+                                {/* Live Status with Countdown */}
+                                {liveData && (
+                                    <LiveStatusCard theme={theme}>
+                                        <LiveStatusHeader>
+                                            <LiveStatusTitle theme={theme}>
+                                                <LiveDot theme={theme} />
+                                                Live Tracking Active
+                                            </LiveStatusTitle>
+                                            <CountdownDisplay>
+                                                <CountdownUnit theme={theme} $urgent={isUrgent}>
+                                                    <CountdownValue theme={theme} $urgent={isUrgent}>{String(countdown.days).padStart(2, '0')}</CountdownValue>
+                                                    <CountdownLabel theme={theme}>Days</CountdownLabel>
+                                                </CountdownUnit>
+                                                <CountdownSeparator theme={theme}>:</CountdownSeparator>
+                                                <CountdownUnit theme={theme} $urgent={isUrgent}>
+                                                    <CountdownValue theme={theme} $urgent={isUrgent}>{String(countdown.hours).padStart(2, '0')}</CountdownValue>
+                                                    <CountdownLabel theme={theme}>Hours</CountdownLabel>
+                                                </CountdownUnit>
+                                                <CountdownSeparator theme={theme}>:</CountdownSeparator>
+                                                <CountdownUnit theme={theme} $urgent={isUrgent}>
+                                                    <CountdownValue theme={theme} $urgent={isUrgent}>{String(countdown.minutes).padStart(2, '0')}</CountdownValue>
+                                                    <CountdownLabel theme={theme}>Min</CountdownLabel>
+                                                </CountdownUnit>
+                                                <CountdownSeparator theme={theme}>:</CountdownSeparator>
+                                                <CountdownUnit theme={theme} $urgent={isUrgent}>
+                                                    <CountdownValue theme={theme} $urgent={isUrgent}>{String(countdown.seconds).padStart(2, '0')}</CountdownValue>
+                                                    <CountdownLabel theme={theme}>Sec</CountdownLabel>
+                                                </CountdownUnit>
+                                            </CountdownDisplay>
+                                        </LiveStatusHeader>
+
+                                        {/* Dynamic Confidence Display */}
+                                        {dynamicConfidence !== null && (
+                                            <DynamicConfidenceCard theme={theme} $trend={confidenceTrend}>
+                                                <ConfidenceHeader>
+                                                    <ConfidenceTitle theme={theme}>
+                                                        <Activity size={18} />
+                                                        Live Confidence Score
+                                                    </ConfidenceTitle>
+                                                    {confidenceChange !== 0 && (
+                                                        <ConfidenceChange theme={theme} $positive={confidenceChange > 0}>
+                                                            {confidenceChange > 0 ? <ArrowUp size={16} /> : <ArrowDown size={16} />}
+                                                            {Math.abs(confidenceChange).toFixed(1)}%
+                                                        </ConfidenceChange>
+                                                    )}
+                                                </ConfidenceHeader>
+                                                <ConfidenceValueLarge theme={theme} $value={dynamicConfidence}>
+                                                    {dynamicConfidence.toFixed(1)}%
+                                                </ConfidenceValueLarge>
+                                                <ConfidenceBarLarge theme={theme}>
+                                                    <ConfidenceBarFill theme={theme} $value={dynamicConfidence} />
+                                                </ConfidenceBarLarge>
+                                                {confidenceMsg && (
+                                                    <ConfidenceMessage theme={theme}>
+                                                        <confidenceMsg.icon size={16} color={confidenceMsg.color} />
+                                                        {confidenceMsg.text}
+                                                    </ConfidenceMessage>
+                                                )}
+                                            </DynamicConfidenceCard>
+                                        )}
+                                    </LiveStatusCard>
+                                )}
+
+                                {/* Prediction Header */}
+                                <PredictionHeader>
+                                    <StockInfo>
+                                        <StockSymbol theme={theme}>
+                                            {prediction.symbol}
+                                            <WatchlistStar onClick={() => handleWatchlistToggle(prediction.symbol)}>
+                                                <Star size={24} fill={watchlist.includes(prediction.symbol?.toUpperCase()) ? warningColor : 'none'} color={warningColor} />
+                                            </WatchlistStar>
+                                        </StockSymbol>
+                                        <CompanyName theme={theme}>{getAssetName(prediction.symbol)}</CompanyName>
+                                        <CurrentPriceSection>
+                                            <CurrentPriceLabel theme={theme}>Current:</CurrentPriceLabel>
+                                            <CurrentPriceValue theme={theme}>${(liveData?.livePrice || liveData?.currentPrice || prediction.current_price)?.toFixed(2)}</CurrentPriceValue>
+                                        </CurrentPriceSection>
+                                    </StockInfo>
+                                    <DirectionBadge theme={theme} $up={prediction.prediction.direction === 'UP'}>
+                                        {prediction.prediction.direction === 'UP' ? <TrendingUp size={28} /> : <TrendingDown size={28} />}
+                                        {prediction.prediction.direction}
+                                    </DirectionBadge>
+                                </PredictionHeader>
+
+                                {/* Action Buttons */}
+                                <ActionButtons>
+                                    <ActionButton theme={theme} onClick={handleSavePrediction}><BookmarkPlus size={18} /> Save</ActionButton>
+                                    <ActionButton theme={theme} onClick={() => setShowShareModal(true)}><Share2 size={18} /> Share</ActionButton>
+                                    <ActionButton theme={theme} onClick={handleExport}><Download size={18} /> Export</ActionButton>
+                                    <ActionButton theme={theme} onClick={() => { setSymbol(prediction.symbol); fetchPrediction({ preventDefault: () => {} }); }}>
+                                        <RefreshCw size={18} /> Refresh
+                                    </ActionButton>
+                                </ActionButtons>
+
+                                {/* Metrics Grid */}
+                                <MetricsGrid>
+                                    <MetricCard theme={theme}>
+                                        <MetricIcon theme={theme} $variant="primary"><Target size={24} /></MetricIcon>
+                                        <MetricLabel theme={theme}>Target Price</MetricLabel>
+                                        <MetricValue theme={theme}>${prediction.prediction.target_price?.toFixed(2)}</MetricValue>
+                                    </MetricCard>
+                                    <MetricCard theme={theme}>
+                                        <MetricIcon theme={theme} $variant={prediction.prediction.direction === 'UP' ? 'success' : 'danger'}>
+                                            <Percent size={24} />
+                                        </MetricIcon>
+                                        <MetricLabel theme={theme}>Price Change</MetricLabel>
+                                        <MetricValue theme={theme} $variant={prediction.prediction.direction === 'UP' ? 'success' : 'danger'}>
+                                            {prediction.prediction.direction === 'UP' ? '+' : ''}{prediction.prediction.price_change_percent?.toFixed(2)}%
+                                        </MetricValue>
+                                    </MetricCard>
+                                    <MetricCard theme={theme}>
+                                        <MetricIcon theme={theme} $variant="warning"><DollarSign size={24} /></MetricIcon>
+                                        <MetricLabel theme={theme}>Dollar Change</MetricLabel>
+                                        <MetricValue theme={theme} $variant="warning">
+                                            {prediction.prediction.direction === 'UP' ? '+' : '-'}${Math.abs(prediction.prediction.target_price - prediction.current_price).toFixed(2)}
+                                        </MetricValue>
+                                    </MetricCard>
+                                    <MetricCard theme={theme}>
+                                        <MetricIcon theme={theme}><Award size={24} /></MetricIcon>
+                                        <MetricLabel theme={theme}>Initial Confidence</MetricLabel>
+                                        <MetricValue theme={theme}>{prediction.prediction.confidence?.toFixed(1)}%</MetricValue>
+                                    </MetricCard>
+                                </MetricsGrid>
+
+                                {/* Technical Indicators */}
+                                <IndicatorsSection theme={theme}>
+                                    <IndicatorsTitle theme={theme}>
+                                        <BarChart3 size={20} /> Technical Indicators
+                                    </IndicatorsTitle>
+                                    {renderIndicators()}
+                                </IndicatorsSection>
+
+                                {/* Price Projection Chart */}
+                                {prediction.chartData && (
+                                    <ChartSection theme={theme}>
+                                        <ChartTitle theme={theme}><Activity size={20} /> Price Projection</ChartTitle>
+                                        <ResponsiveContainer width="100%" height={350}>
+                                            <ComposedChart data={prediction.chartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                                                <CartesianGrid strokeDasharray="3 3" stroke={`${accentColor}33`} />
+                                                <XAxis dataKey="day" tick={{ fill: theme?.text?.secondary || '#94a3b8', fontSize: 12 }} axisLine={{ stroke: `${accentColor}4D` }} />
+                                                <YAxis domain={['auto', 'auto']} tick={{ fill: theme?.text?.secondary || '#94a3b8', fontSize: 12 }} axisLine={{ stroke: `${accentColor}4D` }} tickFormatter={v => `$${v.toFixed(0)}`} />
+                                                <Tooltip
+                                                    contentStyle={{ 
+                                                        backgroundColor: theme?.bg?.card || 'rgba(15, 23, 42, 0.95)', 
+                                                        border: `1px solid ${accentColor}66`, 
+                                                        borderRadius: '12px',
+                                                        color: theme?.text?.primary || '#e0e6ed'
+                                                    }}
+                                                    formatter={(value, name) => {
+                                                        if (Array.isArray(value)) return [`$${value[0].toFixed(2)} - $${value[1].toFixed(2)}`, name];
+                                                        return [`$${value.toFixed(2)}`, name];
+                                                    }}
+                                                />
+                                                <ReferenceLine y={prediction.current_price} stroke={primaryColor} strokeDasharray="5 5" label={{ value: 'Current', fill: primaryColor, fontSize: 12 }} />
+                                                <ReferenceLine y={prediction.prediction.target_price} stroke={prediction.prediction.direction === 'UP' ? successColor : errorColor} strokeDasharray="5 5" label={{ value: 'Target', fill: prediction.prediction.direction === 'UP' ? successColor : errorColor, fontSize: 12 }} />
+                                                <Bar dataKey="highLow" fill="transparent" shape={(props) => {
+                                                    const { x, y, width, height, payload } = props;
+                                                    const color = payload.isUp ? successColor : errorColor;
+                                                    return <Rectangle x={x + width / 2 - 1} y={y} width={2} height={height} fill={color} />;
+                                                }} />
+                                                <Bar dataKey="openClose" shape={(props) => {
+                                                    const { x, y, width, height, payload } = props;
+                                                    const color = payload.isUp ? successColor : errorColor;
+                                                    return <Rectangle x={x} y={y} width={width} height={Math.max(height, 4)} fill={color} radius={[4, 4, 4, 4]} />;
+                                                }} />
+                                            </ComposedChart>
+                                        </ResponsiveContainer>
+                                        <ChartLegend>
+                                            <LegendItem><LegendColor color={successColor} /><LegendText theme={theme}>Bullish Day</LegendText></LegendItem>
+                                            <LegendItem><LegendColor color={errorColor} /><LegendText theme={theme}>Bearish Day</LegendText></LegendItem>
+                                            <LegendItem><LegendColor color={primaryColor} /><LegendText theme={theme}>Current Price</LegendText></LegendItem>
+                                        </ChartLegend>
+                                    </ChartSection>
+                                )}
+                            </PredictionCard>
+                        </ResultsContainer>
+                    )}
+
+                    {/* Empty State */}
+                    {!prediction && !loading && (
+                        <EmptyState>
+                            <EmptyIcon theme={theme}><Brain size={72} color={accentColor} /></EmptyIcon>
+                            <EmptyTitle theme={theme}>Ready to Predict</EmptyTitle>
+                            <EmptyText theme={theme}>Enter a stock or crypto symbol above to generate an AI-powered price prediction</EmptyText>
+                        </EmptyState>
+                    )}
+                </>
+            )}
+
+            {/* SAVED TAB */}
+            {activeTab === 'saved' && (
+                <SavedPredictionsContainer>
+                    {savedPredictions.length > 0 && (
+                        <ClearAllButton theme={theme} onClick={handleClearAllSaved}>
+                            <Trash2 size={18} /> Clear All Saved
+                        </ClearAllButton>
+                    )}
+                    
+                    {savedPredictions.length === 0 ? (
+                        <EmptyState>
+                            <EmptyIcon theme={theme}><Bookmark size={72} color={accentColor} /></EmptyIcon>
+                            <EmptyTitle theme={theme}>No Saved Predictions</EmptyTitle>
+                            <EmptyText theme={theme}>Save predictions to track them here</EmptyText>
+                        </EmptyState>
+                    ) : (
+                        <SavedPredictionsGrid>
+                            {savedPredictions.map(saved => (
+                                <SavedPredictionCard key={saved.id} theme={theme} $up={saved.prediction?.direction === 'UP'}>
+                                    <SavedCardHeader>
+                                        <SavedSymbol theme={theme}>{saved.symbol}</SavedSymbol>
+                                        <SavedDirection theme={theme} $up={saved.prediction?.direction === 'UP'}>
+                                            {saved.prediction?.direction === 'UP' ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
+                                            {saved.prediction?.direction}
+                                        </SavedDirection>
+                                    </SavedCardHeader>
+                                    <SavedCardBody>
+                                        <SavedMetric theme={theme}>
+                                            <SavedMetricLabel theme={theme}>Target</SavedMetricLabel>
+                                            <SavedMetricValue theme={theme}>${saved.prediction?.target_price?.toFixed(2)}</SavedMetricValue>
+                                        </SavedMetric>
+                                        <SavedMetric theme={theme}>
+                                            <SavedMetricLabel theme={theme}>Change</SavedMetricLabel>
+                                            <SavedMetricValue theme={theme}>
+                                                {saved.prediction?.direction === 'UP' ? '+' : ''}{saved.prediction?.price_change_percent?.toFixed(2)}%
+                                            </SavedMetricValue>
+                                        </SavedMetric>
+                                        <SavedMetric theme={theme}>
+                                            <SavedMetricLabel theme={theme}>Confidence</SavedMetricLabel>
+                                            <SavedMetricValue theme={theme}>{saved.prediction?.confidence?.toFixed(1)}%</SavedMetricValue>
+                                        </SavedMetric>
+                                        <SavedMetric theme={theme}>
+                                            <SavedMetricLabel theme={theme}>Entry Price</SavedMetricLabel>
+                                            <SavedMetricValue theme={theme}>${saved.current_price?.toFixed(2)}</SavedMetricValue>
+                                        </SavedMetric>
+                                    </SavedCardBody>
+                                    <SavedCardFooter theme={theme}>
+                                        <SavedDate theme={theme}>
+                                            <Calendar size={14} />
+                                            {formatSavedDate(saved.savedAt || saved.timestamp)}
+                                        </SavedDate>
+                                        <SavedActions>
+                                            <SavedActionButton theme={theme} onClick={() => handleViewSavedPrediction(saved)} title="View">
+                                                <Eye size={16} />
+                                            </SavedActionButton>
+                                            <SavedActionButton theme={theme} $danger onClick={() => handleDeleteSavedPrediction(saved.id)} title="Delete">
+                                                <Trash2 size={16} />
+                                            </SavedActionButton>
+                                        </SavedActions>
+                                    </SavedCardFooter>
+                                </SavedPredictionCard>
+                            ))}
+                        </SavedPredictionsGrid>
+                    )}
+                </SavedPredictionsContainer>
             )}
         </PageContainer>
     );
