@@ -1,42 +1,54 @@
 // client/src/api/axios.js
 import axios from 'axios';
 
-// Automatically detect environment and use appropriate API URL
+// ⚠️ TEMPORARY: Force localhost for development
+const USE_LOCAL = true; // Set to false for production
+
 const getBaseURL = () => {
-    // If REACT_APP_API_URL is explicitly set, use it
+    if (USE_LOCAL) {
+        return 'http://localhost:5000/api';
+    }
+    
     if (process.env.REACT_APP_API_URL) {
         return process.env.REACT_APP_API_URL;
     }
     
-    // Otherwise, auto-detect based on hostname
     const hostname = window.location.hostname;
     
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
-        // Development - use local server
         return 'http://localhost:5000/api';
     } else {
-        // Production - use production API
-        return 'https://api.nexussignal.ai/api';  // ✅ FIXED - Using your custom domain!
+        return 'https://api.nexussignal.ai/api';
     }
 };
 
 const API = axios.create({
-  baseURL: getBaseURL(),
+    baseURL: getBaseURL(),
     withCredentials: true,
     headers: {
         'Content-Type': 'application/json',
     },
 });
 
-// Response interceptor to handle auth errors
+// Request interceptor - add token
+API.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => Promise.reject(error)
+);
+
+// Response interceptor
 API.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401) {
-            // Don't redirect on auth endpoints (login/register)
             const isAuthEndpoint = error.config.url?.includes('/auth/');
             if (!isAuthEndpoint) {
-                console.log('401 Unauthorized - redirecting to login');
                 window.location.href = '/login';
             }
         }
@@ -44,7 +56,6 @@ API.interceptors.response.use(
     }
 );
 
-// Log which API we're using (helpful for debugging)
 console.log('API Base URL:', API.defaults.baseURL);
 
 export default API;

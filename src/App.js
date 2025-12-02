@@ -67,6 +67,7 @@ import PredictionsShowcase from './pages/PredictionsShowcase';
 import CryptoPage from './pages/CryptoPage';
 import WhaleAlertsPage from './pages/WhaleAlertsPage';
 import ComparisonPage from './pages/ComparisonPage';
+import PredictionHistoryPage from './pages/PredictionHistoryPage';
 
 // Global styles to set the page background
 const GlobalStyle = createGlobalStyle`
@@ -152,6 +153,7 @@ function AppContent() {
                     <Route path="/trader/:username" element={<ProtectedRoute><PublicProfilePage /></ProtectedRoute>} />
                     <Route path="/profile/:username" element={<ProtectedRoute><PublicProfilePage /></ProtectedRoute>} />
                     <Route path="/compare" element={<ComparisonPage />} />
+                    <Route path="/prediction-history" element={<PredictionHistoryPage />} />
 
                     {/* 🎮 GAMIFICATION ROUTES */}
                     <Route path="/achievements" element={<ProtectedRoute><AchievementsPage /></ProtectedRoute>} />
