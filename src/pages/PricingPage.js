@@ -1508,7 +1508,7 @@ const PricingPage = () => {
                 {/* UPDATED - Free Trial instead of Money-Back Guarantee */}
                 <Guarantee>
                     <Sparkles />
-                    7-Day Free Trial on All Paid Plans • No Credit Card Required
+                    7-Day Free Trial on STARTER Plans • No Credit Card Required
                 </Guarantee>
 
                 <FooterText style={{ marginTop: '2rem' }}>
