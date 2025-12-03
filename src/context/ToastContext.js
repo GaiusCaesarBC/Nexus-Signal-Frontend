@@ -213,16 +213,15 @@ const getIcon = (type) => {
 const ToastItem = ({ toast, onClose }) => {
     const [isExiting, setIsExiting] = React.useState(false);
 
-    const handleClose = () => {
+    const handleClose = React.useCallback(() => {
         setIsExiting(true);
         setTimeout(() => onClose(toast.id), 300);
-    };
+    }, [onClose, toast.id]);
 
     React.useEffect(() => {
         const timer = setTimeout(handleClose, toast.duration);
         return () => clearTimeout(timer);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [handleClose, toast.duration]);
 
     return (
         <Toast type={toast.type} $isExiting={isExiting}>

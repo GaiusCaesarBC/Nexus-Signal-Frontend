@@ -6,6 +6,45 @@ import { useAuth } from './AuthContext';
 
 const GamificationContext = createContext();
 
+// Helper function to safely extract data with validation
+const safeGet = (obj, path, defaultValue) => {
+    if (!obj || typeof obj !== 'object') return defaultValue;
+    const value = path.split('.').reduce((acc, key) => acc?.[key], obj);
+    return value !== undefined && value !== null ? value : defaultValue;
+};
+
+// Default gamification data structure
+const DEFAULT_GAMIFICATION_DATA = {
+    level: 1,
+    xp: 0,
+    rank: 'Rookie Trader',
+    nexusCoins: 0,
+    loginStreak: 0,
+    maxLoginStreak: 0,
+    totalEarned: 0,
+    profitStreak: 0,
+    maxProfitStreak: 0,
+    xpForCurrentLevel: 0,
+    xpForNextLevel: 1000,
+    progressPercent: 0,
+    stats: {},
+    achievements: [],
+    dailyChallenge: null,
+    vault: {
+        equippedBorder: 'border-bronze',
+        equippedTheme: 'theme-default',
+        equippedBadges: [],
+        activePerks: [],
+        ownedItems: ['border-bronze', 'theme-default']
+    },
+    equippedItems: {
+        avatarBorder: 'border-bronze',
+        profileTheme: 'theme-default',
+        activePerk: null,
+        badges: []
+    }
+};
+
 export const useGamification = () => {
     const context = useContext(GamificationContext);
     if (!context) {
@@ -30,71 +69,82 @@ export const GamificationProvider = ({ children }) => {
         try {
             setLoading(true);
             const response = await api.get('/gamification/stats');
-            
+
             if (response.data) {
                 // Handle both response structures:
                 // response.data.data.* (nested) or response.data.* (flat)
                 const rawData = response.data.data || response.data;
-                
-                // Get vault data - check multiple locations
-                const vaultData = response.data.vault || 
-                                 rawData.vault || 
-                                 rawData.equippedItems || 
-                                 {};
-                
+
+                // Validate rawData is an object
+                if (typeof rawData !== 'object' || rawData === null) {
+                    console.warn('[GamificationContext] Invalid API response structure');
+                    setGamificationData({ ...DEFAULT_GAMIFICATION_DATA });
+                    return;
+                }
+
+                // Get vault data - check multiple locations with validation
+                const vaultData = safeGet(response.data, 'vault', null) ||
+                                 safeGet(rawData, 'vault', null) ||
+                                 safeGet(rawData, 'equippedItems', {});
+
+                // Calculate XP progress safely
+                const xp = safeGet(rawData, 'xp', 0);
+                const xpForCurrentLevel = safeGet(rawData, 'xpForCurrentLevel', 0);
+                const xpForNextLevel = safeGet(rawData, 'xpForNextLevel', 1000);
+                const xpRange = xpForNextLevel - xpForCurrentLevel;
+                const progressPercent = xpRange > 0
+                    ? Math.min(100, Math.max(0, ((xp - xpForCurrentLevel) / xpRange) * 100))
+                    : 0;
+
                 const data = {
                     // Core gamification fields
-                    level: rawData.level || 1,
-                    xp: rawData.xp || 0,
-                    rank: rawData.rank || 'Rookie Trader',
-                    nexusCoins: rawData.nexusCoins || response.data.nexusCoins || 0,
-                    loginStreak: rawData.loginStreak || 0,
-                    maxLoginStreak: rawData.maxLoginStreak || 0,
-                    totalEarned: rawData.totalEarned || 0,
-                    profitStreak: rawData.profitStreak || 0,
-                    maxProfitStreak: rawData.maxProfitStreak || 0,
-                    
+                    level: safeGet(rawData, 'level', 1),
+                    xp,
+                    rank: safeGet(rawData, 'rank', 'Rookie Trader'),
+                    nexusCoins: safeGet(rawData, 'nexusCoins', null) ?? safeGet(response.data, 'nexusCoins', 0),
+                    loginStreak: safeGet(rawData, 'loginStreak', 0),
+                    maxLoginStreak: safeGet(rawData, 'maxLoginStreak', 0),
+                    totalEarned: safeGet(rawData, 'totalEarned', 0),
+                    profitStreak: safeGet(rawData, 'profitStreak', 0),
+                    maxProfitStreak: safeGet(rawData, 'maxProfitStreak', 0),
+
                     // XP progress
-                    xpForCurrentLevel: rawData.xpForCurrentLevel || 0,
-                    xpForNextLevel: rawData.xpForNextLevel || 1000,
-                    progressPercent: rawData.xpForNextLevel ? 
-                        Math.min(100, ((rawData.xp - rawData.xpForCurrentLevel) / (rawData.xpForNextLevel - rawData.xpForCurrentLevel)) * 100) : 0,
-                    
+                    xpForCurrentLevel,
+                    xpForNextLevel,
+                    progressPercent,
+
                     // Stats
-                    stats: rawData.stats || {},
-                    
+                    stats: safeGet(rawData, 'stats', {}),
+
                     // Achievements
-                    achievements: rawData.achievements || [],
-                    
+                    achievements: Array.isArray(rawData.achievements) ? rawData.achievements : [],
+
                     // Daily challenge
-                    dailyChallenge: rawData.dailyChallenge || null,
-                    
+                    dailyChallenge: safeGet(rawData, 'dailyChallenge', null),
+
                     // VAULT DATA - For borders, themes, badges across the app
                     vault: {
-                        equippedBorder: vaultData.equippedBorder || 
-                                       vaultData.avatarBorder || 
-                                       'border-bronze',
-                        equippedTheme: vaultData.equippedTheme || 
-                                      vaultData.profileTheme || 
-                                      'theme-default',
-                        equippedBadges: vaultData.equippedBadges || 
-                                       vaultData.badges || 
-                                       [],
-                        activePerks: vaultData.activePerks || 
-                                    (vaultData.activePerk ? [vaultData.activePerk] : []),
-                        ownedItems: vaultData.ownedItems || 
+                        equippedBorder: safeGet(vaultData, 'equippedBorder', null) ||
+                                       safeGet(vaultData, 'avatarBorder', 'border-bronze'),
+                        equippedTheme: safeGet(vaultData, 'equippedTheme', null) ||
+                                      safeGet(vaultData, 'profileTheme', 'theme-default'),
+                        equippedBadges: Array.isArray(vaultData?.equippedBadges) ? vaultData.equippedBadges :
+                                       (Array.isArray(vaultData?.badges) ? vaultData.badges : []),
+                        activePerks: Array.isArray(vaultData?.activePerks) ? vaultData.activePerks :
+                                    (vaultData?.activePerk ? [vaultData.activePerk] : []),
+                        ownedItems: Array.isArray(vaultData?.ownedItems) ? vaultData.ownedItems :
                                    ['border-bronze', 'theme-default']
                     },
-                    
+
                     // Legacy support
                     equippedItems: rawData.equippedItems || {
-                        avatarBorder: vaultData.equippedBorder || 'border-bronze',
-                        profileTheme: vaultData.equippedTheme || 'theme-default',
-                        activePerk: vaultData.activePerks?.[0] || null,
-                        badges: vaultData.equippedBadges || []
+                        avatarBorder: safeGet(vaultData, 'equippedBorder', 'border-bronze'),
+                        profileTheme: safeGet(vaultData, 'equippedTheme', 'theme-default'),
+                        activePerk: vaultData?.activePerks?.[0] || null,
+                        badges: Array.isArray(vaultData?.equippedBadges) ? vaultData.equippedBadges : []
                     }
                 };
-                
+
                 setGamificationData(data);
                 console.log('[GamificationContext] Data loaded:', {
                     level: data.level,
@@ -107,23 +157,10 @@ export const GamificationProvider = ({ children }) => {
             setError(null);
         } catch (err) {
             console.error('[GamificationContext] Error fetching data:', err);
-            setError(err.message);
-            
+            setError(err.message || 'Failed to load gamification data');
+
             // Set defaults on error
-            setGamificationData({
-                level: 1,
-                xp: 0,
-                rank: 'Rookie Trader',
-                nexusCoins: 0,
-                loginStreak: 0,
-                stats: {},
-                vault: {
-                    equippedBorder: 'border-bronze',
-                    equippedTheme: 'theme-default',
-                    equippedBadges: [],
-                    activePerks: []
-                }
-            });
+            setGamificationData({ ...DEFAULT_GAMIFICATION_DATA });
         } finally {
             setLoading(false);
         }

@@ -2,7 +2,7 @@
 
 import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import API from '../api/axios';
+import API, { safeLocalStorage } from '../api/axios';
 import { useToast } from './ToastContext';
 
 const AuthContext = createContext(null);
@@ -22,8 +22,8 @@ export const AuthProvider = ({ children }) => {
             setError(null);
             await API.post('/auth/logout');
             
-            // ✅ CLEAR TOKEN FROM LOCALSTORAGE
-            localStorage.removeItem('token');
+            // ✅ CLEAR TOKEN FROM LOCALSTORAGE (using safe accessor)
+            safeLocalStorage.removeItem('token');
             
             console.log("Logout successful");
             toast.info('You have been logged out', 'Goodbye');
@@ -104,12 +104,12 @@ const refreshUser = useCallback(async () => {
             // ✅ Use API instance (has correct baseURL with /api)
             const response = await API.post('/auth/login', { email, password });
             
-            // ✅ SAVE TOKEN TO LOCALSTORAGE
+            // ✅ SAVE TOKEN TO LOCALSTORAGE (using safe accessor)
             if (response.data.token) {
-                localStorage.setItem('token', response.data.token);
+                safeLocalStorage.setItem('token', response.data.token);
                 console.log("Token saved to localStorage");
             }
-            
+
             console.log("Login successful, loading user...");
 
             const userLoaded = await loadUser();
@@ -153,12 +153,12 @@ const refreshUser = useCallback(async () => {
             // ✅ Use API instance (has correct baseURL with /api)
             const response = await API.post('/auth/register', userData);
             
-            // ✅ SAVE TOKEN TO LOCALSTORAGE
+            // ✅ SAVE TOKEN TO LOCALSTORAGE (using safe accessor)
             if (response.data.token) {
-                localStorage.setItem('token', response.data.token);
+                safeLocalStorage.setItem('token', response.data.token);
                 console.log("Token saved to localStorage");
             }
-            
+
             console.log("Registration successful, loading user...");
 
             const userLoaded = await loadUser();

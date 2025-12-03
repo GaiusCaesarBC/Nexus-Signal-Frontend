@@ -181,14 +181,13 @@ function AppContent() {
 }
 
 function App() {
+    // Note: ThemeProvider is already in index.js - no need to wrap again here
     return (
-        <ThemeProvider>
-            <GamificationProvider>
-                <VaultProvider>
-                    <AppContent />
-                </VaultProvider>
-            </GamificationProvider>
-        </ThemeProvider>
+        <GamificationProvider>
+            <VaultProvider>
+                <AppContent />
+            </VaultProvider>
+        </GamificationProvider>
     );
 }
 
