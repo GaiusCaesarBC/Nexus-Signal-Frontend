@@ -13,6 +13,25 @@ import {
     calculateBollingerBands
 } from '../utils/indicators';
 import { useTheme } from '../context/ThemeContext';
+import { formatCryptoPrice, formatStockPrice } from '../utils/priceFormatter';
+
+// Smart price formatter based on symbol
+const formatChartPrice = (price, symbol) => {
+    if (!price) return '$0.00';
+    
+    // Check if it's a crypto symbol (ends with -USD, -USDT, etc. or is a known crypto)
+    const cryptoPatterns = ['-USD', '-USDT', '-BUSD', '-EUR', '-GBP'];
+    const knownCryptos = ['BTC', 'ETH', 'SOL', 'ADA', 'DOT', 'MATIC', 'AVAX', 'DOGE', 'SHIB', 'XRP', 'PEPE', 'FLOKI', 'BONK'];
+    
+    const symbolUpper = symbol.toUpperCase();
+    const isCrypto = cryptoPatterns.some(pattern => symbolUpper.endsWith(pattern)) ||
+                     knownCryptos.includes(symbolUpper);
+    
+    if (isCrypto) {
+        return formatCryptoPrice(price);
+    }
+    return formatStockPrice(price);
+};
 
 // ============ STYLED COMPONENTS ============
 
@@ -195,11 +214,11 @@ const AdvancedChart = ({
     const { theme } = useTheme();
     const chartContainerRef = useRef(null);
     const chartRef = useRef(null);
-    const candlestickSeriesRef = useRef(null);
+    const mainSeriesRef = useRef(null); // Changed from candlestickSeriesRef to mainSeriesRef
     const volumeSeriesRef = useRef(null);
     const indicatorSeriesRef = useRef({});
     
-    const [timeframe, setTimeframe] = useState('1D');
+    const [timeframe, setTimeframe] = useState(externalTimeframe);
     const [chartType, setChartType] = useState('candlestick');
     const [activeIndicators, setActiveIndicators] = useState([]);
     const [currentPrice, setCurrentPrice] = useState(null);
@@ -217,7 +236,6 @@ const AdvancedChart = ({
 
     // Get theme color for chart elements
     const primaryColor = theme.brand?.primary || '#00adef';
-    const primaryColorRgb = primaryColor.replace('#', '');
 
     // Initialize chart
     useEffect(() => {
@@ -257,17 +275,7 @@ const AdvancedChart = ({
 
         chartRef.current = chart;
 
-        const candlestickSeries = chart.addCandlestickSeries({
-            upColor: theme.success || '#10b981',
-            downColor: theme.error || '#ef4444',
-            borderUpColor: theme.success || '#10b981',
-            borderDownColor: theme.error || '#ef4444',
-            wickUpColor: theme.success || '#10b981',
-            wickDownColor: theme.error || '#ef4444',
-        });
-
-        candlestickSeriesRef.current = candlestickSeries;
-
+        // Add volume series
         const volumeSeries = chart.addHistogramSeries({
             color: '#26a69a',
             priceFormat: {
@@ -298,15 +306,76 @@ const AdvancedChart = ({
                 chartRef.current.remove();
             }
         };
-    }, [height, theme]);
+    }, [height, theme, primaryColor]);
+
+    // Handle chart type changes - create appropriate series
+    useEffect(() => {
+        if (!chartRef.current || data.length === 0) return;
+
+        // Remove existing main series if it exists
+        if (mainSeriesRef.current) {
+            try {
+                chartRef.current.removeSeries(mainSeriesRef.current);
+            } catch (error) {
+                console.log('Could not remove main series:', error.message);
+            }
+            mainSeriesRef.current = null;
+        }
+
+        // Create new series based on chart type
+        if (chartType === 'candlestick') {
+            const candlestickSeries = chartRef.current.addCandlestickSeries({
+                upColor: theme.success || '#10b981',
+                downColor: theme.error || '#ef4444',
+                borderUpColor: theme.success || '#10b981',
+                borderDownColor: theme.error || '#ef4444',
+                wickUpColor: theme.success || '#10b981',
+                wickDownColor: theme.error || '#ef4444',
+            });
+            mainSeriesRef.current = candlestickSeries;
+            
+            // Set data
+            candlestickSeries.setData(data);
+        } else if (chartType === 'line') {
+            const lineSeries = chartRef.current.addLineSeries({
+                color: theme.brand?.primary || '#00adef',
+                lineWidth: 2,
+            });
+            mainSeriesRef.current = lineSeries;
+            
+            // Convert OHLC data to line data (using close price)
+            const lineData = data.map(d => ({
+                time: d.time,
+                value: d.close
+            }));
+            lineSeries.setData(lineData);
+        } else if (chartType === 'area') {
+            const areaSeries = chartRef.current.addAreaSeries({
+                topColor: `${theme.brand?.primary || '#00adef'}80`,
+                bottomColor: `${theme.brand?.primary || '#00adef'}00`,
+                lineColor: theme.brand?.primary || '#00adef',
+                lineWidth: 2,
+            });
+            mainSeriesRef.current = areaSeries;
+            
+            // Convert OHLC data to area data (using close price)
+            const areaData = data.map(d => ({
+                time: d.time,
+                value: d.close
+            }));
+            areaSeries.setData(areaData);
+        }
+
+        chartRef.current?.timeScale().fitContent();
+    }, [chartType, data, theme]);
 
     // Update chart data
+    // Update volume and price info when data changes
     useEffect(() => {
-        if (!candlestickSeriesRef.current || !volumeSeriesRef.current || data.length === 0) return;
+        if (!volumeSeriesRef.current || data.length === 0) return;
 
         try {
-            candlestickSeriesRef.current.setData(data);
-
+            // Update volume data
             const volumeData = data.map(d => ({
                 time: d.time,
                 value: d.volume || 0,
@@ -314,6 +383,7 @@ const AdvancedChart = ({
             }));
             volumeSeriesRef.current.setData(volumeData);
 
+            // Update current price and price change
             if (data.length > 0) {
                 const latest = data[data.length - 1];
                 setCurrentPrice(latest.close);
@@ -325,8 +395,6 @@ const AdvancedChart = ({
                     setPriceChange({ amount: change, percent: changePercent });
                 }
             }
-
-            chartRef.current?.timeScale().fitContent();
         } catch (error) {
             console.error('Error updating chart data:', error);
         }
@@ -336,7 +404,7 @@ const AdvancedChart = ({
     useEffect(() => {
         if (!chartRef.current || data.length === 0) return;
 
-        // ✅ SAFELY REMOVE OLD INDICATORS
+        // Remove old indicators safely
         Object.entries(indicatorSeriesRef.current).forEach(([key, series]) => {
             try {
                 if (chartRef.current) {
@@ -359,7 +427,7 @@ const AdvancedChart = ({
         // Clear the ref
         indicatorSeriesRef.current = {};
 
-        // ✅ ADD ACTIVE INDICATORS
+        // Add active indicators
         activeIndicators.forEach(indicatorId => {
             try {
                 if (indicatorId === 'sma20') {
@@ -433,7 +501,7 @@ const AdvancedChart = ({
                     });
                     lowerSeries.setData(bbData.lower);
                     
-                    // ✅ Store as object so we can remove all three later
+                    // Store as object so we can remove all three later
                     indicatorSeriesRef.current[indicatorId] = { 
                         upper: upperSeries, 
                         middle: middleSeries, 
@@ -495,12 +563,12 @@ const AdvancedChart = ({
                         {currentPrice && (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '0.5rem' }}>
                                 <Price $positive={priceChange?.amount >= 0}>
-                                    ${currentPrice.toFixed(2)}
+                                    {formatChartPrice(currentPrice, symbol)}
                                 </Price>
                                 {priceChange && (
                                     <PriceChange $positive={priceChange.amount >= 0}>
                                         {priceChange.amount >= 0 ? <TrendingUp size={16} /> : <TrendingUp size={16} style={{ transform: 'rotate(180deg)' }} />}
-                                        {priceChange.amount >= 0 ? '+' : ''}{priceChange.amount.toFixed(2)} ({priceChange.percent >= 0 ? '+' : ''}{priceChange.percent.toFixed(2)}%)
+                                        {priceChange.amount >= 0 ? '+' : ''}{formatChartPrice(Math.abs(priceChange.amount), symbol)} ({priceChange.percent >= 0 ? '+' : ''}{priceChange.percent.toFixed(2)}%)
                                     </PriceChange>
                                 )}
                             </div>

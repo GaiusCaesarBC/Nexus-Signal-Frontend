@@ -1,5 +1,5 @@
-// src/pages/WhaleAlertsPage.js - Whale & Insider Trading Alerts (THEMED)
-// Comprehensive view of insider trades, crypto whales, unusual options, and congress trades
+// src/pages/WhaleAlertsPage.js - Whale & Insider Trading Alerts
+// Full working version with API integration for real data
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -640,7 +640,7 @@ const WhaleAlertsPage = () => {
             setLoading(false);
             setRefreshing(false);
         }
-   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [api]);
 
     // Fetch tab-specific data
     const fetchTabData = useCallback(async (tab) => {
@@ -684,7 +684,7 @@ const WhaleAlertsPage = () => {
         } finally {
             setLoading(false);
         }
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [api]);
 
     // Initial fetch
     useEffect(() => {

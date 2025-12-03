@@ -22,6 +22,23 @@ import AvatarWithBorder from '../components/vault/AvatarWithBorder';
 import { useVault } from '../context/VaultContext';
 import DailyRewardModal from '../components/DailyReward/DailyRewardModal';
 import DailyRewardButton from '../components/DailyReward/DailyRewardButton';
+import { formatCryptoPrice, formatStockPrice } from '../utils/priceFormatter';
+
+
+// Smart price formatter based on symbol
+const formatTickerPrice = (price, symbol) => {
+    // Check if it's a crypto symbol (ends with -USD, -USDT, etc. or is a known crypto)
+    const cryptoPatterns = ['-USD', '-USDT', '-BUSD', '-EUR', '-GBP'];
+    const knownCryptos = ['BTC', 'ETH', 'SOL', 'ADA', 'DOT', 'MATIC', 'AVAX', 'DOGE', 'SHIB', 'XRP'];
+    
+    const isCrypto = cryptoPatterns.some(pattern => symbol.toUpperCase().endsWith(pattern)) ||
+                     knownCryptos.includes(symbol.toUpperCase());
+    
+    if (isCrypto) {
+        return formatCryptoPrice(price);
+    }
+    return formatStockPrice(price);
+};
 
 
 // ============ BORDER COLORS FOR AVATAR FRAMES ============
@@ -1518,7 +1535,7 @@ const handleOpenRewardModal = () => {
                                             </TickerLink>
                                             {stock.price > 0 ? (
                                                 <>
-                                                    <TickerPrice>${stock.price?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TickerPrice>
+                                                    <TickerPrice>{formatTickerPrice(stock.price, stock.symbol)}</TickerPrice>
                                                     <TickerChange $positive={stock.change >= 0}>
                                                         {stock.change >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
                                                         {stock.change >= 0 ? '+' : ''}{stock.change?.toFixed(2)}%
@@ -1551,7 +1568,7 @@ const handleOpenRewardModal = () => {
                                             </TickerLink>
                                             {stock.price > 0 ? (
                                                 <>
-                                                    <TickerPrice>${stock.price?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TickerPrice>
+                                                    <TickerPrice>{formatTickerPrice(stock.price, stock.symbol)}</TickerPrice>
                                                     <TickerChange $positive={stock.change >= 0}>
                                                         {stock.change >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
                                                         {stock.change >= 0 ? '+' : ''}{stock.change?.toFixed(2)}%

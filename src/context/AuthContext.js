@@ -55,6 +55,24 @@ export const AuthProvider = ({ children }) => {
         }
     }, []);
 
+
+// Refresh user data (for XP updates after trades, etc.)
+const refreshUser = useCallback(async () => {
+    if (!isAuthenticated) return false;
+    
+    try {
+        const res = await API.get('/auth/me');
+        setUser(res.data);
+        console.log("[Auth] User data refreshed");
+        return true;
+    } catch (err) {
+        console.error("[Auth] Failed to refresh user:", err);
+        return false;
+    }
+}, [isAuthenticated]);
+
+
+
     // Initial auth check - ONLY once on mount
     useEffect(() => {
         let isMounted = true;
@@ -181,11 +199,13 @@ export const AuthProvider = ({ children }) => {
     const value = {
         isAuthenticated,
         user,
+        setUser,
         loading,
         error,
         login,
         register,
         logout,
+        refreshUser, 
         api: API,
     };
 
