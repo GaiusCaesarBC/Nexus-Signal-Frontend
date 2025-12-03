@@ -1626,22 +1626,23 @@ const PredictionsPage = () => {
     };
 
     // Share
-    const handleShare = (platform) => {
-        if (!prediction) return;
-        const text = `AI prediction: ${prediction.symbol} ${prediction.prediction.direction} to $${prediction.prediction.target_price.toFixed(2)}`;
-        const url = window.location.href;
-        let shareUrl = '';
-        if (platform === 'twitter') shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
-        else if (platform === 'facebook') shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
-        else if (platform === 'linkedin') shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
-        else if (platform === 'copy') { 
-            navigator.clipboard.writeText(`${text}\n${url}`); 
-            toast.success('Copied!', 'Copied'); 
-            setShowShareModal(false); 
-            return; 
-        }
-        if (shareUrl) { window.open(shareUrl, '_blank'); setShowShareModal(false); }
-    };
+const handleShare = (platform) => {
+    if (!prediction) return;
+    const formattedPrice = formatPredictionPrice(prediction.prediction.target_price, prediction.symbol);
+    const text = `AI prediction: ${prediction.symbol} ${prediction.prediction.direction} to ${formattedPrice}`;
+    const url = window.location.href;
+    let shareUrl = '';
+    if (platform === 'twitter') shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+    else if (platform === 'facebook') shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
+    else if (platform === 'linkedin') shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
+    else if (platform === 'copy') { 
+        navigator.clipboard.writeText(`${text}\n${url}`); 
+        toast.success('Copied!', 'Copied'); 
+        setShowShareModal(false); 
+        return; 
+    }
+    if (shareUrl) { window.open(shareUrl, '_blank'); setShowShareModal(false); }
+};
 
     // Export
     const handleExport = () => {
