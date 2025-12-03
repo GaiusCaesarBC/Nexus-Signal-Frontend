@@ -1971,13 +1971,21 @@ const handleShare = (platform) => {
 
                                 {/* Metrics Grid */}
                                 <MetricsGrid>
-                                    <MetricCard theme={theme}>
-                                        <MetricIcon theme={theme} $variant="primary"><Target size={24} /></MetricIcon>
-                                        <MetricLabel theme={theme}>Target Price</MetricLabel>
-                                        <MetricValue theme={theme}>
-    {formatPredictionPrice(prediction.prediction.target_price, prediction.symbol)}
-</MetricValue>
-                                    </MetricCard>
+                                 <MetricCard theme={theme}>
+    <MetricIcon theme={theme} $variant="primary"><Target size={24} /></MetricIcon>
+    <MetricLabel theme={theme}>Target Price</MetricLabel>
+    <MetricValue theme={theme}>
+        {(() => {
+            console.log('🎯 Target Price Data:', {
+                raw: prediction.prediction.target_price,
+                type: typeof prediction.prediction.target_price,
+                prediction: prediction.prediction,
+                allPrediction: prediction
+            });
+            return formatPredictionPrice(prediction.prediction.target_price, prediction.symbol);
+        })()}
+    </MetricValue>
+</MetricCard>
                                     <MetricCard theme={theme}>
                                         <MetricIcon theme={theme} $variant={prediction.prediction.direction === 'UP' ? 'success' : 'danger'}>
                                             <Percent size={24} />
