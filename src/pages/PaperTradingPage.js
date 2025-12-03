@@ -7,7 +7,12 @@ import { useToast } from '../context/ToastContext';
 import { useTheme } from '../context/ThemeContext';
 import RefillAccountButton from '../components/RefillAccountButton';
 import LeverageSelector from '../components/LeverageSelector';
-
+import { 
+    formatCurrency, 
+    formatPriceChange, 
+    formatCryptoPrice, 
+    formatStockPrice 
+} from '../utils/priceFormatter';
 import {
     TrendingUp, TrendingDown, DollarSign, Activity, Target, Zap,
     ArrowUpRight, ArrowDownRight, RefreshCw, Search, Plus, Minus,
@@ -1315,9 +1320,14 @@ const TPSLBadgeContainer = styled.div`
     margin-top: 0.5rem;
 `;
 
-// ============ CONTINUE TO PART 2 FOR COMPONENT ============
+// Smart price formatter based on asset type
+const formatAssetPrice = (price, assetType = 'stock') => {
+    if (assetType === 'crypto') {
+        return formatCryptoPrice(price);
+    }
+    return formatStockPrice(price);
+};
 
-// ============ PART 2 - ADD THIS AFTER THE STYLED COMPONENTS FROM PART 1 ============
 
 // ============ MAIN COMPONENT ============
 const PaperTradingPage = () => {
@@ -1470,45 +1480,95 @@ const PaperTradingPage = () => {
     };
 
     const executeTradeSubmit = async () => {
-        if (!pendingTrade) return;
-        setShowConfirmation(false);
-        setSubmitting(true);
-        try {
-            let endpoint;
-            if (pendingTrade.positionType === 'short' && pendingTrade.action === 'sell') {
-                endpoint = '/paper-trading/cover';
-            } else {
-                endpoint = pendingTrade.action === 'buy' ? '/paper-trading/buy' : '/paper-trading/sell';
-            }
-            const requestBody = {
-                symbol: pendingTrade.symbol, type: pendingTrade.type, quantity: pendingTrade.quantity,
-                positionType: pendingTrade.positionType, notes: pendingTrade.notes, leverage: pendingTrade.leverage
-            };
-            if (pendingTrade.action === 'buy') {
-                if (pendingTrade.takeProfit) requestBody.takeProfit = pendingTrade.takeProfit;
-                if (pendingTrade.stopLoss) requestBody.stopLoss = pendingTrade.stopLoss;
-                if (pendingTrade.trailingStopPercent) requestBody.trailingStopPercent = pendingTrade.trailingStopPercent;
-            }
-            const response = await api.post(endpoint, requestBody);
-            setAccount(response.data.account);
-            toast.success(response.data.message, 'Success');
-            if ((pendingTrade.action === 'sell' || endpoint === '/paper-trading/cover') && response.data.profitLoss !== undefined) {
-                const pl = response.data.profitLoss;
-                const plPercent = response.data.profitLossPercent;
-                const message = pl >= 0 ? `Profit: $${pl.toFixed(2)} (+${plPercent.toFixed(2)}%)` : `Loss: $${Math.abs(pl).toFixed(2)} (${plPercent.toFixed(2)}%)`;
-                toast.info(message, pl >= 0 ? '💰 Nice Trade!' : '📉 Trade Closed');
-            }
-            setSymbol(''); setQuantity(''); setNotes(''); setCurrentPrice(null); setPendingTrade(null);
-            setLeverage(1); setTakeProfit(''); setStopLoss(''); setTrailingStopPercent(''); setShowTPSL(false);
-            loadOrders();
-        } catch (error) {
-            console.error('Trade error:', error);
-            toast.error(error.response?.data?.error || 'Trade failed', 'Error');
-        } finally {
-            setSubmitting(false);
+    if (!pendingTrade) return;
+    setShowConfirmation(false);
+    setSubmitting(true);
+    try {
+        let endpoint;
+        if (pendingTrade.positionType === 'short' && pendingTrade.action === 'sell') {
+            endpoint = '/paper-trading/cover';
+        } else {
+            endpoint = pendingTrade.action === 'buy' ? '/paper-trading/buy' : '/paper-trading/sell';
         }
-    };
-
+        const requestBody = {
+            symbol: pendingTrade.symbol, 
+            type: pendingTrade.type, 
+            quantity: pendingTrade.quantity,
+            positionType: pendingTrade.positionType, 
+            notes: pendingTrade.notes, 
+            leverage: pendingTrade.leverage
+        };
+        if (pendingTrade.action === 'buy') {
+            if (pendingTrade.takeProfit) requestBody.takeProfit = pendingTrade.takeProfit;
+            if (pendingTrade.stopLoss) requestBody.stopLoss = pendingTrade.stopLoss;
+            if (pendingTrade.trailingStopPercent) requestBody.trailingStopPercent = pendingTrade.trailingStopPercent;
+        }
+        const response = await api.post(endpoint, requestBody);
+        
+        setAccount(response.data.account);
+        
+        // ✅ UPDATE USER GAMIFICATION DATA
+        if (response.data.gamification) {
+            console.log('[Trade] Updating user gamification:', response.data.gamification);
+            
+            // Update user in context with new gamification data
+            const updatedUser = {
+                ...user,
+                gamification: response.data.gamification
+            };
+            
+            // Update local user state (if you have setUser from context)
+            if (typeof user !== 'undefined') {
+                // Trigger a re-render by updating the user object
+                window.dispatchEvent(new CustomEvent('userUpdated', { 
+                    detail: updatedUser 
+                }));
+            }
+        }
+        
+        // ✅ SHOW XP REWARD NOTIFICATION
+        if (response.data.xpReward && response.data.xpReward.rewards) {
+            toast.success(
+                response.data.xpReward.rewards.join(' • '), 
+                '🎮 Rewards Earned!'
+            );
+        }
+        
+        toast.success(response.data.message, 'Success');
+        
+        if ((pendingTrade.action === 'sell' || endpoint === '/paper-trading/cover') && response.data.profitLoss !== undefined) {
+            const pl = response.data.profitLoss;
+            const plPercent = response.data.profitLossPercent;
+            const message = pl >= 0 
+                ? `Profit: $${pl.toFixed(2)} (+${plPercent.toFixed(2)}%)` 
+                : `Loss: $${Math.abs(pl).toFixed(2)} (${plPercent.toFixed(2)}%)`;
+            toast.info(message, pl >= 0 ? '💰 Nice Trade!' : '📉 Trade Closed');
+        }
+        
+        setSymbol(''); 
+        setQuantity(''); 
+        setNotes(''); 
+        setCurrentPrice(null); 
+        setPendingTrade(null);
+        setLeverage(1); 
+        setTakeProfit(''); 
+        setStopLoss(''); 
+        setTrailingStopPercent(''); 
+        setShowTPSL(false);
+        loadOrders();
+        
+        // ✅ FORCE USER REFRESH (backup method)
+        setTimeout(() => {
+            window.location.reload();
+        }, 1500);
+        
+    } catch (error) {
+        console.error('Trade error:', error);
+        toast.error(error.response?.data?.error || 'Trade failed', 'Error');
+    } finally {
+        setSubmitting(false);
+    }
+};
     const handleQuickSell = (position) => {
         setActiveTab('sell'); setSymbol(position.symbol); setType(position.type);
         setQuantity(position.quantity.toString()); setPositionType(position.positionType || 'long');
@@ -1537,7 +1597,6 @@ const PaperTradingPage = () => {
         }
     };
 
-    const formatCurrency = (value) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(value);
     const formatPercent = (value) => `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
     const calculateTotal = () => (!currentPrice || !quantity) ? 0 : currentPrice * parseFloat(quantity);
     const getDisplayName = (trader) => {
@@ -1583,7 +1642,7 @@ const PaperTradingPage = () => {
                             <DetailRow theme={theme}><DetailLabelModal theme={theme}>Type</DetailLabelModal><DetailValueModal theme={theme} style={{ textTransform: 'capitalize' }}>{pendingTrade.type}</DetailValueModal></DetailRow>
                             <DetailRow theme={theme}><DetailLabelModal theme={theme}>Position Type</DetailLabelModal><DetailValueModal theme={theme} style={{ color: pendingTrade.positionType === 'short' ? (theme?.error || '#ef4444') : (theme?.success || '#10b981'), textTransform: 'uppercase' }}>{pendingTrade.positionType}</DetailValueModal></DetailRow>
                             <DetailRow theme={theme}><DetailLabelModal theme={theme}>Quantity</DetailLabelModal><DetailValueModal theme={theme}>{pendingTrade.quantity.toLocaleString()}</DetailValueModal></DetailRow>
-                            <DetailRow theme={theme}><DetailLabelModal theme={theme}>Price per Share</DetailLabelModal><DetailValueModal theme={theme}>{formatCurrency(pendingTrade.price)}</DetailValueModal></DetailRow>
+                            <DetailRow theme={theme}><DetailLabelModal theme={theme}>Price per Share</DetailLabelModal><DetailValueModal theme={theme}>{formatAssetPrice(pendingTrade.price, pendingTrade.type)}</DetailValueModal></DetailRow>
                             {pendingTrade.leverage > 1 && (
                                 <>
                                     <DetailRow theme={theme}><DetailLabelModal theme={theme}>Leverage</DetailLabelModal><DetailValueModal theme={theme} style={{ color: pendingTrade.leverage >= 10 ? (theme?.error || '#ef4444') : pendingTrade.leverage >= 5 ? (theme?.warning || '#f59e0b') : (theme?.success || '#10b981') }}>{pendingTrade.leverage}x</DetailValueModal></DetailRow>
@@ -1594,8 +1653,8 @@ const PaperTradingPage = () => {
                             {(pendingTrade.takeProfit || pendingTrade.stopLoss || pendingTrade.trailingStopPercent) && (
                                 <>
                                     <DetailRow theme={theme} style={{ borderTop: `1px dashed ${theme?.brand?.accent || '#8b5cf6'}4D`, marginTop: '0.5rem', paddingTop: '1rem' }}><DetailLabelModal theme={theme} style={{ color: theme?.brand?.accent || '#a78bfa' }}>🎯 Risk Management</DetailLabelModal><DetailValueModal theme={theme}></DetailValueModal></DetailRow>
-                                    {pendingTrade.takeProfit && <DetailRow theme={theme}><DetailLabelModal theme={theme}>Take Profit</DetailLabelModal><DetailValueModal theme={theme} style={{ color: theme?.success || '#10b981' }}>{formatCurrency(pendingTrade.takeProfit)}</DetailValueModal></DetailRow>}
-                                    {pendingTrade.stopLoss && <DetailRow theme={theme}><DetailLabelModal theme={theme}>Stop Loss</DetailLabelModal><DetailValueModal theme={theme} style={{ color: theme?.error || '#ef4444' }}>{formatCurrency(pendingTrade.stopLoss)}</DetailValueModal></DetailRow>}
+                                    {pendingTrade.takeProfit && <DetailRow theme={theme}><DetailLabelModal theme={theme}>Take Profit</DetailLabelModal><DetailValueModal theme={theme} style={{ color: theme?.success || '#10b981' }}>{formatAssetPrice(pendingTrade.takeProfit, pendingTrade.type)}</DetailValueModal></DetailRow>}
+                                    {pendingTrade.stopLoss && <DetailRow theme={theme}><DetailLabelModal theme={theme}>Stop Loss</DetailLabelModal><DetailValueModal theme={theme} style={{ color: theme?.error || '#ef4444' }}>{formatAssetPrice(pendingTrade.stopLoss, pendingTrade.type)}</DetailValueModal></DetailRow>}
                                     {pendingTrade.trailingStopPercent && <DetailRow theme={theme}><DetailLabelModal theme={theme}>Trailing Stop</DetailLabelModal><DetailValueModal theme={theme} style={{ color: theme?.warning || '#f59e0b' }}>{pendingTrade.trailingStopPercent}%</DetailValueModal></DetailRow>}
                                 </>
                             )}
@@ -1705,7 +1764,7 @@ const PaperTradingPage = () => {
                             <Form onSubmit={handleSubmit}>
                                 <FormGroup><Label theme={theme}><Search size={16} />Symbol</Label><Input theme={theme} type="text" placeholder="e.g., AAPL, TSLA, BTC" value={symbol} onChange={(e) => setSymbol(e.target.value.toUpperCase())} required /></FormGroup>
                                 <FormGroup><Label theme={theme}><Target size={16} />Asset Type</Label><Select theme={theme} value={type} onChange={(e) => setType(e.target.value)}><option value="stock">Stock</option><option value="crypto">Cryptocurrency</option></Select></FormGroup>
-                                {currentPrice && !loadingPrice && <PriceDisplay theme={theme}><PriceLabel theme={theme}>Current Price</PriceLabel><PriceValue theme={theme}>{formatCurrency(currentPrice)}</PriceValue></PriceDisplay>}
+                                {currentPrice && !loadingPrice && <PriceDisplay theme={theme}><PriceLabel theme={theme}>Current Price</PriceLabel><PriceValue theme={theme}>{formatAssetPrice(currentPrice, type)}</PriceValue></PriceDisplay>}
                                 {loadingPrice && <PriceDisplay theme={theme}><PriceLabel theme={theme}>Loading price...</PriceLabel><LoadingSpinner size={20} /></PriceDisplay>}
                                 <FormGroup><Label theme={theme}><Activity size={16} />Quantity</Label><Input theme={theme} type="number" step="any" placeholder="How many shares/coins?" value={quantity} onChange={(e) => setQuantity(e.target.value)} required /></FormGroup>
                                 {activeTab === 'buy' && <LeverageSelector value={leverage} onChange={setLeverage} tradeAmount={currentPrice && quantity ? currentPrice * parseFloat(quantity) : 0} disabled={!currentPrice || !quantity} />}
@@ -1717,8 +1776,8 @@ const PaperTradingPage = () => {
                                         </TPSLHeader>
                                         <TPSLContent $expanded={showTPSL}>
                                             <TPSLGrid>
-                                                <TPSLInputGroup><TPSLLabel theme={theme} $tp><Target size={14} />Take Profit</TPSLLabel><TPSLInput theme={theme} $tp type="number" step="any" placeholder={positionType === 'long' ? `Above ${formatCurrency(currentPrice)}` : `Below ${formatCurrency(currentPrice)}`} value={takeProfit} onChange={(e) => setTakeProfit(e.target.value)} /></TPSLInputGroup>
-                                                <TPSLInputGroup><TPSLLabel theme={theme} $sl><ShieldAlert size={14} />Stop Loss</TPSLLabel><TPSLInput theme={theme} $sl type="number" step="any" placeholder={positionType === 'long' ? `Below ${formatCurrency(currentPrice)}` : `Above ${formatCurrency(currentPrice)}`} value={stopLoss} onChange={(e) => setStopLoss(e.target.value)} /></TPSLInputGroup>
+                                                <TPSLInputGroup><TPSLLabel theme={theme} $tp><Target size={14} />Take Profit</TPSLLabel><TPSLInput theme={theme} $tp type="number" step="any" placeholder={positionType === 'long' ? `Above ${formatAssetPrice(currentPrice, type)}` : `Below ${formatAssetPrice(currentPrice, type)}`} value={takeProfit} onChange={(e) => setTakeProfit(e.target.value)} /></TPSLInputGroup>
+                                                <TPSLInputGroup><TPSLLabel theme={theme} $sl><ShieldAlert size={14} />Stop Loss</TPSLLabel><TPSLInput theme={theme} $sl type="number" step="any" placeholder={positionType === 'long' ? `Below ${formatAssetPrice(currentPrice, type)}` : `Above ${formatAssetPrice(currentPrice, type)}`} value={stopLoss} onChange={(e) => setStopLoss(e.target.value)} /></TPSLInputGroup>
                                             </TPSLGrid>
                                             <TrailingStopSection theme={theme}><TPSLInputGroup><TPSLLabel theme={theme}><TrendUp size={14} />Trailing Stop (%)</TPSLLabel><TPSLInput theme={theme} type="number" step="0.1" min="0.1" max="50" placeholder="e.g., 5 for 5%" value={trailingStopPercent} onChange={(e) => setTrailingStopPercent(e.target.value)} /></TPSLInputGroup></TrailingStopSection>
                                             <TPSLHint theme={theme}>💡 <strong>{positionType === 'long' ? 'Long' : 'Short'} Position:</strong> {positionType === 'long' ? 'Take Profit triggers when price rises above target. Stop Loss triggers when price falls below target.' : 'Take Profit triggers when price falls below target. Stop Loss triggers when price rises above target.'} Trailing Stop follows the price and locks in profits.</TPSLHint>
@@ -1773,15 +1832,15 @@ const PaperTradingPage = () => {
                                             </PositionHeader>
                                             {hasTPSL && (
                                                 <TPSLBadgeContainer>
-                                                    {position.takeProfit && <TPSLBadge theme={theme} $type="tp"><Target size={10} />TP: {formatCurrency(position.takeProfit)}</TPSLBadge>}
-                                                    {position.stopLoss && <TPSLBadge theme={theme} $type="sl"><ShieldAlert size={10} />SL: {formatCurrency(position.stopLoss)}</TPSLBadge>}
-                                                    {position.trailingStopPercent && <TPSLBadge theme={theme} $type="trailing"><TrendUp size={10} />Trail: {position.trailingStopPercent}%{position.trailingStopPrice && ` (${formatCurrency(position.trailingStopPrice)})`}</TPSLBadge>}
+                                                    {position.takeProfit && <TPSLBadge theme={theme} $type="tp"><Target size={10} />TP: {formatAssetPrice(position.takeProfit, position.type)}</TPSLBadge>}
+                                                    {position.stopLoss && <TPSLBadge theme={theme} $type="sl"><ShieldAlert size={10} />SL: {formatAssetPrice(position.stopLoss, position.type)}</TPSLBadge>}
+                                                    {position.trailingStopPercent && <TPSLBadge theme={theme} $type="trailing"><TrendUp size={10} />Trail: {position.trailingStopPercent}%{position.trailingStopPrice && ` (${formatAssetPrice(position.trailingStopPrice, position.type)})`}</TPSLBadge>}
                                                 </TPSLBadgeContainer>
                                             )}
                                             <PositionDetails theme={theme}>
                                                 <PositionDetail><DetailLabel theme={theme}>Quantity</DetailLabel><DetailValue theme={theme}>{position.quantity.toLocaleString()}</DetailValue></PositionDetail>
-                                                <PositionDetail><DetailLabel theme={theme}>Avg Price</DetailLabel><DetailValue theme={theme}>{formatCurrency(position.averagePrice)}</DetailValue></PositionDetail>
-                                                <PositionDetail><DetailLabel theme={theme}>Current Price</DetailLabel><DetailValue theme={theme}>{formatCurrency(position.currentPrice)}</DetailValue></PositionDetail>
+                                                <PositionDetail><DetailLabel theme={theme}>Avg Price</DetailLabel><DetailValue theme={theme}>{formatAssetPrice(position.averagePrice, position.type)}</DetailValue></PositionDetail>
+                                                <PositionDetail><DetailLabel theme={theme}>Current Price</DetailLabel><DetailValue theme={theme}>{formatAssetPrice(position.currentPrice, position.type)}</DetailValue></PositionDetail>
                                             </PositionDetails>
                                             <ExpandedDetails $expanded={isExpanded}>
                                                 <ExpandedContent theme={theme}>
@@ -1791,7 +1850,7 @@ const PaperTradingPage = () => {
                                                         <ExpandedItem theme={theme}><ExpandedLabel theme={theme}>{position.positionType === 'short' ? 'Short P/L' : 'Unrealized P/L'}</ExpandedLabel><ExpandedValue theme={theme} $color={position.profitLoss >= 0 ? (theme?.success || '#10b981') : (theme?.error || '#ef4444')}>{position.profitLoss >= 0 ? '+' : ''}{formatCurrency(position.profitLoss || 0)}</ExpandedValue></ExpandedItem>
                                                         <ExpandedItem theme={theme}><ExpandedLabel theme={theme}>Return %</ExpandedLabel><ExpandedValue theme={theme} $color={position.profitLossPercent >= 0 ? (theme?.success || '#10b981') : (theme?.error || '#ef4444')}>{formatPercent(position.profitLossPercent || 0)}</ExpandedValue></ExpandedItem>
                                                     </ExpandedGrid>
-                                                    <PositionNotes theme={theme}><NotesLabel theme={theme}>{position.positionType === 'short' ? <TrendingDown size={14} /> : <TrendingUp size={14} />}Position Strategy</NotesLabel><NotesText theme={theme}>{position.positionType === 'short' ? <><strong>Short Position:</strong> You borrowed and sold at {formatCurrency(position.averagePrice)}. To close, you'll buy back at current price ({formatCurrency(position.currentPrice)}). {position.profitLoss >= 0 ? ` Price dropped = You profit ${formatCurrency(Math.abs(position.profitLoss))}! 🎉` : ` Price rose = You'd lose ${formatCurrency(Math.abs(position.profitLoss))} if you cover now.`}</> : <><strong>Long Position:</strong> You bought at {formatCurrency(position.averagePrice)}. Current value is {formatCurrency(position.currentPrice)} per share.{position.profitLoss >= 0 ? ` Price rose = You're up ${formatCurrency(Math.abs(position.profitLoss))}! 🎉` : ` Price dropped = You're down ${formatCurrency(Math.abs(position.profitLoss))}.`}</>}</NotesText></PositionNotes>
+                                                    <PositionNotes theme={theme}><NotesLabel theme={theme}>{position.positionType === 'short' ? <TrendingDown size={14} /> : <TrendingUp size={14} />}Position Strategy</NotesLabel><NotesText theme={theme}>{position.positionType === 'short' ? <><strong>Short Position:</strong> You borrowed and sold at {formatAssetPrice(position.averagePrice, position.type)}. To close, you'll buy back at current price ({formatAssetPrice(position.currentPrice, position.type)}). {position.profitLoss >= 0 ? ` Price dropped = You profit ${formatCurrency(Math.abs(position.profitLoss))}! 🎉` : ` Price rose = You'd lose ${formatCurrency(Math.abs(position.profitLoss))} if you cover now.`}</> : <><strong>Long Position:</strong> You bought at {formatAssetPrice(position.averagePrice, position.type)}. Current value is {formatAssetPrice(position.currentPrice, position.type)} per share.{position.profitLoss >= 0 ? ` Price rose = You're up ${formatCurrency(Math.abs(position.profitLoss))}! 🎉` : ` Price dropped = You're down ${formatCurrency(Math.abs(position.profitLoss))}.`}</>}</NotesText></PositionNotes>
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: theme?.text?.tertiary || '#64748b', fontSize: '0.8rem', marginBottom: '1rem' }}><Clock size={14} />Last updated: {position.lastUpdated ? new Date(position.lastUpdated).toLocaleString() : 'Just now'}</div>
                                                 </ExpandedContent>
                                             </ExpandedDetails>
@@ -1815,7 +1874,7 @@ const PaperTradingPage = () => {
                                             </div>
                                             <OrderTime theme={theme}>{new Date(order.executedAt).toLocaleString()}</OrderTime>
                                         </OrderHeader>
-                                        <OrderDetails><OrderInfo theme={theme}><OrderSymbol theme={theme}>${order.symbol}</OrderSymbol><OrderQty theme={theme}>× {order.quantity} @ {formatCurrency(order.price)}</OrderQty></OrderInfo><OrderAmount><Amount theme={theme}>{formatCurrency(order.totalAmount)}</Amount>{order.profitLoss !== 0 && <OrderPL theme={theme} $positive={order.profitLoss > 0}>{order.profitLoss > 0 ? '+' : ''}{formatCurrency(order.profitLoss)}</OrderPL>}</OrderAmount></OrderDetails>
+                                        <OrderDetails><OrderInfo theme={theme}><OrderSymbol theme={theme}>${order.symbol}</OrderSymbol><OrderQty theme={theme}>× {order.quantity} @ {formatAssetPrice(order.price, order.type)}</OrderQty></OrderInfo><OrderAmount><Amount theme={theme}>{formatCurrency(order.totalAmount)}</Amount>{order.profitLoss !== 0 && <OrderPL theme={theme} $positive={order.profitLoss > 0}>{order.profitLoss > 0 ? '+' : ''}{formatCurrency(order.profitLoss)}</OrderPL>}</OrderAmount></OrderDetails>
                                     </OrderCard>
                                 ))}
                             </OrdersHistory>

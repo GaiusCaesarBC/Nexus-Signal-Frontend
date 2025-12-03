@@ -6,6 +6,7 @@ import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useNavigate } from 'react-router-dom';
+import { formatCryptoPrice, formatStockPrice } from '../utils/priceFormatter';
 import {
     TrendingUp, TrendingDown, Plus, Trash2, X, Eye, Star,
     Activity, BarChart3, ArrowUpRight, ArrowDownRight,
@@ -42,7 +43,7 @@ const ContentWrapper = styled.div`
 
 const Header = styled.div`
     margin-bottom: 2rem;
-    animation: ${fadeIn} 0.6s ease-out;
+    ${css`animation: ${fadeIn} 0.6s ease-out;`}
 `;
 
 const HeaderTop = styled.div`
@@ -138,7 +139,7 @@ const StatCard = styled.div`
     border: 1px solid ${props => props.theme.brand?.primary || '#00adef'}33;
     border-radius: 16px;
     padding: 1.25rem;
-    animation: ${fadeIn} 0.6s ease-out;
+    ${css`animation: ${fadeIn} 0.6s ease-out;`}
     animation-delay: ${props => props.$delay || '0s'};
     animation-fill-mode: backwards;
     position: relative;
@@ -264,7 +265,7 @@ const WatchlistSection = styled.div`
     border: 1px solid ${props => props.theme.brand?.primary || '#00adef'}33;
     border-radius: 20px;
     padding: 1.5rem;
-    animation: ${fadeIn} 0.6s ease-out;
+    ${css`animation: ${fadeIn} 0.6s ease-out;`}
 `;
 
 const SectionHeader = styled.div`
@@ -476,7 +477,7 @@ const Modal = styled.div`
     justify-content: center;
     z-index: 1000;
     padding: 1rem;
-    animation: ${fadeIn} 0.2s ease-out;
+    ${css`animation: ${fadeIn} 0.2s ease-out;`}
 `;
 
 const ModalContent = styled.div`
@@ -615,12 +616,12 @@ const EmptyIcon = styled.div`
     width: 100px;
     height: 100px;
     margin: 0 auto 1.5rem;
-    background: linear-gradient(135deg, ${props => props.theme.brand?.primary || '#00adef'}33 0%, ${props => props.theme.brand?.accent || '#8b5cf6'}33 100%);
+    background: ${props => `linear-gradient(135deg, ${props.theme.brand?.primary || '#00adef'}33 0%, ${props.theme.brand?.accent || '#8b5cf6'}33 100%)`};
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px dashed ${props => props.theme.brand?.primary || '#00adef'}4D;
+    border: ${props => `2px dashed ${props.theme.brand?.primary || '#00adef'}4D`};
 `;
 
 const EmptyTitle = styled.h2`
@@ -636,11 +637,11 @@ const EmptyText = styled.p`
 
 // ============ LOADING ============
 const SpinningIcon = styled.div`
-    animation: ${rotate} 2s linear infinite;
+    ${css`animation: ${rotate} 2s linear infinite;`}
     display: inline-flex;
 `;
 
-// ============ CRYPTO DETECTION ============
+// ============ CRYPTO DETECTION & FORMATTING ============
 const CRYPTO_SYMBOLS = [
     'BTC', 'ETH', 'BNB', 'XRP', 'ADA', 'DOGE', 'SOL', 'DOT', 'MATIC', 'LTC',
     'SHIB', 'TRX', 'AVAX', 'LINK', 'ATOM', 'UNI', 'XLM', 'ETC', 'BCH', 'ALGO',
@@ -648,17 +649,24 @@ const CRYPTO_SYMBOLS = [
     'CRO', 'NEAR', 'FTM', 'HBAR', 'EGLD', 'THETA', 'XTZ', 'EOS', 'CAKE', 'RUNE',
     'ZEC', 'DASH', 'NEO', 'WAVES', 'KSM', 'ENJ', 'CHZ', 'BAT', 'ZIL', 'QTUM',
     'BTT', 'ONE', 'HOT', 'IOTA', 'XMR', 'KLAY', 'GRT', 'SUSHI', 'YFI', 'CRV',
-    'BTCUSD', 'ETHUSD', 'BNBUSD', 'XRPUSD', 'SOLUSD', 'DOGEUSD', 'ADAUSD'
+    'PEPE', 'FLOKI', 'BONK', 'WIF', 'BRETT'
 ];
 
 const isCrypto = (symbol) => {
     if (!symbol) return false;
     const upperSymbol = symbol.toUpperCase();
-    return CRYPTO_SYMBOLS.includes(upperSymbol) || 
-           upperSymbol.endsWith('USD') && CRYPTO_SYMBOLS.includes(upperSymbol.replace('USD', '')) ||
-           upperSymbol.endsWith('USDT') ||
-           upperSymbol.endsWith('BTC') ||
-           upperSymbol.endsWith('ETH');
+    
+    // Check known crypto symbols
+    if (CRYPTO_SYMBOLS.includes(upperSymbol)) return true;
+    
+    // Check for crypto patterns
+    if (upperSymbol.endsWith('-USD') || upperSymbol.endsWith('-USDT') || 
+        upperSymbol.endsWith('-BUSD') || upperSymbol.endsWith('-EUR') || 
+        upperSymbol.endsWith('-GBP')) return true;
+    
+    // Remove suffixes and check base symbol
+    const baseSymbol = upperSymbol.replace(/-USD|-USDT|-BUSD|-EUR|-GBP/g, '');
+    return CRYPTO_SYMBOLS.includes(baseSymbol);
 };
 
 const getCryptoName = (symbol) => {
@@ -670,23 +678,25 @@ const getCryptoName = (symbol) => {
         'ETC': 'Ethereum Classic', 'BCH': 'Bitcoin Cash', 'ALGO': 'Algorand',
         'VET': 'VeChain', 'FIL': 'Filecoin', 'NEAR': 'NEAR Protocol', 'FTM': 'Fantom',
         'SAND': 'The Sandbox', 'MANA': 'Decentraland', 'AXS': 'Axie Infinity',
-        'AAVE': 'Aave', 'MKR': 'Maker', 'CRO': 'Cronos', 'GRT': 'The Graph'
+        'AAVE': 'Aave', 'MKR': 'Maker', 'CRO': 'Cronos', 'GRT': 'The Graph',
+        'PEPE': 'Pepe', 'FLOKI': 'Floki Inu', 'BONK': 'Bonk'
     };
-    const base = symbol?.toUpperCase().replace('USD', '').replace('USDT', '');
+    const base = symbol?.toUpperCase().replace(/-USD|-USDT|-BUSD|-EUR|-GBP/g, '');
     return names[base] || `${base} Crypto`;
 };
 
+// Smart price formatter - detects crypto vs stock and routes to appropriate formatter
 const formatPrice = (price, symbol) => {
     if (!price || price === 0) return '$0.00';
     
-    if (price >= 1000) {
-        return `$${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    } else if (price >= 1) {
-        return `$${price.toFixed(2)}`;
-    } else if (price >= 0.01) {
-        return `$${price.toFixed(4)}`;
+    // Detect if this is a crypto or stock
+    const crypto = isCrypto(symbol);
+    
+    // Route to the appropriate formatter
+    if (crypto) {
+        return formatCryptoPrice(price);
     } else {
-        return `$${price.toFixed(8)}`;
+        return formatStockPrice(price);
     }
 };
 
@@ -1269,7 +1279,7 @@ const WatchlistPage = () => {
                                     autoFocus
                                 />
                                 <HelpText theme={theme}>
-                                    Current price: ${(selectedStock.currentPrice || selectedStock.price || 0).toFixed(2)}
+                                    Current price: {formatPrice(selectedStock.currentPrice || selectedStock.price || 0, selectedStock.symbol)}
                                 </HelpText>
                             </FormGroup>
                             <SubmitButton theme={theme} type="submit">Create Alert</SubmitButton>

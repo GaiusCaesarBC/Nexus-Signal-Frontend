@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
 import axios from 'axios'; // Keep for axios.isCancel()
 import { useAuth } from '../context/AuthContext';
+import { formatCryptoPrice, formatStockPrice } from '../utils/priceFormatter';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer
@@ -14,6 +15,12 @@ import {
   Minus, Plus, ShoppingCart, Share2, Bell, BellOff,
   Globe, Coins, ArrowUpRight, ArrowDownRight
 } from 'lucide-react';
+
+// Smart price formatter - always uses crypto formatting for crypto page
+const formatPrice = (price) => {
+  if (!price || isNaN(price)) return '$0.00';
+  return formatCryptoPrice(price);
+};
 
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`
@@ -831,27 +838,6 @@ const LoadingContainer = styled.div`
 `;
 
 // ============ HELPER FUNCTIONS ============
-const formatCurrency = (value, decimals = 2) => {
-  if (value === null || value === undefined || isNaN(value)) return '$0.00';
-  
-  // For very small values (like some altcoins), show more decimals
-  if (value < 0.01 && value > 0) {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 6,
-      maximumFractionDigits: 6
-    }).format(value);
-  }
-  
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals
-  }).format(value);
-};
-
 const formatLargeNumber = (num) => {
   if (!num || isNaN(num)) return 'N/A';
   if (num >= 1e12) return (num / 1e12).toFixed(2) + 'T';
@@ -964,7 +950,7 @@ const CustomTooltip = ({ active, payload, label }) => {
       }}>
         <p style={{ margin: '0 0 4px', color: '#a0a0a0', fontSize: '12px' }}>{formattedDate}</p>
         <p style={{ margin: 0, fontWeight: 600, fontSize: '16px', color: '#f7931a' }}>
-          {formatCurrency(payload[0].value)}
+          {formatPrice(payload[0].value)}
         </p>
       </div>
     );
@@ -1023,7 +1009,6 @@ const CryptoPage = () => {
       setChartError(null);
 
       try {
-        // ✅ FIXED: Use api instance instead of axios + API_URL
         const response = await api.get(
           `/crypto/historical/${symbol}`,
           {
@@ -1088,7 +1073,6 @@ const CryptoPage = () => {
       setPredictionLoading(true);
 
       try {
-        // ✅ FIXED: Use api instance instead of axios + API_URL
         const response = await api.get(
           `/crypto/prediction/${symbol}`,
           { params: { range: '6M' } }
@@ -1106,8 +1090,6 @@ const CryptoPage = () => {
     const fetchPosts = async () => {
       setPostsLoading(true);
       try {
-        // ✅ FIXED: Use api instance instead of axios + API_URL
-        // Fetch real posts from social feed API
         const response = await api.get(`/social/feed`, {
           params: { 
             symbol: symbol.toUpperCase(),
@@ -1115,7 +1097,6 @@ const CryptoPage = () => {
           }
         });
         
-        // Filter posts that mention this crypto
         const relevantPosts = (response.data.posts || response.data || []).filter(post => {
           const content = (post.content || '').toUpperCase();
           const tags = (post.tags || []).map(t => t.toUpperCase());
@@ -1210,10 +1191,10 @@ const CryptoPage = () => {
         </CryptoInfo>
         
         <PriceSection>
-          <CurrentPrice>{formatCurrency(currentPrice)}</CurrentPrice>
+          <CurrentPrice>{formatPrice(currentPrice)}</CurrentPrice>
           <PriceChange $positive={isPositive}>
             {isPositive ? <TrendingUp size={18} /> : <TrendingDown size={18} />}
-            {formatCurrency(Math.abs(priceChange))} ({formatPercent(changePercent)})
+            {formatPrice(Math.abs(priceChange))} ({formatPercent(changePercent)})
           </PriceChange>
           <ActionButtons>
             <IconButton 
@@ -1297,7 +1278,7 @@ const CryptoPage = () => {
                       axisLine={false}
                       tickLine={false}
                       tick={{ fill: '#666', fontSize: 11 }}
-                      tickFormatter={(val) => `$${val.toLocaleString()}`}
+                      tickFormatter={(val) => formatPrice(val).replace('$', '')}
                       width={80}
                     />
                     <Tooltip content={<CustomTooltip />} />
@@ -1351,7 +1332,7 @@ const CryptoPage = () => {
                 <div className="label">
                   <DollarSign size={14} /> Current Price
                 </div>
-                <div className="value">{formatCurrency(currentPrice)}</div>
+                <div className="value">{formatPrice(currentPrice)}</div>
               </StatCard>
               <StatCard>
                 <div className="label">
@@ -1359,7 +1340,7 @@ const CryptoPage = () => {
                 </div>
                 <div className="value" style={{ color: '#00ff88' }}>
                   {chartData.length > 0 
-                    ? formatCurrency(Math.max(...chartData.map(d => d.high || d.close)))
+                    ? formatPrice(Math.max(...chartData.map(d => d.high || d.close)))
                     : 'N/A'
                   }
                 </div>
@@ -1370,7 +1351,7 @@ const CryptoPage = () => {
                 </div>
                 <div className="value" style={{ color: '#ff4757' }}>
                   {chartData.length > 0 
-                    ? formatCurrency(Math.min(...chartData.map(d => d.low || d.close)))
+                    ? formatPrice(Math.min(...chartData.map(d => d.low || d.close)))
                     : 'N/A'
                   }
                 </div>
@@ -1518,7 +1499,7 @@ const CryptoPage = () => {
             <OrderSummary>
               <div className="row">
                 <span className="label">Market Price</span>
-                <span>{formatCurrency(currentPrice)}</span>
+                <span>{formatPrice(currentPrice)}</span>
               </div>
               <div className="row">
                 <span className="label">Quantity</span>
@@ -1526,7 +1507,7 @@ const CryptoPage = () => {
               </div>
               <div className="row">
                 <span className="label">Estimated {tradeType === 'buy' ? 'Cost' : 'Credit'}</span>
-                <span>{formatCurrency(estimatedCost)}</span>
+                <span>{formatPrice(estimatedCost)}</span>
               </div>
             </OrderSummary>
 
@@ -1583,11 +1564,11 @@ const CryptoPage = () => {
                 <PredictionTargets>
                   <TargetBox $type="current">
                     <div className="label">Current</div>
-                    <div className="value">{formatCurrency(prediction.currentPrice)}</div>
+                    <div className="value">{formatPrice(prediction.currentPrice)}</div>
                   </TargetBox>
                   <TargetBox $type="predicted" $positive={prediction.percentageChange >= 0}>
                     <div className="label">Predicted</div>
-                    <div className="value">{formatCurrency(prediction.predictedPrice)}</div>
+                    <div className="value">{formatPrice(prediction.predictedPrice)}</div>
                     <div className="change">{formatPercent(prediction.percentageChange)}</div>
                   </TargetBox>
                 </PredictionTargets>

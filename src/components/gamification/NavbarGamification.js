@@ -671,6 +671,19 @@ const NavbarGamification = () => {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+useEffect(() => {
+    const handleUserUpdate = (event) => {
+        console.log('[Navbar] User data updated, refreshing...');
+        // Component will re-render automatically when user changes
+    };
+    
+    window.addEventListener('userUpdated', handleUserUpdate);
+    
+    return () => {
+        window.removeEventListener('userUpdated', handleUserUpdate);
+    };
+}, []);
+
     // Extract raw XP and coins
     const totalXp = gamificationData?.xp || 0;
     const nexusCoins = gamificationData?.nexusCoins || 0;

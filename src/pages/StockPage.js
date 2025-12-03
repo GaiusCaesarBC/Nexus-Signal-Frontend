@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
 import axios from 'axios'; // Keep for axios.isCancel()
 import { useAuth } from '../context/AuthContext';
+import { formatStockPrice, formatCryptoPrice, formatPriceChange, formatVolume, formatMarketCap } from '../utils/priceFormatter';
+
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer
@@ -13,6 +15,24 @@ import {
   Star, StarOff, Loader2, Zap, PieChart,
   Minus, Plus, ShoppingCart, Wallet, Share2, Bell, BellOff
 } from 'lucide-react';
+
+// Smart price formatter based on symbol
+const formatPrice = (price, symbol) => {
+  if (!price || isNaN(price)) return 'N/A';
+  
+  // Check if it's a crypto symbol
+  const cryptoPatterns = ['-USD', '-USDT', '-BUSD', '-EUR', '-GBP'];
+  const knownCryptos = ['BTC', 'ETH', 'SOL', 'ADA', 'DOT', 'MATIC', 'AVAX', 'DOGE', 'SHIB', 'XRP', 'PEPE', 'FLOKI', 'BONK'];
+  
+  const symbolUpper = (symbol || '').toUpperCase();
+  const isCrypto = cryptoPatterns.some(pattern => symbolUpper.endsWith(pattern)) ||
+                   knownCryptos.includes(symbolUpper);
+  
+  if (isCrypto) {
+    return formatCryptoPrice(price);
+  }
+  return formatStockPrice(price);
+};
 
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`
@@ -733,6 +753,95 @@ const EmptyState = styled.div`
   }
 `;
 
+// Company Info Styles
+const CompanyInfoCard = styled(Card)`
+  padding: 24px;
+`;
+
+const CompanyHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+
+  h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .badge {
+    font-size: 11px;
+    padding: 4px 12px;
+    background: linear-gradient(135deg, #00adef 0%, #0088cc 100%);
+    border-radius: 20px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+`;
+
+const CompanyDescription = styled.p`
+  font-size: 14px;
+  line-height: 1.7;
+  color: #b0b0b0;
+  margin-bottom: 24px;
+`;
+
+const CompanyDetailsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+`;
+
+const CompanyDetailItem = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(0, 173, 239, 0.3);
+  }
+
+  .label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: #808080;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+  }
+
+  .value {
+    font-size: 14px;
+    font-weight: 600;
+    color: #ffffff;
+    word-break: break-word;
+  }
+
+  .link {
+    color: #00adef;
+    text-decoration: none;
+    font-size: 13px;
+    
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+`;
+
 // Loading State
 const LoadingContainer = styled.div`
   display: flex;
@@ -748,16 +857,6 @@ const LoadingContainer = styled.div`
 `;
 
 // ============ HELPER FUNCTIONS ============
-const formatCurrency = (value) => {
-  if (value === null || value === undefined || isNaN(value)) return 'N/A';
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(value);
-};
-
 const formatLargeNumber = (num) => {
   if (!num || isNaN(num)) return 'N/A';
   if (num >= 1e12) return (num / 1e12).toFixed(2) + 'T';
@@ -787,7 +886,7 @@ const getTimeAgo = (timestamp) => {
   return `${diffDays}d ago`;
 };
 
-// ✅ Format chart date based on timeframe
+// Format chart date based on timeframe
 const formatChartDate = (dateInput, timeframe) => {
   if (!dateInput) return '';
   
@@ -866,7 +965,112 @@ const getCompanyName = (sym) => {
   return names[sym?.toUpperCase()] || `${sym?.toUpperCase() || 'Unknown'} Inc.`;
 };
 
-// ✅ Extract stock info with multiple field name fallbacks (Alpha Vantage + Yahoo Finance compatibility)
+// Get company information
+const getCompanyInfo = (symbol, stockInfo) => {
+  const companyData = {
+    'AAPL': {
+      description: 'Apple Inc. designs, manufactures, and markets smartphones, personal computers, tablets, wearables, and accessories worldwide. The company serves consumers, small and mid-sized businesses, and the education, enterprise, and government markets.',
+      sector: 'Technology',
+      industry: 'Consumer Electronics',
+      ceo: 'Tim Cook',
+      employees: '164,000',
+      founded: '1976',
+      headquarters: 'Cupertino, California',
+      website: 'https://www.apple.com'
+    },
+    'TSLA': {
+      description: 'Tesla, Inc. designs, develops, manufactures, leases, and sells electric vehicles, and energy generation and storage systems in the United States, China, and internationally. The company is accelerating the world\'s transition to sustainable energy.',
+      sector: 'Automotive',
+      industry: 'Electric Vehicles',
+      ceo: 'Elon Musk',
+      employees: '127,855',
+      founded: '2003',
+      headquarters: 'Austin, Texas',
+      website: 'https://www.tesla.com'
+    },
+    'GOOGL': {
+      description: 'Alphabet Inc. provides various products and platforms in the United States, Europe, the Middle East, Africa, the Asia-Pacific, Canada, and Latin America. It operates through Google Services, Google Cloud, and Other Bets segments.',
+      sector: 'Technology',
+      industry: 'Internet Content & Information',
+      ceo: 'Sundar Pichai',
+      employees: '190,234',
+      founded: '1998',
+      headquarters: 'Mountain View, California',
+      website: 'https://abc.xyz'
+    },
+    'MSFT': {
+      description: 'Microsoft Corporation develops, licenses, and supports software, services, devices, and solutions worldwide. It operates in Productivity and Business Processes, Intelligent Cloud, and More Personal Computing segments.',
+      sector: 'Technology',
+      industry: 'Software - Infrastructure',
+      ceo: 'Satya Nadella',
+      employees: '221,000',
+      founded: '1975',
+      headquarters: 'Redmond, Washington',
+      website: 'https://www.microsoft.com'
+    },
+    'AMZN': {
+      description: 'Amazon.com, Inc. engages in the retail sale of consumer products and subscriptions in North America and internationally. It operates through North America, International, and Amazon Web Services (AWS) segments.',
+      sector: 'Consumer Cyclical',
+      industry: 'Internet Retail',
+      ceo: 'Andy Jassy',
+      employees: '1,541,000',
+      founded: '1994',
+      headquarters: 'Seattle, Washington',
+      website: 'https://www.amazon.com'
+    },
+    'NVDA': {
+      description: 'NVIDIA Corporation provides graphics, compute and networking solutions in the United States, Taiwan, China, and internationally. It operates in Graphics and Compute & Networking segments, powering AI and data centers worldwide.',
+      sector: 'Technology',
+      industry: 'Semiconductors',
+      ceo: 'Jensen Huang',
+      employees: '29,600',
+      founded: '1993',
+      headquarters: 'Santa Clara, California',
+      website: 'https://www.nvidia.com'
+    },
+    'META': {
+      description: 'Meta Platforms, Inc. engages in the development of products that enable people to connect and share with friends and family through mobile devices, personal computers, virtual reality headsets, and wearables worldwide.',
+      sector: 'Technology',
+      industry: 'Internet Content & Information',
+      ceo: 'Mark Zuckerberg',
+      employees: '86,482',
+      founded: '2004',
+      headquarters: 'Menlo Park, California',
+      website: 'https://about.meta.com'
+    },
+    'NFLX': {
+      description: 'Netflix, Inc. provides entertainment services. It offers TV series, documentaries, feature films, and mobile games across various genres and languages. Members can play, pause and resume watching as much as they want, anytime, anywhere.',
+      sector: 'Communication Services',
+      industry: 'Entertainment',
+      ceo: 'Ted Sarandos',
+      employees: '12,800',
+      founded: '1997',
+      headquarters: 'Los Gatos, California',
+      website: 'https://www.netflix.com'
+    }
+  };
+
+  const symbolUpper = symbol.toUpperCase();
+  
+  // Return company-specific data if available
+  if (companyData[symbolUpper]) {
+    return companyData[symbolUpper];
+  }
+  
+  // Return data from API if available, otherwise N/A
+  return {
+    description: stockInfo?.longBusinessSummary || stockInfo?.description || 'Company description not available. Data is pulled from your API endpoint.',
+    sector: stockInfo?.sector || 'N/A',
+    industry: stockInfo?.industry || 'N/A',
+    ceo: stockInfo?.ceo || 'N/A',
+    employees: stockInfo?.employees || 'N/A',
+    founded: stockInfo?.founded || 'N/A',
+    headquarters: stockInfo?.city && stockInfo?.state ? `${stockInfo.city}, ${stockInfo.state}` : (stockInfo?.exchange ? `Listed on ${stockInfo.exchange}` : 'N/A'),
+    website: stockInfo?.website || '#'
+  };
+};
+
+// Extract stock info with multiple field name fallbacks
 const extractStockInfo = (data) => {
   if (!data) return null;
   
@@ -874,7 +1078,7 @@ const extractStockInfo = (data) => {
   const quote = data.quote || data.quoteResponse?.result?.[0] || data;
   
   return {
-    // Price info - try Alpha Vantage fields first, then Yahoo fallbacks
+    // Price info
     price: quote.price || quote.regularMarketPrice || quote.currentPrice || 0,
     previousClose: quote.previousClose || quote.regularMarketPreviousClose || 0,
     open: quote.open || quote.regularMarketOpen || 0,
@@ -887,7 +1091,7 @@ const extractStockInfo = (data) => {
     volume: quote.volume || quote.regularMarketVolume || 0,
     avgVolume: quote.avgVolume || quote.averageDailyVolume10Day || quote.averageVolume || 0,
     
-    // Fundamentals - Alpha Vantage uses simpler field names
+    // Fundamentals
     marketCap: quote.marketCap || quote.MarketCapitalization || 0,
     pe: quote.pe || quote.trailingPE || quote.forwardPE || quote.peRatio || 0,
     eps: quote.eps || quote.epsTrailingTwelveMonths || 0,
@@ -909,7 +1113,7 @@ const extractStockInfo = (data) => {
 };
 
 // ============ CUSTOM TOOLTIP ============
-const CustomTooltip = ({ active, payload, label }) => {
+const CustomTooltip = ({ active, payload, label, symbol }) => {
   if (active && payload && payload.length) {
     return (
       <div style={{
@@ -921,7 +1125,7 @@ const CustomTooltip = ({ active, payload, label }) => {
       }}>
         <p style={{ margin: '0 0 4px', color: '#a0a0a0', fontSize: '12px' }}>{label}</p>
         <p style={{ margin: 0, fontWeight: 600, fontSize: '16px' }}>
-          {formatCurrency(payload[0].value)}
+          {formatPrice(payload[0].value, symbol)}
         </p>
       </div>
     );
@@ -985,7 +1189,6 @@ const StockPage = () => {
         if (selectedRange === '1D') intervalParam = '5m';
         else if (selectedRange === '5D') intervalParam = '1h';
 
-        // ✅ FIXED: Use api instance instead of axios + API_URL
         const response = await api.get(
           `/stocks/historical/${symbol}`,
           {
@@ -999,12 +1202,10 @@ const StockPage = () => {
 
         const fetchedData = response.data.historicalData || response.data;
         
-        // ✅ Transform data with proper date formatting
+        // Transform data with proper date formatting
         const transformedData = fetchedData.map((item) => {
-          // Try multiple date field names - prioritize date string over timestamp
           let rawDate = item.date || item.datetime;
           
-          // If we have a timestamp number, convert it to date string
           if (!rawDate && (item.time || item.timestamp || item.t)) {
             const ts = item.time || item.timestamp || item.t;
             rawDate = new Date(ts).toISOString();
@@ -1020,7 +1221,7 @@ const StockPage = () => {
             low: item.low || item.l,
             volume: item.volume || item.v
           };
-        }).filter(item => item.price > 0 && item.time !== 'N/A'); // Filter out invalid data points
+        }).filter(item => item.price > 0 && item.time !== 'N/A');
 
         setChartData(transformedData);
 
@@ -1066,7 +1267,6 @@ const StockPage = () => {
       setInfoLoading(true);
 
       try {
-        // ✅ FIXED: Use api instance instead of axios + API_URL
         // Fetch quote data
         const quoteRes = await api.get(`/stocks/quote/${symbol}`).catch(() => null);
         
@@ -1075,19 +1275,19 @@ const StockPage = () => {
           params: { symbol: symbol.toUpperCase() }
         }).catch(() => null);
 
-        // Fetch posts - ✅ Only show real posts, no mock data
+        // Fetch posts
         const postsRes = await api.get(`/posts`, {
           params: { symbol: symbol.toUpperCase(), limit: 5 }
         }).catch(() => null);
 
-        // ✅ Set stock info with proper field extraction
+        // Set stock info
         if (quoteRes?.data) {
           setStockInfo(extractStockInfo(quoteRes.data));
         } else {
           setStockInfo(null);
         }
 
-        // ✅ Set predictions - only if real data exists
+        // Set predictions - NO MOCK DATA, only real API data
         if (predRes?.data) {
           const predData = Array.isArray(predRes.data) 
             ? predRes.data.find(p => p.symbol?.toUpperCase() === symbol.toUpperCase())
@@ -1097,7 +1297,7 @@ const StockPage = () => {
           setPrediction(null);
         }
 
-        // ✅ Set posts - only real posts, no mock fallback
+        // Set posts
         if (postsRes?.data) {
           const postsData = Array.isArray(postsRes.data) ? postsRes.data : postsRes.data.posts || [];
           setPosts(postsData);
@@ -1147,7 +1347,6 @@ const StockPage = () => {
 
   const handleWatchlist = async () => {
     try {
-      // ✅ FIXED: Use api instance instead of axios + API_URL
       if (isWatchlisted) {
         await api.delete(`/watchlist/${symbol}`);
       } else {
@@ -1195,10 +1394,10 @@ const StockPage = () => {
         </StockInfo>
         
         <PriceSection>
-          <CurrentPrice>{formatCurrency(currentPrice)}</CurrentPrice>
+          <CurrentPrice>{formatPrice(currentPrice, symbol)}</CurrentPrice>
           <PriceChange $positive={isPositive}>
             {isPositive ? <TrendingUp size={18} /> : <TrendingDown size={18} />}
-            {formatCurrency(Math.abs(priceChange))} ({formatPercent(changePercent)})
+            {formatPrice(Math.abs(priceChange), symbol)} ({formatPercent(changePercent)})
           </PriceChange>
           <ActionButtons>
             <IconButton 
@@ -1281,10 +1480,10 @@ const StockPage = () => {
                       axisLine={false}
                       tickLine={false}
                       tick={{ fill: '#666', fontSize: 11 }}
-                      tickFormatter={(val) => `$${val.toFixed(0)}`}
-                      width={60}
+                      tickFormatter={(val) => formatPrice(val, symbol).replace('$', '')}
+                      width={80}
                     />
-                    <Tooltip content={<CustomTooltip />} />
+                    <Tooltip content={<CustomTooltip symbol={symbol} />} />
                     <Area
                       type="monotone"
                       dataKey="price"
@@ -1328,7 +1527,7 @@ const StockPage = () => {
                   <TrendingUp size={14} /> 52W High
                 </div>
                 <div className="value" style={{ color: stockInfo?.high52 ? '#00ff88' : undefined }}>
-                  {formatCurrency(stockInfo?.high52)}
+                  {formatPrice(stockInfo?.high52, symbol)}
                 </div>
               </StatCard>
               <StatCard>
@@ -1336,7 +1535,7 @@ const StockPage = () => {
                   <TrendingDown size={14} /> 52W Low
                 </div>
                 <div className="value" style={{ color: stockInfo?.low52 ? '#ff4757' : undefined }}>
-                  {formatCurrency(stockInfo?.low52)}
+                  {formatPrice(stockInfo?.low52, symbol)}
                 </div>
               </StatCard>
               <StatCard>
@@ -1349,13 +1548,13 @@ const StockPage = () => {
                 <div className="label">
                   <DollarSign size={14} /> EPS
                 </div>
-                <div className="value">{stockInfo?.eps ? formatCurrency(stockInfo.eps) : 'N/A'}</div>
+                <div className="value">{formatPrice(stockInfo?.eps, symbol)}</div>
               </StatCard>
               <StatCard>
                 <div className="label">
                   <Wallet size={14} /> Dividend
                 </div>
-                <div className="value">{stockInfo?.dividend ? formatCurrency(stockInfo.dividend) : 'N/A'}</div>
+                <div className="value">{formatPrice(stockInfo?.dividend, symbol)}</div>
                 <div className="sub">Yield: {stockInfo?.dividendYield?.toFixed(2) || '0.00'}%</div>
               </StatCard>
               <StatCard>
@@ -1369,7 +1568,106 @@ const StockPage = () => {
             </StatsGrid>
           </Card>
 
-          {/* Community Posts - ✅ NO MOCK DATA */}
+          {/* Company Information */}
+          <CompanyInfoCard $delay="0.35s">
+            <CompanyHeader>
+              <h3>
+                <Activity size={20} />
+                Company Information
+              </h3>
+              <span className="badge">About</span>
+            </CompanyHeader>
+            
+            {stockInfo ? (
+              <>
+                <CompanyDescription>
+                  {getCompanyInfo(symbol, stockInfo).description}
+                </CompanyDescription>
+                
+                <CompanyDetailsGrid>
+                  <CompanyDetailItem>
+                    <div className="label">
+                      <BarChart3 size={14} />
+                      Sector
+                    </div>
+                    <div className="value">{getCompanyInfo(symbol, stockInfo).sector}</div>
+                  </CompanyDetailItem>
+                  
+                  <CompanyDetailItem>
+                    <div className="label">
+                      <Target size={14} />
+                      Industry
+                    </div>
+                    <div className="value">{getCompanyInfo(symbol, stockInfo).industry}</div>
+                  </CompanyDetailItem>
+                  
+                  <CompanyDetailItem>
+                    <div className="label">
+                      <Brain size={14} />
+                      CEO
+                    </div>
+                    <div className="value">{getCompanyInfo(symbol, stockInfo).ceo}</div>
+                  </CompanyDetailItem>
+                  
+                  <CompanyDetailItem>
+                    <div className="label">
+                      <Activity size={14} />
+                      Employees
+                    </div>
+                    <div className="value">{getCompanyInfo(symbol, stockInfo).employees}</div>
+                  </CompanyDetailItem>
+                  
+                  <CompanyDetailItem>
+                    <div className="label">
+                      <Clock size={14} />
+                      Founded
+                    </div>
+                    <div className="value">{getCompanyInfo(symbol, stockInfo).founded}</div>
+                  </CompanyDetailItem>
+                  
+                  <CompanyDetailItem>
+                    <div className="label">
+                      <PieChart size={14} />
+                      Headquarters
+                    </div>
+                    <div className="value">{getCompanyInfo(symbol, stockInfo).headquarters}</div>
+                  </CompanyDetailItem>
+                  
+                  {getCompanyInfo(symbol, stockInfo).website !== '#' && (
+                    <CompanyDetailItem>
+                      <div className="label">
+                        <Share2 size={14} />
+                        Website
+                      </div>
+                      <a 
+                        href={getCompanyInfo(symbol, stockInfo).website} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="link"
+                      >
+                        Visit Website →
+                      </a>
+                    </CompanyDetailItem>
+                  )}
+                  
+                  <CompanyDetailItem>
+                    <div className="label">
+                      <Wallet size={14} />
+                      Exchange
+                    </div>
+                    <div className="value">{stockInfo.exchange || 'NASDAQ'}</div>
+                  </CompanyDetailItem>
+                </CompanyDetailsGrid>
+              </>
+            ) : (
+              <EmptyState>
+                <div className="icon">ℹ️</div>
+                <p>Loading company information...</p>
+              </EmptyState>
+            )}
+          </CompanyInfoCard>
+
+          {/* Community Posts */}
           <SocialCard $delay="0.4s">
             <SocialHeader>
               <h3>
@@ -1400,7 +1698,10 @@ const StockPage = () => {
             )) : (
               <EmptyState>
                 <div className="icon">💬</div>
-                <p>No posts yet for ${symbol?.toUpperCase()}. Be the first to share your thoughts!</p>
+                <p>No community posts available for {symbol?.toUpperCase()}.</p>
+                <p style={{ fontSize: '12px', color: '#666', marginTop: '8px' }}>
+                  Posts are fetched from your social feed API endpoint.
+                </p>
               </EmptyState>
             )}
           </SocialCard>
@@ -1462,7 +1763,7 @@ const StockPage = () => {
             <OrderSummary>
               <div className="row">
                 <span className="label">Market Price</span>
-                <span>{formatCurrency(currentPrice)}</span>
+                <span>{formatPrice(currentPrice, symbol)}</span>
               </div>
               <div className="row">
                 <span className="label">Quantity</span>
@@ -1470,7 +1771,7 @@ const StockPage = () => {
               </div>
               <div className="row">
                 <span className="label">Estimated {tradeType === 'buy' ? 'Cost' : 'Credit'}</span>
-                <span>{formatCurrency(estimatedCost)}</span>
+                <span>{formatPrice(estimatedCost, symbol)}</span>
               </div>
             </OrderSummary>
 
@@ -1483,7 +1784,7 @@ const StockPage = () => {
             </TradeButton>
           </TradingPanel>
 
-          {/* AI Prediction Panel - ✅ Shows "No prediction" if no data */}
+          {/* AI Prediction Panel */}
           <PredictionCard $delay="0.3s">
             <PredictionHeader>
               <div className="icon-wrapper">
@@ -1517,7 +1818,7 @@ const StockPage = () => {
                 <PredictionTargets>
                   <TargetBox $type="high">
                     <div className="label">Target High</div>
-                    <div className="value">{formatCurrency(prediction?.targetHigh || prediction?.targetPrice)}</div>
+                    <div className="value">{formatPrice(prediction?.targetHigh || prediction?.targetPrice, symbol)}</div>
                     {prediction?.targetHigh && currentPrice > 0 && (
                       <div className="change">
                         +{(((prediction.targetHigh - currentPrice) / currentPrice) * 100).toFixed(1)}%
@@ -1526,7 +1827,7 @@ const StockPage = () => {
                   </TargetBox>
                   <TargetBox $type="low">
                     <div className="label">Target Low</div>
-                    <div className="value">{formatCurrency(prediction?.targetLow)}</div>
+                    <div className="value">{formatPrice(prediction?.targetLow, symbol)}</div>
                     {prediction?.targetLow && currentPrice > 0 && (
                       <div className="change">
                         {(((prediction.targetLow - currentPrice) / currentPrice) * 100).toFixed(1)}%
@@ -1551,7 +1852,10 @@ const StockPage = () => {
             ) : (
               <EmptyState>
                 <div className="icon">🤖</div>
-                <p>No AI prediction available for {symbol?.toUpperCase()} yet.</p>
+                <p>No AI prediction available for {symbol?.toUpperCase()}.</p>
+                <p style={{ fontSize: '12px', color: '#666', marginTop: '8px' }}>
+                  Predictions are fetched from your API endpoint.
+                </p>
               </EmptyState>
             )}
           </PredictionCard>
@@ -1567,18 +1871,18 @@ const StockPage = () => {
                 <span style={{ color: '#a0a0a0', fontSize: 14 }}>Day Range</span>
                 <span style={{ fontWeight: 600, fontSize: 14 }}>
                   {stockInfo?.dayLow && stockInfo?.dayHigh 
-                    ? `${formatCurrency(stockInfo.dayLow)} - ${formatCurrency(stockInfo.dayHigh)}`
+                    ? `${formatPrice(stockInfo.dayLow, symbol)} - ${formatPrice(stockInfo.dayHigh, symbol)}`
                     : 'N/A'
                   }
                 </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', background: 'rgba(0,0,0,0.2)', borderRadius: '10px' }}>
                 <span style={{ color: '#a0a0a0', fontSize: 14 }}>Open</span>
-                <span style={{ fontWeight: 600, fontSize: 14 }}>{formatCurrency(stockInfo?.open)}</span>
+                <span style={{ fontWeight: 600, fontSize: 14 }}>{formatPrice(stockInfo?.open, symbol)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', background: 'rgba(0,0,0,0.2)', borderRadius: '10px' }}>
                 <span style={{ color: '#a0a0a0', fontSize: 14 }}>Previous Close</span>
-                <span style={{ fontWeight: 600, fontSize: 14 }}>{formatCurrency(stockInfo?.previousClose || previousClose)}</span>
+                <span style={{ fontWeight: 600, fontSize: 14 }}>{formatPrice(stockInfo?.previousClose || previousClose, symbol)}</span>
               </div>
             </div>
           </Card>
