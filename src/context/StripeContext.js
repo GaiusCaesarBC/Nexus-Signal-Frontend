@@ -1,7 +1,9 @@
 import React, { createContext, useContext } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 
-const stripePromise = loadStripe('pk_test_51SKpIxCtdTItnGjynKIM6de7vIjS5gRSAEItwWZC7XgQpEekd8VKv2E7c7D6nEutF3xmDps6fDYHeoV5Xec5izsG00bXHMcaMl');
+// Use environment variable for Stripe public key (falls back to test key for development)
+const stripePublicKey = process.env.REACT_APP_STRIPE_PUBLIC_KEY || 'pk_test_51SKpIxCtdTItnGjynKIM6de7vIjS5gRSAEItwWZC7XgQpEekd8VKv2E7c7D6nEutF3xmDps6fDYHeoV5Xec5izsG00bXHMcaMl';
+const stripePromise = loadStripe(stripePublicKey);
 
 const StripeContext = createContext();
 

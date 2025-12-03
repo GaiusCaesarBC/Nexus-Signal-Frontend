@@ -1,5 +1,5 @@
 // src/components/DailyReward/DailyRewardButton.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import './DailyRewardButton.css';
 
@@ -9,15 +9,7 @@ const DailyRewardButton = ({ onClick }) => {
     const [streak, setStreak] = useState(0);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        checkRewardStatus();
-        
-        // Check every 5 minutes
-        const interval = setInterval(checkRewardStatus, 5 * 60 * 1000);
-        return () => clearInterval(interval);
-    }, []);
-
-    const checkRewardStatus = async () => {
+    const checkRewardStatus = useCallback(async () => {
         try {
             const response = await api.get('/gamification/daily-reward/status');
             setRewardAvailable(response.data.canClaim);
@@ -27,12 +19,20 @@ const DailyRewardButton = ({ onClick }) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [api]);
+
+    useEffect(() => {
+        checkRewardStatus();
+
+        // Check every 5 minutes
+        const interval = setInterval(checkRewardStatus, 5 * 60 * 1000);
+        return () => clearInterval(interval);
+    }, [checkRewardStatus]);
 
     if (loading) return null;
 
     return (
-        <button 
+        <button
             className={`daily-reward-button ${rewardAvailable ? 'available' : 'claimed'}`}
             onClick={onClick}
             title={rewardAvailable ? 'Claim your daily reward!' : 'Already claimed today'}
@@ -44,7 +44,7 @@ const DailyRewardButton = ({ onClick }) => {
                 <span className="reward-label">
                     {rewardAvailable ? 'Daily Reward' : 'Claimed Today'}
                 </span>
-                {streak > 0 && (
+                {streak != null && streak > 0 && (
                     <span className="reward-streak">
                         🔥 {streak} day{streak !== 1 ? 's' : ''}
                     </span>
