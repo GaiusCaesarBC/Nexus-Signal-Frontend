@@ -269,21 +269,21 @@ const NotificationBell = () => {
     // Initial fetch
     useEffect(() => {
         fetchUnreadCount();
-        
+
         // Poll for new notifications every 30 seconds
         const interval = setInterval(() => {
             fetchUnreadCount();
         }, 30000);
 
         return () => clearInterval(interval);
-    }, []);
+    }, [api]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Fetch notifications when dropdown opens
     useEffect(() => {
         if (isOpen) {
             fetchNotifications();
         }
-    }, [isOpen]);
+    }, [isOpen, api]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Close dropdown when clicking outside
     useEffect(() => {
