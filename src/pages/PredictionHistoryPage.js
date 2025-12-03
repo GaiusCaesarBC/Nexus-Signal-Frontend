@@ -7,6 +7,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import styled, { keyframes } from 'styled-components';
 import { getAssetName } from '../utils/stockNames';
+import { formatCryptoPrice, formatStockPrice } from '../utils/priceFormatter';
 import {
     Brain, TrendingUp, TrendingDown, Target, Clock,
     CheckCircle, XCircle, AlertCircle, ArrowLeft,
@@ -14,6 +15,24 @@ import {
     Filter, RefreshCw, ChevronDown, Trophy, Flame,
     Eye, Trash2, Search, SlidersHorizontal
 } from 'lucide-react';
+
+// Smart price formatter based on symbol
+const formatPredictionPrice = (price, symbol) => {
+    if (!price) return '$0.00';
+    
+    // Check if it's a crypto symbol
+    const cryptoPatterns = ['-USD', '-USDT', '-BUSD', '-EUR', '-GBP'];
+    const knownCryptos = ['BTC', 'ETH', 'SOL', 'ADA', 'DOT', 'MATIC', 'AVAX', 'DOGE', 'SHIB', 'XRP', 'PEPE', 'FLOKI', 'BONK'];
+    
+    const symbolUpper = symbol.toUpperCase();
+    const isCrypto = cryptoPatterns.some(pattern => symbolUpper.endsWith(pattern)) ||
+                     knownCryptos.includes(symbolUpper);
+    
+    if (isCrypto) {
+        return formatCryptoPrice(price);
+    }
+    return formatStockPrice(price);
+};
 
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`
@@ -787,15 +806,14 @@ const PredictionHistoryPage = () => {
                                     <DetailItem>
                                         <DetailLabel theme={theme}>Entry Price</DetailLabel>
                                         <DetailValue theme={theme}>
-                                            <DollarSign size={14} />
-                                            {prediction.currentPrice?.toFixed(2)}
+                                            {formatPredictionPrice(prediction.currentPrice, prediction.symbol)}
                                         </DetailValue>
                                     </DetailItem>
                                     <DetailItem>
                                         <DetailLabel theme={theme}>Target</DetailLabel>
                                         <DetailValue theme={theme}>
                                             <Target size={14} />
-                                            ${prediction.targetPrice?.toFixed(2)}
+                                            {formatPredictionPrice(prediction.targetPrice, prediction.symbol)}
                                         </DetailValue>
                                     </DetailItem>
                                     <DetailItem>
@@ -822,7 +840,7 @@ const PredictionHistoryPage = () => {
                                                 theme={theme}
                                                 $color={prediction.status === 'correct' ? successColor : errorColor}
                                             >
-                                                ${prediction.outcome.actualPrice.toFixed(2)}
+                                                {formatPredictionPrice(prediction.outcome.actualPrice, prediction.symbol)}
                                             </DetailValue>
                                         </DetailItem>
                                     )}
