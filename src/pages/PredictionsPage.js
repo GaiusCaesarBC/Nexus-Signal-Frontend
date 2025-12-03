@@ -7,6 +7,7 @@ import { useToast } from '../context/ToastContext';
 import { useTheme } from '../context/ThemeContext';
 import styled, { keyframes } from 'styled-components';
 import { getAssetName } from '../utils/stockNames';
+import { formatCryptoPrice, formatStockPrice } from '../utils/priceFormatter';
 import { useAuth } from '../context/AuthContext';
 import {
     Brain, TrendingUp, TrendingDown, Target, Zap, Activity,
@@ -27,6 +28,26 @@ const fadeIn = keyframes`
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
 `;
+
+
+// Smart price formatter based on symbol
+const formatPredictionPrice = (price, symbol) => {
+    if (!price) return '$0.00';
+    
+    // Check if it's a crypto symbol
+    const cryptoPatterns = ['-USD', '-USDT', '-BUSD', '-EUR', '-GBP'];
+    const knownCryptos = ['BTC', 'ETH', 'SOL', 'ADA', 'DOT', 'MATIC', 'AVAX', 'DOGE', 'SHIB', 'XRP', 'PEPE', 'FLOKI', 'BONK'];
+    
+    const symbolUpper = symbol?.toUpperCase() || '';
+    const isCrypto = cryptoPatterns.some(pattern => symbolUpper.endsWith(pattern)) ||
+                     knownCryptos.includes(symbolUpper);
+    
+    if (isCrypto) {
+        return formatCryptoPrice(price);
+    }
+    return formatStockPrice(price);
+};
+
 
 const slideIn = keyframes`
     from { transform: translateX(-100%); opacity: 0; }
@@ -1920,7 +1941,12 @@ const PredictionsPage = () => {
                                         <CompanyName theme={theme}>{getAssetName(prediction.symbol)}</CompanyName>
                                         <CurrentPriceSection>
                                             <CurrentPriceLabel theme={theme}>Current:</CurrentPriceLabel>
-                                            <CurrentPriceValue theme={theme}>${(liveData?.livePrice || liveData?.currentPrice || prediction.current_price)?.toFixed(2)}</CurrentPriceValue>
+                                           <CurrentPriceValue theme={theme}>
+    {formatPredictionPrice(
+        liveData?.livePrice || liveData?.currentPrice || prediction.current_price,
+        prediction.symbol
+    )}
+</CurrentPriceValue>
                                         </CurrentPriceSection>
                                     </StockInfo>
                                     <DirectionBadge theme={theme} $up={prediction.prediction.direction === 'UP'}>
@@ -1944,7 +1970,9 @@ const PredictionsPage = () => {
                                     <MetricCard theme={theme}>
                                         <MetricIcon theme={theme} $variant="primary"><Target size={24} /></MetricIcon>
                                         <MetricLabel theme={theme}>Target Price</MetricLabel>
-                                        <MetricValue theme={theme}>${prediction.prediction.target_price?.toFixed(2)}</MetricValue>
+                                        <MetricValue theme={theme}>
+    {formatPredictionPrice(prediction.prediction.target_price, prediction.symbol)}
+</MetricValue>
                                     </MetricCard>
                                     <MetricCard theme={theme}>
                                         <MetricIcon theme={theme} $variant={prediction.prediction.direction === 'UP' ? 'success' : 'danger'}>
@@ -1958,9 +1986,13 @@ const PredictionsPage = () => {
                                     <MetricCard theme={theme}>
                                         <MetricIcon theme={theme} $variant="warning"><DollarSign size={24} /></MetricIcon>
                                         <MetricLabel theme={theme}>Dollar Change</MetricLabel>
-                                        <MetricValue theme={theme} $variant="warning">
-                                            {prediction.prediction.direction === 'UP' ? '+' : '-'}${Math.abs(prediction.prediction.target_price - prediction.current_price).toFixed(2)}
-                                        </MetricValue>
+                                       <MetricValue theme={theme} $variant="warning">
+    {prediction.prediction.direction === 'UP' ? '+' : ''}
+    {formatPredictionPrice(
+        Math.abs(prediction.prediction.target_price - prediction.current_price),
+        prediction.symbol
+    )}
+</MetricValue>
                                     </MetricCard>
                                     <MetricCard theme={theme}>
                                         <MetricIcon theme={theme}><Award size={24} /></MetricIcon>
@@ -1993,10 +2025,15 @@ const PredictionsPage = () => {
                                                         borderRadius: '12px',
                                                         color: theme?.text?.primary || '#e0e6ed'
                                                     }}
-                                                    formatter={(value, name) => {
-                                                        if (Array.isArray(value)) return [`$${value[0].toFixed(2)} - $${value[1].toFixed(2)}`, name];
-                                                        return [`$${value.toFixed(2)}`, name];
-                                                    }}
+                                                   formatter={(value, name) => {
+    if (Array.isArray(value)) {
+        return [
+            `${formatPredictionPrice(value[0], prediction.symbol)} - ${formatPredictionPrice(value[1], prediction.symbol)}`,
+            name
+        ];
+    }
+    return [formatPredictionPrice(value, prediction.symbol), name];
+}}
                                                 />
                                                 <ReferenceLine y={prediction.current_price} stroke={primaryColor} strokeDasharray="5 5" label={{ value: 'Current', fill: primaryColor, fontSize: 12 }} />
                                                 <ReferenceLine y={prediction.prediction.target_price} stroke={prediction.prediction.direction === 'UP' ? successColor : errorColor} strokeDasharray="5 5" label={{ value: 'Target', fill: prediction.prediction.direction === 'UP' ? successColor : errorColor, fontSize: 12 }} />
@@ -2061,10 +2098,12 @@ const PredictionsPage = () => {
                                         </SavedDirection>
                                     </SavedCardHeader>
                                     <SavedCardBody>
-                                        <SavedMetric theme={theme}>
-                                            <SavedMetricLabel theme={theme}>Target</SavedMetricLabel>
-                                            <SavedMetricValue theme={theme}>${saved.prediction?.target_price?.toFixed(2)}</SavedMetricValue>
-                                        </SavedMetric>
+                                      <SavedMetric theme={theme}>
+    <SavedMetricLabel theme={theme}>Target</SavedMetricLabel>
+    <SavedMetricValue theme={theme}>
+        {formatPredictionPrice(saved.prediction?.target_price, saved.symbol)}
+    </SavedMetricValue>
+</SavedMetric>
                                         <SavedMetric theme={theme}>
                                             <SavedMetricLabel theme={theme}>Change</SavedMetricLabel>
                                             <SavedMetricValue theme={theme}>
@@ -2076,9 +2115,11 @@ const PredictionsPage = () => {
                                             <SavedMetricValue theme={theme}>{saved.prediction?.confidence?.toFixed(1)}%</SavedMetricValue>
                                         </SavedMetric>
                                         <SavedMetric theme={theme}>
-                                            <SavedMetricLabel theme={theme}>Entry Price</SavedMetricLabel>
-                                            <SavedMetricValue theme={theme}>${saved.current_price?.toFixed(2)}</SavedMetricValue>
-                                        </SavedMetric>
+    <SavedMetricLabel theme={theme}>Entry Price</SavedMetricLabel>
+    <SavedMetricValue theme={theme}>
+        {formatPredictionPrice(saved.current_price, saved.symbol)}
+    </SavedMetricValue>
+</SavedMetric>
                                     </SavedCardBody>
                                     <SavedCardFooter theme={theme}>
                                         <SavedDate theme={theme}>
