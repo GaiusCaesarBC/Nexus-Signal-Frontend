@@ -1,17 +1,16 @@
-// client/src/pages/PricingPage.js - LEGENDARY EDITION 🚀
-import React, { useState, useEffect, useRef } from 'react';
+// client/src/pages/PricingPage.js - UPDATED FEATURES ✨
+import React, { useState } from 'react';
 import styled, { keyframes, css } from 'styled-components';
 import { 
     Check, Zap, Crown, Star, Rocket, Sparkles, TrendingUp, Shield, Award, Gift,
-    Waves, Brain, Lock, Users, Infinity, Clock, Headphones, BarChart3, Target,
-    Gem, ChevronRight, ArrowRight, X
+    Brain, Lock, Infinity, ArrowRight
 } from 'lucide-react';
 import nexusSignalLogo from '../assets/nexus-signal-logo.png';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useNavigate } from 'react-router-dom';
 
-// ============ EPIC ANIMATIONS ============
+// ============ ANIMATIONS (keeping all your existing animations) ============
 const fadeInUp = keyframes`
     from { opacity: 0; transform: translateY(40px); }
     to { opacity: 1; transform: translateY(0); }
@@ -26,11 +25,6 @@ const float = keyframes`
     0%, 100% { transform: translateY(0px) rotate(0deg); }
     25% { transform: translateY(-10px) rotate(1deg); }
     75% { transform: translateY(-5px) rotate(-1deg); }
-`;
-
-const floatDelayed = keyframes`
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
 `;
 
 const megaGlow = keyframes`
@@ -80,9 +74,23 @@ const gradientShift = keyframes`
     100% { background-position: 0% 50%; }
 `;
 
-const twinkle = keyframes`
-    0%, 100% { opacity: 0.3; transform: scale(0.8); }
-    50% { opacity: 1; transform: scale(1.2); }
+const floatingOrb = keyframes`
+    0%, 100% { 
+        transform: translate(0, 0) scale(1);
+        opacity: 0.6;
+    }
+    25% { 
+        transform: translate(20px, -30px) scale(1.1);
+        opacity: 0.8;
+    }
+    50% { 
+        transform: translate(-10px, -50px) scale(0.9);
+        opacity: 0.5;
+    }
+    75% { 
+        transform: translate(-30px, -20px) scale(1.05);
+        opacity: 0.7;
+    }
 `;
 
 const shootingStar = keyframes`
@@ -105,34 +113,9 @@ const aurora = keyframes`
     }
 `;
 
-const borderRotate = keyframes`
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-`;
-
 const ripple = keyframes`
     0% { transform: scale(0); opacity: 0.6; }
     100% { transform: scale(4); opacity: 0; }
-`;
-
-const checkmarkDraw = keyframes`
-    0% { stroke-dashoffset: 24; }
-    100% { stroke-dashoffset: 0; }
-`;
-
-const textGlow = keyframes`
-    0%, 100% {
-        text-shadow: 
-            0 0 10px rgba(255, 255, 255, 0.5),
-            0 0 20px rgba(59, 130, 246, 0.5),
-            0 0 30px rgba(139, 92, 246, 0.3);
-    }
-    50% {
-        text-shadow: 
-            0 0 20px rgba(255, 255, 255, 0.8),
-            0 0 40px rgba(59, 130, 246, 0.8),
-            0 0 60px rgba(139, 92, 246, 0.5);
-    }
 `;
 
 const countUp = keyframes`
@@ -140,31 +123,7 @@ const countUp = keyframes`
     to { opacity: 1; transform: translateY(0); }
 `;
 
-const energyWave = keyframes`
-    0% { transform: scale(1); opacity: 0.5; }
-    100% { transform: scale(2.5); opacity: 0; }
-`;
-
-const floatingOrb = keyframes`
-    0%, 100% { 
-        transform: translate(0, 0) scale(1);
-        opacity: 0.6;
-    }
-    25% { 
-        transform: translate(20px, -30px) scale(1.1);
-        opacity: 0.8;
-    }
-    50% { 
-        transform: translate(-10px, -50px) scale(0.9);
-        opacity: 0.5;
-    }
-    75% { 
-        transform: translate(-30px, -20px) scale(1.05);
-        opacity: 0.7;
-    }
-`;
-
-// ============ STYLED COMPONENTS ============
+// ============ STYLED COMPONENTS (keeping all your existing styles) ============
 const PricingContainer = styled.div`
     display: flex;
     flex-direction: column;
@@ -180,7 +139,6 @@ const PricingContainer = styled.div`
     overflow: hidden;
 `;
 
-// Cosmic Background
 const CosmicBackground = styled.div`
     position: fixed;
     top: 0;
@@ -278,7 +236,6 @@ const ShootingStar = styled.div`
     opacity: 0;
 `;
 
-// Header Section
 const HeaderSection = styled.div`
     text-align: center;
     z-index: 2;
@@ -376,7 +333,6 @@ const Subtitle = styled.p`
     }
 `;
 
-// Billing Toggle
 const BillingToggleContainer = styled.div`
     display: flex;
     align-items: center;
@@ -437,7 +393,6 @@ const SaveBadge = styled.span`
     box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
 `;
 
-// Trust Badges
 const TrustBadges = styled.div`
     display: flex;
     align-items: center;
@@ -477,7 +432,6 @@ const TrustBadge = styled.div`
     }
 `;
 
-// Pricing Grid
 const PricingGrid = styled.div`
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -504,7 +458,6 @@ const PricingGrid = styled.div`
     }
 `;
 
-// Card Wrapper for 3D effects
 const CardWrapper = styled.div`
     position: relative;
     animation: ${fadeInUp} 0.8s ease-out ${props => props.$delay}s backwards;
@@ -517,7 +470,6 @@ const CardWrapper = styled.div`
     }
 `;
 
-// Animated Border
 const AnimatedBorder = styled.div`
     position: absolute;
     top: -2px;
@@ -649,7 +601,6 @@ const CardShimmer = styled.div`
     }
 `;
 
-// Plan Header
 const PlanHeader = styled.div`
     margin-bottom: 1rem;
     position: relative;
@@ -736,7 +687,6 @@ const PlanDescription = styled.p`
     font-weight: 500;
 `;
 
-// Price Display
 const PriceContainer = styled.div`
     margin: 1rem 0;
     position: relative;
@@ -782,7 +732,6 @@ const Period = styled.span`
     color: #64748b;
 `;
 
-// Features
 const FeatureSection = styled.div`
     flex: 1;
     text-align: left;
@@ -886,7 +835,6 @@ const HighlightFeature = styled(FeatureItem)`
     }
 `;
 
-// CTA Button
 const CTAButton = styled.button`
     width: 100%;
     padding: 0.85rem 1.5rem;
@@ -960,7 +908,6 @@ const RippleEffect = styled.span`
     pointer-events: none;
 `;
 
-// Comparison Badge
 const ComparisonBadge = styled.div`
     display: inline-flex;
     align-items: center;
@@ -980,7 +927,6 @@ const ComparisonBadge = styled.div`
     }
 `;
 
-// Stats Section
 const StatsSection = styled.div`
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -1027,7 +973,6 @@ const StatLabel = styled.div`
     color: #94a3b8;
 `;
 
-// Footer
 const FooterSection = styled.div`
     text-align: center;
     z-index: 2;
@@ -1143,7 +1088,7 @@ const PricingPage = () => {
 
     const handleFreeTier = () => {
         if (!user) {
-            navigate('/signup');
+            navigate('/register');
         } else {
             navigate('/dashboard');
         }
@@ -1171,7 +1116,7 @@ const PricingPage = () => {
         }
     };
 
-    // Plan configurations
+    // ============ UPDATED PLAN CONFIGURATIONS ============
     const plans = [
         {
             id: 'free',
@@ -1184,21 +1129,28 @@ const PricingPage = () => {
             shadow: 'rgba(99, 102, 241, 0.4)',
             borderGradient: 'linear-gradient(135deg, #6366f1, #4f46e5, #6366f1)',
             features: [
-                { category: 'Trading', color: '#6366f1', items: [
-                    'Full Paper Trading Platform',
+                { category: '🎮 Gamification', color: '#6366f1', items: [
+                    'Achievement System (93 achievements)',
+                    'Level Progression (1-100)',
+                    'XP & Nexus Coins',
+                    'Daily Login Rewards',
+                    'Leaderboards',
+                ]},
+                { category: '📈 Paper Trading', color: '#3b82f6', items: [
                     '$100,000 Virtual Cash',
                     'Real Market Simulation',
+                    'Trade History & Analytics',
+                    'Portfolio Tracking',
                 ]},
-                { category: 'Social', color: '#8b5cf6', items: [
-                    'Complete Social Feed Access',
-                    'Post Trades & Updates',
-                    'Follow Top Traders',
-                    'Like & Comment',
-                ]},
-                { category: 'AI & Analytics', color: '#3b82f6', items: [
+                { category: '🤖 AI Features', color: '#8b5cf6', items: [
                     '3 AI Predictions/day',
-                    'Basic Portfolio View',
-                    'Leaderboard Access',
+                    'Basic AI Chat',
+                    '1 Watchlist (10 stocks)',
+                ]},
+                { category: '👥 Social', color: '#10b981', items: [
+                    'Social Feed Access',
+                    'Post & Comment',
+                    'Follow Traders',
                 ]}
             ],
             cta: user ? 'Go to Dashboard' : 'Get Started Free',
@@ -1215,12 +1167,14 @@ const PricingPage = () => {
             borderGradient: 'linear-gradient(135deg, #10b981, #059669, #10b981)',
             features: [
                 { category: 'Everything in Free +', color: '#10b981', items: [
-                    '10 AI Predictions/day',
-                    '2 Watchlists (20 assets each)',
-                    'Advanced Market Overview',
+                    { text: '10 AI Predictions/day', highlight: true },
+                    '2 Watchlists (20 stocks each)',
+                    'Advanced Portfolio Analytics',
                     'Price Alerts',
-                    'Trade History Export',
-                    'Performance Analytics',
+                    'Stock Screener Access',
+                    'Market News Feed',
+                    'Sentiment Analysis',
+                    'Trade Journal',
                     'Email Support',
                 ]}
             ],
@@ -1238,12 +1192,14 @@ const PricingPage = () => {
             borderGradient: 'linear-gradient(135deg, #3b82f6, #2563eb, #3b82f6)',
             features: [
                 { category: 'Everything in Starter +', color: '#3b82f6', items: [
-                    '25 AI Predictions/day',
-                    '5 Watchlists (50 assets each)',
-                    'Advanced Market Analysis',
-                    'Real-Time Price Alerts',
-                    'AI Chat Assistant',
+                    { text: '25 AI Predictions/day', highlight: true },
+                    '5 Watchlists (50 stocks each)',
+                    { text: 'AI Chat Assistant (GPT-4)', highlight: true },
+                    'Advanced Market Heatmap',
                     'Technical Indicators',
+                    'Real-Time Price Alerts',
+                    'Advanced Stock Comparisons',
+                    'Crypto Support',
                     'Priority Email Support',
                 ]}
             ],
@@ -1265,17 +1221,17 @@ const PricingPage = () => {
                 { category: 'Everything in Pro +', color: '#f97316', items: [
                     { text: 'Unlimited AI Predictions', highlight: true },
                     { text: 'Unlimited Watchlists', highlight: true },
-                    'Live Market Data (Real-Time)',
-                    'Advanced AI Chat (GPT-4)',
-                    'Algorithmic Pattern Recognition',
-                    'In-Depth Sector Analysis',
-                    'Portfolio Optimization',
+                    'Advanced AI Chat (GPT-4 Turbo)',
+                    'Prediction History & Analytics',
+                    'Portfolio Optimization Tools',
                     'Custom Alerts & Notifications',
+                    'In-Depth Sector Analysis',
                 ]},
-                { category: 'Exclusive Features', color: '#f59e0b', items: [
-                    { text: '🐋 Whale & Insider Alerts', highlight: true, special: true },
+                { category: '🐋 Exclusive Features', color: '#f59e0b', items: [
+                    { text: 'Whale Alerts (Large Volume Trades)', highlight: true, special: true },
                     'Dark Pool Flow Tracking',
-                    'SEC Filing Monitor',
+                    'Institutional Activity Monitor',
+                    'Discovery Page Access',
                     '24/7 Priority Support',
                 ]}
             ],
@@ -1287,7 +1243,7 @@ const PricingPage = () => {
             name: 'Elite',
             description: 'Ultimate Market Edge',
             icon: Crown,
-            tag: { text: 'Best Value', type: 'value', icon: Gem },
+            tag: { text: 'Best Value', type: 'value', icon: Award },
             featured: true,
             price: prices.elite,
             gradient: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
@@ -1302,13 +1258,15 @@ const PricingPage = () => {
                     'Advanced Backtesting Tools',
                     'Institutional-Grade Analytics',
                     'Multi-Account Management',
-                ]},
-                { category: 'VIP Perks', color: '#a78bfa', items: [
-                    { text: '🐋 Whale Alert Webhooks & API', highlight: true, special: true },
-                    { text: '1-on-1 Mentorship', highlight: true },
                     'White-Label Options',
+                ]},
+                { category: '👑 VIP Perks', color: '#a78bfa', items: [
+                    { text: '🐋 Whale Alert Webhooks & API', highlight: true, special: true },
+                    { text: '1-on-1 Trading Mentorship', highlight: true },
                     'Dedicated Account Manager',
                     'VIP Discord Community',
+                    'Early Access to New Features',
+                    'Custom Feature Requests',
                 ]}
             ],
             comparison: 'Institutional Power',
@@ -1361,7 +1319,7 @@ const PricingPage = () => {
                 </Title>
                 
                 <Subtitle>
-                    Join thousands of traders using AI-powered insights to dominate the markets. 
+                    AI-powered trading platform with gamification, social features, and institutional-grade analytics. 
                     Start free, scale when ready.
                 </Subtitle>
             </HeaderSection>
@@ -1374,7 +1332,7 @@ const PricingPage = () => {
                 {yearly && <SaveBadge>Save 20%</SaveBadge>}
             </BillingToggleContainer>
 
-            {/* Trust Badges */}
+            {/* Trust Badges - UPDATED */}
             <TrustBadges>
                 <TrustBadge>
                     <Shield size={18} />
@@ -1383,10 +1341,6 @@ const PricingPage = () => {
                 <TrustBadge>
                     <Lock size={18} />
                     SOC 2 Compliant
-                </TrustBadge>
-                <TrustBadge>
-                    <Users size={18} />
-                    50,000+ Traders
                 </TrustBadge>
                 <TrustBadge>
                     <Award size={18} />
@@ -1541,7 +1495,7 @@ const PricingPage = () => {
                 </StatCard>
             </StatsSection>
 
-            {/* Footer */}
+            {/* Footer - UPDATED */}
             <FooterSection>
                 <Hashtags>
                     <Hashtag>#NexusSignalAI</Hashtag>
@@ -1551,9 +1505,10 @@ const PricingPage = () => {
                     <Hashtag>#TradingCommunity</Hashtag>
                 </Hashtags>
 
+                {/* UPDATED - Free Trial instead of Money-Back Guarantee */}
                 <Guarantee>
-                    <Shield />
-                    30-Day Money-Back Guarantee • No Questions Asked
+                    <Sparkles />
+                    7-Day Free Trial on All Paid Plans • No Credit Card Required
                 </Guarantee>
 
                 <FooterText style={{ marginTop: '2rem' }}>
