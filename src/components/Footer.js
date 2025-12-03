@@ -1,11 +1,11 @@
-// client/src/components/Footer.js - THE MOST LEGENDARY FOOTER - FULLY THEMED
+// client/src/components/Footer.js - FIXED - NO MORE 404s! 🎯
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { Link } from 'react-router-dom';
 import { 
-    Mail, Send, Twitter, Linkedin, Github, MessageSquare, 
+    Send, Twitter, Linkedin, Github, MessageSquare, 
     TrendingUp, Zap, Brain, Sparkles, ChevronRight, Star,
-    Instagram, Facebook, Youtube
+    Instagram, Youtube
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
@@ -44,7 +44,6 @@ const FooterContainer = styled.footer`
     border-top: 1px solid ${props => `${props.theme.brand?.primary || '#00adef'}33`};
 `;
 
-// Animated background particles
 const ParticleContainer = styled.div`
     position: absolute;
     top: 0;
@@ -373,7 +372,6 @@ const Footer = () => {
     const [email, setEmail] = useState('');
     const [particleList, setParticleList] = useState([]);
 
-    // Generate background particles on mount using theme colors
     useEffect(() => {
         const colors = [
             theme.brand?.primary || '#3b82f6',
@@ -394,7 +392,6 @@ const Footer = () => {
 
     const handleSubscribe = (e) => {
         e.preventDefault();
-        // TODO: Implement newsletter subscription
         console.log('Subscribe:', email);
         alert('Thanks for subscribing! 🎉');
         setEmail('');
@@ -404,7 +401,6 @@ const Footer = () => {
 
     return (
         <FooterContainer>
-            {/* Animated Background Particles */}
             <ParticleContainer>
                 {particleList.map(particle => (
                     <Particle
@@ -438,34 +434,34 @@ const Footer = () => {
                             Made in the USA
                         </Badge>
                         <SocialIcons>
-                            <SocialIcon href="https://twitter.com" target="_blank" rel="noopener noreferrer">
+                            <SocialIcon href="https://twitter.com/nexussignalai" target="_blank" rel="noopener noreferrer">
                                 <Twitter size={20} />
                             </SocialIcon>
-                            <SocialIcon href="https://linkedin.com" target="_blank" rel="noopener noreferrer">
+                            <SocialIcon href="https://linkedin.com/company/nexussignalai" target="_blank" rel="noopener noreferrer">
                                 <Linkedin size={20} />
                             </SocialIcon>
-                            <SocialIcon href="https://github.com" target="_blank" rel="noopener noreferrer">
+                            <SocialIcon href="https://github.com/nexussignal" target="_blank" rel="noopener noreferrer">
                                 <Github size={20} />
                             </SocialIcon>
-                            <SocialIcon href="https://discord.com" target="_blank" rel="noopener noreferrer">
+                            <SocialIcon href="https://discord.gg/nexussignal" target="_blank" rel="noopener noreferrer">
                                 <MessageSquare size={20} />
                             </SocialIcon>
-                            <SocialIcon href="https://instagram.com" target="_blank" rel="noopener noreferrer">
+                            <SocialIcon href="https://instagram.com/nexussignalai" target="_blank" rel="noopener noreferrer">
                                 <Instagram size={20} />
                             </SocialIcon>
-                            <SocialIcon href="https://youtube.com" target="_blank" rel="noopener noreferrer">
+                            <SocialIcon href="https://youtube.com/@nexussignalai" target="_blank" rel="noopener noreferrer">
                                 <Youtube size={20} />
                             </SocialIcon>
                         </SocialIcons>
                     </BrandSection>
 
-                    {/* Product Section */}
+                    {/* Product Section - ✅ FIXED */}
                     <FooterSection>
                         <SectionTitle>
                             <Zap size={18} />
                             Product
                         </SectionTitle>
-                        <FooterLink to="/predictions">
+                        <FooterLink to="/predict">
                             <ChevronRight size={16} />
                             AI Predictions
                         </FooterLink>
@@ -473,21 +469,21 @@ const Footer = () => {
                             <ChevronRight size={16} />
                             AI Chat
                         </FooterLink>
+                        <FooterLink to="/paper-trading">
+                            <ChevronRight size={16} />
+                            Paper Trading
+                        </FooterLink>
+                        <FooterLink to="/screener">
+                            <ChevronRight size={16} />
+                            Stock Screener
+                        </FooterLink>
                         <FooterLink to="/pricing">
                             <ChevronRight size={16} />
                             Pricing
                         </FooterLink>
-                        <FooterLink to="/features">
-                            <ChevronRight size={16} />
-                            Features
-                        </FooterLink>
-                        <ExternalLink href="/api-docs" target="_blank">
-                            <ChevronRight size={16} />
-                            API Docs
-                        </ExternalLink>
                     </FooterSection>
 
-                    {/* Company Section */}
+                    {/* Company Section - ✅ FIXED */}
                     <FooterSection>
                         <SectionTitle>
                             <TrendingUp size={18} />
@@ -497,21 +493,17 @@ const Footer = () => {
                             <ChevronRight size={16} />
                             About Us
                         </FooterLink>
-                        <FooterLink to="/blog">
+                        <FooterLink to="/leaderboard">
                             <ChevronRight size={16} />
-                            Blog
+                            Leaderboard
                         </FooterLink>
-                        <FooterLink to="/careers">
+                        <ExternalLink href="mailto:support@nexussignal.ai">
                             <ChevronRight size={16} />
-                            Careers
-                        </FooterLink>
-                        <FooterLink to="/contact">
+                            Contact Us
+                        </ExternalLink>
+                        <ExternalLink href="https://twitter.com/nexussignalai" target="_blank" rel="noopener noreferrer">
                             <ChevronRight size={16} />
-                            Contact
-                        </FooterLink>
-                        <ExternalLink href="/press" target="_blank">
-                            <ChevronRight size={16} />
-                            Press Kit
+                            Follow Us
                         </ExternalLink>
                     </FooterSection>
 
