@@ -2,7 +2,7 @@
 // Central context for vault data - provides equipped items across the app
 // Use this in Navbar, Feed, Leaderboard, Profile, etc.
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import api from '../api/axios';
 import { useAuth } from './AuthContext';
 
@@ -12,7 +12,7 @@ const VaultContext = createContext(null);
 // ============ PROVIDER ============
 export const VaultProvider = ({ children }) => {
     const { user, isAuthenticated } = useAuth();
-    
+
     // Current user's vault state
     const [equippedBorder, setEquippedBorder] = useState('border-bronze');
     const [equippedTheme, setEquippedTheme] = useState('theme-default');
@@ -21,9 +21,12 @@ export const VaultProvider = ({ children }) => {
     const [ownedItems, setOwnedItems] = useState(['border-bronze', 'theme-default']);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    
+
     // Cache for other users' vault data (for feed/leaderboard)
     const [userVaultCache, setUserVaultCache] = useState({});
+    // Use ref to avoid useCallback recreation on cache updates
+    const userVaultCacheRef = useRef(userVaultCache);
+    userVaultCacheRef.current = userVaultCache;
 
     // Fetch current user's equipped items
     const fetchEquipped = useCallback(async () => {
@@ -91,11 +94,11 @@ export const VaultProvider = ({ children }) => {
 
     // Fetch another user's vault (for feed/leaderboard/profile viewing)
     const fetchUserVault = useCallback(async (userId) => {
-        // Check cache first
-        if (userVaultCache[userId]) {
-            return userVaultCache[userId];
+        // Check cache first (using ref to avoid dependency issues)
+        if (userVaultCacheRef.current[userId]) {
+            return userVaultCacheRef.current[userId];
         }
-        
+
         try {
             const response = await api.get(`/vault/user/${userId}`);
             if (response.data.success) {
@@ -105,13 +108,13 @@ export const VaultProvider = ({ children }) => {
                     equippedBadges: response.data.equipped.badges?.map(b => b.id) || [],
                     level: response.data.level || 1
                 };
-                
+
                 // Cache it
                 setUserVaultCache(prev => ({
                     ...prev,
                     [userId]: vaultData
                 }));
-                
+
                 return vaultData;
             }
         } catch (err) {
@@ -123,7 +126,7 @@ export const VaultProvider = ({ children }) => {
                 level: 1
             };
         }
-    }, [userVaultCache]);
+    }, []); // No dependencies needed - uses ref for cache
 
     // Equip an item
     const equipItem = useCallback(async (itemId) => {
@@ -273,30 +276,43 @@ export const useUserVault = (userId) => {
     const { fetchUserVault, userVaultCache } = useVault();
     const [vault, setVault] = useState(null);
     const [loading, setLoading] = useState(true);
-    
+    // Use ref to track cache without causing re-renders
+    const cacheRef = useRef(userVaultCache);
+    cacheRef.current = userVaultCache;
+
     useEffect(() => {
+        let isMounted = true;
+
         const loadVault = async () => {
             if (!userId) {
-                setLoading(false);
+                if (isMounted) setLoading(false);
                 return;
             }
-            
-            // Check cache first
-            if (userVaultCache[userId]) {
-                setVault(userVaultCache[userId]);
-                setLoading(false);
+
+            // Check cache first (using ref to avoid dependency)
+            if (cacheRef.current[userId]) {
+                if (isMounted) {
+                    setVault(cacheRef.current[userId]);
+                    setLoading(false);
+                }
                 return;
             }
-            
-            setLoading(true);
+
+            if (isMounted) setLoading(true);
             const data = await fetchUserVault(userId);
-            setVault(data);
-            setLoading(false);
+            if (isMounted) {
+                setVault(data);
+                setLoading(false);
+            }
         };
-        
+
         loadVault();
-    }, [userId, fetchUserVault, userVaultCache]);
-    
+
+        return () => {
+            isMounted = false;
+        };
+    }, [userId, fetchUserVault]);
+
     return { vault, loading };
 };
 
