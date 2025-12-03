@@ -30,8 +30,9 @@ const fadeIn = keyframes`
 `;
 
 
-// Smart price formatter based on symbol
 const formatPredictionPrice = (price, symbol) => {
+    console.log('🔍 Formatting:', { price, symbol, type: typeof price });
+    
     if (!price) return '$0.00';
     
     // Check if it's a crypto symbol
@@ -42,10 +43,12 @@ const formatPredictionPrice = (price, symbol) => {
     const isCrypto = cryptoPatterns.some(pattern => symbolUpper.endsWith(pattern)) ||
                      knownCryptos.includes(symbolUpper);
     
-    if (isCrypto) {
-        return formatCryptoPrice(price);
-    }
-    return formatStockPrice(price);
+    console.log('🔍 Is crypto?', isCrypto, 'Symbol:', symbolUpper);
+    
+    const result = isCrypto ? formatCryptoPrice(price) : formatStockPrice(price);
+    console.log('🔍 Result:', result);
+    
+    return result;
 };
 
 
