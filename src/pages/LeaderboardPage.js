@@ -1307,21 +1307,21 @@ const LeaderboardPage = () => {
 
     const mapTraderData = useCallback((traders) => {
         return (traders || []).map((trader, index) => ({
-            rank: index + 1,
-            userId: trader.userId || trader._id,
-            displayName: trader.displayName || trader.profile?.displayName || trader.username,
-            username: trader.username,
-            avatar: trader.avatar || trader.profile?.avatar,
+            rank: trader.rank || index + 1,
+            userId: trader.userId || trader.user?.id || trader._id,
+            displayName: trader.displayName || trader.user?.displayName || trader.profile?.displayName || trader.username || trader.user?.username,
+            username: trader.username || trader.user?.username,
+            avatar: trader.avatar || trader.user?.avatar || trader.profile?.avatar,
             badges: trader.badges || trader.profile?.badges || [],
             level: trader.level || trader.gamification?.level || 1,
             xp: trader.xp || trader.gamification?.xp || 0,
-            totalReturn: trader.totalReturn || trader.stats?.totalReturnPercent || 0,
+            totalReturn: trader.totalReturn || trader.profitLossPercent || trader.stats?.totalReturnPercent || 0,
             winRate: trader.winRate || trader.stats?.winRate || 0,
             totalTrades: trader.totalTrades || trader.stats?.totalTrades || 0,
             currentStreak: trader.currentStreak || trader.stats?.currentStreak || 0,
             followersCount: trader.social?.followersCount || 0,
-            // FIXED: Use equippedBorder for avatar frames, not equippedTheme
-            equippedBorder: trader.equippedBorder || trader.vault?.equippedBorder || 'default',
+            // FIXED: Handle both flat and nested user object structures
+            equippedBorder: trader.equippedBorder || trader.user?.equippedBorder || trader.vault?.equippedBorder || 'border-bronze',
             equippedBadges: trader.equippedBadges || trader.vault?.equippedBadges || [],
         }));
     }, []);
