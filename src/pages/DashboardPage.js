@@ -42,32 +42,51 @@ const formatTickerPrice = (price, symbol) => {
 
 
 // ============ BORDER COLORS FOR AVATAR FRAMES ============
+// Synced with vaultItems.js - uses primary color from each border's gradient
 const BORDER_COLORS = {
-    'border-default': { color: '#00adef', glow: 'rgba(0, 173, 239, 0.5)' },
-    'border-ruby': { color: '#ef4444', glow: 'rgba(239, 68, 68, 0.5)' },
-    'border-sapphire': { color: '#3b82f6', glow: 'rgba(59, 130, 246, 0.5)' },
-    'border-emerald': { color: '#10b981', glow: 'rgba(16, 185, 129, 0.5)' },
-    'border-amethyst': { color: '#8b5cf6', glow: 'rgba(139, 92, 246, 0.5)' },
-    'border-gold': { color: '#f59e0b', glow: 'rgba(245, 158, 11, 0.5)' },
-    'border-platinum': { color: '#e2e8f0', glow: 'rgba(226, 232, 240, 0.5)' },
-    'border-obsidian': { color: '#1e293b', glow: 'rgba(30, 41, 59, 0.8)' },
-    'border-rose': { color: '#f43f5e', glow: 'rgba(244, 63, 94, 0.5)' },
-    'border-cyan': { color: '#06b6d4', glow: 'rgba(6, 182, 212, 0.5)' },
-    'border-sunset': { color: '#fb923c', glow: 'rgba(251, 146, 60, 0.5)' },
-    'border-cosmic': { color: '#a855f7', glow: 'rgba(168, 85, 247, 0.6)' },
-    // Fallbacks without prefix
+    // ===== BASIC BORDERS =====
+    'border-bronze': { color: '#CD7F32', glow: 'rgba(205, 127, 50, 0.5)' },
+    'border-silver': { color: '#C0C0C0', glow: 'rgba(192, 192, 192, 0.5)' },
+    'border-gold': { color: '#FFD700', glow: 'rgba(255, 215, 0, 0.6)' },
+    'border-emerald': { color: '#10b981', glow: 'rgba(16, 185, 129, 0.6)' },
+    'border-ruby': { color: '#ef4444', glow: 'rgba(239, 68, 68, 0.7)' },
+    'border-platinum': { color: '#E5E4E2', glow: 'rgba(229, 228, 226, 0.7)' },
+    'border-sapphire': { color: '#3b82f6', glow: 'rgba(59, 130, 246, 0.7)' },
+    'border-amethyst': { color: '#8b5cf6', glow: 'rgba(139, 92, 246, 0.7)' },
+    'border-diamond': { color: '#00D4FF', glow: 'rgba(0, 212, 255, 0.8)' },
+    'border-rainbow': { color: '#8b5cf6', glow: 'rgba(139, 92, 246, 0.9)' },
+    'border-nexus': { color: '#00adef', glow: 'rgba(0, 173, 237, 1)' },
+    // ===== EPIC BORDERS =====
+    'border-crimson-blade': { color: '#dc2626', glow: 'rgba(220, 38, 38, 0.7)' },
+    'border-tsunami': { color: '#0ea5e9', glow: 'rgba(14, 165, 233, 0.7)' },
+    'border-ancient-oak': { color: '#22c55e', glow: 'rgba(34, 197, 94, 0.7)' },
+    'border-phantom': { color: '#6366f1', glow: 'rgba(99, 102, 241, 0.7)' },
+    'border-toxic-haze': { color: '#84cc16', glow: 'rgba(132, 204, 22, 0.8)' },
+    'border-mystic-runes': { color: '#a855f7', glow: 'rgba(168, 85, 247, 0.8)' },
+    // ===== LEGENDARY BORDERS =====
+    'border-inferno-crown': { color: '#f97316', glow: 'rgba(249, 115, 22, 0.9)' },
+    'border-lightning-fury': { color: '#3b82f6', glow: 'rgba(59, 130, 246, 0.9)' },
+    'border-void-portal': { color: '#7c3aed', glow: 'rgba(124, 58, 237, 0.9)' },
+    'border-deaths-embrace': { color: '#4b5563', glow: 'rgba(75, 85, 99, 0.9)' },
+    'border-dragon-wrath': { color: '#dc2626', glow: 'rgba(220, 38, 38, 1)' },
+    'border-frozen-eternity': { color: '#06b6d4', glow: 'rgba(6, 182, 212, 0.9)' },
+    'border-cosmic-destroyer': { color: '#6366f1', glow: 'rgba(99, 102, 241, 1)' },
+    'border-blood-moon': { color: '#dc2626', glow: 'rgba(220, 38, 38, 0.95)' },
+    'border-quantum-rift': { color: '#d946ef', glow: 'rgba(217, 70, 239, 0.9)' },
+    'border-divine-ascension': { color: '#fbbf24', glow: 'rgba(251, 191, 36, 1)' },
+    'border-abyssal-terror': { color: '#0891b2', glow: 'rgba(8, 145, 178, 0.9)' },
+    'border-supernova-core': { color: '#f97316', glow: 'rgba(249, 115, 22, 1)' },
+    'border-all-seeing-eye': { color: '#fbbf24', glow: 'rgba(251, 191, 36, 0.95)' },
+    'border-prismatic-fury': { color: '#8b5cf6', glow: 'rgba(139, 92, 246, 1)' },
+    'border-apex-predator': { color: '#dc2626', glow: 'rgba(220, 38, 38, 1)' },
+    // ===== MYTHIC BORDERS =====
+    'border-reality-shatter': { color: '#ec4899', glow: 'rgba(236, 72, 153, 1)' },
+    'border-eternal-sovereign': { color: '#fbbf24', glow: 'rgba(251, 191, 36, 1)' },
+    // ===== ORIGIN BORDER =====
+    'border-architects-ring': { color: '#d4af37', glow: 'rgba(212, 175, 55, 1)' },
+    // Default fallback
     'default': { color: '#00adef', glow: 'rgba(0, 173, 239, 0.5)' },
-    'ruby': { color: '#ef4444', glow: 'rgba(239, 68, 68, 0.5)' },
-    'sapphire': { color: '#3b82f6', glow: 'rgba(59, 130, 246, 0.5)' },
-    'emerald': { color: '#10b981', glow: 'rgba(16, 185, 129, 0.5)' },
-    'amethyst': { color: '#8b5cf6', glow: 'rgba(139, 92, 246, 0.5)' },
-    'gold': { color: '#f59e0b', glow: 'rgba(245, 158, 11, 0.5)' },
-    'platinum': { color: '#e2e8f0', glow: 'rgba(226, 232, 240, 0.5)' },
-    'obsidian': { color: '#1e293b', glow: 'rgba(30, 41, 59, 0.8)' },
-    'rose': { color: '#f43f5e', glow: 'rgba(244, 63, 94, 0.5)' },
-    'cyan': { color: '#06b6d4', glow: 'rgba(6, 182, 212, 0.5)' },
-    'sunset': { color: '#fb923c', glow: 'rgba(251, 146, 60, 0.5)' },
-    'cosmic': { color: '#a855f7', glow: 'rgba(168, 85, 247, 0.6)' }
+    'border-default': { color: '#00adef', glow: 'rgba(0, 173, 239, 0.5)' }
 };
 
 // Helper to get border color from equipped border ID
