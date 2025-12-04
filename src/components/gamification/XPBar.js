@@ -219,22 +219,20 @@ const getRankForLevel = (level) => {
 const XPBar = () => {
     const { gamificationData, loading } = useGamification();
 
-    // Extract raw values
+    // ✅ FIXED: Use server-calculated level instead of wrong client-side formula
+    // The server uses LEVEL_THRESHOLDS array, not simple XP/1000
+    const calculatedLevel = gamificationData?.level || 1;
+    const calculatedRank = gamificationData?.title || gamificationData?.rank || getRankForLevel(calculatedLevel);
     const totalXp = gamificationData?.xp || 0;
     const nexusCoins = gamificationData?.nexusCoins || 0;
     const loginStreak = gamificationData?.loginStreak || 0;
 
-    // 🔥 AUTO-CALCULATE LEVEL FROM XP (1000 XP per level)
-    // This ensures frontend always shows correct level regardless of backend sync
-    const calculatedLevel = Math.floor(totalXp / 1000) + 1;
-    const calculatedRank = getRankForLevel(calculatedLevel);
-    
-    // Calculate XP progress within current level
-    const xpForCurrentLevel = (calculatedLevel - 1) * 1000;
-    const xpForNextLevel = calculatedLevel * 1000;
+    // Use server-provided XP progress values
+    const xpForCurrentLevel = gamificationData?.xpForCurrentLevel || 0;
+    const xpForNextLevel = gamificationData?.xpForNextLevel || 1000;
     const xpInCurrentLevel = totalXp - xpForCurrentLevel;
-    const xpNeeded = xpForNextLevel - xpForCurrentLevel; // Always 1000
-    const progressPercent = xpNeeded > 0 ? (xpInCurrentLevel / xpNeeded) * 100 : 0;
+    const xpNeeded = xpForNextLevel - xpForCurrentLevel;
+    const progressPercent = xpNeeded > 0 ? (xpInCurrentLevel / xpNeeded) * 100 : (gamificationData?.progressPercent || 0);
 
     if (loading) {
         return (
