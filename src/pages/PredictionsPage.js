@@ -334,6 +334,99 @@ const Label = styled.label`
     gap: 0.5rem;
 `;
 
+// Autocomplete Dropdown
+const AutocompleteContainer = styled.div`
+    position: relative;
+    width: 100%;
+`;
+
+const SuggestionsDropdown = styled.div`
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.98)'};
+    border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}4D;
+    border-radius: 12px;
+    margin-top: 4px;
+    max-height: 280px;
+    overflow-y: auto;
+    z-index: 1000;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(10px);
+
+    &::-webkit-scrollbar {
+        width: 6px;
+    }
+    &::-webkit-scrollbar-track {
+        background: rgba(255,255,255,0.05);
+    }
+    &::-webkit-scrollbar-thumb {
+        background: ${props => props.theme?.brand?.primary || '#00adef'}66;
+        border-radius: 3px;
+    }
+`;
+
+const SuggestionItem = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+
+    &:last-child {
+        border-bottom: none;
+    }
+
+    &:hover {
+        background: ${props => props.theme?.brand?.primary || '#00adef'}1A;
+    }
+`;
+
+const SuggestionLeft = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+`;
+
+const SuggestionSymbol = styled.span`
+    font-weight: 700;
+    font-size: 1rem;
+    color: ${props => props.theme?.text?.primary || '#e0e6ed'};
+`;
+
+const SuggestionName = styled.span`
+    font-size: 0.8rem;
+    color: ${props => props.theme?.text?.tertiary || '#64748b'};
+    max-width: 150px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+`;
+
+const SuggestionType = styled.span`
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    text-transform: uppercase;
+    background: ${props => props.$type === 'crypto'
+        ? `${props.theme?.warning || '#f59e0b'}26`
+        : `${props.theme?.brand?.primary || '#00adef'}26`};
+    color: ${props => props.$type === 'crypto'
+        ? (props.theme?.warning || '#f59e0b')
+        : (props.theme?.brand?.primary || '#00adef')};
+`;
+
+const NoResults = styled.div`
+    padding: 1rem;
+    text-align: center;
+    color: ${props => props.theme?.text?.tertiary || '#64748b'};
+    font-size: 0.9rem;
+`;
+
 const Input = styled.input`
     padding: 1rem 1.25rem;
     background: ${props => props.theme?.brand?.accent || '#8b5cf6'}0D;
@@ -1321,6 +1414,11 @@ const PredictionsPage = () => {
     const [savedPredictions, setSavedPredictions] = useState([]);
     const [watchlist, setWatchlist] = useState([]);
 
+    // Symbol autocomplete state
+    const [suggestions, setSuggestions] = useState([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [searchLoading, setSearchLoading] = useState(false);
+
     // Dynamic confidence state
     const [dynamicConfidence, setDynamicConfidence] = useState(null);
     const [confidenceChange, setConfidenceChange] = useState(0);
@@ -1335,6 +1433,43 @@ const PredictionsPage = () => {
     const successColor = theme?.success || '#10b981';
     const errorColor = theme?.error || '#ef4444';
     const warningColor = theme?.warning || '#f59e0b';
+
+    // Symbol search function
+    const searchSymbols = useCallback(async (query) => {
+        if (!query || query.length < 1) {
+            setSuggestions([]);
+            return;
+        }
+        setSearchLoading(true);
+        try {
+            const response = await api.get(`/predictions/symbols/search?q=${encodeURIComponent(query)}&type=all`);
+            setSuggestions(response.data.symbols || []);
+        } catch (error) {
+            console.error('Symbol search error:', error);
+            setSuggestions([]);
+        } finally {
+            setSearchLoading(false);
+        }
+    }, [api]);
+
+    // Debounced search
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (symbol.length >= 1) {
+                searchSymbols(symbol);
+            } else {
+                setSuggestions([]);
+            }
+        }, 200);
+        return () => clearTimeout(timer);
+    }, [symbol, searchSymbols]);
+
+    // Handle suggestion click
+    const handleSuggestionClick = (suggestion) => {
+        setSymbol(suggestion.symbol);
+        setShowSuggestions(false);
+        setSuggestions([]);
+    };
 
     const [platformStats, setPlatformStats] = useState({
         accuracy: 0,
@@ -1820,12 +1955,40 @@ const handleShare = (platform) => {
                             <InputGroup>
                                 <FormField>
                                     <Label theme={theme}><BarChart3 size={18} /> Symbol</Label>
-                                    <Input 
-                                        theme={theme} 
-                                        value={symbol} 
-                                        onChange={e => setSymbol(e.target.value.toUpperCase())} 
-                                        placeholder="AAPL, BTC, ETH..." 
-                                    />
+                                    <AutocompleteContainer>
+                                        <Input
+                                            theme={theme}
+                                            value={symbol}
+                                            onChange={e => setSymbol(e.target.value.toUpperCase())}
+                                            onFocus={() => setShowSuggestions(true)}
+                                            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                                            placeholder="Search stocks or crypto..."
+                                            autoComplete="off"
+                                        />
+                                        {showSuggestions && (suggestions.length > 0 || searchLoading) && (
+                                            <SuggestionsDropdown theme={theme}>
+                                                {searchLoading ? (
+                                                    <NoResults theme={theme}>Searching...</NoResults>
+                                                ) : suggestions.length > 0 ? (
+                                                    suggestions.map((s, idx) => (
+                                                        <SuggestionItem
+                                                            key={`${s.symbol}-${idx}`}
+                                                            theme={theme}
+                                                            onMouseDown={() => handleSuggestionClick(s)}
+                                                        >
+                                                            <SuggestionLeft>
+                                                                <SuggestionSymbol theme={theme}>{s.symbol}</SuggestionSymbol>
+                                                                <SuggestionName theme={theme}>{s.name}</SuggestionName>
+                                                            </SuggestionLeft>
+                                                            <SuggestionType theme={theme} $type={s.type}>{s.type}</SuggestionType>
+                                                        </SuggestionItem>
+                                                    ))
+                                                ) : (
+                                                    <NoResults theme={theme}>No matches found</NoResults>
+                                                )}
+                                            </SuggestionsDropdown>
+                                        )}
+                                    </AutocompleteContainer>
                                 </FormField>
                                 <FormField>
                                     <Label theme={theme}><Calendar size={18} /> Timeframe</Label>
