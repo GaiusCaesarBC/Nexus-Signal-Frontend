@@ -985,21 +985,44 @@ const WhaleAlertsPage = () => {
     }, [activeTab, fetchData, fetchTabData]);
 
     // Fetch chart data for selected alert
+    // Helper to detect if symbol is crypto
+    const isCryptoSymbol = (symbol) => {
+        const cryptoSymbols = ['BTC', 'ETH', 'XRP', 'LTC', 'ADA', 'SOL', 'DOGE', 'DOT', 'BNB', 'LINK',
+            'UNI', 'MATIC', 'SHIB', 'TRX', 'AVAX', 'ATOM', 'XMR', 'ALGO', 'VET', 'FIL', 'PEPE', 'APE'];
+        const upperSymbol = symbol?.toUpperCase();
+        return cryptoSymbols.includes(upperSymbol) || upperSymbol?.includes('-USD') || upperSymbol?.includes('USDT');
+    };
+
     const fetchChartData = useCallback(async (symbol, tradeDate) => {
         setChartLoading(true);
         try {
-            // Fetch 30-day chart data around the trade date
-            const response = await api.get(`/chart/${symbol}/1D`);
-            if (response.data.success && response.data.data?.length > 0) {
-                // Format data for the chart
-                const formattedData = response.data.data.map(item => ({
-                    date: new Date(item.date || item.time).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-                    price: item.close,
-                    high: item.high,
-                    low: item.low,
-                    volume: item.volume,
-                    timestamp: new Date(item.date || item.time).getTime()
-                }));
+            // Determine if crypto or stock and use appropriate endpoint
+            const isCrypto = isCryptoSymbol(symbol);
+            const endpoint = isCrypto
+                ? `/crypto/historical/${symbol}`
+                : `/stocks/historical/${symbol}`;
+
+            // Fetch 1 month of data for better chart context
+            const response = await api.get(endpoint, { params: { range: '1M' } });
+
+            const rawData = response.data.historicalData || response.data.data || [];
+
+            if (rawData.length > 0) {
+                // Format data for the chart with proper date handling
+                const formattedData = rawData.map(item => {
+                    const dateValue = item.date || item.time || item.timestamp;
+                    const dateObj = new Date(dateValue);
+                    return {
+                        date: dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                        price: item.close,
+                        high: item.high,
+                        low: item.low,
+                        volume: item.volume,
+                        timestamp: dateObj.getTime(),
+                        rawDate: dateValue
+                    };
+                }).filter(item => item.price && !isNaN(item.price));
+
                 setChartData(formattedData);
             } else {
                 setChartData([]);
@@ -1573,8 +1596,12 @@ const WhaleAlertsPage = () => {
                                                 <XAxis
                                                     dataKey="date"
                                                     stroke="#64748b"
-                                                    fontSize={11}
+                                                    fontSize={10}
                                                     tickLine={false}
+                                                    axisLine={false}
+                                                    interval="preserveStartEnd"
+                                                    tick={{ fill: '#64748b' }}
+                                                    minTickGap={30}
                                                 />
                                                 <YAxis
                                                     stroke="#64748b"
