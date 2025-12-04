@@ -9,6 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme as useThemeContext } from '../context/ThemeContext';
 import { useVault } from '../context/VaultContext';
 import BadgeIcon from './BadgeIcon';
+import AvatarWithBorder from './vault/AvatarWithBorder';
 import { useToast } from '../context/ToastContext';
 import {
     Sparkles, TrendingUp, MessageCircle, Heart, Share2, Bookmark,
@@ -2208,22 +2209,22 @@ const SocialFeed = () => {
         return BORDER_COLORS['default'];
     }, []);
 
-    // 🔥 FIXED: Get current user's border from their equippedBorder
-    const currentUserBorder = useMemo(() => {
+    // 🔥 FIXED: Get current user's border ID from their equippedBorder
+    const currentUserBorderId = useMemo(() => {
         // Priority order for finding user's equipped border:
         // 1. user.vault.equippedBorder (from AuthContext - most reliable)
         // 2. equipped?.border?.id (from VaultContext)
-        // 3. 'default' fallback
-        
-        const userBorderId = 
-            user?.vault?.equippedBorder || 
-            equipped?.border?.id || 
+        // 3. 'border-bronze' fallback
+
+        const userBorderId =
+            user?.vault?.equippedBorder ||
+            equipped?.border?.id ||
             equipped?.border ||
-            null;
-        
-        console.log('🎯 currentUserBorder - found border:', userBorderId);
-        return getAvatarBorderColor(userBorderId);
-    }, [user?.vault?.equippedBorder, equipped?.border, getAvatarBorderColor]);
+            'border-bronze';
+
+        console.log('🎯 currentUserBorderId:', userBorderId);
+        return userBorderId;
+    }, [user?.vault?.equippedBorder, equipped?.border]);
 
     // Format time ago
     const formatTimeAgo = useCallback((date) => {
@@ -2725,22 +2726,15 @@ const SocialFeed = () => {
                         </FilterTabs>
                     </FeedHeader>
 
-                    {/* 🔥 FIXED: Create Post Box - uses currentUserBorder (from equippedBorder) */}
+                    {/* 🔥 FIXED: Create Post Box - uses AvatarWithBorder for animations */}
                     <CreatePostBox>
                         <CreatePostHeader>
-                            <UserAvatar 
-                                $size="48px" 
-                                $fontSize="1.1rem"
-                                $borderColor={currentUserBorder.color}
-                                $borderWidth="3px"
-                                $glow={true}
-                            >
-                                {user?.profile?.avatar ? (
-                                    <img src={user.profile.avatar} alt={user.name} />
-                                ) : (
-                                    getInitials(user?.name)
-                                )}
-                            </UserAvatar>
+                            <AvatarWithBorder
+                                src={user?.profile?.avatar}
+                                name={user?.name}
+                                size={48}
+                                borderId={currentUserBorderId}
+                            />
                             <PostInput onClick={() => setShowCreateModal(true)}>
                                 What's on your mind, {user?.name?.split(' ')[0]}?
                             </PostInput>
@@ -2808,28 +2802,19 @@ const SocialFeed = () => {
                     ) : (
                         posts.map(post => {
                             // 🔥 FIXED: Get border color from THIS post author's equippedBorder
-                            const authorBorder = getAvatarBorderColor(post.author?.equippedBorder);
-                            console.log(`📝 Post by ${post.author?.username}: equippedBorder = ${post.author?.equippedBorder}, color = ${authorBorder.color}`);
-                            
                             return (
                                 <PostCard key={post._id} $isPinned={post.isPinned}>
                                     {/* Post Header */}
                                     <PostHeader>
                                         <PostAuthor>
-                                            <UserAvatar 
-                                                $size="44px" 
-                                                $fontSize="1rem"
-                                                $borderColor={authorBorder.color}
-                                                $borderWidth="3px"
-                                                $glow={true}
+                                            <AvatarWithBorder
+                                                src={post.author?.avatar}
+                                                name={post.author?.displayName}
+                                                username={post.author?.username}
+                                                size={44}
+                                                borderId={post.author?.equippedBorder || 'border-bronze'}
                                                 onClick={() => navigate(`/profile/${post.author?.username}`)}
-                                            >
-                                                {post.author?.avatar ? (
-                                                    <img src={post.author.avatar} alt={post.author?.displayName} />
-                                                ) : (
-                                                    getInitials(post.author?.displayName)
-                                                )}
-                                            </UserAvatar>
+                                            />
                                             <AuthorInfo>
                                                 <AuthorName onClick={() => navigate(`/profile/${post.author?.username}`)}>
                                                     {post.author?.displayName || 'Anonymous'}
@@ -3079,23 +3064,16 @@ const SocialFeed = () => {
                                             {post.comments?.length > 0 && (
                                                 <CommentsList>
                                                     {post.comments.slice(-5).map((comment, index) => {
-                                                        const commentAuthorBorder = getAvatarBorderColor(comment.author?.equippedBorder);
                                                         return (
                                                             <Comment key={index}>
-                                                                <UserAvatar 
-                                                                    $size="32px" 
-                                                                    $fontSize="0.75rem"
-                                                                    $borderColor={commentAuthorBorder.color}
-                                                                    $borderWidth="2px"
-                                                                    $glow={false}
+                                                                <AvatarWithBorder
+                                                                    src={comment.author?.avatar}
+                                                                    name={comment.author?.displayName}
+                                                                    username={comment.author?.username}
+                                                                    size={32}
+                                                                    borderId={comment.author?.equippedBorder || 'border-bronze'}
                                                                     onClick={() => navigate(`/profile/${comment.author?.username}`)}
-                                                                >
-                                                                    {comment.author?.avatar ? (
-                                                                        <img src={comment.author.avatar} alt={comment.author?.displayName} />
-                                                                    ) : (
-                                                                        getInitials(comment.author?.displayName)
-                                                                    )}
-                                                                </UserAvatar>
+                                                                />
                                                                 <CommentContent>
                                                                     <CommentBubble>
                                                                         <CommentAuthor onClick={() => navigate(`/profile/${comment.author?.username}`)}>
@@ -3115,19 +3093,12 @@ const SocialFeed = () => {
                                                 </CommentsList>
                                             )}
                                             <CommentInput>
-                                                <UserAvatar 
-                                                    $size="36px" 
-                                                    $fontSize="0.85rem"
-                                                    $borderColor={currentUserBorder.color}
-                                                    $borderWidth="2px"
-                                                    $glow={false}
-                                                >
-                                                    {user?.profile?.avatar ? (
-                                                        <img src={user.profile.avatar} alt={user?.name} />
-                                                    ) : (
-                                                        getInitials(user?.name)
-                                                    )}
-                                                </UserAvatar>
+                                                <AvatarWithBorder
+                                                    src={user?.profile?.avatar}
+                                                    name={user?.name}
+                                                    size={36}
+                                                    borderId={currentUserBorderId}
+                                                />
                                                 <CommentTextarea
                                                     placeholder="Write a comment..."
                                                     value={commentInputs[post._id] || ''}
@@ -3181,27 +3152,19 @@ const SocialFeed = () => {
                             Top Traders
                         </SidebarTitle>
                         {topTraders.length > 0 ? topTraders.map((trader, index) => {
-                            const traderBorder = getAvatarBorderColor(trader.equippedBorder);
-                            console.log(`🏆 Trader ${trader.name}: border=${trader.equippedBorder}, color=${traderBorder.color}`);
                             return (
-                                <TopTraderCard 
-                                    key={trader.id} 
+                                <TopTraderCard
+                                    key={trader.id}
                                     onClick={() => navigate(`/profile/${trader.username}`)}
                                 >
                                     <TraderRank $rank={index + 1}>{index + 1}</TraderRank>
-                                    <UserAvatar 
-                                        $size="36px" 
-                                        $fontSize="0.85rem"
-                                        $borderColor={traderBorder.color}
-                                        $borderWidth="2px"
-                                        $glow={true}
-                                    >
-                                        {trader.avatar ? (
-                                            <img src={trader.avatar} alt={trader.name} />
-                                        ) : (
-                                            getInitials(trader.name)
-                                        )}
-                                    </UserAvatar>
+                                    <AvatarWithBorder
+                                        src={trader.avatar}
+                                        name={trader.name}
+                                        username={trader.username}
+                                        size={36}
+                                        borderId={trader.equippedBorder || 'border-bronze'}
+                                    />
                                     <TraderInfo>
                                         <TraderName>{trader.name}</TraderName>
                                         <TraderStat>{trader.return} this month</TraderStat>
@@ -3223,25 +3186,18 @@ const SocialFeed = () => {
                             Who to Follow
                         </SidebarTitle>
                         {suggestedUsers.length > 0 ? suggestedUsers.map(suggestedUser => {
-                            const suggestedBorder = getAvatarBorderColor(suggestedUser.equippedBorder);
                             return (
-                                <SuggestedUser 
+                                <SuggestedUser
                                     key={suggestedUser.id}
                                     onClick={() => navigate(`/profile/${suggestedUser.username}`)}
                                 >
-                                    <UserAvatar 
-                                        $size="40px" 
-                                        $fontSize="0.95rem"
-                                        $borderColor={suggestedBorder.color}
-                                        $borderWidth="2px"
-                                        $glow={true}
-                                    >
-                                        {suggestedUser.avatar ? (
-                                            <img src={suggestedUser.avatar} alt={suggestedUser.name} />
-                                        ) : (
-                                            getInitials(suggestedUser.name)
-                                        )}
-                                    </UserAvatar>
+                                    <AvatarWithBorder
+                                        src={suggestedUser.avatar}
+                                        name={suggestedUser.name}
+                                        username={suggestedUser.username}
+                                        size={40}
+                                        borderId={suggestedUser.equippedBorder || 'border-bronze'}
+                                    />
                                     <SuggestedInfo>
                                         <SuggestedName>{suggestedUser.name}</SuggestedName>
                                         <SuggestedMutual>{suggestedUser.mutuals} mutual followers</SuggestedMutual>
