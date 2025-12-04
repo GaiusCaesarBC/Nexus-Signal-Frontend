@@ -579,6 +579,43 @@ const RequirementText = styled.div`
 `;
 
 // ============================================
+// PROGRESS BAR
+// ============================================
+const ProgressContainer = styled.div`
+    flex: 1;
+    max-width: 200px;
+`;
+
+const ProgressBarWrapper = styled.div`
+    height: 8px;
+    background: ${({ theme }) => theme.bg?.input || 'rgba(15, 23, 42, 0.8)'};
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 4px;
+`;
+
+const ProgressBarFill = styled.div`
+    height: 100%;
+    width: ${props => Math.min(props.$percent, 100)}%;
+    background: ${({ $rarity, theme }) => {
+        if ($rarity === 'legendary') return `linear-gradient(90deg, ${theme.warning || '#f59e0b'}, ${theme.warning || '#fbbf24'})`;
+        if ($rarity === 'epic') return `linear-gradient(90deg, ${theme.brand?.accent || '#8b5cf6'}, ${theme.brand?.accent || '#a78bfa'})`;
+        if ($rarity === 'rare') return `linear-gradient(90deg, ${theme.info || '#3b82f6'}, ${theme.info || '#60a5fa'})`;
+        return `linear-gradient(90deg, ${theme.success || '#10b981'}, ${theme.success || '#34d399'})`;
+    }};
+    border-radius: 4px;
+    transition: width 0.5s ease;
+`;
+
+const ProgressText = styled.div`
+    font-size: 0.75rem;
+    color: ${({ theme }) => theme.text?.tertiary || '#64748b'};
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+`;
+
+// ============================================
 // EMPTY STATE
 // ============================================
 const EmptyState = styled.div`
@@ -1011,6 +1048,19 @@ const AchievementsBrowserPage = () => {
                                                 <CheckCircle size={14} />
                                                 Unlocked {new Date(achievement.unlockedAt).toLocaleDateString()}
                                             </UnlockedDate>
+                                        ) : achievement.progress !== undefined && achievement.threshold ? (
+                                            <ProgressContainer>
+                                                <ProgressBarWrapper>
+                                                    <ProgressBarFill
+                                                        $percent={(achievement.progress / achievement.threshold) * 100}
+                                                        $rarity={achievement.rarity}
+                                                    />
+                                                </ProgressBarWrapper>
+                                                <ProgressText>
+                                                    <span>{achievement.progress.toLocaleString()} / {achievement.threshold.toLocaleString()}</span>
+                                                    <span>{Math.round((achievement.progress / achievement.threshold) * 100)}%</span>
+                                                </ProgressText>
+                                            </ProgressContainer>
                                         ) : (
                                             <RequirementText>
                                                 <Lock size={14} />
