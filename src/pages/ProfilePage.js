@@ -1416,7 +1416,9 @@ const ProfilePage = () => {
                 level: gamification.level || 1,
                 title: gamification.rank || 'Rookie Trader',
                 xp: gamification.xp || 0,
+                xpForCurrentLevel: gamification.xpForCurrentLevel || 0,
                 nextLevelXp: gamification.xpForNextLevel || 1000,
+                progressPercent: gamification.progressPercent || 0, // ✅ Use server-calculated progress
                 rank: gamification.stats?.rank || 0,
                 followersCount: social.followersCount || 0,
                 followingCount: social.followingCount || 0,
@@ -1681,10 +1683,8 @@ const ProfilePage = () => {
         );
     }
 
-    // Calculate XP progress
-    const xpProgress = stats?.nextLevelXp > 0 
-        ? ((stats?.xp % 1000) / (stats?.nextLevelXp || 1000)) * 100 
-        : 0;
+    // ✅ FIXED: Use server-calculated progressPercent instead of wrong client formula
+    const xpProgress = stats?.progressPercent || 0;
 
     return (
         <PageContainer>

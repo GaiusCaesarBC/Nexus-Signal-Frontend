@@ -718,37 +718,22 @@ useEffect(() => {
     };
 }, []);
 
-    // Extract raw XP and coins
+    // ✅ FIXED: Use server-calculated level instead of wrong client-side formula
+    // The server uses LEVEL_THRESHOLDS array, not simple XP/1000
+    const level = gamificationData?.level || 1;
+    const rank = gamificationData?.title || gamificationData?.rank || 'Rookie Trader';
     const totalXp = gamificationData?.xp || 0;
     const nexusCoins = gamificationData?.nexusCoins || 0;
     const loginStreak = gamificationData?.loginStreak || 0;
     const stats = gamificationData?.stats || {};
     const achievements = gamificationData?.achievements || [];
 
-    // 🔥 AUTO-CALCULATE LEVEL FROM XP (1000 XP per level)
-    const getRankForLevel = (lvl) => {
-        if (lvl >= 100) return 'Wall Street Titan';
-        if (lvl >= 75) return 'Market Mogul';
-        if (lvl >= 50) return 'Trading Legend';
-        if (lvl >= 40) return 'Master Trader';
-        if (lvl >= 30) return 'Expert Trader';
-        if (lvl >= 20) return 'Veteran Trader';
-        if (lvl >= 15) return 'Advanced Trader';
-        if (lvl >= 10) return 'Skilled Trader';
-        if (lvl >= 5) return 'Apprentice Trader';
-        if (lvl >= 2) return 'Novice Trader';
-        return 'Rookie Trader';
-    };
-
-    const level = Math.floor(totalXp / 1000) + 1;
-    const rank = getRankForLevel(level);
-    
-    // Calculate XP progress within current level
-    const xpForCurrentLevel = (level - 1) * 1000;
-    const xpForNextLevel = level * 1000;
+    // Use server-provided XP progress values
+    const xpForCurrentLevel = gamificationData?.xpForCurrentLevel || 0;
+    const xpForNextLevel = gamificationData?.xpForNextLevel || 1000;
     const xpInLevel = totalXp - xpForCurrentLevel;
     const xpNeeded = xpForNextLevel - xpForCurrentLevel;
-    const xpProgress = xpNeeded > 0 ? (xpInLevel / xpNeeded) * 100 : 0;
+    const xpProgress = xpNeeded > 0 ? (xpInLevel / xpNeeded) * 100 : (gamificationData?.progressPercent || 0);
 
     // Get border style
     const borderId = vault?.equippedBorder || 'border-bronze';
