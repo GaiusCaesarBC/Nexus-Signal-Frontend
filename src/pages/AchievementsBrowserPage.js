@@ -2,11 +2,12 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import styled, { keyframes, css, useTheme as useStyledTheme } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
-import { 
-    Award, Lock, Star, TrendingUp, CheckCircle, Trophy, 
+import {
+    Award, Lock, Star, TrendingUp, CheckCircle, Trophy,
     Filter, Search, Grid, List, ChevronDown, Target,
-    Zap, Users, Calendar, Sparkles, Brain, DollarSign
+    Zap, Users, Calendar, Sparkles, Brain, DollarSign, RefreshCw
 } from 'lucide-react';
+import { useToast } from '../context/ToastContext';
 
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`
@@ -147,6 +148,45 @@ const Subtitle = styled.p`
     color: ${({ theme }) => theme.text?.secondary || '#94a3b8'};
     font-size: 1.2rem;
     margin: 0;
+`;
+
+const RefreshButton = styled.button`
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: ${({ theme }) => `linear-gradient(135deg, ${theme.success || '#10b981'}33 0%, ${theme.success || '#10b981'}1A 100%)`};
+    border: 1px solid ${({ theme }) => `${theme.success || '#10b981'}66`};
+    border-radius: 12px;
+    color: ${({ theme }) => theme.success || '#10b981'};
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover:not(:disabled) {
+        background: ${({ theme }) => `linear-gradient(135deg, ${theme.success || '#10b981'}4D 0%, ${theme.success || '#10b981'}26 100%)`};
+        transform: translateY(-2px);
+        box-shadow: ${({ theme }) => `0 8px 20px ${theme.success || '#10b981'}33`};
+    }
+
+    &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    svg {
+        transition: transform 0.3s ease;
+    }
+
+    &:disabled svg {
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
 `;
 
 const StatsRow = styled.div`
@@ -654,10 +694,12 @@ const EmptySubtext = styled.div`
 const AchievementsBrowserPage = () => {
     const { api } = useAuth();
     const theme = useStyledTheme();
+    const toast = useToast();
 
     const [allAchievements, setAllAchievements] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [checking, setChecking] = useState(false);
 
     const [searchQuery, setSearchQuery] = useState('');
     const [rarityFilter, setRarityFilter] = useState('all');
@@ -699,6 +741,34 @@ const AchievementsBrowserPage = () => {
     useEffect(() => {
         fetchAchievements();
     }, [fetchAchievements]);
+
+    // Check for new achievements (triggers server-side check)
+    const checkForNewAchievements = useCallback(async () => {
+        setChecking(true);
+        try {
+            const response = await api.post('/gamification/check-achievements');
+            if (response.data.success) {
+                const { newlyUnlocked, leveledUp, newLevel, newRank } = response.data;
+
+                if (newlyUnlocked && newlyUnlocked.length > 0) {
+                    toast?.success(`🎉 Unlocked ${newlyUnlocked.length} new achievement${newlyUnlocked.length > 1 ? 's' : ''}!`);
+                    // Refresh the achievements list
+                    await fetchAchievements();
+                } else {
+                    toast?.info('No new achievements unlocked. Keep grinding!');
+                }
+
+                if (leveledUp) {
+                    toast?.success(`🎮 Level Up! You're now level ${newLevel}!`);
+                }
+            }
+        } catch (err) {
+            console.error('Error checking achievements:', err);
+            toast?.error('Failed to check achievements');
+        } finally {
+            setChecking(false);
+        }
+    }, [api, fetchAchievements, toast]);
 
     // Memoized filtered achievements
     const filteredAchievements = useMemo(() => {
@@ -813,6 +883,10 @@ const AchievementsBrowserPage = () => {
                             </TitleIcon>
                             Achievement Browser
                         </Title>
+                        <RefreshButton onClick={checkForNewAchievements} disabled={checking}>
+                            <RefreshCw size={18} />
+                            {checking ? 'Checking...' : 'Check for New Achievements'}
+                        </RefreshButton>
                     </TitleRow>
                     <Subtitle>Discover and track all available achievements</Subtitle>
 
