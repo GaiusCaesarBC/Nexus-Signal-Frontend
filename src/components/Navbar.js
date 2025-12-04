@@ -1113,7 +1113,21 @@ const Navbar = () => {
         switch (type) {
             case 'price_alert': return TrendingUpIcon;
             case 'prediction_expiry': return Clock;
+            case 'prediction_result': return TrendingUpIcon;
             case 'portfolio_milestone': return Trophy;
+            case 'achievement': return Award;
+            case 'level_up': return Zap;
+            case 'follow': return UserPlus;
+            case 'like': return Activity;
+            case 'comment': return MessageCircle;
+            case 'reply': return MessageCircle;
+            case 'mention': return MessageCircle;
+            case 'share': return Activity;
+            case 'leaderboard': return Trophy;
+            case 'trade_copy': return TrendingUpIcon;
+            case 'login_streak': return Zap;
+            case 'welcome': return Sparkles;
+            case 'system': return Bell;
             default: return Bell;
         }
     };
@@ -1132,15 +1146,29 @@ const Navbar = () => {
         if (!isAuthenticated || !user) return;
         try {
             const response = await api.get('/notifications');
-            const mappedNotifications = (response.data.notifications || response.data || []).map(notif => ({
-                id: notif._id,
-                type: notif.type === 'price_alert' ? 'success' : notif.type === 'prediction_expiry' ? 'warning' : 'info',
-                title: notif.title,
-                text: notif.message,
-                time: getTimeAgo(notif.createdAt),
-                unread: !notif.read,
-                icon: getIconForType(notif.type)
-            }));
+            const mappedNotifications = (response.data.notifications || response.data || []).map(notif => {
+                // Map notification type to display style, but preserve original type for navigation
+                const getDisplayType = (type) => {
+                    if (['price_alert', 'prediction_result'].includes(type)) return 'success';
+                    if (['prediction_expiry'].includes(type)) return 'warning';
+                    if (['achievement', 'level_up', 'login_streak'].includes(type)) return 'info';
+                    if (['follow', 'like', 'comment', 'reply', 'mention', 'share'].includes(type)) return 'info';
+                    return 'info';
+                };
+
+                return {
+                    id: notif._id,
+                    type: notif.type, // Preserve original type for navigation
+                    displayType: getDisplayType(notif.type), // For styling
+                    title: notif.title,
+                    text: notif.message,
+                    time: getTimeAgo(notif.createdAt),
+                    unread: !notif.read,
+                    icon: getIconForType(notif.type),
+                    actionUrl: notif.actionUrl,
+                    data: notif.data
+                };
+            });
             setNotifications(mappedNotifications);
         } catch (error) {
             if (error.response?.status !== 401) console.error('Failed to fetch notifications:', error);
@@ -1162,6 +1190,21 @@ useEffect(() => {
     };
     fetchEquippedBadge();
 }, [isAuthenticated, user]);
+
+    // ✅ FIXED: Fetch notifications on mount and periodically refresh
+    useEffect(() => {
+        if (!isAuthenticated || !user) return;
+
+        // Fetch immediately on mount
+        fetchNotifications();
+
+        // Refresh notifications every 60 seconds
+        const interval = setInterval(() => {
+            fetchNotifications();
+        }, 60000);
+
+        return () => clearInterval(interval);
+    }, [isAuthenticated, user]);
 
     const unreadCount = notifications.filter(n => n.unread).length;
 
@@ -1297,14 +1340,65 @@ useEffect(() => {
         try {
             await api.put(`/notifications/${notification.id}/read`);
             setNotifications(notifications.map(n => n.id === notification.id ? { ...n, unread: false } : n));
-            if (notification.type === 'success' || notification.type === 'price_alert') navigate('/watchlist');
-            else if (notification.type === 'warning' || notification.type === 'prediction_expiry') navigate('/predict');
-            else if (notification.type === 'achievement') navigate('/achievements/browse');
-            else if (notification.type === 'level_up' || notification.type === 'follow') navigate('/profile');
-            else if (notification.type === 'portfolio_milestone') navigate('/portfolio');
-            else navigate('/dashboard');
+
+            // Use actionUrl if provided, otherwise navigate based on type
+            if (notification.actionUrl) {
+                navigate(notification.actionUrl);
+            } else {
+                // Navigate based on notification type
+                switch (notification.type) {
+                    case 'price_alert':
+                        navigate('/watchlist');
+                        break;
+                    case 'prediction_expiry':
+                    case 'prediction_result':
+                        navigate('/predict');
+                        break;
+                    case 'achievement':
+                        navigate('/achievements/browse');
+                        break;
+                    case 'level_up':
+                    case 'login_streak':
+                        navigate('/profile');
+                        break;
+                    case 'follow':
+                        // Navigate to follower's profile if data available
+                        if (notification.data?.followerId) {
+                            navigate(`/profile/${notification.data.followerId}`);
+                        } else {
+                            navigate('/profile');
+                        }
+                        break;
+                    case 'like':
+                    case 'comment':
+                    case 'reply':
+                    case 'mention':
+                    case 'share':
+                        // Navigate to post if data available
+                        if (notification.data?.postId) {
+                            navigate(`/post/${notification.data.postId}`);
+                        } else {
+                            navigate('/feed');
+                        }
+                        break;
+                    case 'portfolio_milestone':
+                        navigate('/portfolio');
+                        break;
+                    case 'leaderboard':
+                        navigate('/leaderboard');
+                        break;
+                    case 'trade_copy':
+                        navigate('/paper-trading');
+                        break;
+                    default:
+                        navigate('/dashboard');
+                }
+            }
             setNotificationsOpen(false);
-        } catch (error) { console.error('Failed to mark as read:', error); setNotificationsOpen(false); }
+        } catch (error) {
+            console.error('Failed to mark as read:', error);
+            setNotificationsOpen(false);
+        }
     };
 
     const handleMarkAllRead = async () => {
@@ -1374,7 +1468,7 @@ useEffect(() => {
                                     <NotificationPanel data-notification-panel>
                                         <NotificationHeader><NotificationTitle>Notifications</NotificationTitle>{unreadCount > 0 && <MarkAllRead onClick={handleMarkAllRead}>Mark all read</MarkAllRead>}</NotificationHeader>
                                         <NotificationList>
-                                            {notifications.length === 0 ? <EmptyState><EmptyStateIcon><Bell size={32} /></EmptyStateIcon><EmptyStateText>No notifications yet</EmptyStateText></EmptyState> : notifications.map(notification => { const Icon = notification.icon; return (<NotificationItem key={notification.id} $unread={notification.unread} onClick={() => handleNotificationClick(notification)}>{notification.unread && <UnreadDot />}<NotificationItemHeader><NotificationIcon $type={notification.type}><Icon size={20} /></NotificationIcon><NotificationContent><NotificationItemTitle>{notification.title}</NotificationItemTitle><NotificationItemText>{notification.text}</NotificationItemText><NotificationTime><Clock size={12} />{notification.time}</NotificationTime></NotificationContent></NotificationItemHeader></NotificationItem>); })}
+                                            {notifications.length === 0 ? <EmptyState><EmptyStateIcon><Bell size={32} /></EmptyStateIcon><EmptyStateText>No notifications yet</EmptyStateText></EmptyState> : notifications.map(notification => { const Icon = notification.icon; return (<NotificationItem key={notification.id} $unread={notification.unread} onClick={() => handleNotificationClick(notification)}>{notification.unread && <UnreadDot />}<NotificationItemHeader><NotificationIcon $type={notification.displayType || notification.type}><Icon size={20} /></NotificationIcon><NotificationContent><NotificationItemTitle>{notification.title}</NotificationItemTitle><NotificationItemText>{notification.text}</NotificationItemText><NotificationTime><Clock size={12} />{notification.time}</NotificationTime></NotificationContent></NotificationItemHeader></NotificationItem>); })}
                                         </NotificationList>
                                     </NotificationPanel>
                                 )}
