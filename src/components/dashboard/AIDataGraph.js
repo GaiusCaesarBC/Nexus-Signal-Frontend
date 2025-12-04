@@ -78,7 +78,7 @@ const ErrorMessage = styled.p`
 const AIDataGraph = ({ data, loading, error }) => {
     return (
         <GraphContainer>
-            <h3><BarChart2 size={24} color="#00adef" /> AI Trend Prediction (Mock Data)</h3> {/* Changed icon color */}
+            <h3><BarChart2 size={24} color="#00adef" /> Portfolio Performance</h3>
 
             {/* Conditional rendering for loading, error, or no data */}
             {loading && <StyledLoader />} {/* Use the styled Loader */}
