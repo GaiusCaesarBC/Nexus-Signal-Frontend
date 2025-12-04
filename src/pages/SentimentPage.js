@@ -1,6 +1,6 @@
 // client/src/pages/SentimentPage.js - THEMED SENTIMENT PAGE
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import styled, { keyframes, css } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -11,7 +11,7 @@ import {
     ThumbsUp, ThumbsDown, Minus, RefreshCw, Zap, Target,
     Activity, MessageCircle, Heart, Repeat2, BarChart3,
     ArrowUpRight, ArrowDownRight, Clock, Sparkles, Hash,
-    ExternalLink
+    ExternalLink, Loader
 } from 'lucide-react';
 
 // ============ ANIMATIONS ============
@@ -131,6 +131,97 @@ const SearchInput = styled.input`
 
     &::placeholder {
         color: ${props => props.theme?.text?.tertiary || '#64748b'};
+    }
+`;
+
+// ============ AUTOCOMPLETE DROPDOWN ============
+const AutocompleteContainer = styled.div`
+    position: relative;
+    flex: 1;
+`;
+
+const SuggestionsDropdown = styled.div`
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.98)'};
+    border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}4D;
+    border-top: none;
+    border-radius: 0 0 12px 12px;
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 1000;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+
+    &::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+        background: rgba(15, 23, 42, 0.5);
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: ${props => props.theme?.brand?.primary || '#00adef'}4D;
+        border-radius: 3px;
+    }
+`;
+
+const SuggestionItem = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+
+    &:last-child {
+        border-bottom: none;
+    }
+
+    &:hover {
+        background: ${props => props.theme?.brand?.primary || '#00adef'}1A;
+    }
+`;
+
+const SuggestionSymbol = styled.span`
+    font-weight: 700;
+    color: ${props => props.theme?.brand?.primary || '#00adef'};
+    font-size: 1rem;
+`;
+
+const SuggestionName = styled.span`
+    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
+    font-size: 0.85rem;
+    margin-left: 0.5rem;
+`;
+
+const SuggestionType = styled.span`
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    text-transform: uppercase;
+    font-weight: 600;
+    background: ${props => props.$type === 'crypto'
+        ? `${props.theme?.warning || '#f59e0b'}26`
+        : `${props.theme?.brand?.primary || '#00adef'}26`};
+    color: ${props => props.$type === 'crypto'
+        ? (props.theme?.warning || '#f59e0b')
+        : (props.theme?.brand?.primary || '#00adef')};
+`;
+
+const SuggestionLoading = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    color: ${props => props.theme?.text?.tertiary || '#64748b'};
+    gap: 0.5rem;
+
+    svg {
+        animation: ${rotate} 1s linear infinite;
     }
 `;
 
@@ -715,6 +806,11 @@ const SentimentPage = () => {
     const [trending, setTrending] = useState([]);
     const [marketSentiment, setMarketSentiment] = useState(null);
 
+    // Autocomplete state
+    const [suggestions, setSuggestions] = useState([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [searchLoading, setSearchLoading] = useState(false);
+
     // Common crypto symbols for detection
     const cryptoSymbols = ['BTC', 'ETH', 'BNB', 'XRP', 'ADA', 'DOGE', 'SOL', 'DOT', 'MATIC', 'SHIB', 'AVAX', 'LINK', 'UNI', 'ATOM', 'LTC'];
 
@@ -741,6 +837,46 @@ const SentimentPage = () => {
         } catch (error) {
             console.error('Error loading market sentiment:', error);
         }
+    };
+
+    // Search symbols for autocomplete
+    const searchSymbols = useCallback(async (query) => {
+        if (!query || query.length < 1) {
+            setSuggestions([]);
+            return;
+        }
+
+        setSearchLoading(true);
+        try {
+            const response = await api.get(`/predictions/symbols/search?q=${encodeURIComponent(query)}&type=all`);
+            setSuggestions(response.data.symbols || []);
+        } catch (error) {
+            console.error('Symbol search error:', error);
+            setSuggestions([]);
+        } finally {
+            setSearchLoading(false);
+        }
+    }, [api]);
+
+    // Debounced search
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            if (searchSymbol.length >= 1) {
+                searchSymbols(searchSymbol);
+            } else {
+                setSuggestions([]);
+            }
+        }, 300);
+
+        return () => clearTimeout(timeoutId);
+    }, [searchSymbol, searchSymbols]);
+
+    // Handle suggestion click
+    const handleSuggestionClick = (symbol) => {
+        setSearchSymbol(symbol);
+        setShowSuggestions(false);
+        setSuggestions([]);
+        handleSearch(symbol);
     };
 
     const handleSearch = async (symbol = searchSymbol) => {
@@ -822,20 +958,52 @@ const SentimentPage = () => {
                 {/* Search */}
                 <SearchContainer theme={theme}>
                     <SearchRow>
-                        <SearchInputWrapper>
-                            <SearchIcon theme={theme}>
-                                <Search size={20} />
-                            </SearchIcon>
-                            <SearchInput
-                                theme={theme}
-                                type="text"
-                                placeholder="Enter stock or crypto symbol (AAPL, TSLA, BTC, ETH)..."
-                                value={searchSymbol}
-                                onChange={(e) => setSearchSymbol(e.target.value.toUpperCase())}
-                                onKeyPress={handleKeyPress}
-                                disabled={loading}
-                            />
-                        </SearchInputWrapper>
+                        <AutocompleteContainer>
+                            <SearchInputWrapper>
+                                <SearchIcon theme={theme}>
+                                    <Search size={20} />
+                                </SearchIcon>
+                                <SearchInput
+                                    theme={theme}
+                                    type="text"
+                                    placeholder="Enter stock or crypto symbol (AAPL, TSLA, BTC, ETH)..."
+                                    value={searchSymbol}
+                                    onChange={(e) => {
+                                        setSearchSymbol(e.target.value.toUpperCase());
+                                        setShowSuggestions(true);
+                                    }}
+                                    onKeyPress={handleKeyPress}
+                                    onFocus={() => setShowSuggestions(true)}
+                                    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                                    disabled={loading}
+                                    autoComplete="off"
+                                />
+                            </SearchInputWrapper>
+                            {showSuggestions && (suggestions.length > 0 || searchLoading) && (
+                                <SuggestionsDropdown theme={theme}>
+                                    {searchLoading ? (
+                                        <SuggestionLoading theme={theme}>
+                                            <Loader size={16} />
+                                            Searching...
+                                        </SuggestionLoading>
+                                    ) : (
+                                        suggestions.map((item, index) => (
+                                            <SuggestionItem
+                                                key={index}
+                                                theme={theme}
+                                                onMouseDown={() => handleSuggestionClick(item.symbol)}
+                                            >
+                                                <div>
+                                                    <SuggestionSymbol theme={theme}>{item.symbol}</SuggestionSymbol>
+                                                    {item.name && <SuggestionName theme={theme}>{item.name}</SuggestionName>}
+                                                </div>
+                                                <SuggestionType theme={theme} $type={item.type}>{item.type}</SuggestionType>
+                                            </SuggestionItem>
+                                        ))
+                                    )}
+                                </SuggestionsDropdown>
+                            )}
+                        </AutocompleteContainer>
                         <SearchButton theme={theme} onClick={() => handleSearch()} disabled={loading} $loading={loading}>
                             {loading ? <RefreshCw size={20} /> : <Sparkles size={20} />}
                             {loading ? 'Analyzing...' : 'Analyze'}
