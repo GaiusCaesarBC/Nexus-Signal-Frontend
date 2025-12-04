@@ -87,6 +87,13 @@ const NavInner = styled.div`
     @media (max-width: 768px) {
         padding: 0 1rem;
         justify-content: space-between;
+        height: 60px;
+    }
+
+    @media (max-width: 480px) {
+        padding: 0 0.5rem;
+        height: 54px;
+        gap: 0.1rem;
     }
 `;
 
@@ -146,6 +153,11 @@ const LogoIcon = styled.div`
     @media (max-width: 768px) {
         width: 40px;
         height: 40px;
+    }
+
+    @media (max-width: 480px) {
+        width: 32px;
+        height: 32px;
     }
 `;
 
@@ -488,6 +500,10 @@ const UserSection = styled.div`
         gap: 0.5rem;
         margin-left: 0;
     }
+
+    @media (max-width: 480px) {
+        gap: 0.25rem;
+    }
 `;
 
 const NotificationButton = styled.button`
@@ -743,6 +759,11 @@ const UserMenuButton = styled.button`
         padding: 0.4rem;
         gap: 0;
     }
+
+    @media (max-width: 480px) {
+        padding: 0.25rem;
+        border-radius: 8px;
+    }
 `;
 
 const UserAvatar = styled.div`
@@ -883,6 +904,16 @@ const MobileMenu = styled.div`
     overflow-y: auto;
     display: ${props => props.$open ? 'block' : 'none'};
     border-top: 2px solid ${props => `${props.theme.brand?.primary || '#00adef'}4D`};
+
+    @media (max-width: 768px) {
+        top: 60px;
+        min-height: calc(100vh - 60px);
+    }
+
+    @media (max-width: 480px) {
+        top: 54px;
+        min-height: calc(100vh - 54px);
+    }
 
     @media (min-width: 1025px) {
         display: none !important;

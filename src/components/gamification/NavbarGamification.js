@@ -106,6 +106,10 @@ const tooltipFadeIn = keyframes`
 // ============ STYLED COMPONENTS ============
 const Wrapper = styled.div`
     position: relative;
+
+    @media (max-width: 480px) {
+        display: none;
+    }
 `;
 
 const Container = styled.button`
