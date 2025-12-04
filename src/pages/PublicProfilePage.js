@@ -797,11 +797,21 @@ const PublicProfilePage = () => {
             const response = await api.get(`/social/profile/username/${username}`);
             setProfile(response.data);
             
+            // Check if current user is following this profile
             if (currentUser && response.data.social?.followers) {
+                const currentUserId = currentUser._id || currentUser.id;
                 const isCurrentlyFollowing = response.data.social.followers.some(
-                    follower => follower._id === currentUser.id || follower === currentUser.id
+                    follower => {
+                        const followerId = follower._id || follower.id || follower;
+                        return followerId === currentUserId || String(followerId) === String(currentUserId);
+                    }
                 );
                 setIsFollowing(isCurrentlyFollowing);
+            }
+
+            // Also check via isFollowing field if provided by backend
+            if (response.data.isFollowing !== undefined) {
+                setIsFollowing(response.data.isFollowing);
             }
 
             // Build activity from achievements
@@ -970,7 +980,11 @@ const PublicProfilePage = () => {
         );
     }
 
-    const isOwnProfile = (profile.userId || profile._id) === currentUser?.id;
+    const currentUserId = currentUser?._id || currentUser?.id;
+    const profileUserId = profile.userId || profile._id;
+    const isOwnProfile = currentUserId && profileUserId && (
+        profileUserId === currentUserId || String(profileUserId) === String(currentUserId)
+    );
     const isSpecialBorder = ['border-galaxy', 'border-rainbow', 'border-nexus'].includes(equippedBorder);
 
     return (
