@@ -7,13 +7,18 @@ import styled, { keyframes, css } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import {
-    TrendingUp, TrendingDown, Activity, DollarSign, 
+    TrendingUp, TrendingDown, Activity, DollarSign,
     AlertTriangle, Eye, RefreshCw, Filter, Search,
     ArrowUpRight, ArrowDownRight, ExternalLink, Clock,
     Users, Building2, Landmark, Waves, BarChart3,
-    Zap, Target, ChevronRight, Info, Award, Globe
+    Zap, Target, ChevronRight, Info, Award, Globe, X,
+    Calendar, Hash, Wallet, ArrowRight
 } from 'lucide-react';
 import TickerLink from '../components/TickerLink';
+import {
+    AreaChart, Area, XAxis, YAxis, CartesianGrid,
+    Tooltip, ResponsiveContainer, ReferenceLine
+} from 'recharts';
 
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`
@@ -362,6 +367,7 @@ const AlertCard = styled.div`
     transition: all 0.3s ease;
     position: relative;
     overflow: hidden;
+    cursor: pointer;
 
     ${props => props.$significance === 'massive' && css`
         box-shadow: 0 0 20px ${props.theme?.warning || '#f59e0b'}40;
@@ -370,6 +376,7 @@ const AlertCard = styled.div`
     &:hover {
         transform: translateY(-3px);
         border-color: ${props => props.theme?.brand?.primary || '#00adef'}80;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
     }
 
     &::before {
@@ -548,6 +555,278 @@ const EmptyState = styled.div`
     }
 `;
 
+// ============ DETAIL PANEL STYLES ============
+const slideInFromRight = keyframes`
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+`;
+
+const fadeInOverlay = keyframes`
+    from { opacity: 0; }
+    to { opacity: 1; }
+`;
+
+const DetailOverlay = styled.div`
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+    z-index: 1000;
+    animation: ${fadeInOverlay} 0.3s ease-out;
+`;
+
+const DetailPanel = styled.div`
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 600px;
+    max-width: 100%;
+    height: 100vh;
+    background: ${({ theme }) => theme.bg?.primary || '#0f172a'};
+    border-left: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}4D;
+    z-index: 1001;
+    overflow-y: auto;
+    animation: ${slideInFromRight} 0.3s ease-out;
+    box-shadow: -20px 0 60px rgba(0, 0, 0, 0.5);
+
+    @media (max-width: 768px) {
+        width: 100%;
+    }
+`;
+
+const DetailHeader = styled.div`
+    position: sticky;
+    top: 0;
+    background: ${({ theme }) => theme.bg?.primary || '#0f172a'};
+    padding: 1.5rem;
+    border-bottom: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}33;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    z-index: 10;
+`;
+
+const DetailTitle = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+`;
+
+const DetailSymbol = styled.h2`
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: ${props => props.theme?.brand?.primary || '#00adef'};
+    margin: 0;
+`;
+
+const DetailCompany = styled.p`
+    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
+    font-size: 0.95rem;
+    margin: 0.25rem 0 0;
+`;
+
+const CloseButton = styled.button`
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: ${props => props.theme?.brand?.primary || '#00adef'}1A;
+    border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}33;
+    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+
+    &:hover {
+        background: ${props => props.theme?.brand?.primary || '#00adef'}33;
+        color: ${props => props.theme?.text?.primary || '#e0e6ed'};
+    }
+`;
+
+const DetailContent = styled.div`
+    padding: 1.5rem;
+`;
+
+const DetailSection = styled.div`
+    margin-bottom: 2rem;
+`;
+
+const DetailSectionTitle = styled.h3`
+    font-size: 1rem;
+    font-weight: 700;
+    color: ${props => props.theme?.text?.primary || '#e0e6ed'};
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+`;
+
+const ChartContainer = styled.div`
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
+    border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}33;
+    border-radius: 16px;
+    padding: 1rem;
+    height: 280px;
+`;
+
+const ChartLoading = styled.div`
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: ${props => props.theme?.text?.tertiary || '#64748b'};
+
+    svg {
+        animation: spin 1s linear infinite;
+        margin-bottom: 0.5rem;
+    }
+
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+`;
+
+const TransactionCard = styled.div`
+    background: linear-gradient(135deg,
+        ${props => props.$isBuy
+            ? `${props.theme?.success || '#10b981'}1A`
+            : `${props.theme?.error || '#ef4444'}1A`} 0%,
+        rgba(30, 41, 59, 0.9) 100%);
+    border: 1px solid ${props => props.$isBuy
+        ? `${props.theme?.success || '#10b981'}4D`
+        : `${props.theme?.error || '#ef4444'}4D`};
+    border-radius: 16px;
+    padding: 1.5rem;
+`;
+
+const TransactionHeader = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+`;
+
+const TransactionType = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+`;
+
+const TransactionTypeBadge = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 1rem;
+    background: ${props => props.$isBuy
+        ? `${props.theme?.success || '#10b981'}33`
+        : `${props.theme?.error || '#ef4444'}33`};
+    color: ${props => props.$isBuy
+        ? (props.theme?.success || '#10b981')
+        : (props.theme?.error || '#ef4444')};
+`;
+
+const TransactionValue = styled.div`
+    text-align: right;
+`;
+
+const TransactionAmount = styled.div`
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: ${props => props.$isBuy
+        ? (props.theme?.success || '#10b981')
+        : (props.theme?.error || '#ef4444')};
+`;
+
+const TransactionShares = styled.div`
+    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
+    font-size: 0.9rem;
+`;
+
+const DetailGrid = styled.div`
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+`;
+
+const DetailItem = styled.div`
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
+    border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}26;
+    border-radius: 12px;
+    padding: 1rem;
+`;
+
+const DetailItemLabel = styled.div`
+    color: ${props => props.theme?.text?.tertiary || '#64748b'};
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+`;
+
+const DetailItemValue = styled.div`
+    color: ${props => props.$color || props.theme?.text?.primary || '#e0e6ed'};
+    font-size: 1.1rem;
+    font-weight: 600;
+`;
+
+const TradeMarker = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
+    border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}33;
+    border-radius: 10px;
+    margin-top: 1rem;
+    font-size: 0.9rem;
+`;
+
+const TradeMarkerDot = styled.div`
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: ${props => props.$isBuy
+        ? (props.theme?.success || '#10b981')
+        : (props.theme?.error || '#ef4444')};
+    box-shadow: 0 0 10px ${props => props.$isBuy
+        ? (props.theme?.success || '#10b981')
+        : (props.theme?.error || '#ef4444')};
+`;
+
+const ViewChartButton = styled.button`
+    width: 100%;
+    padding: 1rem;
+    margin-top: 1.5rem;
+    background: linear-gradient(135deg, ${props => props.theme?.brand?.primary || '#00adef'}4D 0%, ${props => props.theme?.brand?.accent || '#8b5cf6'}33 100%);
+    border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}80;
+    border-radius: 12px;
+    color: ${props => props.theme?.brand?.primary || '#00adef'};
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    transition: all 0.3s ease;
+
+    &:hover {
+        background: linear-gradient(135deg, ${props => props.theme?.brand?.primary || '#00adef'}66 0%, ${props => props.theme?.brand?.accent || '#8b5cf6'}4D 100%);
+        transform: translateY(-2px);
+    }
+`;
+
 // ============ HELPER FUNCTIONS ============
 const formatCurrency = (value) => {
     if (!value) return '$0';
@@ -612,6 +891,11 @@ const WhaleAlertsPage = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [transactionFilter, setTransactionFilter] = useState('all'); // all, buy, sell
     const [lastUpdated, setLastUpdated] = useState(null);
+
+    // Detail panel state
+    const [selectedAlert, setSelectedAlert] = useState(null);
+    const [chartData, setChartData] = useState([]);
+    const [chartLoading, setChartLoading] = useState(false);
 
     // Fetch data
     const fetchData = useCallback(async (isRefresh = false) => {
@@ -700,6 +984,70 @@ const WhaleAlertsPage = () => {
         }
     }, [activeTab, fetchData, fetchTabData]);
 
+    // Fetch chart data for selected alert
+    const fetchChartData = useCallback(async (symbol, tradeDate) => {
+        setChartLoading(true);
+        try {
+            // Fetch 30-day chart data around the trade date
+            const response = await api.get(`/chart/${symbol}/1D`);
+            if (response.data.success && response.data.data?.length > 0) {
+                // Format data for the chart
+                const formattedData = response.data.data.map(item => ({
+                    date: new Date(item.date || item.time).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                    price: item.close,
+                    high: item.high,
+                    low: item.low,
+                    volume: item.volume,
+                    timestamp: new Date(item.date || item.time).getTime()
+                }));
+                setChartData(formattedData);
+            } else {
+                setChartData([]);
+            }
+        } catch (error) {
+            console.error('Error fetching chart data:', error);
+            setChartData([]);
+        } finally {
+            setChartLoading(false);
+        }
+    }, [api]);
+
+    // Handle alert click
+    const handleAlertClick = (alert) => {
+        setSelectedAlert(alert);
+        // Fetch chart data for the symbol
+        const symbol = alert.symbol;
+        if (symbol) {
+            fetchChartData(symbol, alert.transactionDate || alert.timestamp || alert.filingDate);
+        }
+    };
+
+    // Close detail panel
+    const closeDetailPanel = () => {
+        setSelectedAlert(null);
+        setChartData([]);
+    };
+
+    // Handle escape key to close panel
+    useEffect(() => {
+        const handleEscape = (e) => {
+            if (e.key === 'Escape' && selectedAlert) {
+                closeDetailPanel();
+            }
+        };
+        window.addEventListener('keydown', handleEscape);
+        return () => window.removeEventListener('keydown', handleEscape);
+    }, [selectedAlert]);
+
+    // Helper to determine if trade is buy/bullish
+    const isBuyTrade = (alert) => {
+        return alert.transactionType === 'BUY' ||
+               alert.sentiment === 'BULLISH' ||
+               alert.type === 'exchange_outflow' ||
+               alert.action === 'NEW_POSITION' ||
+               alert.action === 'INCREASED';
+    };
+
     // Filter alerts
     const filteredAlerts = alerts.filter(alert => {
         // Search filter
@@ -743,12 +1091,13 @@ const WhaleAlertsPage = () => {
         switch (alertType) {
             case 'insider':
                 return (
-                    <AlertCard 
-                        key={alert.id} 
+                    <AlertCard
+                        key={alert.id}
                         theme={theme}
                         $type={alert.transactionType}
                         $significance={alert.significance}
                         $delay={delay}
+                        onClick={() => handleAlertClick(alert)}
                     >
                         <AlertHeader>
                             <AlertLeft>
@@ -805,12 +1154,13 @@ const WhaleAlertsPage = () => {
 
             case 'crypto':
                 return (
-                    <AlertCard 
+                    <AlertCard
                         key={alert.id}
                         theme={theme}
                         $type={alert.type}
                         $significance={alert.significance}
                         $delay={delay}
+                        onClick={() => handleAlertClick(alert)}
                     >
                         <AlertHeader>
                             <AlertLeft>
@@ -864,13 +1214,14 @@ const WhaleAlertsPage = () => {
 
             case 'options':
                 return (
-                    <AlertCard 
+                    <AlertCard
                         key={alert.id}
                         theme={theme}
                         $bullish={alert.sentiment === 'BULLISH'}
                         $bearish={alert.sentiment === 'BEARISH'}
                         $significance={alert.significance}
                         $delay={delay}
+                        onClick={() => handleAlertClick(alert)}
                     >
                         <AlertHeader>
                             <AlertLeft>
@@ -926,12 +1277,13 @@ const WhaleAlertsPage = () => {
 
             case 'congress':
                 return (
-                    <AlertCard 
+                    <AlertCard
                         key={alert.id}
                         theme={theme}
                         $type={alert.transactionType}
                         $significance={alert.significance}
                         $delay={delay}
+                        onClick={() => handleAlertClick(alert)}
                     >
                         <AlertHeader>
                             <AlertLeft>
@@ -1175,6 +1527,256 @@ const WhaleAlertsPage = () => {
                     </AlertsContainer>
                 )}
             </ContentWrapper>
+
+            {/* Detail Panel */}
+            {selectedAlert && (
+                <>
+                    <DetailOverlay onClick={closeDetailPanel} />
+                    <DetailPanel theme={theme}>
+                        <DetailHeader theme={theme}>
+                            <DetailTitle>
+                                <div>
+                                    <DetailSymbol theme={theme}>{selectedAlert.symbol}</DetailSymbol>
+                                    <DetailCompany theme={theme}>
+                                        {selectedAlert.companyName || selectedAlert.blockchain || 'Unknown'}
+                                    </DetailCompany>
+                                </div>
+                            </DetailTitle>
+                            <CloseButton theme={theme} onClick={closeDetailPanel}>
+                                <X size={20} />
+                            </CloseButton>
+                        </DetailHeader>
+
+                        <DetailContent>
+                            {/* Price Chart Section */}
+                            <DetailSection>
+                                <DetailSectionTitle theme={theme}>
+                                    <BarChart3 size={18} />
+                                    Price Action
+                                </DetailSectionTitle>
+                                <ChartContainer theme={theme}>
+                                    {chartLoading ? (
+                                        <ChartLoading theme={theme}>
+                                            <RefreshCw size={32} />
+                                            <span>Loading chart...</span>
+                                        </ChartLoading>
+                                    ) : chartData.length > 0 ? (
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <AreaChart data={chartData}>
+                                                <defs>
+                                                    <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
+                                                        <stop offset="5%" stopColor={primaryColor} stopOpacity={0.3}/>
+                                                        <stop offset="95%" stopColor={primaryColor} stopOpacity={0}/>
+                                                    </linearGradient>
+                                                </defs>
+                                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                                                <XAxis
+                                                    dataKey="date"
+                                                    stroke="#64748b"
+                                                    fontSize={11}
+                                                    tickLine={false}
+                                                />
+                                                <YAxis
+                                                    stroke="#64748b"
+                                                    fontSize={11}
+                                                    tickLine={false}
+                                                    domain={['auto', 'auto']}
+                                                    tickFormatter={(value) => `$${value.toFixed(2)}`}
+                                                />
+                                                <Tooltip
+                                                    contentStyle={{
+                                                        background: 'rgba(15, 23, 42, 0.95)',
+                                                        border: `1px solid ${primaryColor}4D`,
+                                                        borderRadius: '8px',
+                                                        color: '#e0e6ed'
+                                                    }}
+                                                    formatter={(value) => [`$${value.toFixed(2)}`, 'Price']}
+                                                />
+                                                <Area
+                                                    type="monotone"
+                                                    dataKey="price"
+                                                    stroke={primaryColor}
+                                                    strokeWidth={2}
+                                                    fillOpacity={1}
+                                                    fill="url(#colorPrice)"
+                                                />
+                                            </AreaChart>
+                                        </ResponsiveContainer>
+                                    ) : (
+                                        <ChartLoading theme={theme}>
+                                            <BarChart3 size={32} />
+                                            <span>No chart data available</span>
+                                        </ChartLoading>
+                                    )}
+                                </ChartContainer>
+                                <TradeMarker theme={theme}>
+                                    <TradeMarkerDot theme={theme} $isBuy={isBuyTrade(selectedAlert)} />
+                                    <span style={{ color: theme?.text?.secondary }}>
+                                        Trade executed on{' '}
+                                        <strong style={{ color: theme?.text?.primary }}>
+                                            {new Date(selectedAlert.transactionDate || selectedAlert.timestamp || selectedAlert.filingDate).toLocaleDateString('en-US', {
+                                                weekday: 'long',
+                                                year: 'numeric',
+                                                month: 'long',
+                                                day: 'numeric'
+                                            })}
+                                        </strong>
+                                    </span>
+                                </TradeMarker>
+                            </DetailSection>
+
+                            {/* Transaction Details */}
+                            <DetailSection>
+                                <DetailSectionTitle theme={theme}>
+                                    <Activity size={18} />
+                                    Transaction Details
+                                </DetailSectionTitle>
+                                <TransactionCard theme={theme} $isBuy={isBuyTrade(selectedAlert)}>
+                                    <TransactionHeader>
+                                        <TransactionType>
+                                            <TransactionTypeBadge theme={theme} $isBuy={isBuyTrade(selectedAlert)}>
+                                                {isBuyTrade(selectedAlert) ? <TrendingUp size={18} /> : <TrendingDown size={18} />}
+                                                {selectedAlert.transactionType || selectedAlert.type || selectedAlert.sentiment || 'TRADE'}
+                                            </TransactionTypeBadge>
+                                        </TransactionType>
+                                        <TransactionValue>
+                                            <TransactionAmount theme={theme} $isBuy={isBuyTrade(selectedAlert)}>
+                                                {formatCurrency(selectedAlert.totalValue || selectedAlert.amountUsd || selectedAlert.premium)}
+                                            </TransactionAmount>
+                                            <TransactionShares theme={theme}>
+                                                {selectedAlert.shares
+                                                    ? `${formatNumber(selectedAlert.shares)} shares`
+                                                    : selectedAlert.amount
+                                                        ? `${formatNumber(selectedAlert.amount)} ${selectedAlert.symbol}`
+                                                        : selectedAlert.contracts
+                                                            ? `${formatNumber(selectedAlert.contracts)} contracts`
+                                                            : selectedAlert.amountRange || ''}
+                                            </TransactionShares>
+                                        </TransactionValue>
+                                    </TransactionHeader>
+                                </TransactionCard>
+                            </DetailSection>
+
+                            {/* Additional Info Grid */}
+                            <DetailSection>
+                                <DetailSectionTitle theme={theme}>
+                                    <Info size={18} />
+                                    Additional Information
+                                </DetailSectionTitle>
+                                <DetailGrid>
+                                    {selectedAlert.insiderName && (
+                                        <DetailItem theme={theme}>
+                                            <DetailItemLabel theme={theme}>
+                                                <Users size={14} /> Insider
+                                            </DetailItemLabel>
+                                            <DetailItemValue theme={theme}>
+                                                {selectedAlert.insiderName}
+                                            </DetailItemValue>
+                                        </DetailItem>
+                                    )}
+                                    {selectedAlert.insiderTitle && (
+                                        <DetailItem theme={theme}>
+                                            <DetailItemLabel theme={theme}>
+                                                <Award size={14} /> Title
+                                            </DetailItemLabel>
+                                            <DetailItemValue theme={theme}>
+                                                {selectedAlert.insiderTitle}
+                                            </DetailItemValue>
+                                        </DetailItem>
+                                    )}
+                                    {selectedAlert.politicianName && (
+                                        <DetailItem theme={theme}>
+                                            <DetailItemLabel theme={theme}>
+                                                <Landmark size={14} /> Politician
+                                            </DetailItemLabel>
+                                            <DetailItemValue theme={theme}>
+                                                {selectedAlert.politicianName}
+                                            </DetailItemValue>
+                                        </DetailItem>
+                                    )}
+                                    {selectedAlert.pricePerShare && (
+                                        <DetailItem theme={theme}>
+                                            <DetailItemLabel theme={theme}>
+                                                <DollarSign size={14} /> Price per Share
+                                            </DetailItemLabel>
+                                            <DetailItemValue theme={theme}>
+                                                ${selectedAlert.pricePerShare.toFixed(2)}
+                                            </DetailItemValue>
+                                        </DetailItem>
+                                    )}
+                                    {selectedAlert.strike && (
+                                        <DetailItem theme={theme}>
+                                            <DetailItemLabel theme={theme}>
+                                                <Target size={14} /> Strike Price
+                                            </DetailItemLabel>
+                                            <DetailItemValue theme={theme}>
+                                                ${selectedAlert.strike}
+                                            </DetailItemValue>
+                                        </DetailItem>
+                                    )}
+                                    {selectedAlert.expiry && (
+                                        <DetailItem theme={theme}>
+                                            <DetailItemLabel theme={theme}>
+                                                <Calendar size={14} /> Expiry
+                                            </DetailItemLabel>
+                                            <DetailItemValue theme={theme}>
+                                                {selectedAlert.expiry}
+                                            </DetailItemValue>
+                                        </DetailItem>
+                                    )}
+                                    {selectedAlert.from?.name && (
+                                        <DetailItem theme={theme}>
+                                            <DetailItemLabel theme={theme}>
+                                                <Wallet size={14} /> From
+                                            </DetailItemLabel>
+                                            <DetailItemValue theme={theme}>
+                                                {selectedAlert.from.name}
+                                            </DetailItemValue>
+                                        </DetailItem>
+                                    )}
+                                    {selectedAlert.to?.name && (
+                                        <DetailItem theme={theme}>
+                                            <DetailItemLabel theme={theme}>
+                                                <ArrowRight size={14} /> To
+                                            </DetailItemLabel>
+                                            <DetailItemValue theme={theme}>
+                                                {selectedAlert.to.name}
+                                            </DetailItemValue>
+                                        </DetailItem>
+                                    )}
+                                    {selectedAlert.source && (
+                                        <DetailItem theme={theme}>
+                                            <DetailItemLabel theme={theme}>
+                                                <Globe size={14} /> Source
+                                            </DetailItemLabel>
+                                            <DetailItemValue theme={theme}>
+                                                {selectedAlert.source}
+                                            </DetailItemValue>
+                                        </DetailItem>
+                                    )}
+                                    {selectedAlert.unusualScore && (
+                                        <DetailItem theme={theme}>
+                                            <DetailItemLabel theme={theme}>
+                                                <Zap size={14} /> Unusual Score
+                                            </DetailItemLabel>
+                                            <DetailItemValue theme={theme} $color={warningColor}>
+                                                {selectedAlert.unusualScore}/100
+                                            </DetailItemValue>
+                                        </DetailItem>
+                                    )}
+                                </DetailGrid>
+                            </DetailSection>
+
+                            {/* View Full Chart Button */}
+                            <ViewChartButton theme={theme} onClick={() => navigate(`/chart/${selectedAlert.symbol}`)}>
+                                <BarChart3 size={20} />
+                                View Full Chart for {selectedAlert.symbol}
+                                <ChevronRight size={20} />
+                            </ViewChartButton>
+                        </DetailContent>
+                    </DetailPanel>
+                </>
+            )}
         </PageContainer>
     );
 };
