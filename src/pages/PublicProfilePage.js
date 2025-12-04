@@ -14,7 +14,7 @@ import {
     Briefcase, Clock, Medal, ChevronLeft, RefreshCw, Shield,
     Gift, Coins, Sparkles
 } from 'lucide-react';
-import AvatarWithBorder from '../components/vault/AvatarWithBorder';
+import AvatarWithBorder, { BORDER_STYLES } from '../components/vault/AvatarWithBorder';
 import { useVault } from '../context/VaultContext';
 import BadgeIcon from '../components/BadgeIcon';
 
@@ -34,21 +34,8 @@ const BADGE_DEFINITIONS = {
     'badge-millionaire': { name: 'Millionaire', icon: '💵', color: '#10b981', rarity: 'legendary' }
 };
 
-// ============ BORDER STYLES (synced with backend vaultItems.js) ============
-const BORDER_STYLES = {
-    'border-bronze': { name: 'Bronze', background: 'linear-gradient(135deg, #cd7f32, #b87333)', shadow: '0 0 15px rgba(205, 127, 50, 0.5)' },
-    'border-gold': { name: 'Gold', background: 'linear-gradient(135deg, #ffd700, #ffed4e)', shadow: '0 0 20px rgba(255, 215, 0, 0.6)' },
-    'border-diamond': { name: 'Diamond', background: 'linear-gradient(135deg, #b9f2ff, #e0f7ff)', shadow: '0 0 20px rgba(185, 242, 255, 0.6)' },
-    'border-fire': { name: 'Fire', background: 'linear-gradient(135deg, #ff4500, #ff6b35)', shadow: '0 0 20px rgba(255, 69, 0, 0.6)' },
-    'border-ice': { name: 'Ice', background: 'linear-gradient(135deg, #00bfff, #87ceeb)', shadow: '0 0 20px rgba(0, 191, 255, 0.6)' },
-    'border-toxic': { name: 'Toxic', background: 'linear-gradient(135deg, #39ff14, #7fff00)', shadow: '0 0 20px rgba(57, 255, 20, 0.6)' },
-    'border-royal': { name: 'Royal', background: 'linear-gradient(135deg, #9400d3, #ba55d3)', shadow: '0 0 20px rgba(148, 0, 211, 0.6)' },
-    'border-sunset': { name: 'Sunset', background: 'linear-gradient(135deg, #ff6b6b, #feca57)', shadow: '0 0 20px rgba(255, 107, 107, 0.6)' },
-    'border-ocean': { name: 'Ocean', background: 'linear-gradient(135deg, #0077be, #00a8cc)', shadow: '0 0 20px rgba(0, 119, 190, 0.6)' },
-    'border-galaxy': { name: 'Galaxy', background: 'linear-gradient(135deg, #1a1a2e, #16213e, #0f3460, #8b5cf6)', shadow: '0 0 25px rgba(138, 43, 226, 0.8)' },
-    'border-rainbow': { name: 'Rainbow', background: 'linear-gradient(135deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #8b00ff)', shadow: '0 0 25px rgba(255, 0, 0, 0.5)' },
-    'border-nexus': { name: 'Nexus', background: 'linear-gradient(135deg, #ffd700, #00adef)', shadow: '0 0 30px rgba(255, 215, 0, 0.7)' }
-};
+// ============ BORDER STYLES - Now imported from AvatarWithBorder for consistency ============
+// BORDER_STYLES is imported from '../components/vault/AvatarWithBorder' which has all 25+ borders
 
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`
@@ -229,13 +216,14 @@ const AvatarBorder = styled.div`
     border-radius: 24px;
     padding: 5px;
     background: ${props => {
-        const border = BORDER_STYLES[props.$border];
-        return border?.background || 'linear-gradient(135deg, #cd7f32, #b87333)';
+        const border = BORDER_STYLES[props.$border] || BORDER_STYLES['border-bronze'];
+        return border?.gradient || 'linear-gradient(135deg, #cd7f32, #b87333)';
     }};
     background-size: 200% 200%;
     box-shadow: ${props => {
-        const border = BORDER_STYLES[props.$border];
-        return border?.shadow || '0 0 15px rgba(205, 127, 50, 0.5)';
+        const border = BORDER_STYLES[props.$border] || BORDER_STYLES['border-bronze'];
+        const glow = border?.glow || 'rgba(205, 127, 50, 0.5)';
+        return `0 0 20px ${glow}`;
     }};
     animation: ${props => props.$animated ? css`${borderRotate} 3s ease infinite` : 'none'};
     
