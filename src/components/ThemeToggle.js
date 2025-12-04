@@ -23,7 +23,7 @@ const ToggleButton = styled.button`
     height: 36px;
     background: ${props => props.isDarker
         ? 'linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(124, 58, 237, 0.2) 100%)'
-        : '${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'}'
+        : (props.theme?.bg?.card || 'rgba(30, 41, 59, 0.9)')
     };
     border: 1px solid ${props => props.isDarker
         ? 'rgba(139, 92, 246, 0.3)'
