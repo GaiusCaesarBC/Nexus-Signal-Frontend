@@ -1,7 +1,7 @@
 // src/pages/DashboardPage.js - REVAMPED CLEAN DASHBOARD WITH THEME SUPPORT
 // Layout: Header → Ticker Tapes → Chart → Paper Trading → Widgets (Leaderboard | Whale | Social) → Achievements
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import styled, { keyframes, css } from 'styled-components';
@@ -414,8 +414,7 @@ const SearchContainer = styled.div`
 `;
 
 const SearchInput = styled.input`
-    flex: 1;
-    min-width: 250px;
+    width: 100%;
     padding: 0.75rem 1.25rem;
     background: ${props => props.theme.brand?.primary || '#00adef'}0d;
     border: 1px solid ${props => props.theme.border?.primary || 'rgba(0, 173, 237, 0.3)'};
@@ -424,6 +423,7 @@ const SearchInput = styled.input`
     font-size: 1rem;
     font-weight: 600;
     transition: all 0.2s ease;
+    text-transform: uppercase;
 
     &:focus {
         outline: none;
@@ -435,6 +435,7 @@ const SearchInput = styled.input`
     &::placeholder {
         color: ${props => props.theme.text?.tertiary || '#64748b'};
         font-weight: 500;
+        text-transform: none;
     }
 `;
 
@@ -461,6 +462,100 @@ const SearchButton = styled.button`
         cursor: not-allowed;
         transform: none;
     }
+`;
+
+// ============ AUTOCOMPLETE DROPDOWN ============
+const AutocompleteContainer = styled.div`
+    position: relative;
+    flex: 1;
+    min-width: 250px;
+`;
+
+const SuggestionsDropdown = styled.div`
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.98)'};
+    border: 1px solid ${props => props.theme.brand?.primary || '#00adef'}4D;
+    border-radius: 12px;
+    margin-top: 4px;
+    max-height: 280px;
+    overflow-y: auto;
+    z-index: 1000;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(10px);
+
+    &::-webkit-scrollbar {
+        width: 6px;
+    }
+    &::-webkit-scrollbar-track {
+        background: rgba(255,255,255,0.05);
+    }
+    &::-webkit-scrollbar-thumb {
+        background: ${props => props.theme.brand?.primary || '#00adef'}66;
+        border-radius: 3px;
+    }
+`;
+
+const SuggestionItem = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+
+    &:last-child {
+        border-bottom: none;
+    }
+
+    &:hover {
+        background: ${props => props.theme.brand?.primary || '#00adef'}1A;
+    }
+`;
+
+const SuggestionLeft = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+`;
+
+const SuggestionSymbol = styled.span`
+    font-weight: 700;
+    font-size: 1rem;
+    color: ${props => props.theme.text?.primary || '#e0e6ed'};
+`;
+
+const SuggestionName = styled.span`
+    font-size: 0.8rem;
+    color: ${props => props.theme.text?.tertiary || '#64748b'};
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+`;
+
+const SuggestionType = styled.span`
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    text-transform: uppercase;
+    background: ${props => props.$type === 'crypto'
+        ? `${props.theme.warning || '#f59e0b'}26`
+        : `${props.theme.brand?.primary || '#00adef'}26`};
+    color: ${props => props.$type === 'crypto'
+        ? (props.theme.warning || '#f59e0b')
+        : (props.theme.brand?.primary || '#00adef')};
+`;
+
+const NoResults = styled.div`
+    padding: 1rem;
+    text-align: center;
+    color: ${props => props.theme.text?.tertiary || '#64748b'};
+    font-size: 0.9rem;
 `;
 
 const SymbolSelector = styled.div`
@@ -1092,6 +1187,11 @@ const DashboardPage = () => {
     const [loadingChart, setLoadingChart] = useState(false);
     const [searchSymbol, setSearchSymbol] = useState('');
 
+    // Autocomplete states
+    const [suggestions, setSuggestions] = useState([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [searchLoading, setSearchLoading] = useState(false);
+
     // Paper trading
     const [paperTradingStats, setPaperTradingStats] = useState(null);
     const [userRank, setUserRank] = useState(null);
@@ -1421,6 +1521,43 @@ useEffect(() => {
         }
     };
 
+    // Symbol search function for autocomplete
+    const searchSymbols = useCallback(async (query) => {
+        if (!query || query.length < 1) {
+            setSuggestions([]);
+            return;
+        }
+        setSearchLoading(true);
+        try {
+            const response = await api.get(`/predictions/symbols/search?q=${encodeURIComponent(query)}&type=all`);
+            setSuggestions(response.data.symbols || []);
+        } catch (error) {
+            console.error('Symbol search error:', error);
+            setSuggestions([]);
+        } finally {
+            setSearchLoading(false);
+        }
+    }, [api]);
+
+    // Debounced search
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (searchSymbol.length >= 1) {
+                searchSymbols(searchSymbol);
+            } else {
+                setSuggestions([]);
+            }
+        }, 200);
+        return () => clearTimeout(timer);
+    }, [searchSymbol, searchSymbols]);
+
+    // Handle suggestion click
+    const handleSuggestionClick = (suggestion) => {
+        setSelectedSymbol(suggestion.symbol);
+        setSearchSymbol('');
+        setShowSuggestions(false);
+        setSuggestions([]);
+    };
 
     const handleRewardClaimed = async (reward) => {
     console.log('Reward claimed:', reward);
@@ -1611,13 +1748,40 @@ const handleOpenRewardModal = () => {
                 {/* CHART SECTION */}
                 <ChartSection>
                     <SearchContainer>
-                        <SearchInput
-                            type="text"
-                            placeholder="Search any stock or crypto (e.g., AAPL, BTC-USD)..."
-                            value={searchSymbol}
-                            onChange={(e) => setSearchSymbol(e.target.value.toUpperCase())}
-                            onKeyPress={(e) => { if (e.key === 'Enter') handleSearchSymbol(); }}
-                        />
+                        <AutocompleteContainer>
+                            <SearchInput
+                                type="text"
+                                placeholder="Search any stock or crypto (e.g., AAPL, BTC-USD)..."
+                                value={searchSymbol}
+                                onChange={(e) => setSearchSymbol(e.target.value.toUpperCase())}
+                                onFocus={() => setShowSuggestions(true)}
+                                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                                onKeyPress={(e) => { if (e.key === 'Enter') handleSearchSymbol(); }}
+                                autoComplete="off"
+                            />
+                            {showSuggestions && (suggestions.length > 0 || searchLoading) && (
+                                <SuggestionsDropdown>
+                                    {searchLoading ? (
+                                        <NoResults>Searching...</NoResults>
+                                    ) : suggestions.length > 0 ? (
+                                        suggestions.map((s, idx) => (
+                                            <SuggestionItem
+                                                key={`${s.symbol}-${idx}`}
+                                                onMouseDown={() => handleSuggestionClick(s)}
+                                            >
+                                                <SuggestionLeft>
+                                                    <SuggestionSymbol>{s.symbol}</SuggestionSymbol>
+                                                    <SuggestionName>{s.name}</SuggestionName>
+                                                </SuggestionLeft>
+                                                <SuggestionType $type={s.type}>{s.type}</SuggestionType>
+                                            </SuggestionItem>
+                                        ))
+                                    ) : (
+                                        <NoResults>No matches found</NoResults>
+                                    )}
+                                </SuggestionsDropdown>
+                            )}
+                        </AutocompleteContainer>
                         <SearchButton onClick={handleSearchSymbol} disabled={!searchSymbol.trim()}>
                             <Eye size={18} /> Load
                         </SearchButton>
