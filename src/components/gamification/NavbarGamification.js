@@ -62,18 +62,48 @@ const BADGE_NAMES = {
 };
 
 // ============ BORDER COLORS ============
+// Synced with vaultItems.js - complete border definitions
 const BORDER_COLORS = {
-    'border-bronze': { gradient: 'linear-gradient(135deg, #cd7f32 0%, #8b4513 50%, #cd7f32 100%)', glow: 'rgba(205, 127, 50, 0.5)' },
-    'border-silver': { gradient: 'linear-gradient(135deg, #c0c0c0 0%, #808080 50%, #c0c0c0 100%)', glow: 'rgba(192, 192, 192, 0.5)' },
-    'border-gold': { gradient: 'linear-gradient(135deg, #ffd700 0%, #b8860b 50%, #ffd700 100%)', glow: 'rgba(255, 215, 0, 0.6)' },
-    'border-emerald': { gradient: 'linear-gradient(135deg, #50c878 0%, #2e8b57 50%, #50c878 100%)', glow: 'rgba(80, 200, 120, 0.5)' },
-    'border-ruby': { gradient: 'linear-gradient(135deg, #e0115f 0%, #9b111e 50%, #e0115f 100%)', glow: 'rgba(224, 17, 95, 0.5)' },
-    'border-platinum': { gradient: 'linear-gradient(135deg, #e5e4e2 0%, #a0a0a0 50%, #e5e4e2 100%)', glow: 'rgba(229, 228, 226, 0.6)' },
-    'border-sapphire': { gradient: 'linear-gradient(135deg, #0f52ba 0%, #082567 50%, #0f52ba 100%)', glow: 'rgba(15, 82, 186, 0.5)' },
-    'border-amethyst': { gradient: 'linear-gradient(135deg, #9966cc 0%, #663399 50%, #9966cc 100%)', glow: 'rgba(153, 102, 204, 0.5)' },
-    'border-diamond': { gradient: 'linear-gradient(135deg, #b9f2ff 0%, #e6e6fa 25%, #ffffff 50%, #e6e6fa 75%, #b9f2ff 100%)', glow: 'rgba(185, 242, 255, 0.7)', animated: true },
-    'border-rainbow': { gradient: 'linear-gradient(135deg, #ff0000 0%, #ff7f00 14%, #ffff00 28%, #00ff00 42%, #0000ff 57%, #4b0082 71%, #9400d3 85%, #ff0000 100%)', glow: 'rgba(255, 255, 255, 0.5)', animated: true },
-    'border-nexus': { gradient: 'linear-gradient(135deg, #00adef 0%, #00ff88 25%, #8b5cf6 50%, #00ff88 75%, #00adef 100%)', glow: 'rgba(0, 173, 239, 0.7)', animated: true }
+    // ===== BASIC BORDERS =====
+    'border-bronze': { gradient: 'linear-gradient(135deg, #CD7F32 0%, #8B5A2B 50%, #CD7F32 100%)', glow: 'rgba(205, 127, 50, 0.5)' },
+    'border-silver': { gradient: 'linear-gradient(135deg, #C0C0C0 0%, #808080 50%, #C0C0C0 100%)', glow: 'rgba(192, 192, 192, 0.5)' },
+    'border-gold': { gradient: 'linear-gradient(135deg, #FFD700 0%, #FFA500 50%, #FFD700 100%)', glow: 'rgba(255, 215, 0, 0.6)' },
+    'border-emerald': { gradient: 'linear-gradient(135deg, #10b981 0%, #059669 50%, #10b981 100%)', glow: 'rgba(16, 185, 129, 0.6)' },
+    'border-ruby': { gradient: 'linear-gradient(135deg, #ef4444 0%, #dc2626 50%, #ef4444 100%)', glow: 'rgba(239, 68, 68, 0.7)' },
+    'border-platinum': { gradient: 'linear-gradient(135deg, #E5E4E2 0%, #B9B8B5 50%, #E5E4E2 100%)', glow: 'rgba(229, 228, 226, 0.7)' },
+    'border-sapphire': { gradient: 'linear-gradient(135deg, #3b82f6 0%, #1e40af 50%, #3b82f6 100%)', glow: 'rgba(59, 130, 246, 0.7)' },
+    'border-amethyst': { gradient: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 50%, #8b5cf6 100%)', glow: 'rgba(139, 92, 246, 0.7)' },
+    'border-diamond': { gradient: 'linear-gradient(135deg, #B9F2FF 0%, #00D4FF 50%, #B9F2FF 100%)', glow: 'rgba(0, 212, 255, 0.8)', animated: true },
+    'border-rainbow': { gradient: 'linear-gradient(135deg, #ef4444 0%, #f59e0b 20%, #10b981 40%, #3b82f6 60%, #8b5cf6 80%, #ec4899 100%)', glow: 'rgba(139, 92, 246, 0.9)', animated: true },
+    'border-nexus': { gradient: 'linear-gradient(135deg, #00adef 0%, #8b5cf6 50%, #00adef 100%)', glow: 'rgba(0, 173, 237, 1)', animated: true },
+    // ===== EPIC BORDERS =====
+    'border-crimson-blade': { gradient: 'linear-gradient(135deg, #7f1d1d 0%, #dc2626 50%, #7f1d1d 100%)', glow: 'rgba(220, 38, 38, 0.7)', animated: true },
+    'border-tsunami': { gradient: 'linear-gradient(135deg, #0c4a6e 0%, #0ea5e9 50%, #7dd3fc 100%)', glow: 'rgba(14, 165, 233, 0.7)', animated: true },
+    'border-ancient-oak': { gradient: 'linear-gradient(135deg, #14532d 0%, #22c55e 50%, #86efac 100%)', glow: 'rgba(34, 197, 94, 0.7)', animated: true },
+    'border-phantom': { gradient: 'linear-gradient(135deg, #1e1b4b 0%, #6366f1 50%, #c7d2fe 100%)', glow: 'rgba(99, 102, 241, 0.7)', animated: true },
+    'border-toxic-haze': { gradient: 'linear-gradient(135deg, #1a2e05 0%, #84cc16 50%, #d9f99d 100%)', glow: 'rgba(132, 204, 22, 0.8)', animated: true },
+    'border-mystic-runes': { gradient: 'linear-gradient(135deg, #581c87 0%, #a855f7 50%, #e9d5ff 100%)', glow: 'rgba(168, 85, 247, 0.8)', animated: true },
+    // ===== LEGENDARY BORDERS =====
+    'border-inferno-crown': { gradient: 'linear-gradient(135deg, #7c2d12 0%, #f97316 30%, #fbbf24 60%, #fef3c7 100%)', glow: 'rgba(249, 115, 22, 0.9)', animated: true },
+    'border-lightning-fury': { gradient: 'linear-gradient(135deg, #1e3a5f 0%, #3b82f6 40%, #93c5fd 70%, #ffffff 100%)', glow: 'rgba(59, 130, 246, 0.9)', animated: true },
+    'border-void-portal': { gradient: 'linear-gradient(135deg, #000000 0%, #1e1b4b 40%, #7c3aed 80%, #c4b5fd 100%)', glow: 'rgba(124, 58, 237, 0.9)', animated: true },
+    'border-deaths-embrace': { gradient: 'linear-gradient(135deg, #000000 0%, #1f2937 50%, #4b5563 100%)', glow: 'rgba(75, 85, 99, 0.9)', animated: true },
+    'border-dragon-wrath': { gradient: 'linear-gradient(135deg, #450a0a 0%, #dc2626 30%, #f97316 60%, #fbbf24 100%)', glow: 'rgba(220, 38, 38, 1)', animated: true },
+    'border-frozen-eternity': { gradient: 'linear-gradient(135deg, #0c4a6e 0%, #06b6d4 40%, #a5f3fc 70%, #ffffff 100%)', glow: 'rgba(6, 182, 212, 0.9)', animated: true },
+    'border-cosmic-destroyer': { gradient: 'linear-gradient(135deg, #020617 0%, #1e1b4b 30%, #6366f1 60%, #a855f7 80%, #ec4899 100%)', glow: 'rgba(99, 102, 241, 1)', animated: true },
+    'border-blood-moon': { gradient: 'linear-gradient(135deg, #1c1917 0%, #7f1d1d 40%, #dc2626 70%, #fca5a5 100%)', glow: 'rgba(220, 38, 38, 0.95)', animated: true },
+    'border-quantum-rift': { gradient: 'linear-gradient(135deg, #14b8a6 0%, #06b6d4 30%, #d946ef 70%, #f43f5e 100%)', glow: 'rgba(217, 70, 239, 0.9)', animated: true },
+    'border-divine-ascension': { gradient: 'linear-gradient(135deg, #fef3c7 0%, #fbbf24 30%, #f472b6 70%, #ffffff 100%)', glow: 'rgba(251, 191, 36, 1)', animated: true },
+    'border-abyssal-terror': { gradient: 'linear-gradient(135deg, #000000 0%, #0c4a6e 40%, #0891b2 70%, #22d3ee 100%)', glow: 'rgba(8, 145, 178, 0.9)', animated: true },
+    'border-supernova-core': { gradient: 'linear-gradient(135deg, #1e1b4b 0%, #f97316 30%, #fbbf24 50%, #ffffff 70%, #6366f1 100%)', glow: 'rgba(249, 115, 22, 1)', animated: true },
+    'border-all-seeing-eye': { gradient: 'linear-gradient(135deg, #1a1a2e 0%, #fbbf24 40%, #f59e0b 60%, #1a1a2e 100%)', glow: 'rgba(251, 191, 36, 0.95)', animated: true },
+    'border-prismatic-fury': { gradient: 'linear-gradient(135deg, #ef4444 0%, #f97316 15%, #fbbf24 30%, #22c55e 45%, #06b6d4 60%, #3b82f6 75%, #8b5cf6 90%, #ec4899 100%)', glow: 'rgba(139, 92, 246, 1)', animated: true },
+    'border-apex-predator': { gradient: 'linear-gradient(135deg, #000000 0%, #450a0a 25%, #dc2626 50%, #fbbf24 75%, #ffffff 100%)', glow: 'rgba(220, 38, 38, 1)', animated: true },
+    // ===== MYTHIC BORDERS =====
+    'border-reality-shatter': { gradient: 'linear-gradient(135deg, #000000 0%, #7c3aed 20%, #ec4899 40%, #06b6d4 60%, #fbbf24 80%, #ffffff 100%)', glow: 'rgba(236, 72, 153, 1)', animated: true },
+    'border-eternal-sovereign': { gradient: 'linear-gradient(135deg, #000000 0%, #7c2d12 15%, #fbbf24 30%, #ffffff 50%, #fbbf24 70%, #7c2d12 85%, #000000 100%)', glow: 'rgba(251, 191, 36, 1)', animated: true },
+    // ===== ORIGIN BORDER =====
+    'border-architects-ring': { gradient: 'conic-gradient(from 0deg, #0a1628 0%, #d4af37 8%, #f8fafc 12%, #d4af37 16%, #0a1628 25%, #d4af37 33%, #f8fafc 37%, #d4af37 41%, #0a1628 50%, #d4af37 58%, #f8fafc 62%, #d4af37 66%, #0a1628 75%, #d4af37 83%, #f8fafc 87%, #d4af37 91%, #0a1628 100%)', glow: 'rgba(212, 175, 55, 1)', animated: true }
 };
 
 // ============ ANIMATIONS ============
