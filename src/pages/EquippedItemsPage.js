@@ -301,6 +301,113 @@ const ItemsGrid = styled.div`
     gap: 1.5rem;
 `;
 
+// ============ VISUAL PREVIEW COMPONENTS ============
+const BorderPreviewWrapper = styled.div`
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1.5rem 0;
+    margin-bottom: 1rem;
+    background: ${({ theme }) => `radial-gradient(ellipse at center, ${theme.brand?.primary || '#00adef'}15 0%, transparent 70%)`};
+    border-radius: 12px;
+    min-height: 140px;
+`;
+
+const BadgePreviewWrapper = styled.div`
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1.5rem 0;
+    margin-bottom: 1rem;
+    background: ${({ theme }) => `radial-gradient(ellipse at center, ${theme.warning || '#f59e0b'}15 0%, transparent 70%)`};
+    border-radius: 12px;
+    min-height: 120px;
+`;
+
+const LargeBadgeIcon = styled.div`
+    width: 80px;
+    height: 80px;
+    border-radius: 16px;
+    background: ${props => props.$color || 'rgba(0, 173, 237, 0.2)'};
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    animation: ${pulse} 2s ease-in-out infinite;
+    box-shadow: ${props => `0 0 30px ${props.$glowColor || 'rgba(0, 173, 237, 0.5)'}`};
+    border: 2px solid ${props => props.$glowColor || 'rgba(0, 173, 237, 0.5)'};
+`;
+
+const ThemePreviewWrapper = styled.div`
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    background: ${({ theme }) => `radial-gradient(ellipse at center, ${theme.success || '#10b981'}15 0%, transparent 70%)`};
+    border-radius: 12px;
+    min-height: 100px;
+`;
+
+const ThemePreviewBox = styled.div`
+    width: 100%;
+    height: 80px;
+    border-radius: 12px;
+    background: ${props => props.$background || 'linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%)'};
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border: 2px solid ${props => props.$accent || 'rgba(0, 173, 237, 0.5)'};
+    box-shadow: 0 0 20px ${props => `${props.$accent || 'rgba(0, 173, 237, 0.3)'}4D`};
+    overflow: hidden;
+    position: relative;
+
+    &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: ${props => props.$accent || 'linear-gradient(90deg, #00adef, #8b5cf6)'};
+    }
+`;
+
+const ThemeColorDot = styled.div`
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: ${props => props.$color};
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 0 10px ${props => props.$color}80;
+`;
+
+const PerkPreviewWrapper = styled.div`
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1.5rem 0;
+    margin-bottom: 1rem;
+    background: ${({ theme }) => `radial-gradient(ellipse at center, ${theme.brand?.accent || '#8b5cf6'}15 0%, transparent 70%)`};
+    border-radius: 12px;
+    min-height: 100px;
+`;
+
+const LargePerkIcon = styled.div`
+    width: 70px;
+    height: 70px;
+    border-radius: 14px;
+    background: ${props => props.$color || 'rgba(139, 92, 246, 0.2)'};
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    animation: ${float} 3s ease-in-out infinite;
+    box-shadow: 0 0 25px ${props => `${props.$glowColor || 'rgba(139, 92, 246, 0.5)'}`};
+    border: 2px solid ${props => props.$glowColor || 'rgba(139, 92, 246, 0.5)'};
+`;
+
 const ItemCard = styled.div`
     background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.8)'};
     border: 2px solid ${({ $equipped, theme }) => $equipped ? `${theme.success || '#10b981'}80` : theme.border?.primary || 'rgba(100, 116, 139, 0.3)'};
@@ -666,13 +773,33 @@ const EquippedItemsPage = () => {
                                 const equipped = isItemEquipped(item);
                                 return (
                                     <ItemCard key={item.id} $equipped={equipped}>
+                                        {/* Visual Preview of Border with Animation */}
+                                        <BorderPreviewWrapper>
+                                            <AvatarWithBorder
+                                                src={user?.avatar || user?.profile?.avatar}
+                                                name={user?.name || user?.profile?.displayName}
+                                                username={user?.username}
+                                                size={100}
+                                                borderId={item.id}
+                                                showParticles={true}
+                                            />
+                                        </BorderPreviewWrapper>
                                         <ItemHeader>
-                                            <ItemIconWrapper $color={item.glowColor}>
-                                                🖼️
-                                            </ItemIconWrapper>
                                             <RarityBadge $rarity={item.rarity}>
                                                 {item.rarity}
                                             </RarityBadge>
+                                            {equipped && (
+                                                <span style={{
+                                                    color: theme?.success || '#10b981',
+                                                    fontSize: '0.8rem',
+                                                    fontWeight: 700,
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '4px'
+                                                }}>
+                                                    <Check size={14} /> ACTIVE
+                                                </span>
+                                            )}
                                         </ItemHeader>
                                         <ItemName>{item.name}</ItemName>
                                         <ItemDescription>{item.description}</ItemDescription>
@@ -722,13 +849,31 @@ const EquippedItemsPage = () => {
                                 const equipped = isItemEquipped(item);
                                 return (
                                     <ItemCard key={item.id} $equipped={equipped}>
-                                        <ItemHeader>
-                                            <ItemIconWrapper $color={`${theme?.brand?.accent || '#8b5cf6'}4D`}>
+                                        {/* Visual Perk Preview */}
+                                        <PerkPreviewWrapper>
+                                            <LargePerkIcon
+                                                $color={`${theme?.brand?.accent || '#8b5cf6'}33`}
+                                                $glowColor={theme?.brand?.accent || '#8b5cf6'}
+                                            >
                                                 {item.icon}
-                                            </ItemIconWrapper>
+                                            </LargePerkIcon>
+                                        </PerkPreviewWrapper>
+                                        <ItemHeader>
                                             <RarityBadge $rarity={item.rarity}>
                                                 {item.rarity}
                                             </RarityBadge>
+                                            {equipped && (
+                                                <span style={{
+                                                    color: theme?.success || '#10b981',
+                                                    fontSize: '0.8rem',
+                                                    fontWeight: 700,
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '4px'
+                                                }}>
+                                                    <Zap size={14} /> ACTIVE
+                                                </span>
+                                            )}
                                         </ItemHeader>
                                         <ItemName>{item.name}</ItemName>
                                         <ItemDescription>{item.description}</ItemDescription>
@@ -781,17 +926,46 @@ const EquippedItemsPage = () => {
                         <ItemsGrid>
                             {ownedThemes.map(item => {
                                 const equipped = isItemEquipped(item);
+                                // Extract colors for the theme preview
+                                const previewBg = item.colors?.background || 'linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%)';
+                                const previewAccent = item.colors?.primary || item.colors?.accent || theme?.brand?.primary || '#00adef';
                                 return (
                                     <ItemCard key={item.id} $equipped={equipped}>
-                                        <ItemHeader>
-                                            <ItemIconWrapper 
-                                                $color={item.colors?.background || `${theme?.brand?.primary || '#00adef'}33`}
+                                        {/* Theme Visual Preview */}
+                                        <ThemePreviewWrapper>
+                                            <ThemePreviewBox
+                                                $background={previewBg}
+                                                $accent={previewAccent}
                                             >
-                                                🎨
-                                            </ItemIconWrapper>
+                                                {item.colors && (
+                                                    <>
+                                                        <ThemeColorDot $color={item.colors.primary || '#00adef'} />
+                                                        <ThemeColorDot $color={item.colors.accent || '#8b5cf6'} />
+                                                        {item.colors.success && <ThemeColorDot $color={item.colors.success} />}
+                                                        {item.colors.warning && <ThemeColorDot $color={item.colors.warning} />}
+                                                    </>
+                                                )}
+                                                {!item.colors && (
+                                                    <span style={{ color: '#94a3b8', fontSize: '2rem' }}>🎨</span>
+                                                )}
+                                            </ThemePreviewBox>
+                                        </ThemePreviewWrapper>
+                                        <ItemHeader>
                                             <RarityBadge $rarity={item.rarity}>
                                                 {item.rarity}
                                             </RarityBadge>
+                                            {equipped && (
+                                                <span style={{
+                                                    color: theme?.success || '#10b981',
+                                                    fontSize: '0.8rem',
+                                                    fontWeight: 700,
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '4px'
+                                                }}>
+                                                    <Check size={14} /> ACTIVE
+                                                </span>
+                                            )}
                                         </ItemHeader>
                                         <ItemName>{item.name}</ItemName>
                                         <ItemDescription>{item.description}</ItemDescription>
@@ -841,13 +1015,31 @@ const EquippedItemsPage = () => {
                                 const equipped = isItemEquipped(item);
                                 return (
                                     <ItemCard key={item.id} $equipped={equipped}>
-                                        <ItemHeader>
-                                            <ItemIconWrapper $color={item.color}>
+                                        {/* Large Badge Visual Preview */}
+                                        <BadgePreviewWrapper>
+                                            <LargeBadgeIcon
+                                                $color={item.color || `${theme?.warning || '#f59e0b'}33`}
+                                                $glowColor={item.color?.replace('0.2', '0.6') || theme?.warning || '#f59e0b'}
+                                            >
                                                 {item.icon}
-                                            </ItemIconWrapper>
+                                            </LargeBadgeIcon>
+                                        </BadgePreviewWrapper>
+                                        <ItemHeader>
                                             <RarityBadge $rarity={item.rarity}>
                                                 {item.rarity}
                                             </RarityBadge>
+                                            {equipped && (
+                                                <span style={{
+                                                    color: theme?.success || '#10b981',
+                                                    fontSize: '0.8rem',
+                                                    fontWeight: 700,
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '4px'
+                                                }}>
+                                                    <Check size={14} /> DISPLAYED
+                                                </span>
+                                            )}
                                         </ItemHeader>
                                         <ItemName>{item.name}</ItemName>
                                         <ItemDescription>{item.description}</ItemDescription>
