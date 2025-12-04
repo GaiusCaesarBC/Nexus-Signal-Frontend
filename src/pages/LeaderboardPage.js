@@ -17,7 +17,7 @@ import {
     Calendar, Clock, Copy, Sparkles, Shield, Rocket,
     Brain, TrendingUp as Trending, Gift, Heart, Wifi, WifiOff
 } from 'lucide-react';
-import AvatarWithBorder from '../components/vault/AvatarWithBorder';
+import AvatarWithBorder, { BORDER_STYLES } from '../components/vault/AvatarWithBorder';
 import { BadgeList } from '../components/BadgeDisplay';
 
 
@@ -1237,10 +1237,16 @@ const LeaderboardPage = () => {
     
     // Get avatar border color from equippedBorder (avatar FRAME, not theme)
     const getAvatarBorderStyle = useCallback((borderId) => {
-        if (!borderId) return BORDER_COLORS['default'];
+        // Use BORDER_STYLES from AvatarWithBorder for consistency
+        const defaultStyle = { gradient: 'linear-gradient(135deg, #CD7F32 0%, #8B5A2B 50%, #CD7F32 100%)', glow: 'rgba(205, 127, 50, 0.5)' };
+        if (!borderId) return { color: '#CD7F32', glow: 'rgba(205, 127, 50, 0.5)' };
         // Handle both 'border-gold' and 'gold' formats
         const normalizedId = borderId.startsWith('border-') ? borderId : `border-${borderId}`;
-        return BORDER_COLORS[normalizedId] || BORDER_COLORS[borderId] || BORDER_COLORS['default'];
+        const style = BORDER_STYLES[normalizedId] || BORDER_STYLES[borderId] || BORDER_STYLES['border-bronze'];
+        // Extract primary color from gradient for border color
+        const gradientMatch = style?.gradient?.match(/#[a-fA-F0-9]{6}/);
+        const color = gradientMatch ? gradientMatch[0] : '#CD7F32';
+        return { color, glow: style?.glow || 'rgba(205, 127, 50, 0.5)' };
     }, []);
 
     // Current user's border from vault
