@@ -1579,15 +1579,21 @@ const PaperTradingPage = () => {
         setLoadingPrice(true);
 
         try {
+            // Build validation URL - include coinGeckoId for crypto to improve accuracy
+            let validateUrl = `/paper-trading/validate/${result.symbol}/${result.type}`;
+            if (result.type === 'crypto' && result.coinGeckoId) {
+                validateUrl += `?coinGeckoId=${encodeURIComponent(result.coinGeckoId)}`;
+            }
+
             // Validate that the symbol is tradeable (has price data available)
-            const response = await api.get(`/paper-trading/validate/${result.symbol}/${result.type}`);
+            const response = await api.get(validateUrl);
 
             if (response.data.tradeable) {
                 setCurrentPrice(response.data.price);
                 toast.success(`${result.symbol} @ $${response.data.price.toFixed(2)}`, 'Price loaded');
             } else {
                 toast.error(
-                    `${result.symbol} price data unavailable. Try another stock.`,
+                    `${result.symbol} price data unavailable. Try another ${result.type === 'crypto' ? 'crypto' : 'stock'}.`,
                     'Cannot Trade'
                 );
                 setCurrentPrice(null);
