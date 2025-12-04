@@ -1,6 +1,6 @@
 // client/src/pages/PaperTradingPage.js - THEMED VERSION WITH LONG/SHORT TRADING + LEVERAGE + TP/SL
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -1320,6 +1320,124 @@ const TPSLBadgeContainer = styled.div`
     margin-top: 0.5rem;
 `;
 
+// ============ SEARCH AUTOCOMPLETE COMPONENTS ============
+const SearchContainer = styled.div`
+    position: relative;
+    width: 100%;
+`;
+
+const SearchResultsDropdown = styled.div`
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: ${({ theme }) => theme.bg?.secondary || 'rgba(15, 23, 42, 0.98)'};
+    border: 1px solid ${({ theme }) => `${theme.brand?.primary || '#00adef'}4D`};
+    border-radius: 12px;
+    margin-top: 0.5rem;
+    max-height: 350px;
+    overflow-y: auto;
+    z-index: 1000;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    animation: ${fadeIn} 0.2s ease-out;
+
+    &::-webkit-scrollbar {
+        width: 6px;
+    }
+    &::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    &::-webkit-scrollbar-thumb {
+        background: ${({ theme }) => `${theme.brand?.primary || '#00adef'}4D`};
+        border-radius: 3px;
+    }
+`;
+
+const SearchResultSection = styled.div`
+    padding: 0.5rem 0;
+
+    &:not(:last-child) {
+        border-bottom: 1px solid ${({ theme }) => theme.border?.primary || 'rgba(100, 116, 139, 0.3)'};
+    }
+`;
+
+const SearchResultSectionTitle = styled.div`
+    padding: 0.5rem 1rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: ${({ theme }) => theme.text?.tertiary || '#64748b'};
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+`;
+
+const SearchResultItem = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+        background: ${({ theme }) => `${theme.brand?.primary || '#00adef'}1A`};
+    }
+`;
+
+const SearchResultInfo = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+`;
+
+const SearchResultSymbol = styled.span`
+    font-weight: 700;
+    color: ${({ theme }) => theme.text?.primary || '#e0e6ed'};
+    font-size: 1rem;
+`;
+
+const SearchResultName = styled.span`
+    font-size: 0.8rem;
+    color: ${({ theme }) => theme.text?.secondary || '#94a3b8'};
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+`;
+
+const SearchResultType = styled.span`
+    font-size: 0.7rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-weight: 600;
+    background: ${({ $type, theme }) => $type === 'crypto'
+        ? `${theme.warning || '#f59e0b'}33`
+        : `${theme.success || '#10b981'}33`};
+    color: ${({ $type, theme }) => $type === 'crypto'
+        ? (theme.warning || '#f59e0b')
+        : (theme.success || '#10b981')};
+`;
+
+const SearchNoResults = styled.div`
+    padding: 1.5rem;
+    text-align: center;
+    color: ${({ theme }) => theme.text?.tertiary || '#64748b'};
+    font-size: 0.9rem;
+`;
+
+const SearchLoading = styled.div`
+    padding: 1rem;
+    text-align: center;
+    color: ${({ theme }) => theme.text?.secondary || '#94a3b8'};
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+`;
+
 // Smart price formatter based on asset type
 const formatAssetPrice = (price, assetType = 'stock') => {
     if (assetType === 'crypto') {
@@ -1353,6 +1471,12 @@ const PaperTradingPage = () => {
     const [quantity, setQuantity] = useState('');
     const [notes, setNotes] = useState('');
     const [showTPSL, setShowTPSL] = useState(false);
+
+    // Search autocomplete state
+    const [searchResults, setSearchResults] = useState({ stocks: [], crypto: [] });
+    const [showSearchResults, setShowSearchResults] = useState(false);
+    const [isSearching, setIsSearching] = useState(false);
+    const searchContainerRef = useRef(null);
     const [takeProfit, setTakeProfit] = useState('');
     const [stopLoss, setStopLoss] = useState('');
     const [trailingStopPercent, setTrailingStopPercent] = useState('');
@@ -1395,6 +1519,63 @@ const PaperTradingPage = () => {
         } catch (error) {
             console.error('Load leaderboard error:', error);
         }
+    };
+
+    // Search for stocks/crypto
+    const searchSymbols = useCallback(async (query) => {
+        if (!query || query.length < 1) {
+            setSearchResults({ stocks: [], crypto: [] });
+            setShowSearchResults(false);
+            setIsSearching(false);
+            return;
+        }
+
+        setIsSearching(true);
+        try {
+            const response = await api.get(`/search?q=${encodeURIComponent(query)}`);
+            setSearchResults({
+                stocks: response.data.stocks || [],
+                crypto: response.data.crypto || []
+            });
+            setShowSearchResults(true);
+        } catch (error) {
+            console.error('Search error:', error);
+            setSearchResults({ stocks: [], crypto: [] });
+        } finally {
+            setIsSearching(false);
+        }
+    }, [api]);
+
+    // Debounced search effect
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (symbol && symbol.length >= 1) {
+                searchSymbols(symbol);
+            } else {
+                setSearchResults({ stocks: [], crypto: [] });
+                setShowSearchResults(false);
+            }
+        }, 300); // 300ms debounce
+
+        return () => clearTimeout(timer);
+    }, [symbol, searchSymbols]);
+
+    // Click outside to close search results
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (searchContainerRef.current && !searchContainerRef.current.contains(event.target)) {
+                setShowSearchResults(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    // Handle selecting a search result
+    const handleSelectSearchResult = (result) => {
+        setSymbol(result.symbol);
+        setType(result.type === 'crypto' ? 'crypto' : 'stock');
+        setShowSearchResults(false);
     };
 
     const fetchPrice = async () => {
@@ -1769,7 +1950,78 @@ const PaperTradingPage = () => {
                                 <TabButton theme={theme} $active={activeTab === 'sell'} onClick={() => setActiveTab('sell')}><Minus size={20} />{positionType === 'short' ? 'Cover' : 'Sell'}</TabButton>
                             </TabButtons>
                             <Form onSubmit={handleSubmit}>
-                                <FormGroup><Label theme={theme}><Search size={16} />Symbol</Label><Input theme={theme} type="text" placeholder="e.g., AAPL, TSLA, BTC" value={symbol} onChange={(e) => setSymbol(e.target.value.toUpperCase())} required /></FormGroup>
+                                <FormGroup>
+                                    <Label theme={theme}><Search size={16} />Symbol</Label>
+                                    <SearchContainer ref={searchContainerRef}>
+                                        <Input
+                                            theme={theme}
+                                            type="text"
+                                            placeholder="Search stocks or crypto... (e.g., AAPL, BTC)"
+                                            value={symbol}
+                                            onChange={(e) => setSymbol(e.target.value.toUpperCase())}
+                                            onFocus={() => symbol.length >= 1 && setShowSearchResults(true)}
+                                            required
+                                            autoComplete="off"
+                                        />
+                                        {showSearchResults && (
+                                            <SearchResultsDropdown theme={theme}>
+                                                {isSearching ? (
+                                                    <SearchLoading theme={theme}>
+                                                        <RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} />
+                                                        Searching...
+                                                    </SearchLoading>
+                                                ) : (searchResults.stocks.length === 0 && searchResults.crypto.length === 0) ? (
+                                                    <SearchNoResults theme={theme}>
+                                                        {symbol.length >= 1 ? `No results found for "${symbol}"` : 'Start typing to search...'}
+                                                    </SearchNoResults>
+                                                ) : (
+                                                    <>
+                                                        {searchResults.stocks.length > 0 && (
+                                                            <SearchResultSection>
+                                                                <SearchResultSectionTitle theme={theme}>
+                                                                    <TrendingUp size={14} /> Stocks ({searchResults.stocks.length})
+                                                                </SearchResultSectionTitle>
+                                                                {searchResults.stocks.map((stock, idx) => (
+                                                                    <SearchResultItem
+                                                                        key={`stock-${stock.symbol}-${idx}`}
+                                                                        theme={theme}
+                                                                        onClick={() => handleSelectSearchResult(stock)}
+                                                                    >
+                                                                        <SearchResultInfo>
+                                                                            <SearchResultSymbol theme={theme}>{stock.symbol}</SearchResultSymbol>
+                                                                            <SearchResultName theme={theme}>{stock.name}</SearchResultName>
+                                                                        </SearchResultInfo>
+                                                                        <SearchResultType theme={theme} $type="stock">STOCK</SearchResultType>
+                                                                    </SearchResultItem>
+                                                                ))}
+                                                            </SearchResultSection>
+                                                        )}
+                                                        {searchResults.crypto.length > 0 && (
+                                                            <SearchResultSection>
+                                                                <SearchResultSectionTitle theme={theme}>
+                                                                    <DollarSign size={14} /> Crypto ({searchResults.crypto.length})
+                                                                </SearchResultSectionTitle>
+                                                                {searchResults.crypto.map((crypto, idx) => (
+                                                                    <SearchResultItem
+                                                                        key={`crypto-${crypto.symbol}-${idx}`}
+                                                                        theme={theme}
+                                                                        onClick={() => handleSelectSearchResult(crypto)}
+                                                                    >
+                                                                        <SearchResultInfo>
+                                                                            <SearchResultSymbol theme={theme}>{crypto.symbol}</SearchResultSymbol>
+                                                                            <SearchResultName theme={theme}>{crypto.name}</SearchResultName>
+                                                                        </SearchResultInfo>
+                                                                        <SearchResultType theme={theme} $type="crypto">CRYPTO</SearchResultType>
+                                                                    </SearchResultItem>
+                                                                ))}
+                                                            </SearchResultSection>
+                                                        )}
+                                                    </>
+                                                )}
+                                            </SearchResultsDropdown>
+                                        )}
+                                    </SearchContainer>
+                                </FormGroup>
                                 <FormGroup><Label theme={theme}><Target size={16} />Asset Type</Label><Select theme={theme} value={type} onChange={(e) => setType(e.target.value)}><option value="stock">Stock</option><option value="crypto">Cryptocurrency</option></Select></FormGroup>
                                 {currentPrice && !loadingPrice && <PriceDisplay theme={theme}><PriceLabel theme={theme}>Current Price</PriceLabel><PriceValue theme={theme}>{formatAssetPrice(currentPrice, type)}</PriceValue></PriceDisplay>}
                                 {loadingPrice && <PriceDisplay theme={theme}><PriceLabel theme={theme}>Loading price...</PriceLabel><LoadingSpinner size={20} /></PriceDisplay>}
