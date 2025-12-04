@@ -893,8 +893,8 @@ const SentimentPage = () => {
             setSentiment(response.data);
             toast.success(`Loaded sentiment for ${symbol.toUpperCase()}`);
         } catch (error) {
-            console.error('Sentiment error:', error);
-            toast.error(error.response?.data?.error || 'Failed to load sentiment');
+            console.error('Sentiment error:', error.response?.data || error.message);
+            toast.error(error.response?.data?.error || error.response?.data?.message || 'Failed to load sentiment');
         } finally {
             setLoading(false);
         }
