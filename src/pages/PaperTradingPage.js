@@ -1571,11 +1571,33 @@ const PaperTradingPage = () => {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // Handle selecting a search result
-    const handleSelectSearchResult = (result) => {
+    // Handle selecting a search result with validation
+    const handleSelectSearchResult = async (result) => {
         setSymbol(result.symbol);
         setType(result.type === 'crypto' ? 'crypto' : 'stock');
         setShowSearchResults(false);
+        setLoadingPrice(true);
+
+        try {
+            // Validate that the symbol is tradeable (has price data available)
+            const response = await api.get(`/paper-trading/validate/${result.symbol}/${result.type}`);
+
+            if (response.data.tradeable) {
+                setCurrentPrice(response.data.price);
+                toast.success(`${result.symbol} @ $${response.data.price.toFixed(2)}`, 'Price loaded');
+            } else {
+                toast.error(
+                    `${result.symbol} price data unavailable. Try another stock.`,
+                    'Cannot Trade'
+                );
+                setCurrentPrice(null);
+            }
+        } catch (error) {
+            console.error('Validation error:', error);
+            // Still allow manual trading attempt
+        } finally {
+            setLoadingPrice(false);
+        }
     };
 
     const fetchPrice = async () => {
