@@ -372,42 +372,10 @@ const CardTop = styled.div`
 `;
 
 // ✅ THEMED AVATAR COMPONENTS WITH BORDER SUPPORT
-const Avatar = styled.div`
-    width: 70px;
-    height: 70px;
-    border-radius: 50%;
-    background: ${props => props.$hasImage ? 'transparent' : 'linear-gradient(135deg, #ffd700, #ffed4e)'};
-    border: 3px solid ${props => props.$borderColor || 'rgba(255, 215, 0, 0.5)'};
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #0a0e27;
-    font-weight: 900;
-    font-size: 1.8rem;
+// Avatar container for positioning rank badge over AvatarWithBorder
+const AvatarContainer = styled.div`
+    position: relative;
     flex-shrink: 0;
-    position: relative;
-    overflow: hidden;
-    box-shadow: ${props => props.$glow ? `0 0 15px ${props.$glow}` : 'none'};
-    transition: all 0.3s ease;
-
-    &:hover {
-        transform: scale(1.05);
-        box-shadow: ${props => `0 0 20px ${props.$glow || 'rgba(255, 215, 0, 0.5)'}`};
-    }
-`;
-
-const AvatarImage = styled.img`
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-`;
-
-const AvatarInitials = styled.div`
-    position: relative;
-    z-index: 0;
 `;
 
 const RankBadge = styled.div`
@@ -739,43 +707,30 @@ const DiscoveryPage = () => {
     const renderTraderCard = (trader, index) => {
         const isOwnProfile = trader._id === user?.id || trader.userId === user?.id;
         const traderId = trader._id || trader.userId;
-        
-        // Get trader's equipped border for avatar frame
-        const traderBorderStyle = getAvatarBorderStyle(
-            trader.equippedBorder || trader.vault?.equippedBorder || 'default'
-        );
-        
+        const traderBorderId = trader.equippedBorder || trader.vault?.equippedBorder || 'border-bronze';
+        const traderRank = trader.stats?.rank || trader.rank;
+
         return (
-            <TraderCard 
-                key={traderId} 
+            <TraderCard
+                key={traderId}
                 $index={index}
                 onClick={() => handleCardClick(trader)}
             >
                 <CardTop>
-                    <Avatar 
-                        $hasImage={!!(trader.profile?.avatar || trader.avatar)}
-                        $borderColor={traderBorderStyle.color}
-                        $glow={traderBorderStyle.glow}
-                    >
-                        {(trader.profile?.avatar || trader.avatar) ? (
-                            <AvatarImage 
-                                src={trader.profile?.avatar || trader.avatar} 
-                                alt={trader.profile?.displayName || trader.displayName || trader.username}
-                                onError={(e) => {
-                                    e.target.style.display = 'none';
-                                }}
-                            />
-                        ) : (
-                            <AvatarInitials>
-                                {getInitials(trader)}
-                            </AvatarInitials>
-                        )}
-                        {(trader.stats?.rank || trader.rank) && (trader.stats?.rank || trader.rank) <= 10 && (
-                            <RankBadge $rank={trader.stats?.rank || trader.rank}>
-                                #{trader.stats?.rank || trader.rank}
+                    <AvatarContainer>
+                        <AvatarWithBorder
+                            src={trader.profile?.avatar || trader.avatar}
+                            name={trader.profile?.displayName || trader.displayName || trader.username}
+                            username={trader.username}
+                            size={70}
+                            borderId={traderBorderId}
+                        />
+                        {traderRank && traderRank <= 10 && (
+                            <RankBadge $rank={traderRank}>
+                                #{traderRank}
                             </RankBadge>
                         )}
-                    </Avatar>
+                    </AvatarContainer>
                     
                     <UserInfo>
                         <DisplayName>
