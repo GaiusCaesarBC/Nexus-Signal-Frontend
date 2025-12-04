@@ -324,6 +324,15 @@ const PodiumAvatar = styled.div`
     }
 `;
 
+const PodiumAvatarWrapper = styled.div`
+    position: relative;
+    margin-bottom: 1rem;
+
+    ${props => props.$isFirst && css`
+        /* Extra glow for 1st place */
+    `}
+`;
+
 const PodiumAvatarImage = styled.img`
     width: 100%;
     height: 100%;
@@ -1717,23 +1726,16 @@ const LeaderboardPage = () => {
         <PodiumContainer>
             {/* 2nd Place */}
             <PodiumPlace onClick={() => handleCardClick(top3[1])}>
-                {(() => {
-                    const borderStyle = getAvatarBorderStyle(top3[1].equippedBorder);
-                    return (
-                        <PodiumAvatar 
-                            $place={2} 
-                            $hasImage={!!top3[1].avatar}
-                            $borderColor={borderStyle.color}
-                            $glow={borderStyle.glow}
-                        >
-                            {top3[1].avatar ? (
-                                <PodiumAvatarImage src={top3[1].avatar} alt={top3[1].displayName} />
-                            ) : (
-                                <PodiumAvatarInitials $place={2}>{getInitials(top3[1])}</PodiumAvatarInitials>
-                            )}
-                        </PodiumAvatar>
-                    );
-                })()}
+                <PodiumAvatarWrapper>
+                    <AvatarWithBorder
+                        src={top3[1].avatar}
+                        name={top3[1].displayName}
+                        username={top3[1].username}
+                        size={100}
+                        borderId={top3[1].equippedBorder || 'border-bronze'}
+                        showParticles={true}
+                    />
+                </PodiumAvatarWrapper>
                 <PodiumName $place={2}>{top3[1].displayName}</PodiumName>
                 <PodiumStats $place={2}>{getMainStatValue(top3[1]).value}</PodiumStats>
                 {top3[1].equippedBadges && top3[1].equippedBadges.length > 0 && (
@@ -1753,26 +1755,19 @@ const LeaderboardPage = () => {
 
             {/* 1st Place */}
             <PodiumPlace onClick={() => handleCardClick(top3[0])}>
-                {(() => {
-                    const borderStyle = getAvatarBorderStyle(top3[0].equippedBorder);
-                    return (
-                        <PodiumAvatar 
-                            $place={1} 
-                            $hasImage={!!top3[0].avatar}
-                            $borderColor={borderStyle.color}
-                            $glow={borderStyle.glow}
-                        >
-                            <PodiumCrown>
-                                <Crown size={40} color="#ffd700" />
-                            </PodiumCrown>
-                            {top3[0].avatar ? (
-                                <PodiumAvatarImage src={top3[0].avatar} alt={top3[0].displayName} />
-                            ) : (
-                                <PodiumAvatarInitials $place={1}>{getInitials(top3[0])}</PodiumAvatarInitials>
-                            )}
-                        </PodiumAvatar>
-                    );
-                })()}
+                <PodiumAvatarWrapper $isFirst>
+                    <PodiumCrown>
+                        <Crown size={40} color="#ffd700" />
+                    </PodiumCrown>
+                    <AvatarWithBorder
+                        src={top3[0].avatar}
+                        name={top3[0].displayName}
+                        username={top3[0].username}
+                        size={120}
+                        borderId={top3[0].equippedBorder || 'border-bronze'}
+                        showParticles={true}
+                    />
+                </PodiumAvatarWrapper>
                 <PodiumName $place={1}>{top3[0].displayName}</PodiumName>
                 <PodiumStats $place={1}>{getMainStatValue(top3[0]).value}</PodiumStats>
                 {top3[0].equippedBadges && top3[0].equippedBadges.length > 0 && (
@@ -1792,23 +1787,16 @@ const LeaderboardPage = () => {
 
             {/* 3rd Place */}
             <PodiumPlace onClick={() => handleCardClick(top3[2])}>
-                {(() => {
-                    const borderStyle = getAvatarBorderStyle(top3[2].equippedBorder);
-                    return (
-                        <PodiumAvatar 
-                            $place={3} 
-                            $hasImage={!!top3[2].avatar}
-                            $borderColor={borderStyle.color}
-                            $glow={borderStyle.glow}
-                        >
-                            {top3[2].avatar ? (
-                                <PodiumAvatarImage src={top3[2].avatar} alt={top3[2].displayName} />
-                            ) : (
-                                <PodiumAvatarInitials $place={3}>{getInitials(top3[2])}</PodiumAvatarInitials>
-                            )}
-                        </PodiumAvatar>
-                    );
-                })()}
+                <PodiumAvatarWrapper>
+                    <AvatarWithBorder
+                        src={top3[2].avatar}
+                        name={top3[2].displayName}
+                        username={top3[2].username}
+                        size={100}
+                        borderId={top3[2].equippedBorder || 'border-bronze'}
+                        showParticles={true}
+                    />
+                </PodiumAvatarWrapper>
                 <PodiumName $place={3}>{top3[2].displayName}</PodiumName>
                 <PodiumStats $place={3}>{getMainStatValue(top3[2]).value}</PodiumStats>
                 {top3[2].equippedBadges && top3[2].equippedBadges.length > 0 && (
