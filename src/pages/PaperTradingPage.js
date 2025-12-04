@@ -1605,7 +1605,14 @@ const PaperTradingPage = () => {
     };
 
     useEffect(() => {
-        loadAccount(); loadOrders(); loadLeaderboard();
+        const init = async () => {
+            await loadAccount();
+            loadOrders();
+            loadLeaderboard();
+            // Refresh prices immediately after loading to get current values
+            setTimeout(() => handleRefreshPrices(), 1000);
+        };
+        init();
         const priceRefreshInterval = setInterval(() => { handleRefreshPrices(); }, 30000);
         return () => { clearInterval(priceRefreshInterval); };
     }, []);
