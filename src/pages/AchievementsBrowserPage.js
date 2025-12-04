@@ -1,9 +1,7 @@
 // client/src/pages/AchievementsBrowserPage.js - THEMED ACHIEVEMENTS BROWSER
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import styled, { keyframes, css, useTheme as useStyledTheme } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
-import { useGamification } from '../context/GamificationContext';
-import { useTheme as useThemeContext } from '../context/ThemeContext';
 import { 
     Award, Lock, Star, TrendingUp, CheckCircle, Trophy, 
     Filter, Search, Grid, List, ChevronDown, Target,
@@ -618,14 +616,12 @@ const EmptySubtext = styled.div`
 // ============================================
 const AchievementsBrowserPage = () => {
     const { api } = useAuth();
-    const { gamificationData } = useGamification();
     const theme = useStyledTheme();
-    const { profileThemeId } = useThemeContext();
-    
+
     const [allAchievements, setAllAchievements] = useState([]);
-    const [filteredAchievements, setFilteredAchievements] = useState([]);
     const [loading, setLoading] = useState(true);
-    
+    const [error, setError] = useState(null);
+
     const [searchQuery, setSearchQuery] = useState('');
     const [rarityFilter, setRarityFilter] = useState('all');
     const [statusFilter, setStatusFilter] = useState('all');
@@ -647,32 +643,32 @@ const AchievementsBrowserPage = () => {
         { id: 'time_based', name: 'Time', icon: Calendar },
     ];
 
-    useEffect(() => {
-        fetchAchievements();
-    }, []);
-
-    useEffect(() => {
-        applyFilters();
-    }, [searchQuery, rarityFilter, statusFilter, categoryFilter, allAchievements]);
-
-    const fetchAchievements = async () => {
+    // Fetch achievements with proper dependency
+    const fetchAchievements = useCallback(async () => {
         try {
+            setError(null);
             const response = await api.get('/gamification/achievements');
             if (response.data.success) {
                 setAllAchievements(response.data.achievements);
             }
-        } catch (error) {
-            console.error('Error fetching achievements:', error);
+        } catch (err) {
+            console.error('Error fetching achievements:', err);
+            setError('Failed to load achievements. Please try again.');
         } finally {
             setLoading(false);
         }
-    };
+    }, [api]);
 
-    const applyFilters = () => {
+    useEffect(() => {
+        fetchAchievements();
+    }, [fetchAchievements]);
+
+    // Memoized filtered achievements
+    const filteredAchievements = useMemo(() => {
         let filtered = [...allAchievements];
 
         if (searchQuery) {
-            filtered = filtered.filter(ach => 
+            filtered = filtered.filter(ach =>
                 ach.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 ach.description.toLowerCase().includes(searchQuery.toLowerCase())
             );
@@ -692,19 +688,18 @@ const AchievementsBrowserPage = () => {
             filtered = filtered.filter(ach => ach.category === categoryFilter);
         }
 
-        setFilteredAchievements(filtered);
-    };
+        return filtered;
+    }, [allAchievements, searchQuery, rarityFilter, statusFilter, categoryFilter]);
 
-    const getStats = () => {
+    // Memoized stats calculation
+    const stats = useMemo(() => {
         const unlocked = allAchievements.filter(a => a.unlocked).length;
         const total = allAchievements.length;
         const totalPoints = allAchievements.reduce((sum, a) => sum + (a.unlocked ? a.points : 0), 0);
         const possiblePoints = allAchievements.reduce((sum, a) => sum + a.points, 0);
 
         return { unlocked, total, totalPoints, possiblePoints };
-    };
-
-    const stats = getStats();
+    }, [allAchievements]);
     const progressPercent = stats.total > 0 ? (stats.unlocked / stats.total) * 100 : 0;
 
     if (loading) {
@@ -721,6 +716,43 @@ const AchievementsBrowserPage = () => {
                             <Award size={60} />
                         </EmptyIcon>
                         <EmptyText>Loading achievements...</EmptyText>
+                    </EmptyState>
+                </ContentWrapper>
+            </PageContainer>
+        );
+    }
+
+    if (error) {
+        return (
+            <PageContainer>
+                <BackgroundOrbs>
+                    <Orb $duration="25s" />
+                    <Orb $duration="30s" />
+                    <Orb $duration="20s" />
+                </BackgroundOrbs>
+                <ContentWrapper>
+                    <EmptyState>
+                        <EmptyIcon style={{ background: `${theme?.error || '#ef4444'}1A`, color: theme?.error || '#ef4444' }}>
+                            <Award size={60} />
+                        </EmptyIcon>
+                        <EmptyText>{error}</EmptyText>
+                        <EmptySubtext>
+                            <button
+                                onClick={() => { setLoading(true); fetchAchievements(); }}
+                                style={{
+                                    background: `${theme?.brand?.primary || '#00adef'}33`,
+                                    border: `1px solid ${theme?.brand?.primary || '#00adef'}66`,
+                                    borderRadius: '8px',
+                                    padding: '0.75rem 1.5rem',
+                                    color: theme?.brand?.primary || '#00adef',
+                                    cursor: 'pointer',
+                                    fontWeight: 600,
+                                    marginTop: '1rem'
+                                }}
+                            >
+                                Try Again
+                            </button>
+                        </EmptySubtext>
                     </EmptyState>
                 </ContentWrapper>
             </PageContainer>
