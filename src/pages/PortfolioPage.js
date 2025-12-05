@@ -1,23 +1,25 @@
-// client/src/pages/PortfolioPage.js - THEMED VERSION WITH LOCAL AI ANALYSIS
+// client/src/pages/PortfolioPage.js - WITH WALLET CONNECTION INTEGRATION
 
 import React, { useState, useEffect, useMemo } from 'react';
 import styled, { keyframes, css } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useTheme } from '../context/ThemeContext';
-import { useNavigate } from 'react-router-dom';
+import { useWallet } from '../context/WalletContext';
+import WalletConnectButton from '../components/WalletConnectButton';
+import WalletAnalytics from '../components/WalletAnalytics';
+import BrokerageConnect from '../components/BrokerageConnect';
 import {
-    TrendingUp, TrendingDown, DollarSign, PieChart, BarChart3,
-    Activity, Plus, Trash2, X, Brain, Target, Zap, 
+    TrendingUp, TrendingDown, PieChart, BarChart3,
+    Activity, Brain, Target, Zap,
     ArrowUpRight, ArrowDownRight, Eye, Flame, Star,
-    Download, RefreshCw, Search, Edit, AlertTriangle,
-    CheckCircle, Shield, TrendingUp as Trending, Lightbulb,
-    ChevronRight, ExternalLink
+    Download, RefreshCw, Search, AlertTriangle,
+    CheckCircle, Shield, Lightbulb,
+    Wallet, Link2, Building2
 } from 'lucide-react';
 import {
     PieChart as RechartsPie, Pie, Cell, ResponsiveContainer,
-    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-    AreaChart, Area
+    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip
 } from 'recharts';
 
 // ============ ANIMATIONS ============
@@ -563,25 +565,6 @@ const ActionCell = styled.div`
     gap: 0.5rem;
 `;
 
-const SmallButton = styled.button`
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    background: ${props => props.$danger ? `${props.theme.error || '#ef4444'}1A` : `${props.theme.brand?.primary || '#00adef'}1A`};
-    border: 1px solid ${props => props.$danger ? `${props.theme.error || '#ef4444'}4D` : `${props.theme.brand?.primary || '#00adef'}4D`};
-    color: ${props => props.$danger ? props.theme.error || '#ef4444' : props.theme.brand?.primary || '#00adef'};
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-
-    &:hover {
-        background: ${props => props.$danger ? `${props.theme.error || '#ef4444'}33` : `${props.theme.brand?.primary || '#00adef'}33`};
-        transform: scale(1.05);
-    }
-`;
-
 // ============ SIDEBAR CHARTS ============
 const Sidebar = styled.div`
     display: flex;
@@ -604,122 +587,6 @@ const ChartTitle = styled.h3`
     display: flex;
     align-items: center;
     gap: 0.5rem;
-`;
-
-// ============ MODAL ============
-const Modal = styled.div`
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(10px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    padding: 1rem;
-    animation: ${fadeIn} 0.2s ease-out;
-`;
-
-const ModalContent = styled.div`
-    background: ${({ theme }) => theme.bg?.cardSolid || 'rgba(15, 23, 42, 0.95)'};
-    border: 1px solid ${props => props.theme.brand?.primary || '#00adef'}4D;
-    border-radius: 20px;
-    padding: 2rem;
-    max-width: 450px;
-    width: 100%;
-    position: relative;
-`;
-
-const ModalHeader = styled.div`
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-`;
-
-const ModalTitle = styled.h2`
-    font-size: 1.5rem;
-    color: ${props => props.theme.brand?.primary || '#00adef'};
-`;
-
-const CloseButton = styled.button`
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-    background: ${props => props.theme.error || '#ef4444'}1A;
-    border: 1px solid ${props => props.theme.error || '#ef4444'}4D;
-    color: ${props => props.theme.error || '#ef4444'};
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-
-    &:hover {
-        background: ${props => props.theme.error || '#ef4444'}33;
-    }
-`;
-
-const Form = styled.form`
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-`;
-
-const FormGroup = styled.div``;
-
-const Label = styled.label`
-    display: block;
-    color: ${props => props.theme.text?.secondary || '#94a3b8'};
-    font-size: 0.85rem;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-`;
-
-const Input = styled.input`
-    width: 100%;
-    padding: 0.75rem 1rem;
-    background: ${props => props.theme.brand?.primary || '#00adef'}0D;
-    border: 1px solid ${props => props.theme.brand?.primary || '#00adef'}4D;
-    border-radius: 10px;
-    color: ${props => props.theme.text?.primary || '#e0e6ed'};
-    font-size: 1rem;
-
-    &:focus {
-        outline: none;
-        border-color: ${props => props.theme.brand?.primary || '#00adef'};
-        background: ${props => props.theme.brand?.primary || '#00adef'}1A;
-    }
-
-    &::placeholder {
-        color: ${props => props.theme.text?.tertiary || '#64748b'};
-    }
-`;
-
-const SubmitButton = styled.button`
-    width: 100%;
-    padding: 0.875rem;
-    background: ${props => props.theme.brand?.gradient || `linear-gradient(135deg, ${props.theme.brand?.primary || '#00adef'} 0%, ${props.theme.brand?.secondary || '#0088cc'} 100%)`};
-    border: none;
-    border-radius: 10px;
-    color: white;
-    font-weight: 700;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-
-    &:hover:not(:disabled) {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 24px ${props => props.theme.brand?.primary || '#00adef'}66;
-    }
-
-    &:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
 `;
 
 // ============ EMPTY STATE ============
@@ -749,6 +616,89 @@ const EmptyTitle = styled.h2`
 const EmptyText = styled.p`
     color: ${props => props.theme.text?.secondary || '#94a3b8'};
     margin-bottom: 2rem;
+`;
+
+// ============ WALLET CONNECTION SECTION ============
+const WalletSection = styled.div`
+    background: linear-gradient(135deg, ${props => props.theme.brand?.primary || '#00adef'}1A 0%, ${props => props.theme.brand?.accent || '#8b5cf6'}1A 100%);
+    border: 2px solid ${props => props.theme.brand?.primary || '#00adef'}4D;
+    border-radius: 20px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    animation: ${fadeIn} 0.6s ease-out;
+`;
+
+const WalletSectionHeader = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+`;
+
+const WalletTitle = styled.h2`
+    font-size: 1.3rem;
+    color: ${props => props.theme.brand?.primary || '#00adef'};
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 800;
+    margin: 0;
+`;
+
+const WalletInfo = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 1rem;
+    background: ${props => props.$linked
+        ? `${props.theme.success || '#10b981'}33`
+        : `${props.theme.warning || '#fbbf24'}33`};
+    border: 1px solid ${props => props.$linked
+        ? `${props.theme.success || '#10b981'}66`
+        : `${props.theme.warning || '#fbbf24'}66`};
+    border-radius: 20px;
+    color: ${props => props.$linked
+        ? props.theme.success || '#10b981'
+        : props.theme.warning || '#fbbf24'};
+    font-size: 0.8rem;
+    font-weight: 700;
+`;
+
+// ============ TABS ============
+const TabsContainer = styled.div`
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    background: ${props => props.theme.bg?.tertiary || 'rgba(15, 23, 42, 0.5)'};
+    padding: 0.5rem;
+    border-radius: 12px;
+    width: fit-content;
+`;
+
+const Tab = styled.button`
+    padding: 0.75rem 1.5rem;
+    background: ${props => props.$active
+        ? props.theme.brand?.gradient || `linear-gradient(135deg, ${props.theme.brand?.primary || '#00adef'} 0%, ${props.theme.brand?.secondary || '#0088cc'} 100%)`
+        : 'transparent'};
+    border: none;
+    border-radius: 8px;
+    color: ${props => props.$active ? 'white' : props.theme.text?.secondary || '#94a3b8'};
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    &:hover {
+        background: ${props => props.$active
+            ? props.theme.brand?.gradient
+            : `${props.theme.brand?.primary || '#00adef'}1A`};
+        color: ${props => props.$active ? 'white' : props.theme.text?.primary};
+    }
 `;
 
 // ============ LOCAL AI ANALYSIS FUNCTIONS ============
@@ -877,7 +827,7 @@ const PortfolioPage = () => {
     const { api } = useAuth();
     const toast = useToast();
     const { theme } = useTheme();
-    const navigate = useNavigate();
+    const { linkedWallet } = useWallet();
 
     // State
     const [holdings, setHoldings] = useState([]);
@@ -885,10 +835,7 @@ const PortfolioPage = () => {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-    const [showAddModal, setShowAddModal] = useState(false);
-    const [showEditModal, setShowEditModal] = useState(false);
-    const [selectedHolding, setSelectedHolding] = useState(null);
-    const [formData, setFormData] = useState({ symbol: '', shares: '', averagePrice: '' });
+    const [activeTab, setActiveTab] = useState('holdings'); // 'holdings' or 'analytics'
 
     // Dynamic colors from theme
     const COLORS = [
@@ -985,71 +932,6 @@ const PortfolioPage = () => {
         toast.success('Portfolio refreshed!');
     };
 
-    const addHolding = async (e) => {
-        e.preventDefault();
-        
-        if (!formData.symbol || !formData.shares || !formData.averagePrice) {
-            toast.warning('Please fill in all fields');
-            return;
-        }
-
-        try {
-            await api.post('/portfolio/holdings', {
-                symbol: formData.symbol.toUpperCase(),
-                shares: parseFloat(formData.shares),
-                averagePrice: parseFloat(formData.averagePrice),
-                purchaseDate: new Date().toISOString().split('T')[0]
-            });
-
-            toast.success(`${formData.symbol.toUpperCase()} added!`);
-            setShowAddModal(false);
-            setFormData({ symbol: '', shares: '', averagePrice: '' });
-            fetchPortfolio();
-        } catch (error) {
-            toast.error(error.response?.data?.error || 'Failed to add holding');
-        }
-    };
-
-    const updateHolding = async (e) => {
-        e.preventDefault();
-        
-        try {
-            await api.put(`/portfolio/holdings/${selectedHolding._id}`, {
-                shares: parseFloat(formData.shares),
-                averagePrice: parseFloat(formData.averagePrice)
-            });
-
-            toast.success(`${selectedHolding.symbol} updated!`);
-            setShowEditModal(false);
-            setSelectedHolding(null);
-            fetchPortfolio();
-        } catch (error) {
-            toast.error('Failed to update holding');
-        }
-    };
-
-    const deleteHolding = async (holdingId, symbol) => {
-        if (!window.confirm(`Remove ${symbol} from portfolio?`)) return;
-
-        try {
-            await api.delete(`/portfolio/holdings/${holdingId}`);
-            toast.success(`${symbol} removed`);
-            fetchPortfolio();
-        } catch (error) {
-            toast.error('Failed to delete holding');
-        }
-    };
-
-    const handleEdit = (holding) => {
-        setSelectedHolding(holding);
-        setFormData({
-            symbol: holding.symbol,
-            shares: holding.shares,
-            averagePrice: holding.averagePrice || holding.purchasePrice || ''
-        });
-        setShowEditModal(true);
-    };
-
     const handleExportCSV = () => {
         const csv = [
             ['Symbol', 'Shares', 'Avg Price', 'Current Price', 'Value', 'Gain/Loss', 'Gain %'].join(','),
@@ -1124,70 +1006,45 @@ const PortfolioPage = () => {
                         <Title theme={theme}>My Portfolio</Title>
                         <Subtitle theme={theme}>Track your investments with AI-powered insights</Subtitle>
                     </Header>
+
+                    {/* Wallet Connection Section - Always show */}
+                    <WalletSection theme={theme}>
+                        <WalletSectionHeader>
+                            <WalletTitle theme={theme}>
+                                <Wallet size={22} />
+                                Connect Your Wallet
+                            </WalletTitle>
+                            <WalletInfo theme={theme} $linked={!!linkedWallet}>
+                                {linkedWallet ? (
+                                    <>
+                                        <Link2 size={14} />
+                                        Wallet Linked
+                                    </>
+                                ) : (
+                                    <>
+                                        <AlertTriangle size={14} />
+                                        No Wallet Linked
+                                    </>
+                                )}
+                            </WalletInfo>
+                        </WalletSectionHeader>
+                        <WalletConnectButton showInfo={true} />
+                    </WalletSection>
+
                     <EmptyState>
                         <EmptyIcon theme={theme}>
-                            <PieChart size={48} color={theme.brand?.primary || '#00adef'} />
+                            <Wallet size={48} color={theme.brand?.primary || '#00adef'} />
                         </EmptyIcon>
-                        <EmptyTitle theme={theme}>Your Portfolio is Empty</EmptyTitle>
-                        <EmptyText theme={theme}>Add your first holding to start tracking your investments</EmptyText>
-                        <ActionButton theme={theme} $primary onClick={() => setShowAddModal(true)}>
-                            <Plus size={20} />
-                            Add Your First Holding
-                        </ActionButton>
+                        <EmptyTitle theme={theme}>
+                            {linkedWallet ? 'Ready to Sync' : 'Connect Your Wallet'}
+                        </EmptyTitle>
+                        <EmptyText theme={theme}>
+                            {linkedWallet
+                                ? 'Click the Sync button above to import your on-chain holdings'
+                                : 'Connect and link your wallet above to automatically track your crypto holdings'}
+                        </EmptyText>
                     </EmptyState>
                 </ContentWrapper>
-
-                {showAddModal && (
-                    <Modal onClick={() => setShowAddModal(false)}>
-                        <ModalContent theme={theme} onClick={e => e.stopPropagation()}>
-                            <ModalHeader>
-                                <ModalTitle theme={theme}>Add Holding</ModalTitle>
-                                <CloseButton theme={theme} onClick={() => setShowAddModal(false)}>
-                                    <X size={18} />
-                                </CloseButton>
-                            </ModalHeader>
-                            <Form onSubmit={addHolding}>
-                                <FormGroup>
-                                    <Label theme={theme}>Symbol</Label>
-                                    <Input
-                                        theme={theme}
-                                        type="text"
-                                        placeholder="AAPL"
-                                        value={formData.symbol}
-                                        onChange={e => setFormData({ ...formData, symbol: e.target.value.toUpperCase() })}
-                                        required
-                                        autoFocus
-                                    />
-                                </FormGroup>
-                                <FormGroup>
-                                    <Label theme={theme}>Shares</Label>
-                                    <Input
-                                        theme={theme}
-                                        type="number"
-                                        step="0.01"
-                                        placeholder="10"
-                                        value={formData.shares}
-                                        onChange={e => setFormData({ ...formData, shares: e.target.value })}
-                                        required
-                                    />
-                                </FormGroup>
-                                <FormGroup>
-                                    <Label theme={theme}>Average Price</Label>
-                                    <Input
-                                        theme={theme}
-                                        type="number"
-                                        step="0.01"
-                                        placeholder="150.00"
-                                        value={formData.averagePrice}
-                                        onChange={e => setFormData({ ...formData, averagePrice: e.target.value })}
-                                        required
-                                    />
-                                </FormGroup>
-                                <SubmitButton theme={theme} type="submit">Add Holding</SubmitButton>
-                            </Form>
-                        </ModalContent>
-                    </Modal>
-                )}
             </PageContainer>
         );
     }
@@ -1195,6 +1052,30 @@ const PortfolioPage = () => {
     return (
         <PageContainer theme={theme}>
             <ContentWrapper>
+                {/* Wallet Connection Section */}
+                <WalletSection theme={theme}>
+                    <WalletSectionHeader>
+                        <WalletTitle theme={theme}>
+                            <Wallet size={22} />
+                            Wallet Connection
+                        </WalletTitle>
+                        <WalletInfo theme={theme} $linked={!!linkedWallet}>
+                            {linkedWallet ? (
+                                <>
+                                    <Link2 size={14} />
+                                    Wallet Linked
+                                </>
+                            ) : (
+                                <>
+                                    <AlertTriangle size={14} />
+                                    No Wallet Linked
+                                </>
+                            )}
+                        </WalletInfo>
+                    </WalletSectionHeader>
+                    <WalletConnectButton showInfo={true} />
+                </WalletSection>
+
                 {/* Header */}
                 <Header>
                     <HeaderTop>
@@ -1211,14 +1092,53 @@ const PortfolioPage = () => {
                                 <Download size={18} />
                                 Export
                             </ActionButton>
-                            <ActionButton theme={theme} $primary onClick={() => setShowAddModal(true)}>
-                                <Plus size={18} />
-                                Add Holding
-                            </ActionButton>
                         </HeaderActions>
                     </HeaderTop>
                 </Header>
 
+                {/* Tabs */}
+                <TabsContainer theme={theme}>
+                    <Tab
+                        theme={theme}
+                        $active={activeTab === 'holdings'}
+                        onClick={() => setActiveTab('holdings')}
+                    >
+                        <Wallet size={16} />
+                        Holdings
+                    </Tab>
+                    {linkedWallet && (
+                        <Tab
+                            theme={theme}
+                            $active={activeTab === 'analytics'}
+                            onClick={() => setActiveTab('analytics')}
+                        >
+                            <Activity size={16} />
+                            Analytics
+                        </Tab>
+                    )}
+                    <Tab
+                        theme={theme}
+                        $active={activeTab === 'brokerages'}
+                        onClick={() => setActiveTab('brokerages')}
+                    >
+                        <Building2 size={16} />
+                        Brokerages
+                    </Tab>
+                </TabsContainer>
+
+                {/* Analytics Tab */}
+                {activeTab === 'analytics' && linkedWallet && (
+                    <WalletAnalytics />
+                )}
+
+                {/* Brokerages Tab */}
+                {activeTab === 'brokerages' && (
+                    <BrokerageConnect />
+                )}
+
+                {/* Holdings Tab - Stats Hero */}
+                {activeTab === 'holdings' && (
+                    <>
                 {/* Stats Hero */}
                 {stats && (
                     <StatsHero>
@@ -1459,12 +1379,10 @@ const PortfolioPage = () => {
                                                 </Td>
                                                 <Td theme={theme}>
                                                     <ActionCell>
-                                                        <SmallButton theme={theme} onClick={() => handleEdit(holding)}>
-                                                            <Edit size={14} />
-                                                        </SmallButton>
-                                                        <SmallButton theme={theme} $danger onClick={() => deleteHolding(holding._id, holding.symbol)}>
-                                                            <Trash2 size={14} />
-                                                        </SmallButton>
+                                                        <span style={{ color: theme.success || '#10b981', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                                            <Link2 size={12} />
+                                                            Wallet
+                                                        </span>
                                                     </ActionCell>
                                                 </Td>
                                             </Tr>
@@ -1545,100 +1463,10 @@ const PortfolioPage = () => {
                         </ChartCard>
                     </Sidebar>
                 </MainGrid>
+                    </>
+                )}
             </ContentWrapper>
 
-            {/* Add Modal */}
-            {showAddModal && (
-                <Modal onClick={() => setShowAddModal(false)}>
-                    <ModalContent theme={theme} onClick={e => e.stopPropagation()}>
-                        <ModalHeader>
-                            <ModalTitle theme={theme}>Add Holding</ModalTitle>
-                            <CloseButton theme={theme} onClick={() => setShowAddModal(false)}>
-                                <X size={18} />
-                            </CloseButton>
-                        </ModalHeader>
-                        <Form onSubmit={addHolding}>
-                            <FormGroup>
-                                <Label theme={theme}>Symbol</Label>
-                                <Input
-                                    theme={theme}
-                                    type="text"
-                                    placeholder="AAPL"
-                                    value={formData.symbol}
-                                    onChange={e => setFormData({ ...formData, symbol: e.target.value.toUpperCase() })}
-                                    required
-                                    autoFocus
-                                />
-                            </FormGroup>
-                            <FormGroup>
-                                <Label theme={theme}>Shares</Label>
-                                <Input
-                                    theme={theme}
-                                    type="number"
-                                    step="0.01"
-                                    placeholder="10"
-                                    value={formData.shares}
-                                    onChange={e => setFormData({ ...formData, shares: e.target.value })}
-                                    required
-                                />
-                            </FormGroup>
-                            <FormGroup>
-                                <Label theme={theme}>Average Price</Label>
-                                <Input
-                                    theme={theme}
-                                    type="number"
-                                    step="0.01"
-                                    placeholder="150.00"
-                                    value={formData.averagePrice}
-                                    onChange={e => setFormData({ ...formData, averagePrice: e.target.value })}
-                                    required
-                                />
-                            </FormGroup>
-                            <SubmitButton theme={theme} type="submit">Add Holding</SubmitButton>
-                        </Form>
-                    </ModalContent>
-                </Modal>
-            )}
-
-            {/* Edit Modal */}
-            {showEditModal && selectedHolding && (
-                <Modal onClick={() => setShowEditModal(false)}>
-                    <ModalContent theme={theme} onClick={e => e.stopPropagation()}>
-                        <ModalHeader>
-                            <ModalTitle theme={theme}>Edit {selectedHolding.symbol}</ModalTitle>
-                            <CloseButton theme={theme} onClick={() => setShowEditModal(false)}>
-                                <X size={18} />
-                            </CloseButton>
-                        </ModalHeader>
-                        <Form onSubmit={updateHolding}>
-                            <FormGroup>
-                                <Label theme={theme}>Shares</Label>
-                                <Input
-                                    theme={theme}
-                                    type="number"
-                                    step="0.01"
-                                    value={formData.shares}
-                                    onChange={e => setFormData({ ...formData, shares: e.target.value })}
-                                    required
-                                    autoFocus
-                                />
-                            </FormGroup>
-                            <FormGroup>
-                                <Label theme={theme}>Average Price</Label>
-                                <Input
-                                    theme={theme}
-                                    type="number"
-                                    step="0.01"
-                                    value={formData.averagePrice}
-                                    onChange={e => setFormData({ ...formData, averagePrice: e.target.value })}
-                                    required
-                                />
-                            </FormGroup>
-                            <SubmitButton theme={theme} type="submit">Update Holding</SubmitButton>
-                        </Form>
-                    </ModalContent>
-                </Modal>
-            )}
         </PageContainer>
     );
 };
