@@ -103,7 +103,21 @@ const refreshUser = useCallback(async () => {
         try {
             // ✅ Use API instance (has correct baseURL with /api)
             const response = await API.post('/auth/login', { email, password });
-            
+
+            // ✅ CHECK IF 2FA IS REQUIRED
+            if (response.data.requires2FA) {
+                console.log("2FA required for login");
+                setLoading(false);
+                return {
+                    success: true,
+                    requires2FA: true,
+                    tempToken: response.data.tempToken,
+                    method: response.data.method,
+                    email: response.data.email,
+                    phone: response.data.phone
+                };
+            }
+
             // ✅ SAVE TOKEN TO LOCALSTORAGE (using safe accessor)
             if (response.data.token) {
                 safeLocalStorage.setItem('token', response.data.token);
@@ -129,7 +143,7 @@ const refreshUser = useCallback(async () => {
             setError(errorMessage);
             setIsAuthenticated(false);
             setUser(null);
-            
+
             // ✅ SPECIFIC ERROR TOASTS
             if (errorMessage.includes('Invalid credentials') || errorMessage.includes('password')) {
                 toast.error('Invalid email or password', 'Login Failed');
@@ -138,7 +152,42 @@ const refreshUser = useCallback(async () => {
             } else {
                 toast.error(errorMessage, 'Login Failed');
             }
-            
+
+            return { success: false, error: errorMessage };
+        } finally {
+            setLoading(false);
+        }
+    }, [loadUser, navigate, toast]);
+
+    // Complete 2FA Login - Called after successful 2FA verification
+    const complete2FALogin = useCallback(async (tokenData) => {
+        setLoading(true);
+        setError(null);
+        try {
+            // ✅ SAVE TOKEN TO LOCALSTORAGE
+            if (tokenData.token) {
+                safeLocalStorage.setItem('token', tokenData.token);
+                console.log("Token saved to localStorage after 2FA");
+            }
+
+            console.log("2FA successful, loading user...");
+
+            const userLoaded = await loadUser();
+
+            if (userLoaded) {
+                toast.success('Welcome back! 🔐', '2FA Verified');
+                navigate('/dashboard');
+                return { success: true };
+            } else {
+                setError("Failed to establish session");
+                toast.error('Failed to establish session', 'Error');
+                return { success: false, error: "Session error" };
+            }
+        } catch (err) {
+            const errorMessage = err.message || 'Failed to complete login';
+            console.error("2FA login completion failed:", errorMessage);
+            setError(errorMessage);
+            toast.error(errorMessage, 'Login Failed');
             return { success: false, error: errorMessage };
         } finally {
             setLoading(false);
@@ -203,9 +252,10 @@ const refreshUser = useCallback(async () => {
         loading,
         error,
         login,
+        complete2FALogin,
         register,
         logout,
-        refreshUser, 
+        refreshUser,
         api: API,
     };
 
