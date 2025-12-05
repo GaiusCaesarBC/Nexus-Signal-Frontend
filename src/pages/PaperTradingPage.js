@@ -1818,8 +1818,17 @@ const PaperTradingPage = () => {
             await loadAccount();
             loadOrders();
             loadLeaderboard();
-            // Refresh prices immediately after loading to get current values
-            setTimeout(() => handleRefreshPrices(), 1000);
+            // Refresh prices immediately after loading to get current portfolio values
+            // Direct API call to avoid closure issues with handleRefreshPrices
+            try {
+                const response = await api.post('/paper-trading/refresh-prices');
+                if (response.data.success && response.data.account) {
+                    setAccount(response.data.account);
+                    console.log('[PaperTrading] Initial price refresh completed');
+                }
+            } catch (e) {
+                console.error('[PaperTrading] Initial price refresh failed:', e);
+            }
         };
         init();
         const priceRefreshInterval = setInterval(() => { handleRefreshPrices(); }, 30000);
