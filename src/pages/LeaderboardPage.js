@@ -1595,9 +1595,11 @@ const LeaderboardPage = () => {
         return true;
     });
 
-    // Get top 3 for podium
-    const top3 = !debouncedSearch && filteredLeaderboard.length >= 3 ? filteredLeaderboard.slice(0, 3) : [];
-    const restOfLeaderboard = debouncedSearch ? filteredLeaderboard : filteredLeaderboard.slice(3);
+    // Get top 3 for podium (only show podium if we have at least 3 traders)
+    const showPodium = !debouncedSearch && filteredLeaderboard.length >= 3;
+    const top3 = showPodium ? filteredLeaderboard.slice(0, 3) : [];
+    // If we have less than 3 traders or searching, show all traders in the list
+    const restOfLeaderboard = debouncedSearch ? filteredLeaderboard : (showPodium ? filteredLeaderboard.slice(3) : filteredLeaderboard);
 
     // Render skeleton loading
     const renderSkeleton = () => (
