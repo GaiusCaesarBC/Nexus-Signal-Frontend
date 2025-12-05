@@ -69,6 +69,7 @@ import WhaleAlertsPage from './pages/WhaleAlertsPage';
 import ComparisonPage from './pages/ComparisonPage';
 import PredictionHistoryPage from './pages/PredictionHistoryPage';
 import ChartPage from './pages/ChartPage';
+import OAuthCallbackPage from './pages/OAuthCallbackPage';
 
 // Global styles to set the page background
 const GlobalStyle = createGlobalStyle`
@@ -155,6 +156,9 @@ function AppContent() {
                     <Route path="/compare" element={<ComparisonPage />} />
                     <Route path="/prediction-history" element={<PredictionHistoryPage />} />
                     <Route path="/chart/:symbol" element={<ProtectedRoute><ChartPage /></ProtectedRoute>} />
+
+                    {/* Plaid OAuth Callback */}
+                    <Route path="/oauth-callback" element={<ProtectedRoute><OAuthCallbackPage /></ProtectedRoute>} />
 
                     {/* Stock Details Page Routes - supports both /stocks/:symbol and /stock/:symbol */}
                     <Route path="/stocks/:symbol" element={<StockPage />} />
