@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 // ⚠️ TEMPORARY: Force localhost for development
-const USE_LOCAL = true; // Set to false for production
+const USE_LOCAL = false // Set to false for production
 
 // Safe localStorage access (handles private browsing, iframe restrictions, etc.)
 const safeLocalStorage = {
@@ -99,4 +99,4 @@ API.interceptors.response.use(
 console.log('API Base URL:', API.defaults.baseURL);
 
 export { safeLocalStorage };
-export default API;
+export default API;// Force rebuild Thu, Dec  4, 2025 10:27:44 PM
