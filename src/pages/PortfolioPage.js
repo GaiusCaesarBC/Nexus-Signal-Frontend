@@ -1214,8 +1214,28 @@ const PortfolioPage = () => {
         '#84cc16'
     ];
 
+    // Sync a single brokerage connection to get fresh prices
+    const syncBrokerageConnection = useCallback(async (conn) => {
+        try {
+            if (conn.type === 'kraken') {
+                const response = await api.get(`/brokerage/kraken/sync/${conn.id}`);
+                if (response.data.success) {
+                    return response.data.portfolio;
+                }
+            } else if (conn.type === 'plaid') {
+                const response = await api.get(`/brokerage/plaid/sync/${conn.id}`);
+                if (response.data.success) {
+                    return response.data.holdings;
+                }
+            }
+        } catch (error) {
+            console.error(`Error syncing ${conn.name}:`, error);
+        }
+        return null;
+    }, []);
+
     // Fetch brokerage connections and their holdings
-    const fetchBrokerageData = useCallback(async () => {
+    const fetchBrokerageData = useCallback(async (forceSync = false) => {
         try {
             const response = await api.get('/brokerage/connections');
             if (response.data.success) {
@@ -1224,28 +1244,38 @@ const PortfolioPage = () => {
                 const allHoldings = [];
                 let totalBrokerageValue = 0;
 
+                // Sync each active connection to get fresh prices
                 for (const conn of conns) {
-                    if (conn.status === 'active' && conn.cachedPortfolio?.holdings) {
-                        for (const holding of conn.cachedPortfolio.holdings) {
-                            allHoldings.push({
-                                ...holding,
-                                source: conn.type,
-                                sourceName: conn.name,
-                                connectionId: conn.id
-                            });
+                    if (conn.status === 'active') {
+                        // Sync to get fresh prices
+                        const freshPortfolio = await syncBrokerageConnection(conn);
+
+                        // Use fresh data if available, otherwise fall back to cached
+                        const portfolio = freshPortfolio || conn.cachedPortfolio;
+
+                        if (portfolio?.holdings) {
+                            for (const holding of portfolio.holdings) {
+                                allHoldings.push({
+                                    ...holding,
+                                    source: conn.type,
+                                    sourceName: conn.name,
+                                    connectionId: conn.id
+                                });
+                            }
+                            totalBrokerageValue += portfolio?.totalValue || 0;
                         }
-                        totalBrokerageValue += conn.cachedPortfolio?.totalValue || 0;
                     }
                 }
 
                 setBrokerageHoldings(allHoldings);
+                console.log(`[Portfolio] Synced ${conns.length} connections, ${allHoldings.length} holdings, total: $${totalBrokerageValue.toFixed(2)}`);
                 return { holdings: allHoldings, totalValue: totalBrokerageValue, connections: conns };
             }
         } catch (error) {
             console.error('Error fetching brokerage data:', error);
         }
         return { holdings: [], totalValue: 0, connections: [] };
-    }, []);
+    }, [syncBrokerageConnection]);
 
     // Fetch trade history from all brokerage connections
     const fetchTradeHistory = useCallback(async (conns) => {
