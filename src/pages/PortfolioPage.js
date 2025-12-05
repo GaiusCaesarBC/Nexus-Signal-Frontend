@@ -1,6 +1,7 @@
 // client/src/pages/PortfolioPage.js - REDESIGNED PORTFOLIO WITH STUNNING UI
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import styled, { keyframes, css } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -17,7 +18,8 @@ import {
     Download, RefreshCw, Search, AlertTriangle,
     CheckCircle, Shield, Lightbulb, Trophy,
     Wallet, Link2, Building2, Coins, DollarSign,
-    Clock, Sparkles, ChevronRight, ExternalLink
+    Clock, Sparkles, ChevronRight, ExternalLink,
+    History, ArrowRight, ShoppingCart, Tag
 } from 'lucide-react';
 import {
     PieChart as RechartsPie, Pie, Cell, ResponsiveContainer,
@@ -891,6 +893,158 @@ const LoadingText = styled.div`
     font-weight: 600;
 `;
 
+// ============ CLICKABLE SYMBOL ============
+const SymbolLink = styled(Link)`
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.2s ease;
+
+    &:hover {
+        transform: translateX(4px);
+
+        ${props => props.$symbolIcon} {
+            box-shadow: 0 4px 12px ${props => props.theme.brand?.primary || '#00adef'}4D;
+        }
+    }
+`;
+
+const SymbolIconClickable = styled.div`
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, ${props => props.theme.brand?.primary || '#00adef'}33 0%, ${props => props.theme.brand?.accent || '#8b5cf6'}33 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 0.9rem;
+    color: ${props => props.theme.brand?.primary || '#00adef'};
+    transition: all 0.2s ease;
+
+    &:hover {
+        box-shadow: 0 4px 12px ${props => props.theme.brand?.primary || '#00adef'}4D;
+        transform: scale(1.05);
+    }
+`;
+
+// ============ TRADE HISTORY ============
+const TradeHistorySection = styled.div`
+    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
+    border: 1px solid ${props => props.theme.brand?.primary || '#00adef'}33;
+    border-radius: 24px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+    backdrop-filter: blur(10px);
+    animation: ${slideUp} 0.6s ease-out 0.2s both;
+`;
+
+const TradeHistoryHeader = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+`;
+
+const TradeHistoryTitle = styled.h2`
+    font-size: 1.3rem;
+    color: ${props => props.theme.warning || '#f59e0b'};
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 800;
+    margin: 0;
+`;
+
+const TradeCount = styled.span`
+    font-size: 0.85rem;
+    color: ${props => props.theme.text?.secondary || '#94a3b8'};
+    font-weight: 600;
+    padding: 0.35rem 0.75rem;
+    background: ${props => props.theme.warning || '#f59e0b'}1A;
+    border-radius: 20px;
+`;
+
+const TradesTable = styled.div`
+    overflow-x: auto;
+`;
+
+const TradeRow = styled.tr`
+    transition: all 0.2s ease;
+
+    &:hover {
+        background: ${props => props.theme.brand?.primary || '#00adef'}0D;
+    }
+`;
+
+const TradeType = styled.span`
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-weight: 700;
+    padding: 0.35rem 0.75rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    background: ${props => props.$type === 'buy'
+        ? `${props.theme.success || '#10b981'}26`
+        : `${props.theme.error || '#ef4444'}26`};
+    color: ${props => props.$type === 'buy'
+        ? props.theme.success || '#10b981'
+        : props.theme.error || '#ef4444'};
+`;
+
+const TradePair = styled.div`
+    font-weight: 700;
+    color: ${props => props.theme.text?.primary || '#e0e6ed'};
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    &:hover {
+        color: ${props => props.theme.brand?.primary || '#00adef'};
+    }
+`;
+
+const TradeDate = styled.div`
+    color: ${props => props.theme.text?.tertiary || '#64748b'};
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+`;
+
+const TradeAmount = styled.div`
+    font-weight: 600;
+    color: ${props => props.theme.text?.primary || '#e0e6ed'};
+`;
+
+const TradeCost = styled.div`
+    font-weight: 700;
+    color: ${props => props.theme.text?.primary || '#e0e6ed'};
+`;
+
+const TradeFee = styled.div`
+    color: ${props => props.theme.text?.tertiary || '#64748b'};
+    font-size: 0.85rem;
+`;
+
+const NoTradesMessage = styled.div`
+    text-align: center;
+    padding: 3rem 2rem;
+    color: ${props => props.theme.text?.secondary || '#94a3b8'};
+
+    svg {
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+`;
+
 // ============ AI ANALYSIS FUNCTION ============
 const analyzePortfolio = (holdings, stats) => {
     if (!holdings || holdings.length === 0) return null;
@@ -985,15 +1139,38 @@ const analyzePortfolio = (holdings, stats) => {
     return analysis;
 };
 
+// ============ HELPER FUNCTIONS ============
+// Get the correct route for a symbol
+const getAssetRoute = (symbol, type) => {
+    const cryptoSymbols = ['BTC', 'ETH', 'LTC', 'XRP', 'DOGE', 'SOL', 'ADA', 'DOT', 'LINK', 'AVAX', 'ATOM', 'UNI', 'AAVE', 'XLM', 'XMR', 'ETC', 'ZEC', 'MATIC'];
+    const isCrypto = type === 'crypto' || cryptoSymbols.includes(symbol?.toUpperCase());
+    return isCrypto ? `/crypto/${symbol}` : `/stocks/${symbol}`;
+};
+
+// Parse Kraken pair to get base asset
+const parseKrakenPair = (pair) => {
+    // Kraken pairs like XBTUSD, ETHUSD, XXBTZUSD
+    const usdPairs = pair.replace('ZUSD', 'USD').replace('USD', '');
+    // Handle XBT -> BTC
+    if (usdPairs.includes('XBT')) return 'BTC';
+    // Remove X prefix for crypto
+    if (usdPairs.startsWith('X') && usdPairs.length > 3) return usdPairs.slice(1);
+    return usdPairs;
+};
+
 // ============ COMPONENT ============
 const PortfolioPage = () => {
     const { api: authApi } = useAuth();
     const toast = useToast();
     const { theme } = useTheme();
     const { linkedWallet } = useWallet();
+    const navigate = useNavigate();
 
     const [holdings, setHoldings] = useState([]);
     const [brokerageHoldings, setBrokerageHoldings] = useState([]);
+    const [connections, setConnections] = useState([]);
+    const [tradeHistory, setTradeHistory] = useState([]);
+    const [loadingTrades, setLoadingTrades] = useState(false);
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -1016,11 +1193,12 @@ const PortfolioPage = () => {
         try {
             const response = await api.get('/brokerage/connections');
             if (response.data.success) {
-                const connections = response.data.connections || [];
+                const conns = response.data.connections || [];
+                setConnections(conns);
                 const allHoldings = [];
                 let totalBrokerageValue = 0;
 
-                for (const conn of connections) {
+                for (const conn of conns) {
                     if (conn.status === 'active' && conn.cachedPortfolio?.holdings) {
                         for (const holding of conn.cachedPortfolio.holdings) {
                             allHoldings.push({
@@ -1035,12 +1213,52 @@ const PortfolioPage = () => {
                 }
 
                 setBrokerageHoldings(allHoldings);
-                return { holdings: allHoldings, totalValue: totalBrokerageValue };
+                return { holdings: allHoldings, totalValue: totalBrokerageValue, connections: conns };
             }
         } catch (error) {
             console.error('Error fetching brokerage data:', error);
         }
-        return { holdings: [], totalValue: 0 };
+        return { holdings: [], totalValue: 0, connections: [] };
+    }, []);
+
+    // Fetch trade history from all brokerage connections
+    const fetchTradeHistory = useCallback(async (conns) => {
+        if (!conns || conns.length === 0) return;
+
+        setLoadingTrades(true);
+        const allTrades = [];
+
+        try {
+            for (const conn of conns) {
+                if (conn.status !== 'active') continue;
+
+                try {
+                    if (conn.type === 'kraken') {
+                        const response = await api.get(`/brokerage/kraken/trades/${conn.id}`);
+                        if (response.data.success && response.data.trades) {
+                            const trades = response.data.trades.map(trade => ({
+                                ...trade,
+                                source: 'kraken',
+                                sourceName: conn.name,
+                                connectionId: conn.id
+                            }));
+                            allTrades.push(...trades);
+                        }
+                    }
+                    // Add Plaid transactions here when implemented
+                } catch (err) {
+                    console.error(`Error fetching trades from ${conn.name}:`, err);
+                }
+            }
+
+            // Sort by date descending
+            allTrades.sort((a, b) => new Date(b.time) - new Date(a.time));
+            setTradeHistory(allTrades.slice(0, 50)); // Keep last 50 trades
+        } catch (error) {
+            console.error('Error fetching trade history:', error);
+        } finally {
+            setLoadingTrades(false);
+        }
     }, []);
 
     // Fetch portfolio data
@@ -1075,12 +1293,17 @@ const PortfolioPage = () => {
             } else {
                 setStats(null);
             }
+
+            // Fetch trade history from connections
+            if (brokerageData.connections && brokerageData.connections.length > 0) {
+                fetchTradeHistory(brokerageData.connections);
+            }
         } catch (error) {
             console.error('Error fetching portfolio:', error);
         } finally {
             setLoading(false);
         }
-    }, [fetchBrokerageData]);
+    }, [fetchBrokerageData, fetchTradeHistory]);
 
     useEffect(() => {
         fetchPortfolio();
@@ -1469,15 +1692,18 @@ const PortfolioPage = () => {
                                                         return (
                                                             <Tr theme={theme} key={`${holding.symbol}-${idx}`}>
                                                                 <Td theme={theme}>
-                                                                    <SymbolCell>
-                                                                        <SymbolIcon theme={theme}>
+                                                                    <SymbolLink to={getAssetRoute(holding.symbol, holding.type)} theme={theme}>
+                                                                        <SymbolIconClickable theme={theme}>
                                                                             {holding.symbol?.substring(0, 2)}
-                                                                        </SymbolIcon>
+                                                                        </SymbolIconClickable>
                                                                         <SymbolInfo>
-                                                                            <SymbolName theme={theme}>{holding.symbol}</SymbolName>
+                                                                            <SymbolName theme={theme}>
+                                                                                {holding.symbol}
+                                                                                <ExternalLink size={12} style={{ marginLeft: '0.35rem', opacity: 0.5 }} />
+                                                                            </SymbolName>
                                                                             <SymbolType theme={theme}>{holding.name || holding.type || 'Crypto'}</SymbolType>
                                                                         </SymbolInfo>
-                                                                    </SymbolCell>
+                                                                    </SymbolLink>
                                                                 </Td>
                                                                 <Td theme={theme}>
                                                                     <PriceCell theme={theme}>
@@ -1589,6 +1815,115 @@ const PortfolioPage = () => {
                                         </ChartCard>
                                     </Sidebar>
                                 </MainGrid>
+
+                                {/* Trade History Section */}
+                                <TradeHistorySection theme={theme}>
+                                    <TradeHistoryHeader>
+                                        <TradeHistoryTitle theme={theme}>
+                                            <History size={22} />
+                                            Trade History
+                                        </TradeHistoryTitle>
+                                        {tradeHistory.length > 0 && (
+                                            <TradeCount theme={theme}>
+                                                {tradeHistory.length} recent trades
+                                            </TradeCount>
+                                        )}
+                                    </TradeHistoryHeader>
+
+                                    {loadingTrades ? (
+                                        <LoadingContainer style={{ padding: '2rem' }}>
+                                            <LoadingSpinner size={32} theme={theme} />
+                                            <LoadingText theme={theme}>Loading trade history...</LoadingText>
+                                        </LoadingContainer>
+                                    ) : tradeHistory.length === 0 ? (
+                                        <NoTradesMessage theme={theme}>
+                                            <History size={48} />
+                                            <div>No trades found</div>
+                                            <div style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>
+                                                Your trading history will appear here once you make trades on connected brokerages.
+                                            </div>
+                                        </NoTradesMessage>
+                                    ) : (
+                                        <TradesTable>
+                                            <Table>
+                                                <thead>
+                                                    <tr>
+                                                        <Th theme={theme}>Type</Th>
+                                                        <Th theme={theme}>Pair</Th>
+                                                        <Th theme={theme}>Amount</Th>
+                                                        <Th theme={theme}>Price</Th>
+                                                        <Th theme={theme}>Total</Th>
+                                                        <Th theme={theme}>Fee</Th>
+                                                        <Th theme={theme}>Date</Th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {tradeHistory.map((trade, idx) => {
+                                                        const baseAsset = parseKrakenPair(trade.pair || '');
+                                                        return (
+                                                            <TradeRow theme={theme} key={trade.id || idx}>
+                                                                <Td theme={theme}>
+                                                                    <TradeType theme={theme} $type={trade.type}>
+                                                                        {trade.type === 'buy' ? (
+                                                                            <>
+                                                                                <ShoppingCart size={14} />
+                                                                                Buy
+                                                                            </>
+                                                                        ) : (
+                                                                            <>
+                                                                                <Tag size={14} />
+                                                                                Sell
+                                                                            </>
+                                                                        )}
+                                                                    </TradeType>
+                                                                </Td>
+                                                                <Td theme={theme}>
+                                                                    <TradePair
+                                                                        theme={theme}
+                                                                        onClick={() => navigate(getAssetRoute(baseAsset, 'crypto'))}
+                                                                    >
+                                                                        {baseAsset || trade.pair}
+                                                                        <ArrowRight size={14} />
+                                                                    </TradePair>
+                                                                </Td>
+                                                                <Td theme={theme}>
+                                                                    <TradeAmount theme={theme}>
+                                                                        {trade.volume?.toLocaleString(undefined, { maximumFractionDigits: 8 })}
+                                                                    </TradeAmount>
+                                                                </Td>
+                                                                <Td theme={theme}>
+                                                                    <PriceCell theme={theme}>
+                                                                        ${trade.price?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                    </PriceCell>
+                                                                </Td>
+                                                                <Td theme={theme}>
+                                                                    <TradeCost theme={theme}>
+                                                                        ${trade.cost?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                    </TradeCost>
+                                                                </Td>
+                                                                <Td theme={theme}>
+                                                                    <TradeFee theme={theme}>
+                                                                        ${trade.fee?.toLocaleString(undefined, { minimumFractionDigits: 4 })}
+                                                                    </TradeFee>
+                                                                </Td>
+                                                                <Td theme={theme}>
+                                                                    <TradeDate theme={theme}>
+                                                                        <Clock size={14} />
+                                                                        {new Date(trade.time).toLocaleDateString('en-US', {
+                                                                            month: 'short',
+                                                                            day: 'numeric',
+                                                                            year: 'numeric'
+                                                                        })}
+                                                                    </TradeDate>
+                                                                </Td>
+                                                            </TradeRow>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                            </Table>
+                                        </TradesTable>
+                                    )}
+                                </TradeHistorySection>
                             </>
                         )}
                     </>
