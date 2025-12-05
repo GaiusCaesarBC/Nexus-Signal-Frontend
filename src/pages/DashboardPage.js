@@ -11,7 +11,7 @@ import {
     TrendingUp, TrendingDown, Activity, DollarSign,
     Zap, Target, Brain, Eye, ArrowUpRight, ArrowDownRight,
     Clock, Flame, Trophy, RefreshCw, Sparkles, Users, Award, MessageSquare,
-    ThumbsUp, Share2, ChevronRight, Crown, Percent, Lock, Rocket
+    ThumbsUp, Share2, ChevronRight, Crown, Percent, Lock, Rocket, Briefcase, Link2
 } from 'lucide-react';
 import nexusSignalLogo from '../assets/nexus-signal-logo.png';
 import AdvancedChart from '../components/AdvancedChart';
@@ -743,6 +743,124 @@ const ViewTradingButton = styled.button`
     }
 `;
 
+// ============ REAL PORTFOLIO HERO ============
+const RealPortfolioHero = styled.div`
+    background: linear-gradient(135deg, ${props => props.theme.brand?.primary || '#00adef'}1f 0%, ${props => props.theme.brand?.accent || '#8b5cf6'}1f 50%, ${props => props.theme.info || '#ec4899'}1f 100%);
+    border: 1px solid ${props => props.theme.brand?.primary || '#00adef'}59;
+    border-radius: 16px;
+    padding: 1.5rem 2rem;
+    margin-bottom: 2rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr auto;
+    gap: 1.5rem;
+    align-items: center;
+    animation: ${fadeIn} 0.8s ease-out;
+    position: relative;
+    overflow: hidden;
+
+    @media (max-width: 1200px) {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    @media (max-width: 768px) {
+        grid-template-columns: 1fr;
+        text-align: center;
+    }
+`;
+
+const RealPortfolioTitle = styled.div`
+    position: relative;
+    z-index: 1;
+`;
+
+const RealPortfolioLabel = styled.div`
+    color: ${props => props.theme.brand?.primary || '#00adef'};
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 0.4rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    @media (max-width: 768px) {
+        justify-content: center;
+    }
+`;
+
+const RealPortfolioValue = styled.div`
+    font-size: 2rem;
+    font-weight: 900;
+    color: ${props => props.$color || props.theme.text?.primary || '#e0e6ed'};
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    @media (max-width: 768px) {
+        font-size: 1.75rem;
+        justify-content: center;
+    }
+`;
+
+const RealPortfolioChange = styled.div`
+    font-size: 0.9rem;
+    color: ${props => props.$positive ? (props.theme.success || '#10b981') : (props.theme.error || '#ef4444')};
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-top: 0.2rem;
+
+    @media (max-width: 768px) {
+        justify-content: center;
+    }
+`;
+
+const ViewPortfolioButton = styled.button`
+    padding: 1rem 1.75rem;
+    background: linear-gradient(135deg, ${props => props.theme.brand?.primary || '#00adef'} 0%, ${props => props.theme.brand?.accent || '#8b5cf6'} 100%);
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 1;
+
+    &:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 30px ${props => props.theme.brand?.primary || '#00adef'}66;
+    }
+
+    @media (max-width: 768px) {
+        width: 100%;
+        justify-content: center;
+    }
+`;
+
+const EmptyPortfolioMessage = styled.div`
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 1rem;
+    color: ${props => props.theme.text?.secondary || '#94a3b8'};
+    font-size: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+
+    span {
+        font-size: 0.85rem;
+        color: ${props => props.theme.text?.tertiary || '#64748b'};
+    }
+`;
+
 // ============ THREE COLUMN WIDGETS ============
 const WidgetsGrid = styled.div`
     display: grid;
@@ -1196,6 +1314,9 @@ const DashboardPage = () => {
     const [paperTradingStats, setPaperTradingStats] = useState(null);
     const [userRank, setUserRank] = useState(null);
 
+    // Real portfolio
+    const [realPortfolioStats, setRealPortfolioStats] = useState(null);
+
     // Widgets
     const [leaderboard, setLeaderboard] = useState([]);
     const [socialFeed, setSocialFeed] = useState([]);
@@ -1268,6 +1389,7 @@ useEffect(() => {
             await Promise.all([
                 fetchTickerData(),
                 fetchPaperTradingData(),
+                fetchRealPortfolioData(),
                 fetchLeaderboardData(),
                 fetchSocialFeed(),
                 fetchAchievements()
@@ -1417,6 +1539,55 @@ useEffect(() => {
                 winningTrades: 0,
                 losingTrades: 0
             });
+        }
+    };
+
+    const fetchRealPortfolioData = async () => {
+        try {
+            // Get brokerage connections
+            const connResponse = await api.get('/brokerage/connections');
+            if (connResponse.data.success) {
+                const connections = connResponse.data.connections || [];
+                let totalValue = 0;
+                let holdingsCount = 0;
+
+                // Sum up all active brokerage values
+                for (const conn of connections) {
+                    if (conn.status === 'active' && conn.cachedPortfolio) {
+                        totalValue += conn.cachedPortfolio.totalValue || 0;
+                        holdingsCount += conn.cachedPortfolio.holdings?.length || 0;
+                    }
+                }
+
+                // Get portfolio history for gain/loss tracking
+                let totalGain = 0;
+                let totalGainPercent = 0;
+                let initialValue = totalValue;
+
+                try {
+                    const historyResponse = await api.get('/brokerage/portfolio-history');
+                    if (historyResponse.data.success && historyResponse.data.history) {
+                        const history = historyResponse.data.history;
+                        totalGain = history.totalGain || 0;
+                        totalGainPercent = history.totalGainPercent || 0;
+                        initialValue = history.initialValue || totalValue;
+                    }
+                } catch (histError) {
+                    console.log('No portfolio history yet');
+                }
+
+                setRealPortfolioStats({
+                    totalValue,
+                    initialValue,
+                    totalGain,
+                    totalGainPercent,
+                    holdingsCount,
+                    connectionsCount: connections.filter(c => c.status === 'active').length
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching real portfolio data:', error);
+            setRealPortfolioStats(null);
         }
     };
 
@@ -1816,7 +1987,7 @@ const handleOpenRewardModal = () => {
                 {/* PAPER TRADING HERO */}
                 <PaperTradingHero>
                     <PaperTradingTitle>
-                        <PaperTradingLabel><DollarSign size={16} /> Portfolio</PaperTradingLabel>
+                        <PaperTradingLabel><DollarSign size={16} /> Paper Trading</PaperTradingLabel>
                         <PaperTradingValue>{formatCurrency(paperTradingStats?.portfolioValue)}</PaperTradingValue>
                         <PaperTradingChange $positive={paperTradingStats?.totalProfitLoss >= 0}>
                             {paperTradingStats?.totalProfitLoss >= 0 ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
@@ -1854,6 +2025,54 @@ const handleOpenRewardModal = () => {
                         <Rocket size={18} /> Trade Now <ChevronRight size={18} />
                     </ViewTradingButton>
                 </PaperTradingHero>
+
+                {/* REAL PORTFOLIO HERO */}
+                <RealPortfolioHero>
+                    {realPortfolioStats && realPortfolioStats.totalValue > 0 ? (
+                        <>
+                            <RealPortfolioTitle>
+                                <RealPortfolioLabel><Briefcase size={16} /> Real Portfolio</RealPortfolioLabel>
+                                <RealPortfolioValue>{formatCurrency(realPortfolioStats.totalValue)}</RealPortfolioValue>
+                                <RealPortfolioChange $positive={realPortfolioStats.totalGain >= 0}>
+                                    {realPortfolioStats.totalGain >= 0 ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
+                                    {formatCurrency(Math.abs(realPortfolioStats.totalGain))}
+                                    ({formatPercent(realPortfolioStats.totalGainPercent)})
+                                </RealPortfolioChange>
+                            </RealPortfolioTitle>
+
+                            <RealPortfolioTitle>
+                                <RealPortfolioLabel><Activity size={16} /> Holdings</RealPortfolioLabel>
+                                <RealPortfolioValue $color={theme.brand?.primary}>
+                                    {realPortfolioStats.holdingsCount}
+                                </RealPortfolioValue>
+                                <RealPortfolioChange $positive>Assets tracked</RealPortfolioChange>
+                            </RealPortfolioTitle>
+
+                            <RealPortfolioTitle>
+                                <RealPortfolioLabel><Link2 size={16} /> Connected</RealPortfolioLabel>
+                                <RealPortfolioValue $color={theme.success}>
+                                    {realPortfolioStats.connectionsCount}
+                                </RealPortfolioValue>
+                                <RealPortfolioChange $positive>Brokerage{realPortfolioStats.connectionsCount !== 1 ? 's' : ''}</RealPortfolioChange>
+                            </RealPortfolioTitle>
+
+                            <ViewPortfolioButton onClick={() => navigate('/portfolio')}>
+                                <Briefcase size={18} /> View Portfolio <ChevronRight size={18} />
+                            </ViewPortfolioButton>
+                        </>
+                    ) : (
+                        <>
+                            <EmptyPortfolioMessage>
+                                <Briefcase size={32} />
+                                <div>Connect your brokerage to track your real portfolio</div>
+                                <span>Link Kraken, Plaid-supported brokerages, or wallets</span>
+                            </EmptyPortfolioMessage>
+                            <ViewPortfolioButton onClick={() => navigate('/portfolio')}>
+                                <Link2 size={18} /> Connect Brokerage <ChevronRight size={18} />
+                            </ViewPortfolioButton>
+                        </>
+                    )}
+                </RealPortfolioHero>
 
                 {/* THREE COLUMN WIDGETS */}
                 <WidgetsGrid>
