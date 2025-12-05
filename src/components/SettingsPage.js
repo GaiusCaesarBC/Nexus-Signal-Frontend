@@ -11,6 +11,7 @@ import {
     Zap, RefreshCw, X, Globe, Star, MessageSquare,
     ChevronRight, Check, Sparkles
 } from 'lucide-react';
+import TwoFactorSettings from './TwoFactorSettings';
 
 const SettingsPage = () => {
     const { logout, api, user } = useAuth();
@@ -405,12 +406,24 @@ const SettingsPage = () => {
                     {/* SECURITY TAB */}
                     {activeTab === 'security' && (
                         <>
+                            {/* Two-Factor Authentication Section */}
+                            <Section>
+                                <SectionHeader>
+                                    <Shield size={20} />
+                                    <span>Two-Factor Authentication</span>
+                                </SectionHeader>
+
+                                <SectionContent>
+                                    <TwoFactorSettings />
+                                </SectionContent>
+                            </Section>
+
                             <Section>
                                 <SectionHeader>
                                     <Lock size={20} />
                                     <span>Change Password</span>
                                 </SectionHeader>
-                                
+
                                 <SectionContent>
                                     <InfoBanner>
                                         <Shield size={18} />

@@ -4,7 +4,8 @@ import styled, { keyframes } from 'styled-components';
 import { LogIn, User, Lock, ArrowRight, Zap, Shield, Eye, EyeOff } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useToast } from '../context/ToastContext'; // ✅ CORRECT LOCATION
+import { useToast } from '../context/ToastContext';
+import TwoFactorModal from '../components/TwoFactorModal';
 
 // ============ INSANE ANIMATIONS ============
 const fadeIn = keyframes`
@@ -445,8 +446,17 @@ const LoginPage = () => {
     const [particles, setParticles] = useState([]);
     const [shapes, setShapes] = useState([]);
 
-    const { login, loading: authLoading } = useAuth();
-    const toast = useToast(); // ✅ CORRECT LOCATION - Use toast hook
+    // 2FA State
+    const [show2FAModal, setShow2FAModal] = useState(false);
+    const [twoFactorData, setTwoFactorData] = useState({
+        tempToken: null,
+        method: null,
+        email: null,
+        phone: null
+    });
+
+    const { login, complete2FALogin, loading: authLoading } = useAuth();
+    const toast = useToast();
     const isLoading = localLoading || authLoading;
 
     // Generate background particles and shapes on mount
@@ -496,12 +506,43 @@ const LoginPage = () => {
 
         const loginResult = await login(email, password);
 
+        // ✅ HANDLE 2FA REQUIRED
+        if (loginResult.requires2FA) {
+            console.log('LoginPage: 2FA required, showing modal');
+            setTwoFactorData({
+                tempToken: loginResult.tempToken,
+                method: loginResult.method,
+                email: loginResult.email,
+                phone: loginResult.phone
+            });
+            setShow2FAModal(true);
+            setLocalLoading(false);
+            return;
+        }
+
         if (!loginResult.success) {
             setLocalError(loginResult.error || 'Login failed. Please check your credentials.');
             console.error('LoginPage handleSubmit: Login failed:', loginResult.error || 'Unknown error');
         }
 
         setLocalLoading(false);
+    };
+
+    // Handle successful 2FA verification
+    const handle2FASuccess = async (data) => {
+        setShow2FAModal(false);
+        await complete2FALogin(data);
+    };
+
+    // Close 2FA modal
+    const handle2FAClose = () => {
+        setShow2FAModal(false);
+        setTwoFactorData({
+            tempToken: null,
+            method: null,
+            email: null,
+            phone: null
+        });
     };
 
     return (
@@ -632,6 +673,17 @@ const LoginPage = () => {
                     </CardContent>
                 </LoginFormCard>
             </ContentWrapper>
+
+            {/* 2FA Verification Modal */}
+            <TwoFactorModal
+                isOpen={show2FAModal}
+                onClose={handle2FAClose}
+                onSuccess={handle2FASuccess}
+                tempToken={twoFactorData.tempToken}
+                method={twoFactorData.method}
+                email={twoFactorData.email}
+                phone={twoFactorData.phone}
+            />
         </LoginPageContainer>
     );
 };
