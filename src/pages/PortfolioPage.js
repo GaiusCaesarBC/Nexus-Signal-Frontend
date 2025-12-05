@@ -19,7 +19,7 @@ import {
     CheckCircle, Shield, Lightbulb, Trophy,
     Wallet, Link2, Building2, Coins, DollarSign,
     Clock, Sparkles, ChevronRight, ExternalLink,
-    History, ArrowRight, ShoppingCart, Tag
+    History, ArrowRight, ShoppingCart, Tag, Info
 } from 'lucide-react';
 import {
     PieChart as RechartsPie, Pie, Cell, ResponsiveContainer,
@@ -167,6 +167,32 @@ const TitleIcon = styled.div`
 const Subtitle = styled.p`
     color: ${props => props.theme.text?.secondary || '#94a3b8'};
     font-size: 1.1rem;
+`;
+
+const DisclaimerNotice = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.25rem;
+    background: ${props => props.theme.warning || '#f59e0b'}15;
+    border: 1px solid ${props => props.theme.warning || '#f59e0b'}40;
+    border-radius: 12px;
+    margin: 1rem auto 1.5rem;
+    max-width: 700px;
+    animation: ${fadeIn} 0.6s ease-out 0.1s both;
+
+    svg {
+        flex-shrink: 0;
+        color: ${props => props.theme.warning || '#f59e0b'};
+    }
+`;
+
+const DisclaimerText = styled.span`
+    color: ${props => props.theme.text?.secondary || '#94a3b8'};
+    font-size: 0.8rem;
+    line-height: 1.4;
+    text-align: center;
 `;
 
 // ============ TABS ============
@@ -1403,6 +1429,14 @@ const PortfolioPage = () => {
                             : 'Track your investments across wallets and brokerages'}
                     </Subtitle>
                 </Header>
+
+                {/* Leaderboard Disclaimer */}
+                <DisclaimerNotice theme={theme}>
+                    <Info size={16} />
+                    <DisclaimerText theme={theme}>
+                        Leaderboard rankings only track performance after linking your account. Previous gains don't count.
+                    </DisclaimerText>
+                </DisclaimerNotice>
 
                 {/* Tabs */}
                 <TabsContainer theme={theme}>
