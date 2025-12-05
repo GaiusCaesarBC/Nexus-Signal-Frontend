@@ -1198,6 +1198,7 @@ const PortfolioPage = () => {
     const [tradeHistory, setTradeHistory] = useState([]);
     const [loadingTrades, setLoadingTrades] = useState(false);
     const [stats, setStats] = useState(null);
+    const [portfolioHistory, setPortfolioHistory] = useState(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -1317,6 +1318,23 @@ const PortfolioPage = () => {
         }
     }, []);
 
+    // Track portfolio value in database for persistent gain/loss tracking
+    const trackPortfolioValue = useCallback(async (totalValue, holdingsCount) => {
+        try {
+            const response = await api.post('/brokerage/portfolio-history/track', {
+                totalValue,
+                holdingsCount
+            });
+            if (response.data.success && response.data.history) {
+                setPortfolioHistory(response.data.history);
+                return response.data.history;
+            }
+        } catch (error) {
+            console.error('Error tracking portfolio value:', error);
+        }
+        return null;
+    }, []);
+
     // Fetch portfolio data
     const fetchPortfolio = useCallback(async () => {
         try {
@@ -1331,17 +1349,26 @@ const PortfolioPage = () => {
 
             setHoldings(combinedHoldings);
 
-            // Calculate stats from brokerage data only (not paper trading)
             const totalValue = brokerageData.totalValue;
-            // We don't track cost basis for real portfolios yet
-            const totalCost = 0;
-            const totalGain = 0;
-            const totalGainPercent = 0;
 
-            if (combinedHoldings.length > 0) {
+            // Track value in database and get gain/loss from history
+            let totalGain = 0;
+            let totalGainPercent = 0;
+            let initialValue = 0;
+
+            if (totalValue > 0) {
+                const history = await trackPortfolioValue(totalValue, combinedHoldings.length);
+                if (history) {
+                    totalGain = history.totalGain || 0;
+                    totalGainPercent = history.totalGainPercent || 0;
+                    initialValue = history.initialValue || totalValue;
+                }
+            }
+
+            if (combinedHoldings.length > 0 || totalValue > 0) {
                 setStats({
                     totalValue,
-                    totalCost,
+                    totalCost: initialValue,
                     totalGain,
                     totalGainPercent,
                     holdingsCount: combinedHoldings.length
@@ -1359,7 +1386,7 @@ const PortfolioPage = () => {
         } finally {
             setLoading(false);
         }
-    }, [fetchBrokerageData, fetchTradeHistory]);
+    }, [fetchBrokerageData, fetchTradeHistory, trackPortfolioValue]);
 
     useEffect(() => {
         fetchPortfolio();
