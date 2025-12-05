@@ -103,6 +103,41 @@ const PoweredBy = styled.div`
     color: ${props => props.theme?.brand?.primary || '#00adef'};
 `;
 
+const SourceBadge = styled.span`
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    background: ${props => {
+        if (props.$source === 'pancakeswap') return '#f0b90b33';
+        return props.theme?.brand?.primary + '33' || '#00adef33';
+    }};
+    color: ${props => {
+        if (props.$source === 'pancakeswap') return '#f0b90b';
+        return props.theme?.brand?.primary || '#00adef';
+    }};
+    border: 1px solid ${props => {
+        if (props.$source === 'pancakeswap') return '#f0b90b66';
+        return props.theme?.brand?.primary + '66' || '#00adef66';
+    }};
+`;
+
+const ChainBadge = styled.span`
+    display: inline-flex;
+    align-items: center;
+    padding: 0.15rem 0.35rem;
+    border-radius: 4px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    background: #f0b90b22;
+    color: #f0b90b;
+    margin-left: 0.25rem;
+`;
+
 // ============ MODE TOGGLE ============
 const ModeToggle = styled.div`
     max-width: 1800px;
@@ -402,6 +437,10 @@ const Symbol = styled.span`
 const Name = styled.span`
     font-size: 0.85rem;
     color: ${props => props.theme?.text?.tertiary || '#64748b'};
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
 `;
 
 const PriceCell = styled.div`
@@ -659,7 +698,7 @@ const ScreenerPage = () => {
                 <Subtitle theme={theme}>Track the best performing stocks and cryptocurrencies in real-time</Subtitle>
                 <PoweredBy theme={theme}>
                     <Zap size={18} />
-                    Live Market Data • Top 50 Gainers
+                    {mode === 'crypto' ? 'PancakeSwap + CoinGecko • BSC & Global Crypto' : 'Live Market Data • Top 50 Gainers'}
                 </PoweredBy>
             </Header>
 
@@ -768,11 +807,23 @@ const ScreenerPage = () => {
                                     </TableCell>
                                     <TableCell theme={theme}>
                                         <SymbolCell>
-                                            <Symbol theme={theme}>{item.symbol}</Symbol>
+                                            <Symbol theme={theme}>
+                                                {item.symbol}
+                                                {item.source === 'pancakeswap' && (
+                                                    <ChainBadge>BSC</ChainBadge>
+                                                )}
+                                            </Symbol>
                                         </SymbolCell>
                                     </TableCell>
                                     <TableCell theme={theme}>
-                                        <Name theme={theme}>{item.name}</Name>
+                                        <Name theme={theme}>
+                                            {item.name}
+                                            {mode === 'crypto' && item.source && (
+                                                <SourceBadge theme={theme} $source={item.source}>
+                                                    {item.source === 'pancakeswap' ? '🥞 PCS' : '🦎 CG'}
+                                                </SourceBadge>
+                                            )}
+                                        </Name>
                                     </TableCell>
                                     <TableCell theme={theme}>
                                         <PriceCell theme={theme}>{formatPrice(item.price || 0, mode)}</PriceCell>
