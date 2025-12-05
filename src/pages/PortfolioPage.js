@@ -1,6 +1,6 @@
-// client/src/pages/PortfolioPage.js - WITH WALLET CONNECTION INTEGRATION
+// client/src/pages/PortfolioPage.js - REDESIGNED PORTFOLIO WITH STUNNING UI
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import styled, { keyframes, css } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -9,22 +9,34 @@ import { useWallet } from '../context/WalletContext';
 import WalletConnectButton from '../components/WalletConnectButton';
 import WalletAnalytics from '../components/WalletAnalytics';
 import BrokerageConnect from '../components/BrokerageConnect';
+import api from '../api/axios';
 import {
     TrendingUp, TrendingDown, PieChart, BarChart3,
     Activity, Brain, Target, Zap,
     ArrowUpRight, ArrowDownRight, Eye, Flame, Star,
     Download, RefreshCw, Search, AlertTriangle,
-    CheckCircle, Shield, Lightbulb,
-    Wallet, Link2, Building2
+    CheckCircle, Shield, Lightbulb, Trophy,
+    Wallet, Link2, Building2, Coins, DollarSign,
+    Clock, Sparkles, ChevronRight, ExternalLink
 } from 'lucide-react';
 import {
     PieChart as RechartsPie, Pie, Cell, ResponsiveContainer,
-    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip
+    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, AreaChart, Area
 } from 'recharts';
 
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`
     from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+`;
+
+const fadeInScale = keyframes`
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+`;
+
+const slideUp = keyframes`
+    from { opacity: 0; transform: translateY(40px); }
     to { opacity: 1; transform: translateY(0); }
 `;
 
@@ -43,108 +55,226 @@ const rotate = keyframes`
     to { transform: rotate(360deg); }
 `;
 
-const SpinningIcon = styled.div`
-    animation: ${rotate} 2s linear infinite;
-    display: inline-flex;
+const float = keyframes`
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
 `;
 
 const glow = keyframes`
-    0%, 100% { box-shadow: 0 0 20px rgba(139, 92, 246, 0.3); }
-    50% { box-shadow: 0 0 40px rgba(139, 92, 246, 0.6); }
+    0%, 100% { box-shadow: 0 0 20px rgba(0, 173, 239, 0.3); }
+    50% { box-shadow: 0 0 40px rgba(0, 173, 239, 0.6); }
 `;
 
-// ============ STYLED COMPONENTS ============
+const countUp = keyframes`
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+`;
+
+// ============ BACKGROUND ============
+const BackgroundOrbs = styled.div`
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 0;
+`;
+
+const Orb = styled.div`
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.25;
+    animation: ${float} ${props => props.$duration || '20s'} ease-in-out infinite;
+
+    &:nth-child(1) {
+        width: 500px;
+        height: 500px;
+        background: ${({ theme }) => `radial-gradient(circle, ${theme.brand?.primary || '#00adef'}66 0%, transparent 70%)`};
+        top: 5%;
+        left: -150px;
+    }
+
+    &:nth-child(2) {
+        width: 400px;
+        height: 400px;
+        background: ${({ theme }) => `radial-gradient(circle, ${theme.success || '#10b981'}66 0%, transparent 70%)`};
+        top: 40%;
+        right: -100px;
+        animation-delay: -5s;
+    }
+
+    &:nth-child(3) {
+        width: 350px;
+        height: 350px;
+        background: ${({ theme }) => `radial-gradient(circle, ${theme.brand?.accent || '#8b5cf6'}4D 0%, transparent 70%)`};
+        bottom: 10%;
+        left: 30%;
+        animation-delay: -10s;
+    }
+`;
+
+// ============ LAYOUT ============
 const PageContainer = styled.div`
     min-height: 100vh;
     background: transparent;
     color: ${props => props.theme.text?.primary || '#e0e6ed'};
     padding: 6rem 2rem 2rem;
+    position: relative;
+    z-index: 1;
 `;
 
 const ContentWrapper = styled.div`
     max-width: 1600px;
     margin: 0 auto;
+    position: relative;
+    z-index: 1;
 `;
 
+// ============ HEADER ============
 const Header = styled.div`
     margin-bottom: 2rem;
     animation: ${fadeIn} 0.6s ease-out;
-`;
-
-const HeaderTop = styled.div`
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-    flex-wrap: wrap;
-    gap: 1rem;
+    text-align: center;
 `;
 
 const Title = styled.h1`
-    font-size: 2.5rem;
+    font-size: 3rem;
     background: ${props => props.theme.brand?.gradient || 'linear-gradient(135deg, #00adef 0%, #00ff88 100%)'};
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
     font-weight: 900;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
 
     @media (max-width: 768px) {
         font-size: 2rem;
     }
 `;
 
+const TitleIcon = styled.div`
+    animation: ${float} 3s ease-in-out infinite;
+`;
+
 const Subtitle = styled.p`
     color: ${props => props.theme.text?.secondary || '#94a3b8'};
-    font-size: 1rem;
-    margin-top: 0.25rem;
+    font-size: 1.1rem;
 `;
 
-const HeaderActions = styled.div`
+// ============ TABS ============
+const TabsContainer = styled.div`
     display: flex;
-    gap: 0.75rem;
-    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+    background: ${props => props.theme.bg?.tertiary || 'rgba(15, 23, 42, 0.6)'};
+    padding: 0.5rem;
+    border-radius: 16px;
+    width: fit-content;
+    margin-left: auto;
+    margin-right: auto;
+    animation: ${fadeIn} 0.6s ease-out 0.2s both;
+    backdrop-filter: blur(10px);
+    border: 1px solid ${props => props.theme.brand?.primary || '#00adef'}33;
 `;
 
-const ActionButton = styled.button`
+const Tab = styled.button`
+    padding: 0.85rem 1.75rem;
+    background: ${props => props.$active
+        ? props.theme.brand?.gradient || `linear-gradient(135deg, ${props.theme.brand?.primary || '#00adef'} 0%, ${props.theme.brand?.secondary || '#0088cc'} 100%)`
+        : 'transparent'};
+    border: none;
+    border-radius: 12px;
+    color: ${props => props.$active ? 'white' : props.theme.text?.secondary || '#94a3b8'};
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.6rem 1.25rem;
-    background: ${props => props.$primary 
-        ? `linear-gradient(135deg, ${props.theme.success || '#10b981'} 0%, ${props.theme.success || '#059669'} 100%)`
-        : `${props.theme.brand?.primary || '#00adef'}15`};
-    border: 1px solid ${props => props.$primary ? 'transparent' : `${props.theme.brand?.primary || '#00adef'}4D`};
-    border-radius: 10px;
-    color: ${props => props.$primary ? 'white' : props.theme.brand?.primary || '#00adef'};
-    font-weight: 600;
-    font-size: 0.9rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
+
+    ${props => props.$active && css`
+        box-shadow: 0 8px 24px ${props.theme.brand?.primary || '#00adef'}4D;
+    `}
 
     &:hover {
+        background: ${props => props.$active
+            ? props.theme.brand?.gradient
+            : `${props.theme.brand?.primary || '#00adef'}1A`};
+        color: ${props => props.$active ? 'white' : props.theme.text?.primary};
         transform: translateY(-2px);
-        box-shadow: ${props => props.$primary 
-            ? `0 8px 24px ${props.theme.success || '#10b981'}66`
-            : `0 8px 24px ${props.theme.brand?.primary || '#00adef'}33`};
     }
+`;
 
-    &:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-        transform: none;
-    }
+// ============ WALLET SECTION ============
+const WalletSection = styled.div`
+    background: linear-gradient(135deg, ${props => props.theme.brand?.primary || '#00adef'}1A 0%, ${props => props.theme.brand?.accent || '#8b5cf6'}1A 100%);
+    border: 2px solid ${props => props.theme.brand?.primary || '#00adef'}4D;
+    border-radius: 24px;
+    padding: 1.5rem 2rem;
+    margin-bottom: 2rem;
+    animation: ${fadeIn} 0.6s ease-out 0.3s both;
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
 
-    svg {
-        ${props => props.$spinning && css`animation: ${rotate} 1s linear infinite;`}
+    @media (max-width: 768px) {
+        flex-direction: column;
+        text-align: center;
     }
+`;
+
+const WalletInfo = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+`;
+
+const WalletIconWrapper = styled.div`
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    background: ${props => props.theme.brand?.gradient || 'linear-gradient(135deg, #00adef 0%, #00ff88 100%)'};
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 24px ${props => props.theme.brand?.primary || '#00adef'}4D;
+`;
+
+const WalletText = styled.div``;
+
+const WalletTitle = styled.h2`
+    font-size: 1.25rem;
+    color: ${props => props.theme.text?.primary || '#e0e6ed'};
+    font-weight: 800;
+    margin: 0 0 0.25rem 0;
+`;
+
+const WalletStatus = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: ${props => props.$linked ? props.theme.success || '#10b981' : props.theme.warning || '#fbbf24'};
+    font-size: 0.9rem;
+    font-weight: 600;
 `;
 
 // ============ STATS HERO ============
 const StatsHero = styled.div`
     display: grid;
-    grid-template-columns: 2fr 1fr 1fr 1fr;
+    grid-template-columns: 2fr repeat(3, 1fr);
     gap: 1.5rem;
     margin-bottom: 2rem;
+    animation: ${slideUp} 0.8s ease-out 0.4s both;
 
     @media (max-width: 1200px) {
         grid-template-columns: 1fr 1fr;
@@ -157,12 +287,12 @@ const StatsHero = styled.div`
 
 const MainStatCard = styled.div`
     background: linear-gradient(135deg, ${props => props.theme.brand?.primary || '#00adef'}26 0%, ${props => props.theme.success || '#10b981'}26 100%);
-    border: 1px solid ${props => props.theme.brand?.primary || '#00adef'}4D;
-    border-radius: 20px;
+    border: 2px solid ${props => props.theme.brand?.primary || '#00adef'}4D;
+    border-radius: 24px;
     padding: 2rem;
-    animation: ${fadeIn} 0.6s ease-out;
     position: relative;
     overflow: hidden;
+    backdrop-filter: blur(10px);
 
     &::before {
         content: '';
@@ -170,54 +300,79 @@ const MainStatCard = styled.div`
         top: 0;
         left: 0;
         right: 0;
-        height: 3px;
+        height: 4px;
         background: ${props => props.theme.brand?.gradient || `linear-gradient(90deg, ${props.theme.brand?.primary || '#00adef'}, ${props.theme.success || '#10b981'})`};
+    }
+
+    &::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(circle, ${props => props.theme.brand?.primary || '#00adef'}1A 0%, transparent 70%);
+        pointer-events: none;
     }
 `;
 
 const MainStatLabel = styled.div`
     color: ${props => props.theme.text?.secondary || '#94a3b8'};
     font-size: 0.9rem;
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 0.5rem;
+    letter-spacing: 1.5px;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 `;
 
 const MainStatValue = styled.div`
-    font-size: 3rem;
+    font-size: 3.5rem;
     font-weight: 900;
     color: ${props => props.theme.text?.primary || '#e0e6ed'};
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
+    animation: ${countUp} 0.6s ease-out;
 
     @media (max-width: 768px) {
-        font-size: 2.25rem;
+        font-size: 2.5rem;
     }
 `;
 
 const MainStatChange = styled.div`
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 0.5rem;
     font-size: 1.1rem;
     font-weight: 700;
+    padding: 0.5rem 1rem;
+    border-radius: 12px;
+    background: ${props => props.$positive
+        ? `${props.theme.success || '#10b981'}26`
+        : `${props.theme.error || '#ef4444'}26`};
     color: ${props => props.$positive ? props.theme.success || '#10b981' : props.theme.error || '#ef4444'};
 `;
 
 const StatCard = styled.div`
     background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     border: 1px solid ${props => props.theme.brand?.primary || '#00adef'}33;
-    border-radius: 16px;
+    border-radius: 20px;
     padding: 1.5rem;
-    animation: ${fadeIn} 0.6s ease-out;
-    animation-delay: ${props => props.$delay || '0s'};
-    animation-fill-mode: backwards;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+
+    &:hover {
+        border-color: ${props => props.theme.brand?.primary || '#00adef'}66;
+        transform: translateY(-4px);
+        box-shadow: 0 12px 40px ${props => props.theme.brand?.primary || '#00adef'}26;
+    }
 `;
 
 const StatIcon = styled.div`
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
     background: ${props => props.$bg || `${props.theme.brand?.primary || '#00adef'}26`};
     display: flex;
     align-items: center;
@@ -229,26 +384,27 @@ const StatIcon = styled.div`
 const StatLabel = styled.div`
     color: ${props => props.theme.text?.tertiary || '#64748b'};
     font-size: 0.8rem;
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.5rem;
 `;
 
 const StatValue = styled.div`
-    font-size: 1.75rem;
+    font-size: 2rem;
     font-weight: 800;
     color: ${props => props.$color || props.theme.text?.primary || '#e0e6ed'};
 `;
 
-// ============ AI ANALYSIS SECTION ============
+// ============ AI SECTION ============
 const AISection = styled.div`
     background: linear-gradient(135deg, ${props => props.theme.brand?.accent || '#8b5cf6'}1A 0%, ${props => props.theme.info || '#3b82f6'}1A 100%);
     border: 2px solid ${props => props.theme.brand?.accent || '#8b5cf6'}4D;
-    border-radius: 20px;
+    border-radius: 24px;
     padding: 2rem;
     margin-bottom: 2rem;
-    animation: ${fadeIn} 0.6s ease-out;
+    animation: ${fadeInScale} 0.6s ease-out;
+    backdrop-filter: blur(10px);
     position: relative;
     overflow: hidden;
 `;
@@ -269,38 +425,39 @@ const AITitle = styled.h2`
     align-items: center;
     gap: 0.75rem;
     font-weight: 800;
+    margin: 0;
 `;
 
 const AIBadge = styled.div`
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.4rem 1rem;
+    padding: 0.5rem 1rem;
     background: ${props => props.theme.success || '#10b981'}33;
     border: 1px solid ${props => props.theme.success || '#10b981'}66;
     border-radius: 20px;
     color: ${props => props.theme.success || '#10b981'};
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     font-weight: 700;
 `;
 
 const AIGrid = styled.div`
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
     gap: 1.25rem;
 `;
 
 const InsightCard = styled.div`
     background: ${props => props.theme.brand?.accent || '#8b5cf6'}14;
     border: 1px solid ${props => props.theme.brand?.accent || '#8b5cf6'}33;
-    border-radius: 14px;
+    border-radius: 16px;
     padding: 1.25rem;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
 
     &:hover {
         background: ${props => props.theme.brand?.accent || '#8b5cf6'}1F;
         border-color: ${props => props.theme.brand?.accent || '#8b5cf6'}66;
-        transform: translateY(-2px);
+        transform: translateY(-4px);
     }
 `;
 
@@ -312,9 +469,9 @@ const InsightHeader = styled.div`
 `;
 
 const InsightIcon = styled.div`
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
     background: ${props => props.$bg || `${props.theme.brand?.accent || '#8b5cf6'}33`};
     display: flex;
     align-items: center;
@@ -329,7 +486,7 @@ const InsightTitle = styled.div`
 `;
 
 const InsightValue = styled.div`
-    font-size: 1.5rem;
+    font-size: 1.75rem;
     font-weight: 800;
     color: ${props => props.$color || props.theme.brand?.accent || '#a78bfa'};
     margin-bottom: 0.25rem;
@@ -350,7 +507,7 @@ const RecommendationsList = styled.div`
 const RecommendationsTitle = styled.h3`
     font-size: 1.1rem;
     color: ${props => props.theme.brand?.accent || '#a78bfa'};
-    margin-bottom: 1rem;
+    margin: 0 0 1rem 0;
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -360,10 +517,15 @@ const RecommendationItem = styled.div`
     display: flex;
     align-items: flex-start;
     gap: 0.75rem;
-    padding: 0.75rem 1rem;
+    padding: 0.85rem 1rem;
     background: ${props => props.theme.brand?.accent || '#8b5cf6'}0D;
-    border-radius: 10px;
+    border-radius: 12px;
     margin-bottom: 0.5rem;
+    transition: all 0.2s ease;
+
+    &:hover {
+        background: ${props => props.theme.brand?.accent || '#8b5cf6'}1A;
+    }
 
     &:last-child {
         margin-bottom: 0;
@@ -371,8 +533,8 @@ const RecommendationItem = styled.div`
 `;
 
 const RecIcon = styled.div`
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
     background: ${props => {
         if (props.$type === 'success') return `${props.theme.success || '#10b981'}33`;
@@ -390,7 +552,6 @@ const RecIcon = styled.div`
         return props.theme.brand?.accent || '#a78bfa';
     }};
     flex-shrink: 0;
-    margin-top: 0.1rem;
 `;
 
 const RecText = styled.div`
@@ -399,10 +560,10 @@ const RecText = styled.div`
     line-height: 1.5;
 `;
 
-// ============ MAIN CONTENT GRID ============
+// ============ MAIN CONTENT ============
 const MainGrid = styled.div`
     display: grid;
-    grid-template-columns: 1fr 400px;
+    grid-template-columns: 1fr 380px;
     gap: 2rem;
     margin-bottom: 2rem;
 
@@ -411,20 +572,21 @@ const MainGrid = styled.div`
     }
 `;
 
-// ============ HOLDINGS TABLE ============
+// ============ HOLDINGS ============
 const HoldingsSection = styled.div`
     background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     border: 1px solid ${props => props.theme.brand?.primary || '#00adef'}33;
-    border-radius: 20px;
+    border-radius: 24px;
     padding: 1.5rem;
-    animation: ${fadeIn} 0.6s ease-out;
+    backdrop-filter: blur(10px);
+    animation: ${slideUp} 0.6s ease-out;
 `;
 
 const HoldingsHeader = styled.div`
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1.25rem;
+    margin-bottom: 1.5rem;
     flex-wrap: wrap;
     gap: 1rem;
 `;
@@ -435,11 +597,53 @@ const HoldingsTitle = styled.h2`
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    font-weight: 800;
+    margin: 0;
+`;
+
+const HeaderActions = styled.div`
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+`;
+
+const ActionButton = styled.button`
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.65rem 1.25rem;
+    background: ${props => props.$primary
+        ? props.theme.brand?.gradient || `linear-gradient(135deg, ${props.theme.brand?.primary || '#00adef'} 0%, ${props.theme.brand?.secondary || '#0088cc'} 100%)`
+        : `${props.theme.brand?.primary || '#00adef'}15`};
+    border: 1px solid ${props => props.$primary ? 'transparent' : `${props.theme.brand?.primary || '#00adef'}4D`};
+    border-radius: 12px;
+    color: ${props => props.$primary ? 'white' : props.theme.brand?.primary || '#00adef'};
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover {
+        transform: translateY(-2px);
+        box-shadow: ${props => props.$primary
+            ? `0 8px 24px ${props.theme.brand?.primary || '#00adef'}66`
+            : `0 8px 24px ${props.theme.brand?.primary || '#00adef'}33`};
+    }
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    svg {
+        ${props => props.$spinning && css`animation: ${rotate} 1s linear infinite;`}
+    }
 `;
 
 const SearchWrapper = styled.div`
     position: relative;
-    width: 250px;
+    width: 280px;
 
     @media (max-width: 600px) {
         width: 100%;
@@ -448,17 +652,19 @@ const SearchWrapper = styled.div`
 
 const SearchInput = styled.input`
     width: 100%;
-    padding: 0.6rem 1rem 0.6rem 2.5rem;
+    padding: 0.7rem 1rem 0.7rem 2.75rem;
     background: ${props => props.theme.brand?.primary || '#00adef'}0D;
     border: 1px solid ${props => props.theme.brand?.primary || '#00adef'}4D;
-    border-radius: 10px;
+    border-radius: 12px;
     color: ${props => props.theme.text?.primary || '#e0e6ed'};
     font-size: 0.9rem;
+    transition: all 0.2s ease;
 
     &:focus {
         outline: none;
         border-color: ${props => props.theme.brand?.primary || '#00adef'};
         background: ${props => props.theme.brand?.primary || '#00adef'}1A;
+        box-shadow: 0 0 0 3px ${props => props.theme.brand?.primary || '#00adef'}26;
     }
 
     &::placeholder {
@@ -468,12 +674,12 @@ const SearchInput = styled.input`
 
 const SearchIconStyled = styled(Search)`
     position: absolute;
-    left: 0.75rem;
+    left: 0.85rem;
     top: 50%;
     transform: translateY(-50%);
     color: ${props => props.theme.text?.tertiary || '#64748b'};
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
 `;
 
 const HoldingsTable = styled.div`
@@ -505,7 +711,7 @@ const Tr = styled.tr`
 `;
 
 const Td = styled.td`
-    padding: 1rem 0.75rem;
+    padding: 1.1rem 0.75rem;
     border-bottom: 1px solid ${props => props.theme.brand?.primary || '#00adef'}0D;
     vertical-align: middle;
 `;
@@ -513,13 +719,13 @@ const Td = styled.td`
 const SymbolCell = styled.div`
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.85rem;
 `;
 
 const SymbolIcon = styled.div`
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
     background: linear-gradient(135deg, ${props => props.theme.brand?.primary || '#00adef'}33 0%, ${props => props.theme.brand?.accent || '#8b5cf6'}33 100%);
     display: flex;
     align-items: center;
@@ -548,24 +754,38 @@ const PriceCell = styled.div`
 `;
 
 const ChangeCell = styled.div`
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 0.25rem;
     font-weight: 700;
+    padding: 0.35rem 0.75rem;
+    border-radius: 8px;
+    background: ${props => props.$positive
+        ? `${props.theme.success || '#10b981'}26`
+        : `${props.theme.error || '#ef4444'}26`};
     color: ${props => props.$positive ? props.theme.success || '#10b981' : props.theme.error || '#ef4444'};
+    font-size: 0.9rem;
 `;
 
 const ValueCell = styled.div`
     font-weight: 700;
     color: ${props => props.theme.text?.primary || '#e0e6ed'};
+    font-size: 1.05rem;
 `;
 
-const ActionCell = styled.div`
-    display: flex;
-    gap: 0.5rem;
+const SourceBadge = styled.span`
+    font-size: 0.7rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    background: ${props => props.theme.success || '#10b981'}26;
+    color: ${props => props.theme.success || '#10b981'};
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
 `;
 
-// ============ SIDEBAR CHARTS ============
+// ============ SIDEBAR ============
 const Sidebar = styled.div`
     display: flex;
     flex-direction: column;
@@ -575,137 +795,105 @@ const Sidebar = styled.div`
 const ChartCard = styled.div`
     background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
     border: 1px solid ${props => props.theme.brand?.primary || '#00adef'}33;
-    border-radius: 16px;
+    border-radius: 20px;
     padding: 1.5rem;
+    backdrop-filter: blur(10px);
     animation: ${fadeIn} 0.6s ease-out;
 `;
 
 const ChartTitle = styled.h3`
     font-size: 1.1rem;
     color: ${props => props.theme.brand?.primary || '#00adef'};
-    margin-bottom: 1rem;
+    margin: 0 0 1.25rem 0;
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    font-weight: 700;
+`;
+
+const ChartLegend = styled.div`
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: center;
+    margin-top: 1rem;
+`;
+
+const LegendItem = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.8rem;
+    color: ${props => props.theme.text?.secondary || '#94a3b8'};
+`;
+
+const LegendDot = styled.div`
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    background: ${props => props.$color};
 `;
 
 // ============ EMPTY STATE ============
 const EmptyState = styled.div`
     text-align: center;
     padding: 4rem 2rem;
+    animation: ${fadeIn} 0.6s ease-out;
 `;
 
 const EmptyIcon = styled.div`
-    width: 100px;
-    height: 100px;
+    width: 120px;
+    height: 120px;
     margin: 0 auto 1.5rem;
     background: linear-gradient(135deg, ${props => props.theme.brand?.primary || '#00adef'}33 0%, ${props => props.theme.brand?.accent || '#8b5cf6'}33 100%);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px dashed ${props => props.theme.brand?.primary || '#00adef'}4D;
+    border: 3px dashed ${props => props.theme.brand?.primary || '#00adef'}4D;
+    animation: ${float} 3s ease-in-out infinite;
 `;
 
 const EmptyTitle = styled.h2`
     color: ${props => props.theme.brand?.primary || '#00adef'};
-    font-size: 1.5rem;
+    font-size: 1.75rem;
     margin-bottom: 0.5rem;
+    font-weight: 800;
 `;
 
 const EmptyText = styled.p`
     color: ${props => props.theme.text?.secondary || '#94a3b8'};
     margin-bottom: 2rem;
+    font-size: 1.1rem;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
 `;
 
-// ============ WALLET CONNECTION SECTION ============
-const WalletSection = styled.div`
-    background: linear-gradient(135deg, ${props => props.theme.brand?.primary || '#00adef'}1A 0%, ${props => props.theme.brand?.accent || '#8b5cf6'}1A 100%);
-    border: 2px solid ${props => props.theme.brand?.primary || '#00adef'}4D;
-    border-radius: 20px;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
-    animation: ${fadeIn} 0.6s ease-out;
-`;
-
-const WalletSectionHeader = styled.div`
+// ============ LOADING ============
+const LoadingContainer = styled.div`
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
     align-items: center;
-    margin-bottom: 1rem;
-    flex-wrap: wrap;
-    gap: 1rem;
+    justify-content: center;
+    padding: 4rem 2rem;
+    gap: 1.5rem;
 `;
 
-const WalletTitle = styled.h2`
-    font-size: 1.3rem;
+const LoadingSpinner = styled(Activity)`
+    animation: ${rotate} 1.5s linear infinite;
     color: ${props => props.theme.brand?.primary || '#00adef'};
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-weight: 800;
-    margin: 0;
 `;
 
-const WalletInfo = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.4rem 1rem;
-    background: ${props => props.$linked
-        ? `${props.theme.success || '#10b981'}33`
-        : `${props.theme.warning || '#fbbf24'}33`};
-    border: 1px solid ${props => props.$linked
-        ? `${props.theme.success || '#10b981'}66`
-        : `${props.theme.warning || '#fbbf24'}66`};
-    border-radius: 20px;
-    color: ${props => props.$linked
-        ? props.theme.success || '#10b981'
-        : props.theme.warning || '#fbbf24'};
-    font-size: 0.8rem;
-    font-weight: 700;
+const LoadingText = styled.div`
+    color: ${props => props.theme.text?.secondary || '#94a3b8'};
+    font-size: 1.1rem;
+    font-weight: 600;
 `;
 
-// ============ TABS ============
-const TabsContainer = styled.div`
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 1.5rem;
-    background: ${props => props.theme.bg?.tertiary || 'rgba(15, 23, 42, 0.5)'};
-    padding: 0.5rem;
-    border-radius: 12px;
-    width: fit-content;
-`;
-
-const Tab = styled.button`
-    padding: 0.75rem 1.5rem;
-    background: ${props => props.$active
-        ? props.theme.brand?.gradient || `linear-gradient(135deg, ${props.theme.brand?.primary || '#00adef'} 0%, ${props.theme.brand?.secondary || '#0088cc'} 100%)`
-        : 'transparent'};
-    border: none;
-    border-radius: 8px;
-    color: ${props => props.$active ? 'white' : props.theme.text?.secondary || '#94a3b8'};
-    font-weight: 700;
-    font-size: 0.9rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-
-    &:hover {
-        background: ${props => props.$active
-            ? props.theme.brand?.gradient
-            : `${props.theme.brand?.primary || '#00adef'}1A`};
-        color: ${props => props.$active ? 'white' : props.theme.text?.primary};
-    }
-`;
-
-// ============ LOCAL AI ANALYSIS FUNCTIONS ============
+// ============ AI ANALYSIS FUNCTION ============
 const analyzePortfolio = (holdings, stats) => {
-    if (!holdings || holdings.length === 0) {
-        return null;
-    }
+    if (!holdings || holdings.length === 0) return null;
 
     const analysis = {
         diversificationScore: 0,
@@ -717,24 +905,12 @@ const analyzePortfolio = (holdings, stats) => {
         insights: []
     };
 
-    // Calculate diversification score (based on number of holdings and allocation spread)
     const holdingCount = holdings.length;
-    let diversificationBase = Math.min(holdingCount * 10, 50); // Up to 50 points for count
+    let diversificationBase = Math.min(holdingCount * 10, 50);
 
-    // Calculate allocation spread
-    const totalValue = stats?.totalValue || holdings.reduce((sum, h) => {
-        const price = h.currentPrice || h.price || 0;
-        const shares = h.shares || 0;
-        return sum + (price * shares);
-    }, 0);
+    const totalValue = stats?.totalValue || holdings.reduce((sum, h) => sum + (h.value || 0), 0);
+    const allocations = holdings.map(h => ((h.value || 0) / totalValue) * 100);
 
-    const allocations = holdings.map(h => {
-        const price = h.currentPrice || h.price || 0;
-        const shares = h.shares || 0;
-        return (price * shares) / totalValue * 100;
-    });
-
-    // Check for over-concentration (any single holding > 30%)
     const maxAllocation = Math.max(...allocations);
     if (maxAllocation > 50) {
         analysis.sectorConcentration = maxAllocation;
@@ -758,30 +934,19 @@ const analyzePortfolio = (holdings, stats) => {
         });
     }
 
-    // Allocation evenness bonus
     const avgAllocation = 100 / holdingCount;
     const allocationVariance = allocations.reduce((sum, a) => sum + Math.pow(a - avgAllocation, 2), 0) / holdingCount;
-    if (allocationVariance < 100) {
-        diversificationBase += 15;
-    }
+    if (allocationVariance < 100) diversificationBase += 15;
 
     analysis.diversificationScore = Math.min(Math.max(diversificationBase, 0), 100);
 
-    // Determine risk level
-    if (analysis.diversificationScore >= 70) {
-        analysis.riskLevel = 'Low';
-    } else if (analysis.diversificationScore >= 40) {
-        analysis.riskLevel = 'Moderate';
-    } else {
-        analysis.riskLevel = 'High';
-    }
+    if (analysis.diversificationScore >= 70) analysis.riskLevel = 'Low';
+    else if (analysis.diversificationScore >= 40) analysis.riskLevel = 'Moderate';
+    else analysis.riskLevel = 'High';
 
-    // Find top and worst performers
     const performanceData = holdings.map(h => {
-        const currentPrice = h.currentPrice || h.price || 0;
-        const avgPrice = h.averagePrice || h.purchasePrice || currentPrice;
-        const gainPercent = avgPrice > 0 ? ((currentPrice - avgPrice) / avgPrice) * 100 : 0;
-        return { symbol: h.symbol, gainPercent };
+        const change = h.change24h || 0;
+        return { symbol: h.symbol, gainPercent: change };
     }).sort((a, b) => b.gainPercent - a.gainPercent);
 
     if (performanceData.length > 0) {
@@ -789,7 +954,6 @@ const analyzePortfolio = (holdings, stats) => {
         analysis.worstPerformer = performanceData[performanceData.length - 1];
     }
 
-    // Generate insights
     if (holdingCount < 5) {
         analysis.recommendations.push({
             type: 'info',
@@ -797,21 +961,20 @@ const analyzePortfolio = (holdings, stats) => {
         });
     }
 
-    if (analysis.topPerformer && analysis.topPerformer.gainPercent > 50) {
+    if (analysis.topPerformer && analysis.topPerformer.gainPercent > 10) {
         analysis.recommendations.push({
             type: 'success',
-            text: `${analysis.topPerformer.symbol} is up ${analysis.topPerformer.gainPercent.toFixed(1)}%! Consider taking some profits.`
+            text: `${analysis.topPerformer.symbol} is up ${analysis.topPerformer.gainPercent.toFixed(1)}% today! Strong performance.`
         });
     }
 
-    if (analysis.worstPerformer && analysis.worstPerformer.gainPercent < -20) {
+    if (analysis.worstPerformer && analysis.worstPerformer.gainPercent < -5) {
         analysis.recommendations.push({
             type: 'danger',
-            text: `${analysis.worstPerformer.symbol} is down ${Math.abs(analysis.worstPerformer.gainPercent).toFixed(1)}%. Review your thesis or consider cutting losses.`
+            text: `${analysis.worstPerformer.symbol} is down ${Math.abs(analysis.worstPerformer.gainPercent).toFixed(1)}% today. Monitor closely.`
         });
     }
 
-    // Add general tips if we have few recommendations
     if (analysis.recommendations.length < 3) {
         analysis.recommendations.push({
             type: 'info',
@@ -824,20 +987,19 @@ const analyzePortfolio = (holdings, stats) => {
 
 // ============ COMPONENT ============
 const PortfolioPage = () => {
-    const { api } = useAuth();
+    const { api: authApi } = useAuth();
     const toast = useToast();
     const { theme } = useTheme();
     const { linkedWallet } = useWallet();
 
-    // State
     const [holdings, setHoldings] = useState([]);
+    const [brokerageHoldings, setBrokerageHoldings] = useState([]);
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-    const [activeTab, setActiveTab] = useState('holdings'); // 'holdings' or 'analytics'
+    const [activeTab, setActiveTab] = useState('holdings');
 
-    // Dynamic colors from theme
     const COLORS = [
         theme.brand?.primary || '#00adef',
         theme.success || '#10b981',
@@ -849,81 +1011,87 @@ const PortfolioPage = () => {
         '#84cc16'
     ];
 
-    // Fetch portfolio on mount
-    useEffect(() => {
-        fetchPortfolio();
+    // Fetch brokerage connections and their holdings
+    const fetchBrokerageData = useCallback(async () => {
+        try {
+            const response = await api.get('/brokerage/connections');
+            if (response.data.success) {
+                const connections = response.data.connections || [];
+                const allHoldings = [];
+                let totalBrokerageValue = 0;
+
+                for (const conn of connections) {
+                    if (conn.status === 'active' && conn.cachedPortfolio?.holdings) {
+                        for (const holding of conn.cachedPortfolio.holdings) {
+                            allHoldings.push({
+                                ...holding,
+                                source: conn.type,
+                                sourceName: conn.name,
+                                connectionId: conn.id
+                            });
+                        }
+                        totalBrokerageValue += conn.cachedPortfolio?.totalValue || 0;
+                    }
+                }
+
+                setBrokerageHoldings(allHoldings);
+                return { holdings: allHoldings, totalValue: totalBrokerageValue };
+            }
+        } catch (error) {
+            console.error('Error fetching brokerage data:', error);
+        }
+        return { holdings: [], totalValue: 0 };
     }, []);
 
-    const fetchPortfolio = async () => {
+    // Fetch portfolio data
+    const fetchPortfolio = useCallback(async () => {
         try {
             setLoading(true);
-            const response = await api.get('/portfolio');
-            
-            console.log('📊 Full API Response:', response.data);
-            
-            const portfolioData = response.data.portfolio || response.data;
-            const holdingsData = portfolioData.holdings || [];
-            
-            console.log('📊 Holdings Data:', holdingsData);
-            
-            // If API already calculated totals, use them
-            const apiTotalValue = portfolioData.totalValue || portfolioData.total_value || 0;
-            const apiTotalCost = portfolioData.totalInvested || portfolioData.totalCost || portfolioData.total_cost || 0;
-            const apiTotalGain = portfolioData.totalChange || portfolioData.totalGain || portfolioData.total_gain || 0;
-            const apiTotalGainPercent = portfolioData.totalChangePercent || portfolioData.totalGainPercent || portfolioData.total_gain_percent || 0;
-            
-            console.log('📊 API Totals:', { apiTotalValue, apiTotalCost, apiTotalGain, apiTotalGainPercent });
-            
-            setHoldings(holdingsData);
-            
-            // Calculate stats - try API values first, then calculate from holdings
-            if (holdingsData.length > 0) {
-                let totalValue = apiTotalValue;
-                let totalCost = apiTotalCost;
-                
-                // If API didn't provide totals, calculate from holdings
-                if (totalValue === 0) {
-                    totalValue = holdingsData.reduce((sum, h) => {
-                        // Try multiple field names for current price
-                        const price = h.currentPrice || h.current_price || h.price || h.marketPrice || h.market_price || 0;
-                        const shares = h.shares || h.quantity || h.amount || 0;
-                        const holdingValue = h.value || h.totalValue || h.total_value || h.marketValue || (price * shares);
-                        console.log(`📈 ${h.symbol}: price=${price}, shares=${shares}, value=${holdingValue}`);
-                        return sum + holdingValue;
-                    }, 0);
-                }
-                
-                if (totalCost === 0) {
-                    totalCost = holdingsData.reduce((sum, h) => {
-                        const avgPrice = h.averagePrice || h.average_price || h.avgPrice || h.purchasePrice || h.purchase_price || h.costBasis || h.cost_basis || 0;
-                        const shares = h.shares || h.quantity || h.amount || 0;
-                        const holdingCost = h.cost || h.totalCost || h.total_cost || (avgPrice * shares);
-                        return sum + holdingCost;
-                    }, 0);
-                }
 
-                const totalGain = apiTotalGain || (totalValue - totalCost);
-                const totalGainPercent = apiTotalGainPercent || (totalCost > 0 ? (totalGain / totalCost) * 100 : 0);
+            // Fetch both wallet portfolio and brokerage data
+            const [portfolioRes, brokerageData] = await Promise.all([
+                authApi?.get('/portfolio').catch(() => ({ data: { portfolio: { holdings: [] } } })),
+                fetchBrokerageData()
+            ]);
 
-                console.log('📊 Calculated Stats:', { totalValue, totalCost, totalGain, totalGainPercent });
+            const portfolioData = portfolioRes?.data?.portfolio || portfolioRes?.data || {};
+            const walletHoldings = portfolioData.holdings || [];
 
+            // Combine wallet and brokerage holdings
+            const combinedHoldings = [
+                ...walletHoldings.map(h => ({ ...h, source: 'wallet', sourceName: 'Wallet' })),
+                ...brokerageData.holdings
+            ];
+
+            setHoldings(combinedHoldings);
+
+            // Calculate combined stats
+            const totalValue = (portfolioData.totalValue || 0) + brokerageData.totalValue;
+            const totalCost = portfolioData.totalInvested || portfolioData.totalCost || 0;
+            const totalGain = totalValue - totalCost;
+            const totalGainPercent = totalCost > 0 ? (totalGain / totalCost) * 100 : 0;
+
+            if (combinedHoldings.length > 0) {
                 setStats({
                     totalValue,
                     totalCost,
                     totalGain,
                     totalGainPercent,
-                    holdingsCount: holdingsData.length
+                    holdingsCount: combinedHoldings.length
                 });
             } else {
                 setStats(null);
             }
         } catch (error) {
             console.error('Error fetching portfolio:', error);
-            toast.error('Failed to load portfolio');
         } finally {
             setLoading(false);
         }
-    };
+    }, [authApi, fetchBrokerageData]);
+
+    useEffect(() => {
+        fetchPortfolio();
+    }, [fetchPortfolio]);
 
     const handleRefresh = async () => {
         setRefreshing(true);
@@ -934,17 +1102,15 @@ const PortfolioPage = () => {
 
     const handleExportCSV = () => {
         const csv = [
-            ['Symbol', 'Shares', 'Avg Price', 'Current Price', 'Value', 'Gain/Loss', 'Gain %'].join(','),
-            ...holdings.map(h => {
-                const currentPrice = h.currentPrice || h.price || 0;
-                const avgPrice = h.averagePrice || h.purchasePrice || currentPrice;
-                const shares = h.shares || 0;
-                const value = currentPrice * shares;
-                const gain = value - (avgPrice * shares);
-                const gainPercent = avgPrice > 0 ? ((currentPrice - avgPrice) / avgPrice) * 100 : 0;
-                
-                return [h.symbol, shares, avgPrice.toFixed(2), currentPrice.toFixed(2), value.toFixed(2), gain.toFixed(2), gainPercent.toFixed(2)].join(',');
-            })
+            ['Symbol', 'Name', 'Quantity', 'Price', 'Value', 'Source'].join(','),
+            ...holdings.map(h => [
+                h.symbol,
+                h.name || h.symbol,
+                h.quantity || h.shares || 0,
+                h.price || 0,
+                h.value || 0,
+                h.sourceName || 'Unknown'
+            ].join(','))
         ].join('\n');
 
         const blob = new Blob([csv], { type: 'text/csv' });
@@ -956,122 +1122,43 @@ const PortfolioPage = () => {
         toast.success('Portfolio exported!');
     };
 
-    // Filter holdings
     const filteredHoldings = useMemo(() => {
         if (!searchQuery) return holdings;
-        return holdings.filter(h => 
-            h.symbol?.toLowerCase().includes(searchQuery.toLowerCase())
+        return holdings.filter(h =>
+            h.symbol?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            h.name?.toLowerCase().includes(searchQuery.toLowerCase())
         );
     }, [holdings, searchQuery]);
 
-    // AI Analysis
     const aiAnalysis = useMemo(() => analyzePortfolio(holdings, stats), [holdings, stats]);
 
-    // Pie chart data
     const pieData = useMemo(() => {
         return holdings.map(h => ({
             name: h.symbol,
-            value: (h.currentPrice || h.price || 0) * (h.shares || 0)
-        })).filter(d => d.value > 0);
+            value: h.value || 0
+        })).filter(d => d.value > 0).slice(0, 8);
     }, [holdings]);
 
-    // Performance chart data
     const performanceData = useMemo(() => {
-        return holdings.map(h => {
-            const currentPrice = h.currentPrice || h.price || 0;
-            const avgPrice = h.averagePrice || h.purchasePrice || currentPrice;
-            const gain = avgPrice > 0 ? ((currentPrice - avgPrice) / avgPrice) * 100 : 0;
-            return { symbol: h.symbol, gain };
-        }).sort((a, b) => b.gain - a.gain);
+        return holdings.map(h => ({
+            symbol: h.symbol,
+            gain: h.change24h || 0
+        })).sort((a, b) => b.gain - a.gain).slice(0, 6);
     }, [holdings]);
 
     if (loading) {
         return (
             <PageContainer theme={theme}>
+                <BackgroundOrbs>
+                    <Orb $duration="25s" />
+                    <Orb $duration="30s" />
+                    <Orb $duration="20s" />
+                </BackgroundOrbs>
                 <ContentWrapper>
-                    <div style={{ textAlign: 'center', padding: '4rem' }}>
-                        <SpinningIcon><Activity size={64} color={theme.brand?.primary || '#00adef'} /></SpinningIcon>
-                        <h2 style={{ marginTop: '1rem', color: theme.brand?.primary || '#00adef' }}>Loading Portfolio...</h2>
-                    </div>
-                </ContentWrapper>
-            </PageContainer>
-        );
-    }
-
-    if (holdings.length === 0) {
-        return (
-            <PageContainer theme={theme}>
-                <ContentWrapper>
-                    <Header>
-                        <Title theme={theme}>My Portfolio</Title>
-                        <Subtitle theme={theme}>Track your investments with AI-powered insights</Subtitle>
-                    </Header>
-
-                    {/* Wallet Connection Section - Always show */}
-                    <WalletSection theme={theme}>
-                        <WalletSectionHeader>
-                            <WalletTitle theme={theme}>
-                                <Wallet size={22} />
-                                Connect Your Wallet
-                            </WalletTitle>
-                            <WalletInfo theme={theme} $linked={!!linkedWallet}>
-                                {linkedWallet ? (
-                                    <>
-                                        <Link2 size={14} />
-                                        Wallet Linked
-                                    </>
-                                ) : (
-                                    <>
-                                        <AlertTriangle size={14} />
-                                        No Wallet Linked
-                                    </>
-                                )}
-                            </WalletInfo>
-                        </WalletSectionHeader>
-                        <WalletConnectButton showInfo={true} />
-                    </WalletSection>
-
-                    {/* Tabs - Always show */}
-                    <TabsContainer theme={theme}>
-                        <Tab
-                            theme={theme}
-                            $active={activeTab === 'holdings'}
-                            onClick={() => setActiveTab('holdings')}
-                        >
-                            <Wallet size={16} />
-                            Holdings
-                        </Tab>
-                        <Tab
-                            theme={theme}
-                            $active={activeTab === 'brokerages'}
-                            onClick={() => setActiveTab('brokerages')}
-                        >
-                            <Building2 size={16} />
-                            Brokerages
-                        </Tab>
-                    </TabsContainer>
-
-                    {/* Brokerages Tab */}
-                    {activeTab === 'brokerages' && (
-                        <BrokerageConnect />
-                    )}
-
-                    {/* Holdings Tab - Empty State */}
-                    {activeTab === 'holdings' && (
-                        <EmptyState>
-                            <EmptyIcon theme={theme}>
-                                <Wallet size={48} color={theme.brand?.primary || '#00adef'} />
-                            </EmptyIcon>
-                            <EmptyTitle theme={theme}>
-                                {linkedWallet ? 'Ready to Sync' : 'Connect Your Wallet'}
-                            </EmptyTitle>
-                            <EmptyText theme={theme}>
-                                {linkedWallet
-                                    ? 'Click the Sync button above to import your on-chain holdings'
-                                    : 'Connect and link your wallet above, or connect a brokerage to track your holdings'}
-                            </EmptyText>
-                        </EmptyState>
-                    )}
+                    <LoadingContainer>
+                        <LoadingSpinner size={64} theme={theme} />
+                        <LoadingText theme={theme}>Loading your portfolio...</LoadingText>
+                    </LoadingContainer>
                 </ContentWrapper>
             </PageContainer>
         );
@@ -1079,422 +1166,438 @@ const PortfolioPage = () => {
 
     return (
         <PageContainer theme={theme}>
-            <ContentWrapper>
-                {/* Wallet Connection Section */}
-                <WalletSection theme={theme}>
-                    <WalletSectionHeader>
-                        <WalletTitle theme={theme}>
-                            <Wallet size={22} />
-                            Wallet Connection
-                        </WalletTitle>
-                        <WalletInfo theme={theme} $linked={!!linkedWallet}>
-                            {linkedWallet ? (
-                                <>
-                                    <Link2 size={14} />
-                                    Wallet Linked
-                                </>
-                            ) : (
-                                <>
-                                    <AlertTriangle size={14} />
-                                    No Wallet Linked
-                                </>
-                            )}
-                        </WalletInfo>
-                    </WalletSectionHeader>
-                    <WalletConnectButton showInfo={true} />
-                </WalletSection>
+            <BackgroundOrbs>
+                <Orb $duration="25s" />
+                <Orb $duration="30s" />
+                <Orb $duration="20s" />
+            </BackgroundOrbs>
 
+            <ContentWrapper>
                 {/* Header */}
                 <Header>
-                    <HeaderTop>
-                        <div>
-                            <Title theme={theme}>My Portfolio</Title>
-                            <Subtitle theme={theme}>{holdings.length} holdings • AI-powered insights</Subtitle>
-                        </div>
-                        <HeaderActions>
-                            <ActionButton theme={theme} onClick={handleRefresh} disabled={refreshing} $spinning={refreshing}>
-                                <RefreshCw size={18} />
-                                Refresh
-                            </ActionButton>
-                            <ActionButton theme={theme} onClick={handleExportCSV}>
-                                <Download size={18} />
-                                Export
-                            </ActionButton>
-                        </HeaderActions>
-                    </HeaderTop>
+                    <Title theme={theme}>
+                        <TitleIcon>
+                            <Coins size={48} color={theme.brand?.primary || '#00adef'} />
+                        </TitleIcon>
+                        My Portfolio
+                    </Title>
+                    <Subtitle theme={theme}>
+                        {holdings.length > 0
+                            ? `${holdings.length} holdings • AI-powered insights`
+                            : 'Track your investments across wallets and brokerages'}
+                    </Subtitle>
                 </Header>
 
                 {/* Tabs */}
                 <TabsContainer theme={theme}>
-                    <Tab
-                        theme={theme}
-                        $active={activeTab === 'holdings'}
-                        onClick={() => setActiveTab('holdings')}
-                    >
-                        <Wallet size={16} />
+                    <Tab theme={theme} $active={activeTab === 'holdings'} onClick={() => setActiveTab('holdings')}>
+                        <Wallet size={18} />
                         Holdings
                     </Tab>
                     {linkedWallet && (
-                        <Tab
-                            theme={theme}
-                            $active={activeTab === 'analytics'}
-                            onClick={() => setActiveTab('analytics')}
-                        >
-                            <Activity size={16} />
+                        <Tab theme={theme} $active={activeTab === 'analytics'} onClick={() => setActiveTab('analytics')}>
+                            <Activity size={18} />
                             Analytics
                         </Tab>
                     )}
-                    <Tab
-                        theme={theme}
-                        $active={activeTab === 'brokerages'}
-                        onClick={() => setActiveTab('brokerages')}
-                    >
-                        <Building2 size={16} />
+                    <Tab theme={theme} $active={activeTab === 'brokerages'} onClick={() => setActiveTab('brokerages')}>
+                        <Building2 size={18} />
                         Brokerages
                     </Tab>
                 </TabsContainer>
 
+                {/* Wallet Section */}
+                <WalletSection theme={theme}>
+                    <WalletInfo>
+                        <WalletIconWrapper theme={theme}>
+                            <Wallet size={28} color="white" />
+                        </WalletIconWrapper>
+                        <WalletText>
+                            <WalletTitle theme={theme}>Wallet Connection</WalletTitle>
+                            <WalletStatus theme={theme} $linked={!!linkedWallet}>
+                                {linkedWallet ? (
+                                    <>
+                                        <CheckCircle size={16} />
+                                        Wallet Linked
+                                    </>
+                                ) : (
+                                    <>
+                                        <AlertTriangle size={16} />
+                                        No Wallet Linked
+                                    </>
+                                )}
+                            </WalletStatus>
+                        </WalletText>
+                    </WalletInfo>
+                    <WalletConnectButton showInfo={true} />
+                </WalletSection>
+
                 {/* Analytics Tab */}
-                {activeTab === 'analytics' && linkedWallet && (
-                    <WalletAnalytics />
-                )}
+                {activeTab === 'analytics' && linkedWallet && <WalletAnalytics />}
 
                 {/* Brokerages Tab */}
-                {activeTab === 'brokerages' && (
-                    <BrokerageConnect />
-                )}
+                {activeTab === 'brokerages' && <BrokerageConnect />}
 
-                {/* Holdings Tab - Stats Hero */}
+                {/* Holdings Tab */}
                 {activeTab === 'holdings' && (
                     <>
-                {/* Stats Hero */}
-                {stats && (
-                    <StatsHero>
-                        <MainStatCard theme={theme}>
-                            <MainStatLabel theme={theme}>Total Portfolio Value</MainStatLabel>
-                            <MainStatValue theme={theme}>
-                                ${stats.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </MainStatValue>
-                            <MainStatChange theme={theme} $positive={stats.totalGain >= 0}>
-                                {stats.totalGain >= 0 ? <ArrowUpRight size={20} /> : <ArrowDownRight size={20} />}
-                                {stats.totalGain >= 0 ? '+' : ''}${Math.abs(stats.totalGain).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                ({stats.totalGain >= 0 ? '+' : ''}{stats.totalGainPercent.toFixed(2)}%)
-                            </MainStatChange>
-                        </MainStatCard>
+                        {holdings.length === 0 ? (
+                            <EmptyState>
+                                <EmptyIcon theme={theme}>
+                                    <Wallet size={52} color={theme.brand?.primary || '#00adef'} />
+                                </EmptyIcon>
+                                <EmptyTitle theme={theme}>
+                                    {linkedWallet ? 'Ready to Sync' : 'Connect Your Wallet'}
+                                </EmptyTitle>
+                                <EmptyText theme={theme}>
+                                    {linkedWallet
+                                        ? 'Click the Sync button above to import your on-chain holdings'
+                                        : 'Connect your wallet or link a brokerage account to start tracking your portfolio'}
+                                </EmptyText>
+                            </EmptyState>
+                        ) : (
+                            <>
+                                {/* Stats Hero */}
+                                {stats && (
+                                    <StatsHero>
+                                        <MainStatCard theme={theme}>
+                                            <MainStatLabel theme={theme}>
+                                                <DollarSign size={18} />
+                                                Total Portfolio Value
+                                            </MainStatLabel>
+                                            <MainStatValue theme={theme}>
+                                                ${stats.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            </MainStatValue>
+                                            <MainStatChange theme={theme} $positive={stats.totalGain >= 0}>
+                                                {stats.totalGain >= 0 ? <ArrowUpRight size={20} /> : <ArrowDownRight size={20} />}
+                                                {stats.totalGain >= 0 ? '+' : ''}${Math.abs(stats.totalGain).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                                ({stats.totalGain >= 0 ? '+' : ''}{stats.totalGainPercent.toFixed(2)}%)
+                                            </MainStatChange>
+                                        </MainStatCard>
 
-                        <StatCard theme={theme} $delay="0.1s">
-                            <StatIcon theme={theme} $bg={`${theme.success || '#10b981'}26`} $color={theme.success || '#10b981'}>
-                                <TrendingUp size={22} />
-                            </StatIcon>
-                            <StatLabel theme={theme}>Total Gain/Loss</StatLabel>
-                            <StatValue theme={theme} $color={stats.totalGain >= 0 ? theme.success || '#10b981' : theme.error || '#ef4444'}>
-                                {stats.totalGain >= 0 ? '+' : ''}{stats.totalGainPercent.toFixed(2)}%
-                            </StatValue>
-                        </StatCard>
+                                        <StatCard theme={theme}>
+                                            <StatIcon theme={theme} $bg={`${theme.success || '#10b981'}26`} $color={theme.success || '#10b981'}>
+                                                <TrendingUp size={24} />
+                                            </StatIcon>
+                                            <StatLabel theme={theme}>Total Gain/Loss</StatLabel>
+                                            <StatValue theme={theme} $color={stats.totalGain >= 0 ? theme.success || '#10b981' : theme.error || '#ef4444'}>
+                                                {stats.totalGain >= 0 ? '+' : ''}{stats.totalGainPercent.toFixed(2)}%
+                                            </StatValue>
+                                        </StatCard>
 
-                        <StatCard theme={theme} $delay="0.2s">
-                            <StatIcon theme={theme} $bg={`${theme.brand?.accent || '#8b5cf6'}26`} $color={theme.brand?.accent || '#a78bfa'}>
-                                <Target size={22} />
-                            </StatIcon>
-                            <StatLabel theme={theme}>Cost Basis</StatLabel>
-                            <StatValue theme={theme}>
-                                ${stats.totalCost.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                            </StatValue>
-                        </StatCard>
+                                        <StatCard theme={theme}>
+                                            <StatIcon theme={theme} $bg={`${theme.brand?.accent || '#8b5cf6'}26`} $color={theme.brand?.accent || '#a78bfa'}>
+                                                <Target size={24} />
+                                            </StatIcon>
+                                            <StatLabel theme={theme}>Cost Basis</StatLabel>
+                                            <StatValue theme={theme}>
+                                                ${stats.totalCost.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                                            </StatValue>
+                                        </StatCard>
 
-                        <StatCard theme={theme} $delay="0.3s">
-                            <StatIcon theme={theme} $bg={`${theme.warning || '#fbbf24'}26`} $color={theme.warning || '#fbbf24'}>
-                                <BarChart3 size={22} />
-                            </StatIcon>
-                            <StatLabel theme={theme}>Holdings</StatLabel>
-                            <StatValue theme={theme}>{stats.holdingsCount}</StatValue>
-                        </StatCard>
-                    </StatsHero>
-                )}
+                                        <StatCard theme={theme}>
+                                            <StatIcon theme={theme} $bg={`${theme.warning || '#fbbf24'}26`} $color={theme.warning || '#fbbf24'}>
+                                                <BarChart3 size={24} />
+                                            </StatIcon>
+                                            <StatLabel theme={theme}>Holdings</StatLabel>
+                                            <StatValue theme={theme}>{stats.holdingsCount}</StatValue>
+                                        </StatCard>
+                                    </StatsHero>
+                                )}
 
-                {/* AI Analysis Section */}
-                {aiAnalysis && (
-                    <AISection theme={theme}>
-                        <AISectionHeader>
-                            <AITitle theme={theme}>
-                                <Brain size={28} />
-                                AI Portfolio Analysis
-                            </AITitle>
-                            <AIBadge theme={theme}>
-                                <Zap size={14} />
-                                Powered by Nexus AI
-                            </AIBadge>
-                        </AISectionHeader>
+                                {/* AI Analysis */}
+                                {aiAnalysis && (
+                                    <AISection theme={theme}>
+                                        <AISectionHeader>
+                                            <AITitle theme={theme}>
+                                                <Brain size={28} />
+                                                AI Portfolio Analysis
+                                            </AITitle>
+                                            <AIBadge theme={theme}>
+                                                <Sparkles size={16} />
+                                                Powered by Nexus AI
+                                            </AIBadge>
+                                        </AISectionHeader>
 
-                        <AIGrid>
-                            <InsightCard theme={theme}>
-                                <InsightHeader>
-                                    <InsightIcon theme={theme} $bg={`${theme.success || '#10b981'}33`} $color={theme.success || '#10b981'}>
-                                        <Shield size={18} />
-                                    </InsightIcon>
-                                    <InsightTitle theme={theme}>Diversification Score</InsightTitle>
-                                </InsightHeader>
-                                <InsightValue theme={theme} $color={
-                                    aiAnalysis.diversificationScore >= 70 ? theme.success || '#10b981' :
-                                    aiAnalysis.diversificationScore >= 40 ? theme.warning || '#fbbf24' : theme.error || '#ef4444'
-                                }>
-                                    {aiAnalysis.diversificationScore}/100
-                                </InsightValue>
-                                <InsightDescription theme={theme}>
-                                    {aiAnalysis.diversificationScore >= 70 ? 'Well diversified portfolio' :
-                                     aiAnalysis.diversificationScore >= 40 ? 'Moderate diversification' :
-                                     'Consider adding more positions'}
-                                </InsightDescription>
-                            </InsightCard>
+                                        <AIGrid>
+                                            <InsightCard theme={theme}>
+                                                <InsightHeader>
+                                                    <InsightIcon theme={theme} $bg={`${theme.success || '#10b981'}33`} $color={theme.success || '#10b981'}>
+                                                        <Shield size={20} />
+                                                    </InsightIcon>
+                                                    <InsightTitle theme={theme}>Diversification Score</InsightTitle>
+                                                </InsightHeader>
+                                                <InsightValue theme={theme} $color={
+                                                    aiAnalysis.diversificationScore >= 70 ? theme.success || '#10b981' :
+                                                    aiAnalysis.diversificationScore >= 40 ? theme.warning || '#fbbf24' : theme.error || '#ef4444'
+                                                }>
+                                                    {aiAnalysis.diversificationScore}/100
+                                                </InsightValue>
+                                                <InsightDescription theme={theme}>
+                                                    {aiAnalysis.diversificationScore >= 70 ? 'Well diversified portfolio' :
+                                                     aiAnalysis.diversificationScore >= 40 ? 'Moderate diversification' :
+                                                     'Consider adding more positions'}
+                                                </InsightDescription>
+                                            </InsightCard>
 
-                            <InsightCard theme={theme}>
-                                <InsightHeader>
-                                    <InsightIcon theme={theme} $bg={
-                                        aiAnalysis.riskLevel === 'Low' ? `${theme.success || '#10b981'}33` :
-                                        aiAnalysis.riskLevel === 'Moderate' ? `${theme.warning || '#fbbf24'}33` :
-                                        `${theme.error || '#ef4444'}33`
-                                    } $color={
-                                        aiAnalysis.riskLevel === 'Low' ? theme.success || '#10b981' :
-                                        aiAnalysis.riskLevel === 'Moderate' ? theme.warning || '#fbbf24' : theme.error || '#ef4444'
-                                    }>
-                                        <AlertTriangle size={18} />
-                                    </InsightIcon>
-                                    <InsightTitle theme={theme}>Risk Level</InsightTitle>
-                                </InsightHeader>
-                                <InsightValue theme={theme} $color={
-                                    aiAnalysis.riskLevel === 'Low' ? theme.success || '#10b981' :
-                                    aiAnalysis.riskLevel === 'Moderate' ? theme.warning || '#fbbf24' : theme.error || '#ef4444'
-                                }>
-                                    {aiAnalysis.riskLevel}
-                                </InsightValue>
-                                <InsightDescription theme={theme}>
-                                    Based on concentration and diversification
-                                </InsightDescription>
-                            </InsightCard>
+                                            <InsightCard theme={theme}>
+                                                <InsightHeader>
+                                                    <InsightIcon theme={theme} $bg={
+                                                        aiAnalysis.riskLevel === 'Low' ? `${theme.success || '#10b981'}33` :
+                                                        aiAnalysis.riskLevel === 'Moderate' ? `${theme.warning || '#fbbf24'}33` :
+                                                        `${theme.error || '#ef4444'}33`
+                                                    } $color={
+                                                        aiAnalysis.riskLevel === 'Low' ? theme.success || '#10b981' :
+                                                        aiAnalysis.riskLevel === 'Moderate' ? theme.warning || '#fbbf24' : theme.error || '#ef4444'
+                                                    }>
+                                                        <AlertTriangle size={20} />
+                                                    </InsightIcon>
+                                                    <InsightTitle theme={theme}>Risk Level</InsightTitle>
+                                                </InsightHeader>
+                                                <InsightValue theme={theme} $color={
+                                                    aiAnalysis.riskLevel === 'Low' ? theme.success || '#10b981' :
+                                                    aiAnalysis.riskLevel === 'Moderate' ? theme.warning || '#fbbf24' : theme.error || '#ef4444'
+                                                }>
+                                                    {aiAnalysis.riskLevel}
+                                                </InsightValue>
+                                                <InsightDescription theme={theme}>
+                                                    Based on concentration and diversification
+                                                </InsightDescription>
+                                            </InsightCard>
 
-                            {aiAnalysis.topPerformer && (
-                                <InsightCard theme={theme}>
-                                    <InsightHeader>
-                                        <InsightIcon theme={theme} $bg={`${theme.success || '#10b981'}33`} $color={theme.success || '#10b981'}>
-                                            <Star size={18} />
-                                        </InsightIcon>
-                                        <InsightTitle theme={theme}>Top Performer</InsightTitle>
-                                    </InsightHeader>
-                                    <InsightValue theme={theme} $color={theme.success || '#10b981'}>
-                                        {aiAnalysis.topPerformer.symbol}
-                                    </InsightValue>
-                                    <InsightDescription theme={theme}>
-                                        Up {aiAnalysis.topPerformer.gainPercent.toFixed(1)}% from cost basis
-                                    </InsightDescription>
-                                </InsightCard>
-                            )}
+                                            {aiAnalysis.topPerformer && (
+                                                <InsightCard theme={theme}>
+                                                    <InsightHeader>
+                                                        <InsightIcon theme={theme} $bg={`${theme.success || '#10b981'}33`} $color={theme.success || '#10b981'}>
+                                                            <Star size={20} />
+                                                        </InsightIcon>
+                                                        <InsightTitle theme={theme}>Top Performer</InsightTitle>
+                                                    </InsightHeader>
+                                                    <InsightValue theme={theme} $color={theme.success || '#10b981'}>
+                                                        {aiAnalysis.topPerformer.symbol}
+                                                    </InsightValue>
+                                                    <InsightDescription theme={theme}>
+                                                        {aiAnalysis.topPerformer.gainPercent >= 0 ? 'Up' : 'Down'} {Math.abs(aiAnalysis.topPerformer.gainPercent).toFixed(1)}% today
+                                                    </InsightDescription>
+                                                </InsightCard>
+                                            )}
 
-                            {aiAnalysis.worstPerformer && (
-                                <InsightCard theme={theme}>
-                                    <InsightHeader>
-                                        <InsightIcon theme={theme} $bg={`${theme.error || '#ef4444'}33`} $color={theme.error || '#ef4444'}>
-                                            <Flame size={18} />
-                                        </InsightIcon>
-                                        <InsightTitle theme={theme}>Needs Attention</InsightTitle>
-                                    </InsightHeader>
-                                    <InsightValue theme={theme} $color={theme.error || '#ef4444'}>
-                                        {aiAnalysis.worstPerformer.symbol}
-                                    </InsightValue>
-                                    <InsightDescription theme={theme}>
-                                        {aiAnalysis.worstPerformer.gainPercent >= 0 ? 'Up' : 'Down'} {Math.abs(aiAnalysis.worstPerformer.gainPercent).toFixed(1)}% from cost basis
-                                    </InsightDescription>
-                                </InsightCard>
-                            )}
-                        </AIGrid>
+                                            {aiAnalysis.worstPerformer && aiAnalysis.worstPerformer.symbol !== aiAnalysis.topPerformer?.symbol && (
+                                                <InsightCard theme={theme}>
+                                                    <InsightHeader>
+                                                        <InsightIcon theme={theme} $bg={`${theme.error || '#ef4444'}33`} $color={theme.error || '#ef4444'}>
+                                                            <Flame size={20} />
+                                                        </InsightIcon>
+                                                        <InsightTitle theme={theme}>Needs Attention</InsightTitle>
+                                                    </InsightHeader>
+                                                    <InsightValue theme={theme} $color={theme.error || '#ef4444'}>
+                                                        {aiAnalysis.worstPerformer.symbol}
+                                                    </InsightValue>
+                                                    <InsightDescription theme={theme}>
+                                                        {aiAnalysis.worstPerformer.gainPercent >= 0 ? 'Up' : 'Down'} {Math.abs(aiAnalysis.worstPerformer.gainPercent).toFixed(1)}% today
+                                                    </InsightDescription>
+                                                </InsightCard>
+                                            )}
+                                        </AIGrid>
 
-                        {aiAnalysis.recommendations.length > 0 && (
-                            <RecommendationsList theme={theme}>
-                                <RecommendationsTitle theme={theme}>
-                                    <Lightbulb size={20} />
-                                    AI Recommendations
-                                </RecommendationsTitle>
-                                {aiAnalysis.recommendations.map((rec, i) => (
-                                    <RecommendationItem theme={theme} key={i}>
-                                        <RecIcon theme={theme} $type={rec.type}>
-                                            {rec.type === 'success' && <CheckCircle size={14} />}
-                                            {rec.type === 'warning' && <AlertTriangle size={14} />}
-                                            {rec.type === 'danger' && <TrendingDown size={14} />}
-                                            {rec.type === 'info' && <Lightbulb size={14} />}
-                                        </RecIcon>
-                                        <RecText theme={theme}>{rec.text}</RecText>
-                                    </RecommendationItem>
-                                ))}
-                            </RecommendationsList>
+                                        {aiAnalysis.recommendations.length > 0 && (
+                                            <RecommendationsList theme={theme}>
+                                                <RecommendationsTitle theme={theme}>
+                                                    <Lightbulb size={20} />
+                                                    AI Recommendations
+                                                </RecommendationsTitle>
+                                                {aiAnalysis.recommendations.map((rec, i) => (
+                                                    <RecommendationItem theme={theme} key={i}>
+                                                        <RecIcon theme={theme} $type={rec.type}>
+                                                            {rec.type === 'success' && <CheckCircle size={14} />}
+                                                            {rec.type === 'warning' && <AlertTriangle size={14} />}
+                                                            {rec.type === 'danger' && <TrendingDown size={14} />}
+                                                            {rec.type === 'info' && <Lightbulb size={14} />}
+                                                        </RecIcon>
+                                                        <RecText theme={theme}>{rec.text}</RecText>
+                                                    </RecommendationItem>
+                                                ))}
+                                            </RecommendationsList>
+                                        )}
+                                    </AISection>
+                                )}
+
+                                {/* Main Content Grid */}
+                                <MainGrid>
+                                    {/* Holdings Table */}
+                                    <HoldingsSection theme={theme}>
+                                        <HoldingsHeader>
+                                            <HoldingsTitle theme={theme}>
+                                                <Eye size={22} />
+                                                Your Holdings
+                                            </HoldingsTitle>
+                                            <HeaderActions>
+                                                <SearchWrapper>
+                                                    <SearchIconStyled theme={theme} />
+                                                    <SearchInput
+                                                        theme={theme}
+                                                        type="text"
+                                                        placeholder="Search holdings..."
+                                                        value={searchQuery}
+                                                        onChange={e => setSearchQuery(e.target.value)}
+                                                    />
+                                                </SearchWrapper>
+                                                <ActionButton theme={theme} onClick={handleRefresh} disabled={refreshing} $spinning={refreshing}>
+                                                    <RefreshCw size={18} />
+                                                    Refresh
+                                                </ActionButton>
+                                                <ActionButton theme={theme} onClick={handleExportCSV}>
+                                                    <Download size={18} />
+                                                    Export
+                                                </ActionButton>
+                                            </HeaderActions>
+                                        </HoldingsHeader>
+
+                                        <HoldingsTable>
+                                            <Table>
+                                                <thead>
+                                                    <tr>
+                                                        <Th theme={theme}>Asset</Th>
+                                                        <Th theme={theme}>Quantity</Th>
+                                                        <Th theme={theme}>Price</Th>
+                                                        <Th theme={theme}>Value</Th>
+                                                        <Th theme={theme}>24h Change</Th>
+                                                        <Th theme={theme}>Source</Th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {filteredHoldings.map((holding, idx) => {
+                                                        const quantity = holding.quantity || holding.shares || 0;
+                                                        const price = holding.price || 0;
+                                                        const value = holding.value || (price * quantity);
+                                                        const change = holding.change24h || 0;
+                                                        const positive = change >= 0;
+
+                                                        return (
+                                                            <Tr theme={theme} key={`${holding.symbol}-${idx}`}>
+                                                                <Td theme={theme}>
+                                                                    <SymbolCell>
+                                                                        <SymbolIcon theme={theme}>
+                                                                            {holding.symbol?.substring(0, 2)}
+                                                                        </SymbolIcon>
+                                                                        <SymbolInfo>
+                                                                            <SymbolName theme={theme}>{holding.symbol}</SymbolName>
+                                                                            <SymbolType theme={theme}>{holding.name || holding.type || 'Crypto'}</SymbolType>
+                                                                        </SymbolInfo>
+                                                                    </SymbolCell>
+                                                                </Td>
+                                                                <Td theme={theme}>
+                                                                    <PriceCell theme={theme}>
+                                                                        {quantity.toLocaleString(undefined, { maximumFractionDigits: 6 })}
+                                                                    </PriceCell>
+                                                                </Td>
+                                                                <Td theme={theme}>
+                                                                    <PriceCell theme={theme}>
+                                                                        ${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                    </PriceCell>
+                                                                </Td>
+                                                                <Td theme={theme}>
+                                                                    <ValueCell theme={theme}>
+                                                                        ${value.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                                                    </ValueCell>
+                                                                </Td>
+                                                                <Td theme={theme}>
+                                                                    <ChangeCell theme={theme} $positive={positive}>
+                                                                        {positive ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+                                                                        {positive ? '+' : ''}{change.toFixed(2)}%
+                                                                    </ChangeCell>
+                                                                </Td>
+                                                                <Td theme={theme}>
+                                                                    <SourceBadge theme={theme}>
+                                                                        {holding.source === 'wallet' ? <Wallet size={12} /> : <Building2 size={12} />}
+                                                                        {holding.sourceName || holding.source}
+                                                                    </SourceBadge>
+                                                                </Td>
+                                                            </Tr>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                            </Table>
+                                        </HoldingsTable>
+                                    </HoldingsSection>
+
+                                    {/* Sidebar Charts */}
+                                    <Sidebar>
+                                        <ChartCard theme={theme}>
+                                            <ChartTitle theme={theme}>
+                                                <PieChart size={20} />
+                                                Allocation
+                                            </ChartTitle>
+                                            <ResponsiveContainer width="100%" height={220}>
+                                                <RechartsPie>
+                                                    <Pie
+                                                        data={pieData}
+                                                        cx="50%"
+                                                        cy="50%"
+                                                        innerRadius={55}
+                                                        outerRadius={85}
+                                                        paddingAngle={3}
+                                                        dataKey="value"
+                                                    >
+                                                        {pieData.map((entry, index) => (
+                                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                        ))}
+                                                    </Pie>
+                                                    <Tooltip
+                                                        formatter={(value) => `$${value.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
+                                                        contentStyle={{
+                                                            background: '#1e293b',
+                                                            border: `1px solid ${theme.brand?.primary || '#00adef'}4D`,
+                                                            borderRadius: '12px',
+                                                            padding: '0.75rem'
+                                                        }}
+                                                    />
+                                                </RechartsPie>
+                                            </ResponsiveContainer>
+                                            <ChartLegend>
+                                                {pieData.slice(0, 6).map((entry, index) => (
+                                                    <LegendItem key={entry.name} theme={theme}>
+                                                        <LegendDot $color={COLORS[index % COLORS.length]} />
+                                                        {entry.name}
+                                                    </LegendItem>
+                                                ))}
+                                            </ChartLegend>
+                                        </ChartCard>
+
+                                        <ChartCard theme={theme}>
+                                            <ChartTitle theme={theme}>
+                                                <BarChart3 size={20} />
+                                                24h Performance
+                                            </ChartTitle>
+                                            <ResponsiveContainer width="100%" height={220}>
+                                                <BarChart data={performanceData} layout="vertical">
+                                                    <CartesianGrid strokeDasharray="3 3" stroke={`${theme.text?.secondary || '#94a3b8'}1A`} />
+                                                    <XAxis type="number" stroke={theme.text?.tertiary || '#64748b'} tickFormatter={v => `${v}%`} />
+                                                    <YAxis type="category" dataKey="symbol" stroke={theme.text?.tertiary || '#64748b'} width={50} />
+                                                    <Tooltip
+                                                        formatter={(value) => `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`}
+                                                        contentStyle={{
+                                                            background: '#1e293b',
+                                                            border: `1px solid ${theme.brand?.primary || '#00adef'}4D`,
+                                                            borderRadius: '12px',
+                                                            padding: '0.75rem'
+                                                        }}
+                                                    />
+                                                    <Bar dataKey="gain" radius={[0, 6, 6, 0]}>
+                                                        {performanceData.map((entry, index) => (
+                                                            <Cell key={`cell-${index}`} fill={entry.gain >= 0 ? theme.success || '#10b981' : theme.error || '#ef4444'} />
+                                                        ))}
+                                                    </Bar>
+                                                </BarChart>
+                                            </ResponsiveContainer>
+                                        </ChartCard>
+                                    </Sidebar>
+                                </MainGrid>
+                            </>
                         )}
-                    </AISection>
-                )}
-
-                {/* Main Content */}
-                <MainGrid>
-                    {/* Holdings Table */}
-                    <HoldingsSection theme={theme}>
-                        <HoldingsHeader>
-                            <HoldingsTitle theme={theme}>
-                                <Eye size={22} />
-                                Your Holdings
-                            </HoldingsTitle>
-                            <SearchWrapper>
-                                <SearchIconStyled theme={theme} />
-                                <SearchInput
-                                    theme={theme}
-                                    type="text"
-                                    placeholder="Search holdings..."
-                                    value={searchQuery}
-                                    onChange={e => setSearchQuery(e.target.value)}
-                                />
-                            </SearchWrapper>
-                        </HoldingsHeader>
-
-                        <HoldingsTable>
-                            <Table>
-                                <thead>
-                                    <tr>
-                                        <Th theme={theme}>Symbol</Th>
-                                        <Th theme={theme}>Shares</Th>
-                                        <Th theme={theme}>Avg Price</Th>
-                                        <Th theme={theme}>Current</Th>
-                                        <Th theme={theme}>Value</Th>
-                                        <Th theme={theme}>Gain/Loss</Th>
-                                        <Th theme={theme}></Th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filteredHoldings.map(holding => {
-                                        // Debug: log the holding object to see all fields
-                                        console.log('🔍 Holding object:', holding.symbol, holding);
-                                        
-                                        const currentPrice = holding.currentPrice || holding.current_price || holding.price || holding.marketPrice || 0;
-                                        const avgPrice = holding.averagePrice || holding.average_price || holding.avgPrice || holding.purchasePrice || holding.purchase_price || holding.costBasis || currentPrice;
-                                        const shares = holding.shares || holding.quantity || holding.amount || holding.units || holding.qty || 0;
-                                        const value = holding.value || holding.totalValue || holding.marketValue || (currentPrice * shares);
-                                        const gain = value - (avgPrice * shares);
-                                        const gainPercent = avgPrice > 0 ? ((currentPrice - avgPrice) / avgPrice) * 100 : 0;
-                                        const positive = gain >= 0;
-
-                                        return (
-                                            <Tr theme={theme} key={holding._id || holding.symbol}>
-                                                <Td theme={theme}>
-                                                    <SymbolCell>
-                                                        <SymbolIcon theme={theme}>{holding.symbol?.substring(0, 2)}</SymbolIcon>
-                                                        <SymbolInfo>
-                                                            <SymbolName theme={theme}>{holding.symbol}</SymbolName>
-                                                            <SymbolType theme={theme}>Stock</SymbolType>
-                                                        </SymbolInfo>
-                                                    </SymbolCell>
-                                                </Td>
-                                                <Td theme={theme}>
-                                                    <PriceCell theme={theme}>{shares}</PriceCell>
-                                                </Td>
-                                                <Td theme={theme}>
-                                                    <PriceCell theme={theme}>${avgPrice.toFixed(2)}</PriceCell>
-                                                </Td>
-                                                <Td theme={theme}>
-                                                    <PriceCell theme={theme}>${currentPrice.toFixed(2)}</PriceCell>
-                                                </Td>
-                                                <Td theme={theme}>
-                                                    <ValueCell theme={theme}>${value.toLocaleString(undefined, { minimumFractionDigits: 2 })}</ValueCell>
-                                                </Td>
-                                                <Td theme={theme}>
-                                                    <ChangeCell theme={theme} $positive={positive}>
-                                                        {positive ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
-                                                        {positive ? '+' : ''}{gainPercent.toFixed(2)}%
-                                                    </ChangeCell>
-                                                </Td>
-                                                <Td theme={theme}>
-                                                    <ActionCell>
-                                                        <span style={{ color: theme.success || '#10b981', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                                                            <Link2 size={12} />
-                                                            Wallet
-                                                        </span>
-                                                    </ActionCell>
-                                                </Td>
-                                            </Tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </Table>
-                        </HoldingsTable>
-                    </HoldingsSection>
-
-                    {/* Sidebar Charts */}
-                    <Sidebar>
-                        <ChartCard theme={theme}>
-                            <ChartTitle theme={theme}>
-                                <PieChart size={20} />
-                                Allocation
-                            </ChartTitle>
-                            <ResponsiveContainer width="100%" height={220}>
-                                <RechartsPie>
-                                    <Pie
-                                        data={pieData}
-                                        cx="50%"
-                                        cy="50%"
-                                        innerRadius={50}
-                                        outerRadius={80}
-                                        paddingAngle={2}
-                                        dataKey="value"
-                                    >
-                                        {pieData.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip
-                                        formatter={(value) => `$${value.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
-                                        contentStyle={{
-                                            background: '#1e293b',
-                                            border: `1px solid ${theme.brand?.primary || '#00adef'}4D`,
-                                            borderRadius: '8px'
-                                        }}
-                                    />
-                                </RechartsPie>
-                            </ResponsiveContainer>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', justifyContent: 'center' }}>
-                                {pieData.slice(0, 6).map((entry, index) => (
-                                    <div key={entry.name} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem' }}>
-                                        <div style={{ width: 8, height: 8, borderRadius: 2, background: COLORS[index % COLORS.length] }} />
-                                        <span style={{ color: theme.text?.secondary || '#94a3b8' }}>{entry.name}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </ChartCard>
-
-                        <ChartCard theme={theme}>
-                            <ChartTitle theme={theme}>
-                                <BarChart3 size={20} />
-                                Performance
-                            </ChartTitle>
-                            <ResponsiveContainer width="100%" height={220}>
-                                <BarChart data={performanceData.slice(0, 6)} layout="vertical">
-                                    <CartesianGrid strokeDasharray="3 3" stroke={`${theme.text?.secondary || '#94a3b8'}1A`} />
-                                    <XAxis type="number" stroke={theme.text?.tertiary || '#64748b'} tickFormatter={v => `${v}%`} />
-                                    <YAxis type="category" dataKey="symbol" stroke={theme.text?.tertiary || '#64748b'} width={50} />
-                                    <Tooltip
-                                        formatter={(value) => `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`}
-                                        contentStyle={{
-                                            background: '#1e293b',
-                                            border: `1px solid ${theme.brand?.primary || '#00adef'}4D`,
-                                            borderRadius: '8px'
-                                        }}
-                                    />
-                                    <Bar dataKey="gain" radius={[0, 4, 4, 0]}>
-                                        {performanceData.slice(0, 6).map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.gain >= 0 ? theme.success || '#10b981' : theme.error || '#ef4444'} />
-                                        ))}
-                                    </Bar>
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </ChartCard>
-                    </Sidebar>
-                </MainGrid>
                     </>
                 )}
             </ContentWrapper>
-
         </PageContainer>
     );
 };
