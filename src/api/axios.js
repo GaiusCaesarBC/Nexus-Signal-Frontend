@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 // ⚠️ TEMPORARY: Force localhost for development
-const USE_LOCAL = false; // Set to false for production
+const USE_LOCAL = true; // Set to false for production
 
 // Safe localStorage access (handles private browsing, iframe restrictions, etc.)
 const safeLocalStorage = {
