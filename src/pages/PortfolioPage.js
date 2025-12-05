@@ -1546,7 +1546,7 @@ const PortfolioPage = () => {
                                                 Total Portfolio Value
                                             </MainStatLabel>
                                             <MainStatValue theme={theme}>
-                                                ${stats.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                ${stats.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })}
                                             </MainStatValue>
                                             <MainStatChange theme={theme} $positive={stats.totalGain >= 0}>
                                                 {stats.totalGain >= 0 ? <ArrowUpRight size={20} /> : <ArrowDownRight size={20} />}
