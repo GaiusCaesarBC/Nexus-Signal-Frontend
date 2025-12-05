@@ -1363,6 +1363,14 @@ const PortfolioPage = () => {
 
     useEffect(() => {
         fetchPortfolio();
+
+        // Auto-refresh portfolio every 30 seconds
+        const refreshInterval = setInterval(() => {
+            fetchPortfolio();
+            console.log('[Portfolio] Auto-refreshed');
+        }, 30000);
+
+        return () => clearInterval(refreshInterval);
     }, [fetchPortfolio]);
 
     const handleRefresh = async () => {
