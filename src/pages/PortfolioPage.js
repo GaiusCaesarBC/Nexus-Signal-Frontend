@@ -902,14 +902,24 @@ const PortfolioPage = () => {
         '#84cc16'
     ];
 
-    // Fetch portfolio on mount
+    // Fetch portfolio on mount and poll for updates
     useEffect(() => {
         fetchPortfolio();
-    }, []);
 
-    const fetchPortfolio = async () => {
+        // Poll for price updates every 60 seconds (silent refresh)
+        const interval = setInterval(() => {
+            fetchPortfolio(false);
+        }, 60000);
+
+        return () => clearInterval(interval);
+    }, [api]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const fetchPortfolio = async (showLoader = true) => {
         try {
-            setLoading(true);
+            // Only show loading spinner on initial load, not on refresh
+            if (showLoader && holdings.length === 0) {
+                setLoading(true);
+            }
             const response = await api.get('/portfolio');
             
             console.log('📊 Full API Response:', response.data);
