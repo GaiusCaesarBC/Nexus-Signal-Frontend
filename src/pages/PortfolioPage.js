@@ -1031,19 +1031,47 @@ const PortfolioPage = () => {
                         <WalletConnectButton showInfo={true} />
                     </WalletSection>
 
-                    <EmptyState>
-                        <EmptyIcon theme={theme}>
-                            <Wallet size={48} color={theme.brand?.primary || '#00adef'} />
-                        </EmptyIcon>
-                        <EmptyTitle theme={theme}>
-                            {linkedWallet ? 'Ready to Sync' : 'Connect Your Wallet'}
-                        </EmptyTitle>
-                        <EmptyText theme={theme}>
-                            {linkedWallet
-                                ? 'Click the Sync button above to import your on-chain holdings'
-                                : 'Connect and link your wallet above to automatically track your crypto holdings'}
-                        </EmptyText>
-                    </EmptyState>
+                    {/* Tabs - Always show */}
+                    <TabsContainer theme={theme}>
+                        <Tab
+                            theme={theme}
+                            $active={activeTab === 'holdings'}
+                            onClick={() => setActiveTab('holdings')}
+                        >
+                            <Wallet size={16} />
+                            Holdings
+                        </Tab>
+                        <Tab
+                            theme={theme}
+                            $active={activeTab === 'brokerages'}
+                            onClick={() => setActiveTab('brokerages')}
+                        >
+                            <Building2 size={16} />
+                            Brokerages
+                        </Tab>
+                    </TabsContainer>
+
+                    {/* Brokerages Tab */}
+                    {activeTab === 'brokerages' && (
+                        <BrokerageConnect />
+                    )}
+
+                    {/* Holdings Tab - Empty State */}
+                    {activeTab === 'holdings' && (
+                        <EmptyState>
+                            <EmptyIcon theme={theme}>
+                                <Wallet size={48} color={theme.brand?.primary || '#00adef'} />
+                            </EmptyIcon>
+                            <EmptyTitle theme={theme}>
+                                {linkedWallet ? 'Ready to Sync' : 'Connect Your Wallet'}
+                            </EmptyTitle>
+                            <EmptyText theme={theme}>
+                                {linkedWallet
+                                    ? 'Click the Sync button above to import your on-chain holdings'
+                                    : 'Connect and link your wallet above, or connect a brokerage to track your holdings'}
+                            </EmptyText>
+                        </EmptyState>
+                    )}
                 </ContentWrapper>
             </PageContainer>
         );
