@@ -1048,28 +1048,21 @@ const PortfolioPage = () => {
         try {
             setLoading(true);
 
-            // Fetch both wallet portfolio and brokerage data
-            const [portfolioRes, brokerageData] = await Promise.all([
-                authApi?.get('/portfolio').catch(() => ({ data: { portfolio: { holdings: [] } } })),
-                fetchBrokerageData()
-            ]);
+            // Fetch brokerage data (real portfolio)
+            const brokerageData = await fetchBrokerageData();
 
-            const portfolioData = portfolioRes?.data?.portfolio || portfolioRes?.data || {};
-            const walletHoldings = portfolioData.holdings || [];
-
-            // Combine wallet and brokerage holdings
-            const combinedHoldings = [
-                ...walletHoldings.map(h => ({ ...h, source: 'wallet', sourceName: 'Wallet' })),
-                ...brokerageData.holdings
-            ];
+            // For now, only show brokerage holdings (real portfolio)
+            // Wallet holdings would come from on-chain data, not paper trading
+            const combinedHoldings = [...brokerageData.holdings];
 
             setHoldings(combinedHoldings);
 
-            // Calculate combined stats
-            const totalValue = (portfolioData.totalValue || 0) + brokerageData.totalValue;
-            const totalCost = portfolioData.totalInvested || portfolioData.totalCost || 0;
-            const totalGain = totalValue - totalCost;
-            const totalGainPercent = totalCost > 0 ? (totalGain / totalCost) * 100 : 0;
+            // Calculate stats from brokerage data only (not paper trading)
+            const totalValue = brokerageData.totalValue;
+            // We don't track cost basis for real portfolios yet
+            const totalCost = 0;
+            const totalGain = 0;
+            const totalGainPercent = 0;
 
             if (combinedHoldings.length > 0) {
                 setStats({
@@ -1087,7 +1080,7 @@ const PortfolioPage = () => {
         } finally {
             setLoading(false);
         }
-    }, [authApi, fetchBrokerageData]);
+    }, [fetchBrokerageData]);
 
     useEffect(() => {
         fetchPortfolio();
@@ -1488,17 +1481,20 @@ const PortfolioPage = () => {
                                                                 </Td>
                                                                 <Td theme={theme}>
                                                                     <PriceCell theme={theme}>
-                                                                        {quantity.toLocaleString(undefined, { maximumFractionDigits: 6 })}
+                                                                        {quantity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 })}
                                                                     </PriceCell>
                                                                 </Td>
                                                                 <Td theme={theme}>
                                                                     <PriceCell theme={theme}>
-                                                                        ${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                        ${price >= 1
+                                                                            ? price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                                                                            : price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })
+                                                                        }
                                                                     </PriceCell>
                                                                 </Td>
                                                                 <Td theme={theme}>
                                                                     <ValueCell theme={theme}>
-                                                                        ${value.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                                                        ${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                                     </ValueCell>
                                                                 </Td>
                                                                 <Td theme={theme}>
