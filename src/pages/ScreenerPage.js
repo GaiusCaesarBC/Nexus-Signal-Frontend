@@ -630,8 +630,17 @@ const ScreenerPage = () => {
     // Navigate to stock or crypto detail page
     const handleRowClick = (item) => {
         if (mode === 'crypto') {
-            // Navigate to crypto page - use id for CoinGecko coins, fallback to lowercase symbol
-            navigate(`/crypto/${item.id || item.symbol.toLowerCase()}`);
+            // Check if this is a DEX token (from GeckoTerminal)
+            if (item.source === 'geckoterminal' || item.source === 'pancakeswap') {
+                // DEX tokens need query params for proper data fetching
+                const symbol = item.symbol.toUpperCase();
+                const network = item.network || 'bsc';
+                const poolAddress = item.poolAddress || item.contractAddress;
+                navigate(`/crypto/${symbol}?source=dex&network=${network}&pool=${poolAddress}`);
+            } else {
+                // CoinGecko tokens - use id for proper lookup
+                navigate(`/crypto/${item.id || item.symbol.toLowerCase()}`);
+            }
         } else {
             // Navigate to stock page with the symbol (uppercase)
             navigate(`/stocks/${item.symbol.toUpperCase()}`);
