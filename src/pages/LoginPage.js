@@ -530,8 +530,18 @@ const LoginPage = () => {
 
     // Handle successful 2FA verification
     const handle2FASuccess = async (data) => {
+        console.log('[LoginPage] 2FA verification successful, completing login...', data);
         setShow2FAModal(false);
-        await complete2FALogin(data);
+        try {
+            const result = await complete2FALogin(data);
+            console.log('[LoginPage] complete2FALogin result:', result);
+            if (!result?.success) {
+                setLocalError(result?.error || 'Failed to complete login after 2FA verification');
+            }
+        } catch (err) {
+            console.error('[LoginPage] Error completing 2FA login:', err);
+            setLocalError('An error occurred during login. Please try again.');
+        }
     };
 
     // Close 2FA modal

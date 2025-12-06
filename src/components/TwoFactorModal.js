@@ -339,13 +339,44 @@ const TwoFactorModal = ({
     const [countdown, setCountdown] = useState(0);
     const [selectedMethod, setSelectedMethod] = useState(method === 'both' ? 'email' : method);
     const inputRefs = useRef([]);
+    const initialCodeSent = useRef(false);
 
-    // Focus first input on mount
+    // Focus first input and auto-send code on mount
     useEffect(() => {
         if (isOpen && inputRefs.current[0]) {
             inputRefs.current[0].focus();
         }
-    }, [isOpen]);
+
+        // Auto-send verification code when modal opens (only once)
+        if (isOpen && tempToken && !isBackupMode && !initialCodeSent.current) {
+            initialCodeSent.current = true;
+            const sendInitialCode = async () => {
+                console.log('[2FA Modal] Auto-sending verification code...');
+                setResendLoading(true);
+                try {
+                    await api.post('/2fa/send-login-code', {
+                        tempToken,
+                        method: selectedMethod
+                    });
+                    console.log('[2FA Modal] Verification code sent successfully');
+                    setSuccess(`Code sent to your ${selectedMethod === 'email' ? 'email' : 'phone'}!`);
+                    setCountdown(60);
+                    setTimeout(() => setSuccess(''), 3000);
+                } catch (err) {
+                    console.error('[2FA Modal] Failed to send initial code:', err.response?.data || err.message);
+                    setError(err.response?.data?.error || 'Failed to send verification code');
+                } finally {
+                    setResendLoading(false);
+                }
+            };
+            sendInitialCode();
+        }
+
+        // Reset the flag when modal closes
+        if (!isOpen) {
+            initialCodeSent.current = false;
+        }
+    }, [isOpen, tempToken, isBackupMode, selectedMethod]);
 
     // Countdown timer for resend
     useEffect(() => {
