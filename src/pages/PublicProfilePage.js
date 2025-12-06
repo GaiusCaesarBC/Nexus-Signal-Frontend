@@ -919,7 +919,7 @@ const PublicProfilePage = () => {
     // 🔥 Brokerage/Real portfolio stats
     const brokerageStats = profile?.brokerage || {};
     const hasRealPortfolio = brokerageStats.hasConnections || false;
-    const realPortfolioValue = brokerageStats.totalValue ?? 0;
+    const realPortfolioReturn = brokerageStats.returnPercent ?? 0;
 
     const stats = {
         // Paper trading return
@@ -928,7 +928,7 @@ const PublicProfilePage = () => {
 
         // Real portfolio stats
         hasRealPortfolio: hasRealPortfolio,
-        realPortfolioValue: realPortfolioValue,
+        realPortfolioReturn: realPortfolioReturn,
 
         // Legacy return (for backwards compatibility)
         totalReturnPercent: profileStats.totalReturnPercent ?? gamificationStats.totalReturnPercent ?? 0,
@@ -1099,6 +1099,15 @@ const PublicProfilePage = () => {
                             {(stats.paperTradingReturn || 0).toFixed(2)}%
                         </StatValue>
                     </StatBox>
+                    {stats.hasRealPortfolio && (
+                        <StatBox>
+                            <StatLabel>Real Return</StatLabel>
+                            <StatValue $positive={(stats.realPortfolioReturn || 0) >= 0} $negative={(stats.realPortfolioReturn || 0) < 0}>
+                                {(stats.realPortfolioReturn || 0) >= 0 ? <ArrowUpRight size={18} /> : <ArrowDownRight size={18} />}
+                                {(stats.realPortfolioReturn || 0).toFixed(2)}%
+                            </StatValue>
+                        </StatBox>
+                    )}
                     <StatBox>
                         <StatLabel>Win Rate</StatLabel>
                         <StatValue>{(stats.winRate || 0).toFixed(1)}%</StatValue>
