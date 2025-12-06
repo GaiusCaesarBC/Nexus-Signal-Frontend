@@ -161,19 +161,15 @@ const refreshUser = useCallback(async () => {
 
     // Complete 2FA Login - Called after successful 2FA verification
     const complete2FALogin = useCallback(async (tokenData) => {
-        console.log('[Auth] complete2FALogin called with:', tokenData);
         setLoading(true);
         setError(null);
         try {
             // ✅ SAVE TOKEN TO LOCALSTORAGE
             if (tokenData.token) {
                 safeLocalStorage.setItem('token', tokenData.token);
-                console.log('[Auth] Token saved to localStorage after 2FA');
             } else {
-                console.error('[Auth] No token in tokenData!', tokenData);
+                console.error('No token received from 2FA verification');
             }
-
-            console.log("2FA successful, loading user...");
 
             const userLoaded = await loadUser();
 
@@ -188,7 +184,7 @@ const refreshUser = useCallback(async () => {
             }
         } catch (err) {
             const errorMessage = err.message || 'Failed to complete login';
-            console.error("2FA login completion failed:", errorMessage);
+            console.error('2FA login completion failed:', errorMessage);
             setError(errorMessage);
             toast.error(errorMessage, 'Login Failed');
             return { success: false, error: errorMessage };

@@ -329,9 +329,6 @@ const TwoFactorModal = ({
     email,
     phone
 }) => {
-    // Debug: Log props on every render
-    console.log('[2FA Modal] Render with props:', { isOpen, hasTempToken: !!tempToken, method });
-
     const [code, setCode] = useState(['', '', '', '', '', '']);
     const [isBackupMode, setIsBackupMode] = useState(false);
     const [backupCode, setBackupCode] = useState('');
@@ -360,24 +357,21 @@ const TwoFactorModal = ({
         // Auto-send verification code when modal opens (only once)
         // Use method prop directly as fallback if selectedMethod not yet synced
         const methodToUse = selectedMethod || (method === 'both' ? 'email' : method);
-        console.log('[2FA Modal] Effect running:', { isOpen, hasTempToken: !!tempToken, methodToUse, isBackupMode, initialCodeSent: initialCodeSent.current });
 
         if (isOpen && tempToken && methodToUse && !isBackupMode && !initialCodeSent.current) {
             initialCodeSent.current = true;
             const sendInitialCode = async () => {
-                console.log('[2FA Modal] Auto-sending verification code...');
                 setResendLoading(true);
                 try {
                     await api.post('/2fa/send-login-code', {
                         tempToken,
                         method: methodToUse
                     });
-                    console.log('[2FA Modal] Verification code sent successfully');
                     setSuccess(`Code sent to your ${selectedMethod === 'email' ? 'email' : 'phone'}!`);
                     setCountdown(60);
                     setTimeout(() => setSuccess(''), 3000);
                 } catch (err) {
-                    console.error('[2FA Modal] Failed to send initial code:', err.response?.data || err.message);
+                    console.error('Failed to send 2FA code:', err.response?.data?.error || err.message);
                     setError(err.response?.data?.error || 'Failed to send verification code');
                 } finally {
                     setResendLoading(false);
@@ -457,8 +451,6 @@ const TwoFactorModal = ({
         setLoading(true);
         setError('');
 
-        console.log('[2FA Modal] Verifying code...');
-
         try {
             const response = await api.post('/2fa/verify-login', {
                 tempToken,
@@ -466,17 +458,14 @@ const TwoFactorModal = ({
                 isBackupCode: isBackupMode
             });
 
-            console.log('[2FA Modal] Response:', response.data);
-
             if (response.data.success) {
                 setSuccess('Verification successful!');
-                console.log('[2FA Modal] Verification successful, calling onSuccess...');
                 setTimeout(() => {
                     onSuccess(response.data);
                 }, 500);
             }
         } catch (err) {
-            console.error('[2FA Modal] Verification error:', err.response?.data || err.message);
+            console.error('2FA verification failed:', err.response?.data?.msg || err.message);
             const errorMsg = err.response?.data?.msg || err.response?.data?.error || 'Verification failed';
             setError(errorMsg);
 
