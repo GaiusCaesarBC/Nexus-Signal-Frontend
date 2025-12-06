@@ -86,10 +86,10 @@ const TickerBadge = styled.span`
 
 /**
  * TickerLink Component
- * 
+ *
  * A clickable ticker symbol that links to the appropriate stock or crypto page.
  * Automatically detects if the symbol is a cryptocurrency.
- * 
+ *
  * @param {string} symbol - The ticker symbol (e.g., "AAPL", "BTC", "ETH")
  * @param {boolean} forceCrypto - Force the symbol to be treated as crypto
  * @param {boolean} forceStock - Force the symbol to be treated as a stock
@@ -101,9 +101,12 @@ const TickerBadge = styled.span`
  * @param {string} className - Additional CSS class
  * @param {function} onClick - Additional click handler
  * @param {React.ReactNode} children - Custom content (defaults to symbol)
+ * @param {boolean} isDex - Is this a DEX token (GeckoTerminal)
+ * @param {string} network - DEX network (bsc, eth, solana)
+ * @param {string} poolAddress - DEX pool address
  */
-const TickerLink = ({ 
-  symbol, 
+const TickerLink = ({
+  symbol,
   forceCrypto = false,
   forceStock = false,
   variant = 'text',
@@ -114,15 +117,25 @@ const TickerLink = ({
   className,
   onClick,
   children,
-  ...props 
+  isDex = false,
+  network,
+  poolAddress,
+  ...props
 }) => {
   const navigate = useNavigate();
-  
+
   if (!symbol) return null;
-  
+
   const upperSymbol = symbol.toUpperCase();
-  const crypto = forceStock ? false : (forceCrypto || isCrypto(symbol));
-  const path = crypto ? `/crypto/${upperSymbol}` : `/stocks/${upperSymbol}`;
+  const crypto = forceStock ? false : (forceCrypto || isDex || isCrypto(symbol));
+
+  // Build path - DEX tokens include network and poolAddress as query params
+  let path;
+  if (isDex && network && poolAddress) {
+    path = `/crypto/${upperSymbol}?source=dex&network=${network}&pool=${poolAddress}`;
+  } else {
+    path = crypto ? `/crypto/${upperSymbol}` : `/stocks/${upperSymbol}`;
+  }
   
   const handleClick = (e) => {
     e.stopPropagation(); // Prevent parent click handlers
