@@ -311,12 +311,16 @@ const TickerWrapper = styled.div`
 `;
 
 const TickerLabel = styled.div`
-    background: ${props => props.$variant === 'movers' 
-        ? `linear-gradient(135deg, ${props.theme.brand?.secondary || props.theme.brand?.primary}40 0%, ${props.theme.brand?.secondary || props.theme.brand?.primary}26 100%)` 
-        : `linear-gradient(135deg, ${props.theme.brand?.primary || '#00adef'}40 0%, ${props.theme.brand?.primary || '#00adef'}26 100%)`};
-    border: 1px solid ${props => props.$variant === 'movers' 
-        ? `${props.theme.brand?.secondary || props.theme.brand?.primary}66` 
-        : props.theme.border?.hover || 'rgba(0, 173, 237, 0.4)'};
+    background: ${props => {
+        if (props.$variant === 'movers') return `linear-gradient(135deg, ${props.theme.brand?.secondary || props.theme.brand?.primary}40 0%, ${props.theme.brand?.secondary || props.theme.brand?.primary}26 100%)`;
+        if (props.$variant === 'dex') return `linear-gradient(135deg, #8b5cf640 0%, #8b5cf626 100%)`;
+        return `linear-gradient(135deg, ${props.theme.brand?.primary || '#00adef'}40 0%, ${props.theme.brand?.primary || '#00adef'}26 100%)`;
+    }};
+    border: 1px solid ${props => {
+        if (props.$variant === 'movers') return `${props.theme.brand?.secondary || props.theme.brand?.primary}66`;
+        if (props.$variant === 'dex') return 'rgba(139, 92, 246, 0.4)';
+        return props.theme.border?.hover || 'rgba(0, 173, 237, 0.4)';
+    }};
     border-right: none;
     border-radius: 10px 0 0 10px;
     padding: 0 1rem;
@@ -327,7 +331,11 @@ const TickerLabel = styled.div`
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 1.5px;
-    color: ${props => props.$variant === 'movers' ? (props.theme.brand?.secondary || props.theme.brand?.primary) : (props.theme.brand?.primary || '#00adef')};
+    color: ${props => {
+        if (props.$variant === 'movers') return props.theme.brand?.secondary || props.theme.brand?.primary;
+        if (props.$variant === 'dex') return '#8b5cf6';
+        return props.theme.brand?.primary || '#00adef';
+    }};
     white-space: nowrap;
     min-width: 100px;
     justify-content: center;
@@ -341,12 +349,16 @@ const TickerLabel = styled.div`
 
 const TickerContainer = styled.div`
     flex: 1;
-    background: ${props => props.$variant === 'movers' 
-        ? `${props.theme.brand?.secondary || props.theme.brand?.primary}0f` 
-        : `${props.theme.brand?.primary || '#00adef'}0f`};
-    border: 1px solid ${props => props.$variant === 'movers' 
-        ? `${props.theme.brand?.secondary || props.theme.brand?.primary}33` 
-        : props.theme.border?.secondary || 'rgba(0, 173, 237, 0.2)'};
+    background: ${props => {
+        if (props.$variant === 'movers') return `${props.theme.brand?.secondary || props.theme.brand?.primary}0f`;
+        if (props.$variant === 'dex') return 'rgba(139, 92, 246, 0.05)';
+        return `${props.theme.brand?.primary || '#00adef'}0f`;
+    }};
+    border: 1px solid ${props => {
+        if (props.$variant === 'movers') return `${props.theme.brand?.secondary || props.theme.brand?.primary}33`;
+        if (props.$variant === 'dex') return 'rgba(139, 92, 246, 0.2)';
+        return props.theme.border?.secondary || 'rgba(0, 173, 237, 0.2)';
+    }};
     border-left: none;
     border-radius: 0 10px 10px 0;
     overflow: hidden;
@@ -1297,6 +1309,7 @@ const DashboardPage = () => {
     // Ticker data
     const [watchlistTicker, setWatchlistTicker] = useState([]);
     const [moversTicker, setMoversTicker] = useState([]);
+    const [dexTrendingTicker, setDexTrendingTicker] = useState([]);
 
     // Chart states
     const [advancedChartData, setAdvancedChartData] = useState([]);
@@ -1388,6 +1401,7 @@ useEffect(() => {
             setLoading(true);
             await Promise.all([
                 fetchTickerData(),
+                fetchDexTrending(),
                 fetchPaperTradingData(),
                 fetchRealPortfolioData(),
                 fetchLeaderboardData(),
@@ -1519,6 +1533,33 @@ useEffect(() => {
                 { symbol: 'NVDA', price: 495.20, change: 5.8 },
                 { symbol: 'AMD', price: 142.70, change: 4.5 },
             ]);
+        }
+    };
+
+    // Fetch DEX trending tokens from GeckoTerminal
+    const fetchDexTrending = async () => {
+        try {
+            console.log('Fetching DEX trending tokens...');
+            const response = await api.get('/dashboard/dex-trending');
+
+            if (response.data.success && response.data.tokens) {
+                const tokens = response.data.tokens.map(token => ({
+                    symbol: token.symbol,
+                    price: token.price,
+                    change: token.change,
+                    chain: token.chain || 'BSC',
+                    source: 'geckoterminal'
+                }));
+
+                console.log('DEX trending tokens:', tokens.length);
+                setDexTrendingTicker(tokens);
+            } else {
+                console.log('No DEX trending tokens returned');
+                setDexTrendingTicker([]);
+            }
+        } catch (error) {
+            console.error('Error fetching DEX trending:', error);
+            setDexTrendingTicker([]);
         }
     };
 
@@ -1909,6 +1950,47 @@ const handleOpenRewardModal = () => {
                                 ) : (
                                     <TickerItem>
                                         <span style={{ color: theme.text?.tertiary }}>Loading market movers...</span>
+                                    </TickerItem>
+                                )}
+                            </TickerTrack>
+                        </TickerContainer>
+                    </TickerWrapper>
+
+                    {/* DEX Trending Ticker (GeckoTerminal BSC) */}
+                    <TickerWrapper>
+                        <TickerLabel $variant="dex"><Rocket size={14} /> DEX Trending</TickerLabel>
+                        <TickerContainer $variant="dex">
+                            <TickerTrack $duration="45s">
+                                {dexTrendingTicker.length > 0 ? (
+                                    [...dexTrendingTicker, ...dexTrendingTicker].map((token, index) => (
+                                        <TickerItem key={index}>
+                                            <TickerText style={{ fontWeight: 600, color: theme.brand?.primary || '#00adef' }}>
+                                                {token.symbol}
+                                            </TickerText>
+                                            <span style={{
+                                                fontSize: '0.65rem',
+                                                color: theme.text?.tertiary,
+                                                marginLeft: '4px',
+                                                opacity: 0.7
+                                            }}>
+                                                {token.chain}
+                                            </span>
+                                            {token.price > 0 ? (
+                                                <>
+                                                    <TickerPrice>{formatCryptoPrice(token.price)}</TickerPrice>
+                                                    <TickerChange $positive={token.change >= 0}>
+                                                        {token.change >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                                                        {token.change >= 0 ? '+' : ''}{token.change?.toFixed(2)}%
+                                                    </TickerChange>
+                                                </>
+                                            ) : (
+                                                <TickerPrice style={{ color: theme.text?.tertiary }}>Loading...</TickerPrice>
+                                            )}
+                                        </TickerItem>
+                                    ))
+                                ) : (
+                                    <TickerItem>
+                                        <span style={{ color: theme.text?.tertiary }}>Loading DEX tokens...</span>
                                     </TickerItem>
                                 )}
                             </TickerTrack>
