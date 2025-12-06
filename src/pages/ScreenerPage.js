@@ -113,15 +113,15 @@ const SourceBadge = styled.span`
     font-weight: 700;
     text-transform: uppercase;
     background: ${props => {
-        if (props.$source === 'pancakeswap') return '#f0b90b33';
+        if (props.$source === 'dexscreener') return '#f0b90b33';
         return props.theme?.brand?.primary + '33' || '#00adef33';
     }};
     color: ${props => {
-        if (props.$source === 'pancakeswap') return '#f0b90b';
+        if (props.$source === 'dexscreener') return '#f0b90b';
         return props.theme?.brand?.primary || '#00adef';
     }};
     border: 1px solid ${props => {
-        if (props.$source === 'pancakeswap') return '#f0b90b66';
+        if (props.$source === 'dexscreener') return '#f0b90b66';
         return props.theme?.brand?.primary + '66' || '#00adef66';
     }};
 `;
@@ -710,7 +710,7 @@ const ScreenerPage = () => {
                 </Subtitle>
                 <PoweredBy theme={theme}>
                     <Zap size={18} />
-                    {mode === 'crypto' ? 'PancakeSwap + CoinGecko • BSC & Global Crypto' : 'Live Market Data'}
+                    {mode === 'crypto' ? 'DexScreener + CoinGecko • BSC & Global Crypto' : 'Live Market Data'}
                 </PoweredBy>
             </Header>
 
@@ -849,7 +849,7 @@ const ScreenerPage = () => {
                                         <SymbolCell>
                                             <Symbol theme={theme}>
                                                 {item.symbol}
-                                                {item.source === 'pancakeswap' && (
+                                                {item.source === 'dexscreener' && (
                                                     <ChainBadge>BSC</ChainBadge>
                                                 )}
                                             </Symbol>
@@ -860,7 +860,7 @@ const ScreenerPage = () => {
                                             {item.name}
                                             {mode === 'crypto' && item.source && (
                                                 <SourceBadge theme={theme} $source={item.source}>
-                                                    {item.source === 'pancakeswap' ? '🥞 PCS' : '🦎 CG'}
+                                                    {item.source === 'dexscreener' ? '📊 DEX' : '🦎 CG'}
                                                 </SourceBadge>
                                             )}
                                         </Name>
