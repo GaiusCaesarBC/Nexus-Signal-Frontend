@@ -412,6 +412,8 @@ const TwoFactorModal = ({
         setLoading(true);
         setError('');
 
+        console.log('[2FA Modal] Verifying code...');
+
         try {
             const response = await api.post('/2fa/verify-login', {
                 tempToken,
@@ -419,13 +421,17 @@ const TwoFactorModal = ({
                 isBackupCode: isBackupMode
             });
 
+            console.log('[2FA Modal] Response:', response.data);
+
             if (response.data.success) {
                 setSuccess('Verification successful!');
+                console.log('[2FA Modal] Verification successful, calling onSuccess...');
                 setTimeout(() => {
                     onSuccess(response.data);
                 }, 500);
             }
         } catch (err) {
+            console.error('[2FA Modal] Verification error:', err.response?.data || err.message);
             const errorMsg = err.response?.data?.msg || err.response?.data?.error || 'Verification failed';
             setError(errorMsg);
 
