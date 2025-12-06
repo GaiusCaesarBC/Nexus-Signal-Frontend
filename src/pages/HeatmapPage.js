@@ -640,7 +640,17 @@ const HeatmapPage = () => {
 
     const handleCellClick = (item) => {
         if (mode === 'crypto') {
-            navigate(`/crypto/${item.id || item.symbol.toLowerCase()}`);
+            // Check if this is a DEX token (from GeckoTerminal)
+            if (item.source === 'geckoterminal') {
+                // DEX tokens need query params for proper data fetching
+                const symbol = item.symbol.toUpperCase();
+                const network = item.network || 'bsc';
+                const poolAddress = item.poolAddress || item.contractAddress || item.id;
+                navigate(`/crypto/${symbol}?source=dex&network=${network}&pool=${poolAddress}`);
+            } else {
+                // CoinGecko tokens - use id for proper lookup
+                navigate(`/crypto/${item.id || item.symbol.toLowerCase()}`);
+            }
         } else {
             navigate(`/stocks/${item.symbol.toUpperCase()}`);
         }
