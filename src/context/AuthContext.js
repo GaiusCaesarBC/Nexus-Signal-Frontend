@@ -161,13 +161,16 @@ const refreshUser = useCallback(async () => {
 
     // Complete 2FA Login - Called after successful 2FA verification
     const complete2FALogin = useCallback(async (tokenData) => {
+        console.log('[Auth] complete2FALogin called with:', tokenData);
         setLoading(true);
         setError(null);
         try {
             // ✅ SAVE TOKEN TO LOCALSTORAGE
             if (tokenData.token) {
                 safeLocalStorage.setItem('token', tokenData.token);
-                console.log("Token saved to localStorage after 2FA");
+                console.log('[Auth] Token saved to localStorage after 2FA');
+            } else {
+                console.error('[Auth] No token in tokenData!', tokenData);
             }
 
             console.log("2FA successful, loading user...");
