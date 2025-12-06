@@ -355,7 +355,11 @@ const TwoFactorModal = ({
         }
 
         // Auto-send verification code when modal opens (only once)
-        if (isOpen && tempToken && selectedMethod && !isBackupMode && !initialCodeSent.current) {
+        // Use method prop directly as fallback if selectedMethod not yet synced
+        const methodToUse = selectedMethod || (method === 'both' ? 'email' : method);
+        console.log('[2FA Modal] Effect running:', { isOpen, hasTempToken: !!tempToken, methodToUse, isBackupMode, initialCodeSent: initialCodeSent.current });
+
+        if (isOpen && tempToken && methodToUse && !isBackupMode && !initialCodeSent.current) {
             initialCodeSent.current = true;
             const sendInitialCode = async () => {
                 console.log('[2FA Modal] Auto-sending verification code...');
@@ -363,7 +367,7 @@ const TwoFactorModal = ({
                 try {
                     await api.post('/2fa/send-login-code', {
                         tempToken,
-                        method: selectedMethod
+                        method: methodToUse
                     });
                     console.log('[2FA Modal] Verification code sent successfully');
                     setSuccess(`Code sent to your ${selectedMethod === 'email' ? 'email' : 'phone'}!`);
@@ -383,7 +387,7 @@ const TwoFactorModal = ({
         if (!isOpen) {
             initialCodeSent.current = false;
         }
-    }, [isOpen, tempToken, isBackupMode, selectedMethod]);
+    }, [isOpen, tempToken, isBackupMode, selectedMethod, method]);
 
     // Countdown timer for resend
     useEffect(() => {
