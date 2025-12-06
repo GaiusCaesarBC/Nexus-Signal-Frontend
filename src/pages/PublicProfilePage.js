@@ -1099,17 +1099,6 @@ const PublicProfilePage = () => {
                             {(stats.paperTradingReturn || 0).toFixed(2)}%
                         </StatValue>
                     </StatBox>
-                    {stats.hasRealPortfolio && (
-                        <StatBox>
-                            <StatLabel>Real Portfolio</StatLabel>
-                            <StatValue>
-                                <DollarSign size={16} />
-                                {stats.realPortfolioValue >= 1000
-                                    ? `${(stats.realPortfolioValue / 1000).toFixed(1)}K`
-                                    : stats.realPortfolioValue.toFixed(0)}
-                            </StatValue>
-                        </StatBox>
-                    )}
                     <StatBox>
                         <StatLabel>Win Rate</StatLabel>
                         <StatValue>{(stats.winRate || 0).toFixed(1)}%</StatValue>
