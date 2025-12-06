@@ -70,6 +70,7 @@ import ComparisonPage from './pages/ComparisonPage';
 import PredictionHistoryPage from './pages/PredictionHistoryPage';
 import ChartPage from './pages/ChartPage';
 import OAuthCallbackPage from './pages/OAuthCallbackPage';
+import WhitepaperPage from './pages/WhitepaperPage';
 
 // Global styles to set the page background
 const GlobalStyle = createGlobalStyle`
@@ -123,6 +124,7 @@ function AppContent() {
                     <Route path="/privacy" element={<PrivacyPolicyPage />} />
                     <Route path="/disclaimer" element={<DisclaimerPage />} />
                     <Route path="/cookie-policy" element={<CookiePolicyPage />} />
+                    <Route path="/whitepaper" element={<WhitepaperPage />} />
 
                     {/* Protected Routes */}
                     <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />

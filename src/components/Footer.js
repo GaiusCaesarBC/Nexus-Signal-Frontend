@@ -493,6 +493,10 @@ const Footer = () => {
                             <ChevronRight size={16} />
                             About Us
                         </FooterLink>
+                        <FooterLink to="/whitepaper">
+                            <ChevronRight size={16} />
+                            Whitepaper
+                        </FooterLink>
                         <FooterLink to="/leaderboard">
                             <ChevronRight size={16} />
                             Leaderboard
@@ -548,6 +552,7 @@ const Footer = () => {
                         </MadeWithLove>
                     </Copyright>
                     <LegalLinks>
+                        <LegalLink to="/whitepaper">Whitepaper</LegalLink>
                         <LegalLink to="/terms">Terms of Service</LegalLink>
                         <LegalLink to="/privacy">Privacy Policy</LegalLink>
                         <LegalLink to="/disclaimer">Disclaimer</LegalLink>
