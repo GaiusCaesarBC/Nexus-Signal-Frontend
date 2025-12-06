@@ -1,5 +1,5 @@
 // src/components/BrokerageConnect.js - Brokerage Connection Component
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import styled, { keyframes, css } from 'styled-components';
 import { usePlaidLink } from 'react-plaid-link';
 import { useAuth } from '../context/AuthContext';
@@ -456,6 +456,10 @@ const BrokerageConnect = () => {
     // Plaid Link state
     const [plaidToken, setPlaidToken] = useState(null);
 
+    // Refs to prevent re-fetching during Plaid linking
+    const hasInitialFetched = useRef(false);
+    const isPlaidLinkingRef = useRef(false);
+
     // Fetch connections
     const fetchConnections = useCallback(async () => {
         try {
@@ -472,14 +476,18 @@ const BrokerageConnect = () => {
     }, []);
 
     useEffect(() => {
-        if (user) {
+        // Only fetch once on initial mount - prevents re-fetching during Plaid linking
+        if (user && !hasInitialFetched.current && !isPlaidLinkingRef.current) {
+            hasInitialFetched.current = true;
             fetchConnections();
         }
-    }, [user, fetchConnections]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // Create Plaid link token
     const createPlaidToken = async () => {
         try {
+            isPlaidLinkingRef.current = true; // Prevent re-fetches during Plaid flow
             const response = await api.post('/brokerage/plaid/link-token');
             if (response.data.success) {
                 setPlaidToken(response.data.linkToken);
@@ -487,6 +495,7 @@ const BrokerageConnect = () => {
         } catch (err) {
             console.error('Error creating Plaid token:', err);
             setError('Failed to initialize Plaid. Please try again.');
+            isPlaidLinkingRef.current = false;
         }
     };
 
@@ -503,6 +512,7 @@ const BrokerageConnect = () => {
                 });
 
                 if (response.data.success) {
+                    isPlaidLinkingRef.current = false; // Plaid flow complete
                     await fetchConnections();
                     setShowAddModal(false);
                     setSelectedBroker(null);
@@ -511,10 +521,12 @@ const BrokerageConnect = () => {
                 setError(err.response?.data?.error || 'Failed to connect brokerage');
             } finally {
                 setConnecting(false);
+                isPlaidLinkingRef.current = false;
             }
         },
         onExit: () => {
             setPlaidToken(null);
+            isPlaidLinkingRef.current = false; // Plaid flow cancelled/closed
         }
     });
 

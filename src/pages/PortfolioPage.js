@@ -1,6 +1,6 @@
 // client/src/pages/PortfolioPage.js - REDESIGNED PORTFOLIO WITH STUNNING UI
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import styled, { keyframes, css } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
@@ -1204,6 +1204,9 @@ const PortfolioPage = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [activeTab, setActiveTab] = useState('holdings');
 
+    // Ref to prevent multiple initial fetches
+    const hasInitialFetched = useRef(false);
+
     const COLORS = [
         theme.brand?.primary || '#00adef',
         theme.success || '#10b981',
@@ -1389,16 +1392,13 @@ const PortfolioPage = () => {
     }, [fetchBrokerageData, fetchTradeHistory, trackPortfolioValue]);
 
     useEffect(() => {
-        fetchPortfolio();
-
-        // Auto-refresh portfolio every 30 seconds
-        const refreshInterval = setInterval(() => {
+        // Only fetch once on initial mount - prevents re-fetching during Plaid linking
+        if (!hasInitialFetched.current) {
+            hasInitialFetched.current = true;
             fetchPortfolio();
-            console.log('[Portfolio] Auto-refreshed');
-        }, 30000);
-
-        return () => clearInterval(refreshInterval);
-    }, [fetchPortfolio]);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleRefresh = async () => {
         setRefreshing(true);
