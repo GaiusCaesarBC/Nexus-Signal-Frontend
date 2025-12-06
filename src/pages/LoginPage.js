@@ -446,9 +446,9 @@ const LoginPage = () => {
     const [particles, setParticles] = useState([]);
     const [shapes, setShapes] = useState([]);
 
-    // 2FA State
-    const [show2FAModal, setShow2FAModal] = useState(false);
-    const [twoFactorData, setTwoFactorData] = useState({
+    // 2FA State - Combined into single object for atomic updates
+    const [twoFactorState, setTwoFactorState] = useState({
+        show: false,
         tempToken: null,
         method: null,
         email: null,
@@ -502,31 +502,23 @@ const LoginPage = () => {
             return;
         }
 
-        console.log('LoginPage handleSubmit: Submitting login form...');
-
         const loginResult = await login(email, password);
 
-        // ✅ HANDLE 2FA REQUIRED
+        // ✅ HANDLE 2FA REQUIRED - Single atomic state update
         if (loginResult.requires2FA) {
-            console.log('LoginPage: 2FA required, setting state...', {
-                tempToken: loginResult.tempToken?.substring(0, 20) + '...',
-                method: loginResult.method
-            });
-            setTwoFactorData({
+            setTwoFactorState({
+                show: true,
                 tempToken: loginResult.tempToken,
                 method: loginResult.method,
                 email: loginResult.email,
                 phone: loginResult.phone
             });
-            setShow2FAModal(true);
-            console.log('LoginPage: State set, show2FAModal should be true now');
             setLocalLoading(false);
             return;
         }
 
         if (!loginResult.success) {
             setLocalError(loginResult.error || 'Login failed. Please check your credentials.');
-            console.error('LoginPage handleSubmit: Login failed:', loginResult.error || 'Unknown error');
         }
 
         setLocalLoading(false);
@@ -534,24 +526,22 @@ const LoginPage = () => {
 
     // Handle successful 2FA verification
     const handle2FASuccess = async (data) => {
-        console.log('[LoginPage] 2FA verification successful, completing login...', data);
-        setShow2FAModal(false);
+        setTwoFactorState(prev => ({ ...prev, show: false }));
         try {
             const result = await complete2FALogin(data);
-            console.log('[LoginPage] complete2FALogin result:', result);
             if (!result?.success) {
                 setLocalError(result?.error || 'Failed to complete login after 2FA verification');
             }
         } catch (err) {
-            console.error('[LoginPage] Error completing 2FA login:', err);
+            console.error('Error completing 2FA login:', err);
             setLocalError('An error occurred during login. Please try again.');
         }
     };
 
     // Close 2FA modal
     const handle2FAClose = () => {
-        setShow2FAModal(false);
-        setTwoFactorData({
+        setTwoFactorState({
+            show: false,
             tempToken: null,
             method: null,
             email: null,
@@ -689,15 +679,14 @@ const LoginPage = () => {
             </ContentWrapper>
 
             {/* 2FA Verification Modal */}
-            {console.log('[LoginPage] Rendering TwoFactorModal with:', { show2FAModal, hasTempToken: !!twoFactorData.tempToken, method: twoFactorData.method })}
             <TwoFactorModal
-                isOpen={show2FAModal}
+                isOpen={twoFactorState.show}
                 onClose={handle2FAClose}
                 onSuccess={handle2FASuccess}
-                tempToken={twoFactorData.tempToken}
-                method={twoFactorData.method}
-                email={twoFactorData.email}
-                phone={twoFactorData.phone}
+                tempToken={twoFactorState.tempToken}
+                method={twoFactorState.method}
+                email={twoFactorState.email}
+                phone={twoFactorState.phone}
             />
         </LoginPageContainer>
     );
