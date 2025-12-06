@@ -88,6 +88,7 @@ API.interceptors.response.use(
 
             // Prevent redirect if on auth/2fa endpoint, already on login page, or recently redirected
             if (!isAuthEndpoint && !is2FAEndpoint && !isAlreadyOnLogin && (now - lastRedirectTime) > REDIRECT_DEBOUNCE_MS) {
+                console.log('[AXIOS] 401 redirect triggered from:', error.config.url);
                 lastRedirectTime = now;
                 safeLocalStorage.removeItem('token'); // Clear invalid token
                 window.location.href = '/login';
