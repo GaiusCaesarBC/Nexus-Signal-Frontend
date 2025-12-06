@@ -32,22 +32,25 @@ const fadeIn = keyframes`
 
 const formatPredictionPrice = (price, symbol) => {
     console.log('🔍 Formatting:', { price, symbol, type: typeof price });
-    
+
     if (!price) return '$0.00';
-    
+
+    // Check if it's a DEX token (format: SYMBOL:network)
+    const symbolUpper = symbol?.toUpperCase() || '';
+    const isDex = symbolUpper.includes(':');
+
     // Check if it's a crypto symbol
     const cryptoPatterns = ['-USD', '-USDT', '-BUSD', '-EUR', '-GBP'];
     const knownCryptos = ['BTC', 'ETH', 'SOL', 'ADA', 'DOT', 'MATIC', 'AVAX', 'DOGE', 'SHIB', 'XRP', 'PEPE', 'FLOKI', 'BONK'];
-    
-    const symbolUpper = symbol?.toUpperCase() || '';
-    const isCrypto = cryptoPatterns.some(pattern => symbolUpper.endsWith(pattern)) ||
-                     knownCryptos.includes(symbolUpper);
-    
-    console.log('🔍 Is crypto?', isCrypto, 'Symbol:', symbolUpper);
-    
+
+    const isCrypto = isDex || cryptoPatterns.some(pattern => symbolUpper.endsWith(pattern)) ||
+                     knownCryptos.includes(symbolUpper.split(':')[0]);
+
+    console.log('🔍 Is crypto/dex?', isCrypto, 'Symbol:', symbolUpper, 'isDex:', isDex);
+
     const result = isCrypto ? formatCryptoPrice(price) : formatStockPrice(price);
     console.log('🔍 Result:', result);
-    
+
     return result;
 };
 
@@ -412,12 +415,27 @@ const SuggestionType = styled.span`
     padding: 0.2rem 0.5rem;
     border-radius: 4px;
     text-transform: uppercase;
-    background: ${props => props.$type === 'crypto'
-        ? `${props.theme?.warning || '#f59e0b'}26`
-        : `${props.theme?.brand?.primary || '#00adef'}26`};
-    color: ${props => props.$type === 'crypto'
-        ? (props.theme?.warning || '#f59e0b')
-        : (props.theme?.brand?.primary || '#00adef')};
+    background: ${props => {
+        if (props.$type === 'crypto') return `${props.theme?.warning || '#f59e0b'}26`;
+        if (props.$type === 'dex') return `${props.theme?.success || '#10b981'}26`;
+        return `${props.theme?.brand?.primary || '#00adef'}26`;
+    }};
+    color: ${props => {
+        if (props.$type === 'crypto') return props.theme?.warning || '#f59e0b';
+        if (props.$type === 'dex') return props.theme?.success || '#10b981';
+        return props.theme?.brand?.primary || '#00adef';
+    }};
+`;
+
+const SuggestionChain = styled.span`
+    font-size: 0.65rem;
+    font-weight: 500;
+    padding: 0.15rem 0.4rem;
+    border-radius: 3px;
+    text-transform: uppercase;
+    background: ${props => props.theme?.brand?.accent || '#8b5cf6'}1A;
+    color: ${props => props.theme?.brand?.accent || '#8b5cf6'};
+    margin-left: 0.25rem;
 `;
 
 const NoResults = styled.div`
@@ -1418,6 +1436,7 @@ const PredictionsPage = () => {
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [searchLoading, setSearchLoading] = useState(false);
+    const [dexInfo, setDexInfo] = useState(null); // DEX token extra info
 
     // Dynamic confidence state
     const [dynamicConfidence, setDynamicConfidence] = useState(null);
@@ -1469,6 +1488,18 @@ const PredictionsPage = () => {
         setSymbol(suggestion.symbol);
         setShowSuggestions(false);
         setSuggestions([]);
+
+        // Store DEX info if available
+        if (suggestion.type === 'dex') {
+            setDexInfo({
+                network: suggestion.network,
+                poolAddress: suggestion.poolAddress,
+                contractAddress: suggestion.contractAddress,
+                chain: suggestion.chain
+            });
+        } else {
+            setDexInfo(null);
+        }
     };
 
     const [platformStats, setPlatformStats] = useState({
@@ -1660,10 +1691,21 @@ const PredictionsPage = () => {
         setDynamicConfidence(null);
         
         try {
-            const response = await api.post('/predictions/predict', { 
-                symbol: symbol.toUpperCase(), 
-                days: parseInt(days) 
-            });
+            // Build request payload
+            const payload = {
+                symbol: symbol.toUpperCase(),
+                days: parseInt(days)
+            };
+
+            // Add DEX info if available
+            if (dexInfo) {
+                payload.assetType = 'dex';
+                payload.network = dexInfo.network;
+                payload.poolAddress = dexInfo.poolAddress;
+                payload.contractAddress = dexInfo.contractAddress;
+            }
+
+            const response = await api.post('/predictions/predict', payload);
             
             console.log('API Response:', response.data);
             console.log('Indicators:', response.data.indicators);
@@ -1962,7 +2004,7 @@ const handleShare = (platform) => {
                                             onChange={e => setSymbol(e.target.value.toUpperCase())}
                                             onFocus={() => setShowSuggestions(true)}
                                             onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                                            placeholder="Search stocks or crypto..."
+                                            placeholder="Search stocks, crypto, or DEX tokens..."
                                             autoComplete="off"
                                         />
                                         {showSuggestions && (suggestions.length > 0 || searchLoading) && (
@@ -1977,10 +2019,17 @@ const handleShare = (platform) => {
                                                             onMouseDown={() => handleSuggestionClick(s)}
                                                         >
                                                             <SuggestionLeft>
-                                                                <SuggestionSymbol theme={theme}>{s.symbol}</SuggestionSymbol>
+                                                                <SuggestionSymbol theme={theme}>
+                                                                    {s.type === 'dex' ? s.symbol.split(':')[0] : s.symbol}
+                                                                </SuggestionSymbol>
                                                                 <SuggestionName theme={theme}>{s.name}</SuggestionName>
                                                             </SuggestionLeft>
-                                                            <SuggestionType theme={theme} $type={s.type}>{s.type}</SuggestionType>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                                                <SuggestionType theme={theme} $type={s.type}>{s.type}</SuggestionType>
+                                                                {s.type === 'dex' && s.chain && (
+                                                                    <SuggestionChain theme={theme}>{s.chain}</SuggestionChain>
+                                                                )}
+                                                            </div>
                                                         </SuggestionItem>
                                                     ))
                                                 ) : (
@@ -2240,7 +2289,7 @@ const handleShare = (platform) => {
                         <EmptyState>
                             <EmptyIcon theme={theme}><Brain size={72} color={accentColor} /></EmptyIcon>
                             <EmptyTitle theme={theme}>Ready to Predict</EmptyTitle>
-                            <EmptyText theme={theme}>Enter a stock or crypto symbol above to generate an AI-powered price prediction</EmptyText>
+                            <EmptyText theme={theme}>Enter a stock, crypto, or DEX token symbol above to generate an AI-powered price prediction</EmptyText>
                         </EmptyState>
                     )}
                 </>
