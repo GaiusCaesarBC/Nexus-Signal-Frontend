@@ -341,6 +341,13 @@ const TwoFactorModal = ({
     const inputRefs = useRef([]);
     const initialCodeSent = useRef(false);
 
+    // Sync selectedMethod with method prop when it changes
+    useEffect(() => {
+        if (method) {
+            setSelectedMethod(method === 'both' ? 'email' : method);
+        }
+    }, [method]);
+
     // Focus first input and auto-send code on mount
     useEffect(() => {
         if (isOpen && inputRefs.current[0]) {
@@ -348,7 +355,7 @@ const TwoFactorModal = ({
         }
 
         // Auto-send verification code when modal opens (only once)
-        if (isOpen && tempToken && !isBackupMode && !initialCodeSent.current) {
+        if (isOpen && tempToken && selectedMethod && !isBackupMode && !initialCodeSent.current) {
             initialCodeSent.current = true;
             const sendInitialCode = async () => {
                 console.log('[2FA Modal] Auto-sending verification code...');
