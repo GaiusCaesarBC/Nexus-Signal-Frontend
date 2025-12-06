@@ -329,6 +329,9 @@ const TwoFactorModal = ({
     email,
     phone
 }) => {
+    // Debug: Log props on every render
+    console.log('[2FA Modal] Render with props:', { isOpen, hasTempToken: !!tempToken, method });
+
     const [code, setCode] = useState(['', '', '', '', '', '']);
     const [isBackupMode, setIsBackupMode] = useState(false);
     const [backupCode, setBackupCode] = useState('');

@@ -508,7 +508,10 @@ const LoginPage = () => {
 
         // ✅ HANDLE 2FA REQUIRED
         if (loginResult.requires2FA) {
-            console.log('LoginPage: 2FA required, showing modal');
+            console.log('LoginPage: 2FA required, setting state...', {
+                tempToken: loginResult.tempToken?.substring(0, 20) + '...',
+                method: loginResult.method
+            });
             setTwoFactorData({
                 tempToken: loginResult.tempToken,
                 method: loginResult.method,
@@ -516,6 +519,7 @@ const LoginPage = () => {
                 phone: loginResult.phone
             });
             setShow2FAModal(true);
+            console.log('LoginPage: State set, show2FAModal should be true now');
             setLocalLoading(false);
             return;
         }
