@@ -962,7 +962,7 @@ const WhitepaperPage = () => {
 
                     <LaunchDate>
                         <h4>Official Launch Date</h4>
-                        <p>March 1, 2026</p>
+                        <p>March 2026</p>
                     </LaunchDate>
                 </Section>
 
@@ -981,10 +981,10 @@ const WhitepaperPage = () => {
                         <SubTitle><MessageCircle /> Connect With Us</SubTitle>
                         <Paragraph>Join our community and stay updated on development progress:</Paragraph>
                         <SocialLinks>
-                            <SocialLink href="https://discord.gg/nexussignal" target="_blank" rel="noopener noreferrer">
+                            <SocialLink href="https://discord.gg/H2UJ6J8n" target="_blank" rel="noopener noreferrer">
                                 <MessageCircle /> Join Discord Community
                             </SocialLink>
-                            <SocialLink href="https://twitter.com/nexussignal" target="_blank" rel="noopener noreferrer">
+                            <SocialLink href="https://x.com/NexusSignalAI" target="_blank" rel="noopener noreferrer">
                                 <Globe /> Follow on Twitter/X
                             </SocialLink>
                             <SocialLink href="https://nexussignal.ai" target="_blank" rel="noopener noreferrer">
