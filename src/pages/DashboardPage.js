@@ -1545,9 +1545,13 @@ useEffect(() => {
             if (response.data.success && response.data.tokens) {
                 const tokens = response.data.tokens.map(token => ({
                     symbol: token.symbol,
+                    name: token.name,
                     price: token.price,
                     change: token.change,
                     chain: token.chain || 'BSC',
+                    network: response.data.network || 'bsc',
+                    poolAddress: token.poolAddress,
+                    contractAddress: token.contractAddress,
                     source: 'geckoterminal'
                 }));
 
@@ -1964,9 +1968,17 @@ const handleOpenRewardModal = () => {
                                 {dexTrendingTicker.length > 0 ? (
                                     [...dexTrendingTicker, ...dexTrendingTicker].map((token, index) => (
                                         <TickerItem key={index}>
-                                            <TickerText style={{ fontWeight: 600, color: theme.brand?.primary || '#00adef' }}>
+                                            <TickerLink
+                                                symbol={token.symbol}
+                                                isDex={true}
+                                                network={token.network}
+                                                poolAddress={token.poolAddress}
+                                                forceCrypto={true}
+                                                bold
+                                                color="#8b5cf6"
+                                            >
                                                 {token.symbol}
-                                            </TickerText>
+                                            </TickerLink>
                                             <span style={{
                                                 fontSize: '0.65rem',
                                                 color: theme.text?.tertiary,

@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
 import axios from 'axios'; // Keep for axios.isCancel()
 import { useAuth } from '../context/AuthContext';
@@ -961,8 +961,14 @@ const CustomTooltip = ({ active, payload, label }) => {
 // ============ MAIN COMPONENT ============
 const CryptoPage = () => {
   const { symbol } = useParams();
+  const [searchParams] = useSearchParams();
   const { api } = useAuth();
   const navigate = useNavigate();
+
+  // DEX token detection from query params
+  const isDex = searchParams.get('source') === 'dex';
+  const dexNetwork = searchParams.get('network') || 'bsc';
+  const dexPoolAddress = searchParams.get('pool');
 
   // Chart data state
   const [chartData, setChartData] = useState([]);
@@ -974,6 +980,9 @@ const CryptoPage = () => {
   // Prediction state
   const [prediction, setPrediction] = useState(null);
   const [predictionLoading, setPredictionLoading] = useState(false);
+
+  // DEX-specific state
+  const [dexInfo, setDexInfo] = useState(null);
 
   // Other state
   const [posts, setPosts] = useState([]);
@@ -992,9 +1001,18 @@ const CryptoPage = () => {
   const changePercent = firstPrice ? ((priceChange / firstPrice) * 100) : 0;
   const isPositive = priceChange >= 0;
 
-  const cryptoDetails = getCryptoInfo(symbol);
+  // Get crypto details - use DEX info if available
+  const cryptoDetails = useMemo(() => {
+    if (isDex && dexInfo) {
+      return {
+        name: dexInfo.name || `${symbol} Token`,
+        gradient: 'linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%)'
+      };
+    }
+    return getCryptoInfo(symbol);
+  }, [symbol, isDex, dexInfo]);
 
-  // Fetch chart data
+  // Fetch chart data (handles both CoinGecko and DEX tokens)
   useEffect(() => {
     if (!symbol) return;
 
@@ -1009,16 +1027,31 @@ const CryptoPage = () => {
       setChartError(null);
 
       try {
-        const response = await api.get(
-          `/crypto/historical/${symbol}`,
-          {
-            params: { range: selectedRange },
-            signal: signal,
-          }
-        );
+        let response;
+
+        // Use DEX endpoint for GeckoTerminal tokens
+        if (isDex && dexPoolAddress) {
+          console.log(`[CryptoPage] Fetching DEX data for ${symbol} (${dexNetwork}/${dexPoolAddress})`);
+          response = await api.get(
+            `/crypto/dex/historical/${dexNetwork}/${dexPoolAddress}`,
+            {
+              params: { range: selectedRange },
+              signal: signal,
+            }
+          );
+        } else {
+          // Standard CoinGecko endpoint
+          response = await api.get(
+            `/crypto/historical/${symbol}`,
+            {
+              params: { range: selectedRange },
+              signal: signal,
+            }
+          );
+        }
 
         const fetchedData = response.data.historicalData || [];
-        
+
         // Transform data for Recharts
         const transformedData = fetchedData.map((item) => ({
           time: item.time || item.date,
@@ -1030,6 +1063,16 @@ const CryptoPage = () => {
         })).filter(item => item.close && !isNaN(item.close));
 
         setChartData(transformedData);
+
+        // Store DEX info if available
+        if (isDex && response.data) {
+          setDexInfo({
+            name: response.data.name,
+            symbol: response.data.symbol,
+            network: response.data.network,
+            source: response.data.source
+          });
+        }
 
         if (transformedData.length === 0) {
           setChartError(`No data found for ${symbol} (${selectedRange})`);
@@ -1063,9 +1106,9 @@ const CryptoPage = () => {
         fetchController.current.abort();
       }
     };
-  }, [symbol, selectedRange, api]);
+  }, [symbol, selectedRange, api, isDex, dexNetwork, dexPoolAddress]);
 
-  // Fetch prediction and posts
+  // Fetch prediction and posts (handles both CoinGecko and DEX tokens)
   useEffect(() => {
     if (!symbol) return;
 
@@ -1073,10 +1116,21 @@ const CryptoPage = () => {
       setPredictionLoading(true);
 
       try {
-        const response = await api.get(
-          `/crypto/prediction/${symbol}`,
-          { params: { range: '6M' } }
-        );
+        let response;
+
+        // Use DEX endpoint for GeckoTerminal tokens
+        if (isDex && dexPoolAddress) {
+          console.log(`[CryptoPage] Fetching DEX prediction for ${symbol}`);
+          response = await api.get(
+            `/crypto/dex/prediction/${dexNetwork}/${dexPoolAddress}`,
+            { params: { range: '6M' } }
+          );
+        } else {
+          response = await api.get(
+            `/crypto/prediction/${symbol}`,
+            { params: { range: '6M' } }
+          );
+        }
 
         setPrediction(response.data);
       } catch (err) {
@@ -1091,20 +1145,20 @@ const CryptoPage = () => {
       setPostsLoading(true);
       try {
         const response = await api.get(`/social/feed`, {
-          params: { 
+          params: {
             symbol: symbol.toUpperCase(),
-            limit: 10 
+            limit: 10
           }
         });
-        
+
         const relevantPosts = (response.data.posts || response.data || []).filter(post => {
           const content = (post.content || '').toUpperCase();
           const tags = (post.tags || []).map(t => t.toUpperCase());
-          return content.includes(`$${symbol.toUpperCase()}`) || 
+          return content.includes(`$${symbol.toUpperCase()}`) ||
                  content.includes(symbol.toUpperCase()) ||
                  tags.includes(symbol.toUpperCase());
         });
-        
+
         setPosts(relevantPosts);
       } catch (err) {
         console.error('Error fetching posts:', err);
@@ -1116,7 +1170,7 @@ const CryptoPage = () => {
 
     fetchPrediction();
     fetchPosts();
-  }, [symbol, api]);
+  }, [symbol, api, isDex, dexNetwork, dexPoolAddress]);
 
   // Trade handlers
   const handleQuantityChange = (delta) => {
@@ -1183,9 +1237,9 @@ const CryptoPage = () => {
           <CryptoDetails>
             <h1>{symbol?.toUpperCase()}</h1>
             <div className="crypto-name">{cryptoDetails.name}</div>
-            <span className="crypto-badge">
+            <span className="crypto-badge" style={isDex ? { background: 'rgba(139, 92, 246, 0.15)', color: '#8b5cf6' } : {}}>
               <Coins size={12} />
-              Cryptocurrency
+              {isDex ? `DEX Token (${dexNetwork.toUpperCase()})` : 'Cryptocurrency'}
             </span>
           </CryptoDetails>
         </CryptoInfo>
@@ -1596,15 +1650,25 @@ const CryptoPage = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', background: 'rgba(0,0,0,0.2)', borderRadius: '10px' }}>
                 <span style={{ color: '#a0a0a0', fontSize: 14 }}>Asset Type</span>
-                <span style={{ fontWeight: 600, fontSize: 14, color: '#f7931a' }}>Cryptocurrency</span>
+                <span style={{ fontWeight: 600, fontSize: 14, color: isDex ? '#8b5cf6' : '#f7931a' }}>
+                  {isDex ? 'DEX Token' : 'Cryptocurrency'}
+                </span>
               </div>
+              {isDex && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', background: 'rgba(0,0,0,0.2)', borderRadius: '10px' }}>
+                  <span style={{ color: '#a0a0a0', fontSize: 14 }}>Network</span>
+                  <span style={{ fontWeight: 600, fontSize: 14, color: '#8b5cf6' }}>{dexNetwork.toUpperCase()}</span>
+                </div>
+              )}
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', background: 'rgba(0,0,0,0.2)', borderRadius: '10px' }}>
                 <span style={{ color: '#a0a0a0', fontSize: 14 }}>Trading</span>
                 <span style={{ fontWeight: 600, fontSize: 14 }}>24/7</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', background: 'rgba(0,0,0,0.2)', borderRadius: '10px' }}>
                 <span style={{ color: '#a0a0a0', fontSize: 14 }}>Data Source</span>
-                <span style={{ fontWeight: 600, fontSize: 14 }}>CoinGecko Pro</span>
+                <span style={{ fontWeight: 600, fontSize: 14, color: isDex ? '#8b5cf6' : '#f7931a' }}>
+                  {isDex ? 'GeckoTerminal' : 'CoinGecko Pro'}
+                </span>
               </div>
             </div>
           </Card>
