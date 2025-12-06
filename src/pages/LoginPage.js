@@ -689,6 +689,7 @@ const LoginPage = () => {
             </ContentWrapper>
 
             {/* 2FA Verification Modal */}
+            {console.log('[LoginPage] Rendering TwoFactorModal with:', { show2FAModal, hasTempToken: !!twoFactorData.tempToken, method: twoFactorData.method })}
             <TwoFactorModal
                 isOpen={show2FAModal}
                 onClose={handle2FAClose}
