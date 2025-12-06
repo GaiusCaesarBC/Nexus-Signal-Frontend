@@ -413,7 +413,7 @@ const TwoFactorModal = ({
         setError('');
 
         try {
-            const response = await api.post('/api/2fa/verify-login', {
+            const response = await api.post('/2fa/verify-login', {
                 tempToken,
                 code: isBackupMode ? backupCode.trim() : verifyCode,
                 isBackupCode: isBackupMode
@@ -447,7 +447,7 @@ const TwoFactorModal = ({
         setError('');
 
         try {
-            await api.post('/api/2fa/send-login-code', {
+            await api.post('/2fa/send-login-code', {
                 tempToken,
                 method: selectedMethod
             });

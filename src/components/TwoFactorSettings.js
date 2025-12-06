@@ -441,7 +441,7 @@ const TwoFactorSettings = () => {
 
     const fetchStatus = async () => {
         try {
-            const response = await api.get('/api/2fa/status');
+            const response = await api.get('/2fa/status');
             setStatus(response.data);
         } catch (err) {
             console.error('Error fetching 2FA status:', err);
@@ -477,7 +477,7 @@ const TwoFactorSettings = () => {
         setMessage({ type: '', text: '' });
 
         try {
-            const response = await api.post('/api/2fa/setup/init', {
+            const response = await api.post('/2fa/setup/init', {
                 method: selectedMethod,
                 phone: selectedMethod !== 'email' ? phoneNumber : undefined
             });
@@ -511,7 +511,7 @@ const TwoFactorSettings = () => {
         setMessage({ type: '', text: '' });
 
         try {
-            const response = await api.post('/api/2fa/setup/verify', { code });
+            const response = await api.post('/2fa/setup/verify', { code });
 
             if (response.data.success) {
                 setBackupCodes(response.data.backupCodes || []);
@@ -542,7 +542,7 @@ const TwoFactorSettings = () => {
         setMessage({ type: '', text: '' });
 
         try {
-            const response = await api.post('/api/2fa/disable', { password: disablePassword });
+            const response = await api.post('/2fa/disable', { password: disablePassword });
 
             if (response.data.success) {
                 toast.success('2FA has been disabled');
@@ -565,7 +565,7 @@ const TwoFactorSettings = () => {
         setSetupLoading(true);
 
         try {
-            const response = await api.post('/api/2fa/regenerate-backup-codes');
+            const response = await api.post('/2fa/regenerate-backup-codes');
 
             if (response.data.success) {
                 setBackupCodes(response.data.backupCodes);
