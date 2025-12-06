@@ -528,10 +528,11 @@ const ScreenerPage = () => {
     const navigate = useNavigate();
     
     const [mode, setMode] = useState('stocks'); // 'stocks' or 'crypto'
+    const [viewType, setViewType] = useState('gainers'); // 'gainers' or 'losers'
     const [loading, setLoading] = useState(false);
     const [results, setResults] = useState([]);
     const [watchlist, setWatchlist] = useState([]);
-    
+
     // Sorting
     const [sortBy, setSortBy] = useState('changePercent');
     const [sortOrder, setSortOrder] = useState('desc');
@@ -548,32 +549,35 @@ const ScreenerPage = () => {
         }
     }, []);
 
-    // Fetch results on mount and mode change
+    // Fetch results on mount and mode/viewType change
     useEffect(() => {
         if (isAuthenticated) {
             fetchResults();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [mode, isAuthenticated]);
+    }, [mode, viewType, isAuthenticated]);
 
     const fetchResults = async () => {
         setLoading(true);
         try {
             const endpoint = mode === 'stocks' ? '/screener/stocks' : '/screener/crypto';
-            
-            // Fetch top 50 gainers
+
+            // Build params based on viewType (gainers or losers)
             const params = new URLSearchParams({
                 limit: '50',
                 sortBy: 'changePercent',
-                order: 'desc'
+                order: viewType === 'gainers' ? 'desc' : 'asc',
+                changeFilter: viewType // 'gainers' or 'losers'
             });
 
             const response = await api.get(`${endpoint}?${params.toString()}`);
             console.log('Screener response:', response.data);
-            
+
             const data = response.data || [];
             setResults(data);
-            toast.success(`Found ${data.length} top gainers`, 'Screener Updated');
+
+            const label = viewType === 'gainers' ? 'top gainers' : 'biggest losers';
+            toast.success(`Found ${data.length} ${label}`, 'Screener Updated');
         } catch (error) {
             console.error('Error fetching screener data:', error);
             toast.error('Failed to load screener data', 'Error');
@@ -680,7 +684,7 @@ const ScreenerPage = () => {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `top_gainers_${mode}_${Date.now()}.csv`;
+        a.download = `${viewType}_${mode}_${Date.now()}.csv`;
         a.click();
 
         toast.success('Results exported successfully', 'Exported');
@@ -691,20 +695,28 @@ const ScreenerPage = () => {
             <Header>
                 <Title theme={theme}>
                     <TitleIcon>
-                        <TrendingUp size={56} color={theme?.brand?.primary || '#00adef'} />
+                        {viewType === 'gainers' ? (
+                            <TrendingUp size={56} color={theme?.success || '#10b981'} />
+                        ) : (
+                            <TrendingDown size={56} color={theme?.error || '#ef4444'} />
+                        )}
                     </TitleIcon>
-                    Top Gainers
+                    {viewType === 'gainers' ? 'Top Gainers' : 'Biggest Losers'}
                 </Title>
-                <Subtitle theme={theme}>Track the best performing stocks and cryptocurrencies in real-time</Subtitle>
+                <Subtitle theme={theme}>
+                    {viewType === 'gainers'
+                        ? 'Track the best performing stocks and cryptocurrencies in real-time'
+                        : 'Track the biggest drops in stocks and cryptocurrencies'}
+                </Subtitle>
                 <PoweredBy theme={theme}>
                     <Zap size={18} />
-                    {mode === 'crypto' ? 'PancakeSwap + CoinGecko • BSC & Global Crypto' : 'Live Market Data • Top 50 Gainers'}
+                    {mode === 'crypto' ? 'PancakeSwap + CoinGecko • BSC & Global Crypto' : 'Live Market Data'}
                 </PoweredBy>
             </Header>
 
-            {/* Mode Toggle */}
+            {/* Mode Toggle - Stocks vs Crypto */}
             <ModeToggle>
-                <ModeButton 
+                <ModeButton
                     theme={theme}
                     $active={mode === 'stocks'}
                     onClick={() => setMode('stocks')}
@@ -712,7 +724,7 @@ const ScreenerPage = () => {
                     <BarChart3 size={24} />
                     Stocks
                 </ModeButton>
-                <ModeButton 
+                <ModeButton
                     theme={theme}
                     $active={mode === 'crypto'}
                     onClick={() => setMode('crypto')}
@@ -722,11 +734,37 @@ const ScreenerPage = () => {
                 </ModeButton>
             </ModeToggle>
 
+            {/* View Type Toggle - Gainers vs Losers */}
+            <ModeToggle style={{ marginTop: '-1rem' }}>
+                <ModeButton
+                    theme={theme}
+                    $active={viewType === 'gainers'}
+                    onClick={() => setViewType('gainers')}
+                    style={{ padding: '0.75rem 1.5rem', fontSize: '1rem' }}
+                >
+                    <TrendingUp size={20} />
+                    Gainers
+                </ModeButton>
+                <ModeButton
+                    theme={theme}
+                    $active={viewType === 'losers'}
+                    onClick={() => setViewType('losers')}
+                    style={{ padding: '0.75rem 1.5rem', fontSize: '1rem' }}
+                >
+                    <TrendingDown size={20} />
+                    Losers
+                </ModeButton>
+            </ModeToggle>
+
             {/* Controls */}
             <ControlsBar theme={theme}>
                 <ResultsInfo theme={theme}>
-                    <Flame size={24} color={theme?.error || '#ef4444'} />
-                    Showing <span>{sortedResults.length}</span> top gainers
+                    {viewType === 'gainers' ? (
+                        <Flame size={24} color={theme?.success || '#10b981'} />
+                    ) : (
+                        <TrendingDown size={24} color={theme?.error || '#ef4444'} />
+                    )}
+                    Showing <span>{sortedResults.length}</span> {viewType === 'gainers' ? 'top gainers' : 'biggest losers'}
                 </ResultsInfo>
                 <ControlButtons>
                     <ActionButton theme={theme} onClick={fetchResults} disabled={loading} $loading={loading}>
@@ -744,7 +782,9 @@ const ScreenerPage = () => {
             {loading ? (
                 <LoadingContainer>
                     <LoadingSpinner theme={theme} size={64} />
-                    <LoadingText theme={theme}>Loading top {mode === 'stocks' ? 'stock' : 'crypto'} gainers...</LoadingText>
+                    <LoadingText theme={theme}>
+                        Loading {viewType === 'gainers' ? 'top' : 'biggest'} {mode === 'stocks' ? 'stock' : 'crypto'} {viewType === 'gainers' ? 'gainers' : 'losers'}...
+                    </LoadingText>
                 </LoadingContainer>
             ) : sortedResults.length > 0 ? (
                 <ResultsContainer>
