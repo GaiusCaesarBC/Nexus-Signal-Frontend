@@ -910,28 +910,46 @@ const PublicProfilePage = () => {
     // 🔥 FIXED: Merge stats from both profile.stats AND profile.gamification.stats
     const profileStats = profile?.stats || {};
     const gamificationStats = profile?.gamification?.stats || {};
-    
+
+    // 🔥 Paper trading stats
+    const paperTradingStats = profile?.paperTrading || {};
+    const paperTradingReturn = paperTradingStats.totalProfitLossPercent ?? 0;
+    const paperTradingTrades = paperTradingStats.totalTrades ?? 0;
+
+    // 🔥 Brokerage/Real portfolio stats
+    const brokerageStats = profile?.brokerage || {};
+    const hasRealPortfolio = brokerageStats.hasConnections || false;
+    const realPortfolioValue = brokerageStats.totalValue ?? 0;
+
     const stats = {
-        // Trading stats - prefer profile.stats, fallback to gamification.stats
+        // Paper trading return
+        paperTradingReturn: paperTradingReturn,
+        paperTradingTrades: paperTradingTrades,
+
+        // Real portfolio stats
+        hasRealPortfolio: hasRealPortfolio,
+        realPortfolioValue: realPortfolioValue,
+
+        // Legacy return (for backwards compatibility)
         totalReturnPercent: profileStats.totalReturnPercent ?? gamificationStats.totalReturnPercent ?? 0,
-        winRate: profileStats.winRate ?? gamificationStats.winRate ?? 0,
-        totalTrades: profileStats.totalTrades ?? gamificationStats.totalTrades ?? 0,
-        
+        winRate: paperTradingStats.winRate ?? profileStats.winRate ?? gamificationStats.winRate ?? 0,
+        totalTrades: paperTradingTrades || (profileStats.totalTrades ?? gamificationStats.totalTrades ?? 0),
+
         // Prediction stats - check both locations
         totalPredictions: profileStats.totalPredictions ?? gamificationStats.predictionsCreated ?? 0,
         predictionAccuracy: profileStats.predictionAccuracy ?? gamificationStats.predictionAccuracy ?? 0,
-        
-        // Streak - check multiple sources: profile.stats, then gamification root (login or profit), then gamification.stats
-        currentStreak: profileStats.currentStreak || 
-                       profile?.gamification?.loginStreak || 
-                       profile?.gamification?.profitStreak || 
+
+        // Streak - check multiple sources
+        currentStreak: profileStats.currentStreak ||
+                       profile?.gamification?.loginStreak ||
+                       profile?.gamification?.profitStreak ||
                        profileStats.loginStreak ||
-                       gamificationStats.profitStreak || 
+                       gamificationStats.profitStreak ||
                        0,
-        
+
         // Rank - only if it's a real rank (> 0)
         rank: profileStats.rank > 0 ? profileStats.rank : null,
-        
+
         // Best trade
         bestTrade: profileStats.bestTrade ?? gamificationStats.biggestWinPercent ?? 0
     };
@@ -1075,12 +1093,23 @@ const PublicProfilePage = () => {
 
                 <StatsGrid>
                     <StatBox>
-                        <StatLabel>Return</StatLabel>
-                        <StatValue $positive={(stats.totalReturnPercent || 0) >= 0} $negative={(stats.totalReturnPercent || 0) < 0}>
-                            {(stats.totalReturnPercent || 0) >= 0 ? <ArrowUpRight size={18} /> : <ArrowDownRight size={18} />}
-                            {(stats.totalReturnPercent || 0).toFixed(2)}%
+                        <StatLabel>Paper Return</StatLabel>
+                        <StatValue $positive={(stats.paperTradingReturn || 0) >= 0} $negative={(stats.paperTradingReturn || 0) < 0}>
+                            {(stats.paperTradingReturn || 0) >= 0 ? <ArrowUpRight size={18} /> : <ArrowDownRight size={18} />}
+                            {(stats.paperTradingReturn || 0).toFixed(2)}%
                         </StatValue>
                     </StatBox>
+                    {stats.hasRealPortfolio && (
+                        <StatBox>
+                            <StatLabel>Real Portfolio</StatLabel>
+                            <StatValue>
+                                <DollarSign size={16} />
+                                {stats.realPortfolioValue >= 1000
+                                    ? `${(stats.realPortfolioValue / 1000).toFixed(1)}K`
+                                    : stats.realPortfolioValue.toFixed(0)}
+                            </StatValue>
+                        </StatBox>
+                    )}
                     <StatBox>
                         <StatLabel>Win Rate</StatLabel>
                         <StatValue>{(stats.winRate || 0).toFixed(1)}%</StatValue>
