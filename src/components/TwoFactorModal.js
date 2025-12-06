@@ -329,6 +329,11 @@ const TwoFactorModal = ({
     email,
     phone
 }) => {
+    // Debug: Only log when modal opens
+    if (isOpen) {
+        console.log('[2FA MODAL] Opening with:', { tempToken: !!tempToken, method });
+    }
+
     const [code, setCode] = useState(['', '', '', '', '', '']);
     const [isBackupMode, setIsBackupMode] = useState(false);
     const [backupCode, setBackupCode] = useState('');

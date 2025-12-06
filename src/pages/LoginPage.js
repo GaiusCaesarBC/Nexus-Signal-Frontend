@@ -506,6 +506,7 @@ const LoginPage = () => {
 
         // ✅ HANDLE 2FA REQUIRED - Single atomic state update
         if (loginResult.requires2FA) {
+            console.log('[LOGIN] 2FA required - showing modal');
             setTwoFactorState({
                 show: true,
                 tempToken: loginResult.tempToken,
@@ -514,6 +515,7 @@ const LoginPage = () => {
                 phone: loginResult.phone
             });
             setLocalLoading(false);
+            console.log('[LOGIN] Modal state set, returning');
             return;
         }
 
