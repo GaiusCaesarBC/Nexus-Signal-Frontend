@@ -4,19 +4,22 @@ import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useSubscription } from '../context/SubscriptionContext';
 import {
     User, Mail, Lock, Bell, Palette, Shield, CreditCard,
     AlertTriangle, Save, Eye, EyeOff, Trash2, Calendar,
     Settings as SettingsIcon, Clock, Monitor,
     Zap, RefreshCw, X, Globe, Star, MessageSquare,
-    ChevronRight, Check, Sparkles
+    ChevronRight, Check, Sparkles, Crown, ExternalLink
 } from 'lucide-react';
 import TwoFactorSettings from './TwoFactorSettings';
 
 const SettingsPage = () => {
     const { logout, api, user } = useAuth();
     const toast = useToast();
+    const { currentPlan, subscription, loading: subscriptionLoading } = useSubscription();
     const [activeTab, setActiveTab] = useState('profile');
+    const [portalLoading, setPortalLoading] = useState(false);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [showCurrentPassword, setShowCurrentPassword] = useState(false);
@@ -639,35 +642,81 @@ const SettingsPage = () => {
                                 <CreditCard size={20} />
                                 <span>Subscription & Billing</span>
                             </SectionHeader>
-                            
+
                             <SectionContent>
-                                <InfoBanner $highlight>
-                                    <Sparkles size={18} />
-                                    <span>You're on the <strong>Free Plan</strong>. Upgrade to unlock premium features!</span>
-                                </InfoBanner>
+                                {currentPlan === 'free' ? (
+                                    <InfoBanner $highlight>
+                                        <Sparkles size={18} />
+                                        <span>You're on the <strong>Free Plan</strong>. Upgrade to unlock premium features!</span>
+                                    </InfoBanner>
+                                ) : (
+                                    <InfoBanner $success>
+                                        <Crown size={18} />
+                                        <span>You're on the <strong>{currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)} Plan</strong>. Thank you for your support!</span>
+                                    </InfoBanner>
+                                )}
 
                                 <StatsRow>
-                                    <StatCard>
-                                        <StatIcon><CreditCard size={20} /></StatIcon>
+                                    <StatCard $highlight={currentPlan !== 'free'}>
+                                        <StatIcon $premium={currentPlan !== 'free'}>
+                                            {currentPlan !== 'free' ? <Crown size={20} /> : <CreditCard size={20} />}
+                                        </StatIcon>
                                         <StatInfo>
                                             <StatLabel>Current Plan</StatLabel>
-                                            <StatValue>Free</StatValue>
+                                            <StatValue $premium={currentPlan !== 'free'}>
+                                                {currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)}
+                                            </StatValue>
                                         </StatInfo>
                                     </StatCard>
                                     <StatCard>
                                         <StatIcon><Calendar size={20} /></StatIcon>
                                         <StatInfo>
-                                            <StatLabel>Next Billing</StatLabel>
-                                            <StatValue>N/A</StatValue>
+                                            <StatLabel>{subscription?.cancelAtPeriodEnd ? 'Expires On' : 'Next Billing'}</StatLabel>
+                                            <StatValue>
+                                                {subscription?.currentPeriodEnd
+                                                    ? new Date(subscription.currentPeriodEnd).toLocaleDateString('en-US', {
+                                                        month: 'short',
+                                                        day: 'numeric',
+                                                        year: 'numeric'
+                                                    })
+                                                    : 'N/A'
+                                                }
+                                            </StatValue>
                                         </StatInfo>
                                     </StatCard>
                                 </StatsRow>
 
+                                {subscription?.cancelAtPeriodEnd && (
+                                    <WarningBanner>
+                                        <AlertTriangle size={18} />
+                                        <span>Your subscription will be canceled at the end of the billing period.</span>
+                                    </WarningBanner>
+                                )}
+
                                 <ActionBar>
-                                    <UpgradeButton onClick={() => window.location.href = '/pricing'}>
-                                        <Sparkles size={18} />
-                                        Upgrade to Premium
-                                    </UpgradeButton>
+                                    {currentPlan === 'free' ? (
+                                        <UpgradeButton onClick={() => window.location.href = '/pricing'}>
+                                            <Sparkles size={18} />
+                                            Upgrade to Premium
+                                        </UpgradeButton>
+                                    ) : (
+                                        <ManageButton
+                                            onClick={async () => {
+                                                setPortalLoading(true);
+                                                try {
+                                                    const res = await api.post('/stripe/portal');
+                                                    window.location.href = res.data.url;
+                                                } catch (err) {
+                                                    toast.error('Failed to open billing portal');
+                                                    setPortalLoading(false);
+                                                }
+                                            }}
+                                            disabled={portalLoading}
+                                        >
+                                            {portalLoading ? <RefreshCw size={18} className="spinning" /> : <ExternalLink size={18} />}
+                                            {portalLoading ? 'Opening...' : 'Manage Subscription'}
+                                        </ManageButton>
+                                    )}
                                 </ActionBar>
                             </SectionContent>
                         </Section>
@@ -969,7 +1018,12 @@ const StatCard = styled.div`
     align-items: center;
     gap: 12px;
     padding: 14px;
-    background: ${props => props.theme.bg?.input || 'rgba(15, 23, 42, 0.5)'};
+    background: ${props => props.$highlight
+        ? 'rgba(16, 185, 129, 0.05)'
+        : props.theme.bg?.input || 'rgba(15, 23, 42, 0.5)'};
+    border: 1px solid ${props => props.$highlight
+        ? 'rgba(16, 185, 129, 0.2)'
+        : 'transparent'};
     border-radius: 10px;
 `;
 
@@ -977,8 +1031,12 @@ const StatIcon = styled.div`
     width: 40px;
     height: 40px;
     border-radius: 10px;
-    background: ${props => props.theme.brand?.primary || '#00adef'}15;
-    color: ${props => props.theme.brand?.primary || '#00adef'};
+    background: ${props => props.$premium
+        ? 'rgba(16, 185, 129, 0.15)'
+        : `${props.theme.brand?.primary || '#00adef'}15`};
+    color: ${props => props.$premium
+        ? '#10b981'
+        : props.theme.brand?.primary || '#00adef'};
     display: flex;
     align-items: center;
     justify-content: center;
@@ -994,7 +1052,7 @@ const StatLabel = styled.div`
 const StatValue = styled.div`
     font-size: 14px;
     font-weight: 600;
-    color: ${props => props.theme.text?.primary || '#e0e6ed'};
+    color: ${props => props.$premium ? '#10b981' : props.theme.text?.primary || '#e0e6ed'};
 `;
 
 const ToggleRow = styled.div`
@@ -1079,19 +1137,25 @@ const InfoBanner = styled.div`
     align-items: center;
     gap: 12px;
     padding: 14px 16px;
-    background: ${props => props.$highlight 
-        ? `${props.theme.brand?.primary || '#00adef'}10` 
-        : `${props.theme.text?.tertiary || '#64748b'}10`};
-    border: 1px solid ${props => props.$highlight 
-        ? `${props.theme.brand?.primary || '#00adef'}30` 
-        : `${props.theme.text?.tertiary || '#64748b'}20`};
+    background: ${props => {
+        if (props.$success) return 'rgba(16, 185, 129, 0.1)';
+        if (props.$highlight) return `${props.theme.brand?.primary || '#00adef'}10`;
+        return `${props.theme.text?.tertiary || '#64748b'}10`;
+    }};
+    border: 1px solid ${props => {
+        if (props.$success) return 'rgba(16, 185, 129, 0.3)';
+        if (props.$highlight) return `${props.theme.brand?.primary || '#00adef'}30`;
+        return `${props.theme.text?.tertiary || '#64748b'}20`;
+    }};
     border-radius: 10px;
     margin-bottom: 20px;
 
     svg {
-        color: ${props => props.$highlight 
-            ? props.theme.brand?.primary || '#00adef' 
-            : props.theme.text?.tertiary || '#64748b'};
+        color: ${props => {
+            if (props.$success) return '#10b981';
+            if (props.$highlight) return props.theme.brand?.primary || '#00adef';
+            return props.theme.text?.tertiary || '#64748b';
+        }};
         flex-shrink: 0;
     }
 
@@ -1102,7 +1166,30 @@ const InfoBanner = styled.div`
     }
 
     strong {
-        color: ${props => props.theme.brand?.primary || '#00adef'};
+        color: ${props => props.$success ? '#10b981' : props.theme.brand?.primary || '#00adef'};
+    }
+`;
+
+const WarningBanner = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: 10px;
+    margin-top: 16px;
+    margin-bottom: 4px;
+
+    svg {
+        color: #f59e0b;
+        flex-shrink: 0;
+    }
+
+    span {
+        font-size: 13px;
+        color: #f59e0b;
+        line-height: 1.5;
     }
 `;
 
@@ -1159,6 +1246,37 @@ const SaveButton = styled.button`
 
 const UpgradeButton = styled(SaveButton)`
     width: 100%;
+`;
+
+const ManageButton = styled.button`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 12px 24px;
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 10px;
+    color: #10b981;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover:not(:disabled) {
+        background: rgba(16, 185, 129, 0.2);
+        border-color: rgba(16, 185, 129, 0.5);
+    }
+
+    &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    .spinning {
+        animation: ${spin} 1s linear infinite;
+    }
 `;
 
 const DangerButton = styled.button`
