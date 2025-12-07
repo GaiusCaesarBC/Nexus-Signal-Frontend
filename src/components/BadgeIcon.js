@@ -118,13 +118,13 @@ const architectPulse = keyframes`
 `;
 
 const architectInnerRing = keyframes`
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+    from { transform: translate(-50%, -50%) rotate(0deg); }
+    to { transform: translate(-50%, -50%) rotate(360deg); }
 `;
 
 const architectOuterRing = keyframes`
-    from { transform: rotate(360deg); }
-    to { transform: rotate(0deg); }
+    from { transform: translate(-50%, -50%) rotate(360deg); }
+    to { transform: translate(-50%, -50%) rotate(0deg); }
 `;
 
 const architectGlow = keyframes`
@@ -166,11 +166,11 @@ const architectSymbol = keyframes`
 
 const energyWave = keyframes`
     0% {
-        transform: scale(0.8);
+        transform: translate(-50%, -50%) scale(0.8);
         opacity: 0.8;
     }
     100% {
-        transform: scale(2);
+        transform: translate(-50%, -50%) scale(2);
         opacity: 0;
     }
 `;
