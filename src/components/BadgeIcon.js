@@ -255,44 +255,30 @@ const Particle = styled.div`
 
 const SacredGeometry = styled.div`
     position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+    top: -10%;
+    left: -10%;
     width: 120%;
     height: 120%;
     pointer-events: none;
     z-index: 0;
-    background: transparent;
     border-radius: 50%;
-    overflow: hidden;
-
-    &::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        transform-origin: center center;
-        background: conic-gradient(
-            from 0deg,
-            transparent 0deg,
-            rgba(212, 175, 55, 0.3) 30deg,
-            transparent 60deg,
-            rgba(248, 250, 252, 0.2) 90deg,
-            transparent 120deg,
-            rgba(212, 175, 55, 0.3) 150deg,
-            transparent 180deg,
-            rgba(248, 250, 252, 0.2) 210deg,
-            transparent 240deg,
-            rgba(212, 175, 55, 0.3) 270deg,
-            transparent 300deg,
-            rgba(248, 250, 252, 0.2) 330deg,
-            transparent 360deg
-        );
-        animation: ${reverseRotate} 30s linear infinite;
-        border-radius: 50%;
-    }
+    background: conic-gradient(
+        from 0deg,
+        transparent 0deg,
+        rgba(212, 175, 55, 0.3) 30deg,
+        transparent 60deg,
+        rgba(248, 250, 252, 0.2) 90deg,
+        transparent 120deg,
+        rgba(212, 175, 55, 0.3) 150deg,
+        transparent 180deg,
+        rgba(248, 250, 252, 0.2) 210deg,
+        transparent 240deg,
+        rgba(212, 175, 55, 0.3) 270deg,
+        transparent 300deg,
+        rgba(248, 250, 252, 0.2) 330deg,
+        transparent 360deg
+    );
+    animation: ${reverseRotate} 30s linear infinite;
 `;
 
 // ═══════════════════════════════════════════════════════════════
