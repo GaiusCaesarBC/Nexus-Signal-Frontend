@@ -1142,11 +1142,6 @@ const PricingPage = () => {
                     'Trade History & Analytics',
                     'Portfolio Tracking',
                 ]},
-                { category: '🤖 AI Features', color: '#8b5cf6', items: [
-                    '3 AI Predictions/day',
-                    'Basic AI Chat',
-                    '1 Watchlist (10 stocks)',
-                ]},
                 { category: '👥 Social', color: '#10b981', items: [
                     'Social Feed Access',
                     'Post & Comment',
@@ -1167,10 +1162,9 @@ const PricingPage = () => {
             borderGradient: 'linear-gradient(135deg, #10b981, #059669, #10b981)',
             features: [
                 { category: 'Everything in Free +', color: '#10b981', items: [
-                    { text: '10 AI Predictions/day', highlight: true },
-                    '2 Watchlists (20 stocks each)',
-                    'Advanced Portfolio Analytics',
-                    'Price Alerts',
+                    { text: '5 AI Predictions/day', highlight: true },
+                    'Watchlist (10 stocks)',
+                    '3 AI Predictions/month',
                     'Stock Screener Access',
                     'Market News Feed',
                     'Sentiment Analysis',
@@ -1178,7 +1172,7 @@ const PricingPage = () => {
                     'Email Support',
                 ]}
             ],
-            comparison: '3x More AI Power',
+            comparison: 'Start Trading Smart',
             cta: 'Get Started'
         },
         {
@@ -1192,18 +1186,19 @@ const PricingPage = () => {
             borderGradient: 'linear-gradient(135deg, #3b82f6, #2563eb, #3b82f6)',
             features: [
                 { category: 'Everything in Starter +', color: '#3b82f6', items: [
-                    { text: '25 AI Predictions/day', highlight: true },
-                    '5 Watchlists (50 stocks each)',
-                    { text: 'AI Chat Assistant (GPT-4)', highlight: true },
+                    { text: '15 AI Predictions/day', highlight: true },
+                    'Watchlist (30 stocks)',
+                    '10 AI Predictions/month',
+                    { text: 'AI Chat Assistant', highlight: true },
                     'Advanced Market Heatmap',
                     'Technical Indicators',
                     'Real-Time Price Alerts',
                     'Advanced Stock Comparisons',
-                    'Crypto Support',
+                    'Advanced Analysis Tools',
                     'Priority Email Support',
                 ]}
             ],
-            comparison: '8x More AI Power',
+            comparison: '3x More AI Power',
             cta: 'Upgrade to Pro'
         },
         {
@@ -1220,7 +1215,7 @@ const PricingPage = () => {
             features: [
                 { category: 'Everything in Pro +', color: '#f97316', items: [
                     { text: 'Unlimited AI Predictions', highlight: true },
-                    { text: 'Unlimited Watchlists', highlight: true },
+                    { text: 'Unlimited Watchlist Stocks', highlight: true },
                     'Advanced AI Chat (GPT-4 Turbo)',
                     'Prediction History & Analytics',
                     'Portfolio Optimization Tools',
