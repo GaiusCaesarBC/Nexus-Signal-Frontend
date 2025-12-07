@@ -262,7 +262,10 @@ const SacredGeometry = styled.div`
     height: 120%;
     pointer-events: none;
     z-index: 0;
-    
+    background: transparent;
+    border-radius: 50%;
+    overflow: hidden;
+
     &::before {
         content: '';
         position: absolute;
