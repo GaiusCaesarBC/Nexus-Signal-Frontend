@@ -15,50 +15,125 @@ import { useTheme } from '../../context/ThemeContext';
 import AvatarWithBorder from '../vault/AvatarWithBorder';
 import BadgeIcon from '../BadgeIcon';
 
-// ============ BADGE DEFINITIONS (synced with backend) ============
+// ============ BADGE DEFINITIONS (synced with backend - 31 badges) ============
 const BADGE_ICONS = {
-    'badge-founder': '👑',
+    // Common (5)
     'badge-first-trade': '🎯',
+    'badge-first-profit': '📈',
     'badge-week-warrior': '⭐',
+    'badge-early-bird': '🌅',
+    'badge-night-owl': '🦉',
+    // Rare (6)
     'badge-trade-master': '📊',
     'badge-portfolio-builder': '🏗️',
+    'badge-streak-lord': '🔥',
+    'badge-risk-taker': '🎲',
+    'badge-diversified': '🌐',
+    'badge-comeback-king': '👑',
+    // Epic (9)
+    'badge-oracle': '🔮',
+    'badge-diamond-hands': '💎',
     'badge-profit-king': '💰',
     'badge-dedicated': '🔥',
-    'badge-prediction-master': '🔮',
+    'badge-speed-demon': '⚡',
+    'badge-market-shark': '🦈',
+    'badge-half-century': '5️⃣0️⃣',
+    'badge-prediction-master': '🎯',
     'badge-level-50': '5️⃣0️⃣',
+    // Legendary (8)
     'badge-whale': '🐋',
+    'badge-centurion': '🏛️',
+    'badge-millionaire': '💵',
+    'badge-unstoppable': '♾️',
+    'badge-perfect-week': '✨',
+    'badge-trading-god': '⚡',
+    'badge-founder': '👑',
     'badge-level-100': '💯',
-    'badge-millionaire': '💵'
+    // Mythic (2)
+    'badge-reality-breaker': '🌌',
+    'badge-eternal-legend': '🏆',
+    // Origin (1)
+    'badge-the-architect': '⚙️'
 };
 
 const BADGE_COLORS = {
-    'badge-founder': '#fbbf24',
+    // Common - Blue
     'badge-first-trade': '#3b82f6',
-    'badge-week-warrior': '#f59e0b',
-    'badge-trade-master': '#3b82f6',
+    'badge-first-profit': '#3b82f6',
+    'badge-week-warrior': '#3b82f6',
+    'badge-early-bird': '#3b82f6',
+    'badge-night-owl': '#3b82f6',
+    // Rare - Cyan/Teal
+    'badge-trade-master': '#0ea5e9',
     'badge-portfolio-builder': '#0ea5e9',
-    'badge-profit-king': '#10b981',
-    'badge-dedicated': '#ef4444',
+    'badge-streak-lord': '#0ea5e9',
+    'badge-risk-taker': '#0ea5e9',
+    'badge-diversified': '#0ea5e9',
+    'badge-comeback-king': '#0ea5e9',
+    // Epic - Purple
+    'badge-oracle': '#8b5cf6',
+    'badge-diamond-hands': '#8b5cf6',
+    'badge-profit-king': '#8b5cf6',
+    'badge-dedicated': '#8b5cf6',
+    'badge-speed-demon': '#8b5cf6',
+    'badge-market-shark': '#8b5cf6',
+    'badge-half-century': '#8b5cf6',
     'badge-prediction-master': '#8b5cf6',
-    'badge-level-50': '#a855f7',
-    'badge-whale': '#8b5cf6',
+    'badge-level-50': '#8b5cf6',
+    // Legendary - Gold/Orange
+    'badge-whale': '#f59e0b',
+    'badge-centurion': '#f59e0b',
+    'badge-millionaire': '#f59e0b',
+    'badge-unstoppable': '#f59e0b',
+    'badge-perfect-week': '#f59e0b',
+    'badge-trading-god': '#f59e0b',
+    'badge-founder': '#f59e0b',
     'badge-level-100': '#f59e0b',
-    'badge-millionaire': '#10b981'
+    // Mythic - Pink/Magenta
+    'badge-reality-breaker': '#ec4899',
+    'badge-eternal-legend': '#ec4899',
+    // Origin - Gold with special glow
+    'badge-the-architect': '#fbbf24'
 };
 
 const BADGE_NAMES = {
-    'badge-founder': 'Founder',
+    // Common
     'badge-first-trade': 'First Trade',
+    'badge-first-profit': 'First Profit',
     'badge-week-warrior': 'Week Warrior',
+    'badge-early-bird': 'Early Bird',
+    'badge-night-owl': 'Night Owl',
+    // Rare
     'badge-trade-master': 'Trade Master',
     'badge-portfolio-builder': 'Portfolio Builder',
+    'badge-streak-lord': 'Streak Lord',
+    'badge-risk-taker': 'Risk Taker',
+    'badge-diversified': 'Diversified',
+    'badge-comeback-king': 'Comeback King',
+    // Epic
+    'badge-oracle': 'Oracle',
+    'badge-diamond-hands': 'Diamond Hands',
     'badge-profit-king': 'Profit King',
     'badge-dedicated': 'Dedicated',
-    'badge-prediction-master': 'Oracle',
-    'badge-level-50': 'Half Century',
+    'badge-speed-demon': 'Speed Demon',
+    'badge-market-shark': 'Market Shark',
+    'badge-half-century': 'Half Century',
+    'badge-prediction-master': 'Prediction Master',
+    'badge-level-50': 'Level 50',
+    // Legendary
     'badge-whale': 'Whale',
-    'badge-level-100': 'Centurion',
-    'badge-millionaire': 'Millionaire'
+    'badge-centurion': 'Centurion',
+    'badge-millionaire': 'Millionaire',
+    'badge-unstoppable': 'Unstoppable',
+    'badge-perfect-week': 'Perfect Week',
+    'badge-trading-god': 'Trading God',
+    'badge-founder': 'Founder',
+    'badge-level-100': 'Level 100',
+    // Mythic
+    'badge-reality-breaker': 'Reality Breaker',
+    'badge-eternal-legend': 'Eternal Legend',
+    // Origin
+    'badge-the-architect': 'The Architect'
 };
 
 // ============ BORDER COLORS ============
