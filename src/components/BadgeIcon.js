@@ -255,6 +255,9 @@ const Particle = styled.div`
 
 const SacredGeometry = styled.div`
     position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     width: 120%;
     height: 120%;
     pointer-events: none;
