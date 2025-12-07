@@ -4,8 +4,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import styled, { keyframes, css } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { 
-    Send, Brain, User, Sparkles, TrendingUp, AlertCircle, 
+import { useSubscription } from '../context/SubscriptionContext';
+import UpgradePrompt from '../components/UpgradePrompt';
+import {
+    Send, Brain, User, Sparkles, TrendingUp, AlertCircle,
     Zap, MessageSquare, Stars, Rocket, Flame, ChevronDown,
     Copy, ThumbsUp, ThumbsDown
 } from 'lucide-react';
@@ -594,6 +596,7 @@ const ScrollToBottom = styled.button`
 const ChatPage = () => {
     const { api } = useAuth();
     const { theme } = useTheme();
+    const { hasAIChat, canUseFeature, getRequiredPlan } = useSubscription();
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
@@ -601,6 +604,7 @@ const ChatPage = () => {
     const [showScrollButton, setShowScrollButton] = useState(false);
     const [particlesData, setParticlesData] = useState([]);
     const [copiedIndex, setCopiedIndex] = useState(null);
+    const [showUpgradePrompt, setShowUpgradePrompt] = useState(!canUseFeature('hasAIChat'));
     const messagesEndRef = useRef(null);
     const messagesAreaRef = useRef(null);
 
@@ -708,6 +712,14 @@ const ChatPage = () => {
 
     return (
         <PageContainer theme={theme}>
+            {/* Subscription Gate */}
+            <UpgradePrompt
+                isOpen={showUpgradePrompt}
+                onClose={() => setShowUpgradePrompt(false)}
+                feature="hasAIChat"
+                requiredPlan={getRequiredPlan('hasAIChat')}
+            />
+
             <ParticleContainer>
                 {particlesData.map(particle => (
                     <Particle

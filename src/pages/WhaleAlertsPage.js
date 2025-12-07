@@ -6,6 +6,8 @@ import { useNavigate } from 'react-router-dom';
 import styled, { keyframes, css } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useSubscription } from '../context/SubscriptionContext';
+import UpgradePrompt from '../components/UpgradePrompt';
 import {
     TrendingUp, TrendingDown, Activity, DollarSign,
     AlertTriangle, Eye, RefreshCw, Filter, Search,
@@ -872,6 +874,10 @@ const WhaleAlertsPage = () => {
     const navigate = useNavigate();
     const { api } = useAuth();
     const { theme } = useTheme();
+    const { hasPlanAccess } = useSubscription();
+
+    // Subscription gate state
+    const [showUpgradePrompt, setShowUpgradePrompt] = useState(!hasPlanAccess('premium'));
 
     // Theme colors
     const primaryColor = theme?.brand?.primary || '#00adef';
@@ -1362,6 +1368,14 @@ const WhaleAlertsPage = () => {
 
     return (
         <PageContainer theme={theme}>
+            {/* Subscription Gate */}
+            <UpgradePrompt
+                isOpen={showUpgradePrompt}
+                onClose={() => setShowUpgradePrompt(false)}
+                feature="whaleAlerts"
+                requiredPlan="premium"
+            />
+
             <ContentWrapper>
                 <Header>
                     <HeaderLeft>

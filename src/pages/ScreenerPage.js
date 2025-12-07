@@ -5,6 +5,8 @@ import styled, { keyframes, css } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useTheme } from '../context/ThemeContext';
+import { useSubscription } from '../context/SubscriptionContext';
+import UpgradePrompt from '../components/UpgradePrompt';
 import { useNavigate } from 'react-router-dom';
 import { formatCryptoPrice, formatStockPrice } from '../utils/priceFormatter';
 import {
@@ -525,8 +527,12 @@ const ScreenerPage = () => {
     const { api, isAuthenticated } = useAuth();
     const toast = useToast();
     const { theme } = useTheme();
+    const { hasPlanAccess } = useSubscription();
     const navigate = useNavigate();
-    
+
+    // Subscription gate state
+    const [showUpgradePrompt, setShowUpgradePrompt] = useState(!hasPlanAccess('starter'));
+
     const [mode, setMode] = useState('stocks'); // 'stocks' or 'crypto'
     const [viewType, setViewType] = useState('gainers'); // 'gainers' or 'losers'
     const [loading, setLoading] = useState(false);
@@ -701,6 +707,14 @@ const ScreenerPage = () => {
 
     return (
         <PageContainer theme={theme}>
+            {/* Subscription Gate */}
+            <UpgradePrompt
+                isOpen={showUpgradePrompt}
+                onClose={() => setShowUpgradePrompt(false)}
+                feature="screener"
+                requiredPlan="starter"
+            />
+
             <Header>
                 <Title theme={theme}>
                     <TitleIcon>

@@ -27,6 +27,9 @@ import XPNotification from './components/gamification/XPNotification';
 // 🏆 Vault imports
 import { VaultProvider } from './context/VaultContext';
 
+// 💳 Subscription imports
+import { SubscriptionProvider } from './context/SubscriptionContext';
+
 // Page imports
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
@@ -193,7 +196,9 @@ function App() {
     return (
         <GamificationProvider>
             <VaultProvider>
-                <AppContent />
+                <SubscriptionProvider>
+                    <AppContent />
+                </SubscriptionProvider>
             </VaultProvider>
         </GamificationProvider>
     );
