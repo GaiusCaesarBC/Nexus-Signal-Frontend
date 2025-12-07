@@ -8,9 +8,6 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import NavbarGamification from './gamification/NavbarGamification';
 import { useGamification } from '../context/GamificationContext';
-import { useVault } from '../context/VaultContext';
-import AvatarWithBorder from './vault/AvatarWithBorder';
-import { SingleBadge } from '../components/BadgeDisplay';
 
 import {
     Home, TrendingUp, PieChart, Eye, Filter, MapPin, Newspaper, BookOpen, Brain, MessageSquare,
@@ -1088,7 +1085,6 @@ function debounce(func, wait) {
 // ============ COMPONENT ============
 const Navbar = () => {
     const { user, logout, isAuthenticated, api } = useAuth();
-    const { equippedBorder, loading: vaultLoading } = useVault();
     const { theme } = useTheme();
     const location = useLocation();
     const navigate = useNavigate();
@@ -1107,7 +1103,6 @@ const Navbar = () => {
     const [showSearchResults, setShowSearchResults] = useState(false);
     const [selectedIndex, setSelectedIndex] = useState(-1);
     const [isSearching, setIsSearching] = useState(false);
-    const [equippedBadge, setEquippedBadge] = useState(null);
 
     const getIconForType = (type) => {
         switch (type) {
@@ -1174,22 +1169,6 @@ const Navbar = () => {
             if (error.response?.status !== 401) console.error('Failed to fetch notifications:', error);
         }
     };
-
-useEffect(() => {
-    const fetchEquippedBadge = async () => {
-        if (!isAuthenticated || !user) return;
-        try {
-            const response = await api.get('/vault/equipped');
-            if (response.data?.equipped?.badges?.[0]) {
-                // Get the first equipped badge
-                setEquippedBadge(response.data.equipped.badges[0]);
-            }
-        } catch (error) {
-            console.log('Failed to fetch equipped badge:', error);
-        }
-    };
-    fetchEquippedBadge();
-}, [isAuthenticated, user]);
 
     // ✅ FIXED: Fetch notifications on mount and periodically refresh
     useEffect(() => {
@@ -1475,16 +1454,8 @@ useEffect(() => {
                             </div>
                             <div style={{ position: 'relative' }} data-user-menu>
                                <UserMenuButton onClick={() => { setUserDropdownOpen(!userDropdownOpen); setNotificationsOpen(false); setDropdowns({ trading: false, analysis: false, community: false }); }}>
-    <AvatarWithBorder src={user?.profile?.avatar} name={user?.name} username={user?.username} size={32} borderId={vaultLoading ? 'border-bronze' : equippedBorder} />
+    <User size={18} />
     <UserName>{user?.name || 'User'}</UserName>
-    {equippedBadge && (
-        <SingleBadge 
-            badge={equippedBadge} 
-            size={24} 
-            showTooltip={true}
-            showParticles={false}
-        />
-    )}
     <DropdownIconStyled size={18} $open={userDropdownOpen} />
 </UserMenuButton>
                                 {userDropdownOpen && <UserDropdownMenu><UserDropdownItem onClick={() => { navigate('/profile'); setUserDropdownOpen(false); }}><User size={18} />Profile</UserDropdownItem><UserDropdownItem onClick={() => { navigate('/settings'); setUserDropdownOpen(false); }}><Settings size={18} />Settings</UserDropdownItem><UserDropdownItem className="danger" onClick={handleLogout}><LogOut size={18} />Logout</UserDropdownItem></UserDropdownMenu>}
