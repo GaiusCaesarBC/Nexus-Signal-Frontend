@@ -6,6 +6,7 @@ import {
     Check, Lock, ChevronRight, Sparkles, Crown
 } from 'lucide-react';
 import AvatarWithBorder from '../components/vault/AvatarWithBorder';
+import BadgeIcon from '../components/BadgeIcon';
 import { useVault } from '../context/VaultContext';
 import { useGamification } from '../context/GamificationContext';
 import { useAuth } from '../context/AuthContext';
