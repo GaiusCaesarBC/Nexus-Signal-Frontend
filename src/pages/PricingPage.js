@@ -1164,7 +1164,6 @@ const PricingPage = () => {
                 { category: 'Everything in Free +', color: '#10b981', items: [
                     { text: '5 AI Predictions/day', highlight: true },
                     'Watchlist (10 stocks)',
-                    '3 AI Predictions/month',
                     'Stock Screener Access',
                     'Market News Feed',
                     'Sentiment Analysis',
@@ -1188,7 +1187,6 @@ const PricingPage = () => {
                 { category: 'Everything in Starter +', color: '#3b82f6', items: [
                     { text: '15 AI Predictions/day', highlight: true },
                     'Watchlist (30 stocks)',
-                    '10 AI Predictions/month',
                     { text: 'AI Chat Assistant', highlight: true },
                     'Advanced Market Heatmap',
                     'Technical Indicators',
