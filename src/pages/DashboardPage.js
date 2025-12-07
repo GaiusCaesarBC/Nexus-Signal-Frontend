@@ -2,7 +2,7 @@
 // Layout: Header → Ticker Tapes → Chart → Paper Trading → Widgets (Leaderboard | Whale | Social) → Achievements
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import styled, { keyframes, css } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
@@ -1295,9 +1295,33 @@ const RarityDot = styled.div`
 // ============ COMPONENT ============
 const DashboardPage = () => {
     const navigate = useNavigate();
-    const { api, isAuthenticated, user } = useAuth();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const { api, isAuthenticated, user, refreshUser } = useAuth();
     const { theme, primary } = useTheme();
     const toast = useToast();
+
+    // Handle Stripe checkout success redirect
+    useEffect(() => {
+        const success = searchParams.get('success');
+        const sessionId = searchParams.get('session_id');
+
+        if (success === 'true' && sessionId) {
+            // Clear the URL params
+            setSearchParams({});
+
+            // Refresh user data to get updated subscription
+            const handleCheckoutSuccess = async () => {
+                try {
+                    await refreshUser();
+                    toast.success('Subscription activated successfully! 🎉', 'Welcome to your new plan!');
+                } catch (error) {
+                    console.error('Error refreshing user after checkout:', error);
+                }
+            };
+
+            handleCheckoutSuccess();
+        }
+    }, [searchParams, setSearchParams, refreshUser, toast]);
 
     // Core states
     const [loading, setLoading] = useState(true);

@@ -1,14 +1,15 @@
 // client/src/pages/PricingPage.js - UPDATED FEATURES ✨
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled, { keyframes, css } from 'styled-components';
-import { 
+import {
     Check, Zap, Crown, Star, Rocket, Sparkles, TrendingUp, Shield, Award, Gift,
-    Brain, Lock, Infinity, ArrowRight
+    Brain, Lock, Infinity, ArrowRight, CheckCircle
 } from 'lucide-react';
 import nexusSignalLogo from '../assets/nexus-signal-logo.png';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSubscription } from '../context/SubscriptionContext';
 
 // ============ ANIMATIONS (keeping all your existing animations) ============
 const fadeInUp = keyframes`
@@ -927,6 +928,54 @@ const ComparisonBadge = styled.div`
     }
 `;
 
+const CurrentPlanBadge = styled.div`
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    padding: 0.5rem 1.25rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    z-index: 10;
+    animation: ${pulse} 2s ease-in-out infinite;
+
+    svg {
+        width: 16px;
+        height: 16px;
+    }
+`;
+
+const ActivePlanButton = styled.button`
+    width: 100%;
+    padding: 0.85rem 1.5rem;
+    border: 2px solid #10b981;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+    cursor: default;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: auto;
+
+    svg {
+        width: 18px;
+        height: 18px;
+    }
+`;
+
 const StatsSection = styled.div`
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -1044,12 +1093,28 @@ const Guarantee = styled.div`
 
 // ============ COMPONENT ============
 const PricingPage = () => {
-    const { api, user } = useAuth();
+    const { api, user, refreshUser } = useAuth();
     const toast = useToast();
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const { currentPlan } = useSubscription();
     const [yearly, setYearly] = useState(false);
     const [loading, setLoading] = useState(null);
     const [ripples, setRipples] = useState({});
+
+    // Handle canceled checkout redirect
+    useEffect(() => {
+        const canceled = searchParams.get('canceled');
+        if (canceled === 'true') {
+            setSearchParams({});
+            toast.info('Checkout was canceled. Feel free to try again when you\'re ready!', 'Checkout Canceled');
+        }
+    }, [searchParams, setSearchParams, toast]);
+
+    // Check if user has this plan
+    const isCurrentPlan = (planId) => {
+        return currentPlan === planId;
+    };
 
     const PRICE_IDS = {
         starter: yearly ? 'price_starter_yearly' : 'price_1SV9d8CtdTItnGjydNZsbXl3',
@@ -1346,10 +1411,16 @@ const PricingPage = () => {
                 {plans.map((plan, index) => (
                     <CardWrapper key={plan.id} $delay={index * 0.1}>
                         <AnimatedBorder $gradient={plan.borderGradient} />
-                        <Card $featured={plan.featured} $borderGradient={plan.borderGradient}>
-                            <CardGlow $color={plan.gradient.match(/#[a-fA-F0-9]{6}/)?.[0] || '#3b82f6'} />
+                        <Card $featured={plan.featured || isCurrentPlan(plan.id)} $borderGradient={isCurrentPlan(plan.id) ? 'linear-gradient(135deg, #10b981, #059669, #10b981)' : plan.borderGradient}>
+                            {isCurrentPlan(plan.id) && (
+                                <CurrentPlanBadge>
+                                    <CheckCircle size={16} />
+                                    Your Current Plan
+                                </CurrentPlanBadge>
+                            )}
+                            <CardGlow $color={isCurrentPlan(plan.id) ? '#10b981' : (plan.gradient.match(/#[a-fA-F0-9]{6}/)?.[0] || '#3b82f6')} />
                             <CardShimmer />
-                            
+
                             <PlanHeader>
                                 {plan.tag && (
                                     <PlanTag $type={plan.tag.type}>
@@ -1443,26 +1514,33 @@ const PricingPage = () => {
                                 </ComparisonBadge>
                             )}
 
-                            <CTAButton
-                                $gradient={plan.gradient}
-                                $shadow={plan.shadow}
-                                $shadowHover={plan.shadow.replace('0.4', '0.6')}
-                                onClick={(e) => plan.ctaAction ? plan.ctaAction() : handleSubscribe(plan.id, e)}
-                                disabled={loading !== null}
-                            >
-                                {ripples[plan.id] && (
-                                    <RippleEffect 
-                                        style={{
-                                            left: ripples[plan.id].x,
-                                            top: ripples[plan.id].y,
-                                            width: ripples[plan.id].size,
-                                            height: ripples[plan.id].size
-                                        }}
-                                    />
-                                )}
-                                {loading === plan.id ? 'Processing...' : plan.cta}
-                                <ArrowRight size={16} />
-                            </CTAButton>
+                            {isCurrentPlan(plan.id) ? (
+                                <ActivePlanButton>
+                                    <CheckCircle size={18} />
+                                    Active Plan
+                                </ActivePlanButton>
+                            ) : (
+                                <CTAButton
+                                    $gradient={plan.gradient}
+                                    $shadow={plan.shadow}
+                                    $shadowHover={plan.shadow.replace('0.4', '0.6')}
+                                    onClick={(e) => plan.ctaAction ? plan.ctaAction() : handleSubscribe(plan.id, e)}
+                                    disabled={loading !== null}
+                                >
+                                    {ripples[plan.id] && (
+                                        <RippleEffect
+                                            style={{
+                                                left: ripples[plan.id].x,
+                                                top: ripples[plan.id].y,
+                                                width: ripples[plan.id].size,
+                                                height: ripples[plan.id].size
+                                            }}
+                                        />
+                                    )}
+                                    {loading === plan.id ? 'Processing...' : plan.cta}
+                                    <ArrowRight size={16} />
+                                </CTAButton>
+                            )}
                         </Card>
                     </CardWrapper>
                 ))}
