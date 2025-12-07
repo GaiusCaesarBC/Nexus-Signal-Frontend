@@ -101,6 +101,86 @@ const fireFlicker = keyframes`
     75% { transform: scaleY(1.03) scaleX(0.99); }
 `;
 
+// ═══════ THE ARCHITECT - EXCLUSIVE ORIGIN ANIMATIONS ═══════
+const architectPulse = keyframes`
+    0%, 100% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 20px rgba(212, 175, 55, 0.8))
+                drop-shadow(0 0 40px rgba(212, 175, 55, 0.4))
+                drop-shadow(0 0 60px rgba(255, 255, 255, 0.2));
+    }
+    50% {
+        transform: scale(1.02);
+        filter: drop-shadow(0 0 30px rgba(212, 175, 55, 1))
+                drop-shadow(0 0 60px rgba(248, 250, 252, 0.6))
+                drop-shadow(0 0 80px rgba(212, 175, 55, 0.4));
+    }
+`;
+
+const architectInnerRing = keyframes`
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+`;
+
+const architectOuterRing = keyframes`
+    from { transform: rotate(360deg); }
+    to { transform: rotate(0deg); }
+`;
+
+const architectGlow = keyframes`
+    0%, 100% {
+        opacity: 0.6;
+        box-shadow: 0 0 30px rgba(212, 175, 55, 0.8),
+                    inset 0 0 30px rgba(212, 175, 55, 0.3);
+    }
+    50% {
+        opacity: 1;
+        box-shadow: 0 0 50px rgba(212, 175, 55, 1),
+                    0 0 80px rgba(248, 250, 252, 0.5),
+                    inset 0 0 40px rgba(212, 175, 55, 0.5);
+    }
+`;
+
+const architectSymbol = keyframes`
+    0% {
+        transform: rotate(0deg) scale(1);
+        filter: drop-shadow(0 0 8px rgba(212, 175, 55, 0.9));
+    }
+    25% {
+        transform: rotate(90deg) scale(1.05);
+        filter: drop-shadow(0 0 12px rgba(248, 250, 252, 1));
+    }
+    50% {
+        transform: rotate(180deg) scale(1);
+        filter: drop-shadow(0 0 8px rgba(212, 175, 55, 0.9));
+    }
+    75% {
+        transform: rotate(270deg) scale(1.05);
+        filter: drop-shadow(0 0 12px rgba(248, 250, 252, 1));
+    }
+    100% {
+        transform: rotate(360deg) scale(1);
+        filter: drop-shadow(0 0 8px rgba(212, 175, 55, 0.9));
+    }
+`;
+
+const energyWave = keyframes`
+    0% {
+        transform: scale(0.8);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(2);
+        opacity: 0;
+    }
+`;
+
+const holoShift = keyframes`
+    0% { filter: hue-rotate(0deg); }
+    50% { filter: hue-rotate(30deg); }
+    100% { filter: hue-rotate(0deg); }
+`;
+
 // ═══════════════════════════════════════════════════════════════
 // STYLED COMPONENTS
 // ═══════════════════════════════════════════════════════════════
@@ -205,6 +285,10 @@ const BadgeSymbol = styled.div`
     ${props => props.$animate === 'electric' && css`
         animation: ${electricArc} 0.3s ease-in-out infinite;
     `}
+
+    ${props => props.$animate === 'architect' && css`
+        animation: ${architectSymbol} 20s linear infinite;
+    `}
 `;
 
 const ShimmerOverlay = styled.div`
@@ -253,32 +337,141 @@ const Particle = styled.div`
     box-shadow: 0 0 ${props => props.$size * 2}px ${props => props.$color};
 `;
 
-const SacredGeometry = styled.div`
+// ═══════ THE ARCHITECT - EXCLUSIVE STYLED COMPONENTS ═══════
+
+// Outer aura container for The Architect
+const ArchitectAura = styled.div`
     position: absolute;
-    top: -10%;
-    left: -10%;
-    width: 120%;
-    height: 120%;
+    top: 50%;
+    left: 50%;
+    width: 150%;
+    height: 150%;
+    transform: translate(-50%, -50%);
     pointer-events: none;
     z-index: 0;
+`;
+
+// Pulsing energy waves emanating outward
+const EnergyWave = styled.div`
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    height: 100%;
+    transform: translate(-50%, -50%);
+    border: 2px solid rgba(212, 175, 55, 0.6);
     border-radius: 50%;
-    background: conic-gradient(
-        from 0deg,
-        transparent 0deg,
-        rgba(212, 175, 55, 0.3) 30deg,
-        transparent 60deg,
-        rgba(248, 250, 252, 0.2) 90deg,
-        transparent 120deg,
-        rgba(212, 175, 55, 0.3) 150deg,
-        transparent 180deg,
-        rgba(248, 250, 252, 0.2) 210deg,
-        transparent 240deg,
-        rgba(212, 175, 55, 0.3) 270deg,
-        transparent 300deg,
-        rgba(248, 250, 252, 0.2) 330deg,
-        transparent 360deg
-    );
-    animation: ${reverseRotate} 30s linear infinite;
+    animation: ${energyWave} ${props => props.$delay + 2}s ease-out infinite;
+    animation-delay: ${props => props.$delay}s;
+`;
+
+// Outer rotating ring with gold/platinum segments
+const ArchitectOuterRing = styled.div`
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 130%;
+    height: 130%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    border: 2px solid transparent;
+    background:
+        linear-gradient(#0a1628, #0a1628) padding-box,
+        conic-gradient(
+            from 0deg,
+            #d4af37 0deg 20deg,
+            transparent 20deg 40deg,
+            #f8fafc 40deg 60deg,
+            transparent 60deg 80deg,
+            #d4af37 80deg 100deg,
+            transparent 100deg 120deg,
+            #f8fafc 120deg 140deg,
+            transparent 140deg 160deg,
+            #d4af37 160deg 180deg,
+            transparent 180deg 200deg,
+            #f8fafc 200deg 220deg,
+            transparent 220deg 240deg,
+            #d4af37 240deg 260deg,
+            transparent 260deg 280deg,
+            #f8fafc 280deg 300deg,
+            transparent 300deg 320deg,
+            #d4af37 320deg 340deg,
+            transparent 340deg 360deg
+        ) border-box;
+    animation: ${architectOuterRing} 20s linear infinite;
+    pointer-events: none;
+    z-index: 0;
+
+    &::after {
+        content: '';
+        position: absolute;
+        top: -1px;
+        left: -1px;
+        right: -1px;
+        bottom: -1px;
+        border-radius: 50%;
+        background: transparent;
+        border: 1px solid rgba(212, 175, 55, 0.3);
+    }
+`;
+
+// Inner rotating ring (opposite direction)
+const ArchitectInnerRing = styled.div`
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 115%;
+    height: 115%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    border: 1px solid transparent;
+    background:
+        linear-gradient(#0a1628, #0a1628) padding-box,
+        conic-gradient(
+            from 45deg,
+            transparent 0deg 30deg,
+            rgba(212, 175, 55, 0.7) 30deg 35deg,
+            transparent 35deg 90deg,
+            rgba(248, 250, 252, 0.7) 90deg 95deg,
+            transparent 95deg 150deg,
+            rgba(212, 175, 55, 0.7) 150deg 155deg,
+            transparent 155deg 210deg,
+            rgba(248, 250, 252, 0.7) 210deg 215deg,
+            transparent 215deg 270deg,
+            rgba(212, 175, 55, 0.7) 270deg 275deg,
+            transparent 275deg 330deg,
+            rgba(248, 250, 252, 0.7) 330deg 335deg,
+            transparent 335deg 360deg
+        ) border-box;
+    animation: ${architectInnerRing} 15s linear infinite;
+    pointer-events: none;
+    z-index: 0;
+`;
+
+// Main badge glow container
+const ArchitectGlow = styled.div`
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 105%;
+    height: 105%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: transparent;
+    animation: ${architectGlow} 3s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 0;
+`;
+
+// The entire Architect effect wrapper
+const ArchitectEffect = styled.div`
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    animation: ${architectPulse} 4s ease-in-out infinite;
 `;
 
 // ═══════════════════════════════════════════════════════════════
@@ -802,19 +995,19 @@ const BADGE_CONFIG = {
         shimmer: true
     },
 
-    // ═══════ ORIGIN BADGE ═══════
+    // ═══════ ORIGIN BADGE - THE ARCHITECT (FOUNDERS ONLY) ═══════
     'badge-the-architect': {
         icon: 'metatron',
         shape: 'circle',
-        gradient: 'conic-gradient(from 0deg, #0a1628 0%, #d4af37 15%, #f8fafc 25%, #d4af37 35%, #0a1628 50%, #d4af37 65%, #f8fafc 75%, #d4af37 85%, #0a1628 100%)',
-        innerGradient: 'radial-gradient(circle, #0a1628 0%, #050b14 100%)',
+        gradient: 'linear-gradient(135deg, #0a1628 0%, #1a2744 30%, #0a1628 50%, #1a2744 70%, #0a1628 100%)',
+        innerGradient: 'radial-gradient(circle at 30% 30%, #1a2744 0%, #0a1628 40%, #050b14 100%)',
         symbolColor: '#d4af37',
         rarity: 'origin',
-        animate: 'rotate',
+        animate: 'architect', // Special animation for this badge
         particles: true,
-        particleColors: ['#d4af37', '#f8fafc', '#d4af37'],
+        particleColors: ['#d4af37', '#f8fafc', '#c9a227', '#ffe5a0', '#ffffff'],
         shimmer: true,
-        sacred: true
+        architect: true // New flag for The Architect exclusive effects
     }
 };
 
@@ -855,7 +1048,7 @@ const BadgeIcon = ({ badgeId, size = 48, showParticles = true }) => {
         particles,
         particleColors = [],
         shimmer,
-        sacred
+        architect
     } = config;
 
     // Generate particles
@@ -881,25 +1074,37 @@ const BadgeIcon = ({ badgeId, size = 48, showParticles = true }) => {
 
     return (
         <BadgeContainer $size={size}>
-            {sacred && <SacredGeometry />}
-            
+            {/* The Architect - Exclusive Founder Badge Effects */}
+            {architect && (
+                <ArchitectEffect>
+                    <ArchitectAura>
+                        <EnergyWave $delay={0} />
+                        <EnergyWave $delay={0.7} />
+                        <EnergyWave $delay={1.4} />
+                    </ArchitectAura>
+                    <ArchitectOuterRing />
+                    <ArchitectInnerRing />
+                    <ArchitectGlow />
+                </ArchitectEffect>
+            )}
+
             {showParticles && particles && (
                 <ParticleContainer>
                     {particleElements}
                 </ParticleContainer>
             )}
-            
-            <BadgeOuter 
+
+            <BadgeOuter
                 $shape={shape}
                 $gradient={gradient}
                 $rarity={rarity}
             />
-            
-            <BadgeInner 
+
+            <BadgeInner
                 $shape={shape}
                 $innerGradient={innerGradient}
             >
-                <BadgeSymbol 
+                <BadgeSymbol
                     $color={symbolColor}
                     $shape={shape}
                     $animate={animate}
@@ -907,7 +1112,7 @@ const BadgeIcon = ({ badgeId, size = 48, showParticles = true }) => {
                     {Icons[icon]}
                 </BadgeSymbol>
             </BadgeInner>
-            
+
             {shimmer && (
                 <ShimmerOverlay $shape={shape} />
             )}
