@@ -254,7 +254,7 @@ const BadgeDisplay = styled.div`
     flex-wrap: wrap;
 `;
 
-const BadgeIcon = styled.div`
+const BadgeIconWrapper = styled.div`
     width: 60px;
     height: 60px;
     border-radius: 12px;
@@ -740,9 +740,7 @@ const EquippedItemsPage = () => {
                                 <BadgeDisplay>
                                     {equippedBadgesList.length > 0 ? (
                                         equippedBadgesList.map(badge => (
-                                            <BadgeIcon key={badge.id} $color={badge.color}>
-                                                {badge.icon}
-                                            </BadgeIcon>
+                                            <BadgeIcon key={badge.id} badgeId={badge.id} size={60} showParticles={true} />
                                         ))
                                     ) : (
                                         <span style={{ color: theme?.text?.tertiary || '#64748b' }}>No badges equipped</span>
@@ -1017,12 +1015,7 @@ const EquippedItemsPage = () => {
                                     <ItemCard key={item.id} $equipped={equipped}>
                                         {/* Large Badge Visual Preview */}
                                         <BadgePreviewWrapper>
-                                            <LargeBadgeIcon
-                                                $color={item.color || `${theme?.warning || '#f59e0b'}33`}
-                                                $glowColor={item.color?.replace('0.2', '0.6') || theme?.warning || '#f59e0b'}
-                                            >
-                                                {item.icon}
-                                            </LargeBadgeIcon>
+                                            <BadgeIcon badgeId={item.id} size={80} showParticles={true} />
                                         </BadgePreviewWrapper>
                                         <ItemHeader>
                                             <RarityBadge $rarity={item.rarity}>
