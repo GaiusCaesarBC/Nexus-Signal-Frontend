@@ -266,11 +266,11 @@ const SacredGeometry = styled.div`
     &::before {
         content: '';
         position: absolute;
-        top: 50%;
-        left: 50%;
+        top: 0;
+        left: 0;
         width: 100%;
         height: 100%;
-        transform: translate(-50%, -50%);
+        transform-origin: center center;
         background: conic-gradient(
             from 0deg,
             transparent 0deg,
