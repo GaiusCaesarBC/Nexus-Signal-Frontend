@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            width: 1200px;
+            height: 630px;
+            background: linear-gradient(135deg, #0a0f1c 0%, #1a1f3a 50%, #0a0f1c 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+        .glow-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.4;
+        }
+        .orb1 { width: 400px; height: 400px; background: #00adef; top: -100px; left: -100px; }
+        .orb2 { width: 300px; height: 300px; background: #8b5cf6; bottom: -50px; right: -50px; }
+        .orb3 { width: 200px; height: 200px; background: #10b981; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        .content {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+        }
+        .logo-text {
+            font-size: 72px;
+            font-weight: 900;
+            background: linear-gradient(135deg, #00adef 0%, #00ff88 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+        }
+        .tagline {
+            font-size: 32px;
+            color: #94a3b8;
+            margin-bottom: 40px;
+        }
+        .features {
+            display: flex;
+            gap: 40px;
+            margin-top: 20px;
+        }
+        .feature {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 24px;
+            background: rgba(0, 173, 237, 0.1);
+            border: 1px solid rgba(0, 173, 237, 0.3);
+            border-radius: 30px;
+            font-size: 18px;
+            color: #e0e6ed;
+        }
+        .feature-icon {
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(135deg, #00adef, #00ff88);
+            border-radius: 50%;
+        }
+        .url {
+            position: absolute;
+            bottom: 30px;
+            font-size: 20px;
+            color: #64748b;
+        }
+    </style>
+</head>
+<body>
+    <div class="glow-orb orb1"></div>
+    <div class="glow-orb orb2"></div>
+    <div class="glow-orb orb3"></div>
+
+    <div class="content">
+        <div class="logo-text">Nexus Signal AI</div>
+        <div class="tagline">AI-Powered Stock Predictions & Trading Platform</div>
+        <div class="features">
+            <div class="feature">
+                <div class="feature-icon"></div>
+                AI Predictions
+            </div>
+            <div class="feature">
+                <div class="feature-icon"></div>
+                Real-Time Insights
+            </div>
+            <div class="feature">
+                <div class="feature-icon"></div>
+                Portfolio Analytics
+            </div>
+        </div>
+    </div>
+
+    <div class="url">nexussignal.ai</div>
+</body>
+</html>
