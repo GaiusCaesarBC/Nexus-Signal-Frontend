@@ -972,6 +972,103 @@ const MobileSearchContainer = styled.div`
     z-index: 100;
 `;
 
+const MobileGamificationSection = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    background: ${props => props.theme.bg?.card || 'rgba(30, 41, 59, 0.8)'};
+    border-radius: 12px;
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+        border-color: rgba(139, 92, 246, 0.5);
+        transform: translateY(-2px);
+    }
+`;
+
+const MobileGamificationLevel = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+`;
+
+const MobileLevelBadge = styled.div`
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 900;
+    font-size: 1rem;
+    box-shadow: 0 4px 16px rgba(139, 92, 246, 0.4);
+`;
+
+const MobileLevelInfo = styled.div`
+    display: flex;
+    flex-direction: column;
+`;
+
+const MobileLevelText = styled.div`
+    color: #a78bfa;
+    font-weight: 700;
+    font-size: 1rem;
+`;
+
+const MobileRankText = styled.div`
+    color: ${props => props.theme.text?.tertiary || '#64748b'};
+    font-size: 0.75rem;
+`;
+
+const MobileXPSection = styled.div`
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+`;
+
+const MobileXPLabel = styled.div`
+    color: ${props => props.theme.text?.secondary || '#94a3b8'};
+    font-size: 0.75rem;
+    display: flex;
+    justify-content: space-between;
+`;
+
+const MobileXPBar = styled.div`
+    width: 100%;
+    height: 8px;
+    background: rgba(139, 92, 246, 0.2);
+    border-radius: 4px;
+    overflow: hidden;
+`;
+
+const MobileXPFill = styled.div`
+    height: 100%;
+    width: ${props => props.$progress || 0}%;
+    background: linear-gradient(90deg, #8b5cf6, #00adef);
+    border-radius: 4px;
+    transition: width 0.5s ease;
+`;
+
+const MobileCoinsSection = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: rgba(245, 158, 11, 0.2);
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    border-radius: 20px;
+    color: #f59e0b;
+    font-weight: 700;
+    font-size: 0.9rem;
+`;
+
 const Divider = styled.div`
     height: 1px;
     background: ${props => `linear-gradient(90deg, transparent, ${props.theme.brand?.primary || '#00adef'}4D, transparent)`};
@@ -1088,7 +1185,7 @@ const Navbar = () => {
     const { theme } = useTheme();
     const location = useLocation();
     const navigate = useNavigate();
-    const { vault } = useGamification();
+    const { vault, gamificationData } = useGamification();
     const searchRef = useRef(null);
     const mobileSearchRef = useRef(null);
     const searchInputRef = useRef(null);
@@ -1475,6 +1572,38 @@ const Navbar = () => {
                                     )}
                                     {showSearchResults && !isSearching && searchQuery && searchResults.stocks.length === 0 && searchResults.crypto.length === 0 && <SearchResults style={{ position: 'relative', top: '8px', marginBottom: '1rem' }}><NoResults>No results for "{searchQuery}"<br /><small style={{ color: theme.text?.tertiary }}>Press Enter to search anyway</small></NoResults></SearchResults>}
                                 </MobileSearchContainer>
+
+                                {/* Mobile Gamification Stats */}
+                                {gamificationData && (
+                                    <MobileGamificationSection onClick={() => { navigate('/achievements'); setMobileMenuOpen(false); }}>
+                                        <MobileGamificationLevel>
+                                            <MobileLevelBadge>
+                                                <Zap size={20} />
+                                            </MobileLevelBadge>
+                                            <MobileLevelInfo>
+                                                <MobileLevelText>Level {gamificationData.level}</MobileLevelText>
+                                                <MobileRankText>{gamificationData.rank}</MobileRankText>
+                                            </MobileLevelInfo>
+                                        </MobileGamificationLevel>
+                                        <MobileXPSection>
+                                            <MobileXPLabel>
+                                                <span>XP Progress</span>
+                                                <span>{Math.floor(gamificationData.xpInCurrentLevel || 0)}/{Math.floor((gamificationData.xpForNextLevel || 0) - Math.pow((gamificationData.level || 1) - 1, 2) * 100)}</span>
+                                            </MobileXPLabel>
+                                            <MobileXPBar>
+                                                <MobileXPFill $progress={gamificationData.progressPercent || 0} />
+                                            </MobileXPBar>
+                                        </MobileXPSection>
+                                        <MobileCoinsSection>
+                                            <Zap size={16} />
+                                            {(gamificationData.nexusCoins || 0) >= 1000
+                                                ? `${((gamificationData.nexusCoins || 0) / 1000).toFixed(1)}k`
+                                                : gamificationData.nexusCoins || 0
+                                            }
+                                        </MobileCoinsSection>
+                                    </MobileGamificationSection>
+                                )}
+
                                 <MobileNavLink to="/dashboard" $active={location.pathname === '/dashboard'} onClick={() => setMobileMenuOpen(false)}><Home size={22} />Dashboard</MobileNavLink>
                                 <MobileNavCategory><MobileCategoryTitle><Briefcase size={16} />Trading</MobileCategoryTitle>{navStructure.trading.map(item => { const Icon = item.icon; return <MobileNavLink key={item.path} to={item.path} $active={location.pathname === item.path} onClick={() => setMobileMenuOpen(false)}><Icon size={22} />{item.label}</MobileNavLink>; })}</MobileNavCategory>
                                 <MobileNavCategory><MobileCategoryTitle><BarChart3 size={16} />Analysis & Tools</MobileCategoryTitle>{navStructure.analysis.map(item => { const Icon = item.icon; return <MobileNavLink key={item.path} to={item.path} $active={location.pathname === item.path} onClick={() => setMobileMenuOpen(false)}><Icon size={22} />{item.label}</MobileNavLink>; })}</MobileNavCategory>
