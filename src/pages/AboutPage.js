@@ -2,11 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import axios from 'axios';
-import { 
-    Target, ShieldCheck, Users, Zap, TrendingUp, Brain, 
+import {
+    Target, ShieldCheck, Users, Zap, TrendingUp, Brain,
     Rocket, Award, Star, CheckCircle, Code, BarChart3,
     Sparkles, Trophy, Flame, Heart
 } from 'lucide-react';
+import SEO from '../components/SEO';
 
 // API base URL
 const API_URL = process.env.REACT_APP_API_URL || process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
@@ -486,6 +487,11 @@ const AboutPage = () => {
 
     return (
         <AboutContainer>
+            <SEO
+                title="About Us | Nexus Signal AI"
+                description="Learn about Nexus Signal AI's mission to democratize AI-powered trading insights. Our team builds cutting-edge machine learning tools for smarter investment decisions."
+                keywords="about Nexus Signal, AI trading company, stock prediction technology, machine learning finance, trading platform team"
+            />
             {/* Animated Background Particles */}
             <ParticleContainer>
                 {particlesData.map(particle => (

@@ -1,3 +1,40 @@
-# https://www.robotstxt.org/robotstxt.html
+# Robots.txt for Nexus Signal AI
+# https://nexussignal.ai
+
 User-agent: *
-Disallow:
+Allow: /
+
+# Public pages - allow all
+Allow: /
+Allow: /about
+Allow: /pricing
+Allow: /contact
+Allow: /login
+Allow: /register
+
+# Disallow private/authenticated pages
+Disallow: /dashboard
+Disallow: /portfolio
+Disallow: /predictions
+Disallow: /watchlist
+Disallow: /settings
+Disallow: /profile
+Disallow: /chat
+Disallow: /alerts
+Disallow: /paper-trading
+Disallow: /journal
+Disallow: /vault
+Disallow: /leaderboard
+Disallow: /screener
+Disallow: /heatmap
+Disallow: /whale
+Disallow: /calculators
+
+# Disallow API routes
+Disallow: /api/
+
+# Crawl delay (be nice to our servers)
+Crawl-delay: 1
+
+# Sitemap location
+Sitemap: https://nexussignal.ai/sitemap.xml

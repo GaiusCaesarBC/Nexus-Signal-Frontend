@@ -3,6 +3,7 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { ThemeProvider as StyledThemeProvider, createGlobalStyle } from 'styled-components';
+import { HelmetProvider } from 'react-helmet-async';
 import { useAuth } from './context/AuthContext';
 import { useTheme } from './context/ThemeContext';
 import { Analytics } from '@vercel/analytics/react';
@@ -194,13 +195,15 @@ function AppContent() {
 function App() {
     // Note: ThemeProvider is already in index.js - no need to wrap again here
     return (
-        <GamificationProvider>
-            <VaultProvider>
-                <SubscriptionProvider>
-                    <AppContent />
-                </SubscriptionProvider>
-            </VaultProvider>
-        </GamificationProvider>
+        <HelmetProvider>
+            <GamificationProvider>
+                <VaultProvider>
+                    <SubscriptionProvider>
+                        <AppContent />
+                    </SubscriptionProvider>
+                </VaultProvider>
+            </GamificationProvider>
+        </HelmetProvider>
     );
 }
 

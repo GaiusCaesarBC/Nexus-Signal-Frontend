@@ -6,6 +6,7 @@ import {
     Brain, Lock, Infinity, ArrowRight, CheckCircle
 } from 'lucide-react';
 import nexusSignalLogo from '../assets/nexus-signal-logo.png';
+import SEO from '../components/SEO';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -1334,6 +1335,11 @@ const PricingPage = () => {
 
     return (
         <PricingContainer>
+            <SEO
+                title="Pricing Plans | Nexus Signal AI"
+                description="Choose the perfect plan for your trading needs. From free starter to elite professional plans. Get AI-powered stock predictions, unlimited watchlists, and advanced analytics."
+                keywords="Nexus Signal pricing, AI trading subscription, stock prediction plans, trading platform pricing, investment tools cost"
+            />
             {/* Cosmic Background */}
             <CosmicBackground>
                 <StarField>

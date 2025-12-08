@@ -5,11 +5,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
-import { 
+import {
     CheckCircle, Zap, Shield, Rocket, TrendingUp, TrendingDown,
-    Brain, Sparkles, Target, BarChart3, ArrowRight, Flame, Crown, 
+    Brain, Sparkles, Target, BarChart3, ArrowRight, Flame, Crown,
     Users, Activity, Trophy, DollarSign, MessageSquare, Coins
 } from 'lucide-react';
+import SEO from '../components/SEO';
 
 // API URL for production - same pattern as AboutPage
 const API_URL = process.env.REACT_APP_API_URL || process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
@@ -373,7 +374,11 @@ const fetchTopTraders = async () => {
 
     return (
         <LandingContainer>
-            
+            <SEO
+                title="Nexus Signal AI - AI-Powered Stock Predictions & Trading Platform"
+                description="Transform your trading with AI-powered stock predictions, real-time market insights, and intelligent portfolio management. Join thousands of traders using machine learning for smarter decisions."
+                keywords="AI stock predictions, stock market analysis, trading platform, portfolio management, machine learning trading, stock signals, investment tools"
+            />
 <BackgroundEffects>
     <GridOverlay />
     {orbs.map((orb, i) => (<GradientOrb key={i} {...Object.fromEntries(Object.entries(orb).map(([k,v]) => [`$${k}`, v]))} />))}
