@@ -12,18 +12,24 @@ const shimmer = keyframes`
 
 const Container = styled.div`
     display: none;
-    position: fixed;
-    bottom: 60px; // Above mobile nav
+    position: sticky;
+    top: var(--mobile-navbar-height, 54px);
     left: 0;
     right: 0;
     background: ${({ theme }) => theme.bg?.cardSolid || 'rgba(15, 23, 42, 0.95)'};
     backdrop-filter: blur(10px);
-    border-top: 2px solid rgba(139, 92, 246, 0.4);
-    padding: 0.75rem 1rem;
-    z-index: 999;
+    border-bottom: 1px solid rgba(139, 92, 246, 0.3);
+    padding: 0.5rem 1rem;
+    z-index: 99;
+    margin-bottom: 0.5rem;
 
-    @media (max-width: 968px) {
+    @media (max-width: 768px) {
         display: flex;
+    }
+
+    /* Smaller padding on very small screens */
+    @media (max-width: 375px) {
+        padding: 0.4rem 0.75rem;
     }
 `;
 

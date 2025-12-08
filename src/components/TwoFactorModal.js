@@ -72,6 +72,17 @@ const Modal = styled.div`
         z-index: 0;
         pointer-events: none;
     }
+
+    /* Mobile full-screen */
+    @media (max-width: 480px) {
+        max-width: 100%;
+        min-height: 100vh;
+        border-radius: 0;
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
 `;
 
 const ModalContent = styled.div`

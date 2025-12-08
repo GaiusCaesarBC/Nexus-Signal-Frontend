@@ -285,11 +285,32 @@ const SectionTitle = styled.h2`
 
 const TableWrapper = styled.div`
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+
+    /* Mobile: switch to card layout */
+    @media (max-width: 768px) {
+        overflow-x: visible;
+    }
 `;
 
 const Table = styled.table`
     width: 100%;
     border-collapse: collapse;
+
+    /* Mobile: switch to block layout */
+    @media (max-width: 768px) {
+        display: block;
+
+        thead {
+            display: none;
+        }
+
+        tbody {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+    }
 `;
 
 const Th = styled.th`
@@ -310,12 +331,57 @@ const Tr = styled.tr`
     &:hover {
         background: ${props => props.theme.brand?.primary || '#00adef'}0D;
     }
+
+    /* Mobile: card layout */
+    @media (max-width: 768px) {
+        display: flex;
+        flex-wrap: wrap;
+        padding: 1rem;
+        background: ${props => props.theme.bg?.card || 'rgba(30, 41, 59, 0.8)'};
+        border-radius: 12px;
+        border: 1px solid ${props => props.theme.brand?.primary || '#00adef'}1A;
+        gap: 0.75rem;
+        align-items: center;
+
+        &:active {
+            transform: scale(0.99);
+        }
+    }
 `;
 
 const Td = styled.td`
     padding: 1rem 0.75rem;
     border-bottom: 1px solid ${props => props.theme.brand?.primary || '#00adef'}0D;
     vertical-align: middle;
+
+    /* Mobile: flex layout */
+    @media (max-width: 768px) {
+        padding: 0;
+        border: none;
+
+        /* Symbol cell takes full width on mobile */
+        &:first-child {
+            width: 100%;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Price and change cells */
+        &:nth-child(2),
+        &:nth-child(3) {
+            flex: 1;
+        }
+
+        /* Actions cell */
+        &:last-child {
+            width: 100%;
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid ${props => props.theme.brand?.primary || '#00adef'}1A;
+        }
+    }
 `;
 
 const SymbolCell = styled.div`
