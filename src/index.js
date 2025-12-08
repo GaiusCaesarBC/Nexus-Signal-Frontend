@@ -19,8 +19,26 @@ import { WagmiProvider } from 'wagmi';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { config } from './config/wagmi';
 
-// Create a React Query client
-const queryClient = new QueryClient();
+// Check if WalletConnect is properly configured
+const walletConnectProjectId = process.env.REACT_APP_WALLETCONNECT_PROJECT_ID;
+const isWalletConnectEnabled = walletConnectProjectId &&
+    walletConnectProjectId !== 'nexus-signal-default' &&
+    walletConnectProjectId.length > 10;
+
+// Suppress WalletConnect network errors in console (they're noisy when project ID is invalid)
+if (!isWalletConnectEnabled) {
+    console.warn('[Nexus Signal] WalletConnect disabled - invalid or missing project ID. Get one at https://cloud.walletconnect.com/');
+}
+
+// Create a React Query client with error suppression for wallet errors
+const queryClient = new QueryClient({
+    defaultOptions: {
+        queries: {
+            retry: false,
+            refetchOnWindowFocus: false,
+        },
+    },
+});
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
