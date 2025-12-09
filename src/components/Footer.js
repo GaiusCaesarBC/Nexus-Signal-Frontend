@@ -2,10 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { Link } from 'react-router-dom';
-import { 
-    Send, Twitter, Linkedin, Github, MessageSquare, 
-    TrendingUp, Zap, Brain, Sparkles, ChevronRight, Star,
-    Instagram, Youtube
+import {
+    Send, Twitter, Github, MessageSquare,
+    TrendingUp, Zap, Brain, Sparkles, ChevronRight, Star
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
@@ -437,20 +436,11 @@ const Footer = () => {
                             <SocialIcon href="https://twitter.com/nexussignalai" target="_blank" rel="noopener noreferrer">
                                 <Twitter size={20} />
                             </SocialIcon>
-                            <SocialIcon href="https://linkedin.com/company/nexussignalai" target="_blank" rel="noopener noreferrer">
-                                <Linkedin size={20} />
-                            </SocialIcon>
-                            <SocialIcon href="https://github.com/nexussignal" target="_blank" rel="noopener noreferrer">
+                            <SocialIcon href="https://github.com/GaiusCaesarBC" target="_blank" rel="noopener noreferrer">
                                 <Github size={20} />
                             </SocialIcon>
-                            <SocialIcon href="https://discord.gg/nexussignal" target="_blank" rel="noopener noreferrer">
+                            <SocialIcon href="https://discord.gg/knef4zSr" target="_blank" rel="noopener noreferrer">
                                 <MessageSquare size={20} />
-                            </SocialIcon>
-                            <SocialIcon href="https://instagram.com/nexussignalai" target="_blank" rel="noopener noreferrer">
-                                <Instagram size={20} />
-                            </SocialIcon>
-                            <SocialIcon href="https://youtube.com/@nexussignalai" target="_blank" rel="noopener noreferrer">
-                                <Youtube size={20} />
                             </SocialIcon>
                         </SocialIcons>
                     </BrandSection>
