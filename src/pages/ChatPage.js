@@ -1,4 +1,4 @@
-// client/src/pages/ChatPage.js - THEMED VERSION
+// client/src/pages/ChatPage.js - THEMED VERSION WITH CHARTS
 
 import React, { useState, useEffect, useRef } from 'react';
 import styled, { keyframes, css } from 'styled-components';
@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useSubscription } from '../context/SubscriptionContext';
 import UpgradePrompt from '../components/UpgradePrompt';
+import ChatChart from '../components/ChatChart';
 import {
     Send, Brain, User, Sparkles, TrendingUp, AlertCircle,
     Zap, MessageSquare, Stars, Rocket, Flame, ChevronDown,
@@ -681,7 +682,8 @@ const ChatPage = () => {
 
             setMessages(prev => [...prev, {
                 role: 'assistant',
-                content: response.data.response
+                content: response.data.response,
+                charts: response.data.charts || []
             }]);
 
         } catch (err) {
@@ -815,6 +817,18 @@ const ChatPage = () => {
                                 <MessageBubble theme={theme} $isUser={message.role === 'user'}>
                                     {message.content}
                                 </MessageBubble>
+                                {/* Render charts if present */}
+                                {message.charts && message.charts.length > 0 && (
+                                    <>
+                                        {message.charts.map((chart, chartIndex) => (
+                                            <ChatChart
+                                                key={`${index}-chart-${chartIndex}`}
+                                                chart={chart}
+                                                theme={theme}
+                                            />
+                                        ))}
+                                    </>
+                                )}
                                 {message.role === 'assistant' && (
                                     <MessageActions>
                                         <ActionButton theme={theme} onClick={() => copyToClipboard(message.content, index)}>
