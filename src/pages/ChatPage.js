@@ -7,6 +7,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useSubscription } from '../context/SubscriptionContext';
 import UpgradePrompt from '../components/UpgradePrompt';
 import ChatChart from '../components/ChatChart';
+import ScenarioChart from '../components/ScenarioChart';
 import {
     Send, Brain, User, Sparkles, TrendingUp, AlertCircle,
     Zap, MessageSquare, Stars, Rocket, Flame, ChevronDown,
@@ -683,7 +684,8 @@ const ChatPage = () => {
             setMessages(prev => [...prev, {
                 role: 'assistant',
                 content: response.data.response,
-                charts: response.data.charts || []
+                charts: response.data.charts || [],
+                scenarios: response.data.scenarios || []
             }]);
 
         } catch (err) {
@@ -824,6 +826,18 @@ const ChatPage = () => {
                                             <ChatChart
                                                 key={`${index}-chart-${chartIndex}`}
                                                 chart={chart}
+                                                theme={theme}
+                                            />
+                                        ))}
+                                    </>
+                                )}
+                                {/* Render scenario charts if present */}
+                                {message.scenarios && message.scenarios.length > 0 && (
+                                    <>
+                                        {message.scenarios.map((scenario, scenarioIndex) => (
+                                            <ScenarioChart
+                                                key={`${index}-scenario-${scenarioIndex}`}
+                                                scenario={scenario}
                                                 theme={theme}
                                             />
                                         ))}
