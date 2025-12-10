@@ -5,7 +5,7 @@ import { createChart } from 'lightweight-charts';
 import styled from 'styled-components';
 import {
     TrendingUp, Activity, BarChart3, Maximize2,
-    Download, Eye, EyeOff
+    Download, Eye, EyeOff, RefreshCw
 } from 'lucide-react';
 import {
     calculateSMA,
@@ -218,11 +218,21 @@ const ActionButton = styled.button`
     align-items: center;
     justify-content: center;
 
-    &:hover {
+    &:hover:not(:disabled) {
         background: ${props => props.theme.brand?.primary}26;
         border-color: ${props => props.theme.brand?.primary}80;
         color: ${props => props.theme.brand?.primary};
         transform: translateY(-2px);
+    }
+
+    &:disabled {
+        cursor: not-allowed;
+        opacity: 0.7;
+    }
+
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
     }
 `;
 
@@ -289,7 +299,9 @@ const AdvancedChart = ({
     height = '500px',
     timeframe: externalTimeframe = '1D',
     onTimeframeChange,
-    onChartTypeChange
+    onChartTypeChange,
+    onRefresh,
+    isRefreshing = false
 }) => {
     const { theme } = useTheme();
     const chartContainerRef = useRef(null);
@@ -757,6 +769,16 @@ const AdvancedChart = ({
                     </ControlGroup>
 
                     <ControlGroup>
+                        {onRefresh && (
+                            <ActionButton
+                                onClick={onRefresh}
+                                title="Refresh Data"
+                                disabled={isRefreshing}
+                                style={isRefreshing ? { animation: 'spin 1s linear infinite' } : {}}
+                            >
+                                <RefreshCw size={18} style={isRefreshing ? { animation: 'spin 1s linear infinite' } : {}} />
+                            </ActionButton>
+                        )}
                         <ActionButton onClick={handleFullscreen} title="Fullscreen">
                             <Maximize2 size={18} />
                         </ActionButton>

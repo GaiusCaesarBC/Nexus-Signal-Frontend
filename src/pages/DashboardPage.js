@@ -1340,6 +1340,7 @@ const DashboardPage = () => {
     const [selectedSymbol, setSelectedSymbol] = useState('AAPL');
     const [selectedTimeframe, setSelectedTimeframe] = useState('1D');
     const [loadingChart, setLoadingChart] = useState(false);
+    const [isChartRefreshing, setIsChartRefreshing] = useState(false);
     const [searchSymbol, setSearchSymbol] = useState('');
 
     // Autocomplete states
@@ -1413,19 +1414,23 @@ useEffect(() => {
         }
     }, [isAuthenticated]);
 
-    // Fetch chart when symbol changes + auto-refresh for live updates
+    // Fetch chart when symbol or timeframe changes
     useEffect(() => {
         if (selectedSymbol) {
             fetchChartData(selectedSymbol, selectedTimeframe);
-
-            // Auto-refresh chart every 15 seconds (Alpha Vantage Pro)
-            const refreshInterval = setInterval(() => {
-                fetchChartData(selectedSymbol, selectedTimeframe);
-            }, 15000); // 15 seconds
-
-            return () => clearInterval(refreshInterval);
         }
     }, [selectedSymbol, selectedTimeframe]);
+
+    // Manual chart refresh handler
+    const handleChartRefresh = async () => {
+        if (isChartRefreshing || !selectedSymbol) return;
+        setIsChartRefreshing(true);
+        try {
+            await fetchChartData(selectedSymbol, selectedTimeframe);
+        } finally {
+            setIsChartRefreshing(false);
+        }
+    };
 
     const fetchAllDashboardData = async () => {
         try {
@@ -2103,6 +2108,8 @@ const handleOpenRewardModal = () => {
                                 height="500px"
                                 timeframe={selectedTimeframe}
                                 onTimeframeChange={setSelectedTimeframe}
+                                onRefresh={handleChartRefresh}
+                                isRefreshing={isChartRefreshing}
                             />
                             <PatternDetector symbol={selectedSymbol} chartData={advancedChartData} />
                         </>
