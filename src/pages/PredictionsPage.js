@@ -1647,9 +1647,22 @@ const PredictionsPage = () => {
     }, [liveData?.timeRemaining]);
 
     // Generate chart data for price projection line
+    // Handles micro-prices like $0.00001234 by preserving precision
     const generateChartData = (currentPrice, targetPrice, days) => {
         const data = [];
         const priceChange = targetPrice - currentPrice;
+
+        // Determine appropriate decimal precision based on price magnitude
+        const getDecimals = (price) => {
+            const absPrice = Math.abs(price);
+            if (absPrice < 0.000001) return 12;
+            if (absPrice < 0.0001) return 10;
+            if (absPrice < 0.01) return 8;
+            if (absPrice < 1) return 6;
+            return 2;
+        };
+
+        const decimals = Math.max(getDecimals(currentPrice), getDecimals(targetPrice));
 
         for (let i = 0; i <= days; i++) {
             const progress = i / days;
@@ -1662,9 +1675,9 @@ const PredictionsPage = () => {
 
             data.push({
                 day: i === 0 ? 'Today' : `Day ${i}`,
-                price: parseFloat(predictedPrice.toFixed(2)),
-                currentPrice: parseFloat(currentPrice.toFixed(2)),
-                targetPrice: parseFloat(targetPrice.toFixed(2))
+                price: parseFloat(predictedPrice.toFixed(decimals)),
+                currentPrice: parseFloat(currentPrice.toFixed(decimals)),
+                targetPrice: parseFloat(targetPrice.toFixed(decimals))
             });
         }
         return data;
@@ -2224,11 +2237,19 @@ const handleShare = (platform) => {
                                 </IndicatorsSection>
 
                                 {/* Price Projection Chart */}
-                                {prediction.chartData && (
+                                {prediction.chartData && (() => {
+                                    // Calculate Y-axis domain with padding for micro-prices
+                                    const minPrice = Math.min(prediction.current_price, prediction.prediction.target_price);
+                                    const maxPrice = Math.max(prediction.current_price, prediction.prediction.target_price);
+                                    const padding = (maxPrice - minPrice) * 0.1 || minPrice * 0.1;
+                                    const yMin = Math.max(0, minPrice - padding);
+                                    const yMax = maxPrice + padding;
+
+                                    return (
                                     <ChartSection theme={theme}>
                                         <ChartTitle theme={theme}><Activity size={20} /> Price Projection</ChartTitle>
                                         <ResponsiveContainer width="100%" height={350}>
-                                            <AreaChart data={prediction.chartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                                            <AreaChart data={prediction.chartData} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
                                                 <defs>
                                                     <linearGradient id="priceGradient" x1="0" y1="0" x2="0" y2="1">
                                                         <stop offset="0%" stopColor={prediction.prediction.direction === 'UP' ? successColor : errorColor} stopOpacity={0.4} />
@@ -2242,10 +2263,12 @@ const handleShare = (platform) => {
                                                     axisLine={{ stroke: `${accentColor}4D` }}
                                                 />
                                                 <YAxis
-                                                    domain={['auto', 'auto']}
-                                                    tick={{ fill: theme?.text?.secondary || '#94a3b8', fontSize: 12 }}
+                                                    domain={[yMin, yMax]}
+                                                    tick={{ fill: theme?.text?.secondary || '#94a3b8', fontSize: 10 }}
                                                     axisLine={{ stroke: `${accentColor}4D` }}
                                                     tickFormatter={v => formatPredictionPrice(v, prediction.symbol)}
+                                                    width={100}
+                                                    tickCount={6}
                                                 />
                                                 <Tooltip
                                                     contentStyle={{
@@ -2285,7 +2308,8 @@ const handleShare = (platform) => {
                                             <LegendItem><LegendColor color={primaryColor} /><LegendText theme={theme}>Current Price</LegendText></LegendItem>
                                         </ChartLegend>
                                     </ChartSection>
-                                )}
+                                    );
+                                })()}
                             </PredictionCard>
                         </ResultsContainer>
                     )}
