@@ -1413,10 +1413,17 @@ useEffect(() => {
         }
     }, [isAuthenticated]);
 
-    // Fetch chart when symbol changes
+    // Fetch chart when symbol changes + auto-refresh for live updates
     useEffect(() => {
         if (selectedSymbol) {
             fetchChartData(selectedSymbol, selectedTimeframe);
+
+            // Auto-refresh chart every 60 seconds for live data
+            const refreshInterval = setInterval(() => {
+                fetchChartData(selectedSymbol, selectedTimeframe);
+            }, 60000); // 60 seconds
+
+            return () => clearInterval(refreshInterval);
         }
     }, [selectedSymbol, selectedTimeframe]);
 

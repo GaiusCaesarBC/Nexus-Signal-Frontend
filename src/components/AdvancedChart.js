@@ -104,6 +104,39 @@ const ControlGroup = styled.div`
     align-items: center;
 `;
 
+const LiveIndicator = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.8rem;
+    background: ${props => props.theme.success}1a;
+    border: 1px solid ${props => props.theme.success}4d;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    color: ${props => props.theme.success};
+    font-weight: 600;
+
+    &::before {
+        content: '';
+        width: 8px;
+        height: 8px;
+        background: ${props => props.theme.success};
+        border-radius: 50%;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.5; transform: scale(1.2); }
+    }
+`;
+
+const LastUpdated = styled.span`
+    font-size: 0.7rem;
+    color: ${props => props.theme.text?.secondary || '#94a3b8'};
+    margin-left: 0.5rem;
+`;
+
 const TimeframeButton = styled.button`
     padding: 0.5rem 1rem;
     background: ${props => props.$active ? 
@@ -223,6 +256,7 @@ const AdvancedChart = ({
     const [activeIndicators, setActiveIndicators] = useState([]);
     const [currentPrice, setCurrentPrice] = useState(null);
     const [priceChange, setPriceChange] = useState(null);
+    const [lastUpdated, setLastUpdated] = useState(null);
 
     const timeframes = ['1m', '5m', '15m', '1h', '4h', '1D', '1W', '1M'];
     
@@ -267,6 +301,15 @@ const AdvancedChart = ({
                 borderColor: `${primaryColor}33`,
                 timeVisible: true,
                 secondsVisible: false,
+                tickMarkFormatter: (time) => {
+                    const date = new Date(time * 1000);
+                    const hours = date.getHours().toString().padStart(2, '0');
+                    const minutes = date.getMinutes().toString().padStart(2, '0');
+                    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                    const day = date.getDate().toString().padStart(2, '0');
+                    // Show date for daily+ timeframes, time for intraday
+                    return `${month}/${day} ${hours}:${minutes}`;
+                },
             },
             rightPriceScale: {
                 borderColor: `${primaryColor}33`,
@@ -387,7 +430,8 @@ const AdvancedChart = ({
             if (data.length > 0) {
                 const latest = data[data.length - 1];
                 setCurrentPrice(latest.close);
-                
+                setLastUpdated(new Date());
+
                 if (data.length > 1) {
                     const previous = data[data.length - 2];
                     const change = latest.close - previous.close;
@@ -572,6 +616,14 @@ const AdvancedChart = ({
                                     </PriceChange>
                                 )}
                             </div>
+                        )}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', marginTop: '0.5rem' }}>
+                        <LiveIndicator>LIVE</LiveIndicator>
+                        {lastUpdated && (
+                            <LastUpdated>
+                                Updated: {lastUpdated.toLocaleTimeString()}
+                            </LastUpdated>
                         )}
                     </div>
                 </ChartTitle>
