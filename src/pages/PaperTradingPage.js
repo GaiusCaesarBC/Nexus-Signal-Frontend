@@ -1831,7 +1831,7 @@ const PaperTradingPage = () => {
             }
         };
         init();
-        const priceRefreshInterval = setInterval(() => { handleRefreshPrices(); }, 30000);
+        const priceRefreshInterval = setInterval(() => { handleRefreshPrices(); }, 15000); // 15 seconds
         return () => { clearInterval(priceRefreshInterval); };
     }, []);
 
