@@ -235,6 +235,53 @@ const ChartWrapper = styled.div`
     background: rgba(10, 14, 39, 0.5);
 `;
 
+const ChartTooltip = styled.div`
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: ${props => props.theme.bg?.card || 'rgba(15, 23, 42, 0.95)'};
+    border: 1px solid ${props => props.theme.brand?.primary}4d;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 0.8rem;
+    color: ${props => props.theme.text?.primary || '#e0e6ed'};
+    z-index: 10;
+    pointer-events: none;
+    backdrop-filter: blur(8px);
+    min-width: 180px;
+
+    .tooltip-time {
+        font-weight: 600;
+        color: ${props => props.theme.brand?.primary || '#00adef'};
+        margin-bottom: 8px;
+        padding-bottom: 6px;
+        border-bottom: 1px solid ${props => props.theme.brand?.primary}33;
+    }
+
+    .tooltip-row {
+        display: flex;
+        justify-content: space-between;
+        margin: 4px 0;
+    }
+
+    .tooltip-label {
+        color: ${props => props.theme.text?.secondary || '#94a3b8'};
+    }
+
+    .tooltip-value {
+        font-weight: 600;
+        font-family: 'SF Mono', 'Fira Code', monospace;
+    }
+
+    .tooltip-value.up {
+        color: ${props => props.theme.success || '#10b981'};
+    }
+
+    .tooltip-value.down {
+        color: ${props => props.theme.error || '#ef4444'};
+    }
+`;
+
 // ============ COMPONENT ============
 const AdvancedChart = ({
     symbol = 'AAPL',
@@ -257,6 +304,7 @@ const AdvancedChart = ({
     const [currentPrice, setCurrentPrice] = useState(null);
     const [priceChange, setPriceChange] = useState(null);
     const [lastUpdated, setLastUpdated] = useState(null);
+    const [tooltipData, setTooltipData] = useState(null);
 
     const timeframes = ['1m', '5m', '15m', '1h', '4h', '1D', '1W', '1M'];
     
@@ -332,6 +380,49 @@ const AdvancedChart = ({
         });
 
         volumeSeriesRef.current = volumeSeries;
+
+        // Subscribe to crosshair move for tooltip
+        chart.subscribeCrosshairMove((param) => {
+            if (!param || !param.time || param.seriesData.size === 0) {
+                setTooltipData(null);
+                return;
+            }
+
+            // Get the main series data (first series with OHLC data)
+            let ohlcData = null;
+            let volumeData = null;
+
+            param.seriesData.forEach((value, series) => {
+                if (value.open !== undefined) {
+                    ohlcData = value;
+                } else if (value.value !== undefined && !ohlcData) {
+                    // Line/area chart - just has value
+                    ohlcData = { close: value.value };
+                }
+                if (series === volumeSeriesRef.current) {
+                    volumeData = value;
+                }
+            });
+
+            if (ohlcData) {
+                const date = new Date(param.time * 1000);
+                setTooltipData({
+                    time: date.toLocaleString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    }),
+                    open: ohlcData.open,
+                    high: ohlcData.high,
+                    low: ohlcData.low,
+                    close: ohlcData.close,
+                    volume: volumeData?.value,
+                    isUp: ohlcData.close >= ohlcData.open
+                });
+            }
+        });
 
         const handleResize = () => {
             if (chartContainerRef.current && chartRef.current) {
@@ -691,6 +782,46 @@ const AdvancedChart = ({
 
             <ChartWrapper $height={height}>
                 <div ref={chartContainerRef} />
+                {tooltipData && (
+                    <ChartTooltip>
+                        <div className="tooltip-time">{tooltipData.time}</div>
+                        {tooltipData.open !== undefined && (
+                            <>
+                                <div className="tooltip-row">
+                                    <span className="tooltip-label">Open:</span>
+                                    <span className="tooltip-value">{formatChartPrice(tooltipData.open, symbol)}</span>
+                                </div>
+                                <div className="tooltip-row">
+                                    <span className="tooltip-label">High:</span>
+                                    <span className="tooltip-value">{formatChartPrice(tooltipData.high, symbol)}</span>
+                                </div>
+                                <div className="tooltip-row">
+                                    <span className="tooltip-label">Low:</span>
+                                    <span className="tooltip-value">{formatChartPrice(tooltipData.low, symbol)}</span>
+                                </div>
+                            </>
+                        )}
+                        <div className="tooltip-row">
+                            <span className="tooltip-label">Close:</span>
+                            <span className={`tooltip-value ${tooltipData.isUp ? 'up' : 'down'}`}>
+                                {formatChartPrice(tooltipData.close, symbol)}
+                            </span>
+                        </div>
+                        {tooltipData.volume && (
+                            <div className="tooltip-row">
+                                <span className="tooltip-label">Volume:</span>
+                                <span className="tooltip-value">
+                                    {tooltipData.volume >= 1000000
+                                        ? (tooltipData.volume / 1000000).toFixed(2) + 'M'
+                                        : tooltipData.volume >= 1000
+                                            ? (tooltipData.volume / 1000).toFixed(2) + 'K'
+                                            : tooltipData.volume.toLocaleString()
+                                    }
+                                </span>
+                            </div>
+                        )}
+                    </ChartTooltip>
+                )}
             </ChartWrapper>
         </ChartContainer>
     );
