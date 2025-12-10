@@ -1418,10 +1418,10 @@ useEffect(() => {
         if (selectedSymbol) {
             fetchChartData(selectedSymbol, selectedTimeframe);
 
-            // Auto-refresh chart every 60 seconds for live data
+            // Auto-refresh chart every 15 seconds (Alpha Vantage Pro)
             const refreshInterval = setInterval(() => {
                 fetchChartData(selectedSymbol, selectedTimeframe);
-            }, 60000); // 60 seconds
+            }, 15000); // 15 seconds
 
             return () => clearInterval(refreshInterval);
         }
