@@ -910,7 +910,10 @@ const formatChartDate = (dateInput, timeframe) => {
       return date.toLocaleDateString('en-US', { weekday: 'short', hour: '2-digit', minute: '2-digit' });
     } else if (timeframe === '1M' || timeframe === '3M') {
       return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    } else if (timeframe === '6M' || timeframe === '1Y') {
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     } else {
+      // 5Y, MAX
       return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
     }
   } catch (e) {
