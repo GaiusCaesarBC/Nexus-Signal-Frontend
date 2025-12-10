@@ -19,8 +19,8 @@ import {
     CheckCircle, XCircle, ArrowUp, ArrowDown, Users, Radio
 } from 'lucide-react';
 import {
-    ComposedChart, Bar, XAxis, YAxis, CartesianGrid,
-    Tooltip, ResponsiveContainer, ReferenceLine, Rectangle
+    AreaChart, Area, XAxis, YAxis, CartesianGrid,
+    Tooltip, ResponsiveContainer, ReferenceLine
 } from 'recharts';
 
 // ============ ANIMATIONS ============
@@ -1646,35 +1646,25 @@ const PredictionsPage = () => {
         return () => clearInterval(interval);
     }, [liveData?.timeRemaining]);
 
-    // Generate chart data
+    // Generate chart data for price projection line
     const generateChartData = (currentPrice, targetPrice, days) => {
         const data = [];
         const priceChange = targetPrice - currentPrice;
-        const volatility = currentPrice * 0.025;
-        
-        let prevClose = currentPrice;
-        
+
         for (let i = 0; i <= days; i++) {
             const progress = i / days;
-            const trendPrice = currentPrice + (priceChange * progress);
-            
-            const randomFactor = (Math.random() - 0.5) * 2;
-            const open = i === 0 ? currentPrice : prevClose;
-            const close = trendPrice + (randomFactor * volatility * 0.5);
-            const high = Math.max(open, close) + (Math.random() * volatility * 0.8);
-            const low = Math.min(open, close) - (Math.random() * volatility * 0.8);
-            
-            prevClose = close;
-            
+            // Smooth curve using easing function
+            const easedProgress = progress < 0.5
+                ? 2 * progress * progress
+                : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+
+            const predictedPrice = currentPrice + (priceChange * easedProgress);
+
             data.push({
                 day: i === 0 ? 'Today' : `Day ${i}`,
-                open: parseFloat(open.toFixed(2)),
-                high: parseFloat(high.toFixed(2)),
-                low: parseFloat(low.toFixed(2)),
-                close: parseFloat(close.toFixed(2)),
-                openClose: [parseFloat(open.toFixed(2)), parseFloat(close.toFixed(2))],
-                highLow: [parseFloat(low.toFixed(2)), parseFloat(high.toFixed(2))],
-                isUp: close >= open
+                price: parseFloat(predictedPrice.toFixed(2)),
+                currentPrice: parseFloat(currentPrice.toFixed(2)),
+                targetPrice: parseFloat(targetPrice.toFixed(2))
             });
         }
         return data;
@@ -2238,44 +2228,60 @@ const handleShare = (platform) => {
                                     <ChartSection theme={theme}>
                                         <ChartTitle theme={theme}><Activity size={20} /> Price Projection</ChartTitle>
                                         <ResponsiveContainer width="100%" height={350}>
-                                            <ComposedChart data={prediction.chartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                                            <AreaChart data={prediction.chartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                                                <defs>
+                                                    <linearGradient id="priceGradient" x1="0" y1="0" x2="0" y2="1">
+                                                        <stop offset="0%" stopColor={prediction.prediction.direction === 'UP' ? successColor : errorColor} stopOpacity={0.4} />
+                                                        <stop offset="100%" stopColor={prediction.prediction.direction === 'UP' ? successColor : errorColor} stopOpacity={0.05} />
+                                                    </linearGradient>
+                                                </defs>
                                                 <CartesianGrid strokeDasharray="3 3" stroke={`${accentColor}33`} />
-                                                <XAxis dataKey="day" tick={{ fill: theme?.text?.secondary || '#94a3b8', fontSize: 12 }} axisLine={{ stroke: `${accentColor}4D` }} />
-                                                <YAxis domain={['auto', 'auto']} tick={{ fill: theme?.text?.secondary || '#94a3b8', fontSize: 12 }} axisLine={{ stroke: `${accentColor}4D` }} tickFormatter={v => `$${v.toFixed(0)}`} />
+                                                <XAxis
+                                                    dataKey="day"
+                                                    tick={{ fill: theme?.text?.secondary || '#94a3b8', fontSize: 12 }}
+                                                    axisLine={{ stroke: `${accentColor}4D` }}
+                                                />
+                                                <YAxis
+                                                    domain={['auto', 'auto']}
+                                                    tick={{ fill: theme?.text?.secondary || '#94a3b8', fontSize: 12 }}
+                                                    axisLine={{ stroke: `${accentColor}4D` }}
+                                                    tickFormatter={v => formatPredictionPrice(v, prediction.symbol)}
+                                                />
                                                 <Tooltip
-                                                    contentStyle={{ 
-                                                        backgroundColor: theme?.bg?.card || 'rgba(15, 23, 42, 0.95)', 
-                                                        border: `1px solid ${accentColor}66`, 
+                                                    contentStyle={{
+                                                        backgroundColor: theme?.bg?.card || 'rgba(15, 23, 42, 0.95)',
+                                                        border: `1px solid ${accentColor}66`,
                                                         borderRadius: '12px',
                                                         color: theme?.text?.primary || '#e0e6ed'
                                                     }}
-                                                   formatter={(value, name) => {
-    if (Array.isArray(value)) {
-        return [
-            `${formatPredictionPrice(value[0], prediction.symbol)} - ${formatPredictionPrice(value[1], prediction.symbol)}`,
-            name
-        ];
-    }
-    return [formatPredictionPrice(value, prediction.symbol), name];
-}}
+                                                    formatter={(value) => [formatPredictionPrice(value, prediction.symbol), 'Predicted Price']}
+                                                    labelFormatter={(label) => label}
                                                 />
-                                                <ReferenceLine y={prediction.current_price} stroke={primaryColor} strokeDasharray="5 5" label={{ value: 'Current', fill: primaryColor, fontSize: 12 }} />
-                                                <ReferenceLine y={prediction.prediction.target_price} stroke={prediction.prediction.direction === 'UP' ? successColor : errorColor} strokeDasharray="5 5" label={{ value: 'Target', fill: prediction.prediction.direction === 'UP' ? successColor : errorColor, fontSize: 12 }} />
-                                                <Bar dataKey="highLow" fill="transparent" shape={(props) => {
-                                                    const { x, y, width, height, payload } = props;
-                                                    const color = payload.isUp ? successColor : errorColor;
-                                                    return <Rectangle x={x + width / 2 - 1} y={y} width={2} height={height} fill={color} />;
-                                                }} />
-                                                <Bar dataKey="openClose" shape={(props) => {
-                                                    const { x, y, width, height, payload } = props;
-                                                    const color = payload.isUp ? successColor : errorColor;
-                                                    return <Rectangle x={x} y={y} width={width} height={Math.max(height, 4)} fill={color} radius={[4, 4, 4, 4]} />;
-                                                }} />
-                                            </ComposedChart>
+                                                <ReferenceLine
+                                                    y={prediction.current_price}
+                                                    stroke={primaryColor}
+                                                    strokeDasharray="5 5"
+                                                    label={{ value: 'Current', fill: primaryColor, fontSize: 12, position: 'left' }}
+                                                />
+                                                <ReferenceLine
+                                                    y={prediction.prediction.target_price}
+                                                    stroke={prediction.prediction.direction === 'UP' ? successColor : errorColor}
+                                                    strokeDasharray="5 5"
+                                                    label={{ value: 'Target', fill: prediction.prediction.direction === 'UP' ? successColor : errorColor, fontSize: 12, position: 'right' }}
+                                                />
+                                                <Area
+                                                    type="monotone"
+                                                    dataKey="price"
+                                                    stroke={prediction.prediction.direction === 'UP' ? successColor : errorColor}
+                                                    strokeWidth={3}
+                                                    fill="url(#priceGradient)"
+                                                    dot={{ fill: prediction.prediction.direction === 'UP' ? successColor : errorColor, strokeWidth: 2, r: 4 }}
+                                                    activeDot={{ r: 6, strokeWidth: 2 }}
+                                                />
+                                            </AreaChart>
                                         </ResponsiveContainer>
                                         <ChartLegend>
-                                            <LegendItem><LegendColor color={successColor} /><LegendText theme={theme}>Bullish Day</LegendText></LegendItem>
-                                            <LegendItem><LegendColor color={errorColor} /><LegendText theme={theme}>Bearish Day</LegendText></LegendItem>
+                                            <LegendItem><LegendColor color={prediction.prediction.direction === 'UP' ? successColor : errorColor} /><LegendText theme={theme}>Predicted Price Path</LegendText></LegendItem>
                                             <LegendItem><LegendColor color={primaryColor} /><LegendText theme={theme}>Current Price</LegendText></LegendItem>
                                         </ChartLegend>
                                     </ChartSection>
