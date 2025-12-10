@@ -681,6 +681,7 @@ const RegisterPage = () => {
                                         placeholder="Choose a username"
                                         value={username}
                                         onChange={(e) => setUsername(e.target.value)}
+                                        autoComplete="username"
                                         $hasSuccess={username && validations.username}
                                         required
                                     />
@@ -708,6 +709,7 @@ const RegisterPage = () => {
                                         placeholder="your@email.com"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
+                                        autoComplete="email"
                                         $hasSuccess={email && validations.email}
                                         $hasError={email && !validations.email}
                                         required
@@ -736,6 +738,7 @@ const RegisterPage = () => {
                                         placeholder="Create a strong password"
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
+                                        autoComplete="new-password"
                                         $hasSuccess={password && validations.password}
                                         $hasError={password && !validations.password}
                                         required
@@ -771,6 +774,7 @@ const RegisterPage = () => {
                                         placeholder="Re-enter your password"
                                         value={confirmPassword}
                                         onChange={(e) => setConfirmPassword(e.target.value)}
+                                        autoComplete="new-password"
                                         $hasSuccess={confirmPassword && validations.confirmPassword}
                                         $hasError={confirmPassword && !validations.confirmPassword}
                                         required

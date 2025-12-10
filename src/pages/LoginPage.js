@@ -598,6 +598,7 @@ const LoginPage = () => {
                                         placeholder="your@email.com"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
+                                        autoComplete="email"
                                         required
                                     />
                                     <InputIcon>
@@ -615,6 +616,7 @@ const LoginPage = () => {
                                         placeholder="••••••••••"
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
+                                        autoComplete="current-password"
                                         required
                                     />
                                     <InputIcon>
