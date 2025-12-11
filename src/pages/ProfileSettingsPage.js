@@ -3,13 +3,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
+import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import {
     User, Lock, Globe, Eye, EyeOff, Save, X,
     Camera, Upload, AlertCircle, Settings,
     Shield, UserCircle, Image as ImageIcon,
-    Info, RefreshCw, Check, Sparkles
+    Info, RefreshCw, Check, Sparkles, Loader
 } from 'lucide-react';
 import usersAPI from '../api/users';
 
@@ -32,29 +33,29 @@ const ProfileSettingsPage = () => {
     
     const [avatarFile, setAvatarFile] = useState(null);
     const [avatarPreview, setAvatarPreview] = useState('');
+    const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
     useEffect(() => {
         fetchProfile();
     }, []);
 
-    // Track changes
+    // Track changes (avatar is handled separately via immediate upload)
     useEffect(() => {
         if (profile) {
             const originalDisplayName = profile.profile?.displayName || profile.username || '';
             const originalBio = profile.profile?.bio || '';
             const originalIsPublic = profile.profile?.isPublic || false;
             const originalShowPortfolio = profile.profile?.showPortfolio || false;
-            
-            const changed = 
+
+            const changed =
                 displayName !== originalDisplayName ||
                 bio !== originalBio ||
                 isPublic !== originalIsPublic ||
-                showPortfolio !== originalShowPortfolio ||
-                avatarPreview !== '';
-            
+                showPortfolio !== originalShowPortfolio;
+
             setHasChanges(changed);
         }
-    }, [displayName, bio, isPublic, showPortfolio, avatarPreview, profile]);
+    }, [displayName, bio, isPublic, showPortfolio, profile]);
 
     const fetchProfile = async () => {
         setLoading(true);
@@ -76,27 +77,64 @@ const ProfileSettingsPage = () => {
         }
     };
 
-    const handleAvatarChange = (e) => {
+    const handleAvatarChange = async (e) => {
         const file = e.target.files[0];
         if (file) {
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                toast.error('Please select an image file');
+                return;
+            }
+
             if (file.size > 5 * 1024 * 1024) {
                 toast.error('Image must be smaller than 5MB');
                 return;
             }
 
             setAvatarFile(file);
-            
+
+            // Show preview immediately
             const reader = new FileReader();
             reader.onloadend = () => {
                 setAvatarPreview(reader.result);
             };
             reader.readAsDataURL(file);
+
+            // Upload to Cloudinary immediately
+            setUploadingAvatar(true);
+            try {
+                const formData = new FormData();
+                formData.append('avatar', file);
+
+                const response = await axios.post(
+                    `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/auth/upload-avatar`,
+                    formData,
+                    {
+                        headers: { 'Content-Type': 'multipart/form-data' },
+                        withCredentials: true
+                    }
+                );
+
+                if (response.data.success) {
+                    // Update avatar with Cloudinary URL
+                    setAvatar(response.data.avatarUrl);
+                    setAvatarPreview(''); // Clear preview since we have the real URL now
+                    toast.success('Avatar uploaded successfully!');
+                }
+            } catch (err) {
+                console.error('Error uploading avatar:', err);
+                toast.error(err.response?.data?.msg || 'Failed to upload avatar');
+                setAvatarPreview(''); // Clear failed preview
+            } finally {
+                setUploadingAvatar(false);
+                setAvatarFile(null);
+            }
         }
     };
 
     const handleSave = async () => {
         setSaving(true);
-        
+
         try {
             if (displayName.length < 3) {
                 toast.error('Display name must be at least 3 characters');
@@ -117,19 +155,16 @@ const ProfileSettingsPage = () => {
                 showPortfolio,
             };
 
-            if (avatarPreview) {
-                updateData.avatar = avatarPreview;
-            }
-
+            // Update profile via API
             await usersAPI.updateProfile(updateData);
-            
+
             toast.success('Profile updated successfully!');
             setHasChanges(false);
             await fetchProfile();
-            
+
         } catch (error) {
             console.error('Error saving profile:', error);
-            toast.error(error.response?.data?.msg || 'Failed to update profile');
+            toast.error(error.response?.data?.error || 'Failed to update profile');
         } finally {
             setSaving(false);
         }
@@ -192,16 +227,21 @@ const ProfileSettingsPage = () => {
                         </PreviewHeader>
                         
                         <PreviewContent>
-                            <AvatarPreview 
-                                onClick={() => document.getElementById('avatar-upload').click()}
+                            <AvatarPreview
+                                onClick={() => !uploadingAvatar && document.getElementById('avatar-upload').click()}
+                                style={uploadingAvatar ? { cursor: 'wait' } : {}}
                             >
                                 {avatarPreview || avatar ? (
-                                    <AvatarImage src={avatarPreview || avatar} alt="Avatar" />
+                                    <AvatarImage src={avatarPreview || avatar} alt="Avatar" style={uploadingAvatar ? { opacity: 0.5 } : {}} />
                                 ) : (
                                     <AvatarPlaceholder>{getInitials()}</AvatarPlaceholder>
                                 )}
-                                <AvatarOverlay>
-                                    <Camera size={24} />
+                                <AvatarOverlay style={uploadingAvatar ? { opacity: 1, background: 'rgba(0, 0, 0, 0.7)' } : {}}>
+                                    {uploadingAvatar ? (
+                                        <Loader size={24} style={{ animation: 'spin 1s linear infinite' }} />
+                                    ) : (
+                                        <Camera size={24} />
+                                    )}
                                 </AvatarOverlay>
                             </AvatarPreview>
 
@@ -294,20 +334,29 @@ const ProfileSettingsPage = () => {
                                     type="file"
                                     accept="image/*"
                                     onChange={handleAvatarChange}
+                                    disabled={uploadingAvatar}
                                 />
-                                
-                                <UploadArea htmlFor="avatar-upload">
-                                    <Upload size={24} />
-                                    <UploadText>
-                                        {avatarFile ? avatarFile.name : 'Click to upload avatar'}
-                                    </UploadText>
-                                    <UploadHint>JPG, PNG or GIF • Max 5MB • Square recommended</UploadHint>
+
+                                <UploadArea htmlFor="avatar-upload" style={uploadingAvatar ? { opacity: 0.6, pointerEvents: 'none' } : {}}>
+                                    {uploadingAvatar ? (
+                                        <>
+                                            <Loader size={24} style={{ animation: 'spin 1s linear infinite' }} />
+                                            <UploadText>Uploading avatar...</UploadText>
+                                            <UploadHint>Please wait while your image is being uploaded</UploadHint>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Upload size={24} />
+                                            <UploadText>Click to upload avatar</UploadText>
+                                            <UploadHint>JPG, PNG or GIF • Max 5MB • Square recommended</UploadHint>
+                                        </>
+                                    )}
                                 </UploadArea>
 
-                                {avatarPreview && (
-                                    <SuccessBanner>
-                                        <Check size={16} />
-                                        New avatar selected - save to apply
+                                {avatarPreview && !uploadingAvatar && (
+                                    <SuccessBanner style={{ background: 'rgba(59, 130, 246, 0.1)', borderColor: 'rgba(59, 130, 246, 0.3)' }}>
+                                        <Loader size={16} style={{ animation: 'spin 1s linear infinite' }} />
+                                        Uploading...
                                     </SuccessBanner>
                                 )}
                             </SectionContent>
