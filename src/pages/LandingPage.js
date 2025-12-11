@@ -8,7 +8,9 @@ import { useAuth } from '../context/AuthContext';
 import {
     CheckCircle, Zap, Shield, Rocket, TrendingUp, TrendingDown,
     Brain, Sparkles, Target, BarChart3, ArrowRight, Flame, Crown,
-    Users, Activity, Trophy, DollarSign, MessageSquare, Coins, Send, Cloud
+    Users, Activity, Trophy, DollarSign, MessageSquare, Coins, Send, Cloud,
+    UserPlus, LineChart, Gift, Play, Monitor, Smartphone, Bell, Star,
+    ChevronRight, Award, Lock, Layers, Eye, TrendingUp as Chart
 } from 'lucide-react';
 import SEO from '../components/SEO';
 
@@ -161,6 +163,119 @@ const PoweredByItem = styled.a`display: flex; align-items: center; gap: 0.5rem; 
 
 const Footer = styled.footer`padding: 3rem 2rem; border-top: 1px solid rgba(100, 116, 139, 0.1); text-align: center;`;
 const FooterText = styled.p`color: #475569; font-size: 0.9rem;`;
+
+// ============ HOW IT WORKS SECTION ============
+const drawLine = keyframes`from { stroke-dashoffset: 200; } to { stroke-dashoffset: 0; }`;
+const countUp = keyframes`from { opacity: 0; transform: scale(0.5); } to { opacity: 1; transform: scale(1); }`;
+
+const HowItWorksSection = styled.section`padding: 6rem 2rem; background: linear-gradient(180deg, rgba(0, 173, 237, 0.02) 0%, rgba(139, 92, 246, 0.03) 50%, transparent 100%); position: relative; overflow: hidden;`;
+const HowItWorksContainer = styled.div`max-width: 1200px; margin: 0 auto;`;
+const StepsContainer = styled.div`display: flex; justify-content: center; align-items: flex-start; gap: 2rem; margin-top: 4rem; position: relative; @media (max-width: 900px) { flex-direction: column; align-items: center; gap: 3rem; }`;
+const StepConnector = styled.div`position: absolute; top: 60px; left: 50%; transform: translateX(-50%); width: 60%; height: 3px; background: linear-gradient(90deg, #00adef 0%, #8b5cf6 50%, #10b981 100%); opacity: 0.3; @media (max-width: 900px) { display: none; }`;
+const StepCard = styled.div`flex: 1; max-width: 320px; text-align: center; position: relative; animation: ${fadeInUp} 0.8s ease-out; animation-delay: ${p => p.$delay || '0s'}; animation-fill-mode: backwards;`;
+const StepNumber = styled.div`width: 80px; height: 80px; margin: 0 auto 1.5rem; background: ${p => p.$gradient || 'linear-gradient(135deg, #00adef 0%, #0088cc 100%)'}; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: 900; color: white; box-shadow: 0 10px 40px ${p => p.$shadow || 'rgba(0, 173, 237, 0.4)'}; position: relative; animation: ${float} 4s ease-in-out infinite; animation-delay: ${p => p.$floatDelay || '0s'}; &::after { content: ''; position: absolute; inset: -4px; border-radius: 50%; border: 2px solid ${p => p.$borderColor || 'rgba(0, 173, 237, 0.3)'}; animation: ${pulse} 2s ease-in-out infinite; }`;
+const StepIconWrap = styled.div`position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);`;
+const StepTitle = styled.h3`font-size: 1.4rem; font-weight: 800; color: #e0e6ed; margin-bottom: 0.75rem;`;
+const StepDescription = styled.p`font-size: 1rem; color: #94a3b8; line-height: 1.6;`;
+const StepBadge = styled.div`display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0.8rem; background: ${p => p.$bg || 'rgba(0, 173, 237, 0.1)'}; border: 1px solid ${p => p.$border || 'rgba(0, 173, 237, 0.3)'}; border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: ${p => p.$color || '#00adef'}; margin-top: 1rem;`;
+
+// ============ FEATURE DEMOS SECTION ============
+const chartPulse = keyframes`0%, 100% { transform: scaleY(0.3); } 50% { transform: scaleY(1); }`;
+const scanLine = keyframes`0% { top: 0; } 100% { top: 100%; }`;
+const typewriter = keyframes`from { width: 0; } to { width: 100%; }`;
+
+const DemoSection = styled.section`padding: 6rem 2rem; position: relative;`;
+const DemoContainer = styled.div`max-width: 1400px; margin: 0 auto;`;
+const DemoGrid = styled.div`display: grid; grid-template-columns: repeat(2, 1fr); gap: 2rem; margin-top: 3rem; @media (max-width: 1000px) { grid-template-columns: 1fr; }`;
+const DemoCard = styled.div`background: linear-gradient(135deg, rgba(15, 20, 40, 0.95) 0%, rgba(10, 14, 30, 0.98) 100%); border: 1px solid ${p => p.$borderColor || 'rgba(0, 173, 237, 0.2)'}; border-radius: 24px; overflow: hidden; transition: all 0.4s ease; animation: ${fadeIn} 0.8s ease-out; animation-delay: ${p => p.$delay || '0s'}; animation-fill-mode: backwards; &:hover { transform: translateY(-8px); border-color: ${p => p.$hoverBorder || 'rgba(0, 173, 237, 0.5)'}; box-shadow: 0 20px 60px ${p => p.$shadow || 'rgba(0, 173, 237, 0.2)'}; }`;
+const DemoHeader = styled.div`padding: 1.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.05); display: flex; align-items: center; justify-content: space-between;`;
+const DemoTitleGroup = styled.div`display: flex; align-items: center; gap: 0.75rem;`;
+const DemoIconWrap = styled.div`width: 44px; height: 44px; background: ${p => p.$gradient || 'linear-gradient(135deg, #00adef, #0088cc)'}; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white;`;
+const DemoTitle = styled.h4`font-size: 1.1rem; font-weight: 700; color: #e0e6ed;`;
+const DemoSubtitle = styled.p`font-size: 0.8rem; color: #64748b;`;
+const DemoBadge = styled.span`padding: 0.3rem 0.6rem; background: ${p => p.$bg || 'rgba(16, 185, 129, 0.15)'}; color: ${p => p.$color || '#10b981'}; border-radius: 6px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;`;
+const DemoPreview = styled.div`padding: 2rem; min-height: 280px; position: relative; overflow: hidden; background: radial-gradient(ellipse at bottom, rgba(0, 173, 237, 0.05) 0%, transparent 70%);`;
+
+// AI Prediction Demo Styles
+const PredictionDemoWrap = styled.div`display: flex; flex-direction: column; gap: 1rem;`;
+const MiniChart = styled.div`height: 120px; display: flex; align-items: flex-end; gap: 3px; padding: 1rem; background: rgba(0, 0, 0, 0.2); border-radius: 12px; position: relative; overflow: hidden;`;
+const ChartBar = styled.div`flex: 1; background: ${p => p.$up ? 'linear-gradient(180deg, #10b981 0%, #059669 100%)' : 'linear-gradient(180deg, #ef4444 0%, #dc2626 100%)'}; border-radius: 2px 2px 0 0; height: ${p => p.$height}%; animation: ${chartPulse} ${p => p.$duration || '2s'} ease-in-out infinite; animation-delay: ${p => p.$delay || '0s'}; opacity: 0.8;`;
+const PredictionOverlay = styled.div`position: absolute; top: 1rem; right: 1rem; padding: 0.6rem 1rem; background: rgba(16, 185, 129, 0.9); border-radius: 8px; color: white; font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; gap: 0.4rem; animation: ${pulse} 2s ease-in-out infinite;`;
+const AnalysisRow = styled.div`display: flex; justify-content: space-between; padding: 0.75rem; background: rgba(255, 255, 255, 0.03); border-radius: 8px; border-left: 3px solid ${p => p.$color || '#00adef'};`;
+const AnalysisLabel = styled.span`font-size: 0.85rem; color: #94a3b8;`;
+const AnalysisValue = styled.span`font-size: 0.85rem; font-weight: 700; color: ${p => p.$color || '#e0e6ed'};`;
+
+// Paper Trading Demo Styles
+const TradingDemoWrap = styled.div``;
+const TradingHeader = styled.div`display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;`;
+const TradingSymbol = styled.div`font-size: 1.5rem; font-weight: 900; color: #00adef;`;
+const TradingPrice = styled.div`font-size: 1.25rem; font-weight: 700; color: #e0e6ed; span { font-size: 0.9rem; color: #10b981; margin-left: 0.5rem; }`;
+const TradingActions = styled.div`display: flex; gap: 0.75rem; margin-top: 1rem;`;
+const TradingButton = styled.div`flex: 1; padding: 0.75rem; text-align: center; border-radius: 10px; font-weight: 700; font-size: 0.9rem; background: ${p => p.$buy ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #ef4444, #dc2626)'}; color: white; cursor: default;`;
+const PortfolioPreview = styled.div`margin-top: 1.25rem; padding: 1rem; background: rgba(0, 0, 0, 0.2); border-radius: 12px;`;
+const PortfolioRow = styled.div`display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid rgba(255, 255, 255, 0.05); &:last-child { border-bottom: none; }`;
+const PortfolioLabel = styled.span`font-size: 0.85rem; color: #64748b;`;
+const PortfolioValue = styled.span`font-size: 0.9rem; font-weight: 600; color: ${p => p.$color || '#e0e6ed'};`;
+
+// Social Demo Styles
+const SocialDemoWrap = styled.div`display: flex; flex-direction: column; gap: 0.75rem;`;
+const SocialPost = styled.div`padding: 1rem; background: rgba(255, 255, 255, 0.03); border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.05); animation: ${slideUp} 0.5s ease-out; animation-delay: ${p => p.$delay || '0s'}; animation-fill-mode: backwards;`;
+const SocialHeader = styled.div`display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;`;
+const SocialAvatar = styled.div`width: 36px; height: 36px; border-radius: 50%; background: ${p => p.$bg || 'linear-gradient(135deg, #00adef, #8b5cf6)'}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 0.85rem;`;
+const SocialName = styled.span`font-weight: 600; color: #e0e6ed; font-size: 0.9rem;`;
+const SocialTime = styled.span`font-size: 0.75rem; color: #64748b; margin-left: auto;`;
+const SocialContent = styled.p`font-size: 0.85rem; color: #94a3b8; line-height: 1.5;`;
+const SocialStats = styled.div`display: flex; gap: 1rem; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid rgba(255, 255, 255, 0.05);`;
+const SocialStat = styled.span`font-size: 0.75rem; color: #64748b; display: flex; align-items: center; gap: 0.3rem;`;
+
+// Gamification Demo Styles
+const GamificationDemoWrap = styled.div``;
+const XPBar = styled.div`height: 24px; background: rgba(0, 0, 0, 0.3); border-radius: 12px; overflow: hidden; position: relative; margin-bottom: 1rem;`;
+const XPFill = styled.div`height: 100%; width: ${p => p.$percent || '0%'}; background: linear-gradient(90deg, #8b5cf6 0%, #a78bfa 50%, #c4b5fd 100%); border-radius: 12px; transition: width 1s ease-out; position: relative; &::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(255,255,255,0.2) 0%, transparent 50%); }`;
+const XPText = styled.div`position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 0.75rem; font-weight: 700; color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.5);`;
+const LevelBadge = styled.div`display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(168, 123, 250, 0.1)); border: 1px solid rgba(139, 92, 246, 0.4); border-radius: 20px; margin-bottom: 1rem;`;
+const LevelNumber = styled.span`font-size: 1.25rem; font-weight: 900; color: #a78bfa;`;
+const LevelText = styled.span`font-size: 0.85rem; color: #94a3b8;`;
+const AchievementGrid = styled.div`display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-top: 1rem;`;
+const AchievementBadge = styled.div`aspect-ratio: 1; background: ${p => p.$unlocked ? 'linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.1))' : 'rgba(0, 0, 0, 0.2)'}; border: 1px solid ${p => p.$unlocked ? 'rgba(251, 191, 36, 0.4)' : 'rgba(255, 255, 255, 0.05)'}; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: ${p => p.$unlocked ? '#fbbf24' : '#475569'}; transition: all 0.3s ease; &:hover { transform: scale(1.1); }`;
+
+// ============ ENHANCED HERO MOCKUP ============
+const floatSlow = keyframes`0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-15px) rotate(2deg); }`;
+const floatFast = keyframes`0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); }`;
+const glowPulse = keyframes`0%, 100% { box-shadow: 0 0 20px rgba(0, 173, 237, 0.3), 0 0 40px rgba(0, 173, 237, 0.1); } 50% { box-shadow: 0 0 30px rgba(0, 173, 237, 0.5), 0 0 60px rgba(0, 173, 237, 0.2); }`;
+const slideInNotif = keyframes`from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); }`;
+const countUpPulse = keyframes`0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); }`;
+
+const HeroWithMockup = styled.div`display: flex; align-items: center; justify-content: center; gap: 4rem; max-width: 1400px; margin: 0 auto; padding: 3rem 2rem 4rem; @media (max-width: 1100px) { flex-direction: column; gap: 2rem; }`;
+const HeroContent = styled.div`flex: 1; text-align: left; max-width: 580px; @media (max-width: 1100px) { text-align: center; }`;
+const MockupContainer = styled.div`flex: 1; position: relative; max-width: 550px; perspective: 1500px; @media (max-width: 1100px) { max-width: 450px; }`;
+const MockupWrapper = styled.div`position: relative; animation: ${floatSlow} 8s ease-in-out infinite;`;
+const DashboardMockup = styled.div`background: linear-gradient(135deg, rgba(15, 20, 40, 0.98) 0%, rgba(10, 14, 30, 0.98) 100%); border: 1px solid rgba(0, 173, 237, 0.3); border-radius: 20px; padding: 1.25rem; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5), 0 0 60px rgba(0, 173, 237, 0.1); animation: ${glowPulse} 4s ease-in-out infinite; transform: rotateY(-5deg) rotateX(5deg); @media (max-width: 600px) { transform: none; }`;
+const MockupHeader = styled.div`display: flex; align-items: center; justify-content: space-between; padding-bottom: 0.75rem; border-bottom: 1px solid rgba(255, 255, 255, 0.05); margin-bottom: 1rem;`;
+const MockupDots = styled.div`display: flex; gap: 6px; span { width: 10px; height: 10px; border-radius: 50%; } span:nth-child(1) { background: #ef4444; } span:nth-child(2) { background: #fbbf24; } span:nth-child(3) { background: #10b981; }`;
+const MockupTitle = styled.div`font-size: 0.8rem; color: #64748b; font-weight: 600;`;
+const MockupPortfolio = styled.div`display: flex; align-items: flex-end; gap: 1rem; margin-bottom: 1rem;`;
+const MockupValue = styled.div`font-size: 2rem; font-weight: 900; color: #e0e6ed; line-height: 1;`;
+const MockupChange = styled.div`font-size: 0.9rem; font-weight: 700; color: #10b981; display: flex; align-items: center; gap: 4px; padding-bottom: 4px;`;
+const MockupChart = styled.div`height: 80px; display: flex; align-items: flex-end; gap: 4px; background: rgba(0, 0, 0, 0.2); border-radius: 8px; padding: 0.75rem; margin-bottom: 1rem;`;
+const MockupBar = styled.div`flex: 1; background: ${p => p.$color || 'linear-gradient(180deg, #00adef 0%, #0088cc 100%)'}; border-radius: 3px 3px 0 0; height: ${p => p.$h}%;`;
+const MockupPositions = styled.div`display: flex; gap: 0.5rem;`;
+const MockupPosition = styled.div`flex: 1; background: rgba(255, 255, 255, 0.03); border-radius: 8px; padding: 0.6rem;`;
+const MockupSymbol = styled.div`font-size: 0.8rem; font-weight: 700; color: #00adef;`;
+const MockupPL = styled.div`font-size: 0.75rem; font-weight: 600; color: ${p => p.$up ? '#10b981' : '#ef4444'};`;
+
+const FloatingNotification = styled.div`position: absolute; background: rgba(15, 20, 40, 0.95); border: 1px solid ${p => p.$color || 'rgba(16, 185, 129, 0.4)'}; border-radius: 12px; padding: 0.75rem 1rem; display: flex; align-items: center; gap: 0.6rem; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); animation: ${slideInNotif} 0.6s ease-out forwards, ${floatFast} 4s ease-in-out infinite; animation-delay: ${p => p.$delay || '0s'}, ${p => p.$floatDelay || '0s'}; ${p => p.$top && `top: ${p.$top};`} ${p => p.$bottom && `bottom: ${p.$bottom};`} ${p => p.$left && `left: ${p.$left};`} ${p => p.$right && `right: ${p.$right};`} @media (max-width: 600px) { display: none; }`;
+const NotifIcon = styled.div`width: 32px; height: 32px; border-radius: 8px; background: ${p => p.$bg || 'rgba(16, 185, 129, 0.2)'}; display: flex; align-items: center; justify-content: center; color: ${p => p.$color || '#10b981'};`;
+const NotifText = styled.div`font-size: 0.75rem; color: #e0e6ed; font-weight: 500;`;
+const NotifValue = styled.div`font-size: 0.85rem; font-weight: 700; color: ${p => p.$color || '#10b981'};`;
+
+// ============ ANIMATED STAT COUNTERS ============
+const StatCountersSection = styled.section`padding: 4rem 2rem; background: linear-gradient(180deg, rgba(0, 173, 237, 0.03) 0%, transparent 100%);`;
+const StatCountersContainer = styled.div`max-width: 1000px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: 2rem; @media (max-width: 800px) { grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }`;
+const StatCounter = styled.div`text-align: center; padding: 1.5rem; background: linear-gradient(135deg, rgba(20, 27, 45, 0.6) 0%, rgba(10, 14, 39, 0.6) 100%); border: 1px solid rgba(0, 173, 237, 0.15); border-radius: 16px; transition: all 0.3s ease; &:hover { transform: translateY(-5px); border-color: rgba(0, 173, 237, 0.3); }`;
+const StatCounterIcon = styled.div`width: 50px; height: 50px; margin: 0 auto 1rem; border-radius: 12px; background: ${p => p.$bg || 'rgba(0, 173, 237, 0.15)'}; display: flex; align-items: center; justify-content: center; color: ${p => p.$color || '#00adef'};`;
+const StatCounterValue = styled.div`font-size: 2.5rem; font-weight: 900; color: ${p => p.$color || '#00adef'}; margin-bottom: 0.5rem; animation: ${countUpPulse} 2s ease-in-out infinite; @media (max-width: 600px) { font-size: 2rem; }`;
+const StatCounterLabel = styled.div`font-size: 0.9rem; color: #94a3b8; font-weight: 500;`;
 
 // ============ COMPONENT ============
 const LandingPage = () => {
@@ -407,7 +522,7 @@ const fetchTopTraders = async () => {
                                 <HighlightLabel>Top Trader Return</HighlightLabel>
                             </HighlightText>
                         </AnnouncementHighlight>
-                        <LaunchBadge><LaunchLabel>🚀 Official Launch</LaunchLabel><LaunchDate>March 1, 2026</LaunchDate><LaunchSubtext>Join the beta now!</LaunchSubtext></LaunchBadge>
+                        <LaunchBadge><LaunchLabel>🚀 Official Launch</LaunchLabel><LaunchDate>March 2026</LaunchDate><LaunchSubtext>Join the beta now!</LaunchSubtext></LaunchBadge>
                         <AnnouncementHighlight $delay="0.2s">
                             <HighlightIcon $gradient="linear-gradient(135deg, #10b981, #059669)"><Target size={24} /></HighlightIcon>
                             <HighlightText>
@@ -455,15 +570,319 @@ const fetchTopTraders = async () => {
                     </ShowcaseContainer>
                 </ShowcaseSection>
 
-                <HeroSection>
-                    <HeroBadge><Sparkles size={16} />AI-Powered Social Trading Platform</HeroBadge>
-                    <HeroTitle>Trade Smarter with<br /><span className="gradient">AI-Driven Insights</span></HeroTitle>
-                    <HeroSubtitle>Harness machine learning predictions, real-time market data, and social trading to make better investment decisions. Practice risk-free with paper trading.</HeroSubtitle>
-                    <HeroCTA>
-                        <PrimaryButton onClick={() => navigate(isAuthenticated ? '/dashboard' : '/register')}><Rocket size={20} />Start Trading Free<ArrowRight size={18} /></PrimaryButton>
-                        <SecondaryButton onClick={() => navigate('/leaderboard')}><Trophy size={20} />View Leaderboard</SecondaryButton>
-                    </HeroCTA>
-                </HeroSection>
+                {/* Enhanced Hero with Dashboard Mockup */}
+                <HeroWithMockup>
+                    <HeroContent>
+                        <HeroBadge><Sparkles size={16} />AI-Powered Social Trading Platform</HeroBadge>
+                        <HeroTitle>Trade Smarter with<br /><span className="gradient">AI-Driven Insights</span></HeroTitle>
+                        <HeroSubtitle>Harness machine learning predictions, real-time market data, and social trading to make better investment decisions. Practice risk-free with paper trading.</HeroSubtitle>
+                        <HeroCTA style={{ justifyContent: 'flex-start' }}>
+                            <PrimaryButton onClick={() => navigate(isAuthenticated ? '/dashboard' : '/register')}><Rocket size={20} />Start Trading Free<ArrowRight size={18} /></PrimaryButton>
+                            <SecondaryButton onClick={() => navigate('/leaderboard')}><Trophy size={20} />View Leaderboard</SecondaryButton>
+                        </HeroCTA>
+                    </HeroContent>
+                    <MockupContainer>
+                        <MockupWrapper>
+                            <DashboardMockup>
+                                <MockupHeader>
+                                    <MockupDots><span></span><span></span><span></span></MockupDots>
+                                    <MockupTitle>Portfolio Overview</MockupTitle>
+                                </MockupHeader>
+                                <MockupPortfolio>
+                                    <MockupValue>$127,845.32</MockupValue>
+                                    <MockupChange><TrendingUp size={16} />+27.8%</MockupChange>
+                                </MockupPortfolio>
+                                <MockupChart>
+                                    {[40, 55, 45, 60, 50, 75, 65, 80, 70, 85, 75, 95].map((h, i) => (
+                                        <MockupBar key={i} $h={h} $color={i > 5 ? 'linear-gradient(180deg, #10b981 0%, #059669 100%)' : undefined} />
+                                    ))}
+                                </MockupChart>
+                                <MockupPositions>
+                                    <MockupPosition>
+                                        <MockupSymbol>NVDA</MockupSymbol>
+                                        <MockupPL $up>+18.4%</MockupPL>
+                                    </MockupPosition>
+                                    <MockupPosition>
+                                        <MockupSymbol>AAPL</MockupSymbol>
+                                        <MockupPL $up>+5.2%</MockupPL>
+                                    </MockupPosition>
+                                    <MockupPosition>
+                                        <MockupSymbol>BTC</MockupSymbol>
+                                        <MockupPL $up>+12.7%</MockupPL>
+                                    </MockupPosition>
+                                </MockupPositions>
+                            </DashboardMockup>
+                            {/* Floating Notifications */}
+                            <FloatingNotification $top="-20px" $right="-40px" $delay="0.3s" $floatDelay="0s" $color="rgba(16, 185, 129, 0.4)">
+                                <NotifIcon $bg="rgba(16, 185, 129, 0.2)" $color="#10b981"><TrendingUp size={16} /></NotifIcon>
+                                <div>
+                                    <NotifText>AI Prediction</NotifText>
+                                    <NotifValue $color="#10b981">NVDA → UP 87%</NotifValue>
+                                </div>
+                            </FloatingNotification>
+                            <FloatingNotification $bottom="60px" $left="-50px" $delay="0.6s" $floatDelay="0.5s" $color="rgba(251, 191, 36, 0.4)">
+                                <NotifIcon $bg="rgba(251, 191, 36, 0.2)" $color="#fbbf24"><Trophy size={16} /></NotifIcon>
+                                <div>
+                                    <NotifText>Achievement!</NotifText>
+                                    <NotifValue $color="#fbbf24">First Trade 🎉</NotifValue>
+                                </div>
+                            </FloatingNotification>
+                            <FloatingNotification $bottom="-10px" $right="20px" $delay="0.9s" $floatDelay="1s" $color="rgba(139, 92, 246, 0.4)">
+                                <NotifIcon $bg="rgba(139, 92, 246, 0.2)" $color="#a78bfa"><Zap size={16} /></NotifIcon>
+                                <div>
+                                    <NotifText>Level Up!</NotifText>
+                                    <NotifValue $color="#a78bfa">+500 XP</NotifValue>
+                                </div>
+                            </FloatingNotification>
+                        </MockupWrapper>
+                    </MockupContainer>
+                </HeroWithMockup>
+
+                {/* How It Works Section */}
+                <HowItWorksSection>
+                    <HowItWorksContainer>
+                        <SectionHeader>
+                            <SectionBadge $bg="rgba(139, 92, 246, 0.1)" $border="rgba(139, 92, 246, 0.3)" $color="#a78bfa">
+                                <Play size={14} />
+                                How It Works
+                            </SectionBadge>
+                            <SectionTitle>Start Trading in 3 Simple Steps</SectionTitle>
+                            <SectionSubtitle>From sign-up to your first trade in minutes. No experience required.</SectionSubtitle>
+                        </SectionHeader>
+                        <StepsContainer>
+                            <StepConnector />
+                            <StepCard $delay="0.1s">
+                                <StepNumber $gradient="linear-gradient(135deg, #00adef, #0088cc)" $shadow="rgba(0, 173, 237, 0.4)" $borderColor="rgba(0, 173, 237, 0.3)" $floatDelay="0s">
+                                    <StepIconWrap><UserPlus size={32} /></StepIconWrap>
+                                </StepNumber>
+                                <StepTitle>Create Your Account</StepTitle>
+                                <StepDescription>Sign up in seconds with just your email. No credit card required, ever.</StepDescription>
+                                <StepBadge $bg="rgba(0, 173, 237, 0.1)" $border="rgba(0, 173, 237, 0.3)" $color="#00adef">
+                                    <Zap size={12} />30 Seconds
+                                </StepBadge>
+                            </StepCard>
+                            <StepCard $delay="0.3s">
+                                <StepNumber $gradient="linear-gradient(135deg, #8b5cf6, #7c3aed)" $shadow="rgba(139, 92, 246, 0.4)" $borderColor="rgba(139, 92, 246, 0.3)" $floatDelay="0.5s">
+                                    <StepIconWrap><Brain size={32} /></StepIconWrap>
+                                </StepNumber>
+                                <StepTitle>Get AI Insights</StepTitle>
+                                <StepDescription>Receive real-time predictions, market signals, and personalized trading recommendations.</StepDescription>
+                                <StepBadge $bg="rgba(139, 92, 246, 0.1)" $border="rgba(139, 92, 246, 0.3)" $color="#a78bfa">
+                                    <Target size={12} />High Accuracy
+                                </StepBadge>
+                            </StepCard>
+                            <StepCard $delay="0.5s">
+                                <StepNumber $gradient="linear-gradient(135deg, #10b981, #059669)" $shadow="rgba(16, 185, 129, 0.4)" $borderColor="rgba(16, 185, 129, 0.3)" $floatDelay="1s">
+                                    <StepIconWrap><TrendingUp size={32} /></StepIconWrap>
+                                </StepNumber>
+                                <StepTitle>Trade & Learn</StepTitle>
+                                <StepDescription>Practice with $100K virtual money, compete on leaderboards, and level up your skills.</StepDescription>
+                                <StepBadge $bg="rgba(16, 185, 129, 0.1)" $border="rgba(16, 185, 129, 0.3)" $color="#10b981">
+                                    <Shield size={12} />Risk-Free
+                                </StepBadge>
+                            </StepCard>
+                        </StepsContainer>
+                    </HowItWorksContainer>
+                </HowItWorksSection>
+
+                {/* Feature Demos Section */}
+                <DemoSection>
+                    <DemoContainer>
+                        <SectionHeader>
+                            <SectionBadge $bg="rgba(0, 173, 237, 0.1)" $border="rgba(0, 173, 237, 0.3)" $color="#00adef">
+                                <Eye size={14} />
+                                See It In Action
+                            </SectionBadge>
+                            <SectionTitle>Powerful Features, Beautiful Interface</SectionTitle>
+                            <SectionSubtitle>Experience professional-grade trading tools designed for traders of all levels.</SectionSubtitle>
+                        </SectionHeader>
+                        <DemoGrid>
+                            {/* AI Predictions Demo */}
+                            <DemoCard $delay="0.1s" $borderColor="rgba(16, 185, 129, 0.2)" $hoverBorder="rgba(16, 185, 129, 0.5)" $shadow="rgba(16, 185, 129, 0.15)">
+                                <DemoHeader>
+                                    <DemoTitleGroup>
+                                        <DemoIconWrap $gradient="linear-gradient(135deg, #10b981, #059669)"><Brain size={22} /></DemoIconWrap>
+                                        <div><DemoTitle>AI Predictions</DemoTitle><DemoSubtitle>Machine learning-powered forecasts</DemoSubtitle></div>
+                                    </DemoTitleGroup>
+                                    <DemoBadge>Live</DemoBadge>
+                                </DemoHeader>
+                                <DemoPreview>
+                                    <PredictionDemoWrap>
+                                        <MiniChart>
+                                            {[65, 45, 70, 55, 80, 60, 75, 85, 70, 90, 75, 95].map((h, i) => (
+                                                <ChartBar key={i} $height={h} $up={i > 5} $duration={`${1.5 + i * 0.1}s`} $delay={`${i * 0.1}s`} />
+                                            ))}
+                                            <PredictionOverlay><TrendingUp size={16} />+12.4%</PredictionOverlay>
+                                        </MiniChart>
+                                        <AnalysisRow $color="#10b981">
+                                            <AnalysisLabel>AI Confidence</AnalysisLabel>
+                                            <AnalysisValue $color="#10b981">87%</AnalysisValue>
+                                        </AnalysisRow>
+                                        <AnalysisRow $color="#00adef">
+                                            <AnalysisLabel>Technical Signal</AnalysisLabel>
+                                            <AnalysisValue $color="#00adef">Strong Buy</AnalysisValue>
+                                        </AnalysisRow>
+                                        <AnalysisRow $color="#a78bfa">
+                                            <AnalysisLabel>Sentiment Score</AnalysisLabel>
+                                            <AnalysisValue $color="#a78bfa">Bullish</AnalysisValue>
+                                        </AnalysisRow>
+                                    </PredictionDemoWrap>
+                                </DemoPreview>
+                            </DemoCard>
+
+                            {/* Paper Trading Demo */}
+                            <DemoCard $delay="0.2s" $borderColor="rgba(0, 173, 237, 0.2)" $hoverBorder="rgba(0, 173, 237, 0.5)" $shadow="rgba(0, 173, 237, 0.15)">
+                                <DemoHeader>
+                                    <DemoTitleGroup>
+                                        <DemoIconWrap $gradient="linear-gradient(135deg, #00adef, #0088cc)"><LineChart size={22} /></DemoIconWrap>
+                                        <div><DemoTitle>Paper Trading</DemoTitle><DemoSubtitle>Practice with $100K virtual cash</DemoSubtitle></div>
+                                    </DemoTitleGroup>
+                                    <DemoBadge $bg="rgba(0, 173, 237, 0.15)" $color="#00adef">Risk-Free</DemoBadge>
+                                </DemoHeader>
+                                <DemoPreview>
+                                    <TradingDemoWrap>
+                                        <TradingHeader>
+                                            <TradingSymbol>AAPL</TradingSymbol>
+                                            <TradingPrice>$198.45 <span>+2.34%</span></TradingPrice>
+                                        </TradingHeader>
+                                        <TradingActions>
+                                            <TradingButton $buy>Buy</TradingButton>
+                                            <TradingButton>Sell</TradingButton>
+                                        </TradingActions>
+                                        <PortfolioPreview>
+                                            <PortfolioRow>
+                                                <PortfolioLabel>Portfolio Value</PortfolioLabel>
+                                                <PortfolioValue $color="#10b981">$112,847.50</PortfolioValue>
+                                            </PortfolioRow>
+                                            <PortfolioRow>
+                                                <PortfolioLabel>Today's P/L</PortfolioLabel>
+                                                <PortfolioValue $color="#10b981">+$1,234.80</PortfolioValue>
+                                            </PortfolioRow>
+                                            <PortfolioRow>
+                                                <PortfolioLabel>Win Rate</PortfolioLabel>
+                                                <PortfolioValue>68%</PortfolioValue>
+                                            </PortfolioRow>
+                                        </PortfolioPreview>
+                                    </TradingDemoWrap>
+                                </DemoPreview>
+                            </DemoCard>
+
+                            {/* Social Trading Demo */}
+                            <DemoCard $delay="0.3s" $borderColor="rgba(139, 92, 246, 0.2)" $hoverBorder="rgba(139, 92, 246, 0.5)" $shadow="rgba(139, 92, 246, 0.15)">
+                                <DemoHeader>
+                                    <DemoTitleGroup>
+                                        <DemoIconWrap $gradient="linear-gradient(135deg, #8b5cf6, #7c3aed)"><Users size={22} /></DemoIconWrap>
+                                        <div><DemoTitle>Social Trading</DemoTitle><DemoSubtitle>Learn from top traders</DemoSubtitle></div>
+                                    </DemoTitleGroup>
+                                    <DemoBadge $bg="rgba(139, 92, 246, 0.15)" $color="#a78bfa">Community</DemoBadge>
+                                </DemoHeader>
+                                <DemoPreview>
+                                    <SocialDemoWrap>
+                                        <SocialPost $delay="0s">
+                                            <SocialHeader>
+                                                <SocialAvatar $bg="linear-gradient(135deg, #fbbf24, #f59e0b)">TC</SocialAvatar>
+                                                <SocialName>TopCrypto</SocialName>
+                                                <SocialTime>2m ago</SocialTime>
+                                            </SocialHeader>
+                                            <SocialContent>Just opened a position in NVDA. AI chip demand is insane right now 🚀</SocialContent>
+                                            <SocialStats>
+                                                <SocialStat><Star size={12} />42</SocialStat>
+                                                <SocialStat><MessageSquare size={12} />12</SocialStat>
+                                            </SocialStats>
+                                        </SocialPost>
+                                        <SocialPost $delay="0.2s">
+                                            <SocialHeader>
+                                                <SocialAvatar $bg="linear-gradient(135deg, #10b981, #059669)">MV</SocialAvatar>
+                                                <SocialName>MarketVet</SocialName>
+                                                <SocialTime>5m ago</SocialTime>
+                                            </SocialHeader>
+                                            <SocialContent>BTC breaking resistance at $68K. Next target $72K 📈</SocialContent>
+                                            <SocialStats>
+                                                <SocialStat><Star size={12} />89</SocialStat>
+                                                <SocialStat><MessageSquare size={12} />34</SocialStat>
+                                            </SocialStats>
+                                        </SocialPost>
+                                    </SocialDemoWrap>
+                                </DemoPreview>
+                            </DemoCard>
+
+                            {/* Gamification Demo */}
+                            <DemoCard $delay="0.4s" $borderColor="rgba(251, 191, 36, 0.2)" $hoverBorder="rgba(251, 191, 36, 0.5)" $shadow="rgba(251, 191, 36, 0.15)">
+                                <DemoHeader>
+                                    <DemoTitleGroup>
+                                        <DemoIconWrap $gradient="linear-gradient(135deg, #fbbf24, #f59e0b)"><Trophy size={22} /></DemoIconWrap>
+                                        <div><DemoTitle>Gamification</DemoTitle><DemoSubtitle>Level up & earn rewards</DemoSubtitle></div>
+                                    </DemoTitleGroup>
+                                    <DemoBadge $bg="rgba(251, 191, 36, 0.15)" $color="#fbbf24">Rewards</DemoBadge>
+                                </DemoHeader>
+                                <DemoPreview>
+                                    <GamificationDemoWrap>
+                                        <LevelBadge>
+                                            <Award size={20} color="#a78bfa" />
+                                            <LevelNumber>Level 12</LevelNumber>
+                                            <LevelText>Rising Trader</LevelText>
+                                        </LevelBadge>
+                                        <XPBar>
+                                            <XPFill $percent="72%" />
+                                            <XPText>7,200 / 10,000 XP</XPText>
+                                        </XPBar>
+                                        <div style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: '0.5rem' }}>Achievements Unlocked</div>
+                                        <AchievementGrid>
+                                            <AchievementBadge $unlocked><Trophy size={20} /></AchievementBadge>
+                                            <AchievementBadge $unlocked><Target size={20} /></AchievementBadge>
+                                            <AchievementBadge $unlocked><Flame size={20} /></AchievementBadge>
+                                            <AchievementBadge $unlocked><Star size={20} /></AchievementBadge>
+                                            <AchievementBadge $unlocked><Zap size={20} /></AchievementBadge>
+                                            <AchievementBadge $unlocked><Crown size={20} /></AchievementBadge>
+                                            <AchievementBadge><Lock size={18} /></AchievementBadge>
+                                            <AchievementBadge><Lock size={18} /></AchievementBadge>
+                                        </AchievementGrid>
+                                    </GamificationDemoWrap>
+                                </DemoPreview>
+                            </DemoCard>
+                        </DemoGrid>
+                    </DemoContainer>
+                </DemoSection>
+
+                {/* Animated Platform Stats */}
+                <StatCountersSection>
+                    <StatCountersContainer>
+                        <StatCounter>
+                            <StatCounterIcon $bg="rgba(0, 173, 237, 0.15)" $color="#00adef">
+                                <Users size={24} />
+                            </StatCounterIcon>
+                            <StatCounterValue $color="#00adef">
+                                {stats.totalUsers > 0 ? formatNumber(stats.totalUsers) : '1,000+'}
+                            </StatCounterValue>
+                            <StatCounterLabel>Active Traders</StatCounterLabel>
+                        </StatCounter>
+                        <StatCounter>
+                            <StatCounterIcon $bg="rgba(16, 185, 129, 0.15)" $color="#10b981">
+                                <Brain size={24} />
+                            </StatCounterIcon>
+                            <StatCounterValue $color="#10b981">
+                                {stats.totalPredictions > 0 ? formatNumber(stats.totalPredictions) : '5,000+'}
+                            </StatCounterValue>
+                            <StatCounterLabel>AI Predictions</StatCounterLabel>
+                        </StatCounter>
+                        <StatCounter>
+                            <StatCounterIcon $bg="rgba(251, 191, 36, 0.15)" $color="#fbbf24">
+                                <Target size={24} />
+                            </StatCounterIcon>
+                            <StatCounterValue $color="#fbbf24">
+                                {stats.predictionAccuracy > 0 ? `${stats.predictionAccuracy.toFixed(0)}%` : '85%+'}
+                            </StatCounterValue>
+                            <StatCounterLabel>Accuracy Rate</StatCounterLabel>
+                        </StatCounter>
+                        <StatCounter>
+                            <StatCounterIcon $bg="rgba(139, 92, 246, 0.15)" $color="#a78bfa">
+                                <DollarSign size={24} />
+                            </StatCounterIcon>
+                            <StatCounterValue $color="#a78bfa">$100K</StatCounterValue>
+                            <StatCounterLabel>Free Paper Money</StatCounterLabel>
+                        </StatCounter>
+                    </StatCountersContainer>
+                </StatCountersSection>
 
                 <ActivitySection>
                     <ActivityContainer>
@@ -471,34 +890,63 @@ const fetchTopTraders = async () => {
                         <ActivityGrid>
                             <ActivityFeed>
                                 <ActivityTitle><MessageSquare size={18} />Recent Activity</ActivityTitle>
-                                {recentActivity.length > 0 ? recentActivity.map((a, i) => (<ActivityItem key={a.id || i} $delay={i * 0.1}><ActivityIcon $bg={a.bg} $color={a.color}>{a.icon}</ActivityIcon><ActivityContent><ActivityText><strong>{a.user}</strong> posted: {a.content}</ActivityText><ActivityTime>{a.time}</ActivityTime></ActivityContent></ActivityItem>)) : (<ActivityItem><ActivityIcon $bg="rgba(139, 92, 246, 0.15)" $color="#a78bfa"><Sparkles size={16} /></ActivityIcon><ActivityContent><ActivityText>Join now to see live activity!</ActivityText></ActivityContent></ActivityItem>)}
+                                {recentActivity.length > 0 ? recentActivity.map((a, i) => (<ActivityItem key={a.id || i} $delay={i * 0.1}><ActivityIcon $bg={a.bg} $color={a.color}>{a.icon}</ActivityIcon><ActivityContent><ActivityText><strong>{a.user}</strong> posted: {a.content}</ActivityText><ActivityTime>{a.time}</ActivityTime></ActivityContent></ActivityItem>)) : (
+                                    <>
+                                        <ActivityItem $delay={0}><ActivityIcon $bg="rgba(0, 173, 237, 0.15)" $color="#00adef"><TrendingUp size={16} /></ActivityIcon><ActivityContent><ActivityText><strong>TraderPro</strong> opened position in <strong>NVDA</strong></ActivityText><ActivityTime>Demo</ActivityTime></ActivityContent></ActivityItem>
+                                        <ActivityItem $delay={0.1}><ActivityIcon $bg="rgba(16, 185, 129, 0.15)" $color="#10b981"><Trophy size={16} /></ActivityIcon><ActivityContent><ActivityText><strong>CryptoKing</strong> reached <strong>Level 10</strong></ActivityText><ActivityTime>Demo</ActivityTime></ActivityContent></ActivityItem>
+                                        <ActivityItem $delay={0.2}><ActivityIcon $bg="rgba(139, 92, 246, 0.15)" $color="#a78bfa"><MessageSquare size={16} /></ActivityIcon><ActivityContent><ActivityText><strong>MarketWatch</strong> posted: "BTC looking bullish..."</ActivityText><ActivityTime>Demo</ActivityTime></ActivityContent></ActivityItem>
+                                        <ActivityItem $delay={0.3}><ActivityIcon $bg="rgba(251, 191, 36, 0.15)" $color="#fbbf24"><Sparkles size={16} /></ActivityIcon><ActivityContent><ActivityText>Join the community to see live activity!</ActivityText></ActivityContent></ActivityItem>
+                                    </>
+                                )}
                             </ActivityFeed>
                             <PredictionsFeed>
                                 <ActivityTitle style={{ color: '#10b981' }}><Brain size={18} />Latest AI Predictions</ActivityTitle>
-                                {recentPredictions.length > 0 ? recentPredictions.map((p, i) => (<PredictionItem key={p._id || i}><PredictionSymbol>{p.symbol}</PredictionSymbol><PredictionDirection $up={p.direction === 'UP'}>{p.direction === 'UP' ? <TrendingUp size={14} /> : <TrendingDown size={14} />}{p.direction}</PredictionDirection><PredictionInfo><PredictionTarget>Target: ${p.targetPrice?.toFixed(2)}</PredictionTarget></PredictionInfo><PredictionConfidence>{p.confidence?.toFixed(0)}%</PredictionConfidence></PredictionItem>)) : (<PredictionItem><PredictionSymbol>—</PredictionSymbol><PredictionInfo><PredictionTarget>Sign up to see AI predictions</PredictionTarget></PredictionInfo></PredictionItem>)}
+                                {recentPredictions.length > 0 ? recentPredictions.map((p, i) => (<PredictionItem key={p._id || i}><PredictionSymbol>{p.symbol}</PredictionSymbol><PredictionDirection $up={p.direction === 'UP'}>{p.direction === 'UP' ? <TrendingUp size={14} /> : <TrendingDown size={14} />}{p.direction}</PredictionDirection><PredictionInfo><PredictionTarget>Target: ${p.targetPrice?.toFixed(2)}</PredictionTarget></PredictionInfo><PredictionConfidence>{p.confidence?.toFixed(0)}%</PredictionConfidence></PredictionItem>)) : (
+                                    <>
+                                        <PredictionItem style={{ opacity: 0.7 }}><PredictionSymbol>NVDA</PredictionSymbol><PredictionDirection $up><TrendingUp size={14} />UP</PredictionDirection><PredictionInfo><PredictionTarget>Target: $145.50</PredictionTarget></PredictionInfo><PredictionConfidence>87%</PredictionConfidence></PredictionItem>
+                                        <PredictionItem style={{ opacity: 0.7 }}><PredictionSymbol>AAPL</PredictionSymbol><PredictionDirection $up><TrendingUp size={14} />UP</PredictionDirection><PredictionInfo><PredictionTarget>Target: $198.00</PredictionTarget></PredictionInfo><PredictionConfidence>82%</PredictionConfidence></PredictionItem>
+                                        <PredictionItem style={{ opacity: 0.7 }}><PredictionSymbol>BTC</PredictionSymbol><PredictionDirection $up><TrendingUp size={14} />UP</PredictionDirection><PredictionInfo><PredictionTarget>Target: $72,500</PredictionTarget></PredictionInfo><PredictionConfidence>79%</PredictionConfidence></PredictionItem>
+                                        <PredictionItem><PredictionSymbol style={{ color: '#fbbf24' }}>✨</PredictionSymbol><PredictionInfo><PredictionTarget>Sign up to see live AI predictions</PredictionTarget></PredictionInfo></PredictionItem>
+                                    </>
+                                )}
                             </PredictionsFeed>
                         </ActivityGrid>
                     </ActivityContainer>
                 </ActivitySection>
 
-                {topTraders.length > 0 && (
-                    <TradersSection>
-                        <TradersContainer>
-                            <SectionHeader><SectionBadge $bg="rgba(251, 191, 36, 0.1)" $border="rgba(251, 191, 36, 0.3)" $color="#fbbf24"><Crown size={14} />Leaderboard</SectionBadge><SectionTitle>Top Traders This Month</SectionTitle><SectionSubtitle>Follow the best performers and learn from their strategies.</SectionSubtitle></SectionHeader>
-                            <TradersGrid>
-                                {topTraders.slice(0, 6).map((t, i) => {
-                                    const avatar = getAvatar(t); const name = getDisplayName(t); const username = t.user?.username;
-                                    return (<TraderCard key={t.user?._id || i} $rank={t.rank} $delay={i * 0.1} onClick={() => goToProfile(username)}>
+                <TradersSection>
+                    <TradersContainer>
+                        <SectionHeader><SectionBadge $bg="rgba(251, 191, 36, 0.1)" $border="rgba(251, 191, 36, 0.3)" $color="#fbbf24"><Crown size={14} />Leaderboard</SectionBadge><SectionTitle>Top Traders This Month</SectionTitle><SectionSubtitle>Follow the best performers and learn from their strategies.</SectionSubtitle></SectionHeader>
+                        <TradersGrid>
+                            {topTraders.length > 0 ? topTraders.slice(0, 6).map((t, i) => {
+                                const avatar = getAvatar(t); const name = getDisplayName(t); const username = t.user?.username;
+                                return (<TraderCard key={t.user?._id || i} $rank={t.rank} $delay={i * 0.1} onClick={() => goToProfile(username)}>
+                                    <TraderRank $rank={t.rank}>{t.rank <= 3 ? <Crown size={18} /> : `#${t.rank}`}</TraderRank>
+                                    <TraderAvatar $rank={t.rank}>{avatar ? <img src={avatar} alt={name} /> : getInitials(name)}</TraderAvatar>
+                                    <TraderInfo><TraderName>{name}{t.user?.profile?.verified && <VerifiedBadge><CheckCircle size={14} /></VerifiedBadge>}</TraderName><TraderMeta><TraderStat>{t.totalTrades || 0} trades</TraderStat><TraderStat $highlight>{(t.winRate || 0).toFixed(0)}% win</TraderStat></TraderMeta></TraderInfo>
+                                    <TraderReturn $positive={(t.profitLossPercent || 0) >= 0}>{(t.profitLossPercent || 0) >= 0 ? '+' : ''}{(t.profitLossPercent || 0).toFixed(1)}%</TraderReturn>
+                                </TraderCard>);
+                            }) : (
+                                /* Demo traders for empty state */
+                                [
+                                    { rank: 1, initials: 'TC', name: 'TopCrypto', trades: 156, winRate: 78, return: 127.5 },
+                                    { rank: 2, initials: 'MV', name: 'MarketVet', trades: 203, winRate: 72, return: 89.2 },
+                                    { rank: 3, initials: 'AS', name: 'AlphaSig', trades: 134, winRate: 68, return: 67.8 },
+                                    { rank: 4, initials: 'DT', name: 'DayTrader', trades: 298, winRate: 65, return: 54.3 },
+                                    { rank: 5, initials: 'CP', name: 'CryptoPro', trades: 187, winRate: 71, return: 48.9 },
+                                    { rank: 6, initials: 'SH', name: 'StockHawk', trades: 142, winRate: 67, return: 42.1 }
+                                ].map((t, i) => (
+                                    <TraderCard key={i} $rank={t.rank} $delay={i * 0.1} style={{ opacity: 0.8, cursor: 'default' }}>
                                         <TraderRank $rank={t.rank}>{t.rank <= 3 ? <Crown size={18} /> : `#${t.rank}`}</TraderRank>
-                                        <TraderAvatar $rank={t.rank}>{avatar ? <img src={avatar} alt={name} /> : getInitials(name)}</TraderAvatar>
-                                        <TraderInfo><TraderName>{name}{t.user?.profile?.verified && <VerifiedBadge><CheckCircle size={14} /></VerifiedBadge>}</TraderName><TraderMeta><TraderStat>{t.totalTrades || 0} trades</TraderStat><TraderStat $highlight>{(t.winRate || 0).toFixed(0)}% win</TraderStat></TraderMeta></TraderInfo>
-                                        <TraderReturn $positive={(t.profitLossPercent || 0) >= 0}>{(t.profitLossPercent || 0) >= 0 ? '+' : ''}{(t.profitLossPercent || 0).toFixed(1)}%</TraderReturn>
-                                    </TraderCard>);
-                                })}
-                            </TradersGrid>
-                        </TradersContainer>
-                    </TradersSection>
-                )}
+                                        <TraderAvatar $rank={t.rank}>{t.initials}</TraderAvatar>
+                                        <TraderInfo><TraderName>{t.name}</TraderName><TraderMeta><TraderStat>{t.trades} trades</TraderStat><TraderStat $highlight>{t.winRate}% win</TraderStat></TraderMeta></TraderInfo>
+                                        <TraderReturn $positive>+{t.return}%</TraderReturn>
+                                    </TraderCard>
+                                ))
+                            )}
+                        </TradersGrid>
+                    </TradersContainer>
+                </TradersSection>
 
                 <FeaturesSection>
                     <FeaturesContainer>
