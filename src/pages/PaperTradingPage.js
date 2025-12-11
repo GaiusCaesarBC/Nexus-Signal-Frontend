@@ -2184,7 +2184,7 @@ const PaperTradingPage = () => {
                                                 {order.leverage > 1 && <LeverageBadge theme={theme} $leverage={order.leverage}>{order.leverage}x</LeverageBadge>}
                                                 {order.triggerType && order.triggerType !== 'manual' && <TPSLBadge theme={theme} $type={order.triggerType === 'take_profit' ? 'tp' : order.triggerType === 'stop_loss' ? 'sl' : 'trailing'}>{order.triggerType === 'take_profit' ? '🎯 TP' : order.triggerType === 'stop_loss' ? '🛑 SL' : order.triggerType === 'trailing_stop' ? '📉 Trail' : order.triggerType === 'liquidation' ? '💀 Liq' : 'Auto'}</TPSLBadge>}
                                             </div>
-                                            <OrderTime theme={theme}>{new Date(order.executedAt).toLocaleString()}</OrderTime>
+                                            <OrderTime theme={theme}>{order.executedAt || order.createdAt ? new Date(order.executedAt || order.createdAt).toLocaleString() : 'Just now'}</OrderTime>
                                         </OrderHeader>
                                         <OrderDetails><OrderInfo theme={theme}><OrderSymbol theme={theme}>${order.symbol}</OrderSymbol><OrderQty theme={theme}>× {order.quantity} @ {formatAssetPrice(order.price, order.type)}</OrderQty></OrderInfo><OrderAmount><Amount theme={theme}>{formatCurrency(order.totalAmount)}</Amount>{order.profitLoss !== 0 && <OrderPL theme={theme} $positive={order.profitLoss > 0}>{order.profitLoss > 0 ? '+' : ''}{formatCurrency(order.profitLoss)}</OrderPL>}</OrderAmount></OrderDetails>
                                     </OrderCard>
