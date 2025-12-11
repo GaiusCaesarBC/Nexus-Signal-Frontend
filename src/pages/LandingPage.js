@@ -561,6 +561,10 @@ const fetchTopTraders = async () => {
                                 <Cloud size={16} />
                                 Cloudinary
                             </PoweredByItem>
+                            <PoweredByItem href="https://www.coingecko.com" target="_blank" rel="noopener noreferrer">
+                                <Coins size={16} />
+                                CoinGecko
+                            </PoweredByItem>
                         </PoweredByGrid>
                     </PoweredByContainer>
                 </PoweredBySection>

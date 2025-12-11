@@ -620,6 +620,10 @@ const Footer = () => {
                             <Sparkles size={18} />
                             Cloudinary
                         </PoweredByItem>
+                        <PoweredByItem href="https://www.coingecko.com" target="_blank" rel="noopener noreferrer">
+                            <TrendingUp size={18} />
+                            CoinGecko
+                        </PoweredByItem>
                     </PoweredByGrid>
                 </PoweredBySection>
 
