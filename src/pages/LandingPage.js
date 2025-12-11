@@ -8,7 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import {
     CheckCircle, Zap, Shield, Rocket, TrendingUp, TrendingDown,
     Brain, Sparkles, Target, BarChart3, ArrowRight, Flame, Crown,
-    Users, Activity, Trophy, DollarSign, MessageSquare, Coins
+    Users, Activity, Trophy, DollarSign, MessageSquare, Coins, Send, Cloud
 } from 'lucide-react';
 import SEO from '../components/SEO';
 
@@ -152,6 +152,12 @@ const CTATitle = styled.h2`font-size: clamp(1.8rem, 4vw, 2.5rem); font-weight: 9
 const CTADescription = styled.p`font-size: 1.1rem; color: #94a3b8; margin-bottom: 2rem; max-width: 550px; margin-left: auto; margin-right: auto; position: relative; z-index: 1;`;
 const TrustBadges = styled.div`display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap; margin-top: 2rem; position: relative; z-index: 1;`;
 const TrustBadge = styled.div`display: flex; align-items: center; gap: 0.4rem; color: #64748b; font-size: 0.9rem; svg { color: #10b981; }`;
+
+const PoweredBySection = styled.section`padding: 3rem 2rem; background: linear-gradient(180deg, transparent 0%, rgba(0, 173, 237, 0.02) 100%);`;
+const PoweredByContainer = styled.div`max-width: 1000px; margin: 0 auto; text-align: center;`;
+const PoweredByTitle = styled.div`font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 1.5rem; font-weight: 600;`;
+const PoweredByGrid = styled.div`display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 1rem 2rem; @media (max-width: 768px) { gap: 0.75rem 1.25rem; }`;
+const PoweredByItem = styled.a`display: flex; align-items: center; gap: 0.5rem; color: #94a3b8; text-decoration: none; font-size: 0.85rem; font-weight: 500; padding: 0.5rem 0.75rem; border-radius: 8px; transition: all 0.3s ease; opacity: 0.7; &:hover { opacity: 1; color: #e0e6ed; background: rgba(0, 173, 237, 0.1); transform: translateY(-2px); }`;
 
 const Footer = styled.footer`padding: 3rem 2rem; border-top: 1px solid rgba(100, 116, 139, 0.1); text-align: center;`;
 const FooterText = styled.p`color: #475569; font-size: 0.9rem;`;
@@ -522,6 +528,42 @@ const fetchTopTraders = async () => {
                         </TrustBadges>
                     </CTACard>
                 </CTASection>
+
+                <PoweredBySection>
+                    <PoweredByContainer>
+                        <PoweredByTitle>Powered By</PoweredByTitle>
+                        <PoweredByGrid>
+                            <PoweredByItem href="https://www.alphavantage.co" target="_blank" rel="noopener noreferrer">
+                                <TrendingUp size={16} />
+                                Alpha Vantage
+                            </PoweredByItem>
+                            <PoweredByItem href="https://finance.yahoo.com" target="_blank" rel="noopener noreferrer">
+                                <TrendingUp size={16} />
+                                Yahoo Finance
+                            </PoweredByItem>
+                            <PoweredByItem href="https://stripe.com" target="_blank" rel="noopener noreferrer">
+                                <Zap size={16} />
+                                Stripe
+                            </PoweredByItem>
+                            <PoweredByItem href="https://plaid.com" target="_blank" rel="noopener noreferrer">
+                                <Shield size={16} />
+                                Plaid
+                            </PoweredByItem>
+                            <PoweredByItem href="https://sendgrid.com" target="_blank" rel="noopener noreferrer">
+                                <Send size={16} />
+                                SendGrid
+                            </PoweredByItem>
+                            <PoweredByItem href="https://twilio.com" target="_blank" rel="noopener noreferrer">
+                                <MessageSquare size={16} />
+                                Twilio
+                            </PoweredByItem>
+                            <PoweredByItem href="https://cloudinary.com" target="_blank" rel="noopener noreferrer">
+                                <Cloud size={16} />
+                                Cloudinary
+                            </PoweredByItem>
+                        </PoweredByGrid>
+                    </PoweredByContainer>
+                </PoweredBySection>
 
                 <Footer><FooterText>© {new Date().getFullYear()} Nexus Signal. All rights reserved. • Paper trading only — not financial advice.</FooterText></Footer>
             </ContentWrapper>

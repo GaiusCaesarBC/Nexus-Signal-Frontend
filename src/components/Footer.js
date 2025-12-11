@@ -4,7 +4,7 @@ import styled, { keyframes } from 'styled-components';
 import { Link } from 'react-router-dom';
 import {
     Send, Twitter, Github, MessageSquare,
-    TrendingUp, Zap, Brain, Sparkles, ChevronRight, Star
+    TrendingUp, Zap, Brain, Sparkles, ChevronRight, Star, Shield
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
@@ -365,6 +365,61 @@ const FeatureHighlight = styled.div`
     }
 `;
 
+const PoweredBySection = styled.div`
+    border-top: 1px solid ${props => `${props.theme.brand?.primary || '#00adef'}22`};
+    padding: 2rem 0;
+    margin-bottom: 1rem;
+`;
+
+const PoweredByTitle = styled.div`
+    text-align: center;
+    font-size: 0.8rem;
+    color: ${props => props.theme.text?.tertiary || '#64748b'};
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 1.25rem;
+    font-weight: 600;
+`;
+
+const PoweredByGrid = styled.div`
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1.5rem 2.5rem;
+
+    @media (max-width: 768px) {
+        gap: 1rem 1.5rem;
+    }
+`;
+
+const PoweredByItem = styled.a`
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: ${props => props.theme.text?.secondary || '#94a3b8'};
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 500;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    opacity: 0.7;
+
+    &:hover {
+        opacity: 1;
+        color: ${props => props.theme.text?.primary || '#f8fafc'};
+        background: ${props => `${props.theme.brand?.primary || '#00adef'}15`};
+        transform: translateY(-2px);
+    }
+
+    svg, img {
+        width: 18px;
+        height: 18px;
+        object-fit: contain;
+    }
+`;
+
 // ============ COMPONENT ============
 const Footer = () => {
     const { theme } = useTheme();
@@ -533,6 +588,40 @@ const Footer = () => {
                         </FeatureHighlight>
                     </NewsletterSection>
                 </FooterGrid>
+
+                <PoweredBySection>
+                    <PoweredByTitle>Powered By</PoweredByTitle>
+                    <PoweredByGrid>
+                        <PoweredByItem href="https://www.alphavantage.co" target="_blank" rel="noopener noreferrer">
+                            <TrendingUp size={18} />
+                            Alpha Vantage
+                        </PoweredByItem>
+                        <PoweredByItem href="https://finance.yahoo.com" target="_blank" rel="noopener noreferrer">
+                            <TrendingUp size={18} />
+                            Yahoo Finance
+                        </PoweredByItem>
+                        <PoweredByItem href="https://stripe.com" target="_blank" rel="noopener noreferrer">
+                            <Zap size={18} />
+                            Stripe
+                        </PoweredByItem>
+                        <PoweredByItem href="https://plaid.com" target="_blank" rel="noopener noreferrer">
+                            <Shield size={18} />
+                            Plaid
+                        </PoweredByItem>
+                        <PoweredByItem href="https://sendgrid.com" target="_blank" rel="noopener noreferrer">
+                            <Send size={18} />
+                            SendGrid
+                        </PoweredByItem>
+                        <PoweredByItem href="https://twilio.com" target="_blank" rel="noopener noreferrer">
+                            <MessageSquare size={18} />
+                            Twilio
+                        </PoweredByItem>
+                        <PoweredByItem href="https://cloudinary.com" target="_blank" rel="noopener noreferrer">
+                            <Sparkles size={18} />
+                            Cloudinary
+                        </PoweredByItem>
+                    </PoweredByGrid>
+                </PoweredBySection>
 
                 <FooterBottom>
                     <Copyright>
