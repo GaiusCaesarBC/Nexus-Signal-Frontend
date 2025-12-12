@@ -13,7 +13,7 @@ import {
   DollarSign, BarChart3, Clock, MessageSquare,
   Star, StarOff, Loader2, Zap, PieChart,
   Minus, Plus, ShoppingCart, Share2, Bell, BellOff,
-  Globe, Coins, ArrowUpRight, ArrowDownRight
+  Globe, Coins, ArrowUpRight, ArrowDownRight, AlertTriangle
 } from 'lucide-react';
 
 // Smart price formatter - always uses crypto formatting for crypto page
@@ -632,7 +632,11 @@ const PredictionSignal = styled.div`
     gap: 8px;
     font-size: 20px;
     font-weight: 700;
-    color: ${props => props.$direction === 'Up' ? '#00ff88' : '#ff4757'};
+    color: ${props =>
+      props.$direction === 'Up' ? '#00ff88' :
+      props.$direction === 'Neutral' ? '#f59e0b' :
+      '#ff4757'
+    };
   }
 `;
 
@@ -1594,16 +1598,48 @@ const CryptoPage = () => {
             ) : prediction ? (
               <>
                 <PredictionSignal $direction={prediction.predictedDirection}>
-                  <span className="signal-label">Prediction</span>
+                  <span className="signal-label">
+                    {prediction.signalStrength === 'weak' ? 'Signal' : 'Prediction'}
+                  </span>
                   <span className="signal-value">
                     {prediction.predictedDirection === 'Up' ? (
                       <ArrowUpRight size={20} />
+                    ) : prediction.predictedDirection === 'Neutral' ? (
+                      <AlertTriangle size={20} />
                     ) : (
                       <ArrowDownRight size={20} />
                     )}
-                    {prediction.predictedDirection}
+                    {prediction.predictedDirection === 'Neutral' ? 'No Clear Signal' : prediction.predictedDirection}
                   </span>
                 </PredictionSignal>
+
+                {/* Signal Strength Badge */}
+                {prediction.signalStrength && (
+                  <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    marginBottom: '12px',
+                    background: prediction.signalStrength === 'strong' ? 'rgba(16, 185, 129, 0.2)' :
+                               prediction.signalStrength === 'moderate' ? 'rgba(245, 158, 11, 0.2)' :
+                               'rgba(239, 68, 68, 0.2)',
+                    color: prediction.signalStrength === 'strong' ? '#10b981' :
+                           prediction.signalStrength === 'moderate' ? '#f59e0b' :
+                           '#ef4444',
+                    border: `1px solid ${prediction.signalStrength === 'strong' ? 'rgba(16, 185, 129, 0.4)' :
+                                         prediction.signalStrength === 'moderate' ? 'rgba(245, 158, 11, 0.4)' :
+                                         'rgba(239, 68, 68, 0.4)'}`
+                  }}>
+                    {prediction.signalStrength === 'strong' ? <Zap size={14} /> :
+                     prediction.signalStrength === 'moderate' ? <Activity size={14} /> :
+                     <AlertTriangle size={14} />}
+                    {prediction.signalStrength.charAt(0).toUpperCase() + prediction.signalStrength.slice(1)} Signal
+                  </div>
+                )}
 
                 <ConfidenceBar $value={prediction.confidence || 0}>
                   <div className="header">
@@ -1615,21 +1651,24 @@ const CryptoPage = () => {
                   </div>
                 </ConfidenceBar>
 
-                <PredictionTargets>
-                  <TargetBox $type="current">
-                    <div className="label">Current</div>
-                    <div className="value">{formatPrice(prediction.currentPrice)}</div>
-                  </TargetBox>
-                  <TargetBox $type="predicted" $positive={prediction.percentageChange >= 0}>
-                    <div className="label">Predicted</div>
-                    <div className="value">{formatPrice(prediction.predictedPrice)}</div>
-                    <div className="change">{formatPercent(prediction.percentageChange)}</div>
-                  </TargetBox>
-                </PredictionTargets>
+                {/* Only show price targets for actionable predictions */}
+                {prediction.isActionable !== false && (
+                  <PredictionTargets>
+                    <TargetBox $type="current">
+                      <div className="label">Current</div>
+                      <div className="value">{formatPrice(prediction.currentPrice)}</div>
+                    </TargetBox>
+                    <TargetBox $type="predicted" $positive={prediction.percentageChange >= 0}>
+                      <div className="label">Predicted</div>
+                      <div className="value">{formatPrice(prediction.predictedPrice)}</div>
+                      <div className="change">{formatPercent(prediction.percentageChange)}</div>
+                    </TargetBox>
+                  </PredictionTargets>
+                )}
 
-                {prediction.message && (
+                {(prediction.predictionMessage || prediction.message) && (
                   <PredictionMessage>
-                    <strong>Analysis:</strong> {prediction.message}
+                    <strong>Analysis:</strong> {prediction.predictionMessage || prediction.message}
                   </PredictionMessage>
                 )}
               </>

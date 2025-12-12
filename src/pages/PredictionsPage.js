@@ -827,16 +827,51 @@ const DirectionBadge = styled.div`
     align-items: center;
     gap: 0.75rem;
     padding: 1rem 2rem;
-    background: ${props => props.$up ? 
-        `linear-gradient(135deg, ${props.theme?.success || '#10b981'}4D 0%, ${props.theme?.success || '#059669'}4D 100%)` : 
-        `linear-gradient(135deg, ${props.theme?.error || '#ef4444'}4D 0%, ${props.theme?.error || '#dc2626'}4D 100%)`
-    };
-    border: 2px solid ${props => props.$up ? `${props.theme?.success || '#10b981'}80` : `${props.theme?.error || '#ef4444'}80`};
+    background: ${props => {
+        if (props.$neutral) return `linear-gradient(135deg, ${props.theme?.warning || '#f59e0b'}4D 0%, ${props.theme?.warning || '#d97706'}4D 100%)`;
+        return props.$up ?
+            `linear-gradient(135deg, ${props.theme?.success || '#10b981'}4D 0%, ${props.theme?.success || '#059669'}4D 100%)` :
+            `linear-gradient(135deg, ${props.theme?.error || '#ef4444'}4D 0%, ${props.theme?.error || '#dc2626'}4D 100%)`;
+    }};
+    border: 2px solid ${props => {
+        if (props.$neutral) return `${props.theme?.warning || '#f59e0b'}80`;
+        return props.$up ? `${props.theme?.success || '#10b981'}80` : `${props.theme?.error || '#ef4444'}80`;
+    }};
     border-radius: 16px;
-    color: ${props => props.$up ? (props.theme?.success || '#10b981') : (props.theme?.error || '#ef4444')};
+    color: ${props => {
+        if (props.$neutral) return props.theme?.warning || '#f59e0b';
+        return props.$up ? (props.theme?.success || '#10b981') : (props.theme?.error || '#ef4444');
+    }};
     font-size: 1.5rem;
     font-weight: 900;
-    animation: ${slideInRight} 0.6s ease-out, ${pulse} 2s ease-in-out infinite 1s;
+    animation: ${slideInRight} 0.6s ease-out, ${props => props.$neutral ? 'none' : pulse} 2s ease-in-out infinite 1s;
+`;
+
+const SignalStrengthBadge = styled.div`
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: ${props => {
+        if (props.$strength === 'strong') return `${props.theme?.success || '#10b981'}20`;
+        if (props.$strength === 'moderate') return `${props.theme?.warning || '#f59e0b'}20`;
+        return `${props.theme?.error || '#ef4444'}20`;
+    }};
+    border: 1px solid ${props => {
+        if (props.$strength === 'strong') return `${props.theme?.success || '#10b981'}60`;
+        if (props.$strength === 'moderate') return `${props.theme?.warning || '#f59e0b'}60`;
+        return `${props.theme?.error || '#ef4444'}60`;
+    }};
+    border-radius: 8px;
+    color: ${props => {
+        if (props.$strength === 'strong') return props.theme?.success || '#10b981';
+        if (props.$strength === 'moderate') return props.theme?.warning || '#f59e0b';
+        return props.theme?.error || '#ef4444';
+    }};
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-left: 1rem;
 `;
 
 // ============ SHARED PREDICTION BADGE ============
@@ -1727,17 +1762,32 @@ const PredictionsPage = () => {
             
             // Set initial dynamic confidence (use liveConfidence if shared, otherwise confidence)
             setDynamicConfidence(response.data.liveConfidence || response.data.prediction.confidence);
-            
-            // Show different toast for shared vs new predictions
+
+            // Check signal strength and show appropriate message
+            const signalStrength = response.data.prediction.signal_strength;
+            const isActionable = response.data.prediction.is_actionable;
+
+            // Show different toast based on signal strength
             if (response.data.isShared) {
                 toast.info(`Joined live prediction for ${symbol.toUpperCase()}! ${response.data.viewCount || 1} users watching`, 'Live Prediction');
+            } else if (!isActionable || signalStrength === 'weak') {
+                // Weak signal - warn the user
+                toast.warning(
+                    response.data.warning || `Low confidence signal for ${symbol.toUpperCase()} - no clear direction detected`,
+                    'Weak Signal'
+                );
+            } else if (signalStrength === 'moderate') {
+                toast.info(`Moderate signal for ${symbol.toUpperCase()} - proceed with caution`, 'Prediction Created');
             } else {
-                toast.success(`New prediction created for ${symbol.toUpperCase()}`, 'Success');
+                toast.success(`Strong signal detected for ${symbol.toUpperCase()}!`, 'Success');
             }
 
+            // Only show rocket animation for actionable signals
             const isGoingUp = response.data.prediction.direction === 'UP';
-            setShowRocket(isGoingUp ? 'up' : 'down');
-            setTimeout(() => setShowRocket(false), 3000);
+            if (isActionable && response.data.prediction.direction !== 'NEUTRAL') {
+                setShowRocket(isGoingUp ? 'up' : 'down');
+                setTimeout(() => setShowRocket(false), 3000);
+            }
         } catch (error) {
             const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Failed to generate prediction';
             const errorType = error.response?.data?.error;
@@ -2168,10 +2218,33 @@ const handleShare = (platform) => {
 </CurrentPriceValue>
                                         </CurrentPriceSection>
                                     </StockInfo>
-                                    <DirectionBadge theme={theme} $up={prediction.prediction.direction === 'UP'}>
-                                        {prediction.prediction.direction === 'UP' ? <TrendingUp size={28} /> : <TrendingDown size={28} />}
-                                        {prediction.prediction.direction}
-                                    </DirectionBadge>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                                        <DirectionBadge
+                                            theme={theme}
+                                            $up={prediction.prediction.direction === 'UP'}
+                                            $neutral={prediction.prediction.direction === 'NEUTRAL'}
+                                        >
+                                            {prediction.prediction.direction === 'UP' ? (
+                                                <TrendingUp size={28} />
+                                            ) : prediction.prediction.direction === 'NEUTRAL' ? (
+                                                <AlertTriangle size={28} />
+                                            ) : (
+                                                <TrendingDown size={28} />
+                                            )}
+                                            {prediction.prediction.direction === 'NEUTRAL' ? 'NO SIGNAL' : prediction.prediction.direction}
+                                        </DirectionBadge>
+                                        {prediction.prediction.signal_strength && (
+                                            <SignalStrengthBadge theme={theme} $strength={prediction.prediction.signal_strength}>
+                                                {prediction.prediction.signal_strength === 'strong' ? (
+                                                    <><Zap size={14} /> Strong Signal</>
+                                                ) : prediction.prediction.signal_strength === 'moderate' ? (
+                                                    <><Activity size={14} /> Moderate</>
+                                                ) : (
+                                                    <><AlertTriangle size={14} /> Weak Signal</>
+                                                )}
+                                            </SignalStrengthBadge>
+                                        )}
+                                    </div>
                                 </PredictionHeader>
 
                                 {/* Action Buttons */}
