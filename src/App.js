@@ -77,6 +77,7 @@ import OAuthCallbackPage from './pages/OAuthCallbackPage';
 import WhitepaperPage from './pages/WhitepaperPage';
 import AlertsPage from './pages/AlertsPage';
 import AccuracyDashboardPage from './pages/AccuracyDashboardPage';
+import EarningsCalendarPage from './pages/EarningsCalendarPage';
 
 // Global styles to set the page background
 const GlobalStyle = createGlobalStyle`
@@ -165,6 +166,7 @@ function AppContent() {
                     <Route path="/compare" element={<ComparisonPage />} />
                     <Route path="/prediction-history" element={<PredictionHistoryPage />} />
                     <Route path="/accuracy-dashboard" element={<ProtectedRoute><AccuracyDashboardPage /></ProtectedRoute>} />
+                    <Route path="/earnings" element={<ProtectedRoute><EarningsCalendarPage /></ProtectedRoute>} />
                     <Route path="/chart/:symbol" element={<ProtectedRoute><ChartPage /></ProtectedRoute>} />
 
                     {/* Plaid OAuth Callback */}
