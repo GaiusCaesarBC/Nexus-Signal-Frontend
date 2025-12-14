@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
-import styled, { keyframes } from 'styled-components';
+import styled, { keyframes, css } from 'styled-components';
 import {
     Brain, TrendingUp, TrendingDown, Target, Clock,
     CheckCircle, XCircle, AlertCircle, ArrowLeft, Zap,
@@ -112,7 +112,7 @@ const StatCard = styled.div`
     border-radius: 16px;
     padding: 1.5rem;
     transition: all 0.3s ease;
-    ${props => props.$highlight && `animation: ${glow} 2s ease-in-out infinite;`}
+    ${props => props.$highlight && css`animation: ${glow} 2s ease-in-out infinite;`}
 
     &:hover {
         transform: translateY(-5px);
