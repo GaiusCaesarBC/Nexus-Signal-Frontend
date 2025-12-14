@@ -2054,10 +2054,15 @@ const handleShare = (platform) => {
                                         <Input
                                             theme={theme}
                                             value={symbol}
-                                            onChange={e => setSymbol(e.target.value.toUpperCase())}
+                                            onChange={e => {
+                                                const val = e.target.value;
+                                                // Don't uppercase if it looks like a contract address
+                                                const isContractAddress = val.startsWith('0x') || /^[1-9A-HJ-NP-Za-km-z]{20,}$/.test(val);
+                                                setSymbol(isContractAddress ? val : val.toUpperCase());
+                                            }}
                                             onFocus={() => setShowSuggestions(true)}
                                             onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                                            placeholder="Search stocks, crypto, or DEX tokens..."
+                                            placeholder="Search symbol or paste contract address..."
                                             autoComplete="off"
                                         />
                                         {showSuggestions && (suggestions.length > 0 || searchLoading) && (
@@ -2075,7 +2080,14 @@ const handleShare = (platform) => {
                                                                 <SuggestionSymbol theme={theme}>
                                                                     {s.type === 'dex' ? s.symbol.split(':')[0] : s.symbol}
                                                                 </SuggestionSymbol>
-                                                                <SuggestionName theme={theme}>{s.name}</SuggestionName>
+                                                                <SuggestionName theme={theme}>
+                                                                    {s.name}
+                                                                    {s.contractAddress && (
+                                                                        <span style={{ opacity: 0.5, fontSize: '0.75em', marginLeft: '0.5rem' }}>
+                                                                            {s.contractAddress.slice(0, 6)}...{s.contractAddress.slice(-4)}
+                                                                        </span>
+                                                                    )}
+                                                                </SuggestionName>
                                                             </SuggestionLeft>
                                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                                                                 <SuggestionType theme={theme} $type={s.type}>{s.type}</SuggestionType>
