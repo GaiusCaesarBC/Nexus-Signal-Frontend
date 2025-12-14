@@ -2986,7 +2986,7 @@ const SocialFeed = () => {
                                                 ))}
                                             </ReactionsList>
                                             <ReactionCount>
-                                                {post.likesCount || post.likes?.length || 0} reactions
+                                                {post.totalReactions || post.likesCount || post.likes?.length || 0} reactions
                                             </ReactionCount>
                                         </StatsLeft>
                                         <StatsRight>
@@ -3001,27 +3001,34 @@ const SocialFeed = () => {
 
                                     {/* Post Actions */}
                                     <PostActions>
-                                        <ActionButton 
-                                            $active={post.likes?.includes(user?._id)}
-                                            $activeColor={theme?.error || '#ef4444'}
+                                        <ActionButton
+                                            $active={post.userReaction || post.likes?.includes(user?._id)}
+                                            $activeColor={post.userReaction ? (REACTIONS.find(r => r.name === post.userReaction)?.color || '#ef4444') : (theme?.error || '#ef4444')}
                                             $hoverBg={`${theme?.error || '#ef4444'}1A`}
                                             $hoverColor={theme?.error || '#ef4444'}
                                             onMouseEnter={() => setActiveReactionPicker(post._id)}
                                             onMouseLeave={() => setTimeout(() => setActiveReactionPicker(null), 500)}
-                                            onClick={() => handleLike(post._id)}
+                                            onClick={() => handleReaction(post._id, 'like')}
                                         >
-                                            <Heart size={20} fill={post.likes?.includes(user?._id) ? theme?.error || '#ef4444' : 'none'} />
-                                            Like
-                                            
+                                            {post.userReaction ? (
+                                                <span style={{ fontSize: '20px' }}>
+                                                    {REACTIONS.find(r => r.name === post.userReaction)?.emoji || '❤️'}
+                                                </span>
+                                            ) : (
+                                                <Heart size={20} fill={post.likes?.includes(user?._id) ? theme?.error || '#ef4444' : 'none'} />
+                                            )}
+                                            {post.userReaction ? REACTIONS.find(r => r.name === post.userReaction)?.name?.charAt(0).toUpperCase() + REACTIONS.find(r => r.name === post.userReaction)?.name?.slice(1) : 'Like'}
+
                                             {activeReactionPicker === post._id && (
-                                                <ReactionsPopup 
+                                                <ReactionsPopup
                                                     onMouseEnter={() => setActiveReactionPicker(post._id)}
                                                     onMouseLeave={() => setActiveReactionPicker(null)}
                                                     onClick={(e) => e.stopPropagation()}
                                                 >
                                                     {REACTIONS.map((reaction, index) => (
-                                                        <ReactionButton 
+                                                        <ReactionButton
                                                             key={index}
+                                                            $active={post.userReaction === reaction.name}
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 handleReaction(post._id, reaction.name);
@@ -3044,17 +3051,17 @@ const SocialFeed = () => {
                                             Share
                                         </ActionButton>
                                         
-                                        <ActionButton 
-                                            $active={post.bookmarkedBy?.includes(user?._id)}
+                                        <ActionButton
+                                            $active={post.isBookmarked || post.bookmarkedBy?.includes(user?._id)}
                                             $activeColor={theme?.brand?.primary || '#ffd700'}
                                             onClick={() => handleBookmark(post._id)}
                                         >
-                                            {post.bookmarkedBy?.includes(user?._id) ? (
+                                            {(post.isBookmarked || post.bookmarkedBy?.includes(user?._id)) ? (
                                                 <BookmarkCheck size={20} />
                                             ) : (
                                                 <Bookmark size={20} />
                                             )}
-                                            Save
+                                            {(post.isBookmarked || post.bookmarkedBy?.includes(user?._id)) ? 'Saved' : 'Save'}
                                         </ActionButton>
                                     </PostActions>
 
