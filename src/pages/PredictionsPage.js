@@ -9,6 +9,7 @@ import styled, { keyframes } from 'styled-components';
 import { getAssetName } from '../utils/stockNames';
 import { formatCryptoPrice, formatStockPrice } from '../utils/priceFormatter';
 import { useAuth } from '../context/AuthContext';
+import api from '../api/axios';
 import {
     Brain, TrendingUp, TrendingDown, Target, Zap, Activity,
     Calendar, DollarSign, Percent, ArrowRight,
@@ -16,8 +17,9 @@ import {
     Rocket, Trophy, Flame, Share2, Download,
     X, Eye, RefreshCw, BookmarkPlus, Bookmark, Twitter,
     Facebook, Linkedin, Copy, Clock, Trash2, AlertTriangle,
-    CheckCircle, XCircle, ArrowUp, ArrowDown, Users, Radio
+    CheckCircle, XCircle, ArrowUp, ArrowDown, Users, Radio, Bell
 } from 'lucide-react';
+import CreateAlertModal from '../components/CreateAalertModal';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid,
     Tooltip, ResponsiveContainer, ReferenceLine
@@ -1464,6 +1466,7 @@ const PredictionsPage = () => {
     const [showRocket, setShowRocket] = useState(false);
     const [particlesData, setParticlesData] = useState([]);
     const [showShareModal, setShowShareModal] = useState(false);
+    const [showAlertModal, setShowAlertModal] = useState(false);
     const [savedPredictions, setSavedPredictions] = useState([]);
     const [watchlist, setWatchlist] = useState([]);
 
@@ -1856,6 +1859,33 @@ const PredictionsPage = () => {
     const handleViewSavedPrediction = (saved) => {
         setPrediction(saved);
         setActiveTab('predict');
+    };
+
+    // Create Price Alert
+    const handleCreateAlert = async (alertData) => {
+        try {
+            // Map notification methods to API format
+            const payload = {
+                type: alertData.type,
+                symbol: alertData.symbol,
+                assetType: alertData.assetType,
+                targetPrice: alertData.targetPrice,
+                percentChange: alertData.percentageChange,
+                notifyVia: {
+                    inApp: alertData.notificationMethods?.inApp ?? true,
+                    email: alertData.notificationMethods?.email ?? false,
+                    push: alertData.notificationMethods?.push ?? false
+                }
+            };
+
+            await api.post('/alerts', payload);
+            toast.success(`Alert created for ${alertData.symbol}!`, 'Alert Set');
+            setShowAlertModal(false);
+        } catch (error) {
+            console.error('Create alert error:', error);
+            toast.error(error.response?.data?.message || 'Failed to create alert', 'Error');
+            throw error;
+        }
     };
 
     // Share
@@ -2264,6 +2294,7 @@ const handleShare = (platform) => {
                                     <ActionButton theme={theme} onClick={handleSavePrediction}><BookmarkPlus size={18} /> Save</ActionButton>
                                     <ActionButton theme={theme} onClick={() => setShowShareModal(true)}><Share2 size={18} /> Share</ActionButton>
                                     <ActionButton theme={theme} onClick={handleExport}><Download size={18} /> Export</ActionButton>
+                                    <ActionButton theme={theme} onClick={() => setShowAlertModal(true)}><Bell size={18} /> Alert</ActionButton>
                                     <ActionButton theme={theme} onClick={() => { setSymbol(prediction.symbol); fetchPrediction({ preventDefault: () => {} }); }}>
                                         <RefreshCw size={18} /> Refresh
                                     </ActionButton>
@@ -2480,6 +2511,15 @@ const handleShare = (platform) => {
                     )}
                 </SavedPredictionsContainer>
             )}
+
+            {/* Alert Modal */}
+            <CreateAlertModal
+                isOpen={showAlertModal}
+                onClose={() => setShowAlertModal(false)}
+                onSubmit={handleCreateAlert}
+                initialSymbol={prediction?.symbol || ''}
+                initialPrice={prediction?.current_price}
+            />
         </PageContainer>
     );
 };
