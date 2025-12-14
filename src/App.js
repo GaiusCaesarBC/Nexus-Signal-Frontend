@@ -78,6 +78,7 @@ import WhitepaperPage from './pages/WhitepaperPage';
 import AlertsPage from './pages/AlertsPage';
 import AccuracyDashboardPage from './pages/AccuracyDashboardPage';
 import EarningsCalendarPage from './pages/EarningsCalendarPage';
+import PortfolioAnalyticsPage from './pages/PortfolioAnalyticsPage';
 
 // Global styles to set the page background
 const GlobalStyle = createGlobalStyle`
@@ -137,6 +138,7 @@ function AppContent() {
                     <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
                     <Route path="/watchlist" element={<ProtectedRoute><WatchlistPage /></ProtectedRoute>} />
                     <Route path="/portfolio" element={<ProtectedRoute><PortfolioPage /></ProtectedRoute>} />
+                    <Route path="/portfolio-analytics" element={<ProtectedRoute><PortfolioAnalyticsPage /></ProtectedRoute>} />
                     <Route path="/predict" element={<ProtectedRoute><PredictPage /></ProtectedRoute>} />
                     <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
                     <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />

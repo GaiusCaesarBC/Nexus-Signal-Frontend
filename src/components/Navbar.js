@@ -1374,6 +1374,7 @@ const Navbar = () => {
     const navStructure = {
         trading: [
             { path: '/portfolio', label: 'Portfolio', icon: Briefcase },
+            { path: '/portfolio-analytics', label: 'Analytics', icon: PieChart },
             { path: '/watchlist', label: 'Watchlist', icon: Eye },
             { path: '/alerts', label: 'Price Alerts', icon: Bell },
             { path: '/paper-trading', label: 'Paper Trading', icon: TrendingUp },
