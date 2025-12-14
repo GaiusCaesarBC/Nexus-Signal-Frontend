@@ -75,6 +75,7 @@ import PredictionHistoryPage from './pages/PredictionHistoryPage';
 import ChartPage from './pages/ChartPage';
 import OAuthCallbackPage from './pages/OAuthCallbackPage';
 import WhitepaperPage from './pages/WhitepaperPage';
+import AlertsPage from './pages/AlertsPage';
 
 // Global styles to set the page background
 const GlobalStyle = createGlobalStyle`
@@ -158,6 +159,7 @@ function AppContent() {
                     <Route path="/predictions-showcase" element={<PredictionsShowcase />} />
                     <Route path="/crypto/:symbol" element={<ProtectedRoute><CryptoPage /></ProtectedRoute>} />
                     <Route path="/whale-alerts" element={<ProtectedRoute><WhaleAlertsPage /></ProtectedRoute>} />
+                    <Route path="/alerts" element={<ProtectedRoute><AlertsPage /></ProtectedRoute>} />
                     <Route path="/profile/:username" element={<ProtectedRoute><PublicProfilePage /></ProtectedRoute>} />
                     <Route path="/compare" element={<ComparisonPage />} />
                     <Route path="/prediction-history" element={<PredictionHistoryPage />} />

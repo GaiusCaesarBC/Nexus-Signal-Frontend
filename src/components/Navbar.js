@@ -1375,6 +1375,7 @@ const Navbar = () => {
         trading: [
             { path: '/portfolio', label: 'Portfolio', icon: Briefcase },
             { path: '/watchlist', label: 'Watchlist', icon: Eye },
+            { path: '/alerts', label: 'Price Alerts', icon: Bell },
             { path: '/paper-trading', label: 'Paper Trading', icon: TrendingUp },
         ],
         analysis: [
