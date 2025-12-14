@@ -1385,6 +1385,7 @@ const Navbar = () => {
             { path: '/compare', label: 'Stock Comparison', icon: BarChart3 },
             { path: '/whale-alerts', label: 'Whale Alerts', icon: Waves },
             { path: '/predict', label: 'AI Predict', icon: Brain, section: 'AI Tools' },
+            { path: '/accuracy-dashboard', label: 'Prediction Accuracy', icon: Trophy },
             { path: '/chat', label: 'AI Chat', icon: MessageSquare },
             { path: '/news', label: 'News', icon: Newspaper, section: 'Market' },
             { path: '/calculators', label: 'Calculators', icon: Calculator },
