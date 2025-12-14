@@ -17,6 +17,7 @@ import {
 import AvatarWithBorder, { BORDER_STYLES } from '../components/vault/AvatarWithBorder';
 import { useVault } from '../context/VaultContext';
 import BadgeIcon from '../components/BadgeIcon';
+import { PieChart as RechartsPie, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 // ============ BADGE DEFINITIONS (synced with backend vaultItems.js) ============
 const BADGE_DEFINITIONS = {
@@ -701,6 +702,118 @@ const EmptyIcon = styled.div`
     color: #ffd700;
 `;
 
+// ============ PERFORMANCE CHART STYLES ============
+const PerformanceCard = styled(Card)`
+    grid-column: 1 / -1;
+`;
+
+const PerformanceGrid = styled.div`
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 2rem;
+
+    @media (max-width: 1024px) {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    @media (max-width: 768px) {
+        grid-template-columns: 1fr;
+    }
+`;
+
+const ChartContainer = styled.div`
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+`;
+
+const ChartTitle = styled.div`
+    color: #94a3b8;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 1rem;
+    text-align: center;
+`;
+
+const ChartWrapper = styled.div`
+    width: 100%;
+    height: 180px;
+    position: relative;
+`;
+
+const ChartCenter = styled.div`
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+`;
+
+const ChartCenterValue = styled.div`
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: ${props => props.$color || '#ffd700'};
+`;
+
+const ChartCenterLabel = styled.div`
+    font-size: 0.7rem;
+    color: #64748b;
+    text-transform: uppercase;
+`;
+
+const ChartLegend = styled.div`
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-top: 0.75rem;
+`;
+
+const LegendItem = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    color: #94a3b8;
+`;
+
+const LegendDot = styled.div`
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: ${props => props.$color};
+`;
+
+const StatBreakdown = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+`;
+
+const BreakdownRow = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: rgba(255, 215, 0, 0.05);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 215, 0, 0.1);
+`;
+
+const BreakdownLabel = styled.span`
+    color: #94a3b8;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+`;
+
+const BreakdownValue = styled.span`
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: ${props => props.$color || '#e0e6ed'};
+`;
+
 const LoadingContainer = styled.div`
     display: flex;
     flex-direction: column;
@@ -1142,6 +1255,141 @@ const PublicProfilePage = () => {
             <ContentContainer>
                 {activeTab === 'overview' && (
                     <SectionGrid>
+                        {/* Performance Overview with Charts */}
+                        <PerformanceCard>
+                            <CardTitle><BarChart3 size={20} /> Performance Overview</CardTitle>
+                            <PerformanceGrid>
+                                {/* Win/Loss Pie Chart */}
+                                <ChartContainer>
+                                    <ChartTitle>Trading Record</ChartTitle>
+                                    <ChartWrapper>
+                                        {stats.totalTrades > 0 ? (
+                                            <>
+                                                <ResponsiveContainer width="100%" height="100%">
+                                                    <RechartsPie>
+                                                        <Pie
+                                                            data={[
+                                                                { name: 'Wins', value: Math.round(stats.totalTrades * (stats.winRate / 100)) || 0 },
+                                                                { name: 'Losses', value: Math.round(stats.totalTrades * (1 - stats.winRate / 100)) || 0 }
+                                                            ]}
+                                                            cx="50%"
+                                                            cy="50%"
+                                                            innerRadius={50}
+                                                            outerRadius={70}
+                                                            paddingAngle={3}
+                                                            dataKey="value"
+                                                        >
+                                                            <Cell fill="#10b981" />
+                                                            <Cell fill="#ef4444" />
+                                                        </Pie>
+                                                        <Tooltip
+                                                            contentStyle={{ background: '#1e293b', border: '1px solid rgba(255,215,0,0.3)', borderRadius: '8px' }}
+                                                            labelStyle={{ color: '#ffd700' }}
+                                                        />
+                                                    </RechartsPie>
+                                                </ResponsiveContainer>
+                                                <ChartCenter>
+                                                    <ChartCenterValue $color={stats.winRate >= 50 ? '#10b981' : '#ef4444'}>
+                                                        {(stats.winRate || 0).toFixed(0)}%
+                                                    </ChartCenterValue>
+                                                    <ChartCenterLabel>Win Rate</ChartCenterLabel>
+                                                </ChartCenter>
+                                            </>
+                                        ) : (
+                                            <ChartCenter style={{ position: 'relative', transform: 'none' }}>
+                                                <EmptyIcon style={{ margin: '0 auto' }}><TrendingUp size={24} /></EmptyIcon>
+                                                <div style={{ color: '#64748b', fontSize: '0.85rem' }}>No trades yet</div>
+                                            </ChartCenter>
+                                        )}
+                                    </ChartWrapper>
+                                    <ChartLegend>
+                                        <LegendItem><LegendDot $color="#10b981" /> Wins</LegendItem>
+                                        <LegendItem><LegendDot $color="#ef4444" /> Losses</LegendItem>
+                                    </ChartLegend>
+                                </ChartContainer>
+
+                                {/* Prediction Accuracy Chart */}
+                                <ChartContainer>
+                                    <ChartTitle>Prediction Accuracy</ChartTitle>
+                                    <ChartWrapper>
+                                        {stats.totalPredictions > 0 ? (
+                                            <>
+                                                <ResponsiveContainer width="100%" height="100%">
+                                                    <RechartsPie>
+                                                        <Pie
+                                                            data={[
+                                                                { name: 'Correct', value: Math.round(stats.totalPredictions * (stats.predictionAccuracy / 100)) || 0 },
+                                                                { name: 'Incorrect', value: Math.round(stats.totalPredictions * (1 - stats.predictionAccuracy / 100)) || 0 }
+                                                            ]}
+                                                            cx="50%"
+                                                            cy="50%"
+                                                            innerRadius={50}
+                                                            outerRadius={70}
+                                                            paddingAngle={3}
+                                                            dataKey="value"
+                                                        >
+                                                            <Cell fill="#8b5cf6" />
+                                                            <Cell fill="#64748b" />
+                                                        </Pie>
+                                                        <Tooltip
+                                                            contentStyle={{ background: '#1e293b', border: '1px solid rgba(255,215,0,0.3)', borderRadius: '8px' }}
+                                                            labelStyle={{ color: '#ffd700' }}
+                                                        />
+                                                    </RechartsPie>
+                                                </ResponsiveContainer>
+                                                <ChartCenter>
+                                                    <ChartCenterValue $color="#8b5cf6">
+                                                        {(stats.predictionAccuracy || 0).toFixed(0)}%
+                                                    </ChartCenterValue>
+                                                    <ChartCenterLabel>Accuracy</ChartCenterLabel>
+                                                </ChartCenter>
+                                            </>
+                                        ) : (
+                                            <ChartCenter style={{ position: 'relative', transform: 'none' }}>
+                                                <EmptyIcon style={{ margin: '0 auto' }}><Target size={24} /></EmptyIcon>
+                                                <div style={{ color: '#64748b', fontSize: '0.85rem' }}>No predictions yet</div>
+                                            </ChartCenter>
+                                        )}
+                                    </ChartWrapper>
+                                    <ChartLegend>
+                                        <LegendItem><LegendDot $color="#8b5cf6" /> Correct</LegendItem>
+                                        <LegendItem><LegendDot $color="#64748b" /> Incorrect</LegendItem>
+                                    </ChartLegend>
+                                </ChartContainer>
+
+                                {/* Key Stats Breakdown */}
+                                <ChartContainer>
+                                    <ChartTitle>Key Statistics</ChartTitle>
+                                    <StatBreakdown>
+                                        <BreakdownRow>
+                                            <BreakdownLabel><DollarSign size={16} color="#10b981" /> Paper Return</BreakdownLabel>
+                                            <BreakdownValue $color={stats.paperTradingReturn >= 0 ? '#10b981' : '#ef4444'}>
+                                                {stats.paperTradingReturn >= 0 ? '+' : ''}{(stats.paperTradingReturn || 0).toFixed(2)}%
+                                            </BreakdownValue>
+                                        </BreakdownRow>
+                                        <BreakdownRow>
+                                            <BreakdownLabel><TrendingUp size={16} color="#ffd700" /> Total Trades</BreakdownLabel>
+                                            <BreakdownValue>{stats.totalTrades || 0}</BreakdownValue>
+                                        </BreakdownRow>
+                                        <BreakdownRow>
+                                            <BreakdownLabel><Target size={16} color="#8b5cf6" /> Predictions Made</BreakdownLabel>
+                                            <BreakdownValue>{stats.totalPredictions || 0}</BreakdownValue>
+                                        </BreakdownRow>
+                                        <BreakdownRow>
+                                            <BreakdownLabel><Flame size={16} color="#f59e0b" /> Current Streak</BreakdownLabel>
+                                            <BreakdownValue $color="#f59e0b">{stats.currentStreak || 0} days</BreakdownValue>
+                                        </BreakdownRow>
+                                        {stats.bestTrade > 0 && (
+                                            <BreakdownRow>
+                                                <BreakdownLabel><Award size={16} color="#10b981" /> Best Trade</BreakdownLabel>
+                                                <BreakdownValue $color="#10b981">+{(stats.bestTrade || 0).toFixed(2)}%</BreakdownValue>
+                                            </BreakdownRow>
+                                        )}
+                                    </StatBreakdown>
+                                </ChartContainer>
+                            </PerformanceGrid>
+                        </PerformanceCard>
+
                         <Card>
                             <CardTitle><Trophy size={20} /> Recent Achievements</CardTitle>
                             {achievements.length > 0 ? (
@@ -1265,6 +1513,92 @@ const PublicProfilePage = () => {
                         ) : (
                             <EmptyState><EmptyIcon><Activity size={28} /></EmptyIcon><div>No activity to display</div></EmptyState>
                         )}
+                    </Card>
+                )}
+
+                {activeTab === 'trades' && (
+                    <Card>
+                        <CardTitle><TrendingUp size={20} /> Trading History</CardTitle>
+                        <PerformanceGrid style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+                            <StatBreakdown>
+                                <BreakdownRow>
+                                    <BreakdownLabel><DollarSign size={16} color="#10b981" /> Paper Return</BreakdownLabel>
+                                    <BreakdownValue $color={stats.paperTradingReturn >= 0 ? '#10b981' : '#ef4444'}>
+                                        {stats.paperTradingReturn >= 0 ? '+' : ''}{(stats.paperTradingReturn || 0).toFixed(2)}%
+                                    </BreakdownValue>
+                                </BreakdownRow>
+                                <BreakdownRow>
+                                    <BreakdownLabel><TrendingUp size={16} color="#ffd700" /> Total Trades</BreakdownLabel>
+                                    <BreakdownValue>{stats.totalTrades || 0}</BreakdownValue>
+                                </BreakdownRow>
+                                <BreakdownRow>
+                                    <BreakdownLabel><Percent size={16} color="#00adef" /> Win Rate</BreakdownLabel>
+                                    <BreakdownValue $color={stats.winRate >= 50 ? '#10b981' : '#ef4444'}>
+                                        {(stats.winRate || 0).toFixed(1)}%
+                                    </BreakdownValue>
+                                </BreakdownRow>
+                                {stats.bestTrade > 0 && (
+                                    <BreakdownRow>
+                                        <BreakdownLabel><Award size={16} color="#10b981" /> Best Trade</BreakdownLabel>
+                                        <BreakdownValue $color="#10b981">+{(stats.bestTrade || 0).toFixed(2)}%</BreakdownValue>
+                                    </BreakdownRow>
+                                )}
+                            </StatBreakdown>
+                            <ChartContainer>
+                                <ChartTitle>Win/Loss Distribution</ChartTitle>
+                                <ChartWrapper>
+                                    {stats.totalTrades > 0 ? (
+                                        <>
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <RechartsPie>
+                                                    <Pie
+                                                        data={[
+                                                            { name: 'Wins', value: Math.round(stats.totalTrades * (stats.winRate / 100)) || 0 },
+                                                            { name: 'Losses', value: Math.round(stats.totalTrades * (1 - stats.winRate / 100)) || 0 }
+                                                        ]}
+                                                        cx="50%"
+                                                        cy="50%"
+                                                        innerRadius={45}
+                                                        outerRadius={65}
+                                                        paddingAngle={3}
+                                                        dataKey="value"
+                                                    >
+                                                        <Cell fill="#10b981" />
+                                                        <Cell fill="#ef4444" />
+                                                    </Pie>
+                                                    <Tooltip
+                                                        contentStyle={{ background: '#1e293b', border: '1px solid rgba(255,215,0,0.3)', borderRadius: '8px' }}
+                                                        labelStyle={{ color: '#ffd700' }}
+                                                    />
+                                                </RechartsPie>
+                                            </ResponsiveContainer>
+                                            <ChartCenter>
+                                                <ChartCenterValue>{stats.totalTrades}</ChartCenterValue>
+                                                <ChartCenterLabel>Trades</ChartCenterLabel>
+                                            </ChartCenter>
+                                        </>
+                                    ) : (
+                                        <ChartCenter style={{ position: 'relative', transform: 'none' }}>
+                                            <EmptyIcon style={{ margin: '0 auto' }}><TrendingUp size={24} /></EmptyIcon>
+                                            <div style={{ color: '#64748b', fontSize: '0.85rem' }}>No trades yet</div>
+                                        </ChartCenter>
+                                    )}
+                                </ChartWrapper>
+                            </ChartContainer>
+                        </PerformanceGrid>
+                    </Card>
+                )}
+
+                {activeTab === 'posts' && (
+                    <Card>
+                        <CardTitle><MessageSquare size={20} /> Posts ({profile?.postsCount || 0})</CardTitle>
+                        <EmptyState>
+                            <EmptyIcon><MessageSquare size={28} /></EmptyIcon>
+                            <div>Posts will appear here</div>
+                            <div style={{ fontSize: '0.85rem', marginTop: '0.5rem' }}>
+                                Share predictions and insights in the Social Feed
+                            </div>
+                        </EmptyState>
                     </Card>
                 )}
             </ContentContainer>
