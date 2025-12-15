@@ -9,13 +9,14 @@ import { useAuth } from '../context/AuthContext';
 import { formatCryptoPrice, formatStockPrice } from '../utils/priceFormatter';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, ReferenceLine
+  Tooltip, ResponsiveContainer, ReferenceLine, LineChart, Line,
+  ComposedChart, Bar, Cell
 } from 'recharts';
 import {
   ArrowLeft, TrendingUp, TrendingDown, Activity,
   DollarSign, BarChart3, Clock, Loader2, Zap,
   Maximize2, ArrowUpRight, ArrowDownRight, Calendar,
-  ChevronLeft, ChevronRight, Eye
+  ChevronLeft, ChevronRight, Eye, Settings, ChevronDown
 } from 'lucide-react';
 
 // ============ ANIMATIONS ============
@@ -332,6 +333,79 @@ const NavigationLinks = styled.div`
   animation: ${fadeIn} 0.5s ease 0.3s backwards;
 `;
 
+// Indicator Controls
+const IndicatorControls = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+`;
+
+const IndicatorButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: ${props => props.$active ? 'rgba(0, 173, 239, 0.2)' : 'rgba(255, 255, 255, 0.05)'};
+  border: 1px solid ${props => props.$active ? 'rgba(0, 173, 239, 0.5)' : 'rgba(255, 255, 255, 0.1)'};
+  color: ${props => props.$active ? '#00adef' : '#a0a0a0'};
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(0, 173, 239, 0.15);
+    border-color: rgba(0, 173, 239, 0.3);
+    color: #00adef;
+  }
+`;
+
+const IndicatorPanel = styled.div`
+  background: rgba(255, 255, 255, 0.02);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 16px 24px;
+  height: ${props => props.$height || '150px'};
+`;
+
+const IndicatorTitle = styled.div`
+  font-size: 11px;
+  font-weight: 600;
+  color: #a0a0a0;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+`;
+
+const SignalBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  background: ${props => {
+    if (props.$signal === 'bullish' || props.$signal === 'oversold' || props.$signal === 'bullish_crossover') return 'rgba(0, 255, 136, 0.15)';
+    if (props.$signal === 'bearish' || props.$signal === 'overbought' || props.$signal === 'bearish_crossover') return 'rgba(255, 71, 87, 0.15)';
+    return 'rgba(255, 255, 255, 0.1)';
+  }};
+  color: ${props => {
+    if (props.$signal === 'bullish' || props.$signal === 'oversold' || props.$signal === 'bullish_crossover') return '#00ff88';
+    if (props.$signal === 'bearish' || props.$signal === 'overbought' || props.$signal === 'bearish_crossover') return '#ff4757';
+    return '#a0a0a0';
+  }};
+`;
+
+const IndicatorValue = styled.span`
+  font-size: 12px;
+  font-weight: 600;
+  color: ${props => props.$color || '#ffffff'};
+  margin-left: 8px;
+`;
+
 const NavLink = styled.button`
   display: flex;
   align-items: center;
@@ -480,9 +554,23 @@ const ChartPage = () => {
   const [chartError, setChartError] = useState(null);
   const [tradeDate, setTradeDate] = useState(null); // From URL params if whale alert
 
+  // Technical Indicators State
+  const [indicators, setIndicators] = useState({
+    rsi: false,
+    macd: false,
+    bollinger: false,
+    sma: false
+  });
+  const [indicatorData, setIndicatorData] = useState(null);
+  const [indicatorLoading, setIndicatorLoading] = useState(false);
+  const [indicatorSignals, setIndicatorSignals] = useState(null);
+
   const isCrypto = isCryptoSymbol(symbol);
   const timeframes = ['1D', '5D', '1M', '3M', '6M', '1Y', '5Y', 'MAX'];
   const symbolStyle = getSymbolStyle(symbol);
+
+  // Check if any indicator is active
+  const hasActiveIndicator = Object.values(indicators).some(v => v);
 
   // Get URL search params for trade date marker
   useEffect(() => {
@@ -585,6 +673,81 @@ const ChartPage = () => {
     };
   }, [symbol, selectedRange, api, isCrypto]);
 
+  // Fetch indicator data when indicators are toggled
+  useEffect(() => {
+    if (!symbol || !hasActiveIndicator) {
+      setIndicatorData(null);
+      setIndicatorSignals(null);
+      return;
+    }
+
+    const fetchIndicators = async () => {
+      setIndicatorLoading(true);
+      try {
+        const response = await api.get(`/indicators/${symbol}/all`, {
+          params: { range: selectedRange }
+        });
+
+        if (response.data) {
+          setIndicatorData(response.data.data);
+          setIndicatorSignals(response.data.signals);
+        }
+      } catch (err) {
+        console.error('Failed to fetch indicators:', err);
+        // Don't show error to user, just don't display indicators
+      } finally {
+        setIndicatorLoading(false);
+      }
+    };
+
+    fetchIndicators();
+  }, [symbol, selectedRange, hasActiveIndicator, api]);
+
+  // Toggle indicator
+  const toggleIndicator = (indicator) => {
+    setIndicators(prev => ({
+      ...prev,
+      [indicator]: !prev[indicator]
+    }));
+  };
+
+  // Merge chart data with indicator data
+  const mergedChartData = React.useMemo(() => {
+    if (!chartData.length) return [];
+    if (!indicatorData || !hasActiveIndicator) return chartData;
+
+    return chartData.map((candle, index) => {
+      // Find matching indicator data by timestamp
+      const indicatorPoint = indicatorData.find(ind => {
+        const candleTime = new Date(candle.time).getTime();
+        const indTime = ind.time;
+        // Allow 1 day tolerance for matching
+        return Math.abs(candleTime - indTime) < 86400000;
+      });
+
+      return {
+        ...candle,
+        ...(indicatorPoint && indicators.bollinger ? {
+          bollingerUpper: indicatorPoint.bollingerUpper,
+          bollingerMiddle: indicatorPoint.bollingerMiddle,
+          bollingerLower: indicatorPoint.bollingerLower
+        } : {}),
+        ...(indicatorPoint && indicators.sma ? {
+          sma20: indicatorPoint.sma20,
+          sma50: indicatorPoint.sma50
+        } : {}),
+        ...(indicatorPoint && indicators.rsi ? {
+          rsi: indicatorPoint.rsi
+        } : {}),
+        ...(indicatorPoint && indicators.macd ? {
+          macdLine: indicatorPoint.macdLine,
+          macdSignal: indicatorPoint.macdSignal,
+          macdHistogram: indicatorPoint.macdHistogram
+        } : {})
+      };
+    });
+  }, [chartData, indicatorData, indicators, hasActiveIndicator]);
+
   // Handle retry
   const handleRetry = () => {
     setChartError(null);
@@ -659,7 +822,42 @@ const ChartPage = () => {
             <ChartTitle>
               <Activity size={18} />
               Price Chart - {selectedRange}
+              {indicatorLoading && <Loader2 size={14} style={{ marginLeft: 8, animation: 'spin 1s linear infinite' }} />}
             </ChartTitle>
+            <IndicatorControls>
+              <IndicatorButton
+                $active={indicators.bollinger}
+                onClick={() => toggleIndicator('bollinger')}
+                title="Bollinger Bands (20, 2)"
+              >
+                <BarChart3 size={14} />
+                BB
+              </IndicatorButton>
+              <IndicatorButton
+                $active={indicators.sma}
+                onClick={() => toggleIndicator('sma')}
+                title="Simple Moving Averages (20, 50)"
+              >
+                <TrendingUp size={14} />
+                SMA
+              </IndicatorButton>
+              <IndicatorButton
+                $active={indicators.rsi}
+                onClick={() => toggleIndicator('rsi')}
+                title="Relative Strength Index (14)"
+              >
+                <Activity size={14} />
+                RSI
+              </IndicatorButton>
+              <IndicatorButton
+                $active={indicators.macd}
+                onClick={() => toggleIndicator('macd')}
+                title="MACD (12, 26, 9)"
+              >
+                <Zap size={14} />
+                MACD
+              </IndicatorButton>
+            </IndicatorControls>
             <TimeframeButtons>
               {timeframes.map(tf => (
                 <TimeframeBtn
@@ -694,11 +892,15 @@ const ChartPage = () => {
 
             {!chartLoading && !chartError && chartData.length > 0 && (
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData}>
+                <AreaChart data={mergedChartData}>
                   <defs>
                     <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor={isPositive ? '#00ff88' : '#ff4757'} stopOpacity={0.3} />
                       <stop offset="100%" stopColor={isPositive ? '#00ff88' : '#ff4757'} stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="bollingerGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#9945ff" stopOpacity={0.1} />
+                      <stop offset="100%" stopColor="#9945ff" stopOpacity={0.02} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
@@ -734,6 +936,60 @@ const ChartPage = () => {
                     />
                   )}
 
+                  {/* Bollinger Bands */}
+                  {indicators.bollinger && (
+                    <>
+                      <Area
+                        type="monotone"
+                        dataKey="bollingerUpper"
+                        stroke="#9945ff"
+                        strokeWidth={1}
+                        strokeDasharray="3 3"
+                        fill="none"
+                        dot={false}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="bollingerMiddle"
+                        stroke="#9945ff"
+                        strokeWidth={1}
+                        fill="none"
+                        dot={false}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="bollingerLower"
+                        stroke="#9945ff"
+                        strokeWidth={1}
+                        strokeDasharray="3 3"
+                        fill="url(#bollingerGradient)"
+                        dot={false}
+                      />
+                    </>
+                  )}
+
+                  {/* SMA Lines */}
+                  {indicators.sma && (
+                    <>
+                      <Area
+                        type="monotone"
+                        dataKey="sma20"
+                        stroke="#f7931a"
+                        strokeWidth={1.5}
+                        fill="none"
+                        dot={false}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="sma50"
+                        stroke="#00adef"
+                        strokeWidth={1.5}
+                        fill="none"
+                        dot={false}
+                      />
+                    </>
+                  )}
+
                   <Area
                     type="monotone"
                     dataKey="close"
@@ -751,6 +1007,118 @@ const ChartPage = () => {
               </ChartLoading>
             )}
           </ChartContainer>
+
+          {/* RSI Panel */}
+          {indicators.rsi && mergedChartData.length > 0 && (
+            <IndicatorPanel $height="120px">
+              <IndicatorTitle>
+                <span>
+                  RSI (14)
+                  {indicatorSignals?.rsi && (
+                    <>
+                      <IndicatorValue $color={
+                        indicatorSignals.rsi.signal === 'oversold' ? '#00ff88' :
+                        indicatorSignals.rsi.signal === 'overbought' ? '#ff4757' : '#a0a0a0'
+                      }>
+                        {mergedChartData[mergedChartData.length - 1]?.rsi?.toFixed(1) || '--'}
+                      </IndicatorValue>
+                    </>
+                  )}
+                </span>
+                {indicatorSignals?.rsi && (
+                  <SignalBadge $signal={indicatorSignals.rsi.signal}>
+                    {indicatorSignals.rsi.signal.replace('_', ' ').toUpperCase()}
+                  </SignalBadge>
+                )}
+              </IndicatorTitle>
+              <ResponsiveContainer width="100%" height="85%">
+                <LineChart data={mergedChartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                  <XAxis dataKey="time" hide />
+                  <YAxis domain={[0, 100]} ticks={[30, 50, 70]} tick={{ fill: '#666', fontSize: 10 }} width={40} />
+                  <ReferenceLine y={70} stroke="#ff4757" strokeDasharray="3 3" strokeOpacity={0.5} />
+                  <ReferenceLine y={30} stroke="#00ff88" strokeDasharray="3 3" strokeOpacity={0.5} />
+                  <Tooltip
+                    content={({ active, payload }) => {
+                      if (active && payload?.[0]) {
+                        return (
+                          <div style={{ background: 'rgba(20,20,30,0.95)', padding: '8px 12px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.1)' }}>
+                            <span style={{ color: '#fff', fontSize: 12 }}>RSI: {payload[0].value?.toFixed(1)}</span>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="rsi"
+                    stroke="#f7931a"
+                    strokeWidth={1.5}
+                    dot={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </IndicatorPanel>
+          )}
+
+          {/* MACD Panel */}
+          {indicators.macd && mergedChartData.length > 0 && (
+            <IndicatorPanel $height="140px">
+              <IndicatorTitle>
+                <span>
+                  MACD (12, 26, 9)
+                  {indicatorSignals?.macd && (
+                    <IndicatorValue $color={
+                      indicatorSignals.macd.signal.includes('bullish') ? '#00ff88' :
+                      indicatorSignals.macd.signal.includes('bearish') ? '#ff4757' : '#a0a0a0'
+                    }>
+                      {mergedChartData[mergedChartData.length - 1]?.macdLine?.toFixed(3) || '--'}
+                    </IndicatorValue>
+                  )}
+                </span>
+                {indicatorSignals?.macd && (
+                  <SignalBadge $signal={indicatorSignals.macd.signal}>
+                    {indicatorSignals.macd.signal.replace('_', ' ').toUpperCase()}
+                  </SignalBadge>
+                )}
+              </IndicatorTitle>
+              <ResponsiveContainer width="100%" height="85%">
+                <ComposedChart data={mergedChartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                  <XAxis dataKey="time" hide />
+                  <YAxis tick={{ fill: '#666', fontSize: 10 }} width={50} />
+                  <ReferenceLine y={0} stroke="rgba(255,255,255,0.2)" />
+                  <Tooltip
+                    content={({ active, payload }) => {
+                      if (active && payload?.length) {
+                        return (
+                          <div style={{ background: 'rgba(20,20,30,0.95)', padding: '8px 12px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.1)' }}>
+                            <div style={{ color: '#00adef', fontSize: 11 }}>MACD: {payload[0]?.value?.toFixed(3)}</div>
+                            <div style={{ color: '#ff6b35', fontSize: 11 }}>Signal: {payload[1]?.value?.toFixed(3)}</div>
+                            <div style={{ color: payload[2]?.value >= 0 ? '#00ff88' : '#ff4757', fontSize: 11 }}>
+                              Hist: {payload[2]?.value?.toFixed(3)}
+                            </div>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Line type="monotone" dataKey="macdLine" stroke="#00adef" strokeWidth={1.5} dot={false} />
+                  <Line type="monotone" dataKey="macdSignal" stroke="#ff6b35" strokeWidth={1.5} dot={false} />
+                  <Bar dataKey="macdHistogram" radius={[2, 2, 0, 0]}>
+                    {mergedChartData.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={entry.macdHistogram >= 0 ? 'rgba(0, 255, 136, 0.6)' : 'rgba(255, 71, 87, 0.6)'}
+                      />
+                    ))}
+                  </Bar>
+                </ComposedChart>
+              </ResponsiveContainer>
+            </IndicatorPanel>
+          )}
         </ChartCard>
 
         {/* Stats */}
