@@ -1482,6 +1482,8 @@ const PaperTradingPage = () => {
     const [trailingStopPercent, setTrailingStopPercent] = useState('');
     const [orders, setOrders] = useState([]);
     const [leaderboard, setLeaderboard] = useState([]);
+    const [showResetConfirm, setShowResetConfirm] = useState(false);
+    const [resetting, setResetting] = useState(false);
 
     const togglePositionExpand = (positionKey) => {
         setExpandedPositions(prev => ({
@@ -1518,6 +1520,22 @@ const PaperTradingPage = () => {
             setLeaderboard(response.data.leaderboard || []);
         } catch (error) {
             console.error('Load leaderboard error:', error);
+        }
+    };
+
+    const resetAccount = async () => {
+        setResetting(true);
+        try {
+            const response = await api.post('/paper-trading/reset');
+            setAccount(response.data.account);
+            setOrders([]);
+            setShowResetConfirm(false);
+            toast.success('Account reset to $100,000!', 'Reset Complete');
+        } catch (error) {
+            console.error('Reset account error:', error);
+            toast.error('Failed to reset account', 'Error');
+        } finally {
+            setResetting(false);
         }
     };
 
@@ -1922,6 +1940,34 @@ const PaperTradingPage = () => {
                 </ConfirmationModal>
             )}
 
+            {/* Reset Confirmation Modal */}
+            {showResetConfirm && (
+                <ConfirmationModal onClick={() => setShowResetConfirm(false)}>
+                    <ConfirmationCard theme={theme} $variant="sell" onClick={(e) => e.stopPropagation()}>
+                        <ConfirmationTitle theme={theme} $variant="sell">
+                            <AlertTriangle size={32} />
+                            Reset Account?
+                        </ConfirmationTitle>
+                        <ConfirmationDetails theme={theme}>
+                            <div style={{ textAlign: 'center', padding: '1rem' }}>
+                                <p style={{ color: theme?.text?.primary || '#e0e6ed', fontSize: '1.1rem', marginBottom: '1rem' }}>
+                                    This will reset your paper trading account to $100,000.
+                                </p>
+                                <p style={{ color: theme?.error || '#ef4444', fontSize: '0.95rem' }}>
+                                    All positions, orders, and trading history will be permanently deleted.
+                                </p>
+                            </div>
+                        </ConfirmationDetails>
+                        <ConfirmationButtons>
+                            <CancelButton theme={theme} onClick={() => setShowResetConfirm(false)}>Cancel</CancelButton>
+                            <ConfirmButton theme={theme} $variant="sell" onClick={resetAccount} disabled={resetting}>
+                                {resetting ? 'Resetting...' : 'Reset Account'}
+                            </ConfirmButton>
+                        </ConfirmationButtons>
+                    </ConfirmationCard>
+                </ConfirmationModal>
+            )}
+
             <PageContainer theme={theme}>
                 <Header>
                     <Title theme={theme}><Trophy size={56} color={theme?.brand?.primary || '#00adef'} />Paper Trading</Title>
@@ -2221,6 +2267,35 @@ const PaperTradingPage = () => {
                                 {account?.totalTrades >= 10 && <Badge theme={theme}><Users size={14} />Active Trader</Badge>}
                                 {Math.abs(account?.currentStreak || 0) >= 3 && <Badge theme={theme} $gradient={`${theme?.warning || '#f59e0b'}33`} $borderColor={`${theme?.warning || '#f59e0b'}4D`} $color={theme?.warning || '#f59e0b'}><Flame size={14} />On Fire</Badge>}
                             </BadgeContainer>
+                            <button
+                                onClick={() => setShowResetConfirm(true)}
+                                style={{
+                                    width: '100%',
+                                    marginTop: '1rem',
+                                    padding: '0.75rem',
+                                    background: 'transparent',
+                                    border: `1px solid ${theme?.error || '#ef4444'}4D`,
+                                    borderRadius: '8px',
+                                    color: theme?.error || '#ef4444',
+                                    cursor: 'pointer',
+                                    fontSize: '0.85rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '0.5rem',
+                                    transition: 'all 0.2s ease'
+                                }}
+                                onMouseOver={(e) => {
+                                    e.target.style.background = `${theme?.error || '#ef4444'}1A`;
+                                    e.target.style.borderColor = theme?.error || '#ef4444';
+                                }}
+                                onMouseOut={(e) => {
+                                    e.target.style.background = 'transparent';
+                                    e.target.style.borderColor = `${theme?.error || '#ef4444'}4D`;
+                                }}
+                            >
+                                <RefreshCw size={14} /> Reset Account
+                            </button>
                         </StatsPanel>
                         {leaderboard.length > 0 && (
                             <LeaderboardPreview theme={theme}>
