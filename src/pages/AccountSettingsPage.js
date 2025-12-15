@@ -3,12 +3,12 @@ import React, { useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { 
-    User, 
-    Zap, 
-    Shield, 
-    LogOut, 
-    Calendar, 
+import {
+    User,
+    Zap,
+    Shield,
+    LogOut,
+    Calendar,
     Mail,
     Crown,
     Eye,
@@ -23,8 +23,10 @@ import {
     Palette,
     CreditCard,
     HelpCircle,
-    ExternalLink
+    ExternalLink,
+    MessageCircle
 } from 'lucide-react';
+import TelegramSettings from '../components/TelegramSettings';
 
 const AccountSettingsPage = () => {
     const { user, loading: authLoading, isAuthenticated, logout } = useAuth();
@@ -287,6 +289,9 @@ const AccountSettingsPage = () => {
                                 </SettingRow>
                             </SettingsList>
                         </SettingsSection>
+
+                        {/* Telegram Notifications */}
+                        <TelegramSettings />
 
                         {/* Quick Links */}
                         <SettingsSection>
