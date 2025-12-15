@@ -18,7 +18,7 @@ import {
     Loader,
     ChevronRight
 } from 'lucide-react';
-import api from '../services/api';
+import api from '../api/axios';
 import { useToast } from '../context/ToastContext';
 
 const TelegramSettings = () => {
