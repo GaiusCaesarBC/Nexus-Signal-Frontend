@@ -15,7 +15,7 @@ import {
     Tooltip, Legend, ResponsiveContainer, Treemap, Cell, PieChart as RechartsPie,
     Pie, ComposedChart, Area
 } from 'recharts';
-import api from '../services/api';
+import api from '../api/axios';
 
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`

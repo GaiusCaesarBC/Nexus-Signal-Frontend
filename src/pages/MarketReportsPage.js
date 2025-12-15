@@ -11,7 +11,7 @@ import {
     ArrowUpRight, ArrowDownRight, Sparkles, Building2, ChevronRight,
     Loader, Star, Zap, Eye, Search
 } from 'lucide-react';
-import api from '../services/api';
+import api from '../api/axios';
 
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`

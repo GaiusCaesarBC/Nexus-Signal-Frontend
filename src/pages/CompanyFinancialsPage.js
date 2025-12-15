@@ -15,7 +15,7 @@ import {
     BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
     Tooltip, Legend, ResponsiveContainer, ComposedChart, Area
 } from 'recharts';
-import api from '../services/api';
+import api from '../api/axios';
 
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`
