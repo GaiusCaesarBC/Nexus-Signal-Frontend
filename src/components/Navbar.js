@@ -15,7 +15,7 @@ import {
     Settings, Bell, CheckCircle, AlertCircle, TrendingUp as TrendingUpIcon,
     DollarSign as DollarIcon, Clock, ArrowUpRight, ArrowDownRight, Trophy, Twitter,
     Briefcase, BarChart3, Activity, Sparkles, Globe, Calculator, TrendingDown, MessageCircle, Award, Waves,
-    Search, Bitcoin, LineChart, UserPlus, Calendar, Building2, FileText, ArrowRightLeft
+    Search, Bitcoin, LineChart, UserPlus, Calendar, Building2, FileText, ArrowRightLeft, UserCog
 } from 'lucide-react';
 import nexusSignalLogo from '../assets/nexus-signal-logo.png';
 
@@ -1563,7 +1563,7 @@ const Navbar = () => {
     <UserName>{user?.name || 'User'}</UserName>
     <DropdownIconStyled size={18} $open={userDropdownOpen} />
 </UserMenuButton>
-                                {userDropdownOpen && <UserDropdownMenu><UserDropdownItem onClick={() => { navigate('/profile'); setUserDropdownOpen(false); }}><User size={18} />Profile</UserDropdownItem><UserDropdownItem onClick={() => { navigate('/settings'); setUserDropdownOpen(false); }}><Settings size={18} />Settings</UserDropdownItem><UserDropdownItem className="danger" onClick={handleLogout}><LogOut size={18} />Logout</UserDropdownItem></UserDropdownMenu>}
+                                {userDropdownOpen && <UserDropdownMenu><UserDropdownItem onClick={() => { navigate('/profile'); setUserDropdownOpen(false); }}><User size={18} />Profile</UserDropdownItem><UserDropdownItem onClick={() => { navigate('/settings'); setUserDropdownOpen(false); }}><Settings size={18} />Settings</UserDropdownItem><UserDropdownItem onClick={() => { navigate('/account'); setUserDropdownOpen(false); }}><UserCog size={18} />Account</UserDropdownItem><UserDropdownItem className="danger" onClick={handleLogout}><LogOut size={18} />Logout</UserDropdownItem></UserDropdownMenu>}
                             </div>
                             <MobileMenuButton onClick={handleMobileMenuToggle}>{mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}</MobileMenuButton>
                         </UserSection>
@@ -1620,6 +1620,7 @@ const Navbar = () => {
                                 <MobileNavLink to="/pricing" $active={location.pathname === '/pricing'} onClick={() => setMobileMenuOpen(false)}><DollarSign size={22} />Pricing</MobileNavLink>
                                 <MobileNavLink to="/profile" onClick={() => setMobileMenuOpen(false)}><User size={22} />Profile</MobileNavLink>
                                 <MobileNavLink to="/settings" onClick={() => setMobileMenuOpen(false)}><Settings size={22} />Settings</MobileNavLink>
+                                <MobileNavLink to="/account" onClick={() => setMobileMenuOpen(false)}><UserCog size={22} />Account</MobileNavLink>
                                 <MobileNavLink as="button" style={{ border: 'none', width: '100%', color: theme.error }} onClick={handleLogout}><LogOut size={22} />Logout</MobileNavLink>
                             </MobileNavLinks>
                         </MobileMenu>
