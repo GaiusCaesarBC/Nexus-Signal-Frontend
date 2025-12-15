@@ -1393,6 +1393,7 @@ const Navbar = () => {
             { path: '/financials', label: 'Company Financials', icon: Building2 },
             { path: '/market-reports', label: 'AI Market Reports', icon: FileText },
             { path: '/sector-rotation', label: 'Sector Rotation', icon: ArrowRightLeft },
+            { path: '/economic-calendar', label: 'Economic Calendar', icon: Calendar },
             { path: '/calculators', label: 'Calculators', icon: Calculator },
         ],
         community: [

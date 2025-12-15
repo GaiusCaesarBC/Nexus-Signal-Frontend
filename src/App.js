@@ -82,6 +82,7 @@ import PortfolioAnalyticsPage from './pages/PortfolioAnalyticsPage';
 import CompanyFinancialsPage from './pages/CompanyFinancialsPage';
 import MarketReportsPage from './pages/MarketReportsPage';
 import SectorRotationPage from './pages/SectorRotationPage';
+import EconomicCalendarPage from './pages/EconomicCalendarPage';
 
 // Global styles to set the page background
 const GlobalStyle = createGlobalStyle`
@@ -175,6 +176,7 @@ function AppContent() {
                     <Route path="/financials" element={<ProtectedRoute><CompanyFinancialsPage /></ProtectedRoute>} />
                     <Route path="/market-reports" element={<ProtectedRoute><MarketReportsPage /></ProtectedRoute>} />
                     <Route path="/sector-rotation" element={<ProtectedRoute><SectorRotationPage /></ProtectedRoute>} />
+                    <Route path="/economic-calendar" element={<ProtectedRoute><EconomicCalendarPage /></ProtectedRoute>} />
                     <Route path="/chart/:symbol" element={<ProtectedRoute><ChartPage /></ProtectedRoute>} />
 
                     {/* Plaid OAuth Callback */}
