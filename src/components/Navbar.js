@@ -15,7 +15,7 @@ import {
     Settings, Bell, CheckCircle, AlertCircle, TrendingUp as TrendingUpIcon,
     DollarSign as DollarIcon, Clock, ArrowUpRight, ArrowDownRight, Trophy, Twitter,
     Briefcase, BarChart3, Activity, Sparkles, Globe, Calculator, TrendingDown, MessageCircle, Award, Waves,
-    Search, Bitcoin, LineChart, UserPlus, Calendar
+    Search, Bitcoin, LineChart, UserPlus, Calendar, Building2, FileText, ArrowRightLeft
 } from 'lucide-react';
 import nexusSignalLogo from '../assets/nexus-signal-logo.png';
 
@@ -1390,6 +1390,9 @@ const Navbar = () => {
             { path: '/chat', label: 'AI Chat', icon: MessageSquare },
             { path: '/news', label: 'News', icon: Newspaper, section: 'Market' },
             { path: '/earnings', label: 'Earnings Calendar', icon: Calendar },
+            { path: '/financials', label: 'Company Financials', icon: Building2 },
+            { path: '/market-reports', label: 'AI Market Reports', icon: FileText },
+            { path: '/sector-rotation', label: 'Sector Rotation', icon: ArrowRightLeft },
             { path: '/calculators', label: 'Calculators', icon: Calculator },
         ],
         community: [

@@ -79,6 +79,9 @@ import AlertsPage from './pages/AlertsPage';
 import AccuracyDashboardPage from './pages/AccuracyDashboardPage';
 import EarningsCalendarPage from './pages/EarningsCalendarPage';
 import PortfolioAnalyticsPage from './pages/PortfolioAnalyticsPage';
+import CompanyFinancialsPage from './pages/CompanyFinancialsPage';
+import MarketReportsPage from './pages/MarketReportsPage';
+import SectorRotationPage from './pages/SectorRotationPage';
 
 // Global styles to set the page background
 const GlobalStyle = createGlobalStyle`
@@ -169,6 +172,9 @@ function AppContent() {
                     <Route path="/prediction-history" element={<PredictionHistoryPage />} />
                     <Route path="/accuracy-dashboard" element={<ProtectedRoute><AccuracyDashboardPage /></ProtectedRoute>} />
                     <Route path="/earnings" element={<ProtectedRoute><EarningsCalendarPage /></ProtectedRoute>} />
+                    <Route path="/financials" element={<ProtectedRoute><CompanyFinancialsPage /></ProtectedRoute>} />
+                    <Route path="/market-reports" element={<ProtectedRoute><MarketReportsPage /></ProtectedRoute>} />
+                    <Route path="/sector-rotation" element={<ProtectedRoute><SectorRotationPage /></ProtectedRoute>} />
                     <Route path="/chart/:symbol" element={<ProtectedRoute><ChartPage /></ProtectedRoute>} />
 
                     {/* Plaid OAuth Callback */}
