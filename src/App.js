@@ -83,6 +83,7 @@ import CompanyFinancialsPage from './pages/CompanyFinancialsPage';
 import MarketReportsPage from './pages/MarketReportsPage';
 import SectorRotationPage from './pages/SectorRotationPage';
 import EconomicCalendarPage from './pages/EconomicCalendarPage';
+import AccountSettingsPage from './pages/AccountSettingsPage';
 
 // Global styles to set the page background
 const GlobalStyle = createGlobalStyle`
@@ -146,6 +147,7 @@ function AppContent() {
                     <Route path="/predict" element={<ProtectedRoute><PredictPage /></ProtectedRoute>} />
                     <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
                     <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+                    <Route path="/account" element={<ProtectedRoute><AccountSettingsPage /></ProtectedRoute>} />
                     <Route path="/screener" element={<ProtectedRoute><ScreenerPage /></ProtectedRoute>} />
                     <Route path="/news" element={<ProtectedRoute><NewsPage /></ProtectedRoute>} />
                     <Route path="/heatmap" element={<ProtectedRoute><HeatmapPage /></ProtectedRoute>} />
