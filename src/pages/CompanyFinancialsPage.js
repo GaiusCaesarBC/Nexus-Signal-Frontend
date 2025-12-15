@@ -458,10 +458,10 @@ const CompanyFinancialsPage = () => {
         setLoading(true);
         try {
             const [overviewRes, incomeRes, balanceRes, cashflowRes] = await Promise.all([
-                api.get(`/api/financials/overview/${sym}`),
-                api.get(`/api/financials/income/${sym}`),
-                api.get(`/api/financials/balance/${sym}`),
-                api.get(`/api/financials/cashflow/${sym}`)
+                api.get(`/financials/overview/${sym}`),
+                api.get(`/financials/income/${sym}`),
+                api.get(`/financials/balance/${sym}`),
+                api.get(`/financials/cashflow/${sym}`)
             ]);
 
             setData({

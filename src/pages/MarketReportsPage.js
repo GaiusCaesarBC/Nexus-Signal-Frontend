@@ -486,7 +486,7 @@ const MarketReportsPage = () => {
         setLoading(true);
         setReport(null);
         try {
-            const response = await api.get(`/api/market-reports/${activeTab}`);
+            const response = await api.get(`/market-reports/${activeTab}`);
             setReport(response.data.report);
         } catch (error) {
             console.error('Error fetching report:', error);
@@ -501,7 +501,7 @@ const MarketReportsPage = () => {
         setLoading(true);
         setReport(null);
         try {
-            const response = await api.get(`/api/market-reports/sector/${sector}`);
+            const response = await api.get(`/market-reports/sector/${sector}`);
             setReport(response.data.report);
         } catch (error) {
             showToast('Failed to fetch sector report', 'error');
@@ -516,7 +516,7 @@ const MarketReportsPage = () => {
         setLoading(true);
         setReport(null);
         try {
-            const response = await api.get(`/api/market-reports/stock/${stockSymbol.toUpperCase()}`);
+            const response = await api.get(`/market-reports/stock/${stockSymbol.toUpperCase()}`);
             setReport(response.data.report);
         } catch (error) {
             showToast('Failed to fetch stock report', 'error');

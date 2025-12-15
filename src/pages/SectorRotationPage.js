@@ -412,8 +412,8 @@ const SectorRotationPage = () => {
         setLoading(true);
         try {
             const [overviewRes, flowRes] = await Promise.all([
-                api.get('/api/sector-rotation/overview'),
-                api.get('/api/sector-rotation/flow')
+                api.get('/sector-rotation/overview'),
+                api.get('/sector-rotation/flow')
             ]);
 
             setData(overviewRes.data);
