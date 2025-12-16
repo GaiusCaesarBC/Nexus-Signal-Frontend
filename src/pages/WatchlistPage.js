@@ -11,7 +11,8 @@ import {
     TrendingUp, TrendingDown, Plus, Trash2, X, Eye, Star,
     Activity, BarChart3, ArrowUpRight, ArrowDownRight,
     Bell, BellOff, Download, Search, RefreshCw, Flame,
-    AlertTriangle, Target, Zap, Bitcoin, Coins
+    AlertTriangle, Target, Zap, Bitcoin, Coins,
+    TrendingUp as RSIIcon, GitBranch, Maximize2, Minimize2
 } from 'lucide-react';
 import {
     LineChart, Line, ResponsiveContainer, AreaChart, Area
@@ -672,6 +673,93 @@ const HelpText = styled.div`
     margin-top: 0.5rem;
 `;
 
+// ============ TABS ============
+const ModalTabs = styled.div`
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    background: ${props => props.theme.bg?.card || 'rgba(30, 41, 59, 0.5)'};
+    padding: 0.375rem;
+    border-radius: 12px;
+`;
+
+const Tab = styled.button`
+    flex: 1;
+    padding: 0.75rem 1rem;
+    background: ${props => props.$active
+        ? props.theme.brand?.gradient || `linear-gradient(135deg, ${props.theme.brand?.primary || '#00adef'} 0%, ${props.theme.brand?.secondary || '#0088cc'} 100%)`
+        : 'transparent'};
+    border: none;
+    border-radius: 8px;
+    color: ${props => props.$active ? 'white' : props.theme.text?.secondary || '#94a3b8'};
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+
+    &:hover:not(:disabled) {
+        background: ${props => props.$active
+            ? props.theme.brand?.gradient || `linear-gradient(135deg, ${props.theme.brand?.primary || '#00adef'} 0%, ${props.theme.brand?.secondary || '#0088cc'} 100%)`
+            : `${props.theme.brand?.primary || '#00adef'}1A`};
+    }
+`;
+
+const TechnicalTypeCard = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: ${props => props.$selected
+        ? `${props.theme.brand?.primary || '#00adef'}26`
+        : `${props.theme.bg?.card || 'rgba(30, 41, 59, 0.5)'}`};
+    border: 2px solid ${props => props.$selected
+        ? props.theme.brand?.primary || '#00adef'
+        : 'transparent'};
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+        background: ${props => `${props.theme.brand?.primary || '#00adef'}1A`};
+        border-color: ${props => `${props.theme.brand?.primary || '#00adef'}80`};
+    }
+`;
+
+const TechnicalTypeGrid = styled.div`
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+`;
+
+const TechnicalTypeName = styled.div`
+    font-weight: 600;
+    color: ${props => props.theme.text?.primary || '#e0e6ed'};
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+`;
+
+const TechnicalTypeDesc = styled.div`
+    color: ${props => props.theme.text?.tertiary || '#64748b'};
+    font-size: 0.75rem;
+`;
+
+const AlertBadgeCount = styled.span`
+    background: ${props => props.theme.success || '#10b981'};
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.15rem 0.4rem;
+    border-radius: 10px;
+    margin-left: 0.25rem;
+`;
+
 // ============ EMPTY STATE ============
 const EmptyState = styled.div`
     text-align: center;
@@ -786,12 +874,49 @@ const WatchlistPage = () => {
     const [formData, setFormData] = useState({ symbol: '' });
     const [alertFormData, setAlertFormData] = useState({ targetPrice: '', condition: 'above' });
 
+    // Technical alerts state
+    const [alertTab, setAlertTab] = useState('price'); // 'price' or 'technical'
+    const [technicalAlertType, setTechnicalAlertType] = useState('');
+    const [technicalParams, setTechnicalParams] = useState({
+        rsiThreshold: 30,
+        supportLevel: '',
+        resistanceLevel: '',
+        tolerance: 2
+    });
+    const [userAlerts, setUserAlerts] = useState([]); // Alerts from backend
+    const [creatingAlert, setCreatingAlert] = useState(false);
+
+    // Technical alert types config
+    const technicalAlertTypes = [
+        { value: 'rsi_oversold', label: 'RSI Oversold', description: 'RSI drops below threshold', icon: '📉', params: ['rsiThreshold'] },
+        { value: 'rsi_overbought', label: 'RSI Overbought', description: 'RSI rises above threshold', icon: '📈', params: ['rsiThreshold'] },
+        { value: 'macd_bullish_crossover', label: 'MACD Bullish', description: 'MACD crosses above signal', icon: '✨', params: [] },
+        { value: 'macd_bearish_crossover', label: 'MACD Bearish', description: 'MACD crosses below signal', icon: '⚠️', params: [] },
+        { value: 'bollinger_upper_breakout', label: 'Bollinger Upper', description: 'Price breaks upper band', icon: '🔺', params: [] },
+        { value: 'bollinger_lower_breakout', label: 'Bollinger Lower', description: 'Price breaks lower band', icon: '🔻', params: [] },
+        { value: 'support_test', label: 'Support Test', description: 'Price approaches support', icon: '🛡️', params: ['supportLevel', 'tolerance'] },
+        { value: 'resistance_test', label: 'Resistance Test', description: 'Price approaches resistance', icon: '🎯', params: ['resistanceLevel', 'tolerance'] }
+    ];
+
     // Fetch on mount
     useEffect(() => {
         if (isAuthenticated) {
             fetchWatchlist();
+            fetchUserAlerts();
         }
     }, [isAuthenticated]);
+
+    // Fetch user's alerts from backend
+    const fetchUserAlerts = async () => {
+        try {
+            const response = await api.get('/alerts/active');
+            if (response.data?.alerts) {
+                setUserAlerts(response.data.alerts);
+            }
+        } catch (error) {
+            console.error('Error fetching alerts:', error);
+        }
+    };
 
     const fetchWatchlist = async () => {
         setLoading(true);
@@ -871,31 +996,104 @@ const WatchlistPage = () => {
     const handleSetAlert = (stock, e) => {
         e?.stopPropagation();
         setSelectedStock(stock);
+        setAlertTab('price'); // Reset to price tab
         setAlertFormData({
             targetPrice: stock.currentPrice || stock.price || '',
             condition: 'above'
         });
+        setTechnicalAlertType('');
+        setTechnicalParams({
+            rsiThreshold: 30,
+            supportLevel: stock.currentPrice || stock.price || '',
+            resistanceLevel: stock.currentPrice || stock.price || '',
+            tolerance: 2
+        });
         setShowAlertModal(true);
     };
 
-    const handleSubmitAlert = (e) => {
+    const handleSubmitAlert = async (e) => {
         e.preventDefault();
-        const targetPrice = parseFloat(alertFormData.targetPrice);
-        
-        if (targetPrice <= 0) {
-            toast.warning('Target price must be greater than 0');
-            return;
+        setCreatingAlert(true);
+
+        try {
+            const symbol = selectedStock.symbol;
+            const assetType = isCrypto(symbol) ? 'crypto' : 'stock';
+
+            if (alertTab === 'price') {
+                // Price alert
+                const targetPrice = parseFloat(alertFormData.targetPrice);
+
+                if (targetPrice <= 0) {
+                    toast.warning('Target price must be greater than 0');
+                    setCreatingAlert(false);
+                    return;
+                }
+
+                const alertType = alertFormData.condition === 'above' ? 'price_above' : 'price_below';
+
+                await api.post('/alerts', {
+                    type: alertType,
+                    symbol: symbol.toUpperCase(),
+                    assetType,
+                    targetPrice,
+                    notifyVia: { inApp: true, telegram: true }
+                });
+
+                toast.success(`Price alert set: ${symbol} ${alertFormData.condition} $${targetPrice.toFixed(2)}`);
+
+            } else {
+                // Technical alert
+                if (!technicalAlertType) {
+                    toast.warning('Please select an alert type');
+                    setCreatingAlert(false);
+                    return;
+                }
+
+                // Validate required params for support/resistance
+                if (technicalAlertType === 'support_test' && !technicalParams.supportLevel) {
+                    toast.warning('Please enter a support level');
+                    setCreatingAlert(false);
+                    return;
+                }
+                if (technicalAlertType === 'resistance_test' && !technicalParams.resistanceLevel) {
+                    toast.warning('Please enter a resistance level');
+                    setCreatingAlert(false);
+                    return;
+                }
+
+                await api.post('/alerts', {
+                    type: technicalAlertType,
+                    symbol: symbol.toUpperCase(),
+                    assetType,
+                    technicalParams: {
+                        rsiThreshold: technicalAlertType.includes('rsi') ? parseInt(technicalParams.rsiThreshold) : undefined,
+                        supportLevel: technicalAlertType === 'support_test' ? parseFloat(technicalParams.supportLevel) : undefined,
+                        resistanceLevel: technicalAlertType === 'resistance_test' ? parseFloat(technicalParams.resistanceLevel) : undefined,
+                        tolerance: parseInt(technicalParams.tolerance) || 2
+                    },
+                    notifyVia: { inApp: true, telegram: true }
+                });
+
+                const alertLabel = technicalAlertTypes.find(t => t.value === technicalAlertType)?.label || technicalAlertType;
+                toast.success(`Technical alert set: ${symbol} - ${alertLabel}`);
+            }
+
+            // Refresh alerts and close modal
+            await fetchUserAlerts();
+            setShowAlertModal(false);
+            setSelectedStock(null);
+
+        } catch (error) {
+            console.error('Error creating alert:', error);
+            toast.error(error.response?.data?.error || 'Failed to create alert');
+        } finally {
+            setCreatingAlert(false);
         }
+    };
 
-        setWatchlist(prev => prev.map(stock => 
-            stock.symbol === selectedStock.symbol 
-                ? { ...stock, hasAlert: true, alertPrice: targetPrice, alertCondition: alertFormData.condition }
-                : stock
-        ));
-
-        toast.success(`Alert set: ${selectedStock.symbol} ${alertFormData.condition} $${targetPrice.toFixed(2)}`);
-        setShowAlertModal(false);
-        setSelectedStock(null);
+    // Get count of active alerts for a symbol
+    const getAlertCountForSymbol = (symbol) => {
+        return userAlerts.filter(a => a.symbol === symbol.toUpperCase()).length;
     };
 
     const handleExportCSV = () => {
@@ -1249,17 +1447,22 @@ const WatchlistPage = () => {
                                             </Td>
                                             <Td theme={theme}>
                                                 <AlertCell>
-                                                    <AlertBadge 
-                                                        theme={theme}
-                                                        $active={stock.hasAlert}
-                                                        onClick={e => handleSetAlert(stock, e)}
-                                                    >
-                                                        {stock.hasAlert ? <Bell size={12} /> : <BellOff size={12} />}
-                                                        {stock.hasAlert 
-                                                            ? `${stock.alertCondition} $${stock.alertPrice?.toFixed(0)}`
-                                                            : 'Set Alert'
-                                                        }
-                                                    </AlertBadge>
+                                                    {(() => {
+                                                        const alertCount = getAlertCountForSymbol(symbol);
+                                                        return (
+                                                            <AlertBadge
+                                                                theme={theme}
+                                                                $active={alertCount > 0}
+                                                                onClick={e => handleSetAlert(stock, e)}
+                                                            >
+                                                                {alertCount > 0 ? <Bell size={12} /> : <BellOff size={12} />}
+                                                                {alertCount > 0
+                                                                    ? <>Alerts <AlertBadgeCount theme={theme}>{alertCount}</AlertBadgeCount></>
+                                                                    : 'Set Alert'
+                                                                }
+                                                            </AlertBadge>
+                                                        );
+                                                    })()}
                                                 </AlertCell>
                                             </Td>
                                             <Td theme={theme}>
@@ -1313,42 +1516,196 @@ const WatchlistPage = () => {
             {/* Alert Modal */}
             {showAlertModal && selectedStock && (
                 <Modal onClick={() => setShowAlertModal(false)}>
-                    <ModalContent theme={theme} onClick={e => e.stopPropagation()}>
+                    <ModalContent theme={theme} onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
                         <ModalHeader>
                             <ModalTitle theme={theme}>Set Alert for {selectedStock.symbol}</ModalTitle>
                             <CloseButton theme={theme} onClick={() => setShowAlertModal(false)}>
                                 <X size={18} />
                             </CloseButton>
                         </ModalHeader>
+
+                        {/* Tabs */}
+                        <ModalTabs theme={theme}>
+                            <Tab
+                                theme={theme}
+                                $active={alertTab === 'price'}
+                                onClick={() => setAlertTab('price')}
+                            >
+                                <Target size={16} />
+                                Price Alert
+                            </Tab>
+                            <Tab
+                                theme={theme}
+                                $active={alertTab === 'technical'}
+                                onClick={() => setAlertTab('technical')}
+                            >
+                                <Activity size={16} />
+                                Technical Alert
+                            </Tab>
+                        </ModalTabs>
+
                         <Form onSubmit={handleSubmitAlert}>
-                            <FormGroup>
-                                <Label theme={theme}>Alert Condition</Label>
-                                <ModalSelect 
-                                    theme={theme}
-                                    value={alertFormData.condition}
-                                    onChange={e => setAlertFormData({ ...alertFormData, condition: e.target.value })}
-                                >
-                                    <option value="above">Price goes above</option>
-                                    <option value="below">Price goes below</option>
-                                </ModalSelect>
-                            </FormGroup>
-                            <FormGroup>
-                                <Label theme={theme}>Target Price</Label>
-                                <Input
-                                    theme={theme}
-                                    type="number"
-                                    step="0.01"
-                                    placeholder="150.00"
-                                    value={alertFormData.targetPrice}
-                                    onChange={e => setAlertFormData({ ...alertFormData, targetPrice: e.target.value })}
-                                    required
-                                    autoFocus
-                                />
-                                <HelpText theme={theme}>
-                                    Current price: {formatPrice(selectedStock.currentPrice || selectedStock.price || 0, selectedStock.symbol)}
-                                </HelpText>
-                            </FormGroup>
-                            <SubmitButton theme={theme} type="submit">Create Alert</SubmitButton>
+                            {/* Price Alert Tab */}
+                            {alertTab === 'price' && (
+                                <>
+                                    <FormGroup>
+                                        <Label theme={theme}>Alert Condition</Label>
+                                        <ModalSelect
+                                            theme={theme}
+                                            value={alertFormData.condition}
+                                            onChange={e => setAlertFormData({ ...alertFormData, condition: e.target.value })}
+                                        >
+                                            <option value="above">Price goes above</option>
+                                            <option value="below">Price goes below</option>
+                                        </ModalSelect>
+                                    </FormGroup>
+                                    <FormGroup>
+                                        <Label theme={theme}>Target Price</Label>
+                                        <Input
+                                            theme={theme}
+                                            type="number"
+                                            step="0.01"
+                                            placeholder="150.00"
+                                            value={alertFormData.targetPrice}
+                                            onChange={e => setAlertFormData({ ...alertFormData, targetPrice: e.target.value })}
+                                            required
+                                        />
+                                        <HelpText theme={theme}>
+                                            Current price: {formatPrice(selectedStock.currentPrice || selectedStock.price || 0, selectedStock.symbol)}
+                                        </HelpText>
+                                    </FormGroup>
+                                </>
+                            )}
+
+                            {/* Technical Alert Tab */}
+                            {alertTab === 'technical' && (
+                                <>
+                                    <FormGroup>
+                                        <Label theme={theme}>Select Alert Type</Label>
+                                        <TechnicalTypeGrid>
+                                            {technicalAlertTypes.map(type => (
+                                                <TechnicalTypeCard
+                                                    key={type.value}
+                                                    theme={theme}
+                                                    $selected={technicalAlertType === type.value}
+                                                    onClick={() => {
+                                                        setTechnicalAlertType(type.value);
+                                                        // Set default RSI threshold based on type
+                                                        if (type.value === 'rsi_oversold') {
+                                                            setTechnicalParams(p => ({ ...p, rsiThreshold: 30 }));
+                                                        } else if (type.value === 'rsi_overbought') {
+                                                            setTechnicalParams(p => ({ ...p, rsiThreshold: 70 }));
+                                                        }
+                                                    }}
+                                                >
+                                                    <TechnicalTypeName theme={theme}>
+                                                        <span>{type.icon}</span>
+                                                        {type.label}
+                                                    </TechnicalTypeName>
+                                                    <TechnicalTypeDesc theme={theme}>{type.description}</TechnicalTypeDesc>
+                                                </TechnicalTypeCard>
+                                            ))}
+                                        </TechnicalTypeGrid>
+                                    </FormGroup>
+
+                                    {/* RSI Parameters */}
+                                    {(technicalAlertType === 'rsi_oversold' || technicalAlertType === 'rsi_overbought') && (
+                                        <FormGroup>
+                                            <Label theme={theme}>RSI Threshold</Label>
+                                            <Input
+                                                theme={theme}
+                                                type="number"
+                                                min="1"
+                                                max="99"
+                                                value={technicalParams.rsiThreshold}
+                                                onChange={e => setTechnicalParams({ ...technicalParams, rsiThreshold: e.target.value })}
+                                            />
+                                            <HelpText theme={theme}>
+                                                {technicalAlertType === 'rsi_oversold'
+                                                    ? 'Alert when RSI drops below this value (default: 30)'
+                                                    : 'Alert when RSI rises above this value (default: 70)'}
+                                            </HelpText>
+                                        </FormGroup>
+                                    )}
+
+                                    {/* Support Level Parameters */}
+                                    {technicalAlertType === 'support_test' && (
+                                        <>
+                                            <FormGroup>
+                                                <Label theme={theme}>Support Level ($)</Label>
+                                                <Input
+                                                    theme={theme}
+                                                    type="number"
+                                                    step="0.01"
+                                                    placeholder="Enter support price"
+                                                    value={technicalParams.supportLevel}
+                                                    onChange={e => setTechnicalParams({ ...technicalParams, supportLevel: e.target.value })}
+                                                    required
+                                                />
+                                            </FormGroup>
+                                            <FormGroup>
+                                                <Label theme={theme}>Tolerance (%)</Label>
+                                                <Input
+                                                    theme={theme}
+                                                    type="number"
+                                                    min="0.5"
+                                                    max="10"
+                                                    step="0.5"
+                                                    value={technicalParams.tolerance}
+                                                    onChange={e => setTechnicalParams({ ...technicalParams, tolerance: e.target.value })}
+                                                />
+                                                <HelpText theme={theme}>
+                                                    Alert triggers within this % of the support level
+                                                </HelpText>
+                                            </FormGroup>
+                                        </>
+                                    )}
+
+                                    {/* Resistance Level Parameters */}
+                                    {technicalAlertType === 'resistance_test' && (
+                                        <>
+                                            <FormGroup>
+                                                <Label theme={theme}>Resistance Level ($)</Label>
+                                                <Input
+                                                    theme={theme}
+                                                    type="number"
+                                                    step="0.01"
+                                                    placeholder="Enter resistance price"
+                                                    value={technicalParams.resistanceLevel}
+                                                    onChange={e => setTechnicalParams({ ...technicalParams, resistanceLevel: e.target.value })}
+                                                    required
+                                                />
+                                            </FormGroup>
+                                            <FormGroup>
+                                                <Label theme={theme}>Tolerance (%)</Label>
+                                                <Input
+                                                    theme={theme}
+                                                    type="number"
+                                                    min="0.5"
+                                                    max="10"
+                                                    step="0.5"
+                                                    value={technicalParams.tolerance}
+                                                    onChange={e => setTechnicalParams({ ...technicalParams, tolerance: e.target.value })}
+                                                />
+                                                <HelpText theme={theme}>
+                                                    Alert triggers within this % of the resistance level
+                                                </HelpText>
+                                            </FormGroup>
+                                        </>
+                                    )}
+
+                                    {/* Info for MACD/Bollinger */}
+                                    {(technicalAlertType.includes('macd') || technicalAlertType.includes('bollinger')) && (
+                                        <HelpText theme={theme} style={{ marginBottom: '1rem' }}>
+                                            This alert will trigger automatically when the indicator condition is met. No additional parameters needed.
+                                        </HelpText>
+                                    )}
+                                </>
+                            )}
+
+                            <SubmitButton theme={theme} type="submit" disabled={creatingAlert || (alertTab === 'technical' && !technicalAlertType)}>
+                                {creatingAlert ? 'Creating...' : 'Create Alert'}
+                            </SubmitButton>
                         </Form>
                     </ModalContent>
                 </Modal>
