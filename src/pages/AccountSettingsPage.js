@@ -90,6 +90,12 @@ const AccountSettingsPage = () => {
         }
     };
 
+    // Capitalize first letter of tier for display
+    const formatTierName = (tier) => {
+        if (!tier) return 'Free';
+        return tier.charAt(0).toUpperCase() + tier.slice(1).toLowerCase();
+    };
+
     if (authLoading) {
         return (
             <PageContainer>
@@ -137,8 +143,8 @@ const AccountSettingsPage = () => {
                     <ProfileCard>
                         <ProfileHeader>
                             <Avatar>
-                                {user.avatar ? (
-                                    <img src={user.avatar} alt={user.username} />
+                                {user.profile?.avatar ? (
+                                    <img src={user.profile.avatar} alt={user.username} />
                                 ) : (
                                     <AvatarPlaceholder>
                                         {user.username?.charAt(0).toUpperCase()}
@@ -151,9 +157,9 @@ const AccountSettingsPage = () => {
                                     <Mail size={14} />
                                     {user.email}
                                 </Email>
-                                <TierBadge $color={getTierColor(user.subscriptionTier)}>
-                                    {getTierIcon(user.subscriptionTier)}
-                                    {user.subscriptionTier || 'Free'} Plan
+                                <TierBadge $color={getTierColor(user.subscription?.status)}>
+                                    {getTierIcon(user.subscription?.status)}
+                                    {formatTierName(user.subscription?.status)} Plan
                                 </TierBadge>
                             </ProfileInfo>
                         </ProfileHeader>
@@ -170,7 +176,7 @@ const AccountSettingsPage = () => {
                             </StatItem>
                             <StatDivider />
                             <StatItem>
-                                <StatValue>{user.level || 1}</StatValue>
+                                <StatValue>{user.gamification?.level || 1}</StatValue>
                                 <StatLabel>Level</StatLabel>
                             </StatItem>
                         </ProfileStats>
@@ -237,20 +243,20 @@ const AccountSettingsPage = () => {
                                 <span>Subscription</span>
                             </SectionHeader>
                             
-                            <SubscriptionCard $color={getTierColor(user.subscriptionTier)}>
+                            <SubscriptionCard $color={getTierColor(user.subscription?.status)}>
                                 <SubscriptionInfo>
                                     <SubscriptionTier>
-                                        {getTierIcon(user.subscriptionTier)}
-                                        {user.subscriptionTier || 'Free'} Plan
+                                        {getTierIcon(user.subscription?.status)}
+                                        {formatTierName(user.subscription?.status)} Plan
                                     </SubscriptionTier>
                                     <SubscriptionDesc>
-                                        {user.subscriptionTier === 'Free' 
+                                        {(!user.subscription?.status || user.subscription?.status === 'free')
                                             ? 'Upgrade to unlock premium features'
                                             : 'You have access to all premium features'
                                         }
                                     </SubscriptionDesc>
                                 </SubscriptionInfo>
-                                {user.subscriptionTier === 'Free' && (
+                                {(!user.subscription?.status || user.subscription?.status === 'free') && (
                                     <UpgradeButton onClick={() => navigate('/pricing')}>
                                         Upgrade
                                     </UpgradeButton>
