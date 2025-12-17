@@ -1118,10 +1118,10 @@ const PricingPage = () => {
     };
 
     const PRICE_IDS = {
-        starter: yearly ? 'price_starter_yearly' : 'price_1SV9d8CtdTItnGjydNZsbXl3',
-        pro: yearly ? 'price_pro_yearly' : 'price_1SV9dTCtdTItnGjycfSxQtAg',
-        premium: yearly ? 'price_premium_yearly' : 'price_1SV9doCtdTItnGjyYb8yG97j',
-        elite: yearly ? 'price_elite_yearly' : 'price_1SV9eACtdTItnGjyzSNaNYhP'
+        starter: yearly ? 'price_1SfTvNCd6gxWUimR5g3pUz9g' : 'price_1SfTvNCd6gxWUimRapg2v7zC',
+        pro: yearly ? 'price_1SfTxUCd6gxWUimRDKXxf5B9' : 'price_1SfTxUCd6gxWUimRfpe40Nr2',
+        premium: yearly ? 'price_1SfU0WCd6gxWUimRj1tdL545' : 'price_1SfU0WCd6gxWUimRjjA8XnFr',
+        elite: yearly ? 'price_1SfU1VCd6gxWUimR0tUeO70P' : 'price_1SfU1VCd6gxWUimReOuVaFb4'
     };
 
     const prices = {
