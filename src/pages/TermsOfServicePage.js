@@ -461,7 +461,7 @@ const TermsOfServicePage = () => {
                 </Subtitle>
                 <LastUpdated>
                     <Clock size={16} />
-                    Last Updated: October 01, 2025
+                    Last Updated: December 16, 2025
                 </LastUpdated>
             </Header>
 
@@ -494,16 +494,17 @@ const TermsOfServicePage = () => {
                     </SectionHeader>
                     <SectionContent>
                         <p>
-                            By accessing or using Nexus Signal.AI, you agree to be bound by these Terms of Service and our 
-                            <a href="/privacy-policy"> Privacy Policy</a>. If you do not agree to all the terms and conditions, 
-                            you may not access or use our services.
+                            Nexus Signal.AI is operated by <strong>Nexus Signal LLC</strong>, a West Virginia limited liability company
+                            ("Company," "we," "us," or "our"). By accessing or using Nexus Signal.AI, you agree to be bound by these
+                            Terms of Service and our <a href="/privacy-policy"> Privacy Policy</a>. If you do not agree to all the
+                            terms and conditions, you may not access or use our services.
                         </p>
                         <InfoBox>
                             <InfoIcon>
                                 <AlertTriangle size={20} />
                             </InfoIcon>
                             <InfoContent>
-                                <strong>Important:</strong> By creating an account or using our services, you acknowledge that you have read, 
+                                <strong>Important:</strong> By creating an account or using our services, you acknowledge that you have read,
                                 understood, and agree to be bound by these Terms of Service.
                             </InfoContent>
                         </InfoBox>
@@ -631,9 +632,9 @@ const TermsOfServicePage = () => {
                         <Subsection>
                             <SubsectionTitle>Limitation of Liability</SubsectionTitle>
                             <p>
-                                To the maximum extent permitted by applicable law, Nexus Signal.AI and its affiliates, directors, employees, 
-                                and agents shall not be liable for any indirect, incidental, special, consequential, or punitive damages, 
-                                including but not limited to:
+                                To the maximum extent permitted by applicable law, Nexus Signal LLC and its members, affiliates, directors,
+                                employees, and agents shall not be liable for any indirect, incidental, special, consequential, or punitive
+                                damages, including but not limited to:
                             </p>
                             <BulletList>
                                 <li>Loss of profits, data, use, goodwill, or other intangible losses</li>
@@ -661,9 +662,9 @@ const TermsOfServicePage = () => {
                     </SectionHeader>
                     <SectionContent>
                         <p>
-                            All content on Nexus Signal.AI, including text, graphics, logos, images, as well as the compilation thereof, 
-                            and any software used on the site, is the property of Nexus Signal.AI or its suppliers and protected by copyright, 
-                            trademark, and other laws that protect intellectual property and proprietary rights.
+                            All content on Nexus Signal.AI, including text, graphics, logos, images, as well as the compilation thereof,
+                            and any software used on the site, is the property of Nexus Signal LLC or its suppliers and protected by
+                            copyright, trademark, and other laws that protect intellectual property and proprietary rights.
                         </p>
                         <Subsection>
                             <SubsectionTitle>Your License to Use</SubsectionTitle>
@@ -692,16 +693,17 @@ const TermsOfServicePage = () => {
                     </SectionHeader>
                     <SectionContent>
                         <p>
-                            These Terms shall be governed and construed in accordance with the laws of the United States of America, 
-                            without regard to its conflict of law provisions. Our failure to enforce any right or provision of these 
-                            Terms will not be considered a waiver of those rights.
+                            These Terms shall be governed and construed in accordance with the laws of the State of West Virginia,
+                            United States of America, without regard to its conflict of law provisions. Our failure to enforce any
+                            right or provision of these Terms will not be considered a waiver of those rights.
                         </p>
                         <Subsection>
                             <SubsectionTitle>Dispute Resolution</SubsectionTitle>
                             <p>
-                                Any disputes arising out of or relating to these Terms or the service shall be resolved through binding 
-                                arbitration in accordance with the rules of the American Arbitration Association. You agree to waive any 
-                                right to a jury trial or to participate in a class action lawsuit.
+                                Any disputes arising out of or relating to these Terms or the service shall be resolved through binding
+                                arbitration in accordance with the rules of the American Arbitration Association. The arbitration shall
+                                take place in West Virginia. You agree to waive any right to a jury trial or to participate in a class
+                                action lawsuit.
                             </p>
                         </Subsection>
                     </SectionContent>

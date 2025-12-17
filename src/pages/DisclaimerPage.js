@@ -514,7 +514,7 @@ const DisclaimerPage = () => {
                 </Subtitle>
                 <LastUpdated>
                     <Clock size={16} />
-                    Last Updated: October 01, 2025
+                    Last Updated: December 16, 2025
                 </LastUpdated>
             </Header>
 
@@ -563,9 +563,9 @@ const DisclaimerPage = () => {
                     </SectionHeader>
                     <SectionContent>
                         <p>
-                            Nexus Signal.AI provides AI-generated signals and market analysis for <strong>informational purposes only</strong>. 
-                            We are <em>not</em> a registered investment advisor, broker-dealer, or financial analyst. The information provided 
-                            should not be considered as:
+                            Nexus Signal LLC ("Company," "we," "us," or "our"), operating as Nexus Signal.AI, provides AI-generated signals
+                            and market analysis for <strong>informational purposes only</strong>. We are <em>not</em> a registered investment
+                            advisor, broker-dealer, or financial analyst. The information provided should not be considered as:
                         </p>
                         <BulletList>
                             <li>Financial advice or investment recommendations</li>
@@ -710,7 +710,7 @@ const DisclaimerPage = () => {
                     </SectionHeader>
                     <SectionContent>
                         <p>
-                            While we strive to provide accurate and timely information, Nexus Signal.AI <strong>does not guarantee</strong> 
+                            While we strive to provide accurate and timely information, Nexus Signal LLC <strong>does not guarantee</strong>
                             the accuracy, completeness, or timeliness of the information or signals provided.
                         </p>
 
@@ -752,8 +752,8 @@ const DisclaimerPage = () => {
                     </SectionHeader>
                     <SectionContent>
                         <p>
-                            Our website may contain links to third-party websites or services that are not owned or controlled by 
-                            Nexus Signal.AI. We have no control over, and assume no responsibility for, the content, privacy policies, 
+                            Our website may contain links to third-party websites or services that are not owned or controlled by
+                            Nexus Signal LLC. We have no control over, and assume no responsibility for, the content, privacy policies,
                             or practices of any third-party websites or services.
                         </p>
 
@@ -786,7 +786,7 @@ const DisclaimerPage = () => {
                     </SectionHeader>
                     <SectionContent>
                         <p>
-                            Nexus Signal.AI reserves the right to modify or replace this Disclaimer at any time. We will provide notice 
+                            Nexus Signal LLC reserves the right to modify or replace this Disclaimer at any time. We will provide notice
                             of any changes by posting the new Disclaimer on this page and updating the "Last Updated" date.
                         </p>
 
