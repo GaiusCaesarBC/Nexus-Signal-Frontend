@@ -27,6 +27,7 @@ import {
     MessageCircle
 } from 'lucide-react';
 import TelegramSettings from '../components/TelegramSettings';
+import DiscordSettings from '../components/DiscordSettings';
 
 const AccountSettingsPage = () => {
     const { user, loading: authLoading, isAuthenticated, logout } = useAuth();
@@ -298,6 +299,9 @@ const AccountSettingsPage = () => {
 
                         {/* Telegram Notifications */}
                         <TelegramSettings />
+
+                        {/* Discord Notifications */}
+                        <DiscordSettings />
 
                         {/* Quick Links */}
                         <SettingsSection>
