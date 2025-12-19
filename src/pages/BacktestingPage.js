@@ -1,5 +1,5 @@
 // client/src/pages/BacktestingPage.js - Strategy Backtesting Dashboard
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
 import { useTheme } from '../context/ThemeContext';
@@ -11,7 +11,7 @@ import {
     Calendar, DollarSign, Percent, BarChart3, Activity,
     Clock, CheckCircle, XCircle, Trash2, Eye, RefreshCw,
     ChevronDown, Zap, Award, AlertTriangle, LineChart,
-    Settings, History
+    Settings, History, Search
 } from 'lucide-react';
 
 // ============ ANIMATIONS ============
@@ -479,6 +479,118 @@ const ParameterRow = styled.div`
     }
 `;
 
+// ============ SEARCH AUTOCOMPLETE COMPONENTS ============
+const SearchContainer = styled.div`
+    position: relative;
+    width: 100%;
+`;
+
+const SearchResultsDropdown = styled.div`
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: ${({ theme }) => theme?.bg?.secondary || 'rgba(15, 23, 42, 0.98)'};
+    border: 1px solid ${({ theme }) => `${theme?.brand?.primary || '#8b5cf6'}4D`};
+    border-radius: 12px;
+    margin-top: 0.5rem;
+    max-height: 350px;
+    overflow-y: auto;
+    z-index: 1000;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    animation: ${fadeIn} 0.2s ease-out;
+
+    &::-webkit-scrollbar {
+        width: 6px;
+    }
+    &::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    &::-webkit-scrollbar-thumb {
+        background: ${({ theme }) => `${theme?.brand?.primary || '#8b5cf6'}4D`};
+        border-radius: 3px;
+    }
+`;
+
+const SearchResultSection = styled.div`
+    padding: 0.5rem 0;
+
+    &:not(:last-child) {
+        border-bottom: 1px solid ${({ theme }) => theme?.border?.primary || 'rgba(100, 116, 139, 0.3)'};
+    }
+`;
+
+const SearchResultSectionTitle = styled.div`
+    padding: 0.5rem 1rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: ${({ theme }) => theme?.text?.tertiary || '#64748b'};
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+`;
+
+const SearchResultItem = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+        background: ${({ theme }) => `${theme?.brand?.primary || '#8b5cf6'}1A`};
+    }
+`;
+
+const SearchResultInfo = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+`;
+
+const SearchResultSymbol = styled.span`
+    font-weight: 700;
+    color: ${({ theme }) => theme?.text?.primary || '#e0e6ed'};
+    font-size: 1rem;
+`;
+
+const SearchResultName = styled.span`
+    font-size: 0.8rem;
+    color: ${({ theme }) => theme?.text?.secondary || '#94a3b8'};
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+`;
+
+const SearchResultType = styled.span`
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    background: ${({ $type }) => $type === 'crypto' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.2)'};
+    color: ${({ $type }) => $type === 'crypto' ? '#f59e0b' : '#10b981'};
+`;
+
+const SearchLoading = styled.div`
+    padding: 1.5rem;
+    text-align: center;
+    color: ${({ theme }) => theme?.text?.secondary || '#94a3b8'};
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+`;
+
+const SearchNoResults = styled.div`
+    padding: 1.5rem;
+    text-align: center;
+    color: ${({ theme }) => theme?.text?.secondary || '#94a3b8'};
+`;
+
 // ============ STRATEGIES DATA ============
 const STRATEGIES = [
     {
@@ -555,8 +667,70 @@ function BacktestingPage() {
         parameters: {}
     });
 
+    // Search autocomplete state
+    const [searchResults, setSearchResults] = useState({ stocks: [], crypto: [] });
+    const [showSearchResults, setShowSearchResults] = useState(false);
+    const [isSearching, setIsSearching] = useState(false);
+    const searchContainerRef = useRef(null);
+
     // Get selected strategy info
     const selectedStrategy = STRATEGIES.find(s => s.id === formData.strategy);
+
+    // Search for stocks/crypto
+    const searchSymbols = useCallback(async (query) => {
+        if (!query || query.length < 1) {
+            setSearchResults({ stocks: [], crypto: [] });
+            setShowSearchResults(false);
+            setIsSearching(false);
+            return;
+        }
+
+        setIsSearching(true);
+        try {
+            const response = await api.get(`/search?q=${encodeURIComponent(query)}`);
+            setSearchResults({
+                stocks: response.data.stocks || [],
+                crypto: response.data.crypto || []
+            });
+            setShowSearchResults(true);
+        } catch (error) {
+            console.error('Search error:', error);
+            setSearchResults({ stocks: [], crypto: [] });
+        } finally {
+            setIsSearching(false);
+        }
+    }, []);
+
+    // Debounced search effect
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (formData.symbol && formData.symbol.length >= 1) {
+                searchSymbols(formData.symbol);
+            } else {
+                setSearchResults({ stocks: [], crypto: [] });
+                setShowSearchResults(false);
+            }
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [formData.symbol, searchSymbols]);
+
+    // Click outside to close search results
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (searchContainerRef.current && !searchContainerRef.current.contains(event.target)) {
+                setShowSearchResults(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    // Handle selecting a search result
+    const handleSelectSearchResult = (result) => {
+        setFormData(prev => ({ ...prev, symbol: result.symbol }));
+        setShowSearchResults(false);
+    };
 
     // Initialize parameters when strategy changes
     useEffect(() => {
@@ -713,15 +887,76 @@ function BacktestingPage() {
                     </CardTitle>
 
                     <FormGroup>
-                        <Label theme={theme}>Symbol</Label>
-                        <Input
-                            type="text"
-                            name="symbol"
-                            value={formData.symbol}
-                            onChange={handleInputChange}
-                            placeholder="e.g., AAPL, MSFT, BTC"
-                            theme={theme}
-                        />
+                        <Label theme={theme}><Search size={16} /> Symbol</Label>
+                        <SearchContainer ref={searchContainerRef}>
+                            <Input
+                                type="text"
+                                name="symbol"
+                                value={formData.symbol}
+                                onChange={handleInputChange}
+                                onFocus={() => formData.symbol.length >= 1 && setShowSearchResults(true)}
+                                placeholder="Search stocks or crypto... (e.g., AAPL, BTC)"
+                                theme={theme}
+                                autoComplete="off"
+                            />
+                            {showSearchResults && (
+                                <SearchResultsDropdown theme={theme}>
+                                    {isSearching ? (
+                                        <SearchLoading theme={theme}>
+                                            <RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} />
+                                            Searching...
+                                        </SearchLoading>
+                                    ) : (searchResults.stocks.length === 0 && searchResults.crypto.length === 0) ? (
+                                        <SearchNoResults theme={theme}>
+                                            {formData.symbol.length >= 1 ? `No results found for "${formData.symbol}"` : 'Start typing to search...'}
+                                        </SearchNoResults>
+                                    ) : (
+                                        <>
+                                            {searchResults.stocks.length > 0 && (
+                                                <SearchResultSection>
+                                                    <SearchResultSectionTitle theme={theme}>
+                                                        <TrendingUp size={14} /> Stocks ({searchResults.stocks.length})
+                                                    </SearchResultSectionTitle>
+                                                    {searchResults.stocks.map((stock, idx) => (
+                                                        <SearchResultItem
+                                                            key={`stock-${stock.symbol}-${idx}`}
+                                                            theme={theme}
+                                                            onClick={() => handleSelectSearchResult(stock)}
+                                                        >
+                                                            <SearchResultInfo>
+                                                                <SearchResultSymbol theme={theme}>{stock.symbol}</SearchResultSymbol>
+                                                                <SearchResultName theme={theme}>{stock.name}</SearchResultName>
+                                                            </SearchResultInfo>
+                                                            <SearchResultType theme={theme} $type="stock">STOCK</SearchResultType>
+                                                        </SearchResultItem>
+                                                    ))}
+                                                </SearchResultSection>
+                                            )}
+                                            {searchResults.crypto.length > 0 && (
+                                                <SearchResultSection>
+                                                    <SearchResultSectionTitle theme={theme}>
+                                                        <DollarSign size={14} /> Crypto ({searchResults.crypto.length})
+                                                    </SearchResultSectionTitle>
+                                                    {searchResults.crypto.map((crypto, idx) => (
+                                                        <SearchResultItem
+                                                            key={`crypto-${crypto.symbol}-${idx}`}
+                                                            theme={theme}
+                                                            onClick={() => handleSelectSearchResult(crypto)}
+                                                        >
+                                                            <SearchResultInfo>
+                                                                <SearchResultSymbol theme={theme}>{crypto.symbol}</SearchResultSymbol>
+                                                                <SearchResultName theme={theme}>{crypto.name}</SearchResultName>
+                                                            </SearchResultInfo>
+                                                            <SearchResultType theme={theme} $type="crypto">CRYPTO</SearchResultType>
+                                                        </SearchResultItem>
+                                                    ))}
+                                                </SearchResultSection>
+                                            )}
+                                        </>
+                                    )}
+                                </SearchResultsDropdown>
+                            )}
+                        </SearchContainer>
                     </FormGroup>
 
                     <FormGroup>
