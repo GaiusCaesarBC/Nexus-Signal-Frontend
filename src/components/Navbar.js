@@ -15,7 +15,7 @@ import {
     Settings, Bell, CheckCircle, AlertCircle, TrendingUp as TrendingUpIcon,
     DollarSign as DollarIcon, Clock, ArrowUpRight, ArrowDownRight, Trophy, Twitter,
     Briefcase, BarChart3, Activity, Sparkles, Globe, Calculator, TrendingDown, MessageCircle, Award, Waves,
-    Search, Bitcoin, LineChart, UserPlus, Calendar, Building2, FileText, ArrowRightLeft, UserCog
+    Search, Bitcoin, LineChart, UserPlus, Calendar, Building2, FileText, ArrowRightLeft, UserCog, History
 } from 'lucide-react';
 import nexusSignalLogo from '../assets/nexus-signal-logo.png';
 
@@ -1386,6 +1386,7 @@ const Navbar = () => {
             { path: '/compare', label: 'Stock Comparison', icon: BarChart3 },
             { path: '/whale-alerts', label: 'Whale Alerts', icon: Waves },
             { path: '/predict', label: 'AI Predict', icon: Brain, section: 'AI Tools' },
+            { path: '/backtesting', label: 'Backtesting', icon: History },
             { path: '/accuracy-dashboard', label: 'Prediction Accuracy', icon: Trophy },
             { path: '/chat', label: 'AI Chat', icon: MessageSquare },
             { path: '/news', label: 'News', icon: Newspaper, section: 'Market' },
