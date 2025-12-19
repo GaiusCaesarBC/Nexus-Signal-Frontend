@@ -343,6 +343,7 @@ const Label = styled.label`
 const AutocompleteContainer = styled.div`
     position: relative;
     width: 100%;
+    z-index: 100;
 `;
 
 const SuggestionsDropdown = styled.div`
