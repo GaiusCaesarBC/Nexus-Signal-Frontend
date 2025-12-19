@@ -1182,7 +1182,7 @@ const PricingPage = () => {
         }
     };
 
-    // ============ UPDATED PLAN CONFIGURATIONS ============
+    // ============ UPDATED PLAN CONFIGURATIONS - ACCURATE FEATURES ============
     const plans = [
         {
             id: 'free',
@@ -1199,19 +1199,20 @@ const PricingPage = () => {
                     'Achievement System (93 achievements)',
                     'Level Progression (1-100)',
                     'XP & Nexus Coins',
-                    'Daily Login Rewards',
-                    'Leaderboards',
+                    'Daily Login Rewards & Streaks',
+                    'Global Leaderboards',
+                    'Cosmetic Vault (Borders, Badges)',
                 ]},
                 { category: '📈 Paper Trading', color: '#3b82f6', items: [
-                    '$100,000 Virtual Cash',
-                    'Real Market Simulation',
-                    'Trade History & Analytics',
-                    'Portfolio Tracking',
+                    '$100,000 Virtual Portfolio',
+                    'Real-Time Market Simulation',
+                    'Trade History & P/L Analytics',
+                    'Financial Calculators',
                 ]},
                 { category: '👥 Social', color: '#10b981', items: [
-                    'Social Feed Access',
-                    'Post & Comment',
-                    'Follow Traders',
+                    'Social Feed (Post & Comment)',
+                    'Follow Top Traders',
+                    'Public Profile Page',
                 ]}
             ],
             cta: user ? 'Go to Dashboard' : 'Get Started Free',
@@ -1220,7 +1221,7 @@ const PricingPage = () => {
         {
             id: 'starter',
             name: 'Starter',
-            description: 'Enhanced Analytics',
+            description: 'Begin Your Edge',
             icon: Star,
             price: prices.starter,
             gradient: 'linear-gradient(135deg, #10b981, #059669)',
@@ -1232,8 +1233,9 @@ const PricingPage = () => {
                     'Watchlist (10 stocks)',
                     'Stock Screener Access',
                     'Market News Feed',
-                    'Sentiment Analysis',
+                    'Basic Sentiment Analysis',
                     'Trade Journal',
+                    'Stock Detail Pages',
                     'Email Support',
                 ]}
             ],
@@ -1252,12 +1254,12 @@ const PricingPage = () => {
             features: [
                 { category: 'Everything in Starter +', color: '#3b82f6', items: [
                     { text: '15 AI Predictions/day', highlight: true },
-                    'Watchlist (30 stocks)',
                     { text: 'AI Chat Assistant', highlight: true },
+                    'Watchlist (30 stocks, 3 lists)',
                     'Advanced Market Heatmap',
-                    'Technical Indicators',
+                    'Technical Indicators (RSI, MACD, BB)',
                     'Real-Time Price Alerts',
-                    'Advanced Stock Comparisons',
+                    'Stock Comparison Tools',
                     'Advanced Analysis Tools',
                     'Priority Email Support',
                 ]}
@@ -1279,17 +1281,20 @@ const PricingPage = () => {
             features: [
                 { category: 'Everything in Pro +', color: '#f97316', items: [
                     { text: 'Unlimited AI Predictions', highlight: true },
-                    { text: 'Unlimited Watchlist Stocks', highlight: true },
-                    'Advanced AI Chat (GPT-4 Turbo)',
-                    'Prediction History & Analytics',
-                    'Portfolio Optimization Tools',
-                    'Custom Alerts & Notifications',
-                    'In-Depth Sector Analysis',
+                    { text: 'Unlimited Watchlists & Stocks', highlight: true },
+                    { text: 'GPT-4 Turbo AI Chat', highlight: true },
+                    'Prediction History & Accuracy Analytics',
+                    'Portfolio Tracking & Optimization',
+                    'Custom Price Alerts',
+                    'In-Depth Sector Rotation Analysis',
+                    'Pattern Recognition',
+                    'Live Real-Time Data',
                 ]},
-                { category: '🐋 Exclusive Features', color: '#f59e0b', items: [
-                    { text: 'Whale Alerts (Large Volume Trades)', highlight: true, special: true },
+                { category: '🐋 Whale Intelligence', color: '#f59e0b', items: [
+                    { text: 'Whale Alerts (Large Trades)', highlight: true, special: true },
                     'Dark Pool Flow Tracking',
                     'Institutional Activity Monitor',
+                    'Congressional Trade Alerts',
                     'Discovery Page Access',
                     '24/7 Priority Support',
                 ]}
@@ -1300,7 +1305,7 @@ const PricingPage = () => {
         {
             id: 'elite',
             name: 'Elite',
-            description: 'Ultimate Market Edge',
+            description: 'Institutional Power',
             icon: Crown,
             tag: { text: 'Best Value', type: 'value', icon: Award },
             featured: true,
@@ -1310,17 +1315,17 @@ const PricingPage = () => {
             borderGradient: 'linear-gradient(135deg, #8b5cf6, #7c3aed, #8b5cf6)',
             features: [
                 { category: 'All Premium Features +', color: '#8b5cf6', items: [
-                    { text: 'Ultra-Low Latency Data', highlight: true },
-                    { text: 'Full API Access', highlight: true },
+                    { text: 'Ultra-Low Latency Data (<50ms)', highlight: true },
+                    { text: 'Full REST API Access', highlight: true },
+                    { text: 'Strategy Backtesting Engine', highlight: true },
                     'Unlimited AI Research Reports',
                     'Custom Research & Insights',
-                    'Advanced Backtesting Tools',
                     'Institutional-Grade Analytics',
                     'Multi-Account Management',
                     'White-Label Options',
                 ]},
                 { category: '👑 VIP Perks', color: '#a78bfa', items: [
-                    { text: '🐋 Whale Alert Webhooks & API', highlight: true, special: true },
+                    { text: 'Whale Alert Webhooks & API', highlight: true, special: true },
                     { text: '1-on-1 Trading Mentorship', highlight: true },
                     'Dedicated Account Manager',
                     'VIP Discord Community',
@@ -1328,7 +1333,7 @@ const PricingPage = () => {
                     'Custom Feature Requests',
                 ]}
             ],
-            comparison: 'Institutional Power',
+            comparison: 'Hedge Fund Level',
             cta: 'Go Elite'
         }
     ];
@@ -1383,8 +1388,8 @@ const PricingPage = () => {
                 </Title>
                 
                 <Subtitle>
-                    AI-powered trading platform with gamification, social features, and institutional-grade analytics. 
-                    Start free, scale when ready.
+                    AI-powered predictions, strategy backtesting, whale alerts, gamification & paper trading.
+                    100+ trained ML models. Start free, scale when ready.
                 </Subtitle>
             </HeaderSection>
 
@@ -1555,16 +1560,16 @@ const PricingPage = () => {
             {/* Stats Section */}
             <StatsSection>
                 <StatCard>
-                    <StatNumber>$2.5B+</StatNumber>
-                    <StatLabel>Volume Tracked</StatLabel>
+                    <StatNumber>93</StatNumber>
+                    <StatLabel>Achievements</StatLabel>
                 </StatCard>
                 <StatCard>
-                    <StatNumber>24/7</StatNumber>
-                    <StatLabel>Market Coverage</StatLabel>
+                    <StatNumber>6</StatNumber>
+                    <StatLabel>Trading Strategies</StatLabel>
                 </StatCard>
                 <StatCard>
-                    <StatNumber>150+</StatNumber>
-                    <StatLabel>Data Sources</StatLabel>
+                    <StatNumber>100+</StatNumber>
+                    <StatLabel>Trained ML Models</StatLabel>
                 </StatCard>
                 <StatCard>
                     <StatNumber>&lt;50ms</StatNumber>
@@ -1577,19 +1582,19 @@ const PricingPage = () => {
                 <Hashtags>
                     <Hashtag>#NexusSignalAI</Hashtag>
                     <Hashtag>#AITrading</Hashtag>
+                    <Hashtag>#Backtesting</Hashtag>
                     <Hashtag>#WhaleAlerts</Hashtag>
-                    <Hashtag>#SmartMoney</Hashtag>
-                    <Hashtag>#TradingCommunity</Hashtag>
+                    <Hashtag>#PaperTrading</Hashtag>
+                    <Hashtag>#MLPredictions</Hashtag>
                 </Hashtags>
 
-                {/* UPDATED - Free Trial instead of Money-Back Guarantee */}
                 <Guarantee>
                     <Sparkles />
-                    7-Day Free Trial on STARTER Plans • No Credit Card Required
+                    Cancel Anytime • Instant Access • Secure Payments via Stripe
                 </Guarantee>
 
                 <FooterText style={{ marginTop: '2rem' }}>
-                    <span>📱 Mobile App Coming Summer 2026</span>
+                    <span>🤖 100+ ML Models Trained</span>
                     <span>•</span>
                     <span>🇺🇸 Made in USA</span>
                     <span>•</span>
