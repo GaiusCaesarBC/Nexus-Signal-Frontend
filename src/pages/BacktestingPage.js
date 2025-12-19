@@ -5,7 +5,7 @@ import { useToast } from '../context/ToastContext';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import styled, { keyframes } from 'styled-components';
-import api from '../services/api';
+import api from '../api/axios';
 import {
     ArrowLeft, Play, TrendingUp, TrendingDown, Target,
     Calendar, DollarSign, Percent, BarChart3, Activity,
