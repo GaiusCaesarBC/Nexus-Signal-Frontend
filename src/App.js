@@ -1,6 +1,6 @@
-// src/App.js - REVERTED TO YOUR WORKING STRUCTURE 🎮
+// src/App.js - OPTIMIZED WITH LAZY LOADING 🚀
 
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { ThemeProvider as StyledThemeProvider, createGlobalStyle } from 'styled-components';
 import { HelmetProvider } from 'react-helmet-async';
@@ -9,17 +9,15 @@ import { useTheme } from './context/ThemeContext';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 
-// Component imports
+// Core components (always loaded - needed on every page)
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
-import AIChatWidget from './components/AIChatWidget';
-import LoadingScreen from './components/LoadingScreen'; 
-import SettingsPage from './components/SettingsPage';
+import LoadingScreen from './components/LoadingScreen';
 import ProtectedRoute from './components/ProtectedRoute';
-import WhaleNotification from './components/WhaleNotification';
+import ScrollToTop from './components/ScrollToTop';
 import BackgroundEffects from './components/BackgroundEffects';
 
-// 🎮 Gamification imports
+// 🎮 Gamification imports (global overlays - always needed)
 import { GamificationProvider } from './context/GamificationContext';
 import AchievementPopup from './components/gamification/AchievementPopup';
 import LevelUpCelebration from './components/gamification/LevelUpCelebration';
@@ -31,60 +29,64 @@ import { VaultProvider } from './context/VaultContext';
 // 💳 Subscription imports
 import { SubscriptionProvider } from './context/SubscriptionContext';
 
-// Page imports
-import LandingPage from './pages/LandingPage';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import DashboardPage from './pages/DashboardPage';
-import PredictPage from './pages/PredictionsPage';
-import ChatPage from './pages/ChatPage';
-import PricingPage from './pages/PricingPage';
-import WatchlistPage from './pages/WatchlistPage';
-import PortfolioPage from './pages/PortfolioPage';
-import AboutPage from './pages/AboutPage';
-import TermsOfServicePage from './pages/TermsOfServicePage';
-import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
-import DisclaimerPage from './pages/DisclaimerPage';
-import NotFoundPage from './pages/NotFoundPage';
-import StockPage from './pages/StockPage';
-import ProfilePage from './pages/ProfilePage';
-import CookiePolicyPage from './pages/CookiePolicyPage';
-import ScrollToTop from './components/ScrollToTop';
-import ScreenerPage from './pages/ScreenerPage';
-import NewsPage from './pages/NewsPage';
-import HeatmapPage from './pages/HeatmapPage';
-import JournalPage from './pages/JournalPage';
-import LeaderboardPage from './pages/LeaderboardPage';
-import PublicProfilePage from './pages/PublicProfilePage';
-import CalculatorsPage from './pages/CalculatorsPage';
-import SentimentPage from './pages/SentimentPage';
-import PaperTradingPage from './pages/PaperTradingPage';
-import DiscoveryPage from './pages/DiscoveryPage';
-import SocialFeed from './components/SocialFeed';
-import AchievementsPage from './pages/AchievementsPage';
-import AchievementsBrowserPage from './pages/AchievementsBrowserPage';
-import VaultPage from './pages/VaultPage';
-import EquippedItemsPage from './pages/EquippedItemsPage';
-import PriceServiceTester from './components/dev/PriceServiceTester';
-import OnboardingFlow from './pages/OnboardingFlow';
-import PredictionsShowcase from './pages/PredictionsShowcase';
-import CryptoPage from './pages/CryptoPage';
-import WhaleAlertsPage from './pages/WhaleAlertsPage';
-import ComparisonPage from './pages/ComparisonPage';
-import PredictionHistoryPage from './pages/PredictionHistoryPage';
-import ChartPage from './pages/ChartPage';
-import OAuthCallbackPage from './pages/OAuthCallbackPage';
-import WhitepaperPage from './pages/WhitepaperPage';
-import AlertsPage from './pages/AlertsPage';
-import AccuracyDashboardPage from './pages/AccuracyDashboardPage';
-import EarningsCalendarPage from './pages/EarningsCalendarPage';
-import PortfolioAnalyticsPage from './pages/PortfolioAnalyticsPage';
-import CompanyFinancialsPage from './pages/CompanyFinancialsPage';
-import MarketReportsPage from './pages/MarketReportsPage';
-import SectorRotationPage from './pages/SectorRotationPage';
-import EconomicCalendarPage from './pages/EconomicCalendarPage';
-import AccountSettingsPage from './pages/AccountSettingsPage';
-import BacktestingPage from './pages/BacktestingPage';
+// Lazy-loaded components (loaded on-demand)
+const AIChatWidget = lazy(() => import('./components/AIChatWidget'));
+const WhaleNotification = lazy(() => import('./components/WhaleNotification'));
+const SettingsPage = lazy(() => import('./components/SettingsPage'));
+
+// 🚀 LAZY-LOADED PAGES - Code splitting for faster initial load
+const LandingPage = lazy(() => import('./pages/LandingPage'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const RegisterPage = lazy(() => import('./pages/RegisterPage'));
+const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const PredictPage = lazy(() => import('./pages/PredictionsPage'));
+const ChatPage = lazy(() => import('./pages/ChatPage'));
+const PricingPage = lazy(() => import('./pages/PricingPage'));
+const WatchlistPage = lazy(() => import('./pages/WatchlistPage'));
+const PortfolioPage = lazy(() => import('./pages/PortfolioPage'));
+const AboutPage = lazy(() => import('./pages/AboutPage'));
+const TermsOfServicePage = lazy(() => import('./pages/TermsOfServicePage'));
+const PrivacyPolicyPage = lazy(() => import('./pages/PrivacyPolicyPage'));
+const DisclaimerPage = lazy(() => import('./pages/DisclaimerPage'));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
+const StockPage = lazy(() => import('./pages/StockPage'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const CookiePolicyPage = lazy(() => import('./pages/CookiePolicyPage'));
+const ScreenerPage = lazy(() => import('./pages/ScreenerPage'));
+const NewsPage = lazy(() => import('./pages/NewsPage'));
+const HeatmapPage = lazy(() => import('./pages/HeatmapPage'));
+const JournalPage = lazy(() => import('./pages/JournalPage'));
+const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage'));
+const PublicProfilePage = lazy(() => import('./pages/PublicProfilePage'));
+const CalculatorsPage = lazy(() => import('./pages/CalculatorsPage'));
+const SentimentPage = lazy(() => import('./pages/SentimentPage'));
+const PaperTradingPage = lazy(() => import('./pages/PaperTradingPage'));
+const DiscoveryPage = lazy(() => import('./pages/DiscoveryPage'));
+const SocialFeed = lazy(() => import('./components/SocialFeed'));
+const AchievementsPage = lazy(() => import('./pages/AchievementsPage'));
+const AchievementsBrowserPage = lazy(() => import('./pages/AchievementsBrowserPage'));
+const VaultPage = lazy(() => import('./pages/VaultPage'));
+const EquippedItemsPage = lazy(() => import('./pages/EquippedItemsPage'));
+const PriceServiceTester = lazy(() => import('./components/dev/PriceServiceTester'));
+const OnboardingFlow = lazy(() => import('./pages/OnboardingFlow'));
+const PredictionsShowcase = lazy(() => import('./pages/PredictionsShowcase'));
+const CryptoPage = lazy(() => import('./pages/CryptoPage'));
+const WhaleAlertsPage = lazy(() => import('./pages/WhaleAlertsPage'));
+const ComparisonPage = lazy(() => import('./pages/ComparisonPage'));
+const PredictionHistoryPage = lazy(() => import('./pages/PredictionHistoryPage'));
+const ChartPage = lazy(() => import('./pages/ChartPage'));
+const OAuthCallbackPage = lazy(() => import('./pages/OAuthCallbackPage'));
+const WhitepaperPage = lazy(() => import('./pages/WhitepaperPage'));
+const AlertsPage = lazy(() => import('./pages/AlertsPage'));
+const AccuracyDashboardPage = lazy(() => import('./pages/AccuracyDashboardPage'));
+const EarningsCalendarPage = lazy(() => import('./pages/EarningsCalendarPage'));
+const PortfolioAnalyticsPage = lazy(() => import('./pages/PortfolioAnalyticsPage'));
+const CompanyFinancialsPage = lazy(() => import('./pages/CompanyFinancialsPage'));
+const MarketReportsPage = lazy(() => import('./pages/MarketReportsPage'));
+const SectorRotationPage = lazy(() => import('./pages/SectorRotationPage'));
+const EconomicCalendarPage = lazy(() => import('./pages/EconomicCalendarPage'));
+const AccountSettingsPage = lazy(() => import('./pages/AccountSettingsPage'));
+const BacktestingPage = lazy(() => import('./pages/BacktestingPage'));
 
 // Global styles to set the page background
 const GlobalStyle = createGlobalStyle`
@@ -127,6 +129,7 @@ function AppContent() {
             <ScrollToTop />
             <Navbar />
             <main style={{ flexGrow: 1, minHeight: 'calc(100vh - 120px)' }}>
+                <Suspense fallback={<LoadingScreen message="Loading page..." />}>
                 <Routes>
                     {/* Public Routes */}
                     <Route path="/" element={<LandingPage />} />
@@ -192,18 +195,25 @@ function AppContent() {
 
                     {/* Catch-all for 404 Not Found pages */}
                     <Route path="*" element={<NotFoundPage />} />
-                </Routes> 
+                </Routes>
+                </Suspense>
             </main>
             <Footer />
-            <AIChatWidget />
-            
+
+            {/* Lazy-loaded global components */}
+            <Suspense fallback={null}>
+                <AIChatWidget />
+            </Suspense>
+
             {/* 🎮 GAMIFICATION GLOBAL COMPONENTS */}
             <AchievementPopup />
             <LevelUpCelebration />
             <XPNotification />
 
             {/* 🐋 WHALE NOTIFICATIONS */}
-            <WhaleNotification />
+            <Suspense fallback={null}>
+                <WhaleNotification />
+            </Suspense>
             
             {/* 📊 VERCEL ANALYTICS */}
             <Analytics />
