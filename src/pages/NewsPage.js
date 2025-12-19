@@ -13,6 +13,7 @@ import {
     BarChart3, X, Twitter, Linkedin, Copy, ChevronRight,
     Zap, Eye, Filter, Bitcoin
 } from 'lucide-react';
+import SEO from '../components/SEO';
 
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`
@@ -1323,6 +1324,12 @@ const NewsPage = () => {
 
     return (
         <PageContainer>
+            <SEO
+                title="Market News | AI Sentiment Analysis | Nexus Signal AI"
+                description="Get real-time market news with AI-powered sentiment analysis. Track breaking financial news, crypto updates, and stock market developments with our intelligent news feed."
+                keywords="market news, financial news, stock news, crypto news, AI sentiment analysis, trading news, market updates"
+                url="https://nexussignal.ai/news"
+            />
             <ContentWrapper>
                 {/* Header */}
                 <Header>

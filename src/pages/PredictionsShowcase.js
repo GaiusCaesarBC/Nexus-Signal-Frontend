@@ -10,6 +10,7 @@ import {
     Brain, Sparkles, Lock, Eye, Activity, ChevronRight, Star,
     Award, Flame, Filter, Calendar, DollarSign, Percent, Info
 } from 'lucide-react';
+import SEO from '../components/SEO';
 
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`
@@ -800,6 +801,12 @@ const PredictionsShowcase = () => {
 
     return (
         <PageContainer>
+            <SEO
+                title="AI Stock Predictions | Live Trading Signals | Nexus Signal AI"
+                description="See our AI-powered stock predictions in action. Track prediction accuracy, verified performance, and get real-time trading signals from our machine learning models."
+                keywords="AI stock predictions, trading signals, stock forecast, machine learning predictions, trading accuracy, stock predictions, AI trading"
+                url="https://nexussignal.ai/predictions-showcase"
+            />
             {/* Background Effects */}
             <BackgroundEffects>
                 <GridOverlay />

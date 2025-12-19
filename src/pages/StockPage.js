@@ -15,6 +15,7 @@ import {
   Star, StarOff, Loader2, Zap, PieChart,
   Minus, Plus, ShoppingCart, Wallet, Share2, Bell, BellOff
 } from 'lucide-react';
+import SEO from '../components/SEO';
 
 // Smart price formatter based on symbol
 const formatPrice = (price, symbol) => {
@@ -1380,6 +1381,12 @@ const StockPage = () => {
 
   return (
     <PageContainer>
+      <SEO
+        title={`${symbol?.toUpperCase()} Stock Price & Analysis | Nexus Signal AI`}
+        description={`Get real-time ${symbol?.toUpperCase()} stock price, AI predictions, technical analysis, and trading insights. View charts, news, and make informed investment decisions.`}
+        keywords={`${symbol} stock, ${symbol} price, ${symbol} analysis, ${symbol} prediction, stock chart, stock analysis, AI trading`}
+        url={`https://nexussignal.ai/stock/${symbol}`}
+      />
       <BackButton onClick={() => navigate('/dashboard')}>
         <ArrowLeft size={18} />
         Back to Dashboard

@@ -11,6 +11,7 @@ import {
     Check, AlertCircle, Info, TrendingDown, Coins, Calendar,
     BarChart3, Flame, Star, ArrowUpRight, ArrowDownRight
 } from 'lucide-react';
+import SEO from '../components/SEO';
 
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`
@@ -1835,6 +1836,12 @@ const CalculatorsPage = () => {
 
     return (
         <PageContainer>
+            <SEO
+                title="Financial Calculators | Investment Tools | Nexus Signal AI"
+                description="Free financial calculators for traders and investors. Calculate compound interest, position sizing, profit/loss, risk/reward ratios, and more with our powerful trading tools."
+                keywords="financial calculators, investment calculator, compound interest calculator, position size calculator, profit loss calculator, trading calculator, stock calculator"
+                url="https://nexussignal.ai/calculators"
+            />
             {/* Animated Background Particles - Now uses theme colors */}
             <ParticleContainer>
                 {particles.map(particle => (

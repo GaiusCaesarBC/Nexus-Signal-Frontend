@@ -17,6 +17,7 @@ import {
     Calendar, Clock, Copy, Sparkles, Shield, Rocket,
     Brain, TrendingUp as Trending, Gift, Heart, Wifi, WifiOff
 } from 'lucide-react';
+import SEO from '../components/SEO';
 import AvatarWithBorder, { BORDER_STYLES } from '../components/vault/AvatarWithBorder';
 import { BadgeList } from '../components/BadgeDisplay';
 
@@ -1653,6 +1654,12 @@ const LeaderboardPage = () => {
 
     return (
         <PageContainer>
+            <SEO
+                title="Trading Leaderboard | Top Traders | Nexus Signal AI"
+                description="Compete with top traders worldwide on the Nexus Signal AI leaderboard. Track rankings, follow successful traders, and climb the global trading ranks."
+                keywords="trading leaderboard, top traders, trading competition, trader rankings, paper trading leaderboard, trading community"
+                url="https://nexussignal.ai/leaderboard"
+            />
             <BackgroundOrbs>
                 <Orb $duration="25s" />
                 <Orb $duration="30s" />

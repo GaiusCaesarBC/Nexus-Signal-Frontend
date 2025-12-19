@@ -6,12 +6,13 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useTheme } from '../context/ThemeContext';
-import { 
+import {
     TrendingUp, TrendingDown, Plus, X, ArrowUpRight, ArrowDownRight,
     DollarSign, Activity, BarChart3, Award, AlertCircle, Search,
     Target, Shield, GitCompare, Percent, Building, Bitcoin, RefreshCw,
     ExternalLink
 } from 'lucide-react';
+import SEO from '../components/SEO';
 import { Line, Bar } from 'react-chartjs-2';
 import {
     Chart as ChartJS,
@@ -1107,6 +1108,12 @@ const ComparisonPage = () => {
 
     return (
         <PageContainer theme={theme}>
+            <SEO
+                title="Stock & Crypto Comparison | Nexus Signal AI"
+                description="Compare stocks and cryptocurrencies side-by-side. Analyze price performance, market caps, volatility, and key metrics to make informed investment decisions."
+                keywords="stock comparison, crypto comparison, asset comparison, stock analysis, cryptocurrency analysis, investment comparison, market analysis"
+                url="https://nexussignal.ai/compare"
+            />
             <ContentWrapper>
                 {/* Header */}
                 <Header>

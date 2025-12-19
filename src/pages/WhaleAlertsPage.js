@@ -16,6 +16,7 @@ import {
     Zap, Target, ChevronRight, Info, Award, Globe, X,
     Calendar, Hash, Wallet, ArrowRight
 } from 'lucide-react';
+import SEO from '../components/SEO';
 import TickerLink from '../components/TickerLink';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid,
@@ -1368,6 +1369,12 @@ const WhaleAlertsPage = () => {
 
     return (
         <PageContainer theme={theme}>
+            <SEO
+                title="Whale Alerts | Insider Trading Tracker | Nexus Signal AI"
+                description="Track whale movements and insider trading in real-time. Get alerts on large institutional trades, dark pool activity, and congressional trading to spot market opportunities."
+                keywords="whale alerts, insider trading, institutional trading, dark pool, congressional trading, large trades, market intelligence, whale tracking"
+                url="https://nexussignal.ai/whale-alerts"
+            />
             {/* Subscription Gate */}
             <UpgradePrompt
                 isOpen={showUpgradePrompt}

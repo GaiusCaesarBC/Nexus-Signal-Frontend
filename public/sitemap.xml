@@ -1,50 +1,187 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <!-- Homepage -->
+  <!-- Homepage - Main landing page -->
   <url>
     <loc>https://nexussignal.ai/</loc>
-    <lastmod>2024-12-07</lastmod>
+    <lastmod>2025-12-19</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
 
-  <!-- About Page -->
+  <!-- Core Marketing Pages -->
   <url>
     <loc>https://nexussignal.ai/about</loc>
-    <lastmod>2024-12-07</lastmod>
+    <lastmod>2025-12-19</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
 
-  <!-- Pricing Page -->
   <url>
     <loc>https://nexussignal.ai/pricing</loc>
-    <lastmod>2024-12-07</lastmod>
+    <lastmod>2025-12-19</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
 
-  <!-- Contact Page -->
   <url>
     <loc>https://nexussignal.ai/contact</loc>
-    <lastmod>2024-12-07</lastmod>
+    <lastmod>2025-12-19</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
 
-  <!-- Login Page -->
+  <!-- Authentication Pages -->
   <url>
     <loc>https://nexussignal.ai/login</loc>
-    <lastmod>2024-12-07</lastmod>
+    <lastmod>2025-12-19</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.5</priority>
   </url>
 
-  <!-- Register Page -->
   <url>
     <loc>https://nexussignal.ai/register</loc>
-    <lastmod>2024-12-07</lastmod>
+    <lastmod>2025-12-19</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.7</priority>
+  </url>
+
+  <!-- Feature Showcase Pages - High SEO Value -->
+  <url>
+    <loc>https://nexussignal.ai/predictions-showcase</loc>
+    <lastmod>2025-12-19</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://nexussignal.ai/news</loc>
+    <lastmod>2025-12-19</lastmod>
+    <changefreq>hourly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://nexussignal.ai/whale-alerts</loc>
+    <lastmod>2025-12-19</lastmod>
+    <changefreq>hourly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://nexussignal.ai/leaderboard</loc>
+    <lastmod>2025-12-19</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://nexussignal.ai/discovery</loc>
+    <lastmod>2025-12-19</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Tools & Utilities -->
+  <url>
+    <loc>https://nexussignal.ai/calculators</loc>
+    <lastmod>2025-12-19</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://nexussignal.ai/compare</loc>
+    <lastmod>2025-12-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://nexussignal.ai/screener</loc>
+    <lastmod>2025-12-19</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://nexussignal.ai/heatmap</loc>
+    <lastmod>2025-12-19</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Market Data Pages -->
+  <url>
+    <loc>https://nexussignal.ai/earnings</loc>
+    <lastmod>2025-12-19</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://nexussignal.ai/economic-calendar</loc>
+    <lastmod>2025-12-19</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://nexussignal.ai/sector-rotation</loc>
+    <lastmod>2025-12-19</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://nexussignal.ai/market-reports</loc>
+    <lastmod>2025-12-19</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Analytics & Tracking -->
+  <url>
+    <loc>https://nexussignal.ai/prediction-history</loc>
+    <lastmod>2025-12-19</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://nexussignal.ai/accuracy-dashboard</loc>
+    <lastmod>2025-12-19</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- Documentation & Resources -->
+  <url>
+    <loc>https://nexussignal.ai/whitepaper</loc>
+    <lastmod>2025-12-19</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- Legal Pages -->
+  <url>
+    <loc>https://nexussignal.ai/privacy</loc>
+    <lastmod>2025-12-19</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+
+  <url>
+    <loc>https://nexussignal.ai/terms</loc>
+    <lastmod>2025-12-19</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+
+  <!-- Social Features -->
+  <url>
+    <loc>https://nexussignal.ai/feed</loc>
+    <lastmod>2025-12-19</lastmod>
+    <changefreq>hourly</changefreq>
+    <priority>0.6</priority>
   </url>
 </urlset>

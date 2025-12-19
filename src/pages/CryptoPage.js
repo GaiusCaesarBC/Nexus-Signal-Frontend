@@ -15,6 +15,7 @@ import {
   Minus, Plus, ShoppingCart, Share2, Bell, BellOff,
   Globe, Coins, ArrowUpRight, ArrowDownRight, AlertTriangle
 } from 'lucide-react';
+import SEO from '../components/SEO';
 
 // Smart price formatter - always uses crypto formatting for crypto page
 const formatPrice = (price) => {
@@ -1227,6 +1228,12 @@ const CryptoPage = () => {
 
   return (
     <PageContainer>
+      <SEO
+        title={`${symbol?.toUpperCase()} Crypto Price & Analysis | Nexus Signal AI`}
+        description={`Get real-time ${symbol?.toUpperCase()} cryptocurrency price, AI predictions, market analysis, and trading insights. View charts and make informed crypto investment decisions.`}
+        keywords={`${symbol} crypto, ${symbol} price, ${symbol} cryptocurrency, crypto analysis, crypto prediction, crypto chart, AI trading`}
+        url={`https://nexussignal.ai/crypto/${symbol}`}
+      />
       <BackButton onClick={() => navigate('/dashboard')}>
         <ArrowLeft size={18} />
         Back to Dashboard
