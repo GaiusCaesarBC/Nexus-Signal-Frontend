@@ -496,9 +496,9 @@ const fetchTopTraders = async () => {
     return (
         <LandingContainer>
             <SEO
-                title="Nexus Signal AI - AI-Powered Stock Predictions & Trading Platform"
-                description="Transform your trading with AI-powered stock predictions, real-time market insights, and intelligent portfolio management. Join thousands of traders using machine learning for smarter decisions."
-                keywords="AI stock predictions, stock market analysis, trading platform, portfolio management, machine learning trading, stock signals, investment tools"
+                title="Nexus Signal AI - Revolutionary AI Trading Tool"
+                description="A revolutionary trading tool powered by AI. Get stock predictions, real-time market insights, and intelligent portfolio management. Join thousands of traders using machine learning for smarter decisions."
+                keywords="AI stock predictions, stock market analysis, revolutionary trading tool, portfolio management, machine learning trading, stock signals, investment tools"
             />
 <BackgroundEffects>
     <GridOverlay />
@@ -573,9 +573,9 @@ const fetchTopTraders = async () => {
                 {/* Enhanced Hero with Dashboard Mockup */}
                 <HeroWithMockup>
                     <HeroContent>
-                        <HeroBadge><Sparkles size={16} />AI-Powered Social Trading Platform</HeroBadge>
+                        <HeroBadge><Sparkles size={16} />Revolutionary AI Trading Tool</HeroBadge>
                         <HeroTitle>Trade Smarter with<br /><span className="gradient">AI-Driven Insights</span></HeroTitle>
-                        <HeroSubtitle>Harness machine learning predictions, real-time market data, and social trading to make better investment decisions. Practice risk-free with paper trading.</HeroSubtitle>
+                        <HeroSubtitle>A revolutionary tool that harnesses machine learning predictions, real-time market data, and social trading to help you make better investment decisions. Practice risk-free with paper trading.</HeroSubtitle>
                         <HeroCTA style={{ justifyContent: 'flex-start' }}>
                             <PrimaryButton onClick={() => navigate(isAuthenticated ? '/dashboard' : '/register')}><Rocket size={20} />Start Trading Free<ArrowRight size={18} /></PrimaryButton>
                             <SecondaryButton onClick={() => navigate('/leaderboard')}><Trophy size={20} />View Leaderboard</SecondaryButton>
