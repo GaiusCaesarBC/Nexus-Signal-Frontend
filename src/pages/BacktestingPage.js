@@ -536,7 +536,7 @@ const STRATEGIES = [
 
 function BacktestingPage() {
     const navigate = useNavigate();
-    const { showToast } = useToast();
+    const toast = useToast();
     const { theme } = useTheme();
     const { user } = useAuth();
 
@@ -597,7 +597,7 @@ function BacktestingPage() {
 
     const runBacktest = async () => {
         if (!formData.symbol || !formData.strategy) {
-            showToast('Please fill in all required fields', 'error');
+            toast.error('Please fill in all required fields');
             return;
         }
 
@@ -613,7 +613,7 @@ function BacktestingPage() {
             });
 
             if (response.data.success) {
-                showToast('Backtest completed!', 'success');
+                toast.success('Backtest completed!');
                 // Fetch full results
                 const fullResult = await api.get(`/backtest/${response.data.backtest._id}`);
                 setCurrentResult(fullResult.data);
@@ -622,7 +622,7 @@ function BacktestingPage() {
             }
         } catch (error) {
             console.error('Backtest error:', error);
-            showToast(error.response?.data?.error || 'Backtest failed', 'error');
+            toast.error(error.response?.data?.error || 'Backtest failed');
         } finally {
             setLoading(false);
         }
@@ -634,20 +634,20 @@ function BacktestingPage() {
             setCurrentResult(response.data);
             setActiveTab('results');
         } catch (error) {
-            showToast('Failed to load backtest', 'error');
+            toast.error('Failed to load backtest');
         }
     };
 
     const deleteBacktest = async (id) => {
         try {
             await api.delete(`/backtest/${id}`);
-            showToast('Backtest deleted', 'success');
+            toast.success('Backtest deleted');
             fetchBacktests();
             if (currentResult?._id === id) {
                 setCurrentResult(null);
             }
         } catch (error) {
-            showToast('Failed to delete backtest', 'error');
+            toast.error('Failed to delete backtest');
         }
     };
 
