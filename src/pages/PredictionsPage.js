@@ -2137,11 +2137,9 @@ const handleShare = (platform) => {
                                 <FormField>
                                     <Label theme={theme}><Calendar size={18} /> Timeframe</Label>
                                     <Select theme={theme} value={days} onChange={e => setDays(e.target.value)}>
-                                        <option value="1">1 Day</option>
-                                        <option value="3">3 Days</option>
-                                        <option value="7">7 Days</option>
-                                        <option value="14">14 Days</option>
-                                        <option value="30">30 Days</option>
+                                        <option value="7">7 Days (Short-term)</option>
+                                        <option value="30">30 Days (Medium-term)</option>
+                                        <option value="90">90 Days (Long-term)</option>
                                     </Select>
                                 </FormField>
                             </InputGroup>
