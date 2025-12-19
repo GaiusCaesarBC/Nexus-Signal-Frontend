@@ -8,7 +8,8 @@ import styled, { keyframes } from 'styled-components';
 import {
     BarChart3, PieChart, TrendingUp, TrendingDown, Target, Shield,
     DollarSign, Percent, ArrowLeft, Trophy, Activity, Zap,
-    CheckCircle, XCircle, Flame, Award, AlertTriangle, Layers
+    CheckCircle, XCircle, Flame, Award, AlertTriangle, Layers,
+    Wallet, FileText
 } from 'lucide-react';
 import {
     PieChart as RechartsPie, Pie, Cell, ResponsiveContainer,
@@ -82,6 +83,59 @@ const Title = styled.h1`
 const Subtitle = styled.p`
     color: #94a3b8;
     font-size: 1rem;
+`;
+
+// Mode Toggle
+const ModeToggleContainer = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1.5rem;
+`;
+
+const ModeToggle = styled.div`
+    display: flex;
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(0, 173, 237, 0.2);
+    border-radius: 12px;
+    padding: 4px;
+    gap: 4px;
+`;
+
+const ModeButton = styled.button`
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    background: ${props => props.$active
+        ? 'linear-gradient(135deg, rgba(0, 173, 237, 0.3) 0%, rgba(0, 255, 136, 0.2) 100%)'
+        : 'transparent'};
+    border: ${props => props.$active
+        ? '1px solid rgba(0, 173, 237, 0.5)'
+        : '1px solid transparent'};
+    border-radius: 8px;
+    color: ${props => props.$active ? '#00adef' : '#94a3b8'};
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+        background: ${props => props.$active
+            ? 'linear-gradient(135deg, rgba(0, 173, 237, 0.3) 0%, rgba(0, 255, 136, 0.2) 100%)'
+            : 'rgba(0, 173, 237, 0.1)'};
+        color: ${props => props.$active ? '#00adef' : '#e0e6ed'};
+    }
+
+    svg {
+        width: 18px;
+        height: 18px;
+    }
+`;
+
+const ModeLabel = styled.span`
+    color: #64748b;
+    font-size: 0.85rem;
 `;
 
 const Content = styled.div`
@@ -383,15 +437,16 @@ const PortfolioAnalyticsPage = () => {
 
     const [loading, setLoading] = useState(true);
     const [analytics, setAnalytics] = useState(null);
+    const [mode, setMode] = useState('paper'); // 'paper' or 'real'
 
     useEffect(() => {
         fetchAnalytics();
-    }, []);
+    }, [mode]);
 
     const fetchAnalytics = async () => {
         try {
             setLoading(true);
-            const response = await api.get('/portfolio/analytics');
+            const response = await api.get(`/portfolio/analytics?mode=${mode}`);
             if (response.data.success) {
                 setAnalytics(response.data.analytics);
             }
@@ -451,7 +506,31 @@ const PortfolioAnalyticsPage = () => {
                     <BarChart3 size={36} />
                     Portfolio Analytics
                 </Title>
-                <Subtitle>Deep insights into your trading performance</Subtitle>
+                <Subtitle>
+                    {mode === 'paper'
+                        ? 'Deep insights into your paper trading performance'
+                        : 'Deep insights into your real portfolio performance'}
+                </Subtitle>
+
+                <ModeToggleContainer>
+                    <ModeLabel>Analyze:</ModeLabel>
+                    <ModeToggle>
+                        <ModeButton
+                            $active={mode === 'paper'}
+                            onClick={() => setMode('paper')}
+                        >
+                            <FileText size={18} />
+                            Paper Trading
+                        </ModeButton>
+                        <ModeButton
+                            $active={mode === 'real'}
+                            onClick={() => setMode('real')}
+                        >
+                            <Wallet size={18} />
+                            Real Portfolio
+                        </ModeButton>
+                    </ModeToggle>
+                </ModeToggleContainer>
             </Header>
 
             <Content>
