@@ -305,7 +305,7 @@ const InputSection = styled.div`
     animation: ${fadeIn} 0.8s ease-out;
     box-shadow: 0 10px 40px ${props => props.theme?.brand?.accent || '#8b5cf6'}33;
     position: relative;
-    z-index: 1;
+    z-index: 10;
 `;
 
 const InputForm = styled.form`
