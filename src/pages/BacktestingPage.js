@@ -659,8 +659,8 @@ function BacktestingPage() {
         });
     };
 
-    // Check if user has Elite subscription
-    const hasElite = user?.subscription?.plan === 'elite' || user?.subscription?.plan === 'premium';
+    // Check if user has Elite subscription (use 'status' not 'plan')
+    const hasElite = user?.subscription?.status === 'elite';
 
     if (!hasElite) {
         return (
