@@ -576,7 +576,7 @@ function BacktestingPage() {
 
     const fetchBacktests = async () => {
         try {
-            const response = await api.get('/api/backtests');
+            const response = await api.get('/backtests');
             setBacktests(response.data || []);
         } catch (error) {
             console.error('Error fetching backtests:', error);
@@ -603,7 +603,7 @@ function BacktestingPage() {
 
         setLoading(true);
         try {
-            const response = await api.post('/api/backtest', {
+            const response = await api.post('/backtest', {
                 symbol: formData.symbol.toUpperCase(),
                 strategy: formData.strategy,
                 startDate: formData.startDate,
@@ -615,7 +615,7 @@ function BacktestingPage() {
             if (response.data.success) {
                 showToast('Backtest completed!', 'success');
                 // Fetch full results
-                const fullResult = await api.get(`/api/backtest/${response.data.backtest._id}`);
+                const fullResult = await api.get(`/backtest/${response.data.backtest._id}`);
                 setCurrentResult(fullResult.data);
                 setActiveTab('results');
                 fetchBacktests();
@@ -630,7 +630,7 @@ function BacktestingPage() {
 
     const viewBacktest = async (id) => {
         try {
-            const response = await api.get(`/api/backtest/${id}`);
+            const response = await api.get(`/backtest/${id}`);
             setCurrentResult(response.data);
             setActiveTab('results');
         } catch (error) {
@@ -640,7 +640,7 @@ function BacktestingPage() {
 
     const deleteBacktest = async (id) => {
         try {
-            await api.delete(`/api/backtest/${id}`);
+            await api.delete(`/backtest/${id}`);
             showToast('Backtest deleted', 'success');
             fetchBacktests();
             if (currentResult?._id === id) {
