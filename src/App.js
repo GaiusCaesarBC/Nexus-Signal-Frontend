@@ -84,6 +84,7 @@ import MarketReportsPage from './pages/MarketReportsPage';
 import SectorRotationPage from './pages/SectorRotationPage';
 import EconomicCalendarPage from './pages/EconomicCalendarPage';
 import AccountSettingsPage from './pages/AccountSettingsPage';
+import BacktestingPage from './pages/BacktestingPage';
 
 // Global styles to set the page background
 const GlobalStyle = createGlobalStyle`
@@ -174,6 +175,7 @@ function AppContent() {
                     <Route path="/compare" element={<ComparisonPage />} />
                     <Route path="/prediction-history" element={<PredictionHistoryPage />} />
                     <Route path="/accuracy-dashboard" element={<ProtectedRoute><AccuracyDashboardPage /></ProtectedRoute>} />
+                    <Route path="/backtesting" element={<ProtectedRoute><BacktestingPage /></ProtectedRoute>} />
                     <Route path="/earnings" element={<ProtectedRoute><EarningsCalendarPage /></ProtectedRoute>} />
                     <Route path="/financials" element={<ProtectedRoute><CompanyFinancialsPage /></ProtectedRoute>} />
                     <Route path="/market-reports" element={<ProtectedRoute><MarketReportsPage /></ProtectedRoute>} />
