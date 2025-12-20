@@ -8,6 +8,7 @@
     "node": "20.x"
   },
   "dependencies": {
+    "ajv": "^8.17.1",
     "@anthropic-ai/sdk": "^0.69.0",
     "@base-org/account": "^2.5.0",
     "@coinbase/wallet-sdk": "^4.3.7",
