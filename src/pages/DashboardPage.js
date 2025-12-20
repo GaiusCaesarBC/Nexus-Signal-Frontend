@@ -23,6 +23,7 @@ import { useVault } from '../context/VaultContext';
 import DailyRewardModal from '../components/DailyReward/DailyRewardModal';
 import DailyRewardButton from '../components/DailyReward/DailyRewardButton';
 import { formatCryptoPrice, formatStockPrice } from '../utils/priceFormatter';
+import { useLivePrice } from '../hooks/useLivePrice';
 
 
 // Smart price formatter based on symbol
@@ -1343,6 +1344,9 @@ const DashboardPage = () => {
     const [isChartRefreshing, setIsChartRefreshing] = useState(false);
     const [searchSymbol, setSearchSymbol] = useState('');
 
+    // Live price streaming (crypto via Binance WebSocket, stocks via SSE)
+    const { isConnected: isLive, lastPrice: livePrice } = useLivePrice(selectedSymbol);
+
     // Autocomplete states
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
@@ -2110,6 +2114,8 @@ const handleOpenRewardModal = () => {
                                 onTimeframeChange={setSelectedTimeframe}
                                 onRefresh={handleChartRefresh}
                                 isRefreshing={isChartRefreshing}
+                                livePrice={livePrice}
+                                isLive={isLive}
                             />
                             <PatternDetector symbol={selectedSymbol} chartData={advancedChartData} />
                         </>

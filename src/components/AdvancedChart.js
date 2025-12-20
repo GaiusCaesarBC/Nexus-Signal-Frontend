@@ -301,7 +301,9 @@ const AdvancedChart = ({
     onTimeframeChange,
     onChartTypeChange,
     onRefresh,
-    isRefreshing = false
+    isRefreshing = false,
+    livePrice = null,  // Real-time price from WebSocket
+    isLive = false     // Whether live streaming is active
 }) => {
     const { theme } = useTheme();
     const chartContainerRef = useRef(null);
@@ -667,6 +669,50 @@ const AdvancedChart = ({
         setTimeframe(externalTimeframe);
     }, [externalTimeframe]);
 
+    // Handle live price updates - update chart in real-time
+    useEffect(() => {
+        if (!livePrice || !mainSeriesRef.current || data.length === 0) return;
+
+        try {
+            const lastCandle = data[data.length - 1];
+            if (!lastCandle) return;
+
+            // Update the last candle with live price
+            const updatedCandle = {
+                time: lastCandle.time,
+                open: lastCandle.open,
+                high: Math.max(lastCandle.high, livePrice),
+                low: Math.min(lastCandle.low, livePrice),
+                close: livePrice
+            };
+
+            // Update the series based on chart type
+            if (chartType === 'candlestick') {
+                mainSeriesRef.current.update(updatedCandle);
+            } else {
+                // Line/Area chart - just update close value
+                mainSeriesRef.current.update({
+                    time: lastCandle.time,
+                    value: livePrice
+                });
+            }
+
+            // Update price display
+            setCurrentPrice(livePrice);
+            setLastUpdated(new Date());
+
+            // Update price change
+            if (data.length > 1) {
+                const previous = data[data.length - 2];
+                const change = livePrice - previous.close;
+                const changePercent = (change / previous.close) * 100;
+                setPriceChange({ amount: change, percent: changePercent });
+            }
+        } catch (error) {
+            console.error('[AdvancedChart] Live update error:', error);
+        }
+    }, [livePrice, data, chartType]);
+
     const handleTimeframeChange = (tf) => {
         setTimeframe(tf);
         if (onTimeframeChange) {
@@ -722,7 +768,9 @@ const AdvancedChart = ({
                         )}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', marginTop: '0.5rem' }}>
-                        <LiveIndicator>LIVE</LiveIndicator>
+                        <LiveIndicator style={isLive ? {} : { background: 'rgba(100, 116, 139, 0.1)', borderColor: 'rgba(100, 116, 139, 0.3)', color: '#64748b' }}>
+                            {isLive ? '● LIVE' : '○ DELAYED'}
+                        </LiveIndicator>
                         {lastUpdated && (
                             <LastUpdated>
                                 Updated: {lastUpdated.toLocaleTimeString()}

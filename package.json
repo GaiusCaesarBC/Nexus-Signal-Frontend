@@ -8,7 +8,6 @@
     "node": "20.x"
   },
   "dependencies": {
-    "ajv": "^8.17.1",
     "@anthropic-ai/sdk": "^0.69.0",
     "@base-org/account": "^2.5.0",
     "@coinbase/wallet-sdk": "^4.3.7",
@@ -24,6 +23,7 @@
     "@vercel/speed-insights": "^1.2.0",
     "@walletconnect/ethereum-provider": "^2.23.0",
     "@walletconnect/modal": "^2.7.0",
+    "ajv": "^8.17.1",
     "axios": "^1.13.1",
     "botid": "^1.5.10",
     "chart.js": "^4.5.1",
