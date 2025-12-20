@@ -15,19 +15,55 @@ import {
 import { useTheme } from '../context/ThemeContext';
 import { formatCryptoPrice, formatStockPrice } from '../utils/priceFormatter';
 
+// Known crypto symbols for detection
+const KNOWN_CRYPTOS = [
+    'BTC', 'ETH', 'SOL', 'ADA', 'DOT', 'MATIC', 'AVAX', 'DOGE', 'SHIB', 'XRP',
+    'BNB', 'LINK', 'UNI', 'AAVE', 'LTC', 'ATOM', 'NEAR', 'APT', 'ARB', 'OP',
+    'PEPE', 'FLOKI', 'BONK', 'WIF', 'RENDER', 'FET', 'INJ', 'SUI', 'SEI', 'TIA'
+];
+
+// Check if symbol is crypto
+const isCryptoSymbol = (symbol) => {
+    if (!symbol) return false;
+    const upper = symbol.toUpperCase();
+    const cryptoPatterns = ['-USD', '-USDT', '-BUSD', '-EUR', '-GBP'];
+    if (cryptoPatterns.some(pattern => upper.endsWith(pattern))) return true;
+    const base = upper.replace(/-USD.*$/, '').replace(/USDT$/, '');
+    return KNOWN_CRYPTOS.includes(base);
+};
+
+// Check if US stock market is currently open
+const isMarketOpen = () => {
+    const now = new Date();
+
+    // Get current time in Eastern Time
+    const etOptions = { timeZone: 'America/New_York', hour: 'numeric', minute: 'numeric', hour12: false };
+    const etTime = new Intl.DateTimeFormat('en-US', etOptions).format(now);
+    const [hours, minutes] = etTime.split(':').map(Number);
+    const currentMinutes = hours * 60 + minutes;
+
+    // Market hours: 9:30 AM - 4:00 PM ET (570 - 960 minutes from midnight)
+    const marketOpen = 9 * 60 + 30;  // 9:30 AM = 570 minutes
+    const marketClose = 16 * 60;      // 4:00 PM = 960 minutes
+
+    // Get day of week in ET
+    const etDayOptions = { timeZone: 'America/New_York', weekday: 'short' };
+    const dayOfWeek = new Intl.DateTimeFormat('en-US', etDayOptions).format(now);
+
+    // Check if it's a weekday
+    const isWeekday = !['Sat', 'Sun'].includes(dayOfWeek);
+
+    // Check if within market hours
+    const isDuringMarketHours = currentMinutes >= marketOpen && currentMinutes < marketClose;
+
+    return isWeekday && isDuringMarketHours;
+};
+
 // Smart price formatter based on symbol
 const formatChartPrice = (price, symbol) => {
     if (!price) return '$0.00';
-    
-    // Check if it's a crypto symbol (ends with -USD, -USDT, etc. or is a known crypto)
-    const cryptoPatterns = ['-USD', '-USDT', '-BUSD', '-EUR', '-GBP'];
-    const knownCryptos = ['BTC', 'ETH', 'SOL', 'ADA', 'DOT', 'MATIC', 'AVAX', 'DOGE', 'SHIB', 'XRP', 'PEPE', 'FLOKI', 'BONK'];
-    
-    const symbolUpper = symbol.toUpperCase();
-    const isCrypto = cryptoPatterns.some(pattern => symbolUpper.endsWith(pattern)) ||
-                     knownCryptos.includes(symbolUpper);
-    
-    if (isCrypto) {
+
+    if (isCryptoSymbol(symbol)) {
         return formatCryptoPrice(price);
     }
     return formatStockPrice(price);
@@ -109,20 +145,20 @@ const LiveIndicator = styled.div`
     align-items: center;
     gap: 0.5rem;
     padding: 0.4rem 0.8rem;
-    background: ${props => props.theme.success}1a;
-    border: 1px solid ${props => props.theme.success}4d;
+    background: ${props => props.$isLive ? `${props.theme.success}1a` : 'rgba(100, 116, 139, 0.1)'};
+    border: 1px solid ${props => props.$isLive ? `${props.theme.success}4d` : 'rgba(100, 116, 139, 0.3)'};
     border-radius: 20px;
     font-size: 0.75rem;
-    color: ${props => props.theme.success};
+    color: ${props => props.$isLive ? props.theme.success : '#64748b'};
     font-weight: 600;
 
     &::before {
         content: '';
         width: 8px;
         height: 8px;
-        background: ${props => props.theme.success};
+        background: ${props => props.$isLive ? props.theme.success : '#64748b'};
         border-radius: 50%;
-        animation: pulse 2s infinite;
+        ${props => props.$isLive && `animation: pulse 2s infinite;`}
     }
 
     @keyframes pulse {
@@ -705,15 +741,23 @@ const AdvancedChart = ({
 
     // Handle live price updates - update chart in real-time
     useEffect(() => {
-        if (!livePrice || !mainSeriesRef.current || data.length === 0) return;
+        if (!livePrice || !mainSeriesRef.current || data.length === 0) {
+            return;
+        }
+
+        console.log(`[AdvancedChart] Live price update: ${symbol} = $${livePrice}`);
 
         try {
             const lastCandle = data[data.length - 1];
             if (!lastCandle) return;
 
+            // Create a new timestamp for the current time (for live updates)
+            const now = Math.floor(Date.now() / 1000);
+            const candleTime = lastCandle.time;
+
             // Update the last candle with live price
             const updatedCandle = {
-                time: lastCandle.time,
+                time: candleTime,
                 open: lastCandle.open,
                 high: Math.max(lastCandle.high, livePrice),
                 low: Math.min(lastCandle.low, livePrice),
@@ -726,7 +770,7 @@ const AdvancedChart = ({
             } else {
                 // Line/Area chart - just update close value
                 mainSeriesRef.current.update({
-                    time: lastCandle.time,
+                    time: candleTime,
                     value: livePrice
                 });
             }
@@ -735,17 +779,17 @@ const AdvancedChart = ({
             setCurrentPrice(livePrice);
             setLastUpdated(new Date());
 
-            // Update price change
-            if (data.length > 1) {
-                const previous = data[data.length - 2];
-                const change = livePrice - previous.close;
-                const changePercent = (change / previous.close) * 100;
+            // Update price change (compare to first candle's open for accurate daily change)
+            if (data.length > 0) {
+                const firstCandle = data[0];
+                const change = livePrice - firstCandle.open;
+                const changePercent = (change / firstCandle.open) * 100;
                 setPriceChange({ amount: change, percent: changePercent });
             }
         } catch (error) {
             console.error('[AdvancedChart] Live update error:', error);
         }
-    }, [livePrice, data, chartType]);
+    }, [livePrice, data, chartType, symbol]);
 
     const handleTimeframeChange = (tf) => {
         setTimeframe(tf);
@@ -802,8 +846,19 @@ const AdvancedChart = ({
                         )}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', marginTop: '0.5rem' }}>
-                        <LiveIndicator style={isLive ? {} : { background: 'rgba(100, 116, 139, 0.1)', borderColor: 'rgba(100, 116, 139, 0.3)', color: '#64748b' }}>
-                            {isLive ? '● LIVE' : '○ DELAYED'}
+                        <LiveIndicator $isLive={isLive && (isCryptoSymbol(symbol) || isMarketOpen())}>
+                            {(() => {
+                                const isCrypto = isCryptoSymbol(symbol);
+                                const marketOpen = isMarketOpen();
+
+                                if (isCrypto) {
+                                    return isLive ? 'LIVE' : 'DELAYED';
+                                } else {
+                                    // Stock
+                                    if (!marketOpen) return 'CLOSED';
+                                    return isLive ? 'LIVE' : 'DELAYED';
+                                }
+                            })()}
                         </LiveIndicator>
                         {lastUpdated && (
                             <LastUpdated>
