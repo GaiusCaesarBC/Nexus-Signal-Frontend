@@ -1,9 +1,7 @@
-// src/hooks/useLivePrice.js - Real-time price streaming
-// Binance WebSocket for crypto (free, direct), SSE for stocks (via backend/Alpaca)
+// src/hooks/useLivePrice.js - Real-time price streaming via SSE
+// All prices stream through backend (Alpaca for stocks, Binance for crypto)
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-
-const BINANCE_WS_URL = 'wss://stream.binance.com:9443/ws';
 
 // Get API base URL from environment or default
 const getApiBaseUrl = () => {
@@ -33,109 +31,35 @@ const isCryptoSymbol = (symbol) => {
     return KNOWN_CRYPTOS.includes(base);
 };
 
-const getBinanceSymbol = (symbol) => {
-    // Convert BTC-USD, BTC/USD, or BTC to btcusdt format for Binance
+// Normalize symbol for SSE endpoint
+const normalizeSymbol = (symbol) => {
+    if (!symbol) return '';
     const upper = symbol.toUpperCase();
-    let base = upper
+    // Remove suffixes to get base symbol
+    return upper
         .replace(/-USD.*$/, '')
         .replace(/\/USD.*$/, '')
         .replace(/USDT$/, '');
-
-    // Handle full names
-    const nameMap = {
-        'BITCOIN': 'BTC',
-        'ETHEREUM': 'ETH',
-        'SOLANA': 'SOL',
-        'CARDANO': 'ADA',
-        'POLKADOT': 'DOT',
-        'POLYGON': 'MATIC',
-        'DOGECOIN': 'DOGE'
-    };
-    base = nameMap[base] || base;
-
-    return `${base.toLowerCase()}usdt`;
 };
 
 export const useLivePrice = (symbol, onPriceUpdate) => {
     const [isConnected, setIsConnected] = useState(false);
     const [lastPrice, setLastPrice] = useState(null);
     const [lastUpdate, setLastUpdate] = useState(null);
-    const connectionRef = useRef(null); // WebSocket or EventSource
+    const connectionRef = useRef(null);
     const reconnectTimeoutRef = useRef(null);
+    const reconnectAttempts = useRef(0);
     const isCrypto = isCryptoSymbol(symbol);
 
-    // Connect to Binance WebSocket for crypto
-    const connectCrypto = useCallback(() => {
-        if (!symbol) return;
-
-        const binanceSymbol = getBinanceSymbol(symbol);
-        const wsUrl = `${BINANCE_WS_URL}/${binanceSymbol}@trade`;
-
-        console.log(`[LivePrice] Connecting to Binance for ${symbol} (${binanceSymbol})...`);
-
-        try {
-            const ws = new WebSocket(wsUrl);
-            connectionRef.current = ws;
-
-            ws.onopen = () => {
-                console.log(`[LivePrice] Connected to Binance for ${symbol}`);
-                setIsConnected(true);
-            };
-
-            ws.onmessage = (event) => {
-                try {
-                    const data = JSON.parse(event.data);
-                    if (data.e === 'trade') {
-                        const price = parseFloat(data.p);
-                        const timestamp = data.T;
-
-                        setLastPrice(price);
-                        setLastUpdate(new Date(timestamp));
-
-                        if (onPriceUpdate) {
-                            onPriceUpdate({
-                                symbol,
-                                price,
-                                timestamp,
-                                volume: parseFloat(data.q)
-                            });
-                        }
-                    }
-                } catch (err) {
-                    console.error('[LivePrice] Parse error:', err);
-                }
-            };
-
-            ws.onclose = () => {
-                console.log(`[LivePrice] Disconnected from Binance for ${symbol}`);
-                setIsConnected(false);
-
-                // Reconnect after 3 seconds
-                reconnectTimeoutRef.current = setTimeout(() => {
-                    if (symbol && isCrypto) {
-                        connectCrypto();
-                    }
-                }, 3000);
-            };
-
-            ws.onerror = (error) => {
-                console.error('[LivePrice] Binance WebSocket error:', error);
-                setIsConnected(false);
-            };
-
-        } catch (error) {
-            console.error('[LivePrice] Binance connection error:', error);
-        }
-    }, [symbol, isCrypto, onPriceUpdate]);
-
-    // Connect to SSE endpoint for stocks
-    const connectStock = useCallback(() => {
+    // Connect to SSE endpoint (works for both stocks and crypto)
+    const connect = useCallback(() => {
         if (!symbol) return;
 
         const apiBase = getApiBaseUrl();
-        const sseUrl = `${apiBase}/api/live-price/${symbol.toUpperCase()}`;
+        const normalizedSymbol = normalizeSymbol(symbol);
+        const sseUrl = `${apiBase}/api/live-price/${normalizedSymbol}`;
 
-        console.log(`[LivePrice] Connecting to SSE for ${symbol}...`);
+        console.log(`[LivePrice] Connecting to SSE for ${symbol} (${normalizedSymbol})...`);
 
         try {
             const eventSource = new EventSource(sseUrl);
@@ -149,14 +73,16 @@ export const useLivePrice = (symbol, onPriceUpdate) => {
                     if (data.type === 'connected') {
                         console.log(`[LivePrice] SSE connected for ${data.symbol}`);
                         setIsConnected(true);
+                        reconnectAttempts.current = 0;
                         return;
                     }
 
                     // Handle price updates
                     if (data.price) {
-                        setIsConnected(true); // Ensure connected state
+                        setIsConnected(true);
                         setLastPrice(data.price);
                         setLastUpdate(new Date(data.timestamp));
+                        reconnectAttempts.current = 0;
 
                         if (onPriceUpdate) {
                             onPriceUpdate({
@@ -177,18 +103,26 @@ export const useLivePrice = (symbol, onPriceUpdate) => {
                 setIsConnected(false);
                 eventSource.close();
 
-                // Reconnect after 5 seconds
-                reconnectTimeoutRef.current = setTimeout(() => {
-                    if (symbol && !isCrypto) {
-                        connectStock();
-                    }
-                }, 5000);
+                // Exponential backoff for reconnection
+                reconnectAttempts.current++;
+                const delay = Math.min(3000 * Math.pow(2, reconnectAttempts.current - 1), 30000);
+
+                if (reconnectAttempts.current <= 5) {
+                    console.log(`[LivePrice] Reconnecting in ${delay/1000}s (attempt ${reconnectAttempts.current})...`);
+                    reconnectTimeoutRef.current = setTimeout(() => {
+                        if (symbol) {
+                            connect();
+                        }
+                    }, delay);
+                } else {
+                    console.log('[LivePrice] Max reconnection attempts reached');
+                }
             };
 
         } catch (error) {
             console.error('[LivePrice] SSE connection error:', error);
         }
-    }, [symbol, isCrypto, onPriceUpdate]);
+    }, [symbol, onPriceUpdate]);
 
     const disconnect = useCallback(() => {
         if (reconnectTimeoutRef.current) {
@@ -200,6 +134,7 @@ export const useLivePrice = (symbol, onPriceUpdate) => {
             connectionRef.current = null;
         }
         setIsConnected(false);
+        reconnectAttempts.current = 0;
     }, []);
 
     useEffect(() => {
@@ -208,17 +143,13 @@ export const useLivePrice = (symbol, onPriceUpdate) => {
         // Disconnect previous connection
         disconnect();
 
-        // Connect based on asset type
-        if (isCrypto) {
-            connectCrypto();
-        } else {
-            connectStock();
-        }
+        // Connect via SSE (for both stocks and crypto)
+        connect();
 
         return () => {
             disconnect();
         };
-    }, [symbol, isCrypto, connectCrypto, connectStock, disconnect]);
+    }, [symbol, connect, disconnect]);
 
     return {
         isConnected,
