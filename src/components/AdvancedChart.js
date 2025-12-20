@@ -485,7 +485,7 @@ const AdvancedChart = ({
             },
             priceScaleId: '',
             scaleMargins: {
-                top: 0.8,
+                top: 0.92,
                 bottom: 0,
             },
         });
