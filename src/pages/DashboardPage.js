@@ -1421,7 +1421,9 @@ useEffect(() => {
     // Fetch chart when symbol or timeframe changes
     useEffect(() => {
         if (selectedSymbol) {
-            fetchChartData(selectedSymbol, selectedTimeframe);
+            // Map LIVE to 1m for API call (LIVE uses 1-minute candles)
+            const apiInterval = selectedTimeframe === 'LIVE' ? '1m' : selectedTimeframe;
+            fetchChartData(selectedSymbol, apiInterval);
         }
     }, [selectedSymbol, selectedTimeframe]);
 
@@ -1430,7 +1432,9 @@ useEffect(() => {
         if (isChartRefreshing || !selectedSymbol) return;
         setIsChartRefreshing(true);
         try {
-            await fetchChartData(selectedSymbol, selectedTimeframe);
+            // Map LIVE to 1m for API call
+            const apiInterval = selectedTimeframe === 'LIVE' ? '1m' : selectedTimeframe;
+            await fetchChartData(selectedSymbol, apiInterval);
         } finally {
             setIsChartRefreshing(false);
         }
