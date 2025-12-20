@@ -2148,7 +2148,7 @@ const handleOpenRewardModal = () => {
                                 key={`${selectedSymbol}-${selectedTimeframe}-${advancedChartData.length}`}
                                 symbol={selectedSymbol}
                                 data={advancedChartData}
-                                height="700px"
+                                height="1400px"
                                 timeframe={selectedTimeframe}
                                 onTimeframeChange={setSelectedTimeframe}
                                 onRefresh={handleChartRefresh}
