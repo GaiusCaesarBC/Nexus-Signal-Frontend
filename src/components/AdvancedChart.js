@@ -533,6 +533,16 @@ const AdvancedChart = ({
         console.log(`[AdvancedChart] Updating chart with ${data.length} candles for ${symbol}, timeframe=${timeframe}`);
         console.log(`[AdvancedChart] Data range: ${new Date(data[0]?.time * 1000).toLocaleString()} to ${new Date(data[data.length-1]?.time * 1000).toLocaleString()}`);
 
+        // Debug: Log sample candles to check OHLC values
+        console.log('[AdvancedChart] Sample candles (first 3):');
+        data.slice(0, 3).forEach((c, i) => {
+            console.log(`  [${i}] O:${c.open} H:${c.high} L:${c.low} C:${c.close} V:${c.volume}`);
+        });
+        console.log('[AdvancedChart] Sample candles (last 3):');
+        data.slice(-3).forEach((c, i) => {
+            console.log(`  [${data.length - 3 + i}] O:${c.open} H:${c.high} L:${c.low} C:${c.close} V:${c.volume}`);
+        });
+
         // Remove existing main series if it exists
         if (mainSeriesRef.current) {
             try {
