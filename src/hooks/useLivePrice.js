@@ -71,7 +71,7 @@ export const useLivePrice = (symbol, onPriceUpdate) => {
 
                     // Handle connection message - this confirms SSE is working
                     if (data.type === 'connected') {
-                        console.log(`[LivePrice] SSE connected for ${data.symbol}`);
+                        console.log(`[LivePrice] ✅ SSE connected for ${data.symbol}`);
                         setIsConnected(true);
                         reconnectAttempts.current = 0;
                         return;
@@ -79,6 +79,7 @@ export const useLivePrice = (symbol, onPriceUpdate) => {
 
                     // Handle price updates
                     if (data.price) {
+                        console.log(`[LivePrice] 💰 Price update: ${data.symbol} = $${data.price}`);
                         setIsConnected(true);
                         setLastPrice(data.price);
                         setLastUpdate(new Date(data.timestamp));

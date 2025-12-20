@@ -530,6 +530,9 @@ const AdvancedChart = ({
     useEffect(() => {
         if (!chartRef.current || data.length === 0) return;
 
+        console.log(`[AdvancedChart] Updating chart with ${data.length} candles for ${symbol}, timeframe=${timeframe}`);
+        console.log(`[AdvancedChart] Data range: ${new Date(data[0]?.time * 1000).toLocaleString()} to ${new Date(data[data.length-1]?.time * 1000).toLocaleString()}`);
+
         // Remove existing main series if it exists
         if (mainSeriesRef.current) {
             try {
@@ -551,7 +554,7 @@ const AdvancedChart = ({
                 wickDownColor: theme.error || '#ef4444',
             });
             mainSeriesRef.current = candlestickSeries;
-            
+
             // Set data
             candlestickSeries.setData(data);
         } else if (chartType === 'line') {
@@ -560,7 +563,7 @@ const AdvancedChart = ({
                 lineWidth: 2,
             });
             mainSeriesRef.current = lineSeries;
-            
+
             // Convert OHLC data to line data (using close price)
             const lineData = data.map(d => ({
                 time: d.time,
@@ -575,7 +578,7 @@ const AdvancedChart = ({
                 lineWidth: 2,
             });
             mainSeriesRef.current = areaSeries;
-            
+
             // Convert OHLC data to area data (using close price)
             const areaData = data.map(d => ({
                 time: d.time,
@@ -585,7 +588,7 @@ const AdvancedChart = ({
         }
 
         chartRef.current?.timeScale().fitContent();
-    }, [chartType, data, theme]);
+    }, [chartType, data, theme, symbol, timeframe]);
 
     // Update chart data
     // Update volume and price info when data changes

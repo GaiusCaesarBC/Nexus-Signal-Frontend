@@ -2119,6 +2119,7 @@ const handleOpenRewardModal = () => {
                     ) : (
                         <>
                             <AdvancedChart
+                                key={`${selectedSymbol}-${selectedTimeframe}-${advancedChartData.length}`}
                                 symbol={selectedSymbol}
                                 data={advancedChartData}
                                 height="700px"
