@@ -81,8 +81,9 @@
     "nth-check": "^2.1.1",
     "postcss": "^8.4.31",
     "webpack-dev-server": "^5.2.1",
-    "schema-utils": "^3.3.0",
-    "ajv": "^6.12.6",
-    "ajv-keywords": "^3.5.2"
+    "react-scripts": {
+      "ajv": "^8.17.1",
+      "ajv-keywords": "^5.1.0"
+    }
   }
 }
