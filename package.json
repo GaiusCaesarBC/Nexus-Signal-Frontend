@@ -5,7 +5,7 @@
   "homepage": "https://nexussignal.ai",
   "proxy": "http://localhost:5000",
   "engines": {
-    "node": "18.x"
+    "node": "20.x"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.69.0",
