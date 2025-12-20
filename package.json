@@ -9,8 +9,6 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.69.0",
-    "ajv": "^8.17.1",
-    "ajv-keywords": "^5.1.0",
     "@base-org/account": "^2.5.0",
     "@coinbase/wallet-sdk": "^4.3.7",
     "@gemini-wallet/core": "^0.3.2",
@@ -85,8 +83,6 @@
   "overrides": {
     "nth-check": "^2.1.1",
     "postcss": "^8.4.31",
-    "webpack-dev-server": "^5.2.1",
-    "ajv": "^8.17.1",
-    "ajv-keywords": "^5.1.0"
+    "webpack-dev-server": "^5.2.1"
   }
 }
