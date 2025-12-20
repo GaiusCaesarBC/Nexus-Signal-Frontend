@@ -1,5 +1,5 @@
 {
-  "installCommand": "npm install --legacy-peer-deps && rm -rf node_modules/fork-ts-checker-webpack-plugin && mkdir -p node_modules/fork-ts-checker-webpack-plugin && node -e \"require('fs').writeFileSync('node_modules/fork-ts-checker-webpack-plugin/index.js','module.exports=class ForkTsCheckerWebpackPlugin{constructor(){}apply(){}};')\" && node -e \"require('fs').writeFileSync('node_modules/fork-ts-checker-webpack-plugin/package.json','{\\\"name\\\":\\\"fork-ts-checker-webpack-plugin\\\",\\\"version\\\":\\\"6.5.3\\\",\\\"main\\\":\\\"index.js\\\"}')\"",
+  "installCommand": "npm install --legacy-peer-deps && node scripts/fix-fork-ts-checker.js",
   "build": {
     "env": {
       "SKIP_PREFLIGHT_CHECK": "true",
