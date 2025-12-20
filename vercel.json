@@ -1,5 +1,5 @@
 {
-  "installCommand": "npm install --legacy-peer-deps && rm -rf node_modules/fork-ts-checker-webpack-plugin/node_modules/schema-utils",
+  "installCommand": "npm install --legacy-peer-deps && rm -rf node_modules/fork-ts-checker-webpack-plugin",
   "build": {
     "env": {
       "SKIP_PREFLIGHT_CHECK": "true",
