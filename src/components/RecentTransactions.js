@@ -301,6 +301,8 @@ const RecentTransactions = ({ symbol, isCrypto = false }) => {
         return explorers[network] || null;
     };
 
+    const [marketClosed, setMarketClosed] = useState(false);
+
     const fetchTransactions = useCallback(async () => {
         if (!symbol) return;
 
@@ -312,6 +314,7 @@ const RecentTransactions = ({ symbol, isCrypto = false }) => {
 
             if (response.data.success) {
                 setTransactions(response.data.trades || []);
+                setMarketClosed(response.data.marketClosed || false);
                 setLastUpdated(new Date());
             } else {
                 setError(response.data.error || 'Failed to fetch transactions');
@@ -370,8 +373,17 @@ const RecentTransactions = ({ symbol, isCrypto = false }) => {
             ) : transactions.length === 0 ? (
                 <EmptyState>
                     <Activity size={32} />
-                    <p>No recent transactions</p>
-                    <small>Trades will appear here when available</small>
+                    {marketClosed && !isCrypto ? (
+                        <>
+                            <p>Market Closed</p>
+                            <small>Stock market hours: 9:30 AM - 4:00 PM ET</small>
+                        </>
+                    ) : (
+                        <>
+                            <p>No recent transactions</p>
+                            <small>Trades will appear here when available</small>
+                        </>
+                    )}
                 </EmptyState>
             ) : (
                 <TransactionsList>
