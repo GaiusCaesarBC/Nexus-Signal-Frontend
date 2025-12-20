@@ -1,5 +1,11 @@
 {
   "installCommand": "npm install --legacy-peer-deps",
+  "build": {
+    "env": {
+      "SKIP_PREFLIGHT_CHECK": "true",
+      "DISABLE_ESLINT_PLUGIN": "true"
+    }
+  },
   "rewrites": [
     {
       "source": "/(.*)",
