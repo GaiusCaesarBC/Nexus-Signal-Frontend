@@ -55,7 +55,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "ls -l ./node_modules/.bin && echo $PATH && react-scripts build",
+    "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
@@ -80,6 +80,8 @@
   "overrides": {
     "nth-check": "^2.1.1",
     "postcss": "^8.4.31",
-    "webpack-dev-server": "^5.2.1"
+    "webpack-dev-server": "^5.2.1",
+    "ajv": "^8.12.0",
+    "ajv-keywords": "^5.1.0"
   }
 }

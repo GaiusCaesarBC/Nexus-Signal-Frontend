@@ -1,11 +1,12 @@
-// client/src/pages/AlertsPage.js - Alert Management Page with Search
+// client/src/pages/AlertsPage.js - Alert Management Page with Price, Technical & Pattern Alerts
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import styled, { keyframes } from 'styled-components';
 import {
-    Bell, Plus, Trash2, Edit, TrendingUp, TrendingDown,
+    Bell, Plus, Trash2, TrendingUp, TrendingDown,
     Clock, DollarSign, Percent, CheckCircle, XCircle, X,
-    Search, Loader, Bitcoin, BarChart2, Globe
+    Search, Loader, Bitcoin, BarChart2, Globe, Activity,
+    Triangle, ArrowUpCircle, ArrowDownCircle, Target, Layers
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -128,6 +129,206 @@ const FilterButton = styled.button`
         border-color: rgba(0, 173, 237, 0.5);
         color: #00adef;
     }
+`;
+
+// Category Tabs for Price / Technical / Pattern
+const CategoryTabs = styled.div`
+    display: flex;
+    gap: 0;
+    background: rgba(15, 23, 42, 0.6);
+    border-radius: 16px;
+    padding: 0.25rem;
+    margin-bottom: 2rem;
+    border: 1px solid rgba(0, 173, 237, 0.2);
+`;
+
+const CategoryTab = styled.button`
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1rem 1.5rem;
+    background: ${props => props.$active ?
+        'linear-gradient(135deg, rgba(0, 173, 237, 0.3) 0%, rgba(0, 255, 136, 0.1) 100%)' :
+        'transparent'
+    };
+    border: none;
+    border-radius: 12px;
+    color: ${props => props.$active ? '#00adef' : '#64748b'};
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    svg {
+        transition: all 0.3s ease;
+    }
+
+    &:hover {
+        color: #00adef;
+        background: ${props => props.$active ?
+            'linear-gradient(135deg, rgba(0, 173, 237, 0.3) 0%, rgba(0, 255, 136, 0.1) 100%)' :
+            'rgba(0, 173, 237, 0.1)'
+        };
+    }
+`;
+
+const TabBadge = styled.span`
+    background: ${props => props.$count > 0 ? 'rgba(0, 173, 237, 0.3)' : 'rgba(100, 116, 139, 0.3)'};
+    color: ${props => props.$count > 0 ? '#00adef' : '#64748b'};
+    padding: 0.2rem 0.6rem;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+`;
+
+// Modal Tabs
+const ModalTabs = styled.div`
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(0, 173, 237, 0.2);
+`;
+
+const ModalTab = styled.button`
+    flex: 1;
+    padding: 0.75rem 1rem;
+    background: ${props => props.$active ?
+        'linear-gradient(135deg, rgba(0, 173, 237, 0.2) 0%, rgba(0, 173, 237, 0.1) 100%)' :
+        'transparent'
+    };
+    border: 1px solid ${props => props.$active ? 'rgba(0, 173, 237, 0.5)' : 'rgba(100, 116, 139, 0.3)'};
+    border-radius: 10px;
+    color: ${props => props.$active ? '#00adef' : '#64748b'};
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+
+    &:hover {
+        border-color: rgba(0, 173, 237, 0.5);
+        color: #00adef;
+    }
+`;
+
+// Pattern Selection Grid
+const PatternGrid = styled.div`
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+
+    @media (max-width: 500px) {
+        grid-template-columns: 1fr;
+    }
+`;
+
+const PatternCard = styled.button`
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: ${props => props.$selected ?
+        'linear-gradient(135deg, rgba(0, 173, 237, 0.2) 0%, rgba(0, 255, 136, 0.1) 100%)' :
+        'rgba(0, 173, 237, 0.05)'
+    };
+    border: 1px solid ${props => props.$selected ? '#00adef' : 'rgba(0, 173, 237, 0.2)'};
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+        border-color: #00adef;
+        transform: translateY(-2px);
+    }
+`;
+
+const PatternIcon = styled.div`
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: ${props => props.$direction === 'bullish' ?
+        'linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.1) 100%)' :
+        props.$direction === 'bearish' ?
+            'linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0.1) 100%)' :
+            'linear-gradient(135deg, rgba(0, 173, 237, 0.2) 0%, rgba(0, 173, 237, 0.1) 100%)'
+    };
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: ${props => props.$direction === 'bullish' ? '#10b981' :
+        props.$direction === 'bearish' ? '#ef4444' : '#00adef'
+    };
+`;
+
+const PatternName = styled.div`
+    color: #e0e6ed;
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-align: center;
+`;
+
+const PatternDirection = styled.div`
+    color: ${props => props.$direction === 'bullish' ? '#10b981' :
+        props.$direction === 'bearish' ? '#ef4444' : '#f59e0b'
+    };
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    font-weight: 700;
+`;
+
+// Technical Indicator Selection
+const IndicatorGrid = styled.div`
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+
+    @media (max-width: 500px) {
+        grid-template-columns: 1fr;
+    }
+`;
+
+const IndicatorCard = styled.button`
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: ${props => props.$selected ?
+        'linear-gradient(135deg, rgba(0, 173, 237, 0.2) 0%, rgba(0, 255, 136, 0.1) 100%)' :
+        'rgba(0, 173, 237, 0.05)'
+    };
+    border: 1px solid ${props => props.$selected ? '#00adef' : 'rgba(0, 173, 237, 0.2)'};
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+
+    &:hover {
+        border-color: #00adef;
+        transform: translateY(-2px);
+    }
+`;
+
+const IndicatorInfo = styled.div`
+    flex: 1;
+`;
+
+const IndicatorName = styled.div`
+    color: #e0e6ed;
+    font-weight: 600;
+    font-size: 0.9rem;
+`;
+
+const IndicatorDesc = styled.div`
+    color: #64748b;
+    font-size: 0.75rem;
 `;
 
 const CreateButton = styled.button`
@@ -617,6 +818,38 @@ const HelpText = styled.div`
     margin-top: 0.25rem;
 `;
 
+// Pattern types with metadata
+const PATTERN_TYPES = [
+    { type: 'double_bottom', name: 'Double Bottom', direction: 'bullish', icon: 'W' },
+    { type: 'double_top', name: 'Double Top', direction: 'bearish', icon: 'M' },
+    { type: 'head_shoulders', name: 'Head & Shoulders', direction: 'bearish', icon: 'HMS' },
+    { type: 'inverse_head_shoulders', name: 'Inv. H&S', direction: 'bullish', icon: 'IHS' },
+    { type: 'ascending_triangle', name: 'Ascending Triangle', direction: 'bullish', icon: '△' },
+    { type: 'descending_triangle', name: 'Descending Triangle', direction: 'bearish', icon: '▽' },
+    { type: 'symmetrical_triangle', name: 'Symmetrical Triangle', direction: 'neutral', icon: '◇' },
+    { type: 'bull_flag', name: 'Bull Flag', direction: 'bullish', icon: '⚑' },
+    { type: 'bear_flag', name: 'Bear Flag', direction: 'bearish', icon: '⚐' },
+    { type: 'rising_wedge', name: 'Rising Wedge', direction: 'bearish', icon: '∧' },
+    { type: 'falling_wedge', name: 'Falling Wedge', direction: 'bullish', icon: '∨' }
+];
+
+// Technical indicator types
+const TECHNICAL_TYPES = [
+    { type: 'rsi_oversold', name: 'RSI Oversold', description: 'RSI below threshold', icon: Activity },
+    { type: 'rsi_overbought', name: 'RSI Overbought', description: 'RSI above threshold', icon: Activity },
+    { type: 'macd_bullish_crossover', name: 'MACD Bullish', description: 'Signal line crosses above', icon: TrendingUp },
+    { type: 'macd_bearish_crossover', name: 'MACD Bearish', description: 'Signal line crosses below', icon: TrendingDown },
+    { type: 'bollinger_upper_breakout', name: 'BB Upper Break', description: 'Price breaks upper band', icon: ArrowUpCircle },
+    { type: 'bollinger_lower_breakout', name: 'BB Lower Break', description: 'Price breaks lower band', icon: ArrowDownCircle },
+    { type: 'support_test', name: 'Support Test', description: 'Price approaches support', icon: Target },
+    { type: 'resistance_test', name: 'Resistance Test', description: 'Price approaches resistance', icon: Target }
+];
+
+// Helper to categorize alert types
+const PRICE_TYPES = ['price_above', 'price_below', 'percent_change'];
+const TECHNICAL_ALERT_TYPES = ['rsi_oversold', 'rsi_overbought', 'macd_bullish_crossover', 'macd_bearish_crossover', 'bollinger_upper_breakout', 'bollinger_lower_breakout', 'support_test', 'resistance_test'];
+const PATTERN_ALERT_TYPES = ['head_shoulders', 'inverse_head_shoulders', 'double_top', 'double_bottom', 'ascending_triangle', 'descending_triangle', 'symmetrical_triangle', 'bull_flag', 'bear_flag', 'rising_wedge', 'falling_wedge'];
+
 const AlertsPage = () => {
     const { api: authApi } = useAuth();
     const toast = useToast();
@@ -628,6 +861,10 @@ const AlertsPage = () => {
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all');
     const [showCreateModal, setShowCreateModal] = useState(false);
+
+    // Category filter (price, technical, pattern)
+    const [category, setCategory] = useState('all');
+    const [modalTab, setModalTab] = useState('price');
 
     // Search state
     const [searchQuery, setSearchQuery] = useState('');
@@ -644,7 +881,16 @@ const AlertsPage = () => {
         percentChange: '',
         timeframe: '24h',
         network: '',
-        contractAddress: ''
+        contractAddress: '',
+        // Technical alert fields
+        technicalType: '',
+        rsiThreshold: '30',
+        supportLevel: '',
+        resistanceLevel: '',
+        // Pattern alert fields
+        patternType: '',
+        patternTimeframe: '1d',
+        minConfidence: '70'
     });
 
     // Use the appropriate API instance
@@ -761,16 +1007,52 @@ const AlertsPage = () => {
         }
 
         try {
-            const alertPayload = {
-                type: formData.type,
-                symbol: formData.symbol,
-                assetType: formData.assetType,
-                targetPrice: formData.type !== 'percent_change' ? parseFloat(formData.targetPrice) : undefined,
-                percentChange: formData.type === 'percent_change' ? parseFloat(formData.percentChange) : undefined,
-                timeframe: formData.timeframe
-            };
+            let endpoint = '/alerts';
+            let alertPayload = {};
 
-            await apiInstance.post('/alerts', alertPayload);
+            if (modalTab === 'price') {
+                // Price alert
+                endpoint = formData.type === 'percent_change' ? '/alerts/percent-change' : '/alerts/price';
+                alertPayload = {
+                    symbol: formData.symbol,
+                    assetType: formData.assetType,
+                    condition: formData.type === 'price_above' ? 'above' : 'below',
+                    targetPrice: formData.type !== 'percent_change' ? parseFloat(formData.targetPrice) : undefined,
+                    percentChange: formData.type === 'percent_change' ? parseFloat(formData.percentChange) : undefined,
+                    timeframe: formData.timeframe
+                };
+            } else if (modalTab === 'technical') {
+                // Technical indicator alert
+                if (!formData.technicalType) {
+                    toast.error('Please select a technical indicator');
+                    return;
+                }
+                endpoint = '/alerts/technical';
+                alertPayload = {
+                    symbol: formData.symbol,
+                    assetType: formData.assetType,
+                    alertType: formData.technicalType,
+                    threshold: formData.technicalType.includes('rsi') ? parseFloat(formData.rsiThreshold) :
+                        formData.technicalType === 'support_test' ? parseFloat(formData.supportLevel) :
+                            formData.technicalType === 'resistance_test' ? parseFloat(formData.resistanceLevel) : undefined
+                };
+            } else if (modalTab === 'pattern') {
+                // Pattern recognition alert
+                if (!formData.patternType) {
+                    toast.error('Please select a pattern type');
+                    return;
+                }
+                endpoint = '/alerts/pattern';
+                alertPayload = {
+                    symbol: formData.symbol,
+                    assetType: formData.assetType,
+                    patternType: formData.patternType,
+                    timeframe: formData.patternTimeframe,
+                    minConfidence: parseInt(formData.minConfidence)
+                };
+            }
+
+            await apiInstance.post(endpoint, alertPayload);
             toast.success('Alert created successfully!');
             closeModal();
             fetchAlerts();
@@ -787,6 +1069,7 @@ const AlertsPage = () => {
         setSelectedAsset(null);
         setSearchResults([]);
         setShowSearchDropdown(false);
+        setModalTab('price');
         setFormData({
             type: 'price_above',
             symbol: '',
@@ -795,7 +1078,14 @@ const AlertsPage = () => {
             percentChange: '',
             timeframe: '24h',
             network: '',
-            contractAddress: ''
+            contractAddress: '',
+            technicalType: '',
+            rsiThreshold: '30',
+            supportLevel: '',
+            resistanceLevel: '',
+            patternType: '',
+            patternTimeframe: '1d',
+            minConfidence: '70'
         });
     };
 
@@ -816,34 +1106,78 @@ const AlertsPage = () => {
     };
 
     const getAlertIcon = (type) => {
-        switch (type) {
-            case 'price_above':
-                return <TrendingUp size={24} />;
-            case 'price_below':
-                return <TrendingDown size={24} />;
-            case 'percent_change':
-                return <Percent size={24} />;
-            case 'prediction_expiry':
-                return <Clock size={24} />;
-            default:
-                return <Bell size={24} />;
+        // Price alerts
+        if (type === 'price_above') return <TrendingUp size={24} />;
+        if (type === 'price_below') return <TrendingDown size={24} />;
+        if (type === 'percent_change') return <Percent size={24} />;
+        if (type === 'prediction_expiry') return <Clock size={24} />;
+
+        // Technical alerts
+        if (type === 'rsi_oversold' || type === 'rsi_overbought') return <Activity size={24} />;
+        if (type === 'macd_bullish_crossover') return <TrendingUp size={24} color="#10b981" />;
+        if (type === 'macd_bearish_crossover') return <TrendingDown size={24} color="#ef4444" />;
+        if (type === 'bollinger_upper_breakout') return <ArrowUpCircle size={24} />;
+        if (type === 'bollinger_lower_breakout') return <ArrowDownCircle size={24} />;
+        if (type === 'support_test' || type === 'resistance_test') return <Target size={24} />;
+
+        // Pattern alerts
+        if (type === 'double_bottom' || type === 'inverse_head_shoulders' || type === 'ascending_triangle' || type === 'bull_flag' || type === 'falling_wedge') {
+            return <TrendingUp size={24} color="#10b981" />;
         }
+        if (type === 'double_top' || type === 'head_shoulders' || type === 'descending_triangle' || type === 'bear_flag' || type === 'rising_wedge') {
+            return <TrendingDown size={24} color="#ef4444" />;
+        }
+        if (type === 'symmetrical_triangle') return <Triangle size={24} />;
+
+        return <Bell size={24} />;
     };
 
     const getAlertTitle = (alert) => {
-        switch (alert.type) {
-            case 'price_above':
-                return `Price Above Alert`;
-            case 'price_below':
-                return `Price Below Alert`;
-            case 'percent_change':
-                return `${alert.percentChange}% Change Alert`;
-            case 'prediction_expiry':
-                return `Prediction Expiry`;
-            default:
-                return 'Alert';
-        }
+        // Price alerts
+        if (alert.type === 'price_above') return 'Price Above Alert';
+        if (alert.type === 'price_below') return 'Price Below Alert';
+        if (alert.type === 'percent_change') return `${alert.percentChange}% Change Alert`;
+        if (alert.type === 'prediction_expiry') return 'Prediction Expiry';
+
+        // Technical alerts
+        const technicalType = TECHNICAL_TYPES.find(t => t.type === alert.type);
+        if (technicalType) return technicalType.name;
+
+        // Pattern alerts
+        const patternType = PATTERN_TYPES.find(p => p.type === alert.type);
+        if (patternType) return patternType.name;
+
+        return 'Alert';
     };
+
+    // Filter alerts by category
+    const getFilteredAlerts = () => {
+        let filtered = alerts;
+
+        // Filter by category
+        if (category === 'price') {
+            filtered = filtered.filter(a => PRICE_TYPES.includes(a.type));
+        } else if (category === 'technical') {
+            filtered = filtered.filter(a => TECHNICAL_ALERT_TYPES.includes(a.type));
+        } else if (category === 'pattern') {
+            filtered = filtered.filter(a => PATTERN_ALERT_TYPES.includes(a.type));
+        }
+
+        return filtered;
+    };
+
+    // Count alerts by category
+    const getCategoryCounts = () => {
+        return {
+            all: alerts.length,
+            price: alerts.filter(a => PRICE_TYPES.includes(a.type)).length,
+            technical: alerts.filter(a => TECHNICAL_ALERT_TYPES.includes(a.type)).length,
+            pattern: alerts.filter(a => PATTERN_ALERT_TYPES.includes(a.type)).length
+        };
+    };
+
+    const categoryCounts = getCategoryCounts();
+    const filteredAlerts = getFilteredAlerts();
 
     const formatPrice = (price) => {
         if (!price) return 'N/A';
@@ -855,28 +1189,64 @@ const AlertsPage = () => {
     return (
         <PageContainer>
             <Header>
-                <Title>Price Alerts</Title>
-                <Subtitle>Get notified when prices hit your targets</Subtitle>
+                <Title>Smart Alerts</Title>
+                <Subtitle>Price alerts, technical indicators, and pattern recognition</Subtitle>
             </Header>
 
             <StatsGrid>
                 <StatCard>
                     <StatLabel>Active Alerts</StatLabel>
-                    <StatValue color="#10b981">{stats.active}</StatValue>
+                    <StatValue color="#10b981">{stats.activeAlerts || stats.active || 0}</StatValue>
                 </StatCard>
                 <StatCard>
-                    <StatLabel>Triggered</StatLabel>
-                    <StatValue color="#f59e0b">{stats.triggered}</StatValue>
+                    <StatLabel>Triggered Today</StatLabel>
+                    <StatValue color="#f59e0b">{stats.triggeredToday || stats.triggered || 0}</StatValue>
                 </StatCard>
                 <StatCard>
-                    <StatLabel>Expired</StatLabel>
-                    <StatValue color="#ef4444">{stats.expired}</StatValue>
+                    <StatLabel>This Week</StatLabel>
+                    <StatValue color="#00adef">{stats.triggeredThisWeek || 0}</StatValue>
                 </StatCard>
                 <StatCard>
-                    <StatLabel>Total Alerts</StatLabel>
-                    <StatValue color="#00adef">{stats.total}</StatValue>
+                    <StatLabel>Max Alerts</StatLabel>
+                    <StatValue color="#64748b">{stats.maxAlerts || '∞'}</StatValue>
                 </StatCard>
             </StatsGrid>
+
+            {/* Category Tabs */}
+            <CategoryTabs>
+                <CategoryTab
+                    $active={category === 'all'}
+                    onClick={() => setCategory('all')}
+                >
+                    <Layers size={18} />
+                    All
+                    <TabBadge $count={categoryCounts.all}>{categoryCounts.all}</TabBadge>
+                </CategoryTab>
+                <CategoryTab
+                    $active={category === 'price'}
+                    onClick={() => setCategory('price')}
+                >
+                    <DollarSign size={18} />
+                    Price
+                    <TabBadge $count={categoryCounts.price}>{categoryCounts.price}</TabBadge>
+                </CategoryTab>
+                <CategoryTab
+                    $active={category === 'technical'}
+                    onClick={() => setCategory('technical')}
+                >
+                    <Activity size={18} />
+                    Technical
+                    <TabBadge $count={categoryCounts.technical}>{categoryCounts.technical}</TabBadge>
+                </CategoryTab>
+                <CategoryTab
+                    $active={category === 'pattern'}
+                    onClick={() => setCategory('pattern')}
+                >
+                    <Triangle size={18} />
+                    Patterns
+                    <TabBadge $count={categoryCounts.pattern}>{categoryCounts.pattern}</TabBadge>
+                </CategoryTab>
+            </CategoryTabs>
 
             <Toolbar>
                 <FilterButtons>
@@ -917,23 +1287,35 @@ const AlertsPage = () => {
                     <Spinner size={32} />
                     <p style={{ marginTop: '1rem' }}>Loading alerts...</p>
                 </div>
-            ) : alerts.length === 0 ? (
+            ) : filteredAlerts.length === 0 ? (
                 <EmptyState>
                     <EmptyIcon>
                         <Bell size={64} color="#00adef" />
                     </EmptyIcon>
-                    <h2 style={{ color: '#00adef', marginBottom: '0.5rem' }}>No alerts yet</h2>
+                    <h2 style={{ color: '#00adef', marginBottom: '0.5rem' }}>
+                        {category === 'all' ? 'No alerts yet' : `No ${category} alerts`}
+                    </h2>
                     <p style={{ color: '#94a3b8', marginBottom: '2rem' }}>
-                        Create your first alert to get notified about price changes
+                        {category === 'all'
+                            ? 'Create price alerts, technical indicator alerts, or pattern recognition alerts'
+                            : category === 'price'
+                                ? 'Create alerts for when prices hit your targets'
+                                : category === 'technical'
+                                    ? 'Create alerts for RSI, MACD, Bollinger Bands, and more'
+                                    : 'Create alerts for chart patterns like Head & Shoulders, Double Tops, and Flags'
+                        }
                     </p>
-                    <CreateButton onClick={() => setShowCreateModal(true)}>
+                    <CreateButton onClick={() => {
+                        setShowCreateModal(true);
+                        if (category !== 'all') setModalTab(category);
+                    }}>
                         <Plus size={20} />
-                        Create Your First Alert
+                        Create {category === 'all' ? 'Your First' : category.charAt(0).toUpperCase() + category.slice(1)} Alert
                     </CreateButton>
                 </EmptyState>
             ) : (
                 <AlertsGrid>
-                    {alerts.map(alert => (
+                    {filteredAlerts.map(alert => (
                         <AlertCard key={alert._id} $status={alert.status}>
                             <AlertHeader>
                                 <AlertType>
@@ -979,7 +1361,37 @@ const AlertsPage = () => {
                 <Modal onClick={closeModal}>
                     <ModalContent onClick={(e) => e.stopPropagation()}>
                         <ModalTitle>Create New Alert</ModalTitle>
+
+                        {/* Modal Tabs */}
+                        <ModalTabs>
+                            <ModalTab
+                                type="button"
+                                $active={modalTab === 'price'}
+                                onClick={() => setModalTab('price')}
+                            >
+                                <DollarSign size={16} />
+                                Price
+                            </ModalTab>
+                            <ModalTab
+                                type="button"
+                                $active={modalTab === 'technical'}
+                                onClick={() => setModalTab('technical')}
+                            >
+                                <Activity size={16} />
+                                Technical
+                            </ModalTab>
+                            <ModalTab
+                                type="button"
+                                $active={modalTab === 'pattern'}
+                                onClick={() => setModalTab('pattern')}
+                            >
+                                <Triangle size={16} />
+                                Pattern
+                            </ModalTab>
+                        </ModalTabs>
+
                         <Form onSubmit={createAlert}>
+                            {/* Asset Search - Common to all tabs */}
                             <FormGroup>
                                 <Label>Search Asset</Label>
                                 <SearchInputWrapper>
@@ -1065,70 +1477,211 @@ const AlertsPage = () => {
                                 </SelectedAsset>
                             )}
 
-                            <FormGroup>
-                                <Label>Alert Type</Label>
-                                <Select
-                                    value={formData.type}
-                                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                                    required
-                                >
-                                    <option value="price_above">Price Above</option>
-                                    <option value="price_below">Price Below</option>
-                                    <option value="percent_change">Percentage Change</option>
-                                </Select>
-                            </FormGroup>
-
-                            {formData.type !== 'percent_change' && (
-                                <FormGroup>
-                                    <Label>Target Price</Label>
-                                    <Input
-                                        type="number"
-                                        step="any"
-                                        placeholder={selectedAsset?.price ? `Current: ${formatPrice(selectedAsset.price)}` : "Enter target price"}
-                                        value={formData.targetPrice}
-                                        onChange={(e) => setFormData({ ...formData, targetPrice: e.target.value })}
-                                        required
-                                    />
-                                    {selectedAsset?.price && formData.targetPrice && (
-                                        <HelpText>
-                                            {formData.type === 'price_above' ? 'Alert when price rises to' : 'Alert when price drops to'} {formatPrice(parseFloat(formData.targetPrice))}
-                                            {' '}({((parseFloat(formData.targetPrice) - selectedAsset.price) / selectedAsset.price * 100).toFixed(2)}% from current)
-                                        </HelpText>
-                                    )}
-                                </FormGroup>
-                            )}
-
-                            {formData.type === 'percent_change' && (
+                            {/* PRICE ALERTS TAB */}
+                            {modalTab === 'price' && (
                                 <>
                                     <FormGroup>
-                                        <Label>Percentage Change</Label>
-                                        <Input
-                                            type="number"
-                                            step="0.1"
-                                            placeholder="e.g., 10 for 10%"
-                                            value={formData.percentChange}
-                                            onChange={(e) => setFormData({ ...formData, percentChange: e.target.value })}
+                                        <Label>Alert Type</Label>
+                                        <Select
+                                            value={formData.type}
+                                            onChange={(e) => setFormData({ ...formData, type: e.target.value })}
                                             required
-                                        />
+                                        >
+                                            <option value="price_above">Price Above</option>
+                                            <option value="price_below">Price Below</option>
+                                            <option value="percent_change">Percentage Change</option>
+                                        </Select>
                                     </FormGroup>
+
+                                    {formData.type !== 'percent_change' && (
+                                        <FormGroup>
+                                            <Label>Target Price</Label>
+                                            <Input
+                                                type="number"
+                                                step="any"
+                                                placeholder={selectedAsset?.price ? `Current: ${formatPrice(selectedAsset.price)}` : "Enter target price"}
+                                                value={formData.targetPrice}
+                                                onChange={(e) => setFormData({ ...formData, targetPrice: e.target.value })}
+                                                required
+                                            />
+                                            {selectedAsset?.price && formData.targetPrice && (
+                                                <HelpText>
+                                                    {formData.type === 'price_above' ? 'Alert when price rises to' : 'Alert when price drops to'} {formatPrice(parseFloat(formData.targetPrice))}
+                                                    {' '}({((parseFloat(formData.targetPrice) - selectedAsset.price) / selectedAsset.price * 100).toFixed(2)}% from current)
+                                                </HelpText>
+                                            )}
+                                        </FormGroup>
+                                    )}
+
+                                    {formData.type === 'percent_change' && (
+                                        <>
+                                            <FormGroup>
+                                                <Label>Percentage Change</Label>
+                                                <Input
+                                                    type="number"
+                                                    step="0.1"
+                                                    placeholder="e.g., 10 for 10%"
+                                                    value={formData.percentChange}
+                                                    onChange={(e) => setFormData({ ...formData, percentChange: e.target.value })}
+                                                    required
+                                                />
+                                            </FormGroup>
+                                            <FormGroup>
+                                                <Label>Timeframe</Label>
+                                                <Select
+                                                    value={formData.timeframe}
+                                                    onChange={(e) => setFormData({ ...formData, timeframe: e.target.value })}
+                                                >
+                                                    <option value="1h">1 Hour</option>
+                                                    <option value="24h">24 Hours</option>
+                                                    <option value="7d">7 Days</option>
+                                                    <option value="30d">30 Days</option>
+                                                </Select>
+                                            </FormGroup>
+                                        </>
+                                    )}
+                                </>
+                            )}
+
+                            {/* TECHNICAL ALERTS TAB */}
+                            {modalTab === 'technical' && (
+                                <>
+                                    <FormGroup>
+                                        <Label>Select Indicator</Label>
+                                        <IndicatorGrid>
+                                            {TECHNICAL_TYPES.map(indicator => (
+                                                <IndicatorCard
+                                                    key={indicator.type}
+                                                    type="button"
+                                                    $selected={formData.technicalType === indicator.type}
+                                                    onClick={() => setFormData({ ...formData, technicalType: indicator.type })}
+                                                >
+                                                    <PatternIcon $direction={indicator.type.includes('bullish') || indicator.type.includes('oversold') ? 'bullish' : 'bearish'}>
+                                                        <indicator.icon size={20} />
+                                                    </PatternIcon>
+                                                    <IndicatorInfo>
+                                                        <IndicatorName>{indicator.name}</IndicatorName>
+                                                        <IndicatorDesc>{indicator.description}</IndicatorDesc>
+                                                    </IndicatorInfo>
+                                                </IndicatorCard>
+                                            ))}
+                                        </IndicatorGrid>
+                                    </FormGroup>
+
+                                    {formData.technicalType && formData.technicalType.includes('rsi') && (
+                                        <FormGroup>
+                                            <Label>RSI Threshold</Label>
+                                            <Input
+                                                type="number"
+                                                min="0"
+                                                max="100"
+                                                placeholder={formData.technicalType === 'rsi_oversold' ? 'e.g., 30' : 'e.g., 70'}
+                                                value={formData.rsiThreshold}
+                                                onChange={(e) => setFormData({ ...formData, rsiThreshold: e.target.value })}
+                                            />
+                                            <HelpText>
+                                                {formData.technicalType === 'rsi_oversold'
+                                                    ? 'Alert when RSI drops below this value (typically 30)'
+                                                    : 'Alert when RSI rises above this value (typically 70)'
+                                                }
+                                            </HelpText>
+                                        </FormGroup>
+                                    )}
+
+                                    {formData.technicalType === 'support_test' && (
+                                        <FormGroup>
+                                            <Label>Support Level</Label>
+                                            <Input
+                                                type="number"
+                                                step="any"
+                                                placeholder="Enter support price level"
+                                                value={formData.supportLevel}
+                                                onChange={(e) => setFormData({ ...formData, supportLevel: e.target.value })}
+                                            />
+                                            <HelpText>Alert when price approaches this support level</HelpText>
+                                        </FormGroup>
+                                    )}
+
+                                    {formData.technicalType === 'resistance_test' && (
+                                        <FormGroup>
+                                            <Label>Resistance Level</Label>
+                                            <Input
+                                                type="number"
+                                                step="any"
+                                                placeholder="Enter resistance price level"
+                                                value={formData.resistanceLevel}
+                                                onChange={(e) => setFormData({ ...formData, resistanceLevel: e.target.value })}
+                                            />
+                                            <HelpText>Alert when price approaches this resistance level</HelpText>
+                                        </FormGroup>
+                                    )}
+                                </>
+                            )}
+
+                            {/* PATTERN ALERTS TAB */}
+                            {modalTab === 'pattern' && (
+                                <>
+                                    <FormGroup>
+                                        <Label>Select Pattern</Label>
+                                        <PatternGrid>
+                                            {PATTERN_TYPES.map(pattern => (
+                                                <PatternCard
+                                                    key={pattern.type}
+                                                    type="button"
+                                                    $selected={formData.patternType === pattern.type}
+                                                    onClick={() => setFormData({ ...formData, patternType: pattern.type })}
+                                                >
+                                                    <PatternIcon $direction={pattern.direction}>
+                                                        <span style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{pattern.icon}</span>
+                                                    </PatternIcon>
+                                                    <PatternName>{pattern.name}</PatternName>
+                                                    <PatternDirection $direction={pattern.direction}>
+                                                        {pattern.direction}
+                                                    </PatternDirection>
+                                                </PatternCard>
+                                            ))}
+                                        </PatternGrid>
+                                    </FormGroup>
+
                                     <FormGroup>
                                         <Label>Timeframe</Label>
                                         <Select
-                                            value={formData.timeframe}
-                                            onChange={(e) => setFormData({ ...formData, timeframe: e.target.value })}
+                                            value={formData.patternTimeframe}
+                                            onChange={(e) => setFormData({ ...formData, patternTimeframe: e.target.value })}
                                         >
+                                            <option value="1d">Daily</option>
+                                            <option value="4h">4 Hour</option>
                                             <option value="1h">1 Hour</option>
-                                            <option value="24h">24 Hours</option>
-                                            <option value="7d">7 Days</option>
-                                            <option value="30d">30 Days</option>
                                         </Select>
+                                        <HelpText>Chart timeframe for pattern detection</HelpText>
+                                    </FormGroup>
+
+                                    <FormGroup>
+                                        <Label>Minimum Confidence</Label>
+                                        <Select
+                                            value={formData.minConfidence}
+                                            onChange={(e) => setFormData({ ...formData, minConfidence: e.target.value })}
+                                        >
+                                            <option value="60">60% (More alerts)</option>
+                                            <option value="70">70% (Balanced)</option>
+                                            <option value="80">80% (High confidence)</option>
+                                            <option value="90">90% (Very high confidence)</option>
+                                        </Select>
+                                        <HelpText>Higher confidence = fewer but more reliable alerts</HelpText>
                                     </FormGroup>
                                 </>
                             )}
 
                             <ButtonGroup>
-                                <SubmitButton type="submit" disabled={!selectedAsset}>
-                                    Create Alert
+                                <SubmitButton
+                                    type="submit"
+                                    disabled={
+                                        !selectedAsset ||
+                                        (modalTab === 'technical' && !formData.technicalType) ||
+                                        (modalTab === 'pattern' && !formData.patternType)
+                                    }
+                                >
+                                    Create {modalTab.charAt(0).toUpperCase() + modalTab.slice(1)} Alert
                                 </SubmitButton>
                                 <CancelButton type="button" onClick={closeModal}>
                                     Cancel
