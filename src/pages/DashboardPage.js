@@ -1423,6 +1423,7 @@ useEffect(() => {
         if (selectedSymbol) {
             // Map LIVE to 1m for API call (LIVE uses 1-minute candles)
             const apiInterval = selectedTimeframe === 'LIVE' ? '1m' : selectedTimeframe;
+            console.log(`[Dashboard] Timeframe changed: ${selectedTimeframe} -> API interval: ${apiInterval}`);
             fetchChartData(selectedSymbol, apiInterval);
         }
     }, [selectedSymbol, selectedTimeframe]);
@@ -1753,12 +1754,19 @@ useEffect(() => {
     };
 
     const fetchChartData = async (symbol, interval) => {
+        console.log(`[Dashboard] Fetching chart data for ${symbol} with interval ${interval}`);
         setLoadingChart(true);
         setAdvancedChartData([]);
         try {
-            const response = await api.get(`/chart/${symbol}/${interval}`);
+            // Add cache buster to prevent stale data
+            const cacheBuster = Date.now();
+            const response = await api.get(`/chart/${symbol}/${interval}?_t=${cacheBuster}`);
+            console.log(`[Dashboard] Chart API response:`, response.data);
             if (response.data.success && response.data.data?.length > 0) {
+                console.log(`[Dashboard] Setting ${response.data.data.length} candles for ${symbol}/${interval}`);
                 setAdvancedChartData(response.data.data);
+            } else {
+                console.warn(`[Dashboard] No chart data returned for ${symbol}/${interval}`);
             }
         } catch (error) {
             console.error('Error fetching chart data:', error);
