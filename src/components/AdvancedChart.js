@@ -32,6 +32,33 @@ const isCryptoSymbol = (symbol) => {
     return KNOWN_CRYPTOS.includes(base);
 };
 
+// Calculate price format precision based on price magnitude
+const getPriceFormat = (price) => {
+    if (!price || price === 0) {
+        return { precision: 2, minMove: 0.01 };
+    }
+
+    const absPrice = Math.abs(price);
+
+    if (absPrice < 0.000001) {
+        return { precision: 10, minMove: 0.0000000001 };
+    } else if (absPrice < 0.0001) {
+        return { precision: 8, minMove: 0.00000001 };
+    } else if (absPrice < 0.01) {
+        return { precision: 6, minMove: 0.000001 };
+    } else if (absPrice < 1) {
+        return { precision: 5, minMove: 0.00001 };
+    } else if (absPrice < 10) {
+        return { precision: 4, minMove: 0.0001 };
+    } else if (absPrice < 100) {
+        return { precision: 3, minMove: 0.001 };
+    } else if (absPrice < 1000) {
+        return { precision: 2, minMove: 0.01 };
+    } else {
+        return { precision: 2, minMove: 0.01 };
+    }
+};
+
 // Check if US stock market is currently open
 const isMarketOpen = () => {
     const now = new Date();
@@ -531,17 +558,6 @@ const AdvancedChart = ({
         if (!chartRef.current || data.length === 0) return;
 
         console.log(`[AdvancedChart] Updating chart with ${data.length} candles for ${symbol}, timeframe=${timeframe}`);
-        console.log(`[AdvancedChart] Data range: ${new Date(data[0]?.time * 1000).toLocaleString()} to ${new Date(data[data.length-1]?.time * 1000).toLocaleString()}`);
-
-        // Debug: Log sample candles to check OHLC values
-        console.log('[AdvancedChart] Sample candles (first 3):');
-        data.slice(0, 3).forEach((c, i) => {
-            console.log(`  [${i}] O:${c.open} H:${c.high} L:${c.low} C:${c.close} V:${c.volume}`);
-        });
-        console.log('[AdvancedChart] Sample candles (last 3):');
-        data.slice(-3).forEach((c, i) => {
-            console.log(`  [${data.length - 3 + i}] O:${c.open} H:${c.high} L:${c.low} C:${c.close} V:${c.volume}`);
-        });
 
         // Remove existing main series if it exists
         if (mainSeriesRef.current) {
@@ -555,6 +571,12 @@ const AdvancedChart = ({
 
         // Create new series based on chart type
         if (chartType === 'candlestick') {
+            // Calculate price format based on the data's price range
+            const samplePrice = data.length > 0 ? data[data.length - 1].close : 100;
+            const priceFormat = getPriceFormat(samplePrice);
+
+            console.log(`[AdvancedChart] Price format for ${symbol}: precision=${priceFormat.precision}, minMove=${priceFormat.minMove} (sample price: ${samplePrice})`);
+
             const candlestickSeries = chartRef.current.addCandlestickSeries({
                 upColor: theme.success || '#10b981',
                 downColor: theme.error || '#ef4444',
@@ -562,15 +584,28 @@ const AdvancedChart = ({
                 borderDownColor: theme.error || '#ef4444',
                 wickUpColor: theme.success || '#10b981',
                 wickDownColor: theme.error || '#ef4444',
+                priceFormat: {
+                    type: 'price',
+                    precision: priceFormat.precision,
+                    minMove: priceFormat.minMove,
+                },
             });
             mainSeriesRef.current = candlestickSeries;
 
             // Set data
             candlestickSeries.setData(data);
         } else if (chartType === 'line') {
+            const samplePrice = data.length > 0 ? data[data.length - 1].close : 100;
+            const priceFormat = getPriceFormat(samplePrice);
+
             const lineSeries = chartRef.current.addLineSeries({
                 color: theme.brand?.primary || '#00adef',
                 lineWidth: 2,
+                priceFormat: {
+                    type: 'price',
+                    precision: priceFormat.precision,
+                    minMove: priceFormat.minMove,
+                },
             });
             mainSeriesRef.current = lineSeries;
 
@@ -581,11 +616,19 @@ const AdvancedChart = ({
             }));
             lineSeries.setData(lineData);
         } else if (chartType === 'area') {
+            const samplePrice = data.length > 0 ? data[data.length - 1].close : 100;
+            const priceFormat = getPriceFormat(samplePrice);
+
             const areaSeries = chartRef.current.addAreaSeries({
                 topColor: `${theme.brand?.primary || '#00adef'}80`,
                 bottomColor: `${theme.brand?.primary || '#00adef'}00`,
                 lineColor: theme.brand?.primary || '#00adef',
                 lineWidth: 2,
+                priceFormat: {
+                    type: 'price',
+                    precision: priceFormat.precision,
+                    minMove: priceFormat.minMove,
+                },
             });
             mainSeriesRef.current = areaSeries;
 

@@ -100,7 +100,16 @@ export const useLivePrice = (symbol, onPriceUpdate) => {
             };
 
             eventSource.onerror = (error) => {
-                console.error('[LivePrice] SSE error:', error);
+                // Get more details about the error
+                const readyState = eventSource.readyState;
+                const stateNames = ['CONNECTING', 'OPEN', 'CLOSED'];
+                console.warn(`[LivePrice] SSE error - readyState: ${stateNames[readyState] || readyState}`);
+
+                // Only treat as error if we were connected
+                if (readyState === EventSource.CLOSED) {
+                    console.log('[LivePrice] SSE connection closed');
+                }
+
                 setIsConnected(false);
                 eventSource.close();
 
