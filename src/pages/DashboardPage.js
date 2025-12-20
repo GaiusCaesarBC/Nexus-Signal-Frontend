@@ -16,6 +16,7 @@ import {
 import nexusSignalLogo from '../assets/nexus-signal-logo.png';
 import AdvancedChart from '../components/AdvancedChart';
 import PatternDetector from '../components/PatternDetector';
+import RecentTransactions from '../components/RecentTransactions';
 import TickerLink, { TickerText } from '../components/TickerLink';
 import WhaleAlertWidget from '../components/WhaleAlertWidget';
 import AvatarWithBorder from '../components/vault/AvatarWithBorder';
@@ -2156,6 +2157,11 @@ const handleOpenRewardModal = () => {
                                 isLive={isLive}
                             />
                             <PatternDetector symbol={selectedSymbol} chartData={advancedChartData} />
+                            <RecentTransactions
+                                symbol={selectedSymbol}
+                                isCrypto={['-USD', '-USDT', '-BUSD', '-EUR', '-GBP'].some(p => selectedSymbol?.toUpperCase().endsWith(p)) ||
+                                         ['BTC', 'ETH', 'SOL', 'ADA', 'DOT', 'MATIC', 'AVAX', 'DOGE', 'SHIB', 'XRP'].includes(selectedSymbol?.toUpperCase())}
+                            />
                         </>
                     )}
                 </ChartSection>
