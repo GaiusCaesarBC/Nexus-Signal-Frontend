@@ -137,10 +137,44 @@ const LastUpdated = styled.span`
     margin-left: 0.5rem;
 `;
 
+const LiveButton = styled.button`
+    padding: 0.5rem 1rem;
+    background: ${props => props.$active ?
+        `linear-gradient(135deg, #10b98166 0%, #10b98133 100%)` :
+        `#10b9810d`
+    };
+    border: 1px solid ${props => props.$active ? `#10b98180` : `#10b98133`};
+    border-radius: 8px;
+    color: ${props => props.$active ? '#10b981' : props.theme.text?.secondary};
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+
+    ${props => props.$active && `
+        animation: livePulse 2s ease-in-out infinite;
+    `}
+
+    @keyframes livePulse {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+        50% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+    }
+
+    &:hover {
+        background: linear-gradient(135deg, #10b98133 0%, #10b9811a 100%);
+        border-color: #10b98180;
+        color: #10b981;
+    }
+`;
+
 const TimeframeButton = styled.button`
     padding: 0.5rem 1rem;
-    background: ${props => props.$active ? 
-        `linear-gradient(135deg, ${props.theme.brand?.primary}4D 0%, ${props.theme.brand?.primary}33 100%)` : 
+    background: ${props => props.$active ?
+        `linear-gradient(135deg, ${props.theme.brand?.primary}4D 0%, ${props.theme.brand?.primary}33 100%)` :
         `${props.theme.brand?.primary}0d`
     };
     border: 1px solid ${props => props.$active ? `${props.theme.brand?.primary}80` : `${props.theme.brand?.primary}33`};
@@ -781,6 +815,14 @@ const AdvancedChart = ({
 
                 <ChartControls>
                     <ControlGroup>
+                        <LiveButton
+                            $active={timeframe === 'LIVE'}
+                            onClick={() => handleTimeframeChange('LIVE')}
+                            title="Real-time live data"
+                        >
+                            <span style={{ color: timeframe === 'LIVE' ? '#10b981' : '#64748b' }}>●</span>
+                            LIVE
+                        </LiveButton>
                         {timeframes.map(tf => (
                             <TimeframeButton
                                 key={tf}

@@ -14,27 +14,45 @@ const getApiBaseUrl = () => {
     return baseUrl.replace(/\/api$/, '');
 };
 
-// Known crypto symbols (without -USD suffix)
+// Known crypto symbols (expanded list - without -USD suffix)
 const KNOWN_CRYPTOS = [
     'BTC', 'ETH', 'SOL', 'ADA', 'DOT', 'MATIC', 'AVAX', 'DOGE', 'SHIB', 'XRP',
     'BNB', 'LINK', 'UNI', 'AAVE', 'LTC', 'ATOM', 'NEAR', 'APT', 'ARB', 'OP',
-    'PEPE', 'FLOKI', 'BONK', 'WIF', 'RENDER', 'FET', 'INJ', 'SUI', 'SEI', 'TIA'
+    'PEPE', 'FLOKI', 'BONK', 'WIF', 'RENDER', 'FET', 'INJ', 'SUI', 'SEI', 'TIA',
+    'ALGO', 'VET', 'FIL', 'THETA', 'EOS', 'XLM', 'TRX', 'XMR', 'HBAR', 'ICP',
+    'BITCOIN', 'ETHEREUM', 'SOLANA', 'CARDANO', 'POLKADOT', 'POLYGON', 'DOGECOIN'
 ];
 
 const isCryptoSymbol = (symbol) => {
     if (!symbol) return false;
     const upper = symbol.toUpperCase();
-    // Check for -USD, -USDT suffixes or known cryptos
-    if (upper.includes('-USD') || upper.includes('USDT')) return true;
+    // Check for -USD, -USDT, /USD suffixes or known cryptos
+    if (upper.includes('-USD') || upper.includes('USDT') || upper.includes('/USD')) return true;
     // Check if base symbol is a known crypto
-    const base = upper.replace(/-USD.*$/, '').replace(/USDT$/, '');
+    const base = upper.replace(/-USD.*$/, '').replace(/USDT$/, '').replace(/\/USD.*$/, '');
     return KNOWN_CRYPTOS.includes(base);
 };
 
 const getBinanceSymbol = (symbol) => {
-    // Convert BTC-USD or BTC to btcusdt format for Binance
+    // Convert BTC-USD, BTC/USD, or BTC to btcusdt format for Binance
     const upper = symbol.toUpperCase();
-    const base = upper.replace(/-USD.*$/, '').replace(/USDT$/, '');
+    let base = upper
+        .replace(/-USD.*$/, '')
+        .replace(/\/USD.*$/, '')
+        .replace(/USDT$/, '');
+
+    // Handle full names
+    const nameMap = {
+        'BITCOIN': 'BTC',
+        'ETHEREUM': 'ETH',
+        'SOLANA': 'SOL',
+        'CARDANO': 'ADA',
+        'POLKADOT': 'DOT',
+        'POLYGON': 'MATIC',
+        'DOGECOIN': 'DOGE'
+    };
+    base = nameMap[base] || base;
+
     return `${base.toLowerCase()}usdt`;
 };
 
