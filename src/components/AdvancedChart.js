@@ -483,7 +483,13 @@ const AdvancedChart = ({
             priceFormat: {
                 type: 'volume',
             },
-            priceScaleId: '',
+            priceScaleId: 'volume',
+            lastValueVisible: false,
+            priceLineVisible: false,
+        });
+
+        // Configure volume price scale to be at bottom with bars starting from 0
+        chart.priceScale('volume').applyOptions({
             scaleMargins: {
                 top: 0.92,
                 bottom: 0,
