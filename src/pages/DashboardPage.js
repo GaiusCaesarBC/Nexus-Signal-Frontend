@@ -1775,9 +1775,26 @@ useEffect(() => {
         }
     };
 
+    // Detect if input is a contract address
+    const isContractAddress = (input) => {
+        if (!input) return false;
+        const trimmed = input.trim();
+        // EVM address (0x followed by 40 hex chars)
+        if (/^0x[a-fA-F0-9]{40}$/.test(trimmed)) return true;
+        // Solana address (base58, typically 32-44 chars)
+        if (/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(trimmed)) return true;
+        return false;
+    };
+
     const handleSearchSymbol = () => {
         if (searchSymbol.trim()) {
-            setSelectedSymbol(searchSymbol.trim().toUpperCase());
+            const input = searchSymbol.trim();
+            // If it's a contract address, don't uppercase it (case-sensitive for some chains)
+            if (isContractAddress(input)) {
+                setSelectedSymbol(input);
+            } else {
+                setSelectedSymbol(input.toUpperCase());
+            }
             setSearchSymbol('');
         }
     };
@@ -2068,9 +2085,17 @@ const handleOpenRewardModal = () => {
                         <AutocompleteContainer>
                             <SearchInput
                                 type="text"
-                                placeholder="Search any stock or crypto (e.g., AAPL, BTC-USD)..."
+                                placeholder="Search symbol or paste contract address (0x... or Solana)..."
                                 value={searchSymbol}
-                                onChange={(e) => setSearchSymbol(e.target.value.toUpperCase())}
+                                onChange={(e) => {
+                                    const val = e.target.value;
+                                    // Don't uppercase if it looks like a contract address
+                                    if (val.startsWith('0x') || /^[1-9A-HJ-NP-Za-km-z]{20,}$/.test(val)) {
+                                        setSearchSymbol(val);
+                                    } else {
+                                        setSearchSymbol(val.toUpperCase());
+                                    }
+                                }}
                                 onFocus={() => setShowSuggestions(true)}
                                 onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                                 onKeyPress={(e) => { if (e.key === 'Enter') handleSearchSymbol(); }}
