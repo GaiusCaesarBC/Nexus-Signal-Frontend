@@ -23,12 +23,20 @@ const glow = keyframes`
 
 // ============ STYLED COMPONENTS ============
 
+// Chart margins (TradingView lightweight-charts defaults)
+const CHART_MARGINS = {
+    right: 60,   // Price scale width
+    bottom: 30,  // Time scale height
+    top: 10,
+    left: 5
+};
+
 const OverlayContainer = styled.svg`
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    top: ${CHART_MARGINS.top}px;
+    left: ${CHART_MARGINS.left}px;
+    width: calc(100% - ${CHART_MARGINS.left + CHART_MARGINS.right}px);
+    height: calc(100% - ${CHART_MARGINS.top + CHART_MARGINS.bottom}px);
     pointer-events: none;
     z-index: 10;
     overflow: visible;
@@ -106,22 +114,28 @@ const PatternOverlay = ({ patterns, chartDimensions, priceScale, timeScale }) =>
         return null;
     }
 
-    const { width, height } = chartDimensions;
+    // Calculate effective chart area (excluding price scale and time scale)
+    const chartWidth = chartDimensions.width - CHART_MARGINS.left - CHART_MARGINS.right;
+    const chartHeight = chartDimensions.height - CHART_MARGINS.top - CHART_MARGINS.bottom;
 
-    // Convert price to Y coordinate
+    // Convert price to Y coordinate within the chart area
     const priceToY = (price) => {
-        if (!price || !priceScale.min || !priceScale.max) return height / 2;
+        if (!price || !priceScale.min || !priceScale.max) return chartHeight / 2;
         const range = priceScale.max - priceScale.min;
-        if (range === 0) return height / 2;
-        return height - ((price - priceScale.min) / range) * height * 0.85 - height * 0.05;
+        if (range === 0) return chartHeight / 2;
+        // Map price to Y: high prices at top (low Y), low prices at bottom (high Y)
+        const normalized = (price - priceScale.min) / range;
+        return chartHeight * (1 - normalized);
     };
 
-    // Convert index to X coordinate
+    // Convert data index to X coordinate within the chart area
     const indexToX = (index) => {
-        if (index === undefined || !timeScale.start || !timeScale.end) return width / 2;
+        if (index === undefined || timeScale.start === undefined || timeScale.end === undefined) return chartWidth / 2;
         const range = timeScale.end - timeScale.start;
-        if (range === 0) return width / 2;
-        return ((index - timeScale.start) / range) * width * 0.9 + width * 0.05;
+        if (range === 0) return chartWidth / 2;
+        // Map index to X position across the chart width
+        const normalized = (index - timeScale.start) / range;
+        return normalized * chartWidth;
     };
 
     // Get color based on pattern type
@@ -215,7 +229,7 @@ const PatternOverlay = ({ patterns, chartDimensions, priceScale, timeScale }) =>
 
         // Wedge/Triangle/Flag/Pennant
         if (points.apex) {
-            return { x: indexToX(points.apex.index), y: height / 2 };
+            return { x: indexToX(points.apex.index), y: chartHeight / 2 };
         }
         if (points.upperEnd && points.lowerEnd) {
             const x = (indexToX(points.upperEnd.index) + indexToX(points.lowerEnd.index)) / 2;
@@ -257,8 +271,8 @@ const PatternOverlay = ({ patterns, chartDimensions, priceScale, timeScale }) =>
         const badgeY = pos.y + yOffset;
 
         // Keep badge within bounds
-        const clampedX = Math.max(badgeWidth / 2 + 5, Math.min(width - badgeWidth / 2 - 5, pos.x));
-        const clampedY = Math.max(badgeHeight + 5, Math.min(height - badgeHeight - 5, badgeY));
+        const clampedX = Math.max(badgeWidth / 2 + 5, Math.min(chartWidth - badgeWidth / 2 - 5, pos.x));
+        const clampedY = Math.max(badgeHeight + 5, Math.min(chartHeight - badgeHeight - 5, badgeY));
 
         return (
             <PatternBadge
@@ -339,7 +353,7 @@ const PatternOverlay = ({ patterns, chartDimensions, priceScale, timeScale }) =>
 
         const tooltipWidth = 160;
         const tooltipHeight = 90;
-        const x = Math.max(5, Math.min(width - tooltipWidth - 5, tooltipPos.x - tooltipWidth / 2));
+        const x = Math.max(5, Math.min(chartWidth - tooltipWidth - 5, tooltipPos.x - tooltipWidth / 2));
         const y = Math.max(5, tooltipPos.y);
 
         return (
@@ -375,7 +389,7 @@ const PatternOverlay = ({ patterns, chartDimensions, priceScale, timeScale }) =>
     };
 
     return (
-        <OverlayContainer viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
+        <OverlayContainer viewBox={`0 0 ${chartWidth} ${chartHeight}`} preserveAspectRatio="none">
             {patterns.map((pattern, index) => renderPatternBadge(pattern, index))}
             {renderTooltip()}
         </OverlayContainer>
