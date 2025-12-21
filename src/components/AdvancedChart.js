@@ -1,11 +1,11 @@
 // client/src/components/AdvancedChart.js - Professional Trading Charts - THEMED VERSION
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { createChart } from 'lightweight-charts';
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 import {
     TrendingUp, Activity, BarChart3, Maximize2,
-    Download, Eye, EyeOff, RefreshCw
+    Download, Eye, EyeOff, RefreshCw, Sparkles, Target
 } from 'lucide-react';
 import {
     calculateSMA,
@@ -18,7 +18,14 @@ import {
     calculateStochastic
 } from '../utils/indicators';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 import { formatCryptoPrice, formatStockPrice } from '../utils/priceFormatter';
+
+// Animation for NEXUS indicator
+const nexusPulse = keyframes`
+    0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+    50% { box-shadow: 0 0 12px 4px rgba(59, 130, 246, 0.2); }
+`;
 
 // Known crypto symbols for detection
 const KNOWN_CRYPTOS = [
@@ -338,6 +345,115 @@ const ActionButton = styled.button`
     }
 `;
 
+// Special styled button for NEXUS AI indicator
+const NexusButton = styled.button`
+    padding: 0.5rem 1rem;
+    background: ${props => props.$active
+        ? `linear-gradient(135deg, #3b82f64D 0%, #8b5cf64D 100%)`
+        : `linear-gradient(135deg, #3b82f60d 0%, #8b5cf60d 100%)`
+    };
+    border: 1px solid ${props => props.$active ? '#3b82f6' : '#3b82f633'};
+    border-radius: 8px;
+    color: ${props => props.$active ? '#3b82f6' : props.theme.text?.secondary};
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+    position: relative;
+
+    ${props => props.$active && `animation: ${nexusPulse} 2s ease-in-out infinite;`}
+
+    &:hover {
+        background: linear-gradient(135deg, #3b82f633 0%, #8b5cf633 100%);
+        border-color: #3b82f6;
+        color: #3b82f6;
+    }
+
+    &:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+    }
+
+    svg {
+        ${props => props.$loading && `animation: spin 1s linear infinite;`}
+    }
+
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+`;
+
+// Prediction badge display
+const PredictionBadge = styled.div`
+    position: absolute;
+    top: 50px;
+    right: 12px;
+    background: ${props => props.$direction === 'UP'
+        ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.95) 0%, rgba(37, 99, 235, 0.95) 100%)'
+        : 'linear-gradient(135deg, rgba(249, 115, 22, 0.95) 0%, rgba(234, 88, 12, 0.95) 100%)'
+    };
+    border: 1px solid ${props => props.$direction === 'UP' ? '#3b82f6' : '#f97316'};
+    border-radius: 12px;
+    padding: 12px 16px;
+    z-index: 15;
+    backdrop-filter: blur(8px);
+    min-width: 200px;
+    box-shadow: 0 4px 20px ${props => props.$direction === 'UP'
+        ? 'rgba(59, 130, 246, 0.3)'
+        : 'rgba(249, 115, 22, 0.3)'
+    };
+
+    .prediction-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: white;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 8px;
+        opacity: 0.9;
+    }
+
+    .prediction-direction {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 1.25rem;
+        font-weight: 900;
+        color: white;
+        margin-bottom: 4px;
+    }
+
+    .prediction-target {
+        font-size: 0.9rem;
+        color: white;
+        opacity: 0.95;
+        margin-bottom: 4px;
+    }
+
+    .prediction-confidence {
+        font-size: 0.75rem;
+        color: white;
+        opacity: 0.8;
+    }
+
+    .prediction-change {
+        font-size: 0.8rem;
+        color: white;
+        font-weight: 600;
+        margin-top: 6px;
+        padding-top: 6px;
+        border-top: 1px solid rgba(255,255,255,0.2);
+    }
+`;
+
 const ChartWrapper = styled.div`
     width: 100%;
     height: ${props => props.$height || '500px'};
@@ -408,12 +524,14 @@ const AdvancedChart = ({
     isLive = false     // Whether live streaming is active
 }) => {
     const { theme } = useTheme();
+    const { api } = useAuth();
     const chartContainerRef = useRef(null);
     const chartRef = useRef(null);
-    const mainSeriesRef = useRef(null); // Changed from candlestickSeriesRef to mainSeriesRef
+    const mainSeriesRef = useRef(null);
     const volumeSeriesRef = useRef(null);
     const indicatorSeriesRef = useRef({});
-    
+    const predictionLineRef = useRef(null);
+
     const [timeframe, setTimeframe] = useState(externalTimeframe);
     const [chartType, setChartType] = useState('candlestick');
     const [activeIndicators, setActiveIndicators] = useState([]);
@@ -421,6 +539,12 @@ const AdvancedChart = ({
     const [priceChange, setPriceChange] = useState(null);
     const [lastUpdated, setLastUpdated] = useState(null);
     const [tooltipData, setTooltipData] = useState(null);
+
+    // NEXUS AI Prediction state
+    const [nexusEnabled, setNexusEnabled] = useState(false);
+    const [nexusPrediction, setNexusPrediction] = useState(null);
+    const [nexusLoading, setNexusLoading] = useState(false);
+    const [nexusError, setNexusError] = useState(null);
 
     const timeframes = ['1m', '5m', '15m', '1h', '4h', '1D', '1W', '1M'];
     
@@ -973,6 +1097,115 @@ const AdvancedChart = ({
         });
     }, [activeIndicators, data, theme]);
 
+    // Fetch NEXUS AI prediction when enabled
+    const fetchNexusPrediction = useCallback(async () => {
+        if (!symbol || !api) return;
+
+        setNexusLoading(true);
+        setNexusError(null);
+
+        try {
+            console.log(`[NEXUS] Fetching prediction for ${symbol}...`);
+            const response = await api.get(`/predictions/active/${encodeURIComponent(symbol)}`);
+
+            if (response.data.success && response.data.exists) {
+                const pred = response.data.prediction;
+                setNexusPrediction({
+                    targetPrice: pred.prediction?.target_price,
+                    direction: pred.prediction?.direction,
+                    confidence: pred.prediction?.confidence,
+                    priceChangePercent: pred.prediction?.price_change_percent,
+                    currentPrice: pred.livePrice || pred.current_price,
+                    daysRemaining: pred.daysRemaining,
+                    createdAt: pred.createdAt
+                });
+                console.log(`[NEXUS] Prediction loaded: ${pred.prediction?.direction} to $${pred.prediction?.target_price}`);
+            } else {
+                setNexusPrediction(null);
+                setNexusError('No active prediction for this symbol');
+                console.log(`[NEXUS] No prediction available for ${symbol}`);
+            }
+        } catch (error) {
+            console.error('[NEXUS] Error fetching prediction:', error);
+            setNexusError(error.response?.data?.error || 'Failed to load prediction');
+            setNexusPrediction(null);
+        } finally {
+            setNexusLoading(false);
+        }
+    }, [symbol, api]);
+
+    // Effect to fetch prediction when NEXUS is enabled
+    useEffect(() => {
+        if (nexusEnabled && symbol) {
+            fetchNexusPrediction();
+        } else {
+            setNexusPrediction(null);
+            setNexusError(null);
+        }
+    }, [nexusEnabled, symbol, fetchNexusPrediction]);
+
+    // Effect to draw/remove prediction line on chart
+    useEffect(() => {
+        if (!chartRef.current || !mainSeriesRef.current) return;
+
+        // Remove existing prediction line
+        if (predictionLineRef.current) {
+            try {
+                chartRef.current.removeSeries(predictionLineRef.current);
+            } catch (error) {
+                console.log('Could not remove prediction line:', error.message);
+            }
+            predictionLineRef.current = null;
+        }
+
+        // Draw new prediction line if we have prediction data
+        if (nexusEnabled && nexusPrediction && nexusPrediction.targetPrice && data.length > 0) {
+            try {
+                const isUp = nexusPrediction.direction === 'UP';
+                const lineColor = isUp ? '#3b82f6' : '#f97316'; // Blue for UP, Orange for DOWN
+
+                // Create a horizontal line series for the prediction target
+                const predictionSeries = chartRef.current.addLineSeries({
+                    color: lineColor,
+                    lineWidth: 2,
+                    lineStyle: 2, // Dashed line
+                    title: `NEXUS Target: ${isUp ? '↑' : '↓'}`,
+                    lastValueVisible: true,
+                    priceLineVisible: true,
+                    crosshairMarkerVisible: false,
+                });
+
+                // Create horizontal line data spanning the entire chart
+                const lineData = data.map(d => ({
+                    time: d.time,
+                    value: nexusPrediction.targetPrice
+                }));
+
+                predictionSeries.setData(lineData);
+
+                // Add price line at the target price
+                predictionSeries.createPriceLine({
+                    price: nexusPrediction.targetPrice,
+                    color: lineColor,
+                    lineWidth: 2,
+                    lineStyle: 2,
+                    axisLabelVisible: true,
+                    title: `NEXUS ${isUp ? '↑' : '↓'} Target`,
+                });
+
+                predictionLineRef.current = predictionSeries;
+                console.log(`[NEXUS] Drew prediction line at $${nexusPrediction.targetPrice} (${nexusPrediction.direction})`);
+            } catch (error) {
+                console.error('[NEXUS] Error drawing prediction line:', error);
+            }
+        }
+    }, [nexusEnabled, nexusPrediction, data]);
+
+    // Toggle NEXUS indicator
+    const toggleNexus = () => {
+        setNexusEnabled(prev => !prev);
+    };
+
     // Sync internal timeframe with external prop
     useEffect(() => {
         setTimeframe(externalTimeframe);
@@ -1173,7 +1406,33 @@ const AdvancedChart = ({
                 </ChartControls>
             </ChartHeader>
 
-            <div style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <div style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                {/* NEXUS AI Button - Featured first */}
+                <NexusButton
+                    $active={nexusEnabled}
+                    $loading={nexusLoading}
+                    onClick={toggleNexus}
+                    title="NEXUS AI Prediction - Shows predicted target price"
+                    disabled={nexusLoading}
+                >
+                    {nexusLoading ? <RefreshCw size={14} /> : <Sparkles size={14} />}
+                    NEXUS AI
+                    {nexusPrediction && (
+                        <span style={{
+                            marginLeft: '4px',
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            fontSize: '0.7rem',
+                            background: nexusPrediction.direction === 'UP' ? '#3b82f633' : '#f9731633',
+                            color: nexusPrediction.direction === 'UP' ? '#3b82f6' : '#f97316'
+                        }}>
+                            {nexusPrediction.direction === 'UP' ? '↑' : '↓'}
+                        </span>
+                    )}
+                </NexusButton>
+
+                <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.1)', margin: '0 4px' }} />
+
                 {indicators.map(indicator => (
                     <IndicatorButton
                         key={indicator.id}
@@ -1188,6 +1447,51 @@ const AdvancedChart = ({
 
             <ChartWrapper $height={height}>
                 <div ref={chartContainerRef} />
+
+                {/* NEXUS AI Prediction Badge */}
+                {nexusEnabled && nexusPrediction && (
+                    <PredictionBadge $direction={nexusPrediction.direction}>
+                        <div className="prediction-header">
+                            <Sparkles size={12} />
+                            NEXUS AI Prediction
+                        </div>
+                        <div className="prediction-direction">
+                            {nexusPrediction.direction === 'UP' ? <TrendingUp size={20} /> : <TrendingUp size={20} style={{ transform: 'rotate(180deg)' }} />}
+                            {nexusPrediction.direction}
+                        </div>
+                        <div className="prediction-target">
+                            <Target size={14} style={{ marginRight: '4px', verticalAlign: 'middle' }} />
+                            Target: {formatChartPrice(nexusPrediction.targetPrice, symbol)}
+                        </div>
+                        <div className="prediction-confidence">
+                            Confidence: {nexusPrediction.confidence?.toFixed(1)}%
+                        </div>
+                        <div className="prediction-change">
+                            Expected: {nexusPrediction.priceChangePercent >= 0 ? '+' : ''}{nexusPrediction.priceChangePercent?.toFixed(2)}%
+                            {nexusPrediction.daysRemaining && ` in ${nexusPrediction.daysRemaining}d`}
+                        </div>
+                    </PredictionBadge>
+                )}
+
+                {/* NEXUS Error State */}
+                {nexusEnabled && nexusError && !nexusPrediction && !nexusLoading && (
+                    <PredictionBadge $direction="NONE" style={{
+                        background: 'rgba(100, 116, 139, 0.9)',
+                        border: '1px solid #64748b'
+                    }}>
+                        <div className="prediction-header">
+                            <Sparkles size={12} />
+                            NEXUS AI
+                        </div>
+                        <div style={{ color: 'white', fontSize: '0.85rem' }}>
+                            {nexusError}
+                        </div>
+                        <div style={{ marginTop: '8px', fontSize: '0.75rem', opacity: 0.8 }}>
+                            Make a prediction first to see the AI target
+                        </div>
+                    </PredictionBadge>
+                )}
+
                 {tooltipData && (
                     <ChartTooltip>
                         <div className="tooltip-time">{tooltipData.time}</div>
