@@ -11,7 +11,7 @@ import { useGamification } from '../context/GamificationContext';
 
 import {
     Home, TrendingUp, PieChart, Eye, Filter, MapPin, Newspaper, BookOpen, Brain, MessageSquare,
-    DollarSign, LogOut, LogIn, User, Menu, X, ChevronDown, Zap, Users,
+    DollarSign, LogOut, LogIn, User, Menu, X, ChevronDown, Zap, Users, Copy,
     Settings, Bell, CheckCircle, AlertCircle, TrendingUp as TrendingUpIcon,
     DollarSign as DollarIcon, Clock, ArrowUpRight, ArrowDownRight, Trophy, Twitter,
     Briefcase, BarChart3, Activity, Sparkles, Globe, Calculator, TrendingDown, MessageCircle, Award, Waves,
@@ -1400,6 +1400,7 @@ const Navbar = () => {
         community: [
             { path: '/feed', label: 'Social Feed', icon: MessageCircle },
             { path: '/leaderboard', label: 'Leaderboard', icon: Trophy },
+            { path: '/copy-trading', label: 'Copy Trading', icon: Copy },
             { path: '/discover', label: 'Discover Traders', icon: Sparkles },
             { path: '/journal', label: 'Journal', icon: BookOpen },
             { path: '/achievements/browse', label: 'Achievements', icon: Award },
