@@ -399,10 +399,10 @@ const PriceComparisonPage = () => {
 
     const plans = [
         { id: 'free', name: 'Free', icon: Gift, gradient: 'linear-gradient(135deg, #6366f1, #4f46e5)', shadow: 'rgba(99, 102, 241, 0.4)', price: 0, color: '#6366f1' },
-        { id: 'starter', name: 'Starter', icon: Star, gradient: 'linear-gradient(135deg, #10b981, #059669)', shadow: 'rgba(16, 185, 129, 0.4)', price: 9.99, color: '#10b981' },
-        { id: 'pro', name: 'Pro', icon: Rocket, gradient: 'linear-gradient(135deg, #3b82f6, #2563eb)', shadow: 'rgba(59, 130, 246, 0.4)', price: 24.99, color: '#3b82f6' },
-        { id: 'premium', name: 'Premium', icon: TrendingUp, gradient: 'linear-gradient(135deg, #f97316, #ea580c)', shadow: 'rgba(249, 115, 22, 0.4)', price: 49.99, color: '#f97316', featured: true, badge: 'Most Popular' },
-        { id: 'elite', name: 'Elite', icon: Crown, gradient: 'linear-gradient(135deg, #8b5cf6, #7c3aed)', shadow: 'rgba(139, 92, 246, 0.4)', price: 99.99, color: '#8b5cf6', badge: 'Best Value' },
+        { id: 'starter', name: 'Starter', icon: Star, gradient: 'linear-gradient(135deg, #10b981, #059669)', shadow: 'rgba(16, 185, 129, 0.4)', price: 15, color: '#10b981' },
+        { id: 'pro', name: 'Pro', icon: Rocket, gradient: 'linear-gradient(135deg, #3b82f6, #2563eb)', shadow: 'rgba(59, 130, 246, 0.4)', price: 25, color: '#3b82f6' },
+        { id: 'premium', name: 'Premium', icon: TrendingUp, gradient: 'linear-gradient(135deg, #f97316, #ea580c)', shadow: 'rgba(249, 115, 22, 0.4)', price: 50, color: '#f97316', featured: true, badge: 'Most Popular' },
+        { id: 'elite', name: 'Elite', icon: Crown, gradient: 'linear-gradient(135deg, #8b5cf6, #7c3aed)', shadow: 'rgba(139, 92, 246, 0.4)', price: 125, color: '#8b5cf6', badge: 'Best Value' },
     ];
 
     // Feature categories with all features
