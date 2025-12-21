@@ -5,7 +5,7 @@ import { createChart } from 'lightweight-charts';
 import styled, { keyframes, css } from 'styled-components';
 import {
     TrendingUp, Activity, BarChart3, Maximize2,
-    Download, Eye, EyeOff, RefreshCw, Sparkles, Target, Lock
+    Download, Eye, EyeOff, RefreshCw, Sparkles, Target, Lock, Brain
 } from 'lucide-react';
 import {
     calculateSMA,
@@ -401,6 +401,139 @@ const NexusButton = styled.button`
     }
 `;
 
+// Special styled button for NEXUS Pattern indicator
+const PatternButton = styled.button`
+    padding: 0.5rem 1rem;
+    background: ${props => props.$locked
+        ? `linear-gradient(135deg, #64748b1a 0%, #47556922 100%)`
+        : props.$active
+            ? `linear-gradient(135deg, #10b9814D 0%, #22c55e4D 100%)`
+            : `linear-gradient(135deg, #10b9810d 0%, #22c55e0d 100%)`
+    };
+    border: 1px solid ${props => props.$locked
+        ? '#64748b44'
+        : props.$active ? '#10b981' : '#10b98133'
+    };
+    border-radius: 8px;
+    color: ${props => props.$locked
+        ? '#94a3b8'
+        : props.$active ? '#10b981' : props.theme.text?.secondary
+    };
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+    position: relative;
+
+    &:hover {
+        background: ${props => props.$locked
+            ? `linear-gradient(135deg, #a855f71a 0%, #f59e0b1a 100%)`
+            : `linear-gradient(135deg, #10b98133 0%, #22c55e33 100%)`
+        };
+        border-color: ${props => props.$locked ? '#f59e0b66' : '#10b981'};
+        color: ${props => props.$locked ? '#f59e0b' : '#10b981'};
+    }
+
+    &:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+    }
+
+    svg {
+        ${props => props.$loading && `animation: spin 1s linear infinite;`}
+    }
+`;
+
+// Pattern badge display
+const PatternBadge = styled.div`
+    position: absolute;
+    top: 50px;
+    left: 12px;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.95) 0%, rgba(34, 197, 94, 0.95) 100%);
+    border: 1px solid #10b981;
+    border-radius: 12px;
+    padding: 12px 16px;
+    z-index: 15;
+    backdrop-filter: blur(8px);
+    min-width: 220px;
+    max-width: 280px;
+    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+    max-height: 300px;
+    overflow-y: auto;
+
+    .pattern-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.75rem;
+        color: rgba(255, 255, 255, 0.8);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 8px;
+        font-weight: 600;
+    }
+
+    .pattern-count {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: white;
+        margin-bottom: 8px;
+    }
+
+    .pattern-item {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 8px;
+        padding: 8px 10px;
+        margin-bottom: 6px;
+
+        &:last-child {
+            margin-bottom: 0;
+        }
+    }
+
+    .pattern-name {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: white;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .pattern-type {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        padding: 2px 6px;
+        border-radius: 4px;
+        background: ${props => props.$type === 'bullish' ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)'};
+        color: ${props => props.$type === 'bullish' ? '#22c55e' : '#ef4444'};
+    }
+
+    .pattern-confidence {
+        font-size: 0.75rem;
+        color: rgba(255, 255, 255, 0.7);
+        margin-top: 4px;
+    }
+
+    .pattern-target {
+        font-size: 0.75rem;
+        color: rgba(255, 255, 255, 0.9);
+        margin-top: 2px;
+        font-weight: 600;
+    }
+
+    .no-patterns {
+        font-size: 0.85rem;
+        color: rgba(255, 255, 255, 0.8);
+        text-align: center;
+        padding: 8px 0;
+    }
+`;
+
 // Prediction badge display
 const PredictionBadge = styled.div`
     position: absolute;
@@ -560,6 +693,12 @@ const AdvancedChart = ({
     const [nexusLoading, setNexusLoading] = useState(false);
     const [nexusError, setNexusError] = useState(null);
     const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
+
+    // NEXUS Pattern state
+    const [patternEnabled, setPatternEnabled] = useState(false);
+    const [patterns, setPatterns] = useState([]);
+    const [patternLoading, setPatternLoading] = useState(false);
+    const [patternError, setPatternError] = useState(null);
 
     // Check if user has access to NEXUS AI (Premium/Elite only)
     const hasNexusAccess = canUseFeature('hasNexusAI') || hasPlanAccess('premium');
@@ -1162,6 +1301,54 @@ const AdvancedChart = ({
         }
     }, [nexusEnabled, symbol, fetchNexusPrediction]);
 
+    // Fetch Pattern Recognition when enabled
+    const fetchPatterns = useCallback(async () => {
+        if (!symbol || !api) return;
+
+        setPatternLoading(true);
+        setPatternError(null);
+
+        try {
+            console.log(`[PATTERN] Fetching patterns for ${symbol}...`);
+            const response = await api.get(`/patterns/${encodeURIComponent(symbol)}?interval=${timeframe}`);
+
+            if (response.data.success && response.data.patterns) {
+                setPatterns(response.data.patterns);
+                console.log(`[PATTERN] Found ${response.data.patterns.length} patterns`);
+            } else {
+                setPatterns([]);
+                console.log(`[PATTERN] No patterns detected for ${symbol}`);
+            }
+        } catch (error) {
+            console.error('[PATTERN] Error fetching patterns:', error);
+            setPatternError(error.response?.data?.error || 'Failed to detect patterns');
+            setPatterns([]);
+        } finally {
+            setPatternLoading(false);
+        }
+    }, [symbol, api, timeframe]);
+
+    // Effect to fetch patterns when enabled
+    useEffect(() => {
+        if (patternEnabled && symbol) {
+            fetchPatterns();
+        } else {
+            setPatterns([]);
+            setPatternError(null);
+        }
+    }, [patternEnabled, symbol, fetchPatterns]);
+
+    // Toggle Pattern indicator
+    const togglePattern = () => {
+        // Pattern recognition is available to all users with hasPatternRecognition feature
+        const hasPatternAccess = canUseFeature('hasPatternRecognition') || hasPlanAccess('premium');
+        if (!hasPatternAccess) {
+            setShowUpgradePrompt(true);
+            return;
+        }
+        setPatternEnabled(prev => !prev);
+    };
+
     // Effect to draw/remove prediction line on chart
     useEffect(() => {
         if (!chartRef.current || !mainSeriesRef.current) return;
@@ -1514,6 +1701,35 @@ const AdvancedChart = ({
                     )}
                 </NexusButton>
 
+                {/* NEXUS Pattern Button */}
+                <PatternButton
+                    $active={patternEnabled}
+                    $loading={patternLoading}
+                    $locked={false}
+                    onClick={togglePattern}
+                    title="NEXUS Pattern - AI Chart Pattern Recognition"
+                    disabled={patternLoading}
+                >
+                    {patternLoading ? (
+                        <RefreshCw size={14} />
+                    ) : (
+                        <Brain size={14} />
+                    )}
+                    NEXUS Pattern
+                    {patterns.length > 0 && (
+                        <span style={{
+                            marginLeft: '4px',
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            fontSize: '0.7rem',
+                            background: '#10b98133',
+                            color: '#10b981'
+                        }}>
+                            {patterns.length}
+                        </span>
+                    )}
+                </PatternButton>
+
                 <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.1)', margin: '0 4px' }} />
 
                 {indicators.map(indicator => (
@@ -1573,6 +1789,63 @@ const AdvancedChart = ({
                             Make a prediction first to see the AI target
                         </div>
                     </PredictionBadge>
+                )}
+
+                {/* NEXUS Pattern Badge */}
+                {patternEnabled && (
+                    <PatternBadge>
+                        <div className="pattern-header">
+                            <Brain size={12} />
+                            NEXUS Pattern Recognition
+                        </div>
+                        {patternLoading ? (
+                            <div className="no-patterns">
+                                <RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} />
+                                <span style={{ marginLeft: '8px' }}>Scanning...</span>
+                            </div>
+                        ) : patterns.length > 0 ? (
+                            <>
+                                <div className="pattern-count">
+                                    {patterns.length} Pattern{patterns.length > 1 ? 's' : ''} Detected
+                                </div>
+                                {patterns.map((pattern, idx) => (
+                                    <div key={idx} className="pattern-item">
+                                        <div className="pattern-name">
+                                            {pattern.type === 'bullish' ? (
+                                                <TrendingUp size={14} style={{ color: '#22c55e' }} />
+                                            ) : (
+                                                <TrendingUp size={14} style={{ color: '#ef4444', transform: 'rotate(180deg)' }} />
+                                            )}
+                                            {pattern.name}
+                                            <span className="pattern-type" style={{
+                                                background: pattern.type === 'bullish' ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)',
+                                                color: pattern.type === 'bullish' ? '#22c55e' : '#ef4444'
+                                            }}>
+                                                {pattern.type}
+                                            </span>
+                                        </div>
+                                        <div className="pattern-confidence">
+                                            Confidence: {pattern.confidence?.toFixed(0)}%
+                                        </div>
+                                        {pattern.target && (
+                                            <div className="pattern-target">
+                                                Target: {formatChartPrice(pattern.target, symbol)}
+                                                {pattern.potentialMove && (
+                                                    <span style={{ marginLeft: '8px', color: pattern.type === 'bullish' ? '#22c55e' : '#ef4444' }}>
+                                                        ({pattern.potentialMove >= 0 ? '+' : ''}{pattern.potentialMove}%)
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </>
+                        ) : (
+                            <div className="no-patterns">
+                                No patterns detected for current timeframe
+                            </div>
+                        )}
+                    </PatternBadge>
                 )}
 
                 {tooltipData && (
