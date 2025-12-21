@@ -1148,55 +1148,95 @@ const AdvancedChart = ({
     useEffect(() => {
         if (!chartRef.current || !mainSeriesRef.current) return;
 
-        // Remove existing prediction line
+        // Remove existing prediction series
         if (predictionLineRef.current) {
             try {
-                chartRef.current.removeSeries(predictionLineRef.current);
+                if (predictionLineRef.current.projectionLine) {
+                    chartRef.current.removeSeries(predictionLineRef.current.projectionLine);
+                }
+                if (predictionLineRef.current.targetLine) {
+                    chartRef.current.removeSeries(predictionLineRef.current.targetLine);
+                }
             } catch (error) {
-                console.log('Could not remove prediction line:', error.message);
+                console.log('Could not remove prediction lines:', error.message);
             }
             predictionLineRef.current = null;
         }
 
-        // Draw new prediction line if we have prediction data
+        // Draw new prediction visualization if we have prediction data
         if (nexusEnabled && nexusPrediction && nexusPrediction.targetPrice && data.length > 0) {
             try {
                 const isUp = nexusPrediction.direction === 'UP';
                 const lineColor = isUp ? '#3b82f6' : '#f97316'; // Blue for UP, Orange for DOWN
 
-                // Create a horizontal line series for the prediction target
-                const predictionSeries = chartRef.current.addLineSeries({
+                // Get the last candle (current price point)
+                const lastCandle = data[data.length - 1];
+                const currentPrice = lastCandle.close;
+                const currentTime = lastCandle.time;
+
+                // Calculate future time based on daysRemaining or default to 7 days
+                const daysRemaining = nexusPrediction.daysRemaining || 7;
+
+                // Calculate time increment based on timeframe
+                // For daily data, add days; for intraday, we need to calculate properly
+                const secondsPerDay = 86400;
+                const futureTime = currentTime + (daysRemaining * secondsPerDay);
+
+                // Create intermediate points for a smooth projection line
+                const projectionPoints = [];
+                const numPoints = Math.max(daysRemaining, 5); // At least 5 points for smooth line
+
+                for (let i = 0; i <= numPoints; i++) {
+                    const progress = i / numPoints;
+                    const time = currentTime + (progress * daysRemaining * secondsPerDay);
+                    // Linear interpolation from current price to target price
+                    const value = currentPrice + (progress * (nexusPrediction.targetPrice - currentPrice));
+                    projectionPoints.push({ time: Math.floor(time), value });
+                }
+
+                // Create the projection line (from current to target in future)
+                const projectionLine = chartRef.current.addLineSeries({
                     color: lineColor,
-                    lineWidth: 2,
+                    lineWidth: 3,
                     lineStyle: 2, // Dashed line
-                    title: `NEXUS Target: ${isUp ? '↑' : '↓'}`,
+                    title: `NEXUS ${isUp ? '↑' : '↓'} Projection`,
                     lastValueVisible: true,
-                    priceLineVisible: true,
+                    priceLineVisible: false,
+                    crosshairMarkerVisible: true,
+                });
+                projectionLine.setData(projectionPoints);
+
+                // Create a horizontal target line at the target price (extending into future)
+                const targetLine = chartRef.current.addLineSeries({
+                    color: lineColor,
+                    lineWidth: 1,
+                    lineStyle: 1, // Dotted line
+                    title: '',
+                    lastValueVisible: false,
+                    priceLineVisible: false,
                     crosshairMarkerVisible: false,
                 });
 
-                // Create horizontal line data spanning the entire chart
-                const lineData = data.map(d => ({
-                    time: d.time,
-                    value: nexusPrediction.targetPrice
-                }));
+                // Horizontal line from projection end extending further
+                targetLine.setData([
+                    { time: Math.floor(futureTime), value: nexusPrediction.targetPrice },
+                    { time: Math.floor(futureTime + (3 * secondsPerDay)), value: nexusPrediction.targetPrice }
+                ]);
 
-                predictionSeries.setData(lineData);
-
-                // Add price line at the target price
-                predictionSeries.createPriceLine({
+                // Add a price line marker at the target
+                projectionLine.createPriceLine({
                     price: nexusPrediction.targetPrice,
                     color: lineColor,
-                    lineWidth: 2,
-                    lineStyle: 2,
+                    lineWidth: 1,
+                    lineStyle: 1,
                     axisLabelVisible: true,
-                    title: `NEXUS ${isUp ? '↑' : '↓'} Target`,
+                    title: `Target: ${isUp ? '↑' : '↓'}`,
                 });
 
-                predictionLineRef.current = predictionSeries;
-                console.log(`[NEXUS] Drew prediction line at $${nexusPrediction.targetPrice} (${nexusPrediction.direction})`);
+                predictionLineRef.current = { projectionLine, targetLine };
+                console.log(`[NEXUS] Drew projection: $${currentPrice.toFixed(2)} → $${nexusPrediction.targetPrice.toFixed(2)} over ${daysRemaining} days`);
             } catch (error) {
-                console.error('[NEXUS] Error drawing prediction line:', error);
+                console.error('[NEXUS] Error drawing prediction:', error);
             }
         }
     }, [nexusEnabled, nexusPrediction, data]);
