@@ -1659,6 +1659,60 @@ const AdvancedChart = ({
                     addMarker(recentIdx, isBullish ? 'belowBar' : 'aboveBar', patternColor, isBullish ? '↑' : '↓');
                 }
 
+                // NEW PATTERNS - Wedges
+                else if (pattern.pattern === 'RISING_WEDGE' || pattern.pattern === 'FALLING_WEDGE') {
+                    const recentIdx = data.length - 1;
+                    addMarker(recentIdx, isBullish ? 'belowBar' : 'aboveBar', patternColor, '⟨⟩');
+                }
+
+                // NEW PATTERNS - Pennants
+                else if (pattern.pattern === 'BULL_PENNANT' || pattern.pattern === 'BEAR_PENNANT') {
+                    if (pattern.points?.poleStart?.index !== undefined) {
+                        addMarker(pattern.points.poleStart.index, isBullish ? 'belowBar' : 'aboveBar', patternColor, 'P');
+                    }
+                    const recentIdx = data.length - 1;
+                    addMarker(recentIdx, isBullish ? 'belowBar' : 'aboveBar', patternColor, '▷');
+                }
+
+                // NEW PATTERNS - Triple Bottom
+                else if (pattern.pattern === 'TRIPLE_BOTTOM') {
+                    if (pattern.points?.first?.index !== undefined) {
+                        addMarker(pattern.points.first.index, 'belowBar', patternColor, '1');
+                    }
+                    if (pattern.points?.second?.index !== undefined) {
+                        addMarker(pattern.points.second.index, 'belowBar', patternColor, '2');
+                    }
+                    if (pattern.points?.third?.index !== undefined) {
+                        addMarker(pattern.points.third.index, 'belowBar', patternColor, '3');
+                    }
+                }
+
+                // NEW PATTERNS - Rounding patterns
+                else if (pattern.pattern === 'ROUNDING_BOTTOM' || pattern.pattern === 'ROUNDING_TOP') {
+                    if (pattern.points?.bottom?.index !== undefined || pattern.points?.top?.index !== undefined) {
+                        const idx = pattern.points.bottom?.index || pattern.points.top?.index;
+                        addMarker(idx, isBullish ? 'belowBar' : 'aboveBar', patternColor, '◠');
+                    }
+                }
+
+                // NEW PATTERNS - Broadening patterns
+                else if (pattern.pattern === 'BROADENING_TOP' || pattern.pattern === 'BROADENING_BOTTOM') {
+                    const recentIdx = data.length - 1;
+                    addMarker(recentIdx, isBullish ? 'belowBar' : 'aboveBar', patternColor, '◇');
+                }
+
+                // NEW PATTERNS - Candlestick patterns
+                else if (['DOJI', 'HAMMER', 'HANGING_MAN', 'INVERTED_HAMMER', 'SHOOTING_STAR',
+                         'BULLISH_ENGULFING', 'BEARISH_ENGULFING', 'MORNING_STAR', 'EVENING_STAR',
+                         'THREE_WHITE_SOLDIERS', 'THREE_BLACK_CROWS', 'PIERCING_LINE',
+                         'DARK_CLOUD_COVER', 'MARUBOZU'].includes(pattern.pattern)) {
+                    const candleIdx = pattern.points?.index;
+                    if (candleIdx !== undefined) {
+                        const symbol = isBullish ? '★' : '✦';
+                        addMarker(candleIdx, isBullish ? 'belowBar' : 'aboveBar', patternColor, symbol);
+                    }
+                }
+
                 // Draw target price line
                 if (pattern.target && Number.isFinite(pattern.target)) {
                     drawHorizontalLine(pattern.target, patternColor, `Target ${isBullish ? '↑' : '↓'}`, 1);
