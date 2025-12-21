@@ -13,7 +13,8 @@ import {
   DollarSign, BarChart3, Clock, MessageSquare,
   Star, StarOff, Loader2, Zap, PieChart,
   Minus, Plus, ShoppingCart, Share2, Bell, BellOff,
-  Globe, Coins, ArrowUpRight, ArrowDownRight, AlertTriangle
+  Globe, Coins, ArrowUpRight, ArrowDownRight, AlertTriangle,
+  Copy, Check
 } from 'lucide-react';
 import SEO from '../components/SEO';
 
@@ -165,6 +166,70 @@ const CryptoDetails = styled.div`
     border-radius: 6px;
     font-size: 12px;
     color: #f7931a;
+  }
+`;
+
+const ContractAddressRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  margin-bottom: 8px;
+
+  .contract-label {
+    color: #64748b;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .contract-address {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-family: 'Monaco', 'Menlo', monospace;
+    font-size: 12px;
+    color: #a0a0a0;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+
+    .address-text {
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+
+      @media (max-width: 600px) {
+        max-width: 120px;
+      }
+    }
+  }
+
+  .copy-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(139, 92, 246, 0.15);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    color: #8b5cf6;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: rgba(139, 92, 246, 0.25);
+      border-color: rgba(139, 92, 246, 0.5);
+    }
+
+    &.copied {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: rgba(16, 185, 129, 0.3);
+      color: #10b981;
+    }
   }
 `;
 
@@ -996,8 +1061,23 @@ const CryptoPage = () => {
   const [quantity, setQuantity] = useState(0.1);
   const [isWatchlisted, setIsWatchlisted] = useState(false);
   const [hasAlerts, setHasAlerts] = useState(false);
+  const [copiedAddress, setCopiedAddress] = useState(false);
 
   const timeframes = ['1D', '5D', '1M', '3M', '6M', '1Y', '5Y', 'MAX'];
+
+  // Copy contract address to clipboard
+  const handleCopyAddress = async (address) => {
+    try {
+      await navigator.clipboard.writeText(address);
+      setCopiedAddress(true);
+      setTimeout(() => setCopiedAddress(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  // Get contract address - for DEX tokens use pool address
+  const contractAddress = searchParams.get('contract') || dexPoolAddress;
 
   // Get current price from chart data
   const currentPrice = chartData.length > 0 ? chartData[chartData.length - 1].close : 0;
@@ -1248,6 +1328,23 @@ const CryptoPage = () => {
           <CryptoDetails>
             <h1>{symbol?.toUpperCase()}</h1>
             <div className="crypto-name">{cryptoDetails.name}</div>
+            {contractAddress && (
+              <ContractAddressRow>
+                <span className="contract-label">Contract:</span>
+                <div className="contract-address">
+                  <span className="address-text" title={contractAddress}>
+                    {contractAddress}
+                  </span>
+                </div>
+                <button
+                  className={`copy-button ${copiedAddress ? 'copied' : ''}`}
+                  onClick={() => handleCopyAddress(contractAddress)}
+                  title={copiedAddress ? 'Copied!' : 'Copy address'}
+                >
+                  {copiedAddress ? <Check size={14} /> : <Copy size={14} />}
+                </button>
+              </ContractAddressRow>
+            )}
             <span className="crypto-badge" style={isDex ? { background: 'rgba(139, 92, 246, 0.15)', color: '#8b5cf6' } : {}}>
               <Coins size={12} />
               {isDex ? `DEX Token (${dexNetwork.toUpperCase()})` : 'Cryptocurrency'}
