@@ -178,13 +178,51 @@ const TypeBadge = styled.span`
     text-transform: uppercase;
 `;
 
-// Candlestick marker
+// Candlestick marker with pulse animation
+const candlePulse = keyframes`
+    0%, 100% {
+        opacity: 0.3;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.6;
+        transform: scale(1.05);
+    }
+`;
+
 const CandlestickMarker = styled.rect`
     fill: ${props => props.$color || '#00adef'};
     opacity: 0.4;
     stroke: ${props => props.$color || '#00adef'};
     stroke-width: 2;
-    rx: 2;
+    rx: 4;
+    animation: ${candlePulse} 2s ease-in-out infinite;
+    filter: drop-shadow(0 0 6px ${props => props.$color || '#00adef'});
+`;
+
+const CandleHighlight = styled.rect`
+    fill: none;
+    stroke: ${props => props.$color || '#00adef'};
+    stroke-width: 3;
+    stroke-dasharray: 4,2;
+    rx: 4;
+    opacity: 0.8;
+    filter: drop-shadow(0 0 8px ${props => props.$color || '#00adef'});
+`;
+
+const PatternIcon = styled.circle`
+    fill: ${props => props.$color || '#00adef'};
+    stroke: white;
+    stroke-width: 2;
+    filter: drop-shadow(0 0 4px ${props => props.$color || '#00adef'});
+    animation: ${pulseGlow} 1.5s ease-in-out infinite;
+`;
+
+const ConnectorLine = styled.line`
+    stroke: ${props => props.$color || '#00adef'};
+    stroke-width: 2;
+    stroke-dasharray: 6,3;
+    opacity: 0.7;
 `;
 
 /**
@@ -692,28 +730,170 @@ const PatternOverlay = ({ patterns, chartDimensions, priceScale, timeScale, onPa
 
     const drawCandlestickPattern = (pattern, index) => {
         const color = getColor(pattern);
-        const candleIndex = pattern.points?.index;
+        const patternName = pattern.name || pattern.pattern?.replace(/_/g, ' ') || 'Pattern';
+        const isBullish = pattern.type === 'bullish';
+        const isBearish = pattern.type === 'bearish';
 
-        if (candleIndex === undefined) return null;
+        // Get candle positions based on pattern structure
+        let candles = [];
 
-        const x = indexToX(candleIndex);
-        const y = priceToY(pattern.points.price);
+        // Single candle patterns (Doji, Hammer, etc.)
+        if (pattern.points?.index !== undefined && pattern.points?.price !== undefined) {
+            candles.push({
+                x: indexToX(pattern.points.index),
+                y: priceToY(pattern.points.price),
+                main: true
+            });
+        }
+        // Two-candle patterns (Engulfing, Piercing Line, Dark Cloud)
+        else if (pattern.points?.engulfed && pattern.points?.engulfing) {
+            candles.push({
+                x: indexToX(pattern.points.engulfed.index),
+                y: priceToY(pattern.points.engulfed.price),
+                main: false
+            });
+            candles.push({
+                x: indexToX(pattern.points.engulfing.index),
+                y: priceToY(pattern.points.engulfing.price),
+                main: true
+            });
+        }
+        else if (pattern.points?.first && pattern.points?.second) {
+            candles.push({
+                x: indexToX(pattern.points.first.index),
+                y: priceToY(pattern.points.first.price),
+                main: false
+            });
+            candles.push({
+                x: indexToX(pattern.points.second.index),
+                y: priceToY(pattern.points.second.price),
+                main: true
+            });
+        }
+        // Three-candle patterns (Morning Star, Evening Star, Three Soldiers/Crows)
+        else if (pattern.points?.first && pattern.points?.star && pattern.points?.third) {
+            candles.push({
+                x: indexToX(pattern.points.first.index),
+                y: priceToY(pattern.points.first.price),
+                main: false
+            });
+            candles.push({
+                x: indexToX(pattern.points.star.index),
+                y: priceToY(pattern.points.star.price),
+                main: false
+            });
+            candles.push({
+                x: indexToX(pattern.points.third.index),
+                y: priceToY(pattern.points.third.price),
+                main: true
+            });
+        }
+        else if (pattern.points?.first && pattern.points?.second && pattern.points?.third) {
+            candles.push({
+                x: indexToX(pattern.points.first.index),
+                y: priceToY(pattern.points.first.price),
+                main: false
+            });
+            candles.push({
+                x: indexToX(pattern.points.second.index),
+                y: priceToY(pattern.points.second.price),
+                main: false
+            });
+            candles.push({
+                x: indexToX(pattern.points.third.index),
+                y: priceToY(pattern.points.third.price),
+                main: true
+            });
+        }
+
+        if (candles.length === 0) return null;
+
+        const mainCandle = candles.find(c => c.main) || candles[candles.length - 1];
+        const arrowY = isBullish ? mainCandle.y + 40 : mainCandle.y - 40;
 
         return (
-            <AnimatedGroup key={`candle-${index}`} $delay={`${index * 0.05}s`}>
-                {/* Highlight marker */}
-                <CandlestickMarker
-                    x={x - 15} y={y - 25}
-                    width={30} height={50}
+            <AnimatedGroup key={`candle-${index}`} $delay={`${index * 0.05}s`} $confirmed={true}>
+                <defs>
+                    <linearGradient id={`candle-grad-${index}`} x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stopColor={color} stopOpacity="0.1" />
+                        <stop offset="50%" stopColor={color} stopOpacity="0.4" />
+                        <stop offset="100%" stopColor={color} stopOpacity="0.1" />
+                    </linearGradient>
+                    <filter id={`candle-glow-${index}`}>
+                        <feGaussianBlur stdDeviation="3" result="blur" />
+                        <feMerge>
+                            <feMergeNode in="blur" />
+                            <feMergeNode in="SourceGraphic" />
+                        </feMerge>
+                    </filter>
+                </defs>
+
+                {/* Draw all candle highlights */}
+                {candles.map((candle, i) => (
+                    <React.Fragment key={i}>
+                        <CandlestickMarker
+                            x={candle.x - 12}
+                            y={candle.y - 20}
+                            width={24}
+                            height={40}
+                            $color={color}
+                            style={{ animationDelay: `${i * 0.15}s` }}
+                        />
+                        {candle.main && (
+                            <CandleHighlight
+                                x={candle.x - 16}
+                                y={candle.y - 24}
+                                width={32}
+                                height={48}
+                                $color={color}
+                            />
+                        )}
+                    </React.Fragment>
+                ))}
+
+                {/* Connector lines between candles */}
+                {candles.length > 1 && candles.slice(0, -1).map((candle, i) => (
+                    <ConnectorLine
+                        key={`conn-${i}`}
+                        x1={candle.x + 12}
+                        y1={candle.y}
+                        x2={candles[i + 1].x - 12}
+                        y2={candles[i + 1].y}
+                        $color={color}
+                    />
+                ))}
+
+                {/* Direction arrow */}
+                <g transform={`translate(${mainCandle.x}, ${arrowY})`}>
+                    <PatternIcon r="14" $color={color} />
+                    <text
+                        x="0" y="5"
+                        textAnchor="middle"
+                        fill="white"
+                        fontSize="16"
+                        fontWeight="bold"
+                    >
+                        {isBullish ? '↑' : isBearish ? '↓' : '●'}
+                    </text>
+                </g>
+
+                {/* Pattern name label */}
+                <PatternLabel
+                    x={mainCandle.x}
+                    y={isBullish ? arrowY + 30 : arrowY - 20}
                     $color={color}
-                />
-
-                {/* Small icon */}
-                <PatternCircle cx={x} cy={y - 35} r="8" $color={color} />
-
-                <PatternLabel x={x} y={y - 55} $color={color} style={{ fontSize: '10px' }}>
-                    {pattern.name?.split(' ')[0] || pattern.pattern}
+                    style={{ fontSize: '11px', fontWeight: 'bold' }}
+                >
+                    {patternName}
                 </PatternLabel>
+
+                {/* Confidence badge */}
+                <g transform={`translate(${mainCandle.x + 25}, ${mainCandle.y - 30})`}>
+                    <rect x="-18" y="-10" width="36" height="18" rx="9" fill={color} opacity="0.9" />
+                    <text x="0" y="4" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold">
+                        {pattern.confidence?.toFixed(0) || 'N/A'}%
+                    </text>
+                </g>
             </AnimatedGroup>
         );
     };
