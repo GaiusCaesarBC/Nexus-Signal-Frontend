@@ -1,5 +1,5 @@
-// client/src/components/PatternOverlay.js - CLEAN PATTERN OVERLAY
-// Minimal, elegant pattern markers without cluttering the chart
+// client/src/components/PatternOverlay.js - COMPREHENSIVE PATTERN VISUALIZATION
+// Full visual overlays: shapes, zones, markers, and badges
 
 import React, { useState } from 'react';
 import styled, { keyframes } from 'styled-components';
@@ -7,29 +7,34 @@ import styled, { keyframes } from 'styled-components';
 // ============ ANIMATIONS ============
 
 const fadeIn = keyframes`
-    from { opacity: 0; transform: scale(0.8); }
+    from { opacity: 0; transform: scale(0.9); }
     to { opacity: 1; transform: scale(1); }
 `;
 
 const pulse = keyframes`
-    0%, 100% { transform: scale(1); opacity: 0.9; }
-    50% { transform: scale(1.1); opacity: 1; }
+    0%, 100% { opacity: 0.8; }
+    50% { opacity: 1; }
 `;
 
-const glow = keyframes`
-    0%, 100% { filter: drop-shadow(0 0 4px currentColor); }
-    50% { filter: drop-shadow(0 0 10px currentColor); }
+const drawLine = keyframes`
+    from { stroke-dashoffset: 1000; }
+    to { stroke-dashoffset: 0; }
 `;
 
-// ============ STYLED COMPONENTS ============
+const glowPulse = keyframes`
+    0%, 100% { filter: drop-shadow(0 0 3px currentColor); }
+    50% { filter: drop-shadow(0 0 8px currentColor); }
+`;
 
-// Chart margins (TradingView lightweight-charts defaults)
+// ============ CHART MARGINS ============
 const CHART_MARGINS = {
-    right: 60,   // Price scale width
-    bottom: 30,  // Time scale height
+    right: 60,
+    bottom: 30,
     top: 10,
     left: 5
 };
+
+// ============ STYLED COMPONENTS ============
 
 const OverlayContainer = styled.svg`
     position: absolute;
@@ -42,20 +47,74 @@ const OverlayContainer = styled.svg`
     overflow: visible;
 `;
 
-const PatternBadge = styled.g`
-    animation: ${fadeIn} 0.4s ease-out forwards;
-    cursor: pointer;
+const PatternGroup = styled.g`
+    animation: ${fadeIn} 0.5s ease-out forwards;
     pointer-events: all;
+    cursor: pointer;
+`;
 
-    &:hover {
-        transform: scale(1.05);
-    }
+// Pattern zone (shaded region)
+const PatternZone = styled.path`
+    fill: ${props => props.$color || 'rgba(59, 130, 246, 0.1)'};
+    stroke: none;
+    animation: ${pulse} 3s ease-in-out infinite;
+`;
+
+// Trendlines
+const TrendLine = styled.line`
+    stroke: ${props => props.$color || '#3b82f6'};
+    stroke-width: ${props => props.$width || 2};
+    stroke-dasharray: ${props => props.$dashed ? '6,4' : 'none'};
+    stroke-linecap: round;
+    animation: ${glowPulse} 2s ease-in-out infinite;
+`;
+
+// Curved path for patterns like Cup & Handle, Rounding
+const PatternPath = styled.path`
+    fill: none;
+    stroke: ${props => props.$color || '#3b82f6'};
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 0;
+    animation: ${drawLine} 1s ease-out forwards, ${glowPulse} 2s ease-in-out infinite 1s;
+`;
+
+// Horizontal support/resistance lines
+const LevelLine = styled.line`
+    stroke: ${props => props.$color || '#f59e0b'};
+    stroke-width: 1.5;
+    stroke-dasharray: 8,4;
+    opacity: 0.8;
+`;
+
+// Candle marker dot
+const CandleMarker = styled.circle`
+    fill: ${props => props.$color || '#3b82f6'};
+    stroke: white;
+    stroke-width: 2;
+    filter: drop-shadow(0 0 4px ${props => props.$color || '#3b82f6'});
+    animation: ${pulse} 2s ease-in-out infinite;
+`;
+
+// Small arrow marker
+const ArrowMarker = styled.path`
+    fill: ${props => props.$color || '#3b82f6'};
+    filter: drop-shadow(0 0 3px ${props => props.$color || '#3b82f6'});
+`;
+
+// Badge container
+const BadgeGroup = styled.g`
+    animation: ${fadeIn} 0.4s ease-out forwards;
 `;
 
 const BadgeRect = styled.rect`
-    fill: ${props => props.$bg || 'rgba(0, 173, 237, 0.9)'};
+    fill: ${props => props.$bg || 'rgba(15, 23, 42, 0.9)'};
+    stroke: ${props => props.$color || '#3b82f6'};
+    stroke-width: 1.5;
     rx: 6;
-    filter: drop-shadow(0 2px 8px rgba(0,0,0,0.4));
+    filter: drop-shadow(0 2px 6px rgba(0,0,0,0.3));
 `;
 
 const BadgeText = styled.text`
@@ -68,27 +127,14 @@ const BadgeText = styled.text`
     letter-spacing: 0.5px;
 `;
 
-const DirectionArrow = styled.path`
-    fill: white;
-    opacity: 0.9;
+const ConfidenceText = styled.text`
+    fill: ${props => props.$color || '#10b981'};
+    font-size: 9px;
+    font-weight: 600;
+    text-anchor: middle;
 `;
 
-const MarkerDot = styled.circle`
-    fill: ${props => props.$color || '#00adef'};
-    stroke: white;
-    stroke-width: 2;
-    animation: ${pulse} 2s ease-in-out infinite;
-    filter: drop-shadow(0 0 6px ${props => props.$color || '#00adef'});
-`;
-
-const ConfidenceRing = styled.circle`
-    fill: none;
-    stroke: ${props => props.$color || '#00adef'};
-    stroke-width: 3;
-    opacity: 0.6;
-    animation: ${glow} 2s ease-in-out infinite;
-`;
-
+// Tooltip
 const TooltipGroup = styled.g`
     pointer-events: none;
 `;
@@ -97,11 +143,6 @@ const TooltipBg = styled.rect`
     fill: rgba(15, 23, 42, 0.95);
     rx: 8;
     filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5));
-`;
-
-const TooltipText = styled.text`
-    fill: #e2e8f0;
-    font-size: 11px;
 `;
 
 // ============ COMPONENT ============
@@ -114,41 +155,83 @@ const PatternOverlay = ({ patterns, chartDimensions, priceScale, timeScale }) =>
         return null;
     }
 
-    // Calculate effective chart area (excluding price scale and time scale)
+    // Calculate effective chart area
     const chartWidth = chartDimensions.width - CHART_MARGINS.left - CHART_MARGINS.right;
     const chartHeight = chartDimensions.height - CHART_MARGINS.top - CHART_MARGINS.bottom;
 
-    // Convert price to Y coordinate within the chart area
+    // Coordinate conversion functions
     const priceToY = (price) => {
         if (!price || !priceScale.min || !priceScale.max) return chartHeight / 2;
         const range = priceScale.max - priceScale.min;
         if (range === 0) return chartHeight / 2;
-        // Map price to Y: high prices at top (low Y), low prices at bottom (high Y)
-        const normalized = (price - priceScale.min) / range;
-        return chartHeight * (1 - normalized);
+        return chartHeight * (1 - (price - priceScale.min) / range);
     };
 
-    // Convert data index to X coordinate within the chart area
     const indexToX = (index) => {
         if (index === undefined || timeScale.start === undefined || timeScale.end === undefined) return chartWidth / 2;
         const range = timeScale.end - timeScale.start;
         if (range === 0) return chartWidth / 2;
-        // Map index to X position across the chart width
-        const normalized = (index - timeScale.start) / range;
-        return normalized * chartWidth;
+        return ((index - timeScale.start) / range) * chartWidth;
     };
 
-    // Get color based on pattern type
+    // Color helpers
     const getColor = (pattern) => {
-        const patternType = pattern.type || 'neutral';
-        if (patternType === 'bullish') return '#10b981';
-        if (patternType === 'bearish') return '#ef4444';
+        const type = pattern.type || PATTERN_TYPES[pattern.pattern] || 'neutral';
+        if (type === 'bullish') return '#10b981';
+        if (type === 'bearish') return '#ef4444';
         return '#8b5cf6';
     };
 
-    // Get pattern display name (shortened)
+    const getZoneColor = (pattern) => {
+        const type = pattern.type || PATTERN_TYPES[pattern.pattern] || 'neutral';
+        if (type === 'bullish') return 'rgba(16, 185, 129, 0.08)';
+        if (type === 'bearish') return 'rgba(239, 68, 68, 0.08)';
+        return 'rgba(139, 92, 246, 0.08)';
+    };
+
+    // Pattern type lookup
+    const PATTERN_TYPES = {
+        'HEAD_SHOULDERS': 'bearish',
+        'HEAD_SHOULDERS_INVERSE': 'bullish',
+        'DOUBLE_TOP': 'bearish',
+        'DOUBLE_BOTTOM': 'bullish',
+        'TRIPLE_TOP': 'bearish',
+        'TRIPLE_BOTTOM': 'bullish',
+        'ASCENDING_TRIANGLE': 'bullish',
+        'DESCENDING_TRIANGLE': 'bearish',
+        'SYMMETRIC_TRIANGLE': 'neutral',
+        'BULL_FLAG': 'bullish',
+        'BEAR_FLAG': 'bearish',
+        'BULL_PENNANT': 'bullish',
+        'BEAR_PENNANT': 'bearish',
+        'RISING_WEDGE': 'bearish',
+        'FALLING_WEDGE': 'bullish',
+        'CUP_HANDLE': 'bullish',
+        'ROUNDING_BOTTOM': 'bullish',
+        'ROUNDING_TOP': 'bearish',
+        'BROADENING_TOP': 'bearish',
+        'BROADENING_BOTTOM': 'bullish',
+        'DOJI': 'neutral',
+        'HAMMER': 'bullish',
+        'HANGING_MAN': 'bearish',
+        'INVERTED_HAMMER': 'bullish',
+        'SHOOTING_STAR': 'bearish',
+        'BULLISH_ENGULFING': 'bullish',
+        'BEARISH_ENGULFING': 'bearish',
+        'MORNING_STAR': 'bullish',
+        'EVENING_STAR': 'bearish',
+        'THREE_WHITE_SOLDIERS': 'bullish',
+        'THREE_BLACK_CROWS': 'bearish',
+        'PIERCING_LINE': 'bullish',
+        'DARK_CLOUD_COVER': 'bearish',
+        'MARUBOZU': 'neutral',
+        'UPTREND': 'bullish',
+        'DOWNTREND': 'bearish',
+        'SUPPORT_RESISTANCE': 'neutral'
+    };
+
+    // Short names for badges
     const getShortName = (pattern) => {
-        const name = pattern.name || pattern.pattern || '';
         const shortNames = {
             'HEAD_SHOULDERS': 'H&S',
             'HEAD_SHOULDERS_INVERSE': 'INV H&S',
@@ -158,6 +241,7 @@ const PatternOverlay = ({ patterns, chartDimensions, priceScale, timeScale }) =>
             'TRIPLE_BOTTOM': 'TRIP BTM',
             'ASCENDING_TRIANGLE': 'ASC TRI',
             'DESCENDING_TRIANGLE': 'DESC TRI',
+            'SYMMETRIC_TRIANGLE': 'SYM TRI',
             'BULL_FLAG': 'BULL FLAG',
             'BEAR_FLAG': 'BEAR FLAG',
             'BULL_PENNANT': 'PENNANT',
@@ -171,7 +255,7 @@ const PatternOverlay = ({ patterns, chartDimensions, priceScale, timeScale }) =>
             'BROADENING_BOTTOM': 'BROAD',
             'DOJI': 'DOJI',
             'HAMMER': 'HAMMER',
-            'HANGING_MAN': 'HANG',
+            'HANGING_MAN': 'HANG MAN',
             'INVERTED_HAMMER': 'INV HAM',
             'SHOOTING_STAR': 'STAR',
             'BULLISH_ENGULFING': 'ENGULF',
@@ -182,210 +266,500 @@ const PatternOverlay = ({ patterns, chartDimensions, priceScale, timeScale }) =>
             'THREE_BLACK_CROWS': '3 CROW',
             'PIERCING_LINE': 'PIERCE',
             'DARK_CLOUD_COVER': 'CLOUD',
-            'MARUBOZU': 'MARU'
+            'MARUBOZU': 'MARU',
+            'UPTREND': 'UPTREND',
+            'DOWNTREND': 'DOWNTREND',
+            'SUPPORT_RESISTANCE': 'S&R'
         };
-        return shortNames[pattern.pattern] || name.substring(0, 8).toUpperCase();
+        return shortNames[pattern.pattern] || pattern.pattern?.substring(0, 8) || 'PATTERN';
     };
 
-    // Get pattern position for badge placement
-    const getPatternPosition = (pattern) => {
+    // ============ PATTERN SHAPE RENDERERS ============
+
+    // Draw Head & Shoulders
+    const drawHeadShoulders = (pattern) => {
         const points = pattern.points;
-        if (!points) {
-            // Fallback: use currentPrice if available
-            if (pattern.currentPrice) {
-                return { x: chartWidth * 0.8, y: priceToY(pattern.currentPrice) };
-            }
+        if (!points?.head || !points?.leftShoulder || !points?.rightShoulder) return null;
+
+        const color = getColor(pattern);
+        const ls = { x: indexToX(points.leftShoulder.index), y: priceToY(points.leftShoulder.price) };
+        const head = { x: indexToX(points.head.index), y: priceToY(points.head.price) };
+        const rs = { x: indexToX(points.rightShoulder.index), y: priceToY(points.rightShoulder.price) };
+        const necklineY = points.neckline ? priceToY(points.neckline) : (ls.y + rs.y) / 2;
+
+        return (
+            <g>
+                {/* Zone */}
+                <PatternZone
+                    $color={getZoneColor(pattern)}
+                    d={`M ${ls.x} ${necklineY} L ${ls.x} ${ls.y} L ${head.x} ${head.y} L ${rs.x} ${rs.y} L ${rs.x} ${necklineY} Z`}
+                />
+                {/* Shoulder-Head-Shoulder line */}
+                <PatternPath $color={color} d={`M ${ls.x} ${ls.y} Q ${(ls.x + head.x) / 2} ${head.y - 10} ${head.x} ${head.y} Q ${(head.x + rs.x) / 2} ${head.y - 10} ${rs.x} ${rs.y}`} />
+                {/* Neckline */}
+                <LevelLine x1={ls.x - 20} y1={necklineY} x2={rs.x + 20} y2={necklineY} $color="#f59e0b" />
+                {/* Markers */}
+                <CandleMarker cx={ls.x} cy={ls.y} r="5" $color={color} />
+                <CandleMarker cx={head.x} cy={head.y} r="7" $color={color} />
+                <CandleMarker cx={rs.x} cy={rs.y} r="5" $color={color} />
+            </g>
+        );
+    };
+
+    // Draw Double Top/Bottom
+    const drawDoubleTopBottom = (pattern) => {
+        const points = pattern.points;
+        const isTop = pattern.pattern?.includes('TOP');
+
+        let p1, p2;
+        if (points?.peak1 && points?.peak2) {
+            p1 = { x: indexToX(points.peak1.index), y: priceToY(points.peak1.price) };
+            p2 = { x: indexToX(points.peak2.index), y: priceToY(points.peak2.price) };
+        } else if (points?.trough1 && points?.trough2) {
+            p1 = { x: indexToX(points.trough1.index), y: priceToY(points.trough1.price) };
+            p2 = { x: indexToX(points.trough2.index), y: priceToY(points.trough2.price) };
+        } else {
             return null;
         }
 
-        // Single point patterns (candlestick - DOJI, HAMMER, MARUBOZU, etc.)
-        if (points.index !== undefined && points.price !== undefined) {
-            return { x: indexToX(points.index), y: priceToY(points.price) };
+        const color = getColor(pattern);
+        const necklineY = points.neckline ? priceToY(points.neckline) : (isTop ? Math.max(p1.y, p2.y) + 30 : Math.min(p1.y, p2.y) - 30);
+
+        return (
+            <g>
+                {/* Zone */}
+                <PatternZone
+                    $color={getZoneColor(pattern)}
+                    d={`M ${p1.x} ${necklineY} L ${p1.x} ${p1.y} L ${p2.x} ${p2.y} L ${p2.x} ${necklineY} Z`}
+                />
+                {/* Connection line */}
+                <PatternPath $color={color} d={`M ${p1.x} ${p1.y} Q ${(p1.x + p2.x) / 2} ${necklineY} ${p2.x} ${p2.y}`} />
+                {/* Neckline */}
+                <LevelLine x1={p1.x - 20} y1={necklineY} x2={p2.x + 20} y2={necklineY} $color="#f59e0b" />
+                {/* Markers */}
+                <CandleMarker cx={p1.x} cy={p1.y} r="6" $color={color} />
+                <CandleMarker cx={p2.x} cy={p2.y} r="6" $color={color} />
+            </g>
+        );
+    };
+
+    // Draw Triple Top/Bottom
+    const drawTriple = (pattern) => {
+        const points = pattern.points;
+        if (!points?.first || !points?.second || !points?.third) return null;
+
+        const color = getColor(pattern);
+        const p1 = { x: indexToX(points.first.index), y: priceToY(points.first.price) };
+        const p2 = { x: indexToX(points.second.index), y: priceToY(points.second.price) };
+        const p3 = { x: indexToX(points.third.index), y: priceToY(points.third.price) };
+        const necklineY = points.neckline ? priceToY(points.neckline) : (p1.y + p2.y + p3.y) / 3;
+
+        return (
+            <g>
+                {/* Zone */}
+                <PatternZone
+                    $color={getZoneColor(pattern)}
+                    d={`M ${p1.x} ${necklineY} L ${p1.x} ${p1.y} L ${p2.x} ${p2.y} L ${p3.x} ${p3.y} L ${p3.x} ${necklineY} Z`}
+                />
+                {/* Connection line */}
+                <PatternPath $color={color} d={`M ${p1.x} ${p1.y} L ${p2.x} ${p2.y} L ${p3.x} ${p3.y}`} />
+                {/* Markers */}
+                <CandleMarker cx={p1.x} cy={p1.y} r="5" $color={color} />
+                <CandleMarker cx={p2.x} cy={p2.y} r="5" $color={color} />
+                <CandleMarker cx={p3.x} cy={p3.y} r="5" $color={color} />
+            </g>
+        );
+    };
+
+    // Draw Triangle/Wedge/Broadening
+    const drawTriangleWedge = (pattern) => {
+        const points = pattern.points;
+        if (!points?.upperStart && !points?.upperEnd && !points?.lowerStart && !points?.lowerEnd) {
+            return null;
         }
 
-        // Two-candle patterns (Engulfing)
-        if (points.engulfing) {
-            return { x: indexToX(points.engulfing.index), y: priceToY(points.engulfing.price) };
+        const color = getColor(pattern);
+        const upperStart = points.upperStart ? { x: indexToX(points.upperStart.index), y: priceToY(points.upperStart.price) } : null;
+        const upperEnd = points.upperEnd ? { x: indexToX(points.upperEnd.index), y: priceToY(points.upperEnd.price) } : null;
+        const lowerStart = points.lowerStart ? { x: indexToX(points.lowerStart.index), y: priceToY(points.lowerStart.price) } : null;
+        const lowerEnd = points.lowerEnd ? { x: indexToX(points.lowerEnd.index), y: priceToY(points.lowerEnd.price) } : null;
+
+        if (!upperStart || !upperEnd || !lowerStart || !lowerEnd) return null;
+
+        return (
+            <g>
+                {/* Zone */}
+                <PatternZone
+                    $color={getZoneColor(pattern)}
+                    d={`M ${upperStart.x} ${upperStart.y} L ${upperEnd.x} ${upperEnd.y} L ${lowerEnd.x} ${lowerEnd.y} L ${lowerStart.x} ${lowerStart.y} Z`}
+                />
+                {/* Upper trendline */}
+                <TrendLine x1={upperStart.x} y1={upperStart.y} x2={upperEnd.x} y2={upperEnd.y} $color={color} />
+                {/* Lower trendline */}
+                <TrendLine x1={lowerStart.x} y1={lowerStart.y} x2={lowerEnd.x} y2={lowerEnd.y} $color={color} />
+                {/* Markers */}
+                <CandleMarker cx={upperStart.x} cy={upperStart.y} r="4" $color={color} />
+                <CandleMarker cx={upperEnd.x} cy={upperEnd.y} r="4" $color={color} />
+                <CandleMarker cx={lowerStart.x} cy={lowerStart.y} r="4" $color={color} />
+                <CandleMarker cx={lowerEnd.x} cy={lowerEnd.y} r="4" $color={color} />
+            </g>
+        );
+    };
+
+    // Draw Flag/Pennant
+    const drawFlagPennant = (pattern) => {
+        const points = pattern.points;
+        if (!points?.poleStart && !points?.poleEnd) return null;
+
+        const color = getColor(pattern);
+        const poleStart = points.poleStart ? { x: indexToX(points.poleStart.index), y: priceToY(points.poleStart.price) } : null;
+        const poleEnd = points.poleEnd ? { x: indexToX(points.poleEnd.index), y: priceToY(points.poleEnd.price) } : null;
+
+        if (!poleStart || !poleEnd) return null;
+
+        // For pennant, draw converging lines from poleEnd
+        const flagWidth = 40;
+        const flagHeight = Math.abs(poleEnd.y - poleStart.y) * 0.3;
+
+        return (
+            <g>
+                {/* Pole line */}
+                <TrendLine x1={poleStart.x} y1={poleStart.y} x2={poleEnd.x} y2={poleEnd.y} $color={color} $width={3} />
+                {/* Flag/Pennant shape */}
+                <PatternPath
+                    $color={color}
+                    d={`M ${poleEnd.x} ${poleEnd.y - flagHeight} L ${poleEnd.x + flagWidth} ${poleEnd.y} L ${poleEnd.x} ${poleEnd.y + flagHeight}`}
+                />
+                {/* Markers */}
+                <CandleMarker cx={poleStart.x} cy={poleStart.y} r="5" $color={color} />
+                <CandleMarker cx={poleEnd.x} cy={poleEnd.y} r="6" $color={color} />
+            </g>
+        );
+    };
+
+    // Draw Cup & Handle
+    const drawCupHandle = (pattern) => {
+        const points = pattern.points;
+        if (!points?.bottom) return null;
+
+        const color = getColor(pattern);
+        const leftRim = points.leftRim ? { x: indexToX(points.leftRim.index), y: priceToY(points.leftRim.price) } : null;
+        const bottom = { x: indexToX(points.bottom.index), y: priceToY(points.bottom.price) };
+        const rightRim = points.rightRim ? { x: indexToX(points.rightRim.index), y: priceToY(points.rightRim.price) } : null;
+
+        const startX = leftRim?.x || bottom.x - 50;
+        const startY = leftRim?.y || bottom.y - 30;
+        const endX = rightRim?.x || bottom.x + 50;
+        const endY = rightRim?.y || bottom.y - 30;
+
+        return (
+            <g>
+                {/* Cup curve */}
+                <PatternPath
+                    $color={color}
+                    d={`M ${startX} ${startY} Q ${bottom.x} ${bottom.y + 20} ${endX} ${endY}`}
+                />
+                {/* Handle */}
+                {points.handleTop && (
+                    <PatternPath
+                        $color={color}
+                        d={`M ${endX} ${endY} Q ${endX + 20} ${endY + 15} ${endX + 30} ${endY}`}
+                    />
+                )}
+                {/* Markers */}
+                <CandleMarker cx={bottom.x} cy={bottom.y} r="6" $color={color} />
+                {leftRim && <CandleMarker cx={leftRim.x} cy={leftRim.y} r="4" $color={color} />}
+                {rightRim && <CandleMarker cx={rightRim.x} cy={rightRim.y} r="4" $color={color} />}
+            </g>
+        );
+    };
+
+    // Draw Rounding pattern
+    const drawRounding = (pattern) => {
+        const points = pattern.points;
+        if (!points?.curvePoints || points.curvePoints.length < 3) {
+            // Fallback to simple arc
+            const bottom = points?.bottom || points?.top;
+            if (!bottom) return null;
+
+            const color = getColor(pattern);
+            const center = { x: indexToX(bottom.index), y: priceToY(bottom.price) };
+
+            return (
+                <g>
+                    <CandleMarker cx={center.x} cy={center.y} r="8" $color={color} />
+                </g>
+            );
         }
 
-        // Two-candle patterns (Piercing Line, Dark Cloud Cover)
-        if (points.second && points.first) {
-            return { x: indexToX(points.second.index), y: priceToY(points.second.price) };
+        const color = getColor(pattern);
+        const curvePoints = points.curvePoints.map(p => ({
+            x: indexToX(p.index),
+            y: priceToY(p.price)
+        }));
+
+        // Create smooth curve through points
+        let pathD = `M ${curvePoints[0].x} ${curvePoints[0].y}`;
+        for (let i = 1; i < curvePoints.length; i++) {
+            const prev = curvePoints[i - 1];
+            const curr = curvePoints[i];
+            const cpX = (prev.x + curr.x) / 2;
+            pathD += ` Q ${cpX} ${curr.y} ${curr.x} ${curr.y}`;
         }
 
-        // Three-candle patterns (Morning/Evening Star, Three Soldiers/Crows)
-        if (points.third && points.third.index !== undefined) {
-            return { x: indexToX(points.third.index), y: priceToY(points.third.price) };
+        return (
+            <g>
+                <PatternPath $color={color} d={pathD} />
+                {curvePoints.map((p, i) => (
+                    <CandleMarker key={i} cx={p.x} cy={p.y} r="4" $color={color} />
+                ))}
+            </g>
+        );
+    };
+
+    // Draw Single Candlestick Pattern (Doji, Hammer, etc.)
+    const drawSingleCandle = (pattern) => {
+        const points = pattern.points;
+        if (points?.index === undefined) return null;
+
+        const color = getColor(pattern);
+        const x = indexToX(points.index);
+        const y = priceToY(points.price);
+        const isBullish = PATTERN_TYPES[pattern.pattern] === 'bullish';
+
+        return (
+            <g>
+                {/* Candle marker */}
+                <CandleMarker cx={x} cy={y} r="8" $color={color} />
+                {/* Direction arrow */}
+                <ArrowMarker
+                    $color={color}
+                    d={isBullish
+                        ? `M ${x - 6} ${y - 18} L ${x} ${y - 26} L ${x + 6} ${y - 18} Z`
+                        : `M ${x - 6} ${y + 18} L ${x} ${y + 26} L ${x + 6} ${y + 18} Z`
+                    }
+                />
+            </g>
+        );
+    };
+
+    // Draw Two-Candle Pattern (Engulfing, etc.)
+    const drawTwoCandle = (pattern) => {
+        const points = pattern.points;
+        let p1, p2;
+
+        if (points?.engulfed && points?.engulfing) {
+            p1 = { x: indexToX(points.engulfed.index), y: priceToY(points.engulfed.price) };
+            p2 = { x: indexToX(points.engulfing.index), y: priceToY(points.engulfing.price) };
+        } else if (points?.first && points?.second) {
+            p1 = { x: indexToX(points.first.index), y: priceToY(points.first.price) };
+            p2 = { x: indexToX(points.second.index), y: priceToY(points.second.price) };
+        } else {
+            return null;
         }
 
-        // Head and shoulders
-        if (points.head) {
-            return { x: indexToX(points.head.index), y: priceToY(points.head.price) };
+        const color = getColor(pattern);
+
+        return (
+            <g>
+                {/* Connection line */}
+                <TrendLine x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y} $color={color} $dashed />
+                {/* Markers */}
+                <CandleMarker cx={p1.x} cy={p1.y} r="5" $color={color} />
+                <CandleMarker cx={p2.x} cy={p2.y} r="7" $color={color} />
+            </g>
+        );
+    };
+
+    // Draw Three-Candle Pattern (Morning Star, etc.)
+    const drawThreeCandle = (pattern) => {
+        const points = pattern.points;
+        if (!points?.first || !points?.third) return null;
+
+        const color = getColor(pattern);
+        const p1 = { x: indexToX(points.first.index), y: priceToY(points.first.price) };
+        const p2 = points.star
+            ? { x: indexToX(points.star.index), y: priceToY(points.star.price) }
+            : points.second
+                ? { x: indexToX(points.second.index), y: priceToY(points.second.price) }
+                : { x: (p1.x + indexToX(points.third.index)) / 2, y: p1.y };
+        const p3 = { x: indexToX(points.third.index), y: priceToY(points.third.price) };
+
+        return (
+            <g>
+                {/* Connection lines */}
+                <TrendLine x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y} $color={color} $dashed />
+                <TrendLine x1={p2.x} y1={p2.y} x2={p3.x} y2={p3.y} $color={color} $dashed />
+                {/* Markers */}
+                <CandleMarker cx={p1.x} cy={p1.y} r="5" $color={color} />
+                <CandleMarker cx={p2.x} cy={p2.y} r="4" $color={color} />
+                <CandleMarker cx={p3.x} cy={p3.y} r="6" $color={color} />
+            </g>
+        );
+    };
+
+    // Draw Support/Resistance
+    const drawSupportResistance = (pattern) => {
+        const points = pattern.points;
+        if (points?.resistance === undefined && points?.support === undefined) return null;
+
+        const resistance = points.resistance ? priceToY(points.resistance) : null;
+        const support = points.support ? priceToY(points.support) : null;
+
+        return (
+            <g>
+                {resistance !== null && (
+                    <LevelLine x1={0} y1={resistance} x2={chartWidth} y2={resistance} $color="#ef4444" />
+                )}
+                {support !== null && (
+                    <LevelLine x1={0} y1={support} x2={chartWidth} y2={support} $color="#10b981" />
+                )}
+            </g>
+        );
+    };
+
+    // ============ MAIN RENDER LOGIC ============
+
+    const renderPatternShape = (pattern) => {
+        const patternType = pattern.pattern;
+
+        // Head & Shoulders
+        if (patternType === 'HEAD_SHOULDERS' || patternType === 'HEAD_SHOULDERS_INVERSE') {
+            return drawHeadShoulders(pattern);
         }
 
         // Double Top/Bottom
-        if (points.peak1 && points.peak2) {
-            const avgX = (indexToX(points.peak1.index) + indexToX(points.peak2.index)) / 2;
-            const avgY = (priceToY(points.peak1.price) + priceToY(points.peak2.price)) / 2;
-            return { x: avgX, y: avgY };
-        }
-        if (points.trough1 && points.trough2) {
-            const avgX = (indexToX(points.trough1.index) + indexToX(points.trough2.index)) / 2;
-            const avgY = (priceToY(points.trough1.price) + priceToY(points.trough2.price)) / 2;
-            return { x: avgX, y: avgY };
+        if (patternType === 'DOUBLE_TOP' || patternType === 'DOUBLE_BOTTOM') {
+            return drawDoubleTopBottom(pattern);
         }
 
-        // Triple Bottom/Top (first, second, third structure)
-        if (points.first && points.second && points.third) {
-            // Position at the third point (most recent)
-            return { x: indexToX(points.third.index), y: priceToY(points.third.price) };
+        // Triple Top/Bottom
+        if (patternType === 'TRIPLE_TOP' || patternType === 'TRIPLE_BOTTOM') {
+            return drawTriple(pattern);
         }
 
-        // Wedge/Triangle/Broadening - use upperEnd/lowerEnd for proper positioning
-        if (points.upperEnd && points.lowerEnd) {
-            const x = (indexToX(points.upperEnd.index) + indexToX(points.lowerEnd.index)) / 2;
-            const y = (priceToY(points.upperEnd.price) + priceToY(points.lowerEnd.price)) / 2;
-            return { x, y };
+        // Triangles, Wedges, Broadening
+        if (patternType?.includes('TRIANGLE') || patternType?.includes('WEDGE') || patternType?.includes('BROADENING')) {
+            return drawTriangleWedge(pattern);
         }
 
-        // Pennant - use poleEnd for positioning
-        if (points.poleEnd) {
-            return { x: indexToX(points.poleEnd.index), y: priceToY(points.poleEnd.price) };
+        // Flags and Pennants
+        if (patternType?.includes('FLAG') || patternType?.includes('PENNANT')) {
+            return drawFlagPennant(pattern);
         }
 
-        // Flag patterns - use flagEnd or resistance/support
-        if (points.flagEnd) {
-            return { x: indexToX(points.flagEnd.index), y: priceToY(points.flagEnd.price) };
-        }
-
-        // Apex-based patterns (fallback for wedges/triangles without upperEnd/lowerEnd)
-        if (points.apex && points.apex.index !== undefined) {
-            // Try to get a better Y from pattern's current price
-            const y = pattern.currentPrice ? priceToY(pattern.currentPrice) : chartHeight / 2;
-            return { x: indexToX(points.apex.index), y };
-        }
-
-        // Cup and Handle
-        if (points.bottom) {
-            return { x: indexToX(points.bottom.index), y: priceToY(points.bottom.price) };
+        // Cup & Handle
+        if (patternType === 'CUP_HANDLE') {
+            return drawCupHandle(pattern);
         }
 
         // Rounding patterns
-        if (points.curvePoints && points.curvePoints.length > 0) {
-            const mid = points.curvePoints[Math.floor(points.curvePoints.length / 2)];
-            if (mid && mid.index !== undefined) {
-                return { x: indexToX(mid.index), y: priceToY(mid.price) };
-            }
+        if (patternType?.includes('ROUNDING')) {
+            return drawRounding(pattern);
         }
 
-        // Rounding - leftRim/rightRim or leftBase/rightBase
-        if (points.rightRim) {
-            return { x: indexToX(points.rightRim.index), y: priceToY(points.rightRim.price) };
-        }
-        if (points.rightBase) {
-            return { x: indexToX(points.rightBase.index), y: priceToY(points.rightBase.price) };
+        // Single candle patterns
+        if (['DOJI', 'HAMMER', 'HANGING_MAN', 'INVERTED_HAMMER', 'SHOOTING_STAR', 'MARUBOZU'].includes(patternType)) {
+            return drawSingleCandle(pattern);
         }
 
-        // Trend/S&R patterns
-        if (points.resistance !== undefined && points.support !== undefined) {
-            const midPrice = (points.resistance + points.support) / 2;
-            return { x: chartWidth * 0.8, y: priceToY(midPrice) };
+        // Two-candle patterns
+        if (['BULLISH_ENGULFING', 'BEARISH_ENGULFING', 'PIERCING_LINE', 'DARK_CLOUD_COVER'].includes(patternType)) {
+            return drawTwoCandle(pattern);
         }
 
-        // Ultimate fallback: use currentPrice at right side of chart
+        // Three-candle patterns
+        if (['MORNING_STAR', 'EVENING_STAR', 'THREE_WHITE_SOLDIERS', 'THREE_BLACK_CROWS'].includes(patternType)) {
+            return drawThreeCandle(pattern);
+        }
+
+        // Support/Resistance
+        if (patternType === 'SUPPORT_RESISTANCE') {
+            return drawSupportResistance(pattern);
+        }
+
+        // Fallback: just show a marker at currentPrice
         if (pattern.currentPrice) {
-            return { x: chartWidth * 0.75, y: priceToY(pattern.currentPrice) };
+            const y = priceToY(pattern.currentPrice);
+            return <CandleMarker cx={chartWidth * 0.9} cy={y} r="6" $color={getColor(pattern)} />;
         }
 
         return null;
     };
 
-    // Render single pattern badge
-    const renderPatternBadge = (pattern, index) => {
-        const pos = getPatternPosition(pattern);
+    // Get badge position for pattern
+    const getBadgePosition = (pattern) => {
+        const points = pattern.points;
+
+        // Try to find a good position based on pattern type
+        if (points?.head) {
+            return { x: indexToX(points.head.index), y: priceToY(points.head.price) - 40 };
+        }
+        if (points?.peak1 && points?.peak2) {
+            const x = (indexToX(points.peak1.index) + indexToX(points.peak2.index)) / 2;
+            const y = Math.min(priceToY(points.peak1.price), priceToY(points.peak2.price)) - 30;
+            return { x, y };
+        }
+        if (points?.trough1 && points?.trough2) {
+            const x = (indexToX(points.trough1.index) + indexToX(points.trough2.index)) / 2;
+            const y = Math.max(priceToY(points.trough1.price), priceToY(points.trough2.price)) + 30;
+            return { x, y };
+        }
+        if (points?.third) {
+            return { x: indexToX(points.third.index), y: priceToY(points.third.price) - 35 };
+        }
+        if (points?.upperEnd && points?.lowerEnd) {
+            const x = (indexToX(points.upperEnd.index) + indexToX(points.lowerEnd.index)) / 2;
+            const y = (priceToY(points.upperEnd.price) + priceToY(points.lowerEnd.price)) / 2 - 30;
+            return { x, y };
+        }
+        if (points?.poleEnd) {
+            return { x: indexToX(points.poleEnd.index) + 30, y: priceToY(points.poleEnd.price) - 20 };
+        }
+        if (points?.bottom) {
+            return { x: indexToX(points.bottom.index), y: priceToY(points.bottom.price) + 35 };
+        }
+        if (points?.index !== undefined) {
+            const isBullish = PATTERN_TYPES[pattern.pattern] === 'bullish';
+            return { x: indexToX(points.index), y: priceToY(points.price) + (isBullish ? -45 : 45) };
+        }
+        if (points?.engulfing) {
+            return { x: indexToX(points.engulfing.index), y: priceToY(points.engulfing.price) - 35 };
+        }
+        if (pattern.currentPrice) {
+            return { x: chartWidth * 0.85, y: priceToY(pattern.currentPrice) - 20 };
+        }
+
+        return null;
+    };
+
+    // Render badge
+    const renderBadge = (pattern, index) => {
+        const pos = getBadgePosition(pattern);
         if (!pos || isNaN(pos.x) || isNaN(pos.y)) return null;
 
         const color = getColor(pattern);
-        const shortName = getShortName(pattern);
-        const isBullish = pattern.type === 'bullish';
-        const isBearish = pattern.type === 'bearish';
+        const name = getShortName(pattern);
         const confidence = pattern.confidence?.toFixed(0) || '?';
+        const badgeWidth = Math.max(55, name.length * 7 + 20);
+        const badgeHeight = 28;
 
-        // Badge dimensions
-        const badgeWidth = Math.max(50, shortName.length * 7 + 20);
-        const badgeHeight = 24;
-
-        // Position badge above or below based on pattern type
-        const yOffset = isBullish ? 35 : -45;
-        const badgeY = pos.y + yOffset;
-
-        // Keep badge within bounds
-        const clampedX = Math.max(badgeWidth / 2 + 5, Math.min(chartWidth - badgeWidth / 2 - 5, pos.x));
-        const clampedY = Math.max(badgeHeight + 5, Math.min(chartHeight - badgeHeight - 5, badgeY));
+        // Clamp to chart bounds
+        const x = Math.max(badgeWidth / 2 + 5, Math.min(chartWidth - badgeWidth / 2 - 5, pos.x));
+        const y = Math.max(badgeHeight + 5, Math.min(chartHeight - badgeHeight - 5, pos.y));
 
         return (
-            <PatternBadge
-                key={`pattern-${index}`}
-                onMouseEnter={(e) => {
-                    setHoveredPattern(pattern);
-                    setTooltipPos({ x: clampedX, y: clampedY - 60 });
-                }}
-                onMouseLeave={() => setHoveredPattern(null)}
-            >
-                {/* Marker dot at pattern location */}
-                <ConfidenceRing cx={pos.x} cy={pos.y} r="12" $color={color} />
-                <MarkerDot cx={pos.x} cy={pos.y} r="6" $color={color} />
-
-                {/* Badge with pattern name */}
+            <BadgeGroup key={`badge-${index}`}>
                 <BadgeRect
-                    x={clampedX - badgeWidth / 2}
-                    y={clampedY - badgeHeight / 2}
+                    x={x - badgeWidth / 2}
+                    y={y - badgeHeight / 2}
                     width={badgeWidth}
                     height={badgeHeight}
-                    $bg={color}
+                    $color={color}
                 />
-
-                {/* Direction arrow */}
-                {isBullish && (
-                    <DirectionArrow
-                        d={`M ${clampedX - badgeWidth/2 + 8} ${clampedY + 3}
-                            L ${clampedX - badgeWidth/2 + 12} ${clampedY - 4}
-                            L ${clampedX - badgeWidth/2 + 16} ${clampedY + 3} Z`}
-                    />
-                )}
-                {isBearish && (
-                    <DirectionArrow
-                        d={`M ${clampedX - badgeWidth/2 + 8} ${clampedY - 3}
-                            L ${clampedX - badgeWidth/2 + 12} ${clampedY + 4}
-                            L ${clampedX - badgeWidth/2 + 16} ${clampedY - 3} Z`}
-                    />
-                )}
-
-                {/* Pattern name */}
-                <BadgeText x={clampedX + 5} y={clampedY}>
-                    {shortName}
-                </BadgeText>
-
-                {/* Confidence percentage - small badge */}
-                <rect
-                    x={clampedX + badgeWidth/2 - 22}
-                    y={clampedY - 8}
-                    width="18"
-                    height="16"
-                    rx="8"
-                    fill="rgba(255,255,255,0.2)"
-                />
-                <text
-                    x={clampedX + badgeWidth/2 - 13}
-                    y={clampedY + 1}
-                    fill="white"
-                    fontSize="8"
-                    fontWeight="bold"
-                    textAnchor="middle"
-                >
-                    {confidence}
-                </text>
-            </PatternBadge>
+                <BadgeText x={x} y={y - 3}>{name}</BadgeText>
+                <ConfidenceText x={x} y={y + 9} $color={color}>{confidence}%</ConfidenceText>
+            </BadgeGroup>
         );
     };
 
@@ -398,48 +772,66 @@ const PatternOverlay = ({ patterns, chartDimensions, priceScale, timeScale }) =>
         const confidence = hoveredPattern.confidence?.toFixed(1) || 'N/A';
         const target = hoveredPattern.target?.toFixed(2) || 'N/A';
         const move = hoveredPattern.potentialMove || '0';
-        const status = hoveredPattern.status || 'detected';
 
-        const tooltipWidth = 160;
-        const tooltipHeight = 90;
+        const tooltipWidth = 170;
+        const tooltipHeight = 95;
         const x = Math.max(5, Math.min(chartWidth - tooltipWidth - 5, tooltipPos.x - tooltipWidth / 2));
         const y = Math.max(5, tooltipPos.y);
 
         return (
             <TooltipGroup>
                 <TooltipBg x={x} y={y} width={tooltipWidth} height={tooltipHeight} />
-
-                {/* Header with pattern name */}
-                <rect x={x} y={y} width={tooltipWidth} height={22} rx="8" fill={color} />
-                <text x={x + tooltipWidth/2} y={y + 15} fill="white" fontSize="11" fontWeight="bold" textAnchor="middle">
+                <rect x={x} y={y} width={tooltipWidth} height={24} rx="8" fill={color} />
+                <text x={x + tooltipWidth / 2} y={y + 16} fill="white" fontSize="11" fontWeight="bold" textAnchor="middle">
                     {name}
                 </text>
-
-                {/* Stats */}
-                <TooltipText x={x + 10} y={y + 40}>
-                    <tspan fontWeight="bold" fill="#94a3b8">Confidence:</tspan>
-                    <tspan x={x + 100} fill="#fff">{confidence}%</tspan>
-                </TooltipText>
-                <TooltipText x={x + 10} y={y + 56}>
-                    <tspan fontWeight="bold" fill="#94a3b8">Target:</tspan>
-                    <tspan x={x + 100} fill={color}>${target}</tspan>
-                </TooltipText>
-                <TooltipText x={x + 10} y={y + 72}>
-                    <tspan fontWeight="bold" fill="#94a3b8">Move:</tspan>
-                    <tspan x={x + 100} fill={parseFloat(move) >= 0 ? '#10b981' : '#ef4444'}>
-                        {parseFloat(move) >= 0 ? '+' : ''}{move}%
-                    </tspan>
-                </TooltipText>
-
-                {/* Status indicator */}
-                <circle cx={x + tooltipWidth - 15} y={y + 11} r="4" fill={status === 'confirmed' ? '#10b981' : '#f59e0b'} />
+                <text x={x + 12} y={y + 44} fill="#94a3b8" fontSize="10">Confidence:</text>
+                <text x={x + tooltipWidth - 12} y={y + 44} fill="white" fontSize="10" textAnchor="end">{confidence}%</text>
+                <text x={x + 12} y={y + 60} fill="#94a3b8" fontSize="10">Target:</text>
+                <text x={x + tooltipWidth - 12} y={y + 60} fill={color} fontSize="10" textAnchor="end">${target}</text>
+                <text x={x + 12} y={y + 76} fill="#94a3b8" fontSize="10">Move:</text>
+                <text x={x + tooltipWidth - 12} y={y + 76} fill={parseFloat(move) >= 0 ? '#10b981' : '#ef4444'} fontSize="10" textAnchor="end">
+                    {parseFloat(move) >= 0 ? '+' : ''}{move}%
+                </text>
             </TooltipGroup>
+        );
+    };
+
+    // Render complete pattern (shape + badge)
+    const renderPattern = (pattern, index) => {
+        const shape = renderPatternShape(pattern);
+        const badge = renderBadge(pattern, index);
+
+        if (!shape && !badge) return null;
+
+        return (
+            <PatternGroup
+                key={`pattern-${index}`}
+                onMouseEnter={() => {
+                    setHoveredPattern(pattern);
+                    const pos = getBadgePosition(pattern);
+                    if (pos) setTooltipPos({ x: pos.x, y: pos.y - 50 });
+                }}
+                onMouseLeave={() => setHoveredPattern(null)}
+            >
+                {shape}
+                {badge}
+            </PatternGroup>
         );
     };
 
     return (
         <OverlayContainer viewBox={`0 0 ${chartWidth} ${chartHeight}`} preserveAspectRatio="none">
-            {patterns.map((pattern, index) => renderPatternBadge(pattern, index))}
+            <defs>
+                <filter id="glow">
+                    <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                    <feMerge>
+                        <feMergeNode in="coloredBlur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                </filter>
+            </defs>
+            {patterns.map((pattern, index) => renderPattern(pattern, index))}
             {renderTooltip()}
         </OverlayContainer>
     );
