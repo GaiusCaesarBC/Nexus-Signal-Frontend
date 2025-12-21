@@ -10,7 +10,12 @@ import {
 import {
     calculateSMA,
     calculateEMA,
-    calculateBollingerBands
+    calculateBollingerBands,
+    calculateRSI,
+    calculateMACD,
+    calculateVWAP,
+    calculateATR,
+    calculateStochastic
 } from '../utils/indicators';
 import { useTheme } from '../context/ThemeContext';
 import { formatCryptoPrice, formatStockPrice } from '../utils/priceFormatter';
@@ -420,11 +425,21 @@ const AdvancedChart = ({
     const timeframes = ['1m', '5m', '15m', '1h', '4h', '1D', '1W', '1M'];
     
     const indicators = [
-        { id: 'sma20', label: 'SMA 20', color: theme.brand?.primary || '#00adef' },
-        { id: 'sma50', label: 'SMA 50', color: theme.success || '#10b981' },
-        { id: 'ema12', label: 'EMA 12', color: theme.warning || '#f59e0b' },
-        { id: 'ema26', label: 'EMA 26', color: '#ec4899' },
-        { id: 'bb', label: 'Bollinger Bands', color: theme.brand?.accent || '#8b5cf6' },
+        // Moving Averages
+        { id: 'sma20', label: 'SMA 20', color: theme.brand?.primary || '#00adef', category: 'ma' },
+        { id: 'sma50', label: 'SMA 50', color: theme.success || '#10b981', category: 'ma' },
+        { id: 'sma200', label: 'SMA 200', color: '#f97316', category: 'ma' },
+        { id: 'ema12', label: 'EMA 12', color: theme.warning || '#f59e0b', category: 'ma' },
+        { id: 'ema26', label: 'EMA 26', color: '#ec4899', category: 'ma' },
+        // Overlays
+        { id: 'bb', label: 'Bollinger Bands', color: theme.brand?.accent || '#8b5cf6', category: 'overlay' },
+        { id: 'vwap', label: 'VWAP', color: '#06b6d4', category: 'overlay' },
+        // Oscillators (shown as separate panel)
+        { id: 'rsi', label: 'RSI (14)', color: '#a855f7', category: 'oscillator' },
+        { id: 'macd', label: 'MACD', color: '#22c55e', category: 'oscillator' },
+        { id: 'stoch', label: 'Stochastic', color: '#eab308', category: 'oscillator' },
+        // Volatility
+        { id: 'atr', label: 'ATR (14)', color: '#f43f5e', category: 'volatility' },
     ];
 
     // Get theme color for chart elements
@@ -694,7 +709,18 @@ const AdvancedChart = ({
                         if (series.upper) chartRef.current.removeSeries(series.upper);
                         if (series.middle) chartRef.current.removeSeries(series.middle);
                         if (series.lower) chartRef.current.removeSeries(series.lower);
-                    } 
+                    }
+                    // Handle MACD (which has macdLine, signalLine, histogram)
+                    else if (key === 'macd' && series && typeof series === 'object' && series.macdLine) {
+                        if (series.macdLine) chartRef.current.removeSeries(series.macdLine);
+                        if (series.signalLine) chartRef.current.removeSeries(series.signalLine);
+                        if (series.histogram) chartRef.current.removeSeries(series.histogram);
+                    }
+                    // Handle Stochastic (which has kLine, dLine)
+                    else if (key === 'stoch' && series && typeof series === 'object' && series.kLine) {
+                        if (series.kLine) chartRef.current.removeSeries(series.kLine);
+                        if (series.dLine) chartRef.current.removeSeries(series.dLine);
+                    }
                     // Handle regular indicators (which are single series)
                     else if (series && typeof series.setData === 'function') {
                         chartRef.current.removeSeries(series);
@@ -758,7 +784,7 @@ const AdvancedChart = ({
                 if (indicatorId === 'bb') {
                     const bbData = calculateBollingerBands(data, 20, 2);
                     const bbColor = theme.brand?.accent || '#8b5cf6';
-                    
+
                     const upperSeries = chartRef.current.addLineSeries({
                         color: bbColor,
                         lineWidth: 1,
@@ -766,14 +792,14 @@ const AdvancedChart = ({
                         lineStyle: 2,
                     });
                     upperSeries.setData(bbData.upper);
-                    
+
                     const middleSeries = chartRef.current.addLineSeries({
                         color: bbColor,
                         lineWidth: 1,
                         title: 'BB Middle',
                     });
                     middleSeries.setData(bbData.sma);
-                    
+
                     const lowerSeries = chartRef.current.addLineSeries({
                         color: bbColor,
                         lineWidth: 1,
@@ -781,15 +807,166 @@ const AdvancedChart = ({
                         lineStyle: 2,
                     });
                     lowerSeries.setData(bbData.lower);
-                    
+
                     // Store as object so we can remove all three later
-                    indicatorSeriesRef.current[indicatorId] = { 
-                        upper: upperSeries, 
-                        middle: middleSeries, 
-                        lower: lowerSeries 
+                    indicatorSeriesRef.current[indicatorId] = {
+                        upper: upperSeries,
+                        middle: middleSeries,
+                        lower: lowerSeries
                     };
                 }
-                
+
+                // SMA 200
+                if (indicatorId === 'sma200') {
+                    const smaData = calculateSMA(data, 200);
+                    const series = chartRef.current.addLineSeries({
+                        color: '#f97316',
+                        lineWidth: 2,
+                        title: 'SMA 200',
+                    });
+                    series.setData(smaData);
+                    indicatorSeriesRef.current[indicatorId] = series;
+                }
+
+                // VWAP
+                if (indicatorId === 'vwap') {
+                    const vwapData = calculateVWAP(data);
+                    const series = chartRef.current.addLineSeries({
+                        color: '#06b6d4',
+                        lineWidth: 2,
+                        title: 'VWAP',
+                        lineStyle: 0,
+                    });
+                    series.setData(vwapData);
+                    indicatorSeriesRef.current[indicatorId] = series;
+                }
+
+                // RSI - displayed in separate pane at bottom
+                if (indicatorId === 'rsi') {
+                    const rsiData = calculateRSI(data, 14);
+                    const series = chartRef.current.addLineSeries({
+                        color: '#a855f7',
+                        lineWidth: 2,
+                        title: 'RSI (14)',
+                        priceScaleId: 'rsi',
+                        lastValueVisible: true,
+                        priceLineVisible: false,
+                    });
+                    series.setData(rsiData);
+
+                    // Configure RSI scale (0-100)
+                    chartRef.current.priceScale('rsi').applyOptions({
+                        scaleMargins: { top: 0.85, bottom: 0 },
+                        borderVisible: false,
+                    });
+
+                    indicatorSeriesRef.current[indicatorId] = series;
+                }
+
+                // MACD - displayed in separate pane
+                if (indicatorId === 'macd') {
+                    const macdData = calculateMACD(data, 12, 26, 9);
+
+                    // MACD Line
+                    const macdLine = chartRef.current.addLineSeries({
+                        color: '#22c55e',
+                        lineWidth: 2,
+                        title: 'MACD',
+                        priceScaleId: 'macd',
+                        lastValueVisible: true,
+                        priceLineVisible: false,
+                    });
+                    macdLine.setData(macdData.macdLine.slice(-(macdData.signalLine.length)));
+
+                    // Signal Line
+                    const signalLine = chartRef.current.addLineSeries({
+                        color: '#ef4444',
+                        lineWidth: 1,
+                        title: 'Signal',
+                        priceScaleId: 'macd',
+                        lastValueVisible: false,
+                        priceLineVisible: false,
+                    });
+                    signalLine.setData(macdData.signalLine);
+
+                    // Histogram
+                    const histogram = chartRef.current.addHistogramSeries({
+                        priceScaleId: 'macd',
+                        lastValueVisible: false,
+                        priceLineVisible: false,
+                    });
+                    histogram.setData(macdData.histogram);
+
+                    // Configure MACD scale
+                    chartRef.current.priceScale('macd').applyOptions({
+                        scaleMargins: { top: 0.85, bottom: 0 },
+                        borderVisible: false,
+                    });
+
+                    indicatorSeriesRef.current[indicatorId] = {
+                        macdLine,
+                        signalLine,
+                        histogram
+                    };
+                }
+
+                // Stochastic Oscillator
+                if (indicatorId === 'stoch') {
+                    const stochData = calculateStochastic(data, 14, 3);
+
+                    // %K Line
+                    const kLine = chartRef.current.addLineSeries({
+                        color: '#eab308',
+                        lineWidth: 2,
+                        title: '%K',
+                        priceScaleId: 'stoch',
+                        lastValueVisible: true,
+                        priceLineVisible: false,
+                    });
+                    kLine.setData(stochData.kLine);
+
+                    // %D Line
+                    const dLine = chartRef.current.addLineSeries({
+                        color: '#f97316',
+                        lineWidth: 1,
+                        title: '%D',
+                        priceScaleId: 'stoch',
+                        lastValueVisible: false,
+                        priceLineVisible: false,
+                    });
+                    dLine.setData(stochData.dLine);
+
+                    // Configure Stochastic scale (0-100)
+                    chartRef.current.priceScale('stoch').applyOptions({
+                        scaleMargins: { top: 0.85, bottom: 0 },
+                        borderVisible: false,
+                    });
+
+                    indicatorSeriesRef.current[indicatorId] = { kLine, dLine };
+                }
+
+                // ATR - displayed in separate pane
+                if (indicatorId === 'atr') {
+                    const atrData = calculateATR(data, 14);
+                    const series = chartRef.current.addLineSeries({
+                        color: '#f43f5e',
+                        lineWidth: 2,
+                        title: 'ATR (14)',
+                        priceScaleId: 'atr',
+                        lastValueVisible: true,
+                        priceLineVisible: false,
+                    });
+                    series.setData(atrData);
+
+                    // Configure ATR scale
+                    chartRef.current.priceScale('atr').applyOptions({
+                        scaleMargins: { top: 0.85, bottom: 0 },
+                        borderVisible: false,
+                    });
+
+                    indicatorSeriesRef.current[indicatorId] = series;
+                }
+
             } catch (error) {
                 console.error(`Error adding indicator ${indicatorId}:`, error);
             }
