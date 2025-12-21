@@ -165,7 +165,9 @@ const CurrentPlan = styled.div`
 `;
 
 // Feature descriptions for different features
+// IMPORTANT: Keep in sync with SubscriptionContext.js and PricingPage.js!
 const FEATURE_INFO = {
+    // NEXUS AI - Premium/Elite
     hasNexusAI: {
         icon: '✨',
         title: 'NEXUS AI Chart Indicator',
@@ -178,6 +180,7 @@ const FEATURE_INFO = {
             'Works with stocks and crypto'
         ]
     },
+    // AI Chat - Pro+
     hasAIChat: {
         icon: '🤖',
         title: 'AI Chat Assistant',
@@ -189,17 +192,43 @@ const FEATURE_INFO = {
             'Portfolio optimization tips'
         ]
     },
+    // GPT-4 Chat - Premium/Elite
+    hasAIChatGPT4: {
+        icon: '🧠',
+        title: 'GPT-4 Turbo AI Chat',
+        description: 'Access our most powerful AI model for in-depth market analysis and complex trading questions.',
+        benefits: [
+            'Most advanced AI reasoning',
+            'Deeper market analysis',
+            'Complex strategy discussions',
+            'Enhanced accuracy'
+        ]
+    },
+    // Price Alerts - Pro+
     hasPriceAlerts: {
         icon: '🔔',
-        title: 'Price Alerts',
+        title: 'Real-Time Price Alerts',
         description: 'Set custom price alerts and never miss a trading opportunity.',
         benefits: [
-            'Unlimited price alerts',
-            'Email and push notifications',
+            'Real-time notifications',
+            'Email and push alerts',
             'Multi-asset support',
             'Percentage-based triggers'
         ]
     },
+    // Custom Alerts - Premium/Elite
+    hasCustomAlerts: {
+        icon: '🎯',
+        title: 'Custom Price Alerts',
+        description: 'Create advanced custom alerts with complex conditions.',
+        benefits: [
+            'Multi-condition alerts',
+            'Technical indicator triggers',
+            'Volume-based alerts',
+            'Webhook integrations'
+        ]
+    },
+    // Daily Signals/Predictions
     dailySignals: {
         icon: '📊',
         title: 'AI Predictions',
@@ -211,6 +240,7 @@ const FEATURE_INFO = {
             'Multiple timeframes'
         ]
     },
+    // Watchlist
     watchlistAssets: {
         icon: '👀',
         title: 'Watchlist',
@@ -222,18 +252,8 @@ const FEATURE_INFO = {
             'Price change alerts'
         ]
     },
-    whaleAlerts: {
-        icon: '🐋',
-        title: 'Whale Alerts',
-        description: 'Track large institutional and insider trading activity.',
-        benefits: [
-            'SEC insider filings',
-            'Crypto whale transactions',
-            'Unusual options activity',
-            'Congressional trading'
-        ]
-    },
-    screener: {
+    // Screener - Starter+
+    hasScreener: {
         icon: '🔍',
         title: 'Stock Screener',
         description: 'Find trading opportunities with our advanced screener.',
@@ -244,6 +264,379 @@ const FEATURE_INFO = {
             'Save filter presets'
         ]
     },
+    // News Feed - Starter+
+    hasNewsFeed: {
+        icon: '📰',
+        title: 'Market News Feed',
+        description: 'Stay updated with real-time market news and analysis.',
+        benefits: [
+            'Breaking market news',
+            'Earnings announcements',
+            'SEC filings alerts',
+            'Curated stock news'
+        ]
+    },
+    // Sentiment Analysis - Starter+
+    hasSentimentAnalysis: {
+        icon: '😊',
+        title: 'Sentiment Analysis',
+        description: 'Gauge market sentiment with our AI-powered analysis.',
+        benefits: [
+            'Social media sentiment',
+            'News sentiment scores',
+            'Bullish/bearish indicators',
+            'Trend detection'
+        ]
+    },
+    // Trade Journal - Starter+
+    hasTradeJournal: {
+        icon: '📓',
+        title: 'Trade Journal',
+        description: 'Track and analyze your trading performance.',
+        benefits: [
+            'Log all your trades',
+            'Performance analytics',
+            'Win/loss tracking',
+            'Strategy notes'
+        ]
+    },
+    // Stock Details - Starter+
+    hasStockDetails: {
+        icon: '📈',
+        title: 'Stock Detail Pages',
+        description: 'Access detailed stock information and analysis.',
+        benefits: [
+            'Company fundamentals',
+            'Historical data',
+            'Technical charts',
+            'Key metrics'
+        ]
+    },
+    // Heatmap - Pro+
+    hasHeatmap: {
+        icon: '🗺️',
+        title: 'Advanced Market Heatmap',
+        description: 'Visualize market performance with our interactive heatmap.',
+        benefits: [
+            'Sector performance',
+            'Real-time updates',
+            'Custom views',
+            'Quick stock access'
+        ]
+    },
+    // Technical Indicators - Pro+
+    hasTechnicalIndicators: {
+        icon: '📉',
+        title: 'Technical Indicators',
+        description: 'Access professional-grade technical indicators.',
+        benefits: [
+            'RSI, MACD, Bollinger Bands',
+            'Moving averages',
+            'Volume analysis',
+            'Custom overlays'
+        ]
+    },
+    // Stock Comparison - Pro+
+    hasStockComparison: {
+        icon: '⚖️',
+        title: 'Stock Comparison Tools',
+        description: 'Compare multiple stocks side by side.',
+        benefits: [
+            'Performance comparison',
+            'Fundamental metrics',
+            'Technical analysis',
+            'Peer analysis'
+        ]
+    },
+    // Advanced Analysis - Pro+
+    hasAdvancedAnalysis: {
+        icon: '🔬',
+        title: 'Advanced Analysis Tools',
+        description: 'Access professional-grade analysis tools.',
+        benefits: [
+            'Deep market analysis',
+            'Advanced charting',
+            'Custom indicators',
+            'Strategy tools'
+        ]
+    },
+    // Prediction History - Premium/Elite
+    hasPredictionHistory: {
+        icon: '📚',
+        title: 'Prediction History',
+        description: 'View your complete prediction history and track performance.',
+        benefits: [
+            'Full prediction archive',
+            'Performance tracking',
+            'Strategy refinement',
+            'Historical insights'
+        ]
+    },
+    // Accuracy Analytics - Premium/Elite
+    hasAccuracyAnalytics: {
+        icon: '🎯',
+        title: 'Accuracy Analytics',
+        description: 'Analyze the accuracy of AI predictions in detail.',
+        benefits: [
+            'Accuracy metrics',
+            'Performance trends',
+            'Asset-specific stats',
+            'Timeframe analysis'
+        ]
+    },
+    // Portfolio Tracking - Premium/Elite
+    hasPortfolioTracking: {
+        icon: '💼',
+        title: 'Portfolio Tracking',
+        description: 'Track and optimize your investment portfolio.',
+        benefits: [
+            'Real-time P/L tracking',
+            'Portfolio analytics',
+            'Diversification analysis',
+            'Performance reports'
+        ]
+    },
+    // Live Data - Premium/Elite
+    hasLiveData: {
+        icon: '⚡',
+        title: 'Live Real-Time Data',
+        description: 'Access streaming real-time market data.',
+        benefits: [
+            'Live price updates',
+            'Real-time quotes',
+            'Instant notifications',
+            'Zero delay data'
+        ]
+    },
+    // Pattern Recognition - Premium/Elite
+    hasPatternRecognition: {
+        icon: '🔮',
+        title: 'Pattern Recognition',
+        description: 'AI-powered chart pattern detection.',
+        benefits: [
+            'Candlestick patterns',
+            'Chart formations',
+            'Trend identification',
+            'Breakout alerts'
+        ]
+    },
+    // Sector Analysis - Premium/Elite
+    hasSectorAnalysis: {
+        icon: '🏢',
+        title: 'Sector Rotation Analysis',
+        description: 'Track sector performance and rotation trends.',
+        benefits: [
+            'Sector performance',
+            'Rotation signals',
+            'Industry trends',
+            'Allocation insights'
+        ]
+    },
+    // Whale Alerts - Premium/Elite
+    hasWhaleAlerts: {
+        icon: '🐋',
+        title: 'Whale Alerts',
+        description: 'Track large institutional and insider trading activity.',
+        benefits: [
+            'Large trade detection',
+            'Institutional moves',
+            'Smart money tracking',
+            'Real-time alerts'
+        ]
+    },
+    // Dark Pool Flow - Premium/Elite
+    hasDarkPoolFlow: {
+        icon: '🌑',
+        title: 'Dark Pool Flow',
+        description: 'Monitor dark pool trading activity.',
+        benefits: [
+            'Dark pool prints',
+            'Block trades',
+            'Hidden liquidity',
+            'Institutional flow'
+        ]
+    },
+    // Institutional Activity - Premium/Elite
+    hasInstitutionalActivity: {
+        icon: '🏛️',
+        title: 'Institutional Activity',
+        description: 'Track institutional investor movements.',
+        benefits: [
+            '13F filings',
+            'Hedge fund positions',
+            'Institutional buying',
+            'Position changes'
+        ]
+    },
+    // Congressional Trades - Premium/Elite
+    hasCongressionalTrades: {
+        icon: '🏛️',
+        title: 'Congressional Trade Alerts',
+        description: 'Track stock trades made by members of Congress.',
+        benefits: [
+            'Senator trades',
+            'Representative trades',
+            'Filing alerts',
+            'Trade history'
+        ]
+    },
+    // Discovery Page - Premium/Elite
+    hasDiscoveryPage: {
+        icon: '🌟',
+        title: 'Discovery Page',
+        description: 'Discover top traders and trending predictions.',
+        benefits: [
+            'Top performers',
+            'Trending stocks',
+            'Community insights',
+            'Follow experts'
+        ]
+    },
+    // API Access - Elite
+    hasAPIAccess: {
+        icon: '🔌',
+        title: 'REST API Access',
+        description: 'Full programmatic access to our trading data and signals.',
+        benefits: [
+            'Complete API access',
+            'Webhooks support',
+            'Custom integrations',
+            'Algorithmic trading'
+        ]
+    },
+    // Ultra-Low Latency - Elite
+    hasUltraLowLatency: {
+        icon: '⚡',
+        title: 'Ultra-Low Latency Data',
+        description: 'Get market data with less than 50ms latency.',
+        benefits: [
+            '<50ms latency',
+            'Direct market feeds',
+            'Priority data routing',
+            'Institutional speed'
+        ]
+    },
+    // Backtesting - Elite
+    hasBacktesting: {
+        icon: '⏮️',
+        title: 'Strategy Backtesting',
+        description: 'Test trading strategies against historical data.',
+        benefits: [
+            'Historical testing',
+            'Strategy validation',
+            'Performance metrics',
+            'Risk analysis'
+        ]
+    },
+    // Institutional Analytics - Elite
+    hasInstitutionalAnalytics: {
+        icon: '📊',
+        title: 'Institutional Analytics',
+        description: 'Access institutional-grade analytics and insights.',
+        benefits: [
+            'Professional tools',
+            'Advanced metrics',
+            'Deep analysis',
+            'Institutional data'
+        ]
+    },
+    // Multi-Account - Elite
+    hasMultiAccount: {
+        icon: '👥',
+        title: 'Multi-Account Management',
+        description: 'Manage multiple trading accounts from one dashboard.',
+        benefits: [
+            'Multiple portfolios',
+            'Unified dashboard',
+            'Account switching',
+            'Aggregate analytics'
+        ]
+    },
+    // Custom Research - Elite
+    hasCustomResearch: {
+        icon: '🔎',
+        title: 'Custom Research & Insights',
+        description: 'Get personalized research reports and analysis.',
+        benefits: [
+            'Custom reports',
+            'Personalized insights',
+            'On-demand analysis',
+            'Expert research'
+        ]
+    },
+    // Mentorship - Elite
+    hasMentorship: {
+        icon: '🎓',
+        title: '1-on-1 Trading Mentorship',
+        description: 'Get personal guidance from experienced traders.',
+        benefits: [
+            'Personal mentorship',
+            'Strategy coaching',
+            'Trading guidance',
+            'Expert advice'
+        ]
+    },
+    // White Label - Elite
+    hasWhiteLabel: {
+        icon: '🏷️',
+        title: 'White-Label Options',
+        description: 'Rebrand our platform for your business.',
+        benefits: [
+            'Custom branding',
+            'Your own platform',
+            'Client management',
+            'Revenue sharing'
+        ]
+    },
+    // Dedicated Manager - Elite
+    hasDedicatedManager: {
+        icon: '👔',
+        title: 'Dedicated Account Manager',
+        description: 'Get a personal account manager for priority support.',
+        benefits: [
+            'Personal contact',
+            'Priority support',
+            'Direct line',
+            'Proactive help'
+        ]
+    },
+    // VIP Community - Elite
+    hasVIPCommunity: {
+        icon: '👑',
+        title: 'VIP Discord Community',
+        description: 'Join our exclusive community of elite traders.',
+        benefits: [
+            'Exclusive access',
+            'Expert discussions',
+            'Private channels',
+            'Networking'
+        ]
+    },
+    // Whale Webhooks - Elite
+    hasWhaleWebhooks: {
+        icon: '🔗',
+        title: 'Whale Alert Webhooks',
+        description: 'Get whale alerts via API and webhooks.',
+        benefits: [
+            'Real-time webhooks',
+            'Custom integrations',
+            'Automated alerts',
+            'API access'
+        ]
+    },
+    // Early Access - Elite
+    hasEarlyAccess: {
+        icon: '🚀',
+        title: 'Early Access',
+        description: 'Be the first to try new features.',
+        benefits: [
+            'Beta features',
+            'Priority access',
+            'Feature voting',
+            'Direct feedback'
+        ]
+    },
+    // Default fallback
     default: {
         icon: '⭐',
         title: 'Premium Feature',
