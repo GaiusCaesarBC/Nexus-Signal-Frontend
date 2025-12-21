@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { createChart } from 'lightweight-charts';
-import styled, { keyframes } from 'styled-components';
+import styled, { keyframes, css } from 'styled-components';
 import {
     TrendingUp, Activity, BarChart3, Maximize2,
     Download, Eye, EyeOff, RefreshCw, Sparkles, Target
@@ -365,7 +365,7 @@ const NexusButton = styled.button`
     white-space: nowrap;
     position: relative;
 
-    ${props => props.$active && `animation: ${nexusPulse} 2s ease-in-out infinite;`}
+    ${props => props.$active && css`animation: ${nexusPulse} 2s ease-in-out infinite;`}
 
     &:hover {
         background: linear-gradient(135deg, #3b82f633 0%, #8b5cf633 100%);
