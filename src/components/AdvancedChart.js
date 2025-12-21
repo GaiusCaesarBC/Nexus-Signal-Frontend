@@ -857,7 +857,50 @@ const AdvancedChart = ({
 
     // Handle chart type changes - create appropriate series
     useEffect(() => {
-        if (!chartRef.current || data.length === 0) return;
+        if (!chartRef.current) return;
+
+        // If data is empty, clear the chart and reset state
+        if (data.length === 0) {
+            console.log(`[AdvancedChart] Data cleared for ${symbol}, removing series`);
+            if (mainSeriesRef.current) {
+                try {
+                    chartRef.current.removeSeries(mainSeriesRef.current);
+                } catch (error) {
+                    console.log('Could not remove main series:', error.message);
+                }
+                mainSeriesRef.current = null;
+            }
+            if (volumeSeriesRef.current) {
+                try {
+                    chartRef.current.removeSeries(volumeSeriesRef.current);
+                } catch (error) {
+                    console.log('Could not remove volume series:', error.message);
+                }
+                volumeSeriesRef.current = null;
+            }
+            // Clear all indicators
+            Object.entries(indicatorSeriesRef.current).forEach(([key, series]) => {
+                try {
+                    if (key === 'bb' && series && typeof series === 'object' && series.upper) {
+                        if (series.upper) chartRef.current.removeSeries(series.upper);
+                        if (series.middle) chartRef.current.removeSeries(series.middle);
+                        if (series.lower) chartRef.current.removeSeries(series.lower);
+                    } else if (key === 'macd' && series && typeof series === 'object' && series.macdLine) {
+                        if (series.macdLine) chartRef.current.removeSeries(series.macdLine);
+                        if (series.signalLine) chartRef.current.removeSeries(series.signalLine);
+                        if (series.histogram) chartRef.current.removeSeries(series.histogram);
+                    } else if (series) {
+                        chartRef.current.removeSeries(series);
+                    }
+                } catch (error) {
+                    // Ignore removal errors
+                }
+            });
+            indicatorSeriesRef.current = {};
+            setCurrentPrice(null);
+            setPriceChange(null);
+            return;
+        }
 
         console.log(`[AdvancedChart] Updating chart with ${data.length} candles for ${symbol}, timeframe=${timeframe}`);
 
