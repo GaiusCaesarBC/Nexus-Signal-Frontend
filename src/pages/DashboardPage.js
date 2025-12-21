@@ -1339,7 +1339,7 @@ const DashboardPage = () => {
 
     // Chart states
     const [advancedChartData, setAdvancedChartData] = useState([]);
-    const [selectedSymbol, setSelectedSymbol] = useState('AAPL');
+    const [selectedSymbol, setSelectedSymbol] = useState('XRP-USD');
     const [selectedTimeframe, setSelectedTimeframe] = useState('1D');
     const [loadingChart, setLoadingChart] = useState(false);
     const [isChartRefreshing, setIsChartRefreshing] = useState(false);
@@ -2129,7 +2129,7 @@ const handleOpenRewardModal = () => {
                             <Eye size={18} /> Load
                         </SearchButton>
                         <SymbolSelector>
-                            {['AAPL', 'TSLA', 'NVDA', 'MSFT', 'GOOGL', 'AMD', 'BTC-USD', 'ETH-USD', 'SOL-USD'].map(sym => (
+                            {['XRP-USD', 'BTC-USD', 'ETH-USD', 'SOL-USD', 'AAPL', 'TSLA', 'NVDA', 'MSFT', 'GOOGL'].map(sym => (
                                 <SymbolButton key={sym} $active={selectedSymbol === sym} onClick={() => handleSymbolChange(sym)}>
                                     {sym}
                                 </SymbolButton>
