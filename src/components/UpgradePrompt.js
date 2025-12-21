@@ -166,6 +166,18 @@ const CurrentPlan = styled.div`
 
 // Feature descriptions for different features
 const FEATURE_INFO = {
+    hasNexusAI: {
+        icon: '✨',
+        title: 'NEXUS AI Chart Indicator',
+        description: 'Visualize AI-powered price predictions directly on your charts with projected target lines extending into the future.',
+        benefits: [
+            'See AI price targets on charts',
+            'Visual projection lines into the future',
+            'Blue/orange indicators for UP/DOWN',
+            'Confidence levels and timeframes',
+            'Works with stocks and crypto'
+        ]
+    },
     hasAIChat: {
         icon: '🤖',
         title: 'AI Chat Assistant',

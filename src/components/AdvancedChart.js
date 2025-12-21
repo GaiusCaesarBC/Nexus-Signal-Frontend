@@ -5,7 +5,7 @@ import { createChart } from 'lightweight-charts';
 import styled, { keyframes, css } from 'styled-components';
 import {
     TrendingUp, Activity, BarChart3, Maximize2,
-    Download, Eye, EyeOff, RefreshCw, Sparkles, Target
+    Download, Eye, EyeOff, RefreshCw, Sparkles, Target, Lock
 } from 'lucide-react';
 import {
     calculateSMA,
@@ -19,7 +19,9 @@ import {
 } from '../utils/indicators';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { useSubscription } from '../context/SubscriptionContext';
 import { formatCryptoPrice, formatStockPrice } from '../utils/priceFormatter';
+import UpgradePrompt from './UpgradePrompt';
 
 // Animation for NEXUS indicator
 const nexusPulse = keyframes`
@@ -348,13 +350,21 @@ const ActionButton = styled.button`
 // Special styled button for NEXUS AI indicator
 const NexusButton = styled.button`
     padding: 0.5rem 1rem;
-    background: ${props => props.$active
-        ? `linear-gradient(135deg, #3b82f64D 0%, #8b5cf64D 100%)`
-        : `linear-gradient(135deg, #3b82f60d 0%, #8b5cf60d 100%)`
+    background: ${props => props.$locked
+        ? `linear-gradient(135deg, #64748b1a 0%, #47556922 100%)`
+        : props.$active
+            ? `linear-gradient(135deg, #3b82f64D 0%, #8b5cf64D 100%)`
+            : `linear-gradient(135deg, #3b82f60d 0%, #8b5cf60d 100%)`
     };
-    border: 1px solid ${props => props.$active ? '#3b82f6' : '#3b82f633'};
+    border: 1px solid ${props => props.$locked
+        ? '#64748b44'
+        : props.$active ? '#3b82f6' : '#3b82f633'
+    };
     border-radius: 8px;
-    color: ${props => props.$active ? '#3b82f6' : props.theme.text?.secondary};
+    color: ${props => props.$locked
+        ? '#94a3b8'
+        : props.$active ? '#3b82f6' : props.theme.text?.secondary
+    };
     font-weight: 700;
     font-size: 0.85rem;
     cursor: pointer;
@@ -365,12 +375,15 @@ const NexusButton = styled.button`
     white-space: nowrap;
     position: relative;
 
-    ${props => props.$active && css`animation: ${nexusPulse} 2s ease-in-out infinite;`}
+    ${props => props.$active && !props.$locked && css`animation: ${nexusPulse} 2s ease-in-out infinite;`}
 
     &:hover {
-        background: linear-gradient(135deg, #3b82f633 0%, #8b5cf633 100%);
-        border-color: #3b82f6;
-        color: #3b82f6;
+        background: ${props => props.$locked
+            ? `linear-gradient(135deg, #a855f71a 0%, #f59e0b1a 100%)`
+            : `linear-gradient(135deg, #3b82f633 0%, #8b5cf633 100%)`
+        };
+        border-color: ${props => props.$locked ? '#f59e0b66' : '#3b82f6'};
+        color: ${props => props.$locked ? '#f59e0b' : '#3b82f6'};
     }
 
     &:disabled {
@@ -525,6 +538,7 @@ const AdvancedChart = ({
 }) => {
     const { theme } = useTheme();
     const { api } = useAuth();
+    const { canUseFeature, hasPlanAccess } = useSubscription();
     const chartContainerRef = useRef(null);
     const chartRef = useRef(null);
     const mainSeriesRef = useRef(null);
@@ -545,6 +559,10 @@ const AdvancedChart = ({
     const [nexusPrediction, setNexusPrediction] = useState(null);
     const [nexusLoading, setNexusLoading] = useState(false);
     const [nexusError, setNexusError] = useState(null);
+    const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
+
+    // Check if user has access to NEXUS AI (Premium/Elite only)
+    const hasNexusAccess = canUseFeature('hasNexusAI') || hasPlanAccess('premium');
 
     const timeframes = ['1m', '5m', '15m', '1h', '4h', '1D', '1W', '1M'];
     
@@ -1241,8 +1259,12 @@ const AdvancedChart = ({
         }
     }, [nexusEnabled, nexusPrediction, data]);
 
-    // Toggle NEXUS indicator
+    // Toggle NEXUS indicator (Premium/Elite only)
     const toggleNexus = () => {
+        if (!hasNexusAccess) {
+            setShowUpgradePrompt(true);
+            return;
+        }
         setNexusEnabled(prev => !prev);
     };
 
@@ -1338,6 +1360,7 @@ const AdvancedChart = ({
     };
 
     return (
+        <>
         <ChartContainer>
             <ChartHeader>
                 <ChartTitle>
@@ -1447,17 +1470,37 @@ const AdvancedChart = ({
             </ChartHeader>
 
             <div style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                {/* NEXUS AI Button - Featured first */}
+                {/* NEXUS AI Button - Featured first (Premium/Elite only) */}
                 <NexusButton
                     $active={nexusEnabled}
                     $loading={nexusLoading}
+                    $locked={!hasNexusAccess}
                     onClick={toggleNexus}
-                    title="NEXUS AI Prediction - Shows predicted target price"
+                    title={hasNexusAccess ? "NEXUS AI Prediction - Shows predicted target price" : "NEXUS AI - Premium/Elite feature"}
                     disabled={nexusLoading}
                 >
-                    {nexusLoading ? <RefreshCw size={14} /> : <Sparkles size={14} />}
+                    {!hasNexusAccess ? (
+                        <Lock size={14} />
+                    ) : nexusLoading ? (
+                        <RefreshCw size={14} />
+                    ) : (
+                        <Sparkles size={14} />
+                    )}
                     NEXUS AI
-                    {nexusPrediction && (
+                    {!hasNexusAccess && (
+                        <span style={{
+                            marginLeft: '4px',
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            fontSize: '0.65rem',
+                            background: 'linear-gradient(135deg, #a855f733, #f59e0b33)',
+                            color: '#f59e0b',
+                            fontWeight: 600
+                        }}>
+                            PREMIUM
+                        </span>
+                    )}
+                    {hasNexusAccess && nexusPrediction && (
                         <span style={{
                             marginLeft: '4px',
                             padding: '2px 6px',
@@ -1574,6 +1617,15 @@ const AdvancedChart = ({
                 )}
             </ChartWrapper>
         </ChartContainer>
+
+        {/* Upgrade Prompt for NEXUS AI */}
+        <UpgradePrompt
+            isOpen={showUpgradePrompt}
+            onClose={() => setShowUpgradePrompt(false)}
+            feature="hasNexusAI"
+            requiredPlan="premium"
+        />
+        </>
     );
 };
 
