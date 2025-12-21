@@ -678,6 +678,7 @@ const AdvancedChart = ({
     const volumeSeriesRef = useRef(null);
     const indicatorSeriesRef = useRef({});
     const predictionLineRef = useRef(null);
+    const patternSeriesRef = useRef([]);  // Array to hold pattern drawing series
 
     const [timeframe, setTimeframe] = useState(externalTimeframe);
     const [chartType, setChartType] = useState('candlestick');
@@ -897,6 +898,13 @@ const AdvancedChart = ({
                 }
             });
             indicatorSeriesRef.current = {};
+            // Clear pattern series
+            patternSeriesRef.current.forEach(series => {
+                try {
+                    if (series) chartRef.current.removeSeries(series);
+                } catch (e) { /* ignore */ }
+            });
+            patternSeriesRef.current = [];
             setCurrentPrice(null);
             setPriceChange(null);
             return;
@@ -1488,6 +1496,381 @@ const AdvancedChart = ({
             }
         }
     }, [nexusEnabled, nexusPrediction, data]);
+
+    // Effect to draw pattern visualizations on the chart
+    useEffect(() => {
+        if (!chartRef.current || !mainSeriesRef.current) return;
+
+        // Remove existing pattern series
+        patternSeriesRef.current.forEach(series => {
+            try {
+                if (series) {
+                    chartRef.current.removeSeries(series);
+                }
+            } catch (error) {
+                // Ignore removal errors
+            }
+        });
+        patternSeriesRef.current = [];
+
+        // If patterns are disabled or no patterns, exit
+        if (!patternEnabled || patterns.length === 0 || data.length === 0) {
+            return;
+        }
+
+        console.log(`[PATTERN] Drawing ${patterns.length} patterns on chart...`);
+
+        // Get time range from data
+        const startTime = data[0].time;
+        const endTime = data[data.length - 1].time;
+        const currentPrice = data[data.length - 1].close;
+
+        patterns.forEach((pattern, idx) => {
+            try {
+                const patternColor = pattern.type === 'bullish' ? '#22c55e' :
+                                    pattern.type === 'bearish' ? '#ef4444' : '#8b5cf6';
+
+                // Draw based on pattern type
+                if (pattern.pattern === 'SUPPORT_RESISTANCE' || pattern.pattern === 'CONSOLIDATION') {
+                    // Draw support line
+                    if (pattern.points?.support) {
+                        const supportLine = chartRef.current.addLineSeries({
+                            color: '#22c55e',
+                            lineWidth: 2,
+                            lineStyle: 2, // Dashed
+                            priceLineVisible: false,
+                            lastValueVisible: false,
+                            crosshairMarkerVisible: false,
+                        });
+                        supportLine.setData([
+                            { time: startTime, value: pattern.points.support },
+                            { time: endTime, value: pattern.points.support }
+                        ]);
+                        // Add price line marker
+                        supportLine.createPriceLine({
+                            price: pattern.points.support,
+                            color: '#22c55e',
+                            lineWidth: 1,
+                            lineStyle: 2,
+                            axisLabelVisible: true,
+                            title: 'Support',
+                        });
+                        patternSeriesRef.current.push(supportLine);
+                    }
+
+                    // Draw resistance line
+                    if (pattern.points?.resistance) {
+                        const resistanceLine = chartRef.current.addLineSeries({
+                            color: '#ef4444',
+                            lineWidth: 2,
+                            lineStyle: 2, // Dashed
+                            priceLineVisible: false,
+                            lastValueVisible: false,
+                            crosshairMarkerVisible: false,
+                        });
+                        resistanceLine.setData([
+                            { time: startTime, value: pattern.points.resistance },
+                            { time: endTime, value: pattern.points.resistance }
+                        ]);
+                        // Add price line marker
+                        resistanceLine.createPriceLine({
+                            price: pattern.points.resistance,
+                            color: '#ef4444',
+                            lineWidth: 1,
+                            lineStyle: 2,
+                            axisLabelVisible: true,
+                            title: 'Resistance',
+                        });
+                        patternSeriesRef.current.push(resistanceLine);
+                    }
+                }
+
+                else if (pattern.pattern === 'UPTREND' || pattern.pattern === 'DOWNTREND') {
+                    // Draw trend channel lines
+                    const isUp = pattern.pattern === 'UPTREND';
+                    const trendColor = isUp ? '#22c55e' : '#ef4444';
+
+                    // Draw support line (lower boundary)
+                    if (pattern.points?.support) {
+                        const supportLine = chartRef.current.addLineSeries({
+                            color: trendColor,
+                            lineWidth: 2,
+                            lineStyle: 2,
+                            priceLineVisible: false,
+                            lastValueVisible: false,
+                            crosshairMarkerVisible: false,
+                        });
+                        supportLine.setData([
+                            { time: startTime, value: pattern.points.support },
+                            { time: endTime, value: pattern.points.support }
+                        ]);
+                        supportLine.createPriceLine({
+                            price: pattern.points.support,
+                            color: trendColor,
+                            lineWidth: 1,
+                            lineStyle: 2,
+                            axisLabelVisible: true,
+                            title: isUp ? 'Trend Support' : 'Support',
+                        });
+                        patternSeriesRef.current.push(supportLine);
+                    }
+
+                    // Draw resistance line (upper boundary)
+                    if (pattern.points?.resistance) {
+                        const resistanceLine = chartRef.current.addLineSeries({
+                            color: trendColor,
+                            lineWidth: 2,
+                            lineStyle: 2,
+                            priceLineVisible: false,
+                            lastValueVisible: false,
+                            crosshairMarkerVisible: false,
+                        });
+                        resistanceLine.setData([
+                            { time: startTime, value: pattern.points.resistance },
+                            { time: endTime, value: pattern.points.resistance }
+                        ]);
+                        resistanceLine.createPriceLine({
+                            price: pattern.points.resistance,
+                            color: trendColor,
+                            lineWidth: 1,
+                            lineStyle: 2,
+                            axisLabelVisible: true,
+                            title: isUp ? 'Resistance' : 'Trend Resistance',
+                        });
+                        patternSeriesRef.current.push(resistanceLine);
+                    }
+                }
+
+                else if (pattern.pattern === 'DOUBLE_TOP' || pattern.pattern === 'DOUBLE_BOTTOM') {
+                    // Draw the two peaks/troughs and neckline
+                    const isTop = pattern.pattern === 'DOUBLE_TOP';
+                    const peakColor = isTop ? '#ef4444' : '#22c55e';
+
+                    // Draw neckline
+                    if (pattern.points?.neckline) {
+                        const necklineSeries = chartRef.current.addLineSeries({
+                            color: peakColor,
+                            lineWidth: 2,
+                            lineStyle: 2,
+                            priceLineVisible: false,
+                            lastValueVisible: false,
+                            crosshairMarkerVisible: false,
+                        });
+                        necklineSeries.setData([
+                            { time: startTime, value: pattern.points.neckline },
+                            { time: endTime, value: pattern.points.neckline }
+                        ]);
+                        necklineSeries.createPriceLine({
+                            price: pattern.points.neckline,
+                            color: peakColor,
+                            lineWidth: 1,
+                            lineStyle: 2,
+                            axisLabelVisible: true,
+                            title: 'Neckline',
+                        });
+                        patternSeriesRef.current.push(necklineSeries);
+                    }
+
+                    // Draw markers at peaks/troughs if we have index data
+                    if (pattern.points?.first && pattern.points?.second) {
+                        // Use indices to find timestamps
+                        const firstIdx = pattern.points.first.index;
+                        const secondIdx = pattern.points.second.index;
+
+                        if (firstIdx < data.length && secondIdx < data.length) {
+                            const peakLine = chartRef.current.addLineSeries({
+                                color: peakColor,
+                                lineWidth: 2,
+                                lineStyle: 0,
+                                priceLineVisible: false,
+                                lastValueVisible: false,
+                                crosshairMarkerVisible: false,
+                            });
+                            peakLine.setData([
+                                { time: data[firstIdx].time, value: pattern.points.first.price },
+                                { time: data[secondIdx].time, value: pattern.points.second.price }
+                            ]);
+                            patternSeriesRef.current.push(peakLine);
+                        }
+                    }
+                }
+
+                else if (pattern.pattern === 'HEAD_SHOULDERS' || pattern.pattern === 'HEAD_SHOULDERS_INVERSE') {
+                    const isInverse = pattern.pattern === 'HEAD_SHOULDERS_INVERSE';
+                    const hsColor = isInverse ? '#22c55e' : '#ef4444';
+
+                    // Draw neckline
+                    if (pattern.points?.neckline) {
+                        const necklineSeries = chartRef.current.addLineSeries({
+                            color: hsColor,
+                            lineWidth: 2,
+                            lineStyle: 2,
+                            priceLineVisible: false,
+                            lastValueVisible: false,
+                            crosshairMarkerVisible: false,
+                        });
+                        necklineSeries.setData([
+                            { time: startTime, value: pattern.points.neckline },
+                            { time: endTime, value: pattern.points.neckline }
+                        ]);
+                        necklineSeries.createPriceLine({
+                            price: pattern.points.neckline,
+                            color: hsColor,
+                            lineWidth: 1,
+                            lineStyle: 2,
+                            axisLabelVisible: true,
+                            title: 'Neckline',
+                        });
+                        patternSeriesRef.current.push(necklineSeries);
+                    }
+
+                    // Connect shoulders and head if we have indices
+                    if (pattern.points?.leftShoulder && pattern.points?.head && pattern.points?.rightShoulder) {
+                        const lsIdx = pattern.points.leftShoulder.index;
+                        const headIdx = pattern.points.head.index;
+                        const rsIdx = pattern.points.rightShoulder.index;
+
+                        if (lsIdx < data.length && headIdx < data.length && rsIdx < data.length) {
+                            const patternLine = chartRef.current.addLineSeries({
+                                color: hsColor,
+                                lineWidth: 2,
+                                lineStyle: 0,
+                                priceLineVisible: false,
+                                lastValueVisible: false,
+                                crosshairMarkerVisible: false,
+                            });
+                            patternLine.setData([
+                                { time: data[lsIdx].time, value: pattern.points.leftShoulder.price },
+                                { time: data[headIdx].time, value: pattern.points.head.price },
+                                { time: data[rsIdx].time, value: pattern.points.rightShoulder.price }
+                            ]);
+                            patternSeriesRef.current.push(patternLine);
+                        }
+                    }
+                }
+
+                else if (pattern.pattern === 'ASCENDING_TRIANGLE' || pattern.pattern === 'DESCENDING_TRIANGLE') {
+                    const isAscending = pattern.pattern === 'ASCENDING_TRIANGLE';
+                    const triColor = isAscending ? '#22c55e' : '#ef4444';
+
+                    // Draw flat line (resistance for ascending, support for descending)
+                    const flatLevel = isAscending ? pattern.points?.resistance : pattern.points?.support;
+                    if (flatLevel) {
+                        const flatLine = chartRef.current.addLineSeries({
+                            color: triColor,
+                            lineWidth: 2,
+                            lineStyle: 0,
+                            priceLineVisible: false,
+                            lastValueVisible: false,
+                            crosshairMarkerVisible: false,
+                        });
+                        flatLine.setData([
+                            { time: startTime, value: flatLevel },
+                            { time: endTime, value: flatLevel }
+                        ]);
+                        flatLine.createPriceLine({
+                            price: flatLevel,
+                            color: triColor,
+                            lineWidth: 1,
+                            lineStyle: 0,
+                            axisLabelVisible: true,
+                            title: isAscending ? 'Resistance' : 'Support',
+                        });
+                        patternSeriesRef.current.push(flatLine);
+                    }
+
+                    // Draw sloped line
+                    const slopeStart = isAscending ? pattern.points?.supportStart : pattern.points?.resistanceStart;
+                    const slopeEnd = isAscending ? pattern.points?.supportEnd : pattern.points?.resistanceEnd;
+                    if (slopeStart && slopeEnd) {
+                        const slopeLine = chartRef.current.addLineSeries({
+                            color: triColor,
+                            lineWidth: 2,
+                            lineStyle: 0,
+                            priceLineVisible: false,
+                            lastValueVisible: false,
+                            crosshairMarkerVisible: false,
+                        });
+                        slopeLine.setData([
+                            { time: startTime, value: slopeStart },
+                            { time: endTime, value: slopeEnd }
+                        ]);
+                        patternSeriesRef.current.push(slopeLine);
+                    }
+                }
+
+                else if (pattern.pattern === 'BULL_FLAG' || pattern.pattern === 'BEAR_FLAG') {
+                    const isBull = pattern.pattern === 'BULL_FLAG';
+                    const flagColor = isBull ? '#22c55e' : '#ef4444';
+
+                    // Draw flag range (high and low)
+                    if (pattern.points?.flagHigh && pattern.points?.flagLow) {
+                        // Flag high line
+                        const highLine = chartRef.current.addLineSeries({
+                            color: flagColor,
+                            lineWidth: 2,
+                            lineStyle: 2,
+                            priceLineVisible: false,
+                            lastValueVisible: false,
+                            crosshairMarkerVisible: false,
+                        });
+                        const recentStart = data[Math.max(0, data.length - 20)].time;
+                        highLine.setData([
+                            { time: recentStart, value: pattern.points.flagHigh },
+                            { time: endTime, value: pattern.points.flagHigh }
+                        ]);
+                        patternSeriesRef.current.push(highLine);
+
+                        // Flag low line
+                        const lowLine = chartRef.current.addLineSeries({
+                            color: flagColor,
+                            lineWidth: 2,
+                            lineStyle: 2,
+                            priceLineVisible: false,
+                            lastValueVisible: false,
+                            crosshairMarkerVisible: false,
+                        });
+                        lowLine.setData([
+                            { time: recentStart, value: pattern.points.flagLow },
+                            { time: endTime, value: pattern.points.flagLow }
+                        ]);
+                        patternSeriesRef.current.push(lowLine);
+                    }
+                }
+
+                // Draw target price line for all patterns
+                if (pattern.target && pattern.target !== pattern.currentPrice) {
+                    const targetLine = chartRef.current.addLineSeries({
+                        color: patternColor,
+                        lineWidth: 1,
+                        lineStyle: 1, // Dotted
+                        priceLineVisible: false,
+                        lastValueVisible: false,
+                        crosshairMarkerVisible: false,
+                    });
+                    targetLine.setData([
+                        { time: startTime, value: pattern.target },
+                        { time: endTime, value: pattern.target }
+                    ]);
+                    targetLine.createPriceLine({
+                        price: pattern.target,
+                        color: patternColor,
+                        lineWidth: 1,
+                        lineStyle: 1,
+                        axisLabelVisible: true,
+                        title: `Target ${pattern.type === 'bullish' ? '↑' : pattern.type === 'bearish' ? '↓' : '→'}`,
+                    });
+                    patternSeriesRef.current.push(targetLine);
+                }
+
+                console.log(`[PATTERN] Drew ${pattern.pattern} (${pattern.name})`);
+
+            } catch (error) {
+                console.error(`[PATTERN] Error drawing ${pattern.pattern}:`, error);
+            }
+        });
+
+    }, [patternEnabled, patterns, data]);
 
     // Toggle NEXUS indicator (Premium/Elite only)
     const toggleNexus = () => {
