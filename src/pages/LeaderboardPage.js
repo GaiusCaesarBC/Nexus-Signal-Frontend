@@ -20,6 +20,7 @@ import {
 import SEO from '../components/SEO';
 import AvatarWithBorder, { BORDER_STYLES } from '../components/vault/AvatarWithBorder';
 import { BadgeList } from '../components/BadgeDisplay';
+import CopyTradingModal from '../components/CopyTradingModal';
 
 
 // ============ BORDER COLORS MAP (for Avatar Frames) ============
@@ -1268,6 +1269,8 @@ const LeaderboardPage = () => {
     const [lastUpdated, setLastUpdated] = useState(null);
     const [isOnline, setIsOnline] = useState(navigator.onLine);
     const [error, setError] = useState(null);
+    const [copyModalOpen, setCopyModalOpen] = useState(false);
+    const [selectedTraderForCopy, setSelectedTraderForCopy] = useState(null);
     
     const refreshIntervalRef = useRef(null);
     const searchTimeoutRef = useRef(null);
@@ -1541,8 +1544,14 @@ const LeaderboardPage = () => {
         }
     };
 
-    const handleCopyTrader = async (trader) => {
-        toast.info(`Copy trading for ${trader.displayName} coming soon!`, 'Coming Soon');
+    const handleCopyTrader = (trader) => {
+        if (!user) {
+            toast.error('Please log in to copy traders', 'Login Required');
+            navigate('/login');
+            return;
+        }
+        setSelectedTraderForCopy(trader);
+        setCopyModalOpen(true);
     };
 
     const handleCardClick = (trader) => {
@@ -2131,12 +2140,27 @@ const LeaderboardPage = () => {
                     </EmptyIcon>
                     <EmptyTitle>No Traders Found</EmptyTitle>
                     <EmptyText>
-                        {debouncedSearch ? 
+                        {debouncedSearch ?
                             'Try adjusting your search' :
                             'Be the first to join the leaderboard!'
                         }
                     </EmptyText>
                 </EmptyState>
+            )}
+
+            {/* Copy Trading Modal */}
+            {selectedTraderForCopy && (
+                <CopyTradingModal
+                    trader={selectedTraderForCopy}
+                    isOpen={copyModalOpen}
+                    onClose={() => {
+                        setCopyModalOpen(false);
+                        setSelectedTraderForCopy(null);
+                    }}
+                    onSuccess={() => {
+                        toast.success(`Now copying ${selectedTraderForCopy.displayName || selectedTraderForCopy.username}!`);
+                    }}
+                />
             )}
         </PageContainer>
     );

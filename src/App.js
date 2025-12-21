@@ -88,6 +88,7 @@ const SectorRotationPage = lazy(() => import('./pages/SectorRotationPage'));
 const EconomicCalendarPage = lazy(() => import('./pages/EconomicCalendarPage'));
 const AccountSettingsPage = lazy(() => import('./pages/AccountSettingsPage'));
 const BacktestingPage = lazy(() => import('./pages/BacktestingPage'));
+const CopyTradingPage = lazy(() => import('./pages/CopyTradingPage'));
 
 // Global styles to set the page background
 const GlobalStyle = createGlobalStyle`
@@ -160,6 +161,7 @@ function AppContent() {
                     <Route path="/journal" element={<ProtectedRoute><JournalPage /></ProtectedRoute>} />
                     <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
                     <Route path="/leaderboard" element={<ProtectedRoute><LeaderboardPage /></ProtectedRoute>} />
+                    <Route path="/copy-trading" element={<ProtectedRoute><CopyTradingPage /></ProtectedRoute>} />
                     <Route path="/trader/:username" element={<ProtectedRoute><PublicProfilePage /></ProtectedRoute>} />
                     <Route path="/calculators" element={<CalculatorsPage />} />
                     <Route path="/sentiment" element={<ProtectedRoute><SentimentPage /></ProtectedRoute>} />
