@@ -22,6 +22,7 @@ import { useAuth } from '../context/AuthContext';
 import { useSubscription } from '../context/SubscriptionContext';
 import { formatCryptoPrice, formatStockPrice } from '../utils/priceFormatter';
 import UpgradePrompt from './UpgradePrompt';
+import PatternOverlay from './PatternOverlay';
 
 // Animation for NEXUS indicator
 const nexusPulse = keyframes`
@@ -708,6 +709,7 @@ const AdvancedChart = ({
     const [patterns, setPatterns] = useState([]);
     const [patternLoading, setPatternLoading] = useState(false);
     const [patternError, setPatternError] = useState(null);
+    const [chartVisibleRange, setChartVisibleRange] = useState(null);
 
     // Check if user has access to NEXUS AI (Premium/Elite only)
     const hasNexusAccess = canUseFeature('hasNexusAI') || hasPlanAccess('premium');
@@ -857,11 +859,39 @@ const AdvancedChart = ({
             }
         });
 
+        // Subscribe to visible range changes for pattern overlay
+        const updateVisibleRange = () => {
+            if (!chartRef.current) return;
+
+            try {
+                const timeScale = chartRef.current.timeScale();
+                const logicalRange = timeScale.getVisibleLogicalRange();
+
+                if (logicalRange) {
+                    setChartVisibleRange({
+                        timeScale: {
+                            start: Math.floor(logicalRange.from),
+                            end: Math.ceil(logicalRange.to)
+                        },
+                        dimensions: {
+                            width: chartContainerRef.current?.clientWidth || 800,
+                            height: parseInt(height) || 500
+                        }
+                    });
+                }
+            } catch (e) {
+                // Ignore errors during initialization
+            }
+        };
+
+        chart.timeScale().subscribeVisibleLogicalRangeChange(updateVisibleRange);
+
         const handleResize = () => {
             if (chartContainerRef.current && chartRef.current) {
                 chartRef.current.applyOptions({
                     width: chartContainerRef.current.clientWidth
                 });
+                updateVisibleRange();
             }
         };
 
@@ -869,6 +899,7 @@ const AdvancedChart = ({
 
         return () => {
             window.removeEventListener('resize', handleResize);
+            chart.timeScale().unsubscribeVisibleLogicalRangeChange(updateVisibleRange);
             if (chartRef.current) {
                 chartRef.current.remove();
             }
@@ -2079,6 +2110,25 @@ const AdvancedChart = ({
 
             <ChartWrapper $height={height}>
                 <div ref={chartContainerRef} />
+
+                {/* Pattern Overlay - SVG visual overlays for detected patterns */}
+                {patternEnabled && patterns.length > 0 && chartVisibleRange && data.length > 0 && (
+                    <PatternOverlay
+                        patterns={patterns}
+                        chartDimensions={chartVisibleRange.dimensions}
+                        priceScale={{
+                            min: Math.min(...data.slice(
+                                Math.max(0, chartVisibleRange.timeScale.start),
+                                Math.min(data.length, chartVisibleRange.timeScale.end + 1)
+                            ).map(d => d.low)),
+                            max: Math.max(...data.slice(
+                                Math.max(0, chartVisibleRange.timeScale.start),
+                                Math.min(data.length, chartVisibleRange.timeScale.end + 1)
+                            ).map(d => d.high))
+                        }}
+                        timeScale={chartVisibleRange.timeScale}
+                    />
+                )}
 
                 {/* NEXUS AI Prediction Badge */}
                 {nexusEnabled && nexusPrediction && (
