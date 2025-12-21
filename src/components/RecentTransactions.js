@@ -302,15 +302,17 @@ const RecentTransactions = ({ symbol, isCrypto = false }) => {
     };
 
     const [marketClosed, setMarketClosed] = useState(false);
+    const [currentSymbol, setCurrentSymbol] = useState(null);
 
-    const fetchTransactions = useCallback(async () => {
-        if (!symbol) return;
+    const fetchTransactions = useCallback(async (symbolToFetch) => {
+        const targetSymbol = symbolToFetch || symbol;
+        if (!targetSymbol) return;
 
         setLoading(true);
         setError(null);
 
         try {
-            const response = await api.get(`/transactions/${encodeURIComponent(symbol)}`);
+            const response = await api.get(`/transactions/${encodeURIComponent(targetSymbol)}`);
 
             if (response.data.success) {
                 setTransactions(response.data.trades || []);
@@ -327,14 +329,27 @@ const RecentTransactions = ({ symbol, isCrypto = false }) => {
         }
     }, [api, symbol]);
 
-    // Initial fetch and auto-refresh
+    // Immediately fetch when symbol changes
     useEffect(() => {
-        fetchTransactions();
+        if (symbol && symbol !== currentSymbol) {
+            // Clear old data immediately when symbol changes
+            setTransactions([]);
+            setError(null);
+            setCurrentSymbol(symbol);
+
+            // Fetch new data immediately
+            fetchTransactions(symbol);
+        }
+    }, [symbol, currentSymbol, fetchTransactions]);
+
+    // Auto-refresh interval (separate from symbol change)
+    useEffect(() => {
+        if (!symbol) return;
 
         // Auto-refresh every 30 seconds for crypto, 60 seconds for stocks
-        const interval = setInterval(fetchTransactions, isCrypto ? 30000 : 60000);
+        const interval = setInterval(() => fetchTransactions(), isCrypto ? 30000 : 60000);
         return () => clearInterval(interval);
-    }, [fetchTransactions, isCrypto]);
+    }, [symbol, isCrypto, fetchTransactions]);
 
     if (loading && transactions.length === 0) {
         return (
