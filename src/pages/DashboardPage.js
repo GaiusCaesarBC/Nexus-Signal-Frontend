@@ -1339,7 +1339,7 @@ const DashboardPage = () => {
 
     // Chart states
     const [advancedChartData, setAdvancedChartData] = useState([]);
-    const [selectedSymbol, setSelectedSymbol] = useState('XRP-USD');
+    const [selectedSymbol, setSelectedSymbol] = useState('XRP');
     const [selectedTimeframe, setSelectedTimeframe] = useState('1D');
     const [loadingChart, setLoadingChart] = useState(false);
     const [isChartRefreshing, setIsChartRefreshing] = useState(false);

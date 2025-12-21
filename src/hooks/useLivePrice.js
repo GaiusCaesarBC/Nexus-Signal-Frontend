@@ -77,6 +77,13 @@ export const useLivePrice = (symbol, onPriceUpdate) => {
                         return;
                     }
 
+                    // Verify the data is for the current symbol (ignore stale data from old connections)
+                    const incomingSymbol = normalizeSymbol(data.symbol);
+                    if (incomingSymbol !== normalizedSymbol) {
+                        console.log(`[LivePrice] ⚠️ Ignoring stale data for ${data.symbol} (expected ${normalizedSymbol})`);
+                        return;
+                    }
+
                     // Handle price updates
                     if (data.price) {
                         console.log(`[LivePrice] 💰 Price update: ${data.symbol} = $${data.price}`);
@@ -149,6 +156,10 @@ export const useLivePrice = (symbol, onPriceUpdate) => {
 
     useEffect(() => {
         if (!symbol) return;
+
+        // Reset price state when symbol changes to prevent showing stale price
+        setLastPrice(null);
+        setLastUpdate(null);
 
         // Disconnect previous connection
         disconnect();

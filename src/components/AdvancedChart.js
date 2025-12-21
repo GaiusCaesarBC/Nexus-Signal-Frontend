@@ -489,6 +489,14 @@ const PatternBadge = styled.div`
         border-radius: 8px;
         padding: 8px 10px;
         margin-bottom: 6px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+
+        &:hover {
+            background: rgba(0, 0, 0, 0.4);
+            transform: translateX(4px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
 
         &:last-child {
             margin-bottom: 0;
@@ -703,6 +711,17 @@ const AdvancedChart = ({
 
     // Check if user has access to NEXUS AI (Premium/Elite only)
     const hasNexusAccess = canUseFeature('hasNexusAI') || hasPlanAccess('premium');
+
+    // Reset state when symbol changes to prevent showing stale data
+    useEffect(() => {
+        console.log(`[AdvancedChart] Symbol changed to ${symbol}, resetting state`);
+        setCurrentPrice(null);
+        setPriceChange(null);
+        setNexusPrediction(null);
+        setNexusError(null);
+        setPatterns([]);
+        setPatternError(null);
+    }, [symbol]);
 
     const timeframes = ['1m', '5m', '15m', '1h', '4h', '1D', '1W', '1M'];
     
@@ -1972,6 +1991,51 @@ const AdvancedChart = ({
         }
     };
 
+    // Handle clicking on a pattern to zoom/scroll chart to that location
+    const handlePatternClick = useCallback((pattern) => {
+        if (!chartRef.current || !data || data.length === 0) return;
+
+        console.log('[AdvancedChart] Pattern clicked:', pattern);
+
+        // Extract all indices from the pattern's points
+        const indices = [];
+        const extractIndices = (obj) => {
+            if (!obj) return;
+            if (typeof obj === 'object') {
+                if (obj.index !== undefined) {
+                    indices.push(obj.index);
+                }
+                Object.values(obj).forEach(v => extractIndices(v));
+            }
+        };
+        extractIndices(pattern.points);
+
+        if (indices.length === 0) {
+            console.log('[AdvancedChart] No indices found in pattern, centering on recent data');
+            // For patterns without indices, center on recent data
+            chartRef.current.timeScale().fitContent();
+            return;
+        }
+
+        // Find the min and max indices
+        const minIdx = Math.max(0, Math.min(...indices) - 5); // Add some padding
+        const maxIdx = Math.min(data.length - 1, Math.max(...indices) + 5);
+
+        console.log(`[AdvancedChart] Scrolling to indices ${minIdx}-${maxIdx}`);
+
+        // Get the timestamps for these indices
+        const fromTime = data[minIdx]?.time;
+        const toTime = data[maxIdx]?.time;
+
+        if (fromTime && toTime) {
+            // Set visible range to show the pattern
+            chartRef.current.timeScale().setVisibleRange({
+                from: fromTime,
+                to: toTime
+            });
+        }
+    }, [data]);
+
     return (
         <>
         <ChartContainer>
@@ -2235,7 +2299,12 @@ const AdvancedChart = ({
                                     {patterns.length} Pattern{patterns.length > 1 ? 's' : ''} Detected
                                 </div>
                                 {patterns.map((pattern, idx) => (
-                                    <div key={idx} className="pattern-item">
+                                    <div
+                                        key={idx}
+                                        className="pattern-item"
+                                        onClick={() => handlePatternClick(pattern)}
+                                        title="Click to zoom chart to this pattern"
+                                    >
                                         <div className="pattern-name">
                                             {pattern.type === 'bullish' ? (
                                                 <TrendingUp size={14} style={{ color: '#22c55e' }} />
@@ -2263,6 +2332,17 @@ const AdvancedChart = ({
                                                 )}
                                             </div>
                                         )}
+                                        <div style={{
+                                            fontSize: '0.65rem',
+                                            color: 'rgba(255,255,255,0.5)',
+                                            marginTop: '4px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '4px'
+                                        }}>
+                                            <Eye size={10} />
+                                            Click to view on chart
+                                        </div>
                                     </div>
                                 ))}
                             </>
