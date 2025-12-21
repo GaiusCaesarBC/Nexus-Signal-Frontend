@@ -16,6 +16,8 @@ import {
     Pie, ComposedChart, Area
 } from 'recharts';
 import api from '../api/axios';
+import { useSubscription } from '../context/SubscriptionContext';
+import UpgradePrompt from '../components/UpgradePrompt';
 
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`
@@ -394,6 +396,8 @@ const SectorRotationPage = () => {
     const { user } = useAuth();
     const { showToast } = useToast();
     const navigate = useNavigate();
+    const { canUseFeature } = useSubscription();
+    const [showUpgradePrompt, setShowUpgradePrompt] = useState(!canUseFeature('hasSectorAnalysis'));
 
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState(null);
@@ -444,6 +448,7 @@ const SectorRotationPage = () => {
     }
 
     return (
+        <>
         <PageContainer>
             <Header>
                 <Title>
@@ -739,6 +744,14 @@ const SectorRotationPage = () => {
                 </Card>
             </Content>
         </PageContainer>
+
+            <UpgradePrompt
+                isOpen={showUpgradePrompt}
+                onClose={() => setShowUpgradePrompt(false)}
+                feature="hasSectorAnalysis"
+                requiredPlan="premium"
+            />
+        </>
     );
 };
 

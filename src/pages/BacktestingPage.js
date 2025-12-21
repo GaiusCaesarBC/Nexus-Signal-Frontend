@@ -6,6 +6,8 @@ import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import styled, { keyframes } from 'styled-components';
 import api from '../api/axios';
+import { useSubscription } from '../context/SubscriptionContext';
+import UpgradePrompt from '../components/UpgradePrompt';
 import {
     ArrowLeft, Play, TrendingUp, TrendingDown, Target,
     Calendar, DollarSign, Percent, BarChart3, Activity,
@@ -651,6 +653,8 @@ function BacktestingPage() {
     const toast = useToast();
     const { theme } = useTheme();
     const { user } = useAuth();
+    const { canUseFeature } = useSubscription();
+    const [showUpgradePrompt, setShowUpgradePrompt] = useState(!canUseFeature('hasBacktesting'));
 
     const [activeTab, setActiveTab] = useState('results');
     const [loading, setLoading] = useState(false);
@@ -862,6 +866,7 @@ function BacktestingPage() {
     }
 
     return (
+        <>
         <PageContainer theme={theme}>
             <Header>
                 <BackButton onClick={() => navigate('/dashboard')} theme={theme}>
@@ -1249,6 +1254,14 @@ function BacktestingPage() {
                 </ResultsCard>
             </MainContent>
         </PageContainer>
+
+            <UpgradePrompt
+                isOpen={showUpgradePrompt}
+                onClose={() => setShowUpgradePrompt(false)}
+                feature="hasBacktesting"
+                requiredPlan="elite"
+            />
+        </>
     );
 }
 

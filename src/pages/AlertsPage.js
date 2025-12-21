@@ -11,6 +11,8 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import api from '../api/axios';
+import { useSubscription } from '../context/SubscriptionContext';
+import UpgradePrompt from '../components/UpgradePrompt';
 
 // Animations
 const fadeIn = keyframes`
@@ -853,6 +855,8 @@ const PATTERN_ALERT_TYPES = ['head_shoulders', 'inverse_head_shoulders', 'double
 const AlertsPage = () => {
     const { api: authApi } = useAuth();
     const toast = useToast();
+    const { canUseFeature } = useSubscription();
+    const [showUpgradePrompt, setShowUpgradePrompt] = useState(!canUseFeature('hasPriceAlerts'));
     const searchTimeoutRef = useRef(null);
     const searchInputRef = useRef(null);
 
@@ -1187,6 +1191,7 @@ const AlertsPage = () => {
     };
 
     return (
+        <>
         <PageContainer>
             <Header>
                 <Title>Smart Alerts</Title>
@@ -1692,6 +1697,14 @@ const AlertsPage = () => {
                 </Modal>
             )}
         </PageContainer>
+
+            <UpgradePrompt
+                isOpen={showUpgradePrompt}
+                onClose={() => setShowUpgradePrompt(false)}
+                feature="hasPriceAlerts"
+                requiredPlan="pro"
+            />
+        </>
     );
 };
 

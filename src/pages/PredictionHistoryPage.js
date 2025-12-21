@@ -15,6 +15,8 @@ import {
     Filter, RefreshCw, ChevronDown, Trophy, Flame,
     Eye, Trash2, Search, SlidersHorizontal
 } from 'lucide-react';
+import { useSubscription } from '../context/SubscriptionContext';
+import UpgradePrompt from '../components/UpgradePrompt';
 
 // Smart price formatter based on symbol
 const formatPredictionPrice = (price, symbol) => {
@@ -503,6 +505,8 @@ const PredictionHistoryPage = () => {
     const toast = useToast();
     const navigate = useNavigate();
     const { theme } = useTheme();
+    const { canUseFeature } = useSubscription();
+    const [showUpgradePrompt, setShowUpgradePrompt] = useState(!canUseFeature('hasPredictionHistory'));
 
     const [predictions, setPredictions] = useState([]);
     const [stats, setStats] = useState({
@@ -630,6 +634,7 @@ const PredictionHistoryPage = () => {
     }
 
     return (
+        <>
         <PageContainer theme={theme}>
             <Header>
                 <BackButton theme={theme} onClick={() => navigate('/predict')}>
@@ -876,6 +881,14 @@ const PredictionHistoryPage = () => {
                 )}
             </PredictionsContainer>
         </PageContainer>
+
+            <UpgradePrompt
+                isOpen={showUpgradePrompt}
+                onClose={() => setShowUpgradePrompt(false)}
+                feature="hasPredictionHistory"
+                requiredPlan="premium"
+            />
+        </>
     );
 };
 

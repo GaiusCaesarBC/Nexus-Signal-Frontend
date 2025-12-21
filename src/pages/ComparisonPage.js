@@ -13,6 +13,8 @@ import {
     ExternalLink
 } from 'lucide-react';
 import SEO from '../components/SEO';
+import { useSubscription } from '../context/SubscriptionContext';
+import UpgradePrompt from '../components/UpgradePrompt';
 import { Line, Bar } from 'react-chartjs-2';
 import {
     Chart as ChartJS,
@@ -649,6 +651,8 @@ const ComparisonPage = () => {
     const toast = useToast();
     const navigate = useNavigate();
     const { theme } = useTheme();
+    const { canUseFeature } = useSubscription();
+    const [showUpgradePrompt, setShowUpgradePrompt] = useState(!canUseFeature('hasStockComparison'));
 
     const [selectedAssets, setSelectedAssets] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
@@ -1107,6 +1111,7 @@ const ComparisonPage = () => {
     const hasCrypto = selectedAssets.some(a => a.type === 'crypto');
 
     return (
+        <>
         <PageContainer theme={theme}>
             <SEO
                 title="Stock & Crypto Comparison | Nexus Signal AI"
@@ -1653,6 +1658,14 @@ const ComparisonPage = () => {
                 )}
             </ContentWrapper>
         </PageContainer>
+
+            <UpgradePrompt
+                isOpen={showUpgradePrompt}
+                onClose={() => setShowUpgradePrompt(false)}
+                feature="hasStockComparison"
+                requiredPlan="pro"
+            />
+        </>
     );
 };
 

@@ -13,6 +13,8 @@ import {
     DollarSign, TrendingUp as TrendUp
 } from 'lucide-react';
 import { Treemap, ResponsiveContainer, Tooltip } from 'recharts';
+import { useSubscription } from '../context/SubscriptionContext';
+import UpgradePrompt from '../components/UpgradePrompt';
 
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`
@@ -590,6 +592,8 @@ const HeatmapPage = () => {
     const toast = useToast();
     const { theme } = useTheme();
     const navigate = useNavigate();
+    const { canUseFeature } = useSubscription();
+    const [showUpgradePrompt, setShowUpgradePrompt] = useState(!canUseFeature('hasHeatmap'));
 
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -835,6 +839,7 @@ const HeatmapPage = () => {
     const primaryColor = theme?.brand?.primary || '#00adef';
 
     return (
+        <>
         <PageContainer theme={theme}>
             <ContentWrapper>
                 {/* Header */}
@@ -1071,6 +1076,14 @@ const HeatmapPage = () => {
                 </HeatmapContainer>
             </ContentWrapper>
         </PageContainer>
+
+            <UpgradePrompt
+                isOpen={showUpgradePrompt}
+                onClose={() => setShowUpgradePrompt(false)}
+                feature="hasHeatmap"
+                requiredPlan="pro"
+            />
+        </>
     );
 };
 

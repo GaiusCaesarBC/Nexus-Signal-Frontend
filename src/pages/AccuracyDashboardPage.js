@@ -18,6 +18,8 @@ import {
     PieChart as RechartsPie, Pie, Legend
 } from 'recharts';
 import api from '../api/axios';
+import { useSubscription } from '../context/SubscriptionContext';
+import UpgradePrompt from '../components/UpgradePrompt';
 
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`
@@ -455,6 +457,8 @@ const AccuracyDashboardPage = () => {
     const toast = useToast();
     const { theme } = useTheme();
     const { api: authApi } = useAuth();
+    const { canUseFeature } = useSubscription();
+    const [showUpgradePrompt, setShowUpgradePrompt] = useState(!canUseFeature('hasAccuracyAnalytics'));
 
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -547,6 +551,7 @@ const AccuracyDashboardPage = () => {
         }));
 
     return (
+        <>
         <PageContainer>
             <Header>
                 <BackButton onClick={() => navigate('/predict')}>
@@ -813,6 +818,14 @@ const AccuracyDashboardPage = () => {
                 </Card>
             </Content>
         </PageContainer>
+
+            <UpgradePrompt
+                isOpen={showUpgradePrompt}
+                onClose={() => setShowUpgradePrompt(false)}
+                feature="hasAccuracyAnalytics"
+                requiredPlan="premium"
+            />
+        </>
     );
 };
 

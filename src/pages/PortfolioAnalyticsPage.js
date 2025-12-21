@@ -16,6 +16,8 @@ import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
     RadialBarChart, RadialBar
 } from 'recharts';
+import { useSubscription } from '../context/SubscriptionContext';
+import UpgradePrompt from '../components/UpgradePrompt';
 
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`
@@ -434,6 +436,8 @@ const PortfolioAnalyticsPage = () => {
     const navigate = useNavigate();
     const { api } = useAuth();
     const toast = useToast();
+    const { canUseFeature } = useSubscription();
+    const [showUpgradePrompt, setShowUpgradePrompt] = useState(!canUseFeature('hasPortfolioTracking'));
 
     const [loading, setLoading] = useState(true);
     const [analytics, setAnalytics] = useState(null);
@@ -497,6 +501,7 @@ const PortfolioAnalyticsPage = () => {
     const { overview, paperTrading, predictions, risk } = analytics || {};
 
     return (
+        <>
         <PageContainer>
             <Header>
                 <BackButton onClick={() => navigate('/portfolio')}>
@@ -804,6 +809,14 @@ const PortfolioAnalyticsPage = () => {
                 </Grid>
             </Content>
         </PageContainer>
+
+            <UpgradePrompt
+                isOpen={showUpgradePrompt}
+                onClose={() => setShowUpgradePrompt(false)}
+                feature="hasPortfolioTracking"
+                requiredPlan="premium"
+            />
+        </>
     );
 };
 

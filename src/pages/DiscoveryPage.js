@@ -14,6 +14,8 @@ import {
     Sparkles, Target, Zap, Eye, Globe, RefreshCw
 } from 'lucide-react';
 import AvatarWithBorder from '../components/vault/AvatarWithBorder';
+import { useSubscription } from '../context/SubscriptionContext';
+import UpgradePrompt from '../components/UpgradePrompt';
 
 // ============ BORDER COLORS MAP (for Avatar Frames) ============
 // Synced with vaultItems.js - uses primary color from each border's gradient
@@ -581,6 +583,8 @@ const DiscoveryPage = () => {
     const theme = useStyledTheme();
     const { profileThemeId } = useThemeContext();
     const { equipped } = useVault();
+    const { canUseFeature } = useSubscription();
+    const [showUpgradePrompt, setShowUpgradePrompt] = useState(!canUseFeature('hasDiscoveryPage'));
     
     const [searchQuery, setSearchQuery] = useState('');
     const [activeFilter, setActiveFilter] = useState('suggested');
@@ -835,6 +839,7 @@ const DiscoveryPage = () => {
     }
 
     return (
+        <>
         <PageContainer>
             <BackgroundOrbs>
                 <Orb $duration="25s" />
@@ -946,6 +951,14 @@ const DiscoveryPage = () => {
                 )}
             </Section>
         </PageContainer>
+
+            <UpgradePrompt
+                isOpen={showUpgradePrompt}
+                onClose={() => setShowUpgradePrompt(false)}
+                feature="hasDiscoveryPage"
+                requiredPlan="premium"
+            />
+        </>
     );
 };
 

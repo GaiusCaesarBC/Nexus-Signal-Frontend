@@ -14,6 +14,8 @@ import {
     Zap, Eye, Filter, Bitcoin
 } from 'lucide-react';
 import SEO from '../components/SEO';
+import { useSubscription } from '../context/SubscriptionContext';
+import UpgradePrompt from '../components/UpgradePrompt';
 
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`
@@ -1111,6 +1113,8 @@ const NewsPage = () => {
     const toast = useToast();
     const navigate = useNavigate();
     const theme = useTheme();
+    const { canUseFeature } = useSubscription();
+    const [showUpgradePrompt, setShowUpgradePrompt] = useState(!canUseFeature('hasNewsFeed'));
 
     const [loading, setLoading] = useState(true);
     const [newsArticles, setNewsArticles] = useState([]);
@@ -1323,6 +1327,7 @@ const NewsPage = () => {
     const accentColor = theme?.brand?.accent || '#8b5cf6';
 
     return (
+        <>
         <PageContainer>
             <SEO
                 title="Market News | AI Sentiment Analysis | Nexus Signal AI"
@@ -1799,6 +1804,14 @@ const NewsPage = () => {
                 </ModalOverlay>
             )}
         </PageContainer>
+
+            <UpgradePrompt
+                isOpen={showUpgradePrompt}
+                onClose={() => setShowUpgradePrompt(false)}
+                feature="hasNewsFeed"
+                requiredPlan="starter"
+            />
+        </>
     );
 };
 
