@@ -190,23 +190,31 @@ const PatternOverlay = ({ patterns, chartDimensions, priceScale, timeScale }) =>
     // Get pattern position for badge placement
     const getPatternPosition = (pattern) => {
         const points = pattern.points;
-        if (!points) return null;
+        if (!points) {
+            // Fallback: use currentPrice if available
+            if (pattern.currentPrice) {
+                return { x: chartWidth * 0.8, y: priceToY(pattern.currentPrice) };
+            }
+            return null;
+        }
 
-        // Single point patterns (candlestick)
+        // Single point patterns (candlestick - DOJI, HAMMER, MARUBOZU, etc.)
         if (points.index !== undefined && points.price !== undefined) {
             return { x: indexToX(points.index), y: priceToY(points.price) };
         }
 
-        // Two-candle patterns
+        // Two-candle patterns (Engulfing)
         if (points.engulfing) {
             return { x: indexToX(points.engulfing.index), y: priceToY(points.engulfing.price) };
         }
+
+        // Two-candle patterns (Piercing Line, Dark Cloud Cover)
         if (points.second && points.first) {
             return { x: indexToX(points.second.index), y: priceToY(points.second.price) };
         }
 
-        // Three-candle patterns
-        if (points.third) {
+        // Three-candle patterns (Morning/Evening Star, Three Soldiers/Crows)
+        if (points.third && points.third.index !== undefined) {
             return { x: indexToX(points.third.index), y: priceToY(points.third.price) };
         }
 
@@ -215,7 +223,7 @@ const PatternOverlay = ({ patterns, chartDimensions, priceScale, timeScale }) =>
             return { x: indexToX(points.head.index), y: priceToY(points.head.price) };
         }
 
-        // Double/Triple patterns
+        // Double Top/Bottom
         if (points.peak1 && points.peak2) {
             const avgX = (indexToX(points.peak1.index) + indexToX(points.peak2.index)) / 2;
             const avgY = (priceToY(points.peak1.price) + priceToY(points.peak2.price)) / 2;
@@ -227,14 +235,34 @@ const PatternOverlay = ({ patterns, chartDimensions, priceScale, timeScale }) =>
             return { x: avgX, y: avgY };
         }
 
-        // Wedge/Triangle/Flag/Pennant
-        if (points.apex) {
-            return { x: indexToX(points.apex.index), y: chartHeight / 2 };
+        // Triple Bottom/Top (first, second, third structure)
+        if (points.first && points.second && points.third) {
+            // Position at the third point (most recent)
+            return { x: indexToX(points.third.index), y: priceToY(points.third.price) };
         }
+
+        // Wedge/Triangle/Broadening - use upperEnd/lowerEnd for proper positioning
         if (points.upperEnd && points.lowerEnd) {
             const x = (indexToX(points.upperEnd.index) + indexToX(points.lowerEnd.index)) / 2;
             const y = (priceToY(points.upperEnd.price) + priceToY(points.lowerEnd.price)) / 2;
             return { x, y };
+        }
+
+        // Pennant - use poleEnd for positioning
+        if (points.poleEnd) {
+            return { x: indexToX(points.poleEnd.index), y: priceToY(points.poleEnd.price) };
+        }
+
+        // Flag patterns - use flagEnd or resistance/support
+        if (points.flagEnd) {
+            return { x: indexToX(points.flagEnd.index), y: priceToY(points.flagEnd.price) };
+        }
+
+        // Apex-based patterns (fallback for wedges/triangles without upperEnd/lowerEnd)
+        if (points.apex && points.apex.index !== undefined) {
+            // Try to get a better Y from pattern's current price
+            const y = pattern.currentPrice ? priceToY(pattern.currentPrice) : chartHeight / 2;
+            return { x: indexToX(points.apex.index), y };
         }
 
         // Cup and Handle
@@ -242,10 +270,31 @@ const PatternOverlay = ({ patterns, chartDimensions, priceScale, timeScale }) =>
             return { x: indexToX(points.bottom.index), y: priceToY(points.bottom.price) };
         }
 
-        // Rounding
+        // Rounding patterns
         if (points.curvePoints && points.curvePoints.length > 0) {
             const mid = points.curvePoints[Math.floor(points.curvePoints.length / 2)];
-            if (mid) return { x: indexToX(mid.index), y: priceToY(mid.price) };
+            if (mid && mid.index !== undefined) {
+                return { x: indexToX(mid.index), y: priceToY(mid.price) };
+            }
+        }
+
+        // Rounding - leftRim/rightRim or leftBase/rightBase
+        if (points.rightRim) {
+            return { x: indexToX(points.rightRim.index), y: priceToY(points.rightRim.price) };
+        }
+        if (points.rightBase) {
+            return { x: indexToX(points.rightBase.index), y: priceToY(points.rightBase.price) };
+        }
+
+        // Trend/S&R patterns
+        if (points.resistance !== undefined && points.support !== undefined) {
+            const midPrice = (points.resistance + points.support) / 2;
+            return { x: chartWidth * 0.8, y: priceToY(midPrice) };
+        }
+
+        // Ultimate fallback: use currentPrice at right side of chart
+        if (pattern.currentPrice) {
+            return { x: chartWidth * 0.75, y: priceToY(pattern.currentPrice) };
         }
 
         return null;
