@@ -13,6 +13,7 @@ import {
     ChevronRight, Check, Sparkles, Crown, ExternalLink
 } from 'lucide-react';
 import TwoFactorSettings from './TwoFactorSettings';
+import PushNotificationSettings from './PushNotificationSettings';
 
 const SettingsPage = () => {
     const { logout, api, user } = useAuth();
@@ -513,16 +514,18 @@ const SettingsPage = () => {
                     {/* NOTIFICATIONS TAB */}
                     {activeTab === 'notifications' && (
                         <>
+                            {/* Web Push Notifications */}
+                            <PushNotificationSettings />
+
                             <Section>
                                 <SectionHeader>
                                     <Bell size={20} />
-                                    <span>Notification Preferences</span>
+                                    <span>Email & In-App Preferences</span>
                                 </SectionHeader>
-                                
+
                                 <SectionContent>
                                     {[
                                         { key: 'email', title: 'Email Notifications', desc: 'Receive important updates via email' },
-                                        { key: 'push', title: 'Push Notifications', desc: 'Get instant alerts on your device' },
                                         { key: 'dailySummary', title: 'Daily Market Summary', desc: 'Receive a daily summary of market activity' },
                                         { key: 'priceAlerts', title: 'Price Alerts', desc: 'Get notified when stocks hit your targets' },
                                         { key: 'portfolioUpdates', title: 'Portfolio Updates', desc: 'Notifications about portfolio changes' },
@@ -534,8 +537,8 @@ const SettingsPage = () => {
                                                     <ToggleDesc>{item.desc}</ToggleDesc>
                                                 </ToggleText>
                                             </ToggleInfo>
-                                            <Toggle 
-                                                $active={form.notifications[item.key]} 
+                                            <Toggle
+                                                $active={form.notifications[item.key]}
                                                 onClick={() => toggleNotification(item.key)}
                                                 type="button"
                                             >
