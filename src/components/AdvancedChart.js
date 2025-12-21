@@ -5,7 +5,7 @@ import { createChart } from 'lightweight-charts';
 import styled, { keyframes, css } from 'styled-components';
 import {
     TrendingUp, Activity, BarChart3, Maximize2,
-    Download, Eye, EyeOff, RefreshCw, Sparkles, Target, Lock, Brain
+    Download, Eye, EyeOff, RefreshCw, Sparkles, Target, Lock, Brain, PenTool
 } from 'lucide-react';
 import {
     calculateSMA,
@@ -15,7 +15,10 @@ import {
     calculateMACD,
     calculateVWAP,
     calculateATR,
-    calculateStochastic
+    calculateStochastic,
+    calculateIchimoku,
+    calculateParabolicSAR,
+    calculateADX
 } from '../utils/indicators';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -23,6 +26,8 @@ import { useSubscription } from '../context/SubscriptionContext';
 import { formatCryptoPrice, formatStockPrice } from '../utils/priceFormatter';
 import UpgradePrompt from './UpgradePrompt';
 import PatternOverlay from './PatternOverlay';
+import DrawingTools from './DrawingTools';
+import MultiTimeframeView from './MultiTimeframeView';
 
 // Animation for NEXUS indicator
 const nexusPulse = keyframes`
@@ -711,6 +716,13 @@ const AdvancedChart = ({
     const [patternError, setPatternError] = useState(null);
     const [chartVisibleRange, setChartVisibleRange] = useState(null);
 
+    // Drawing Tools state
+    const [drawingEnabled, setDrawingEnabled] = useState(false);
+    const [chartDrawings, setChartDrawings] = useState([]);
+
+    // Multi-Timeframe state
+    const [showMultiTimeframe, setShowMultiTimeframe] = useState(false);
+
     // Check if user has access to NEXUS AI (Premium/Elite only)
     const hasNexusAccess = canUseFeature('hasNexusAI') || hasPlanAccess('premium');
 
@@ -737,10 +749,13 @@ const AdvancedChart = ({
         // Overlays
         { id: 'bb', label: 'Bollinger Bands', color: theme.brand?.accent || '#8b5cf6', category: 'overlay' },
         { id: 'vwap', label: 'VWAP', color: '#06b6d4', category: 'overlay' },
+        { id: 'ichimoku', label: 'Ichimoku Cloud', color: '#3b82f6', category: 'overlay' },
+        { id: 'psar', label: 'Parabolic SAR', color: '#10b981', category: 'overlay' },
         // Oscillators (shown as separate panel)
         { id: 'rsi', label: 'RSI (14)', color: '#a855f7', category: 'oscillator' },
         { id: 'macd', label: 'MACD', color: '#22c55e', category: 'oscillator' },
         { id: 'stoch', label: 'Stochastic', color: '#eab308', category: 'oscillator' },
+        { id: 'adx', label: 'ADX (14)', color: '#14b8a6', category: 'oscillator' },
         // Volatility
         { id: 'atr', label: 'ATR (14)', color: '#f43f5e', category: 'volatility' },
     ];
@@ -1103,6 +1118,25 @@ const AdvancedChart = ({
                         if (series.kLine) chartRef.current.removeSeries(series.kLine);
                         if (series.dLine) chartRef.current.removeSeries(series.dLine);
                     }
+                    // Handle Ichimoku Cloud (5 series)
+                    else if (key === 'ichimoku' && series && typeof series === 'object' && series.tenkan) {
+                        if (series.tenkan) chartRef.current.removeSeries(series.tenkan);
+                        if (series.kijun) chartRef.current.removeSeries(series.kijun);
+                        if (series.senkouA) chartRef.current.removeSeries(series.senkouA);
+                        if (series.senkouB) chartRef.current.removeSeries(series.senkouB);
+                        if (series.chikou) chartRef.current.removeSeries(series.chikou);
+                    }
+                    // Handle Parabolic SAR (up and down series)
+                    else if (key === 'psar' && series && typeof series === 'object' && series.up) {
+                        if (series.up) chartRef.current.removeSeries(series.up);
+                        if (series.down) chartRef.current.removeSeries(series.down);
+                    }
+                    // Handle ADX (adx, plusDI, minusDI)
+                    else if (key === 'adx' && series && typeof series === 'object' && series.adx) {
+                        if (series.adx) chartRef.current.removeSeries(series.adx);
+                        if (series.plusDI) chartRef.current.removeSeries(series.plusDI);
+                        if (series.minusDI) chartRef.current.removeSeries(series.minusDI);
+                    }
                     // Handle regular indicators (which are single series)
                     else if (series && typeof series.setData === 'function') {
                         chartRef.current.removeSeries(series);
@@ -1347,6 +1381,158 @@ const AdvancedChart = ({
                     });
 
                     indicatorSeriesRef.current[indicatorId] = series;
+                }
+
+                // Ichimoku Cloud - complex overlay with 5 components
+                if (indicatorId === 'ichimoku') {
+                    const ichimokuData = calculateIchimoku(data);
+
+                    // Tenkan-sen (Conversion Line) - Blue
+                    const tenkanSeries = chartRef.current.addLineSeries({
+                        color: '#3b82f6',
+                        lineWidth: 1,
+                        title: 'Tenkan-sen',
+                        lastValueVisible: false,
+                        priceLineVisible: false,
+                    });
+                    tenkanSeries.setData(ichimokuData.tenkanSen);
+
+                    // Kijun-sen (Base Line) - Red
+                    const kijunSeries = chartRef.current.addLineSeries({
+                        color: '#ef4444',
+                        lineWidth: 1,
+                        title: 'Kijun-sen',
+                        lastValueVisible: false,
+                        priceLineVisible: false,
+                    });
+                    kijunSeries.setData(ichimokuData.kijunSen);
+
+                    // Senkou Span A (Leading Span A) - Green (upper cloud boundary when bullish)
+                    const senkouASeries = chartRef.current.addLineSeries({
+                        color: 'rgba(16, 185, 129, 0.5)',
+                        lineWidth: 1,
+                        title: 'Senkou A',
+                        lastValueVisible: false,
+                        priceLineVisible: false,
+                        crosshairMarkerVisible: false,
+                    });
+                    senkouASeries.setData(ichimokuData.senkouSpanA);
+
+                    // Senkou Span B (Leading Span B) - Red (lower cloud boundary when bullish)
+                    const senkouBSeries = chartRef.current.addLineSeries({
+                        color: 'rgba(239, 68, 68, 0.5)',
+                        lineWidth: 1,
+                        title: 'Senkou B',
+                        lastValueVisible: false,
+                        priceLineVisible: false,
+                        crosshairMarkerVisible: false,
+                    });
+                    senkouBSeries.setData(ichimokuData.senkouSpanB);
+
+                    // Chikou Span (Lagging Span) - Purple
+                    const chikouSeries = chartRef.current.addLineSeries({
+                        color: '#a855f7',
+                        lineWidth: 1,
+                        title: 'Chikou',
+                        lastValueVisible: false,
+                        priceLineVisible: false,
+                        lineStyle: 2, // Dotted
+                    });
+                    chikouSeries.setData(ichimokuData.chikouSpan);
+
+                    indicatorSeriesRef.current[indicatorId] = {
+                        tenkan: tenkanSeries,
+                        kijun: kijunSeries,
+                        senkouA: senkouASeries,
+                        senkouB: senkouBSeries,
+                        chikou: chikouSeries
+                    };
+                }
+
+                // Parabolic SAR - displayed as dots on chart
+                if (indicatorId === 'psar') {
+                    const sarData = calculateParabolicSAR(data);
+
+                    // Create separate series for up and down dots
+                    const upDots = sarData.filter(d => d.color.includes('129'));
+                    const downDots = sarData.filter(d => d.color.includes('68'));
+
+                    const upSeries = chartRef.current.addLineSeries({
+                        color: '#10b981',
+                        lineWidth: 0,
+                        title: 'SAR Up',
+                        lastValueVisible: false,
+                        priceLineVisible: false,
+                        pointMarkersVisible: true,
+                        pointMarkersRadius: 3,
+                    });
+                    upSeries.setData(upDots.map(d => ({ time: d.time, value: d.value })));
+
+                    const downSeries = chartRef.current.addLineSeries({
+                        color: '#ef4444',
+                        lineWidth: 0,
+                        title: 'SAR Down',
+                        lastValueVisible: false,
+                        priceLineVisible: false,
+                        pointMarkersVisible: true,
+                        pointMarkersRadius: 3,
+                    });
+                    downSeries.setData(downDots.map(d => ({ time: d.time, value: d.value })));
+
+                    indicatorSeriesRef.current[indicatorId] = {
+                        up: upSeries,
+                        down: downSeries
+                    };
+                }
+
+                // ADX - displayed in separate pane with +DI and -DI
+                if (indicatorId === 'adx') {
+                    const adxData = calculateADX(data, 14);
+
+                    // ADX Line (main trend strength) - Teal
+                    const adxSeries = chartRef.current.addLineSeries({
+                        color: '#14b8a6',
+                        lineWidth: 2,
+                        title: 'ADX',
+                        priceScaleId: 'adx',
+                        lastValueVisible: true,
+                        priceLineVisible: false,
+                    });
+                    adxSeries.setData(adxData.adx);
+
+                    // +DI Line - Green
+                    const plusDISeries = chartRef.current.addLineSeries({
+                        color: '#22c55e',
+                        lineWidth: 1,
+                        title: '+DI',
+                        priceScaleId: 'adx',
+                        lastValueVisible: false,
+                        priceLineVisible: false,
+                    });
+                    plusDISeries.setData(adxData.plusDI);
+
+                    // -DI Line - Red
+                    const minusDISeries = chartRef.current.addLineSeries({
+                        color: '#ef4444',
+                        lineWidth: 1,
+                        title: '-DI',
+                        priceScaleId: 'adx',
+                        lastValueVisible: false,
+                        priceLineVisible: false,
+                    });
+                    minusDISeries.setData(adxData.minusDI);
+
+                    // Configure ADX scale (0-100)
+                    chartRef.current.priceScale('adx').applyOptions({
+                        scaleMargins: { top: 0.85, bottom: 0 },
+                        borderVisible: false,
+                    });
+
+                    indicatorSeriesRef.current[indicatorId] = {
+                        adx: adxSeries,
+                        plusDI: plusDISeries,
+                        minusDI: minusDISeries
+                    };
                 }
 
             } catch (error) {
@@ -2094,6 +2280,42 @@ const AdvancedChart = ({
                     )}
                 </PatternButton>
 
+                {/* Drawing Tools Button */}
+                <PatternButton
+                    $active={drawingEnabled}
+                    $loading={false}
+                    $locked={false}
+                    onClick={() => setDrawingEnabled(!drawingEnabled)}
+                    title="Drawing Tools - Trendlines, Fibonacci, Annotations"
+                >
+                    <PenTool size={14} />
+                    Draw
+                    {chartDrawings.length > 0 && (
+                        <span style={{
+                            marginLeft: '4px',
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            fontSize: '0.7rem',
+                            background: '#3b82f633',
+                            color: '#3b82f6'
+                        }}>
+                            {chartDrawings.length}
+                        </span>
+                    )}
+                </PatternButton>
+
+                {/* Multi-Timeframe Button */}
+                <PatternButton
+                    $active={showMultiTimeframe}
+                    $loading={false}
+                    $locked={false}
+                    onClick={() => setShowMultiTimeframe(!showMultiTimeframe)}
+                    title="Multi-Timeframe Analysis"
+                >
+                    <Maximize2 size={14} />
+                    MTF
+                </PatternButton>
+
                 <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.1)', margin: '0 4px' }} />
 
                 {indicators.map(indicator => (
@@ -2127,6 +2349,25 @@ const AdvancedChart = ({
                             ).map(d => d.high))
                         }}
                         timeScale={chartVisibleRange.timeScale}
+                    />
+                )}
+
+                {/* Drawing Tools - Trendlines, Fibonacci, Annotations */}
+                {drawingEnabled && chartVisibleRange && data.length > 0 && (
+                    <DrawingTools
+                        chartDimensions={chartVisibleRange.dimensions}
+                        priceScale={{
+                            min: Math.min(...data.slice(
+                                Math.max(0, chartVisibleRange.timeScale.start),
+                                Math.min(data.length, chartVisibleRange.timeScale.end + 1)
+                            ).map(d => d.low)),
+                            max: Math.max(...data.slice(
+                                Math.max(0, chartVisibleRange.timeScale.start),
+                                Math.min(data.length, chartVisibleRange.timeScale.end + 1)
+                            ).map(d => d.high))
+                        }}
+                        timeScale={chartVisibleRange.timeScale}
+                        onDrawingsChange={setChartDrawings}
                     />
                 )}
 
@@ -2289,6 +2530,15 @@ const AdvancedChart = ({
                 )}
             </ChartWrapper>
         </ChartContainer>
+
+        {/* Multi-Timeframe Analysis View */}
+        {showMultiTimeframe && (
+            <MultiTimeframeView
+                symbol={symbol}
+                api={api}
+                onClose={() => setShowMultiTimeframe(false)}
+            />
+        )}
 
         {/* Upgrade Prompt for NEXUS AI */}
         <UpgradePrompt
