@@ -42,6 +42,7 @@ const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const PredictPage = lazy(() => import('./pages/PredictionsPage'));
 const ChatPage = lazy(() => import('./pages/ChatPage'));
 const PricingPage = lazy(() => import('./pages/PricingPage'));
+const PriceComparisonPage = lazy(() => import('./pages/PriceComparisonPage'));
 const WatchlistPage = lazy(() => import('./pages/WatchlistPage'));
 const PortfolioPage = lazy(() => import('./pages/PortfolioPage'));
 const AboutPage = lazy(() => import('./pages/AboutPage'));
@@ -136,6 +137,7 @@ function AppContent() {
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/register" element={<RegisterPage />} />
                     <Route path="/pricing" element={<PricingPage />} />
+                    <Route path="/pricing/compare" element={<PriceComparisonPage />} />
                     <Route path="/about" element={<AboutPage />} />
                     <Route path="/terms" element={<TermsOfServicePage />} />
                     <Route path="/privacy" element={<PrivacyPolicyPage />} />

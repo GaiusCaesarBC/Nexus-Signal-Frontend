@@ -1190,7 +1190,7 @@ const Navbar = () => {
     const mobileSearchRef = useRef(null);
     const searchInputRef = useRef(null);
     
-    const [dropdowns, setDropdowns] = useState({ trading: false, analysis: false, community: false });
+    const [dropdowns, setDropdowns] = useState({ trading: false, analysis: false, community: false, pricing: false });
     const [userDropdownOpen, setUserDropdownOpen] = useState(false);
     const [notificationsOpen, setNotificationsOpen] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -1406,6 +1406,10 @@ const Navbar = () => {
             { path: '/vault', label: 'The Vault', icon: DollarSign, section: 'Rewards' },
             { path: '/equipped', label: 'Equipped Items', icon: Award },
         ],
+        pricing: [
+            { path: '/pricing', label: 'View Plans', icon: DollarSign },
+            { path: '/pricing/compare', label: 'Compare Features', icon: BarChart3 },
+        ],
     };
 
     const handleDropdownToggle = (dropdown) => {
@@ -1413,6 +1417,7 @@ const Navbar = () => {
             trading: dropdown === 'trading' ? !dropdowns.trading : false,
             analysis: dropdown === 'analysis' ? !dropdowns.analysis : false,
             community: dropdown === 'community' ? !dropdowns.community : false,
+            pricing: dropdown === 'pricing' ? !dropdowns.pricing : false,
         });
         setUserDropdownOpen(false);
         setNotificationsOpen(false);
@@ -1493,13 +1498,13 @@ const Navbar = () => {
     const getUserInitials = () => { if (!user?.name) return 'U'; return user.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2); };
     const isPathActive = (paths) => paths.some(item => location.pathname === item.path);
 
-    useEffect(() => { setMobileMenuOpen(false); setUserDropdownOpen(false); setNotificationsOpen(false); setShowSearchResults(false); setSearchQuery(''); setSearchResults({ stocks: [], crypto: [] }); setDropdowns({ trading: false, analysis: false, community: false }); }, [location]);
+    useEffect(() => { setMobileMenuOpen(false); setUserDropdownOpen(false); setNotificationsOpen(false); setShowSearchResults(false); setSearchQuery(''); setSearchResults({ stocks: [], crypto: [] }); setDropdowns({ trading: false, analysis: false, community: false, pricing: false }); }, [location]);
 
     useEffect(() => {
         const handleClickOutside = (e) => {
             if (!e.target.closest('[data-notification-panel]') && !e.target.closest('[data-notification-button]')) setNotificationsOpen(false);
             if (!e.target.closest('[data-user-menu]')) setUserDropdownOpen(false);
-            if (!e.target.closest('[data-dropdown]')) setDropdowns({ trading: false, analysis: false, community: false });
+            if (!e.target.closest('[data-dropdown]')) setDropdowns({ trading: false, analysis: false, community: false, pricing: false });
             if (searchRef.current && !searchRef.current.contains(e.target) && mobileSearchRef.current && !mobileSearchRef.current.contains(e.target)) setShowSearchResults(false);
         };
         document.addEventListener('mousedown', handleClickOutside);
@@ -1543,12 +1548,12 @@ const Navbar = () => {
                             <NavItem data-dropdown><DropdownTrigger onClick={() => handleDropdownToggle('trading')} $open={dropdowns.trading} $active={isPathActive(navStructure.trading)}><Briefcase size={16} />Trading<ChevronDown size={14} /></DropdownTrigger>{dropdowns.trading && <DropdownMenu>{navStructure.trading.map(item => { const Icon = item.icon; return <DropdownItem key={item.path} to={item.path} $active={location.pathname === item.path}><Icon size={16} />{item.label}</DropdownItem>; })}</DropdownMenu>}</NavItem>
                             <NavItem data-dropdown><DropdownTrigger onClick={() => handleDropdownToggle('analysis')} $open={dropdowns.analysis} $active={isPathActive(navStructure.analysis)}><BarChart3 size={16} />Analysis<ChevronDown size={14} /></DropdownTrigger>{dropdowns.analysis && <DropdownMenu>{renderDropdownItems(navStructure.analysis)}</DropdownMenu>}</NavItem>
                             <NavItem data-dropdown><DropdownTrigger onClick={() => handleDropdownToggle('community')} $open={dropdowns.community} $active={isPathActive(navStructure.community)}><Users size={16} />Community<ChevronDown size={14} /></DropdownTrigger>{dropdowns.community && <DropdownMenu>{renderDropdownItems(navStructure.community)}</DropdownMenu>}</NavItem>
-                            <NavLink to="/pricing" $active={location.pathname === '/pricing'}><DollarSign size={16} />Pricing</NavLink>
+                            <NavItem data-dropdown><DropdownTrigger onClick={() => handleDropdownToggle('pricing')} $open={dropdowns.pricing} $active={isPathActive(navStructure.pricing)}><DollarSign size={16} />Pricing<ChevronDown size={14} /></DropdownTrigger>{dropdowns.pricing && <DropdownMenu>{navStructure.pricing.map(item => { const Icon = item.icon; return <DropdownItem key={item.path} to={item.path} $active={location.pathname === item.path}><Icon size={16} />{item.label}</DropdownItem>; })}</DropdownMenu>}</NavItem>
                         </NavLinks>
                         <UserSection>
                             <NavbarGamification />
                             <div style={{ position: 'relative' }}>
-                                <NotificationButton onClick={() => { setNotificationsOpen(!notificationsOpen); setUserDropdownOpen(false); setDropdowns({ trading: false, analysis: false, community: false }); }} data-notification-button><Bell size={20} />{unreadCount > 0 && <NotificationBadge>{unreadCount}</NotificationBadge>}</NotificationButton>
+                                <NotificationButton onClick={() => { setNotificationsOpen(!notificationsOpen); setUserDropdownOpen(false); setDropdowns({ trading: false, analysis: false, community: false, pricing: false }); }} data-notification-button><Bell size={20} />{unreadCount > 0 && <NotificationBadge>{unreadCount}</NotificationBadge>}</NotificationButton>
                                 {notificationsOpen && (
                                     <NotificationPanel data-notification-panel>
                                         <NotificationHeader><NotificationTitle>Notifications</NotificationTitle>{unreadCount > 0 && <MarkAllRead onClick={handleMarkAllRead}>Mark all read</MarkAllRead>}</NotificationHeader>
@@ -1559,7 +1564,7 @@ const Navbar = () => {
                                 )}
                             </div>
                             <div style={{ position: 'relative' }} data-user-menu>
-                               <UserMenuButton onClick={() => { setUserDropdownOpen(!userDropdownOpen); setNotificationsOpen(false); setDropdowns({ trading: false, analysis: false, community: false }); }}>
+                               <UserMenuButton onClick={() => { setUserDropdownOpen(!userDropdownOpen); setNotificationsOpen(false); setDropdowns({ trading: false, analysis: false, community: false, pricing: false }); }}>
     <User size={18} />
     <UserName>{user?.name || 'User'}</UserName>
     <DropdownIconStyled size={18} $open={userDropdownOpen} />
@@ -1618,7 +1623,7 @@ const Navbar = () => {
                                 <MobileNavCategory><MobileCategoryTitle><BarChart3 size={16} />Analysis & Tools</MobileCategoryTitle>{navStructure.analysis.map(item => { const Icon = item.icon; return <MobileNavLink key={item.path} to={item.path} $active={location.pathname === item.path} onClick={() => setMobileMenuOpen(false)}><Icon size={22} />{item.label}</MobileNavLink>; })}</MobileNavCategory>
                                 <MobileNavCategory><MobileCategoryTitle><Users size={16} />Community & Rewards</MobileCategoryTitle>{navStructure.community.map(item => { const Icon = item.icon; return <MobileNavLink key={item.path} to={item.path} $active={location.pathname === item.path} onClick={() => setMobileMenuOpen(false)}><Icon size={22} />{item.label}</MobileNavLink>; })}</MobileNavCategory>
                                 <Divider />
-                                <MobileNavLink to="/pricing" $active={location.pathname === '/pricing'} onClick={() => setMobileMenuOpen(false)}><DollarSign size={22} />Pricing</MobileNavLink>
+                                <MobileNavCategory><MobileCategoryTitle><DollarSign size={16} />Pricing</MobileCategoryTitle>{navStructure.pricing.map(item => { const Icon = item.icon; return <MobileNavLink key={item.path} to={item.path} $active={location.pathname === item.path} onClick={() => setMobileMenuOpen(false)}><Icon size={22} />{item.label}</MobileNavLink>; })}</MobileNavCategory>
                                 <MobileNavLink to="/profile" onClick={() => setMobileMenuOpen(false)}><User size={22} />Profile</MobileNavLink>
                                 <MobileNavLink to="/settings" onClick={() => setMobileMenuOpen(false)}><Settings size={22} />Settings</MobileNavLink>
                                 <MobileNavLink to="/account" onClick={() => setMobileMenuOpen(false)}><UserCog size={22} />Account</MobileNavLink>
