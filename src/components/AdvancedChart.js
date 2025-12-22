@@ -1,6 +1,6 @@
 // client/src/components/AdvancedChart.js - Professional Trading Charts - THEMED VERSION
 
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { createChart } from 'lightweight-charts';
 import styled, { keyframes, css } from 'styled-components';
 import {
@@ -737,6 +737,28 @@ const AdvancedChart = ({
         setPatternError(null);
     }, [symbol]);
 
+    // CRITICAL: Memoized sanitized data to prevent "Value is null" crashes
+    // Filter out any candles with null/undefined/NaN/invalid values
+    const sanitizedData = useMemo(() => {
+        if (!data || data.length === 0) return [];
+
+        const filtered = data.filter(candle => {
+            if (!candle) return false;
+            const { time, open, high, low, close } = candle;
+            return time != null &&
+                   Number.isFinite(open) && open > 0 &&
+                   Number.isFinite(high) && high > 0 &&
+                   Number.isFinite(low) && low > 0 &&
+                   Number.isFinite(close) && close > 0;
+        });
+
+        if (filtered.length !== data.length) {
+            console.warn(`[AdvancedChart] Sanitized data: filtered out ${data.length - filtered.length} invalid candles`);
+        }
+
+        return filtered;
+    }, [data]);
+
     const timeframes = ['1m', '5m', '15m', '1h', '4h', '1D', '1W', '1M'];
     
     const indicators = [
@@ -925,8 +947,8 @@ const AdvancedChart = ({
     useEffect(() => {
         if (!chartRef.current) return;
 
-        // If data is empty, clear the chart and reset state
-        if (data.length === 0) {
+        // If sanitized data is empty, clear the chart and reset state
+        if (sanitizedData.length === 0) {
             console.log(`[AdvancedChart] Data cleared for ${symbol}, removing series`);
             if (mainSeriesRef.current) {
                 try {
@@ -975,26 +997,11 @@ const AdvancedChart = ({
             return;
         }
 
-        console.log(`[AdvancedChart] Updating chart with ${data.length} candles for ${symbol}, timeframe=${timeframe}`);
+        console.log(`[AdvancedChart] Updating chart with ${sanitizedData.length} candles for ${symbol}, timeframe=${timeframe}`);
 
-        // CRITICAL: Filter out any candles with null/undefined/NaN values
-        // This prevents TradingView Lightweight Charts "Value is null" crash
-        const sanitizedData = data.filter(candle => {
-            if (!candle) return false;
-            const { time, open, high, low, close } = candle;
-            return time != null &&
-                   Number.isFinite(open) && open > 0 &&
-                   Number.isFinite(high) && high > 0 &&
-                   Number.isFinite(low) && low > 0 &&
-                   Number.isFinite(close) && close > 0;
-        });
-
-        if (sanitizedData.length !== data.length) {
-            console.warn(`[AdvancedChart] Filtered out ${data.length - sanitizedData.length} invalid candles`);
-        }
-
+        // sanitizedData is already filtered via useMemo - no need to filter again
         if (sanitizedData.length === 0) {
-            console.error('[AdvancedChart] No valid candles after filtering');
+            console.error('[AdvancedChart] No valid candles in sanitizedData');
             return;
         }
 
@@ -1080,25 +1087,16 @@ const AdvancedChart = ({
         }
 
         chartRef.current?.timeScale().fitContent();
-    }, [chartType, data, theme, symbol, timeframe]);
+    }, [chartType, sanitizedData, theme, symbol, timeframe]);
 
     // Update chart data
     // Update volume and price info when data changes
     useEffect(() => {
-        if (!volumeSeriesRef.current || data.length === 0) return;
+        if (!volumeSeriesRef.current || sanitizedData.length === 0) return;
 
         try {
-            // Filter out invalid candles before processing volume
-            const validData = data.filter(d =>
-                d && d.time != null &&
-                Number.isFinite(d.open) && Number.isFinite(d.close) &&
-                d.open > 0 && d.close > 0
-            );
-
-            if (validData.length === 0) return;
-
-            // Update volume data
-            const volumeData = validData.map(d => ({
+            // Update volume data (using sanitizedData which is already filtered)
+            const volumeData = sanitizedData.map(d => ({
                 time: d.time,
                 value: d.volume || 0,
                 color: d.close >= d.open ? `${theme.success || '#10b981'}80` : `${theme.error || '#ef4444'}80`
@@ -1106,13 +1104,13 @@ const AdvancedChart = ({
             volumeSeriesRef.current.setData(volumeData);
 
             // Update current price and price change
-            if (validData.length > 0) {
-                const latest = validData[validData.length - 1];
+            if (sanitizedData.length > 0) {
+                const latest = sanitizedData[sanitizedData.length - 1];
                 setCurrentPrice(latest.close);
                 setLastUpdated(new Date());
 
-                if (validData.length > 1) {
-                    const previous = validData[validData.length - 2];
+                if (sanitizedData.length > 1) {
+                    const previous = sanitizedData[sanitizedData.length - 2];
                     const change = latest.close - previous.close;
                     const changePercent = (change / previous.close) * 100;
                     setPriceChange({ amount: change, percent: changePercent });
@@ -1121,21 +1119,14 @@ const AdvancedChart = ({
         } catch (error) {
             console.error('Error updating chart data:', error);
         }
-    }, [data, theme]);
+    }, [sanitizedData, theme]);
 
     // Update indicators
     useEffect(() => {
-        if (!chartRef.current || data.length === 0) return;
+        if (!chartRef.current || sanitizedData.length === 0) return;
 
-        // Filter out invalid candles before processing indicators
-        const validData = data.filter(d =>
-            d && d.time != null &&
-            Number.isFinite(d.open) && Number.isFinite(d.high) &&
-            Number.isFinite(d.low) && Number.isFinite(d.close) &&
-            d.open > 0 && d.high > 0 && d.low > 0 && d.close > 0
-        );
-
-        if (validData.length === 0) return;
+        // Use sanitizedData directly (already filtered via useMemo)
+        const validData = sanitizedData;
 
         // Remove old indicators safely
         Object.entries(indicatorSeriesRef.current).forEach(([key, series]) => {
@@ -1579,7 +1570,7 @@ const AdvancedChart = ({
                 console.error(`Error adding indicator ${indicatorId}:`, error);
             }
         });
-    }, [activeIndicators, data, theme]);
+    }, [activeIndicators, sanitizedData, theme]);
 
     // Fetch NEXUS AI prediction when enabled
     const fetchNexusPrediction = useCallback(async () => {
@@ -1696,13 +1687,13 @@ const AdvancedChart = ({
         }
 
         // Draw new prediction visualization if we have prediction data
-        if (nexusEnabled && nexusPrediction && nexusPrediction.targetPrice && data.length > 0) {
+        if (nexusEnabled && nexusPrediction && nexusPrediction.targetPrice && sanitizedData.length > 0) {
             try {
                 const isUp = nexusPrediction.direction === 'UP';
                 const lineColor = isUp ? '#3b82f6' : '#f97316'; // Blue for UP, Orange for DOWN
 
-                // Get the last candle (current price point)
-                const lastCandle = data[data.length - 1];
+                // Get the last candle (current price point) - use sanitizedData to avoid null values
+                const lastCandle = sanitizedData[sanitizedData.length - 1];
                 const currentPrice = lastCandle.close;
                 const currentTime = lastCandle.time;
 
@@ -1799,24 +1790,24 @@ const AdvancedChart = ({
         }
 
         // If patterns are disabled or no patterns, exit
-        if (!patternEnabled || patterns.length === 0 || data.length === 0) {
+        if (!patternEnabled || patterns.length === 0 || sanitizedData.length === 0) {
             return;
         }
 
         console.log(`[PATTERN] Drawing ${patterns.length} patterns on chart...`);
 
-        // Get time range from data
-        const startTime = data[0].time;
-        const endTime = data[data.length - 1].time;
+        // Get time range from sanitized data (already filtered for null values)
+        const startTime = sanitizedData[0].time;
+        const endTime = sanitizedData[sanitizedData.length - 1].time;
 
         // Collect all markers for the main series
         const allMarkers = [];
 
         // Helper to add arrow marker at a specific index
         const addMarker = (index, position, color, text) => {
-            if (index >= 0 && index < data.length) {
+            if (index >= 0 && index < sanitizedData.length && sanitizedData[index]?.time) {
                 allMarkers.push({
-                    time: data[index].time,
+                    time: sanitizedData[index].time,
                     position: position, // 'aboveBar' or 'belowBar'
                     color: color,
                     shape: position === 'aboveBar' ? 'arrowDown' : 'arrowUp',
@@ -1896,7 +1887,7 @@ const AdvancedChart = ({
 
                 else if (pattern.pattern === 'ASCENDING_TRIANGLE' || pattern.pattern === 'DESCENDING_TRIANGLE') {
                     // For triangles, mark the apex area with a single arrow
-                    const recentIdx = data.length - 1;
+                    const recentIdx = sanitizedData.length - 1;
                     addMarker(recentIdx, isBullish ? 'belowBar' : 'aboveBar', patternColor, '▲');
                 }
 
@@ -1906,19 +1897,19 @@ const AdvancedChart = ({
                         addMarker(pattern.points.poleStart.index, isBullish ? 'belowBar' : 'aboveBar', patternColor, 'P');
                     }
                     // Mark current consolidation
-                    const recentIdx = data.length - 1;
+                    const recentIdx = sanitizedData.length - 1;
                     addMarker(recentIdx, isBullish ? 'belowBar' : 'aboveBar', patternColor, 'F');
                 }
 
                 else if (pattern.pattern === 'UPTREND' || pattern.pattern === 'DOWNTREND') {
                     // Mark trend direction with arrow at recent candle
-                    const recentIdx = data.length - 1;
+                    const recentIdx = sanitizedData.length - 1;
                     addMarker(recentIdx, isBullish ? 'belowBar' : 'aboveBar', patternColor, isBullish ? '↑' : '↓');
                 }
 
                 // NEW PATTERNS - Wedges
                 else if (pattern.pattern === 'RISING_WEDGE' || pattern.pattern === 'FALLING_WEDGE') {
-                    const recentIdx = data.length - 1;
+                    const recentIdx = sanitizedData.length - 1;
                     addMarker(recentIdx, isBullish ? 'belowBar' : 'aboveBar', patternColor, '⟨⟩');
                 }
 
@@ -1927,7 +1918,7 @@ const AdvancedChart = ({
                     if (pattern.points?.poleStart?.index !== undefined) {
                         addMarker(pattern.points.poleStart.index, isBullish ? 'belowBar' : 'aboveBar', patternColor, 'P');
                     }
-                    const recentIdx = data.length - 1;
+                    const recentIdx = sanitizedData.length - 1;
                     addMarker(recentIdx, isBullish ? 'belowBar' : 'aboveBar', patternColor, '▷');
                 }
 
@@ -1954,7 +1945,7 @@ const AdvancedChart = ({
 
                 // NEW PATTERNS - Broadening patterns
                 else if (pattern.pattern === 'BROADENING_TOP' || pattern.pattern === 'BROADENING_BOTTOM') {
-                    const recentIdx = data.length - 1;
+                    const recentIdx = sanitizedData.length - 1;
                     addMarker(recentIdx, isBullish ? 'belowBar' : 'aboveBar', patternColor, '◇');
                 }
 
@@ -1989,7 +1980,7 @@ const AdvancedChart = ({
             console.log(`[PATTERN] Added ${allMarkers.length} arrow markers to chart`);
         }
 
-    }, [patternEnabled, patterns, data]);
+    }, [patternEnabled, patterns, sanitizedData]);
 
     // Toggle NEXUS indicator (Premium/Elite only)
     const toggleNexus = () => {
@@ -2007,14 +1998,14 @@ const AdvancedChart = ({
 
     // Handle live price updates - update chart in real-time
     useEffect(() => {
-        if (!livePrice || !mainSeriesRef.current || data.length === 0) {
+        if (!livePrice || !mainSeriesRef.current || sanitizedData.length === 0) {
             return;
         }
 
         console.log(`[AdvancedChart] Live price update: ${symbol} = $${livePrice}`);
 
         try {
-            const lastCandle = data[data.length - 1];
+            const lastCandle = sanitizedData[sanitizedData.length - 1];
             if (!lastCandle) return;
 
             // Create a new timestamp for the current time (for live updates)
@@ -2046,8 +2037,8 @@ const AdvancedChart = ({
             setLastUpdated(new Date());
 
             // Update price change (compare to first candle's open for accurate daily change)
-            if (data.length > 0) {
-                const firstCandle = data[0];
+            if (sanitizedData.length > 0) {
+                const firstCandle = sanitizedData[0];
                 const change = livePrice - firstCandle.open;
                 const changePercent = (change / firstCandle.open) * 100;
                 setPriceChange({ amount: change, percent: changePercent });
@@ -2055,7 +2046,7 @@ const AdvancedChart = ({
         } catch (error) {
             console.error('[AdvancedChart] Live update error:', error);
         }
-    }, [livePrice, data, chartType, symbol]);
+    }, [livePrice, sanitizedData, chartType, symbol]);
 
     const handleTimeframeChange = (tf) => {
         setTimeframe(tf);
@@ -2093,7 +2084,7 @@ const AdvancedChart = ({
 
     // Handle clicking on a pattern to zoom/scroll chart to that location
     const handlePatternClick = useCallback((pattern) => {
-        if (!chartRef.current || !data || data.length === 0) return;
+        if (!chartRef.current || !sanitizedData || sanitizedData.length === 0) return;
 
         console.log('[AdvancedChart] Pattern clicked:', pattern);
 
@@ -2119,13 +2110,13 @@ const AdvancedChart = ({
 
         // Find the min and max indices
         const minIdx = Math.max(0, Math.min(...indices) - 5); // Add some padding
-        const maxIdx = Math.min(data.length - 1, Math.max(...indices) + 5);
+        const maxIdx = Math.min(sanitizedData.length - 1, Math.max(...indices) + 5);
 
         console.log(`[AdvancedChart] Scrolling to indices ${minIdx}-${maxIdx}`);
 
-        // Get the timestamps for these indices
-        const fromTime = data[minIdx]?.time;
-        const toTime = data[maxIdx]?.time;
+        // Get the timestamps for these indices (using sanitizedData to avoid null values)
+        const fromTime = sanitizedData[minIdx]?.time;
+        const toTime = sanitizedData[maxIdx]?.time;
 
         if (fromTime && toTime) {
             // Set visible range to show the pattern
@@ -2134,7 +2125,7 @@ const AdvancedChart = ({
                 to: toTime
             });
         }
-    }, [data]);
+    }, [sanitizedData]);
 
     return (
         <>
@@ -2374,18 +2365,18 @@ const AdvancedChart = ({
                 <div ref={chartContainerRef} />
 
                 {/* Pattern Overlay - SVG visual overlays for detected patterns */}
-                {patternEnabled && patterns.length > 0 && chartVisibleRange && data.length > 0 && (
+                {patternEnabled && patterns.length > 0 && chartVisibleRange && sanitizedData.length > 0 && (
                     <PatternOverlay
                         patterns={patterns}
                         chartDimensions={chartVisibleRange.dimensions}
                         priceScale={{
-                            min: Math.min(...data.slice(
+                            min: Math.min(...sanitizedData.slice(
                                 Math.max(0, chartVisibleRange.timeScale.start),
-                                Math.min(data.length, chartVisibleRange.timeScale.end + 1)
+                                Math.min(sanitizedData.length, chartVisibleRange.timeScale.end + 1)
                             ).map(d => d.low)),
-                            max: Math.max(...data.slice(
+                            max: Math.max(...sanitizedData.slice(
                                 Math.max(0, chartVisibleRange.timeScale.start),
-                                Math.min(data.length, chartVisibleRange.timeScale.end + 1)
+                                Math.min(sanitizedData.length, chartVisibleRange.timeScale.end + 1)
                             ).map(d => d.high))
                         }}
                         timeScale={chartVisibleRange.timeScale}
@@ -2393,17 +2384,17 @@ const AdvancedChart = ({
                 )}
 
                 {/* Drawing Tools - Trendlines, Fibonacci, Annotations */}
-                {drawingEnabled && chartVisibleRange && data.length > 0 && (
+                {drawingEnabled && chartVisibleRange && sanitizedData.length > 0 && (
                     <DrawingTools
                         chartDimensions={chartVisibleRange.dimensions}
                         priceScale={{
-                            min: Math.min(...data.slice(
+                            min: Math.min(...sanitizedData.slice(
                                 Math.max(0, chartVisibleRange.timeScale.start),
-                                Math.min(data.length, chartVisibleRange.timeScale.end + 1)
+                                Math.min(sanitizedData.length, chartVisibleRange.timeScale.end + 1)
                             ).map(d => d.low)),
-                            max: Math.max(...data.slice(
+                            max: Math.max(...sanitizedData.slice(
                                 Math.max(0, chartVisibleRange.timeScale.start),
-                                Math.min(data.length, chartVisibleRange.timeScale.end + 1)
+                                Math.min(sanitizedData.length, chartVisibleRange.timeScale.end + 1)
                             ).map(d => d.high))
                         }}
                         timeScale={chartVisibleRange.timeScale}
