@@ -1,7 +1,7 @@
 // client/src/components/AvatarUpload.jsx - Profile Picture Upload Component
 
 import React, { useState } from 'react';
-import axios from 'axios';
+import API from '../api/axios';
 
 const AvatarUpload = ({ currentAvatar, onAvatarUpdate }) => {
     const [uploading, setUploading] = useState(false);
@@ -48,21 +48,17 @@ const AvatarUpload = ({ currentAvatar, onAvatarUpdate }) => {
             const formData = new FormData();
             formData.append('avatar', file);
 
-            const response = await axios.post(
-                `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/auth/upload-avatar`,
-                formData,
-                {
-                    headers: {
-                        'Content-Type': 'multipart/form-data'
-                    },
-                    withCredentials: true // Important for cookie-based auth
+            const response = await API.post('/auth/upload-avatar', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
                 }
-            );
+            });
 
             if (response.data.success) {
-                setPreviewUrl(response.data.avatarUrl);
+                const newUrl = response.data.avatarUrl || response.data.avatar;
+                setPreviewUrl(newUrl);
                 if (onAvatarUpdate) {
-                    onAvatarUpdate(response.data.avatarUrl);
+                    onAvatarUpdate(newUrl);
                 }
             }
         } catch (err) {
@@ -83,10 +79,7 @@ const AvatarUpload = ({ currentAvatar, onAvatarUpdate }) => {
         setError('');
 
         try {
-            const response = await axios.delete(
-                `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/auth/delete-avatar`,
-                { withCredentials: true }
-            );
+            const response = await API.delete('/auth/delete-avatar');
 
             if (response.data.success) {
                 setPreviewUrl('');

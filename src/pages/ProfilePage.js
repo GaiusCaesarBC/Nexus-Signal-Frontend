@@ -1572,13 +1572,14 @@ const ProfilePage = () => {
             });
 
             // Update local state instead of reloading
-            if (response.data.avatar) {
-                setAvatarPreview(response.data.avatar);
+            const newAvatarUrl = response.data.avatarUrl || response.data.avatar;
+            if (newAvatarUrl) {
+                setAvatarPreview(newAvatarUrl);
                 setProfileUser(prev => ({
                     ...prev,
                     profile: {
                         ...prev?.profile,
-                        avatar: response.data.avatar
+                        avatar: newAvatarUrl
                     }
                 }));
             }
