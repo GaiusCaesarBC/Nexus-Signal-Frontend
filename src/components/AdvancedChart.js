@@ -977,6 +977,27 @@ const AdvancedChart = ({
 
         console.log(`[AdvancedChart] Updating chart with ${data.length} candles for ${symbol}, timeframe=${timeframe}`);
 
+        // CRITICAL: Filter out any candles with null/undefined/NaN values
+        // This prevents TradingView Lightweight Charts "Value is null" crash
+        const sanitizedData = data.filter(candle => {
+            if (!candle) return false;
+            const { time, open, high, low, close } = candle;
+            return time != null &&
+                   Number.isFinite(open) && open > 0 &&
+                   Number.isFinite(high) && high > 0 &&
+                   Number.isFinite(low) && low > 0 &&
+                   Number.isFinite(close) && close > 0;
+        });
+
+        if (sanitizedData.length !== data.length) {
+            console.warn(`[AdvancedChart] Filtered out ${data.length - sanitizedData.length} invalid candles`);
+        }
+
+        if (sanitizedData.length === 0) {
+            console.error('[AdvancedChart] No valid candles after filtering');
+            return;
+        }
+
         // Remove existing main series if it exists
         if (mainSeriesRef.current) {
             try {
@@ -990,7 +1011,7 @@ const AdvancedChart = ({
         // Create new series based on chart type
         if (chartType === 'candlestick') {
             // Calculate price format based on the data's price range
-            const samplePrice = data.length > 0 ? data[data.length - 1].close : 100;
+            const samplePrice = sanitizedData.length > 0 ? sanitizedData[sanitizedData.length - 1].close : 100;
             const priceFormat = getPriceFormat(samplePrice);
 
             console.log(`[AdvancedChart] Price format for ${symbol}: precision=${priceFormat.precision}, minMove=${priceFormat.minMove} (sample price: ${samplePrice})`);
@@ -1010,10 +1031,10 @@ const AdvancedChart = ({
             });
             mainSeriesRef.current = candlestickSeries;
 
-            // Set data
-            candlestickSeries.setData(data);
+            // Set data (using sanitized data to prevent null value crashes)
+            candlestickSeries.setData(sanitizedData);
         } else if (chartType === 'line') {
-            const samplePrice = data.length > 0 ? data[data.length - 1].close : 100;
+            const samplePrice = sanitizedData.length > 0 ? sanitizedData[sanitizedData.length - 1].close : 100;
             const priceFormat = getPriceFormat(samplePrice);
 
             const lineSeries = chartRef.current.addLineSeries({
@@ -1028,13 +1049,13 @@ const AdvancedChart = ({
             mainSeriesRef.current = lineSeries;
 
             // Convert OHLC data to line data (using close price)
-            const lineData = data.map(d => ({
+            const lineData = sanitizedData.map(d => ({
                 time: d.time,
                 value: d.close
             }));
             lineSeries.setData(lineData);
         } else if (chartType === 'area') {
-            const samplePrice = data.length > 0 ? data[data.length - 1].close : 100;
+            const samplePrice = sanitizedData.length > 0 ? sanitizedData[sanitizedData.length - 1].close : 100;
             const priceFormat = getPriceFormat(samplePrice);
 
             const areaSeries = chartRef.current.addAreaSeries({
@@ -1051,7 +1072,7 @@ const AdvancedChart = ({
             mainSeriesRef.current = areaSeries;
 
             // Convert OHLC data to area data (using close price)
-            const areaData = data.map(d => ({
+            const areaData = sanitizedData.map(d => ({
                 time: d.time,
                 value: d.close
             }));
@@ -1067,8 +1088,17 @@ const AdvancedChart = ({
         if (!volumeSeriesRef.current || data.length === 0) return;
 
         try {
+            // Filter out invalid candles before processing volume
+            const validData = data.filter(d =>
+                d && d.time != null &&
+                Number.isFinite(d.open) && Number.isFinite(d.close) &&
+                d.open > 0 && d.close > 0
+            );
+
+            if (validData.length === 0) return;
+
             // Update volume data
-            const volumeData = data.map(d => ({
+            const volumeData = validData.map(d => ({
                 time: d.time,
                 value: d.volume || 0,
                 color: d.close >= d.open ? `${theme.success || '#10b981'}80` : `${theme.error || '#ef4444'}80`
@@ -1076,13 +1106,13 @@ const AdvancedChart = ({
             volumeSeriesRef.current.setData(volumeData);
 
             // Update current price and price change
-            if (data.length > 0) {
-                const latest = data[data.length - 1];
+            if (validData.length > 0) {
+                const latest = validData[validData.length - 1];
                 setCurrentPrice(latest.close);
                 setLastUpdated(new Date());
 
-                if (data.length > 1) {
-                    const previous = data[data.length - 2];
+                if (validData.length > 1) {
+                    const previous = validData[validData.length - 2];
                     const change = latest.close - previous.close;
                     const changePercent = (change / previous.close) * 100;
                     setPriceChange({ amount: change, percent: changePercent });
@@ -1096,6 +1126,16 @@ const AdvancedChart = ({
     // Update indicators
     useEffect(() => {
         if (!chartRef.current || data.length === 0) return;
+
+        // Filter out invalid candles before processing indicators
+        const validData = data.filter(d =>
+            d && d.time != null &&
+            Number.isFinite(d.open) && Number.isFinite(d.high) &&
+            Number.isFinite(d.low) && Number.isFinite(d.close) &&
+            d.open > 0 && d.high > 0 && d.low > 0 && d.close > 0
+        );
+
+        if (validData.length === 0) return;
 
         // Remove old indicators safely
         Object.entries(indicatorSeriesRef.current).forEach(([key, series]) => {
@@ -1154,7 +1194,7 @@ const AdvancedChart = ({
         activeIndicators.forEach(indicatorId => {
             try {
                 if (indicatorId === 'sma20') {
-                    const smaData = calculateSMA(data, 20);
+                    const smaData = calculateSMA(validData, 20);
                     const series = chartRef.current.addLineSeries({
                         color: theme.brand?.primary || '#00adef',
                         lineWidth: 2,
@@ -1165,7 +1205,7 @@ const AdvancedChart = ({
                 }
                 
                 if (indicatorId === 'sma50') {
-                    const smaData = calculateSMA(data, 50);
+                    const smaData = calculateSMA(validData, 50);
                     const series = chartRef.current.addLineSeries({
                         color: theme.success || '#10b981',
                         lineWidth: 2,
@@ -1176,7 +1216,7 @@ const AdvancedChart = ({
                 }
                 
                 if (indicatorId === 'ema12') {
-                    const emaData = calculateEMA(data, 12);
+                    const emaData = calculateEMA(validData, 12);
                     const series = chartRef.current.addLineSeries({
                         color: theme.warning || '#f59e0b',
                         lineWidth: 2,
@@ -1187,7 +1227,7 @@ const AdvancedChart = ({
                 }
                 
                 if (indicatorId === 'ema26') {
-                    const emaData = calculateEMA(data, 26);
+                    const emaData = calculateEMA(validData, 26);
                     const series = chartRef.current.addLineSeries({
                         color: '#ec4899',
                         lineWidth: 2,
@@ -1198,7 +1238,7 @@ const AdvancedChart = ({
                 }
                 
                 if (indicatorId === 'bb') {
-                    const bbData = calculateBollingerBands(data, 20, 2);
+                    const bbData = calculateBollingerBands(validData, 20, 2);
                     const bbColor = theme.brand?.accent || '#8b5cf6';
 
                     const upperSeries = chartRef.current.addLineSeries({
@@ -1234,7 +1274,7 @@ const AdvancedChart = ({
 
                 // SMA 200
                 if (indicatorId === 'sma200') {
-                    const smaData = calculateSMA(data, 200);
+                    const smaData = calculateSMA(validData, 200);
                     const series = chartRef.current.addLineSeries({
                         color: '#f97316',
                         lineWidth: 2,
@@ -1246,7 +1286,7 @@ const AdvancedChart = ({
 
                 // VWAP
                 if (indicatorId === 'vwap') {
-                    const vwapData = calculateVWAP(data);
+                    const vwapData = calculateVWAP(validData);
                     const series = chartRef.current.addLineSeries({
                         color: '#06b6d4',
                         lineWidth: 2,
@@ -1259,7 +1299,7 @@ const AdvancedChart = ({
 
                 // RSI - displayed in separate pane at bottom
                 if (indicatorId === 'rsi') {
-                    const rsiData = calculateRSI(data, 14);
+                    const rsiData = calculateRSI(validData, 14);
                     const series = chartRef.current.addLineSeries({
                         color: '#a855f7',
                         lineWidth: 2,
@@ -1281,7 +1321,7 @@ const AdvancedChart = ({
 
                 // MACD - displayed in separate pane
                 if (indicatorId === 'macd') {
-                    const macdData = calculateMACD(data, 12, 26, 9);
+                    const macdData = calculateMACD(validData, 12, 26, 9);
 
                     // MACD Line
                     const macdLine = chartRef.current.addLineSeries({
@@ -1328,7 +1368,7 @@ const AdvancedChart = ({
 
                 // Stochastic Oscillator
                 if (indicatorId === 'stoch') {
-                    const stochData = calculateStochastic(data, 14, 3);
+                    const stochData = calculateStochastic(validData, 14, 3);
 
                     // %K Line
                     const kLine = chartRef.current.addLineSeries({
@@ -1363,7 +1403,7 @@ const AdvancedChart = ({
 
                 // ATR - displayed in separate pane
                 if (indicatorId === 'atr') {
-                    const atrData = calculateATR(data, 14);
+                    const atrData = calculateATR(validData, 14);
                     const series = chartRef.current.addLineSeries({
                         color: '#f43f5e',
                         lineWidth: 2,
@@ -1385,7 +1425,7 @@ const AdvancedChart = ({
 
                 // Ichimoku Cloud - complex overlay with 5 components
                 if (indicatorId === 'ichimoku') {
-                    const ichimokuData = calculateIchimoku(data);
+                    const ichimokuData = calculateIchimoku(validData);
 
                     // Tenkan-sen (Conversion Line) - Blue
                     const tenkanSeries = chartRef.current.addLineSeries({
@@ -1451,7 +1491,7 @@ const AdvancedChart = ({
 
                 // Parabolic SAR - displayed as dots on chart
                 if (indicatorId === 'psar') {
-                    const sarData = calculateParabolicSAR(data);
+                    const sarData = calculateParabolicSAR(validData);
 
                     // Create separate series for up and down dots
                     const upDots = sarData.filter(d => d.color.includes('129'));
@@ -1487,7 +1527,7 @@ const AdvancedChart = ({
 
                 // ADX - displayed in separate pane with +DI and -DI
                 if (indicatorId === 'adx') {
-                    const adxData = calculateADX(data, 14);
+                    const adxData = calculateADX(validData, 14);
 
                     // ADX Line (main trend strength) - Teal
                     const adxSeries = chartRef.current.addLineSeries({
