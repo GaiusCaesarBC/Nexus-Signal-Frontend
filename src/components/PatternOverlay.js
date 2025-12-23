@@ -6,13 +6,19 @@ import styled, { keyframes } from 'styled-components';
 
 // ============ ANIMATIONS ============
 
-const fadeIn = keyframes`
-    from { opacity: 0; transform: scale(0.9); }
-    to { opacity: 1; transform: scale(1); }
+const fadeSlideIn = keyframes`
+    from {
+        opacity: 0;
+        transform: translateY(10px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 `;
 
 const pulse = keyframes`
-    0%, 100% { opacity: 0.8; }
+    0%, 100% { opacity: 0.7; }
     50% { opacity: 1; }
 `;
 
@@ -22,8 +28,23 @@ const drawLine = keyframes`
 `;
 
 const glowPulse = keyframes`
-    0%, 100% { filter: drop-shadow(0 0 3px currentColor); }
-    50% { filter: drop-shadow(0 0 8px currentColor); }
+    0%, 100% {
+        filter: drop-shadow(0 0 4px currentColor) drop-shadow(0 0 8px currentColor);
+    }
+    50% {
+        filter: drop-shadow(0 0 8px currentColor) drop-shadow(0 0 16px currentColor);
+    }
+`;
+
+const shimmer = keyframes`
+    0% { opacity: 0.6; }
+    50% { opacity: 0.9; }
+    100% { opacity: 0.6; }
+`;
+
+const breathe = keyframes`
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
 `;
 
 // ============ CHART MARGINS ============
@@ -48,16 +69,24 @@ const OverlayContainer = styled.svg`
 `;
 
 const PatternGroup = styled.g`
-    animation: ${fadeIn} 0.5s ease-out forwards;
+    animation: ${fadeSlideIn} 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    animation-delay: ${props => (props.$index || 0) * 0.1}s;
+    opacity: 0;
     pointer-events: all;
     cursor: pointer;
+
+    &:hover {
+        filter: brightness(1.2);
+    }
 `;
 
-// Pattern zone (shaded region)
+// Pattern zone (shaded region with gradient support)
 const PatternZone = styled.path`
-    fill: ${props => props.$color || 'rgba(59, 130, 246, 0.1)'};
-    stroke: none;
-    animation: ${pulse} 3s ease-in-out infinite;
+    fill: ${props => props.$gradient ? `url(#${props.$gradient})` : (props.$color || 'rgba(59, 130, 246, 0.1)')};
+    stroke: ${props => props.$strokeColor || 'none'};
+    stroke-width: 1;
+    stroke-opacity: 0.3;
+    animation: ${shimmer} 4s ease-in-out infinite;
 `;
 
 // Trendlines
@@ -89,13 +118,19 @@ const LevelLine = styled.line`
     opacity: 0.8;
 `;
 
-// Candle marker dot
+// Candle marker dot with glow
 const CandleMarker = styled.circle`
     fill: ${props => props.$color || '#3b82f6'};
-    stroke: white;
+    stroke: rgba(255, 255, 255, 0.9);
     stroke-width: 2;
-    filter: drop-shadow(0 0 4px ${props => props.$color || '#3b82f6'});
-    animation: ${pulse} 2s ease-in-out infinite;
+    filter: drop-shadow(0 0 6px ${props => props.$color || '#3b82f6'})
+            drop-shadow(0 0 12px ${props => props.$color || '#3b82f6'});
+    animation: ${breathe} 2.5s ease-in-out infinite;
+    transition: r 0.2s ease;
+
+    &:hover {
+        r: ${props => (props.r || 5) + 2};
+    }
 `;
 
 // Small arrow marker
@@ -106,7 +141,7 @@ const ArrowMarker = styled.path`
 
 // Badge container
 const BadgeGroup = styled.g`
-    animation: ${fadeIn} 0.4s ease-out forwards;
+    animation: ${fadeSlideIn} 0.4s ease-out forwards;
 `;
 
 const BadgeRect = styled.rect`
@@ -134,15 +169,23 @@ const ConfidenceText = styled.text`
     text-anchor: middle;
 `;
 
-// Tooltip
+// Tooltip with glass-morphism
 const TooltipGroup = styled.g`
     pointer-events: none;
+    animation: ${fadeSlideIn} 0.3s ease-out forwards;
 `;
 
 const TooltipBg = styled.rect`
-    fill: rgba(15, 23, 42, 0.95);
-    rx: 8;
-    filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5));
+    fill: rgba(15, 23, 42, 0.85);
+    rx: 12;
+    filter: drop-shadow(0 8px 24px rgba(0,0,0,0.6)) drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+`;
+
+const TooltipGlassBorder = styled.rect`
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.15);
+    stroke-width: 1;
+    rx: 12;
 `;
 
 // ============ COMPONENT ============
@@ -187,6 +230,14 @@ const PatternOverlay = ({ patterns, chartDimensions, priceScale, timeScale }) =>
         if (type === 'bullish') return 'rgba(16, 185, 129, 0.08)';
         if (type === 'bearish') return 'rgba(239, 68, 68, 0.08)';
         return 'rgba(139, 92, 246, 0.08)';
+    };
+
+    // Get gradient ID for pattern zone
+    const getZoneGradient = (pattern) => {
+        const type = pattern.type || PATTERN_TYPES[pattern.pattern] || 'neutral';
+        if (type === 'bullish') return 'bullishGradient';
+        if (type === 'bearish') return 'bearishGradient';
+        return 'neutralGradient';
     };
 
     // Pattern type lookup
@@ -289,18 +340,19 @@ const PatternOverlay = ({ patterns, chartDimensions, priceScale, timeScale }) =>
 
         return (
             <g>
-                {/* Zone */}
+                {/* Zone with gradient */}
                 <PatternZone
-                    $color={getZoneColor(pattern)}
+                    $gradient={getZoneGradient(pattern)}
+                    $strokeColor={color}
                     d={`M ${ls.x} ${necklineY} L ${ls.x} ${ls.y} L ${head.x} ${head.y} L ${rs.x} ${rs.y} L ${rs.x} ${necklineY} Z`}
                 />
-                {/* Shoulder-Head-Shoulder line */}
+                {/* Shoulder-Head-Shoulder curved line */}
                 <PatternPath $color={color} d={`M ${ls.x} ${ls.y} Q ${(ls.x + head.x) / 2} ${head.y - 10} ${head.x} ${head.y} Q ${(head.x + rs.x) / 2} ${head.y - 10} ${rs.x} ${rs.y}`} />
                 {/* Neckline */}
                 <LevelLine x1={ls.x - 20} y1={necklineY} x2={rs.x + 20} y2={necklineY} $color="#f59e0b" />
-                {/* Markers */}
+                {/* Markers with labels */}
                 <CandleMarker cx={ls.x} cy={ls.y} r="5" $color={color} />
-                <CandleMarker cx={head.x} cy={head.y} r="7" $color={color} />
+                <CandleMarker cx={head.x} cy={head.y} r="8" $color={color} />
                 <CandleMarker cx={rs.x} cy={rs.y} r="5" $color={color} />
             </g>
         );
@@ -327,18 +379,19 @@ const PatternOverlay = ({ patterns, chartDimensions, priceScale, timeScale }) =>
 
         return (
             <g>
-                {/* Zone */}
+                {/* Zone with gradient */}
                 <PatternZone
-                    $color={getZoneColor(pattern)}
+                    $gradient={getZoneGradient(pattern)}
+                    $strokeColor={color}
                     d={`M ${p1.x} ${necklineY} L ${p1.x} ${p1.y} L ${p2.x} ${p2.y} L ${p2.x} ${necklineY} Z`}
                 />
-                {/* Connection line */}
+                {/* Connection curve */}
                 <PatternPath $color={color} d={`M ${p1.x} ${p1.y} Q ${(p1.x + p2.x) / 2} ${necklineY} ${p2.x} ${p2.y}`} />
                 {/* Neckline */}
                 <LevelLine x1={p1.x - 20} y1={necklineY} x2={p2.x + 20} y2={necklineY} $color="#f59e0b" />
                 {/* Markers */}
-                <CandleMarker cx={p1.x} cy={p1.y} r="6" $color={color} />
-                <CandleMarker cx={p2.x} cy={p2.y} r="6" $color={color} />
+                <CandleMarker cx={p1.x} cy={p1.y} r="7" $color={color} />
+                <CandleMarker cx={p2.x} cy={p2.y} r="7" $color={color} />
             </g>
         );
     };
@@ -356,17 +409,18 @@ const PatternOverlay = ({ patterns, chartDimensions, priceScale, timeScale }) =>
 
         return (
             <g>
-                {/* Zone */}
+                {/* Zone with gradient */}
                 <PatternZone
-                    $color={getZoneColor(pattern)}
+                    $gradient={getZoneGradient(pattern)}
+                    $strokeColor={color}
                     d={`M ${p1.x} ${necklineY} L ${p1.x} ${p1.y} L ${p2.x} ${p2.y} L ${p3.x} ${p3.y} L ${p3.x} ${necklineY} Z`}
                 />
-                {/* Connection line */}
-                <PatternPath $color={color} d={`M ${p1.x} ${p1.y} L ${p2.x} ${p2.y} L ${p3.x} ${p3.y}`} />
+                {/* Connection curve through all three points */}
+                <PatternPath $color={color} d={`M ${p1.x} ${p1.y} Q ${(p1.x + p2.x) / 2} ${(p1.y + p2.y) / 2 - 5} ${p2.x} ${p2.y} Q ${(p2.x + p3.x) / 2} ${(p2.y + p3.y) / 2 - 5} ${p3.x} ${p3.y}`} />
                 {/* Markers */}
-                <CandleMarker cx={p1.x} cy={p1.y} r="5" $color={color} />
-                <CandleMarker cx={p2.x} cy={p2.y} r="5" $color={color} />
-                <CandleMarker cx={p3.x} cy={p3.y} r="5" $color={color} />
+                <CandleMarker cx={p1.x} cy={p1.y} r="6" $color={color} />
+                <CandleMarker cx={p2.x} cy={p2.y} r="6" $color={color} />
+                <CandleMarker cx={p3.x} cy={p3.y} r="6" $color={color} />
             </g>
         );
     };
@@ -388,9 +442,10 @@ const PatternOverlay = ({ patterns, chartDimensions, priceScale, timeScale }) =>
 
         return (
             <g>
-                {/* Zone */}
+                {/* Zone with gradient */}
                 <PatternZone
-                    $color={getZoneColor(pattern)}
+                    $gradient={getZoneGradient(pattern)}
+                    $strokeColor={color}
                     d={`M ${upperStart.x} ${upperStart.y} L ${upperEnd.x} ${upperEnd.y} L ${lowerEnd.x} ${lowerEnd.y} L ${lowerStart.x} ${lowerStart.y} Z`}
                 />
                 {/* Upper trendline */}
@@ -398,10 +453,10 @@ const PatternOverlay = ({ patterns, chartDimensions, priceScale, timeScale }) =>
                 {/* Lower trendline */}
                 <TrendLine x1={lowerStart.x} y1={lowerStart.y} x2={lowerEnd.x} y2={lowerEnd.y} $color={color} />
                 {/* Markers */}
-                <CandleMarker cx={upperStart.x} cy={upperStart.y} r="4" $color={color} />
-                <CandleMarker cx={upperEnd.x} cy={upperEnd.y} r="4" $color={color} />
-                <CandleMarker cx={lowerStart.x} cy={lowerStart.y} r="4" $color={color} />
-                <CandleMarker cx={lowerEnd.x} cy={lowerEnd.y} r="4" $color={color} />
+                <CandleMarker cx={upperStart.x} cy={upperStart.y} r="5" $color={color} />
+                <CandleMarker cx={upperEnd.x} cy={upperEnd.y} r="5" $color={color} />
+                <CandleMarker cx={lowerStart.x} cy={lowerStart.y} r="5" $color={color} />
+                <CandleMarker cx={lowerEnd.x} cy={lowerEnd.y} r="5" $color={color} />
             </g>
         );
     };
@@ -763,7 +818,7 @@ const PatternOverlay = ({ patterns, chartDimensions, priceScale, timeScale }) =>
         );
     };
 
-    // Render tooltip
+    // Render tooltip with glass-morphism
     const renderTooltip = () => {
         if (!hoveredPattern) return null;
 
@@ -772,25 +827,41 @@ const PatternOverlay = ({ patterns, chartDimensions, priceScale, timeScale }) =>
         const confidence = hoveredPattern.confidence?.toFixed(1) || 'N/A';
         const target = hoveredPattern.target?.toFixed(2) || 'N/A';
         const move = hoveredPattern.potentialMove || '0';
+        const type = PATTERN_TYPES[hoveredPattern.pattern] || 'neutral';
+        const typeLabel = type.charAt(0).toUpperCase() + type.slice(1);
 
-        const tooltipWidth = 170;
-        const tooltipHeight = 95;
+        const tooltipWidth = 180;
+        const tooltipHeight = 110;
         const x = Math.max(5, Math.min(chartWidth - tooltipWidth - 5, tooltipPos.x - tooltipWidth / 2));
         const y = Math.max(5, tooltipPos.y);
 
         return (
             <TooltipGroup>
+                {/* Background with glass effect */}
                 <TooltipBg x={x} y={y} width={tooltipWidth} height={tooltipHeight} />
-                <rect x={x} y={y} width={tooltipWidth} height={24} rx="8" fill={color} />
-                <text x={x + tooltipWidth / 2} y={y + 16} fill="white" fontSize="11" fontWeight="bold" textAnchor="middle">
+                <TooltipGlassBorder x={x} y={y} width={tooltipWidth} height={tooltipHeight} />
+
+                {/* Header with pattern color */}
+                <rect x={x} y={y} width={tooltipWidth} height={28} rx="12" fill={color} />
+                <text x={x + tooltipWidth / 2} y={y + 18} fill="white" fontSize="11" fontWeight="bold" textAnchor="middle" style={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                     {name}
                 </text>
-                <text x={x + 12} y={y + 44} fill="#94a3b8" fontSize="10">Confidence:</text>
-                <text x={x + tooltipWidth - 12} y={y + 44} fill="white" fontSize="10" textAnchor="end">{confidence}%</text>
-                <text x={x + 12} y={y + 60} fill="#94a3b8" fontSize="10">Target:</text>
-                <text x={x + tooltipWidth - 12} y={y + 60} fill={color} fontSize="10" textAnchor="end">${target}</text>
-                <text x={x + 12} y={y + 76} fill="#94a3b8" fontSize="10">Move:</text>
-                <text x={x + tooltipWidth - 12} y={y + 76} fill={parseFloat(move) >= 0 ? '#10b981' : '#ef4444'} fontSize="10" textAnchor="end">
+
+                {/* Pattern type indicator */}
+                <text x={x + 12} y={y + 48} fill="#64748b" fontSize="9" style={{ textTransform: 'uppercase' }}>Type:</text>
+                <text x={x + tooltipWidth - 12} y={y + 48} fill={color} fontSize="10" fontWeight="600" textAnchor="end">{typeLabel}</text>
+
+                {/* Confidence */}
+                <text x={x + 12} y={y + 64} fill="#64748b" fontSize="9" style={{ textTransform: 'uppercase' }}>Confidence:</text>
+                <text x={x + tooltipWidth - 12} y={y + 64} fill="white" fontSize="10" fontWeight="600" textAnchor="end">{confidence}%</text>
+
+                {/* Target */}
+                <text x={x + 12} y={y + 80} fill="#64748b" fontSize="9" style={{ textTransform: 'uppercase' }}>Target:</text>
+                <text x={x + tooltipWidth - 12} y={y + 80} fill={color} fontSize="10" fontWeight="600" textAnchor="end">${target}</text>
+
+                {/* Potential move */}
+                <text x={x + 12} y={y + 96} fill="#64748b" fontSize="9" style={{ textTransform: 'uppercase' }}>Move:</text>
+                <text x={x + tooltipWidth - 12} y={y + 96} fill={parseFloat(move) >= 0 ? '#10b981' : '#ef4444'} fontSize="10" fontWeight="bold" textAnchor="end">
                     {parseFloat(move) >= 0 ? '+' : ''}{move}%
                 </text>
             </TooltipGroup>
@@ -807,6 +878,7 @@ const PatternOverlay = ({ patterns, chartDimensions, priceScale, timeScale }) =>
         return (
             <PatternGroup
                 key={`pattern-${index}`}
+                $index={index}
                 onMouseEnter={() => {
                     setHoveredPattern(pattern);
                     const pos = getBadgePosition(pattern);
@@ -823,13 +895,43 @@ const PatternOverlay = ({ patterns, chartDimensions, priceScale, timeScale }) =>
     return (
         <OverlayContainer viewBox={`0 0 ${chartWidth} ${chartHeight}`} preserveAspectRatio="none">
             <defs>
-                <filter id="glow">
-                    <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                {/* Glow filter */}
+                <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
                     <feMerge>
                         <feMergeNode in="coloredBlur"/>
                         <feMergeNode in="SourceGraphic"/>
                     </feMerge>
                 </filter>
+
+                {/* Enhanced shadow filter */}
+                <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="rgba(0,0,0,0.4)"/>
+                </filter>
+
+                {/* Bullish gradient - green */}
+                <linearGradient id="bullishGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stopColor="rgba(16, 185, 129, 0.25)" />
+                    <stop offset="100%" stopColor="rgba(16, 185, 129, 0.02)" />
+                </linearGradient>
+
+                {/* Bearish gradient - red */}
+                <linearGradient id="bearishGradient" x1="0%" y1="100%" x2="0%" y2="0%">
+                    <stop offset="0%" stopColor="rgba(239, 68, 68, 0.25)" />
+                    <stop offset="100%" stopColor="rgba(239, 68, 68, 0.02)" />
+                </linearGradient>
+
+                {/* Neutral gradient - purple */}
+                <linearGradient id="neutralGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="rgba(139, 92, 246, 0.2)" />
+                    <stop offset="100%" stopColor="rgba(139, 92, 246, 0.02)" />
+                </linearGradient>
+
+                {/* Radial glow for markers */}
+                <radialGradient id="markerGlow">
+                    <stop offset="0%" stopColor="rgba(255, 255, 255, 0.3)" />
+                    <stop offset="100%" stopColor="rgba(255, 255, 255, 0)" />
+                </radialGradient>
             </defs>
             {patterns.map((pattern, index) => renderPattern(pattern, index))}
             {renderTooltip()}
