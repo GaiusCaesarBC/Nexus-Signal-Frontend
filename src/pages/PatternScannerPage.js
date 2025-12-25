@@ -943,9 +943,9 @@ const PatternScannerPage = () => {
                                                             </PatternType>
                                                         </PatternDetails>
                                                     </PatternInfo>
-                                                    <ConfidenceBadge theme={theme} $confidence={pattern.confidence}>
+                                                    <ConfidenceBadge theme={theme} $confidence={pattern.confidence / 100}>
                                                         <Target size={14} />
-                                                        {Math.round(pattern.confidence * 100)}%
+                                                        {Math.round(pattern.confidence)}%
                                                     </ConfidenceBadge>
                                                 </PatternItem>
                                             ))}
