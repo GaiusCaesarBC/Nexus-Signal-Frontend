@@ -178,9 +178,7 @@ const MiniChart = ({ symbol, timeframe, api, theme }) => {
 
             setLoading(true);
             try {
-                const response = await api.get(`/chart/ohlc/${encodeURIComponent(symbol)}`, {
-                    params: { interval: timeframe.interval, limit: 50 }
-                });
+                const response = await api.get(`/chart/${encodeURIComponent(symbol)}/${timeframe.interval}`);
 
                 if (response.data?.success && response.data?.data?.length > 0) {
                     const chartData = response.data.data;
