@@ -715,6 +715,23 @@ const AdvancedChart = ({
     const [patternLoading, setPatternLoading] = useState(false);
     const [patternError, setPatternError] = useState(null);
     const [chartVisibleRange, setChartVisibleRange] = useState(null);
+    const [showCandlestickPatterns, setShowCandlestickPatterns] = useState(true);
+
+    // Candlestick pattern types (single/multi-candle patterns)
+    const CANDLESTICK_PATTERNS = [
+        'DOJI', 'HAMMER', 'HANGING_MAN', 'INVERTED_HAMMER', 'SHOOTING_STAR',
+        'BULLISH_ENGULFING', 'BEARISH_ENGULFING', 'MORNING_STAR', 'EVENING_STAR',
+        'THREE_WHITE_SOLDIERS', 'THREE_BLACK_CROWS', 'PIERCING_LINE', 'DARK_CLOUD_COVER', 'MARUBOZU'
+    ];
+
+    // Helper to check if pattern is a candlestick pattern
+    const isCandlestickPattern = (pattern) => CANDLESTICK_PATTERNS.includes(pattern.pattern);
+
+    // Filter patterns based on candlestick toggle
+    const filteredPatterns = useMemo(() => {
+        if (showCandlestickPatterns) return patterns;
+        return patterns.filter(p => !isCandlestickPattern(p));
+    }, [patterns, showCandlestickPatterns]);
 
     // Drawing Tools state
     const [drawingEnabled, setDrawingEnabled] = useState(false);
@@ -1790,11 +1807,11 @@ const AdvancedChart = ({
         }
 
         // If patterns are disabled or no patterns, exit
-        if (!patternEnabled || patterns.length === 0 || sanitizedData.length === 0) {
+        if (!patternEnabled || filteredPatterns.length === 0 || sanitizedData.length === 0) {
             return;
         }
 
-        console.log(`[PATTERN] Drawing ${patterns.length} patterns on chart...`);
+        console.log(`[PATTERN] Drawing ${filteredPatterns.length} patterns on chart...`);
 
         // Get time range from sanitized data (already filtered for null values)
         const startTime = sanitizedData[0].time;
@@ -1844,7 +1861,7 @@ const AdvancedChart = ({
             return lineSeries;
         };
 
-        patterns.forEach((pattern) => {
+        filteredPatterns.forEach((pattern) => {
             try {
                 const isBullish = pattern.type === 'bullish';
                 const patternColor = isBullish ? '#22c55e' : pattern.type === 'bearish' ? '#ef4444' : '#8b5cf6';
@@ -1980,7 +1997,7 @@ const AdvancedChart = ({
             console.log(`[PATTERN] Added ${allMarkers.length} arrow markers to chart`);
         }
 
-    }, [patternEnabled, patterns, sanitizedData]);
+    }, [patternEnabled, filteredPatterns, sanitizedData]);
 
     // Toggle NEXUS indicator (Premium/Elite only)
     const toggleNexus = () => {
@@ -2297,7 +2314,7 @@ const AdvancedChart = ({
                         <Brain size={14} />
                     )}
                     NEXUS Pattern
-                    {patterns.length > 0 && (
+                    {filteredPatterns.length > 0 && (
                         <span style={{
                             marginLeft: '4px',
                             padding: '2px 6px',
@@ -2306,10 +2323,35 @@ const AdvancedChart = ({
                             background: '#10b98133',
                             color: '#10b981'
                         }}>
-                            {patterns.length}
+                            {filteredPatterns.length}
                         </span>
                     )}
                 </PatternButton>
+
+                {/* Candlestick Pattern Toggle - Only show when patterns are enabled */}
+                {patternEnabled && (
+                    <IndicatorButton
+                        $active={showCandlestickPatterns}
+                        onClick={() => setShowCandlestickPatterns(!showCandlestickPatterns)}
+                        title={showCandlestickPatterns ? "Hide candlestick patterns (Doji, Hammer, Engulfing, etc.)" : "Show candlestick patterns"}
+                        style={{ marginLeft: '2px' }}
+                    >
+                        {showCandlestickPatterns ? <Eye size={14} /> : <EyeOff size={14} />}
+                        Candles
+                        {patterns.filter(p => isCandlestickPattern(p)).length > 0 && (
+                            <span style={{
+                                marginLeft: '4px',
+                                padding: '2px 6px',
+                                borderRadius: '4px',
+                                fontSize: '0.7rem',
+                                background: showCandlestickPatterns ? '#8b5cf633' : '#64748b33',
+                                color: showCandlestickPatterns ? '#8b5cf6' : '#64748b'
+                            }}>
+                                {patterns.filter(p => isCandlestickPattern(p)).length}
+                            </span>
+                        )}
+                    </IndicatorButton>
+                )}
 
                 {/* Drawing Tools Button */}
                 <PatternButton
@@ -2365,9 +2407,9 @@ const AdvancedChart = ({
                 <div ref={chartContainerRef} />
 
                 {/* Pattern Overlay - SVG visual overlays for detected patterns */}
-                {patternEnabled && patterns.length > 0 && chartVisibleRange && sanitizedData.length > 0 && (
+                {patternEnabled && filteredPatterns.length > 0 && chartVisibleRange && sanitizedData.length > 0 && (
                     <PatternOverlay
-                        patterns={patterns}
+                        patterns={filteredPatterns}
                         chartDimensions={chartVisibleRange.dimensions}
                         priceScale={{
                             min: Math.min(...sanitizedData.slice(
@@ -2458,12 +2500,17 @@ const AdvancedChart = ({
                                 <RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} />
                                 <span style={{ marginLeft: '8px' }}>Scanning...</span>
                             </div>
-                        ) : patterns.length > 0 ? (
+                        ) : filteredPatterns.length > 0 ? (
                             <>
                                 <div className="pattern-count">
-                                    {patterns.length} Pattern{patterns.length > 1 ? 's' : ''} Detected
+                                    {filteredPatterns.length} Pattern{filteredPatterns.length > 1 ? 's' : ''} Detected
+                                    {!showCandlestickPatterns && patterns.length > filteredPatterns.length && (
+                                        <span style={{ marginLeft: '8px', fontSize: '0.7rem', opacity: 0.7 }}>
+                                            (+{patterns.length - filteredPatterns.length} candle patterns hidden)
+                                        </span>
+                                    )}
                                 </div>
-                                {patterns.map((pattern, idx) => (
+                                {filteredPatterns.map((pattern, idx) => (
                                     <div
                                         key={idx}
                                         className="pattern-item"
