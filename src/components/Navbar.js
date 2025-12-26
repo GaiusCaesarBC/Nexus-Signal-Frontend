@@ -1535,7 +1535,7 @@ const Navbar = () => {
                 {isAuthenticated ? (
                     <>
                         <SearchContainer ref={searchRef}>
-                            <SearchInputWrapper><SearchIconStyled size={16} /><SearchInput ref={searchInputRef} type="text" placeholder="Search stocks & crypto..." value={searchQuery} onChange={(e) => handleSearch(e.target.value)} onFocus={() => searchQuery && setShowSearchResults(true)} onKeyDown={handleSearchKeyDown} /></SearchInputWrapper>
+                            <SearchInputWrapper><SearchIconStyled size={16} /><SearchInput ref={searchInputRef} data-search-input type="text" placeholder="Search stocks & crypto... (/)" value={searchQuery} onChange={(e) => handleSearch(e.target.value)} onFocus={() => searchQuery && setShowSearchResults(true)} onKeyDown={handleSearchKeyDown} /></SearchInputWrapper>
                             {showSearchResults && isSearching && <SearchResults><SearchLoading>Searching...</SearchLoading></SearchResults>}
                             {showSearchResults && !isSearching && (searchResults.stocks.length > 0 || searchResults.crypto.length > 0) && (
                                 <SearchResults>

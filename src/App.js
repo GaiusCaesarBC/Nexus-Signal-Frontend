@@ -16,6 +16,8 @@ import LoadingScreen from './components/LoadingScreen';
 import ProtectedRoute from './components/ProtectedRoute';
 import ScrollToTop from './components/ScrollToTop';
 import BackgroundEffects from './components/BackgroundEffects';
+import KeyboardShortcutsHelp from './components/KeyboardShortcutsHelp';
+import useKeyboardShortcuts from './hooks/useKeyboardShortcuts';
 
 // 🎮 Gamification imports (global overlays - always needed)
 import { GamificationProvider } from './context/GamificationContext';
@@ -109,6 +111,7 @@ const GlobalStyle = createGlobalStyle`
 function AppContent() {
     const { theme } = useTheme();
     const { loading } = useAuth();
+    const { showShortcutsHelp, setShowShortcutsHelp } = useKeyboardShortcuts();
 
     if (loading) {
         return <LoadingScreen message="Loading your AI-powered trading platform..." />;
@@ -224,6 +227,12 @@ function AppContent() {
             {/* 📊 VERCEL ANALYTICS */}
             <Analytics />
             <SpeedInsights />
+
+            {/* ⌨️ KEYBOARD SHORTCUTS HELP */}
+            <KeyboardShortcutsHelp
+                isOpen={showShortcutsHelp}
+                onClose={() => setShowShortcutsHelp(false)}
+            />
         </StyledThemeProvider>
     );
 }
