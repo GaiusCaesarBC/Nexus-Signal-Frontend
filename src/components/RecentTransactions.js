@@ -279,6 +279,7 @@ const RecentTransactions = ({ symbol, isCrypto = false }) => {
     };
 
     const formatAmount = (amount) => {
+        if (amount == null || isNaN(amount)) return '$0.00';
         if (amount >= 1000000) return `$${(amount / 1000000).toFixed(2)}M`;
         if (amount >= 1000) return `$${(amount / 1000).toFixed(2)}K`;
         return `$${amount.toFixed(2)}`;
@@ -402,8 +403,8 @@ const RecentTransactions = ({ symbol, isCrypto = false }) => {
                 </EmptyState>
             ) : (
                 <TransactionsList>
-                    {transactions.slice(0, 25).map((tx, index) => (
-                        <TransactionRow key={tx.id || index} $side={tx.side}>
+                    {transactions.slice(0, 25).filter(Boolean).map((tx, index) => (
+                        <TransactionRow key={tx?.id || index} $side={tx?.side || 'BUY'}>
                             <SideBadge $side={tx.side}>
                                 {tx.side === 'BUY' ? <ArrowUpRight /> : <ArrowDownRight />}
                                 {tx.side}

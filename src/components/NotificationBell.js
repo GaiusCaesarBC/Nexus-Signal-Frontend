@@ -247,7 +247,7 @@ const NotificationBell = () => {
     const fetchUnreadCount = async () => {
         try {
             const response = await api.get('/notifications/unread-count');
-            setUnreadCount(response.data.count);
+            setUnreadCount(response?.data?.count ?? 0);
         } catch (error) {
             console.error('Error fetching unread count:', error);
         }
