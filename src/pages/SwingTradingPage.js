@@ -595,10 +595,17 @@ const SwingTradingPage = () => {
 
                     if (!response.ok) continue;
 
-                    const data = await response.json();
-                    const candles = data.candles || data.data || [];
+                    const responseData = await response.json();
 
-                    if (candles.length < 20) continue;
+                    // API returns { success: true, data: [...candles...] }
+                    const candles = responseData.data || responseData.candles || [];
+
+                    console.log(`[SwingTrading] ${symbol}: ${candles.length} candles received`);
+
+                    if (candles.length < 20) {
+                        console.log(`[SwingTrading] ${symbol}: Not enough candles (${candles.length})`);
+                        continue;
+                    }
 
                     // Analyze for swing trade setup
                     const signal = analyzeForSwingTrade(symbol, candles, mode);
@@ -672,19 +679,21 @@ const SwingTradingPage = () => {
         if (rsi < 30) bearishConditions.push(`RSI oversold at ${rsi.toFixed(0)} (potential bounce)`);
         if (currentPrice > recentHigh * 0.95) bearishConditions.push('Near resistance level');
 
-        // Decide signal
-        if (bullishConditions.length >= 3 && rsi < 70) {
+        // Decide signal - need at least 2 conditions
+        if (bullishConditions.length >= 2 && rsi < 75) {
             signalType = 'LONG';
-            confidence = Math.min(50 + bullishConditions.length * 10, 92);
+            confidence = Math.min(45 + bullishConditions.length * 12, 95);
             reasons = bullishConditions;
-        } else if (bearishConditions.length >= 3 && rsi > 30) {
+        } else if (bearishConditions.length >= 2 && rsi > 25) {
             signalType = 'SHORT';
-            confidence = Math.min(50 + bearishConditions.length * 10, 92);
+            confidence = Math.min(45 + bearishConditions.length * 12, 95);
             reasons = bearishConditions;
         }
 
-        // Only return strong signals
-        if (!signalType || confidence < 60) return null;
+        console.log(`[SwingTrading] ${symbol}: Bull=${bullishConditions.length}, Bear=${bearishConditions.length}, RSI=${rsi.toFixed(0)}, Signal=${signalType || 'NONE'}`);
+
+        // Return signal if we have one (minimum 50% confidence from 2 conditions)
+        if (!signalType) return null;
 
         // Calculate entry, target, and stop loss
         const entry = currentPrice;
