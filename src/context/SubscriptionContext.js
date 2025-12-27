@@ -58,7 +58,8 @@ const DEFAULT_PLAN_LIMITS = {
         hasDedicatedManager: false,
         hasVIPCommunity: false,
         hasWhaleWebhooks: false,
-        hasEarlyAccess: false
+        hasEarlyAccess: false,
+        hasSwingTrading: false
     },
     starter: {
         // Limits
@@ -108,7 +109,8 @@ const DEFAULT_PLAN_LIMITS = {
         hasDedicatedManager: false,
         hasVIPCommunity: false,
         hasWhaleWebhooks: false,
-        hasEarlyAccess: false
+        hasEarlyAccess: false,
+        hasSwingTrading: false
     },
     pro: {
         // Limits
@@ -159,7 +161,8 @@ const DEFAULT_PLAN_LIMITS = {
         hasDedicatedManager: false,
         hasVIPCommunity: false,
         hasWhaleWebhooks: false,
-        hasEarlyAccess: false
+        hasEarlyAccess: false,
+        hasSwingTrading: true
     },
     premium: {
         // Limits - Unlimited
@@ -211,7 +214,8 @@ const DEFAULT_PLAN_LIMITS = {
         hasDedicatedManager: false,
         hasVIPCommunity: false,
         hasWhaleWebhooks: false,
-        hasEarlyAccess: false
+        hasEarlyAccess: false,
+        hasSwingTrading: true
     },
     elite: {
         // Limits - Unlimited
@@ -263,7 +267,8 @@ const DEFAULT_PLAN_LIMITS = {
         hasDedicatedManager: true,
         hasVIPCommunity: true,
         hasWhaleWebhooks: true,
-        hasEarlyAccess: true
+        hasEarlyAccess: true,
+        hasSwingTrading: true
     }
 };
 
@@ -367,6 +372,7 @@ export const SubscriptionProvider = ({ children }) => {
         hasAdvancedAnalysis: canUseFeature('hasAdvancedAnalysis'),
         hasBacktesting: canUseFeature('hasBacktesting'),
         hasAPIAccess: canUseFeature('hasAPIAccess'),
+        hasSwingTrading: canUseFeature('hasSwingTrading'),
 
         // Constants
         PLAN_HIERARCHY,

@@ -92,6 +92,7 @@ const AccountSettingsPage = lazy(() => import('./pages/AccountSettingsPage'));
 const BacktestingPage = lazy(() => import('./pages/BacktestingPage'));
 const CopyTradingPage = lazy(() => import('./pages/CopyTradingPage'));
 const PatternScannerPage = lazy(() => import('./pages/PatternScannerPage'));
+const SwingTradingPage = lazy(() => import('./pages/SwingTradingPage'));
 
 // Global styles to set the page background
 const GlobalStyle = createGlobalStyle`
@@ -188,6 +189,7 @@ function AppContent() {
                     <Route path="/accuracy-dashboard" element={<ProtectedRoute><AccuracyDashboardPage /></ProtectedRoute>} />
                     <Route path="/backtesting" element={<ProtectedRoute><BacktestingPage /></ProtectedRoute>} />
                     <Route path="/pattern-scanner" element={<ProtectedRoute><PatternScannerPage /></ProtectedRoute>} />
+                    <Route path="/swing-trading" element={<ProtectedRoute><SwingTradingPage /></ProtectedRoute>} />
                     <Route path="/earnings" element={<ProtectedRoute><EarningsCalendarPage /></ProtectedRoute>} />
                     <Route path="/financials" element={<ProtectedRoute><CompanyFinancialsPage /></ProtectedRoute>} />
                     <Route path="/market-reports" element={<ProtectedRoute><MarketReportsPage /></ProtectedRoute>} />

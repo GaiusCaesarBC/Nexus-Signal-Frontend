@@ -1382,6 +1382,7 @@ const Navbar = () => {
         analysis: [
             { path: '/screener', label: 'Screener', icon: Filter },
             { path: '/pattern-scanner', label: 'Pattern Scanner', icon: Layers },
+            { path: '/swing-trading', label: 'Swing Trading', icon: Activity },
             { path: '/heatmap', label: 'Heatmap', icon: MapPin },
             { path: '/sentiment', label: 'Sentiment', icon: Activity },
             { path: '/compare', label: 'Stock Comparison', icon: BarChart3 },
