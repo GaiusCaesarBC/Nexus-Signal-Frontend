@@ -1028,12 +1028,12 @@ const SwingTradingPage = () => {
 
         setSearchLoading(true);
         try {
-            const endpoint = mode === 'stocks'
-                ? `/stocks/search?q=${encodeURIComponent(query)}`
-                : `/crypto/search?q=${encodeURIComponent(query)}`;
+            // Use the predictions symbols search endpoint with type filter
+            const typeFilter = mode === 'stocks' ? 'stock' : 'crypto';
+            const endpoint = `/predictions/symbols/search?q=${encodeURIComponent(query)}&type=${typeFilter}`;
 
             const response = await api.get(endpoint);
-            const results = response.data.results || response.data || [];
+            const results = response.data.symbols || response.data.results || response.data || [];
             setSearchResults(results.slice(0, 10)); // Limit to 10 results
             setShowResults(true);
         } catch (err) {
