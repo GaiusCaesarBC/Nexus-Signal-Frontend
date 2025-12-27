@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import {
     TrendingUp, TrendingDown, Clock, Target, Activity,
-    CheckCircle, XCircle, Award, AlertCircle, Zap
+    CheckCircle, XCircle, Award, AlertCircle, Zap,
+    Copy, Share2, Twitter, Check
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -318,11 +319,53 @@ const OutcomeStatValue = styled.div`
     color: ${props => props.$color || '#e0e6ed'};
 `;
 
+const ShareSection = styled.div`
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(139, 92, 246, 0.2);
+`;
+
+const ShareButton = styled.button`
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid rgba(100, 116, 139, 0.3);
+    background: ${props => props.$variant === 'twitter'
+        ? 'rgba(29, 161, 242, 0.1)'
+        : 'rgba(100, 116, 139, 0.1)'};
+    color: ${props => props.$variant === 'twitter'
+        ? '#1DA1F2'
+        : props.$copied ? '#10b981' : '#94a3b8'};
+
+    &:hover {
+        background: ${props => props.$variant === 'twitter'
+            ? 'rgba(29, 161, 242, 0.2)'
+            : 'rgba(100, 116, 139, 0.2)'};
+        border-color: ${props => props.$variant === 'twitter'
+            ? 'rgba(29, 161, 242, 0.4)'
+            : 'rgba(100, 116, 139, 0.4)'};
+        transform: translateY(-2px);
+    }
+
+    &:active {
+        transform: translateY(0);
+    }
+`;
+
 // ============ COMPONENT ============
 const LivePredictionCard = ({ prediction, onUpdate }) => {
     const { api } = useAuth();
     const [liveData, setLiveData] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [copied, setCopied] = useState(false);
 
     useEffect(() => {
         fetchLiveData();
@@ -361,6 +404,36 @@ const LivePredictionCard = ({ prediction, onUpdate }) => {
         if (days > 0) return `${days}d ${hours}h`;
         if (hours > 0) return `${hours}h ${minutes}m`;
         return `${minutes}m`;
+    };
+
+    const generateShareText = () => {
+        const d = liveData || prediction;
+        const arrow = d.direction === 'UP' ? '📈' : '📉';
+        const status = d.status === 'correct' ? '✅ CORRECT!' : d.status === 'incorrect' ? '❌ Incorrect' : '⏳ Pending';
+        const conf = (liveData?.liveConfidence || d.confidence).toFixed(0);
+
+        let text = `${arrow} $${d.symbol} ${d.direction} Prediction\n`;
+        text += `💰 Entry: $${d.currentPrice.toFixed(2)} → Target: $${d.targetPrice.toFixed(2)}\n`;
+        text += `🎯 Confidence: ${conf}%\n`;
+        text += `${status}\n\n`;
+        text += `Made with @NexusSignalAI 🤖\nhttps://nexussignal.ai`;
+
+        return text;
+    };
+
+    const handleCopy = async () => {
+        try {
+            await navigator.clipboard.writeText(generateShareText());
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch (err) {
+            console.error('Failed to copy:', err);
+        }
+    };
+
+    const handleTwitterShare = () => {
+        const text = encodeURIComponent(generateShareText());
+        window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank', 'width=550,height=420');
     };
 
     const data = liveData || prediction;
@@ -541,6 +614,17 @@ const LivePredictionCard = ({ prediction, onUpdate }) => {
                     </OutcomeGrid>
                 </OutcomeSection>
             )}
+
+            <ShareSection>
+                <ShareButton onClick={handleCopy} $copied={copied}>
+                    {copied ? <Check size={16} /> : <Copy size={16} />}
+                    {copied ? 'Copied!' : 'Copy'}
+                </ShareButton>
+                <ShareButton $variant="twitter" onClick={handleTwitterShare}>
+                    <Twitter size={16} />
+                    Share on X
+                </ShareButton>
+            </ShareSection>
         </Card>
     );
 };
