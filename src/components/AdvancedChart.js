@@ -2015,7 +2015,11 @@ const AdvancedChart = ({
 
     // Handle live price updates - update chart in real-time
     useEffect(() => {
+        // Debug: log what we have
+        console.log(`[AdvancedChart] Live update check: livePrice=${livePrice}, hasSeriesRef=${!!mainSeriesRef.current}, dataLen=${sanitizedData.length}`);
+
         if (!livePrice || !mainSeriesRef.current || sanitizedData.length === 0) {
+            console.log(`[AdvancedChart] Skipping update - missing: ${!livePrice ? 'livePrice' : ''} ${!mainSeriesRef.current ? 'seriesRef' : ''} ${sanitizedData.length === 0 ? 'data' : ''}`);
             return;
         }
 
