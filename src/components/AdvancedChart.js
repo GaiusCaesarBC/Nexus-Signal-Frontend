@@ -760,13 +760,23 @@ const AdvancedChart = ({
         if (!data || data.length === 0) return [];
 
         const filtered = data.filter(candle => {
-            if (!candle) return false;
+            if (!candle || typeof candle !== 'object') return false;
             const { time, open, high, low, close } = candle;
-            return time != null &&
-                   Number.isFinite(open) && open > 0 &&
-                   Number.isFinite(high) && high > 0 &&
-                   Number.isFinite(low) && low > 0 &&
-                   Number.isFinite(close) && close > 0;
+
+            // Validate time is a positive integer (UNIX timestamp in seconds)
+            if (typeof time !== 'number' || !Number.isFinite(time) || time <= 0) return false;
+
+            // Validate OHLC are finite numbers (allow 0 for some edge cases, but not null/undefined/NaN)
+            if (typeof open !== 'number' || !Number.isFinite(open) || open < 0) return false;
+            if (typeof high !== 'number' || !Number.isFinite(high) || high < 0) return false;
+            if (typeof low !== 'number' || !Number.isFinite(low) || low < 0) return false;
+            if (typeof close !== 'number' || !Number.isFinite(close) || close < 0) return false;
+
+            // Sanity check: high >= low, high >= open, high >= close
+            if (high < low || high < open || high < close) return false;
+            if (low > open || low > close) return false;
+
+            return true;
         });
 
         if (filtered.length !== data.length) {
@@ -1056,7 +1066,13 @@ const AdvancedChart = ({
             mainSeriesRef.current = candlestickSeries;
 
             // Set data (using sanitized data to prevent null value crashes)
-            candlestickSeries.setData(sanitizedData);
+            try {
+                candlestickSeries.setData(sanitizedData);
+            } catch (err) {
+                console.error('[AdvancedChart] Failed to set candlestick data:', err.message);
+                console.error('[AdvancedChart] First 3 candles:', sanitizedData.slice(0, 3));
+                console.error('[AdvancedChart] Last 3 candles:', sanitizedData.slice(-3));
+            }
         } else if (chartType === 'line') {
             const samplePrice = sanitizedData.length > 0 ? sanitizedData[sanitizedData.length - 1].close : 100;
             const priceFormat = getPriceFormat(samplePrice);
