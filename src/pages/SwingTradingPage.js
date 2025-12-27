@@ -12,7 +12,8 @@ import {
     TrendingUp, TrendingDown, Target, Shield, DollarSign,
     RefreshCw, Zap, Activity, Star, Clock, AlertTriangle,
     CheckCircle, ArrowUpRight, ArrowDownRight, BarChart3,
-    Percent, Calendar, Filter, ChevronDown, ChevronUp
+    Percent, Calendar, Filter, ChevronDown, ChevronUp,
+    Search, Plus, X, Loader2
 } from 'lucide-react';
 
 // ============ ANIMATIONS ============
@@ -552,6 +553,223 @@ const EmptyText = styled.p`
     margin: 0 auto;
 `;
 
+// ============ SEARCH COMPONENTS ============
+const SearchSection = styled.div`
+    max-width: 1800px;
+    margin: 0 auto 2rem;
+    background: ${props => props.theme?.bg?.card || 'rgba(30, 41, 59, 0.9)'};
+    backdrop-filter: blur(10px);
+    border: 1px solid ${props => props.theme?.border?.primary || 'rgba(100, 116, 139, 0.3)'};
+    border-radius: 16px;
+    padding: 1.5rem;
+`;
+
+const SearchHeader = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+`;
+
+const SearchTitle = styled.h3`
+    font-size: 1.1rem;
+    color: ${props => props.theme?.text?.primary || '#e0e6ed'};
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+`;
+
+const SearchInputWrapper = styled.div`
+    position: relative;
+    flex: 1;
+    min-width: 300px;
+    max-width: 500px;
+`;
+
+const SearchInput = styled.input`
+    width: 100%;
+    padding: 0.75rem 1rem 0.75rem 2.75rem;
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(100, 116, 139, 0.3);
+    border-radius: 10px;
+    color: ${props => props.theme?.text?.primary || '#e0e6ed'};
+    font-size: 1rem;
+    transition: all 0.3s ease;
+
+    &:focus {
+        outline: none;
+        border-color: ${props => props.theme?.brand?.primary || '#00adef'};
+        box-shadow: 0 0 0 3px ${props => props.theme?.brand?.primary || '#00adef'}33;
+    }
+
+    &::placeholder {
+        color: ${props => props.theme?.text?.secondary || '#94a3b8'};
+    }
+`;
+
+const SearchIcon = styled.div`
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
+`;
+
+const SearchResults = styled.div`
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: ${props => props.theme?.bg?.card || 'rgba(30, 41, 59, 0.98)'};
+    border: 1px solid ${props => props.theme?.border?.primary || 'rgba(100, 116, 139, 0.3)'};
+    border-radius: 10px;
+    margin-top: 0.5rem;
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 100;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+`;
+
+const SearchResultItem = styled.button`
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: transparent;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: background 0.2s;
+    color: ${props => props.theme?.text?.primary || '#e0e6ed'};
+
+    &:hover {
+        background: rgba(0, 173, 239, 0.1);
+    }
+
+    &:not(:last-child) {
+        border-bottom: 1px solid rgba(100, 116, 139, 0.2);
+    }
+`;
+
+const ResultSymbol = styled.span`
+    font-weight: 700;
+    color: ${props => props.theme?.brand?.primary || '#00adef'};
+`;
+
+const ResultName = styled.span`
+    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
+    font-size: 0.85rem;
+    margin-left: 0.75rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+`;
+
+const AddButton = styled.button`
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.35rem 0.75rem;
+    background: ${props => props.theme?.brand?.primary || '#00adef'}33;
+    border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}66;
+    border-radius: 6px;
+    color: ${props => props.theme?.brand?.primary || '#00adef'};
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover {
+        background: ${props => props.theme?.brand?.primary || '#00adef'}4D;
+    }
+`;
+
+const CustomSymbolsRow = styled.div`
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
+`;
+
+const SymbolTag = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: ${props => props.$analyzing
+        ? 'rgba(255, 167, 38, 0.2)'
+        : 'rgba(0, 173, 239, 0.15)'};
+    border: 1px solid ${props => props.$analyzing
+        ? 'rgba(255, 167, 38, 0.4)'
+        : 'rgba(0, 173, 239, 0.3)'};
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: ${props => props.$analyzing
+        ? '#ffa726'
+        : (props.theme?.brand?.primary || '#00adef')};
+`;
+
+const RemoveSymbolBtn = styled.button`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    background: rgba(255, 68, 68, 0.2);
+    border: none;
+    border-radius: 50%;
+    color: #ff4444;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover {
+        background: rgba(255, 68, 68, 0.4);
+    }
+`;
+
+const AnalyzeButton = styled.button`
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: linear-gradient(135deg, ${props => props.theme?.brand?.primary || '#00adef'} 0%, ${props => props.theme?.success || '#00ff88'} 100%);
+    border: none;
+    border-radius: 10px;
+    color: #0a0e27;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px ${props => props.theme?.brand?.primary || '#00adef'}66;
+    }
+
+    &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+`;
+
+const SearchingIndicator = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
+    font-size: 0.9rem;
+`;
+
+const SpinningLoader = styled(Loader2)`
+    ${css`animation: ${spin} 1s linear infinite;`}
+`;
+
 // ============ COMPONENT ============
 const SwingTradingPage = () => {
     const { user, api } = useAuth();
@@ -566,6 +784,14 @@ const SwingTradingPage = () => {
     const [refreshing, setRefreshing] = useState(false);
     const [timeframe, setTimeframe] = useState('all');
     const [direction, setDirection] = useState('all');
+
+    // Search state
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState([]);
+    const [searchLoading, setSearchLoading] = useState(false);
+    const [showResults, setShowResults] = useState(false);
+    const [customSymbols, setCustomSymbols] = useState([]);
+    const [analyzingCustom, setAnalyzingCustom] = useState(false);
 
     // Default symbols
     const STOCK_SYMBOLS = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'NVDA', 'META', 'AMD', 'NFLX', 'SPY', 'QQQ', 'DIS', 'BA', 'JPM', 'V'];
@@ -618,6 +844,17 @@ const SwingTradingPage = () => {
         }
     }, [mode, api, toast]);
 
+    // Helper to format price for reasons text
+    const formatReasonPrice = (price, assetType) => {
+        if (assetType === 'crypto') {
+            if (price < 0.01) return price.toFixed(6);
+            if (price < 1) return price.toFixed(4);
+            if (price < 100) return price.toFixed(4);
+            return price.toFixed(2);
+        }
+        return price.toFixed(2);
+    };
+
     // Analyze candles for swing trade opportunity
     const analyzeForSwingTrade = (symbol, candles, assetType) => {
         const recentCandles = candles.slice(-30);
@@ -645,27 +882,30 @@ const SwingTradingPage = () => {
         const recentLow = Math.min(...lows.slice(-14));
         const recentHigh = Math.max(...highs.slice(-14));
 
+        // Price formatting helper
+        const fp = (p) => formatReasonPrice(p, assetType);
+
         // Determine signal type
         let signalType = null;
         let confidence = 0;
         let reasons = [];
 
-        // Bullish conditions
+        // Bullish conditions - with specific values
         const bullishConditions = [];
-        if (currentPrice > sma10) bullishConditions.push('Price above SMA10');
-        if (currentPrice > sma20) bullishConditions.push('Price above SMA20');
-        if (sma10 > sma20) bullishConditions.push('SMA10 > SMA20 (Bullish crossover)');
-        if (rsi > 40 && rsi < 70) bullishConditions.push(`RSI at ${rsi.toFixed(0)} (healthy momentum)`);
-        if (currentPrice < recentLow * 1.05) bullishConditions.push('Near support level');
+        if (currentPrice > sma10) bullishConditions.push(`$${fp(currentPrice)} above 10-day MA ($${fp(sma10)})`);
+        if (currentPrice > sma20) bullishConditions.push(`Trading above 20-day MA at $${fp(sma20)}`);
+        if (sma10 > sma20) bullishConditions.push(`Bullish trend: 10MA ($${fp(sma10)}) > 20MA ($${fp(sma20)})`);
+        if (rsi > 40 && rsi < 70) bullishConditions.push(`RSI ${rsi.toFixed(1)} shows healthy momentum`);
+        if (currentPrice < recentLow * 1.05) bullishConditions.push(`Near 14-day support at $${fp(recentLow)}`);
 
-        // Bearish conditions
+        // Bearish conditions - with specific values
         const bearishConditions = [];
-        if (currentPrice < sma10) bearishConditions.push('Price below SMA10');
-        if (currentPrice < sma20) bearishConditions.push('Price below SMA20');
-        if (sma10 < sma20) bearishConditions.push('SMA10 < SMA20 (Bearish crossover)');
-        if (rsi > 70) bearishConditions.push(`RSI overbought at ${rsi.toFixed(0)}`);
-        if (rsi < 30) bearishConditions.push(`RSI oversold at ${rsi.toFixed(0)} (potential bounce)`);
-        if (currentPrice > recentHigh * 0.95) bearishConditions.push('Near resistance level');
+        if (currentPrice < sma10) bearishConditions.push(`$${fp(currentPrice)} below 10-day MA ($${fp(sma10)})`);
+        if (currentPrice < sma20) bearishConditions.push(`Trading below 20-day MA at $${fp(sma20)}`);
+        if (sma10 < sma20) bearishConditions.push(`Bearish trend: 10MA ($${fp(sma10)}) < 20MA ($${fp(sma20)})`);
+        if (rsi > 70) bearishConditions.push(`RSI overbought at ${rsi.toFixed(1)} - pullback likely`);
+        if (rsi < 30) bearishConditions.push(`RSI oversold at ${rsi.toFixed(1)} - bounce possible`);
+        if (currentPrice > recentHigh * 0.95) bearishConditions.push(`Near 14-day resistance at $${fp(recentHigh)}`);
 
         // Decide signal - need at least 2 conditions
         if (bullishConditions.length >= 2 && rsi < 75) {
@@ -778,6 +1018,114 @@ const SwingTradingPage = () => {
         generateSignals();
     };
 
+    // Search for symbols
+    const searchSymbols = useCallback(async (query) => {
+        if (!query || query.length < 1) {
+            setSearchResults([]);
+            setShowResults(false);
+            return;
+        }
+
+        setSearchLoading(true);
+        try {
+            const endpoint = mode === 'stocks'
+                ? `/stocks/search?q=${encodeURIComponent(query)}`
+                : `/crypto/search?q=${encodeURIComponent(query)}`;
+
+            const response = await api.get(endpoint);
+            const results = response.data.results || response.data || [];
+            setSearchResults(results.slice(0, 10)); // Limit to 10 results
+            setShowResults(true);
+        } catch (err) {
+            console.error('Search error:', err);
+            setSearchResults([]);
+        } finally {
+            setSearchLoading(false);
+        }
+    }, [api, mode]);
+
+    // Debounced search
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (searchQuery) {
+                searchSymbols(searchQuery);
+            }
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [searchQuery, searchSymbols]);
+
+    // Add symbol to custom list
+    const addCustomSymbol = (symbol, name) => {
+        const symbolUpper = symbol.toUpperCase();
+        if (!customSymbols.find(s => s.symbol === symbolUpper)) {
+            setCustomSymbols(prev => [...prev, { symbol: symbolUpper, name }]);
+            toast.success(`Added ${symbolUpper} to analysis queue`);
+        }
+        setSearchQuery('');
+        setShowResults(false);
+    };
+
+    // Remove symbol from custom list
+    const removeCustomSymbol = (symbol) => {
+        setCustomSymbols(prev => prev.filter(s => s.symbol !== symbol));
+    };
+
+    // Analyze custom symbols
+    const analyzeCustomSymbols = async () => {
+        if (customSymbols.length === 0) {
+            toast.error('Add symbols to analyze first');
+            return;
+        }
+
+        setAnalyzingCustom(true);
+        const newSignals = [];
+
+        for (const { symbol } of customSymbols) {
+            try {
+                const endpoint = mode === 'stocks'
+                    ? `/stocks/historical/${symbol}`
+                    : `/crypto/historical/${symbol}`;
+
+                const response = await api.get(endpoint, {
+                    params: { range: '1M' }
+                });
+
+                const candles = response.data.historicalData || response.data.data || [];
+                if (candles.length >= 20) {
+                    const signal = analyzeForSwingTrade(symbol, candles, mode);
+                    if (signal) {
+                        newSignals.push(signal);
+                    } else {
+                        toast.info(`${symbol}: No strong setup detected`);
+                    }
+                }
+            } catch (err) {
+                toast.error(`Failed to analyze ${symbol}`);
+            }
+        }
+
+        if (newSignals.length > 0) {
+            // Add new signals to existing ones (avoid duplicates)
+            setSignals(prev => {
+                const existingSymbols = new Set(prev.map(s => s.symbol));
+                const uniqueNew = newSignals.filter(s => !existingSymbols.has(s.symbol));
+                const combined = [...uniqueNew, ...prev];
+                return combined.sort((a, b) => b.confidence - a.confidence);
+            });
+            toast.success(`Found ${newSignals.length} swing trade setup${newSignals.length > 1 ? 's' : ''}!`);
+        }
+
+        setCustomSymbols([]);
+        setAnalyzingCustom(false);
+    };
+
+    // Close search results when clicking outside
+    useEffect(() => {
+        const handleClickOutside = () => setShowResults(false);
+        document.addEventListener('click', handleClickOutside);
+        return () => document.removeEventListener('click', handleClickOutside);
+    }, []);
+
     const formatPrice = (price, type) => {
         if (type === 'crypto') {
             if (price < 0.01) return `$${price.toFixed(6)}`;
@@ -834,6 +1182,83 @@ const SwingTradingPage = () => {
                     Crypto
                 </ModeButton>
             </ModeToggle>
+
+            {/* Search Section */}
+            <SearchSection>
+                <SearchHeader>
+                    <SearchTitle>
+                        <Search size={18} />
+                        Search & Analyze Any {mode === 'stocks' ? 'Stock' : 'Crypto'}
+                    </SearchTitle>
+                </SearchHeader>
+
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                    <SearchInputWrapper onClick={(e) => e.stopPropagation()}>
+                        <SearchIcon>
+                            {searchLoading ? <SpinningLoader size={18} /> : <Search size={18} />}
+                        </SearchIcon>
+                        <SearchInput
+                            type="text"
+                            placeholder={mode === 'stocks' ? 'Search stocks (e.g., AAPL, MSFT, GME)...' : 'Search crypto (e.g., BTC, ETH, SHIB)...'}
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onFocus={() => searchResults.length > 0 && setShowResults(true)}
+                        />
+                        {showResults && searchResults.length > 0 && (
+                            <SearchResults>
+                                {searchResults.map((result, idx) => (
+                                    <SearchResultItem
+                                        key={idx}
+                                        onClick={() => addCustomSymbol(result.symbol, result.name)}
+                                    >
+                                        <div>
+                                            <ResultSymbol>{result.symbol}</ResultSymbol>
+                                            <ResultName>{result.name}</ResultName>
+                                        </div>
+                                        <AddButton>
+                                            <Plus size={14} />
+                                            Add
+                                        </AddButton>
+                                    </SearchResultItem>
+                                ))}
+                            </SearchResults>
+                        )}
+                    </SearchInputWrapper>
+
+                    <AnalyzeButton
+                        onClick={analyzeCustomSymbols}
+                        disabled={customSymbols.length === 0 || analyzingCustom}
+                    >
+                        {analyzingCustom ? (
+                            <>
+                                <SpinningLoader size={18} />
+                                Analyzing...
+                            </>
+                        ) : (
+                            <>
+                                <Zap size={18} />
+                                Analyze ({customSymbols.length})
+                            </>
+                        )}
+                    </AnalyzeButton>
+                </div>
+
+                {customSymbols.length > 0 && (
+                    <CustomSymbolsRow>
+                        {customSymbols.map(({ symbol, name }) => (
+                            <SymbolTag key={symbol} $analyzing={analyzingCustom}>
+                                {analyzingCustom && <SpinningLoader size={14} />}
+                                {symbol}
+                                {!analyzingCustom && (
+                                    <RemoveSymbolBtn onClick={() => removeCustomSymbol(symbol)}>
+                                        <X size={12} />
+                                    </RemoveSymbolBtn>
+                                )}
+                            </SymbolTag>
+                        ))}
+                    </CustomSymbolsRow>
+                )}
+            </SearchSection>
 
             <ControlsBar>
                 <FilterGroup>
