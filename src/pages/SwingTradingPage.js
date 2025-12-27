@@ -15,8 +15,6 @@ import {
     Percent, Calendar, Filter, ChevronDown, ChevronUp
 } from 'lucide-react';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`
     from { opacity: 0; transform: translateY(20px); }
@@ -556,7 +554,7 @@ const EmptyText = styled.p`
 
 // ============ COMPONENT ============
 const SwingTradingPage = () => {
-    const { user, token } = useAuth();
+    const { user, api } = useAuth();
     const { theme } = useTheme();
     const { hasSwingTrading } = useSubscription();
     const toast = useToast();
@@ -571,7 +569,7 @@ const SwingTradingPage = () => {
 
     // Default symbols
     const STOCK_SYMBOLS = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'NVDA', 'META', 'AMD', 'NFLX', 'SPY', 'QQQ', 'DIS', 'BA', 'JPM', 'V'];
-    const CRYPTO_SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT', 'XRPUSDT', 'ADAUSDT', 'DOGEUSDT', 'DOTUSDT', 'AVAXUSDT', 'LINKUSDT'];
+    const CRYPTO_SYMBOLS = ['BTC', 'ETH', 'BNB', 'SOL', 'XRP', 'ADA', 'DOGE', 'DOT', 'AVAX', 'LINK'];
 
     // Generate swing trade signals
     const generateSignals = useCallback(async () => {
@@ -582,23 +580,18 @@ const SwingTradingPage = () => {
             const generatedSignals = [];
 
             for (const symbol of symbols) {
-                // Fetch chart data to analyze
-                const cleanSymbol = symbol.replace('USDT', '');
+                // Use correct endpoints: /stocks/historical or /crypto/historical
                 const endpoint = mode === 'stocks'
-                    ? `${API_BASE_URL}/chart/${symbol}/1d`
-                    : `${API_BASE_URL}/chart/${cleanSymbol}/1d`;
+                    ? `/stocks/historical/${symbol}`
+                    : `/crypto/historical/${symbol}`;
 
                 try {
-                    const response = await fetch(endpoint, {
-                        headers: { Authorization: `Bearer ${token}` }
+                    const response = await api.get(endpoint, {
+                        params: { range: '1M' }
                     });
 
-                    if (!response.ok) continue;
-
-                    const responseData = await response.json();
-
-                    // API returns { success: true, data: [...candles...] }
-                    const candles = responseData.data || responseData.candles || [];
+                    // API returns { historicalData: [...] } or { data: [...] }
+                    const candles = response.data.historicalData || response.data.data || [];
 
                     console.log(`[SwingTrading] ${symbol}: ${candles.length} candles received`);
 
@@ -628,7 +621,7 @@ const SwingTradingPage = () => {
             setLoading(false);
             setRefreshing(false);
         }
-    }, [mode, token, toast]);
+    }, [mode, api, toast]);
 
     // Analyze candles for swing trade opportunity
     const analyzeForSwingTrade = (symbol, candles, assetType) => {
@@ -769,10 +762,10 @@ const SwingTradingPage = () => {
 
     // Initial load
     useEffect(() => {
-        if (token) {
+        if (api) {
             generateSignals();
         }
-    }, [mode, token, generateSignals]);
+    }, [mode, api, generateSignals]);
 
     // Filter signals
     const filteredSignals = signals.filter(signal => {
