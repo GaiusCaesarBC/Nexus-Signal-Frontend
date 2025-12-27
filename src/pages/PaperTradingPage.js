@@ -1608,7 +1608,7 @@ const PaperTradingPage = () => {
 
             if (response.data.tradeable) {
                 setCurrentPrice(response.data.price);
-                toast.success(`${result.symbol} @ $${response.data.price.toFixed(2)}`, 'Price loaded');
+                toast.success(`${result.symbol} @ ${formatAssetPrice(response.data.price, result.type)}`, 'Price loaded');
             } else {
                 toast.error(
                     `${result.symbol} price data unavailable. Try another ${result.type === 'crypto' ? 'crypto' : 'stock'}.`,
