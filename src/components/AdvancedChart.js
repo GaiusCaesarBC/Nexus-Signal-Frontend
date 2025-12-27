@@ -2023,14 +2023,13 @@ const AdvancedChart = ({
             return;
         }
 
-        console.log(`[AdvancedChart] Live price update: ${symbol} = $${livePrice}`);
-
         try {
             const lastCandle = sanitizedData[sanitizedData.length - 1];
-            if (!lastCandle) return;
+            if (!lastCandle) {
+                console.log(`[AdvancedChart] No last candle found`);
+                return;
+            }
 
-            // Create a new timestamp for the current time (for live updates)
-            const now = Math.floor(Date.now() / 1000);
             const candleTime = lastCandle.time;
 
             // Update the last candle with live price
@@ -2042,15 +2041,19 @@ const AdvancedChart = ({
                 close: livePrice
             };
 
+            console.log(`[AdvancedChart] Calling update() - chartType=${chartType}, time=${candleTime}, close=${livePrice}, lastClose=${lastCandle.close}`);
+
             // Update the series based on chart type
             if (chartType === 'candlestick') {
                 mainSeriesRef.current.update(updatedCandle);
+                console.log(`[AdvancedChart] ✅ Candlestick updated`);
             } else {
                 // Line/Area chart - just update close value
                 mainSeriesRef.current.update({
                     time: candleTime,
                     value: livePrice
                 });
+                console.log(`[AdvancedChart] ✅ Line/Area updated`);
             }
 
             // Update price display
