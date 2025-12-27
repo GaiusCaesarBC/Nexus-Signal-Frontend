@@ -593,12 +593,7 @@ const SwingTradingPage = () => {
                     // API returns { historicalData: [...] } or { data: [...] }
                     const candles = response.data.historicalData || response.data.data || [];
 
-                    console.log(`[SwingTrading] ${symbol}: ${candles.length} candles received`);
-
-                    if (candles.length < 20) {
-                        console.log(`[SwingTrading] ${symbol}: Not enough candles (${candles.length})`);
-                        continue;
-                    }
+                    if (candles.length < 20) continue;
 
                     // Analyze for swing trade setup
                     const signal = analyzeForSwingTrade(symbol, candles, mode);
@@ -606,13 +601,12 @@ const SwingTradingPage = () => {
                         generatedSignals.push(signal);
                     }
                 } catch (err) {
-                    console.log(`Skipping ${symbol}:`, err.message);
+                    // Skip symbol on error
                 }
             }
 
             // Sort by confidence
             generatedSignals.sort((a, b) => b.confidence - a.confidence);
-            console.log('[SwingTrading] Generated signals:', generatedSignals.length, generatedSignals);
             setSignals(generatedSignals);
 
         } catch (err) {
@@ -684,9 +678,7 @@ const SwingTradingPage = () => {
             reasons = bearishConditions;
         }
 
-        console.log(`[SwingTrading] ${symbol}: Bull=${bullishConditions.length}, Bear=${bearishConditions.length}, RSI=${rsi.toFixed(0)}, Signal=${signalType || 'NONE'}`);
-
-        // Return signal if we have one (minimum 50% confidence from 2 conditions)
+        // Return signal if we have one
         if (!signalType) return null;
 
         // Calculate entry, target, and stop loss
@@ -796,20 +788,17 @@ const SwingTradingPage = () => {
         return `$${price.toFixed(2)}`;
     };
 
-    // Debug: Log signals state
-    console.log('[SwingTrading] Rendering - signals:', signals.length, 'filtered:', filteredSignals.length, 'loading:', loading);
-
-    // Subscription gate - temporarily disabled for debugging
-    // if (!hasSwingTrading) {
-    //     return (
-    //         <PageContainer>
-    //             <UpgradePrompt
-    //                 feature="Swing Trading Signals"
-    //                 requiredPlan="Pro"
-    //             />
-    //         </PageContainer>
-    //     );
-    // }
+    // Subscription gate
+    if (!hasSwingTrading) {
+        return (
+            <PageContainer>
+                <UpgradePrompt
+                    feature="Swing Trading Signals"
+                    requiredPlan="Pro"
+                />
+            </PageContainer>
+        );
+    }
 
     return (
         <PageContainer>
