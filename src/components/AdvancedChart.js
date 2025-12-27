@@ -2015,20 +2015,13 @@ const AdvancedChart = ({
 
     // Handle live price updates - update chart in real-time
     useEffect(() => {
-        // Debug: log what we have
-        console.log(`[AdvancedChart] Live update check: livePrice=${livePrice}, hasSeriesRef=${!!mainSeriesRef.current}, dataLen=${sanitizedData.length}`);
-
         if (!livePrice || !mainSeriesRef.current || sanitizedData.length === 0) {
-            console.log(`[AdvancedChart] Skipping update - missing: ${!livePrice ? 'livePrice' : ''} ${!mainSeriesRef.current ? 'seriesRef' : ''} ${sanitizedData.length === 0 ? 'data' : ''}`);
             return;
         }
 
         try {
             const lastCandle = sanitizedData[sanitizedData.length - 1];
-            if (!lastCandle) {
-                console.log(`[AdvancedChart] No last candle found`);
-                return;
-            }
+            if (!lastCandle) return;
 
             const candleTime = lastCandle.time;
 
@@ -2041,19 +2034,15 @@ const AdvancedChart = ({
                 close: livePrice
             };
 
-            console.log(`[AdvancedChart] Calling update() - chartType=${chartType}, time=${candleTime}, close=${livePrice}, lastClose=${lastCandle.close}`);
-
             // Update the series based on chart type
             if (chartType === 'candlestick') {
                 mainSeriesRef.current.update(updatedCandle);
-                console.log(`[AdvancedChart] ✅ Candlestick updated`);
             } else {
                 // Line/Area chart - just update close value
                 mainSeriesRef.current.update({
                     time: candleTime,
                     value: livePrice
                 });
-                console.log(`[AdvancedChart] ✅ Line/Area updated`);
             }
 
             // Update price display
