@@ -788,17 +788,17 @@ const SwingTradingPage = () => {
         return `$${price.toFixed(2)}`;
     };
 
-    // Subscription gate
-    if (!hasSwingTrading) {
-        return (
-            <PageContainer>
-                <UpgradePrompt
-                    feature="Swing Trading Signals"
-                    requiredPlan="Pro"
-                />
-            </PageContainer>
-        );
-    }
+    // Subscription gate - disabled for now (TODO: enable for production)
+    // if (!hasSwingTrading) {
+    //     return (
+    //         <PageContainer>
+    //             <UpgradePrompt
+    //                 feature="Swing Trading Signals"
+    //                 requiredPlan="Pro"
+    //             />
+    //         </PageContainer>
+    //     );
+    // }
 
     return (
         <PageContainer>
