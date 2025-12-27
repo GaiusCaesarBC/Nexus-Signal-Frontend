@@ -612,6 +612,7 @@ const SwingTradingPage = () => {
 
             // Sort by confidence
             generatedSignals.sort((a, b) => b.confidence - a.confidence);
+            console.log('[SwingTrading] Generated signals:', generatedSignals.length, generatedSignals);
             setSignals(generatedSignals);
 
         } catch (err) {
@@ -795,17 +796,20 @@ const SwingTradingPage = () => {
         return `$${price.toFixed(2)}`;
     };
 
-    // Subscription gate - check for swing trading feature
-    if (!hasSwingTrading) {
-        return (
-            <PageContainer>
-                <UpgradePrompt
-                    feature="Swing Trading Signals"
-                    requiredPlan="Pro"
-                />
-            </PageContainer>
-        );
-    }
+    // Debug: Log signals state
+    console.log('[SwingTrading] Rendering - signals:', signals.length, 'filtered:', filteredSignals.length, 'loading:', loading);
+
+    // Subscription gate - temporarily disabled for debugging
+    // if (!hasSwingTrading) {
+    //     return (
+    //         <PageContainer>
+    //             <UpgradePrompt
+    //                 feature="Swing Trading Signals"
+    //                 requiredPlan="Pro"
+    //             />
+    //         </PageContainer>
+    //     );
+    // }
 
     return (
         <PageContainer>
