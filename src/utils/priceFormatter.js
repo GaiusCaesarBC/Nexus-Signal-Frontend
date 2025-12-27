@@ -154,10 +154,11 @@ export const formatVolume = (value) => {
 
 /**
  * Format cryptocurrency price (always show many decimals)
+ * Crypto needs more precision than stocks, especially for mid-range coins like XRP, ADA, DOGE
  */
 export const formatCryptoPrice = (price) => {
     if (price == null || isNaN(price)) return '$0.00';
-    
+
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
     const absPrice = Math.abs(numPrice);
 
@@ -170,7 +171,11 @@ export const formatCryptoPrice = (price) => {
         decimals = 6;
     } else if (absPrice < 1) {
         decimals = 4;
+    } else if (absPrice < 100) {
+        // Mid-range crypto like XRP, ADA, DOGE need 4 decimals for trading precision
+        decimals = 4;
     } else {
+        // BTC, ETH, etc. - 2 decimals is fine
         decimals = 2;
     }
 
