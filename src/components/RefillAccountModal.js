@@ -579,7 +579,8 @@ const RefillAccountModal = ({ isOpen, onClose, currentCashBalance = 0, onRefillS
             }
         } catch (err) {
             console.error('Refill error:', err);
-            setError(err.response?.data?.message || 'Failed to refill account');
+            // Server sends { error: '...' }, not { message: '...' }
+            setError(err.response?.data?.error || err.response?.data?.message || 'Failed to refill account');
         } finally {
             setLoading(false);
         }
