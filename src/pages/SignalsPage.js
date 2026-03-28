@@ -24,6 +24,11 @@ const slideIn = keyframes`from{opacity:0;transform:translateX(-8px)}to{opacity:1
 const spin = keyframes`from{transform:rotate(0)}to{transform:rotate(360deg)}`;
 const tickUp = keyframes`from{color:#10b981;opacity:.6}to{color:#10b981;opacity:1}`;
 const tickDown = keyframes`from{color:#ef4444;opacity:.6}to{color:#ef4444;opacity:1}`;
+const flashGreen = keyframes`0%{background:rgba(16,185,129,.12)}100%{background:transparent}`;
+const flashRed = keyframes`0%{background:rgba(239,68,68,.12)}100%{background:transparent}`;
+const nearTargetGlow = keyframes`0%,100%{box-shadow:0 0 8px rgba(16,185,129,.1)}50%{box-shadow:0 0 24px rgba(16,185,129,.25)}`;
+const nearSlGlow = keyframes`0%,100%{box-shadow:0 0 8px rgba(239,68,68,.1)}50%{box-shadow:0 0 24px rgba(239,68,68,.25)}`;
+const expiringPulse = keyframes`0%,100%{border-color:rgba(245,158,11,.2)}50%{border-color:rgba(245,158,11,.45)}`;
 
 // ─── Helpers ──────────────────────────────────────────────
 const isCrypto = (sym) => { const base = sym?.split(':')[0]?.replace(/USDT|USD/i,'') || ''; return CRYPTO_SET.has(base.toUpperCase()); };
@@ -82,6 +87,22 @@ const moveStory = (s) => {
         if (abs > totalRange * 0.7) return `${pct} ${s.long ? '↓' : '↑'} ⚠ nearing stop loss`;
         return `${pct} ${s.long ? '↓' : '↑'} against position`;
     }
+};
+
+// Microcopy — dynamic "in trade feel" line
+const microCopyText = (s) => {
+    if (s.status === 'closed') return '';
+    const abs = Math.abs(s.movePct);
+    const totalRange = Math.abs(s.changePct);
+    const fav = s.long ? s.movePct >= 0 : s.movePct <= 0;
+
+    if (fav && abs >= totalRange * 0.85) return 'Momentum building — approaching target';
+    if (fav && abs >= totalRange * 0.5) return 'Strong move — holding direction';
+    if (fav && abs >= totalRange * 0.15) return 'Holding above entry — on track';
+    if (fav) return 'Early movement — monitoring';
+    if (!fav && abs >= totalRange * 0.6) return 'Weak movement — watch closely';
+    if (!fav && abs >= totalRange * 0.3) return 'Pullback — still valid';
+    return 'Consolidating near entry';
 };
 
 // Proximity warnings
@@ -164,8 +185,11 @@ const Card = styled.div`
     border-radius:16px;overflow:hidden;transition:all .25s;cursor:pointer;
     animation:${fadeIn} .35s ease-out ${p=>p.$delay||'0s'} backwards;
     ${p=>p.$status==='new'&&css`animation:${fadeIn} .35s ease-out backwards,${newPulse} 2.5s ease-in-out infinite;`}
-    ${p=>p.$status!=='new'&&p.$highConf&&css`animation:${fadeIn} .35s ease-out backwards,${highGlow} 3s ease-in-out infinite;`}
-    &:hover{border-color:rgba(0,173,237,.4);transform:translateY(-3px);box-shadow:0 12px 32px rgba(0,0,0,.35);}
+    ${p=>p.$status!=='new'&&p.$highConf&&!p.$prox&&css`animation:${fadeIn} .35s ease-out backwards,${highGlow} 3s ease-in-out infinite;`}
+    ${p=>p.$prox==='near-target'&&css`border-color:rgba(16,185,129,.35);animation:${fadeIn} .35s ease-out backwards,${nearTargetGlow} 2.5s ease-in-out infinite;`}
+    ${p=>p.$prox==='near-sl'&&css`border-color:rgba(239,68,68,.3);animation:${fadeIn} .35s ease-out backwards,${nearSlGlow} 2.5s ease-in-out infinite;`}
+    ${p=>p.$expiring&&p.$status!=='closed'&&css`animation:${fadeIn} .35s ease-out backwards,${expiringPulse} 2s ease-in-out infinite;`}
+    &:hover{border-color:rgba(0,173,237,.4);transform:translateY(-4px);box-shadow:0 12px 32px rgba(0,0,0,.35);}
 `;
 
 const CardHeader = styled.div`
@@ -228,13 +252,39 @@ const StoryText = styled.div`font-size:.85rem;font-weight:600;color:${p=>p.$pos?
 const StoryPrice = styled.div`font-size:.75rem;color:#64748b;`;
 
 const BarContainer = styled.div`position:relative;margin-top:.3rem;`;
-const BarTrack = styled.div`width:100%;height:5px;background:rgba(255,255,255,.05);border-radius:3px;overflow:hidden;position:relative;`;
+const BarTrack = styled.div`width:100%;height:5px;background:rgba(255,255,255,.05);border-radius:3px;overflow:visible;position:relative;`;
 const BarFill = styled.div`
     height:100%;border-radius:3px;transition:width .6s ease;
     width:${p=>Math.min(Math.max(p.$pct,2),98)}%;
     background:${p=>p.$pos?'linear-gradient(90deg,#10b981,#059669)':'linear-gradient(90deg,#ef4444,#dc2626)'};
+    position:relative;
 `;
-const BarLabels = styled.div`display:flex;justify-content:space-between;margin-top:.25rem;font-size:.6rem;color:#475569;`;
+const BarDot = styled.div`
+    position:absolute;right:-4px;top:-3px;width:11px;height:11px;
+    border-radius:50%;background:${p=>p.$pos?'#10b981':'#ef4444'};
+    border:2px solid rgba(12,16,32,.9);box-shadow:0 0 6px ${p=>p.$pos?'rgba(16,185,129,.5)':'rgba(239,68,68,.5)'};
+    transition:all .6s ease;
+`;
+const BarLabels = styled.div`display:flex;justify-content:space-between;margin-top:.35rem;font-size:.58rem;color:#475569;`;
+const MicroCopy = styled.div`font-size:.72rem;color:#64748b;margin-top:.4rem;font-style:italic;`;
+const PnlLine = styled.div`
+    font-size:.7rem;margin-top:.35rem;padding:.3rem .6rem;
+    background:${p=>p.$pos?'rgba(16,185,129,.04)':'rgba(239,68,68,.04)'};
+    border-radius:4px;display:inline-block;
+    color:${p=>p.$pos?'#10b981':'#ef4444'};font-weight:600;
+`;
+const PriceFlash = styled.span`
+    animation:${p=>p.$pos?flashGreen:flashRed} .3s ease-out;
+    border-radius:3px;padding:0 .15rem;
+`;
+const TrackBtn = styled.button`
+    padding:.4rem .75rem;border-radius:7px;font-size:.72rem;font-weight:700;
+    background:${p=>p.$tracked?'rgba(16,185,129,.12)':'rgba(139,92,246,.08)'};
+    border:1px solid ${p=>p.$tracked?'rgba(16,185,129,.25)':'rgba(139,92,246,.18)'};
+    color:${p=>p.$tracked?'#10b981':'#a78bfa'};
+    cursor:pointer;display:flex;align-items:center;gap:.3rem;transition:all .2s;white-space:nowrap;
+    &:hover{transform:translateY(-1px);${p=>!p.$tracked&&'background:rgba(139,92,246,.15);'}}
+`;
 
 // ─── Time Context ─────────────────────────────────────────
 const TimeRow = styled.div`
@@ -463,6 +513,7 @@ const SignalsPage = () => {
     const [signals, setSignals] = useState([]);
     const [filter, setFilter] = useState('all');
     const [refreshing, setRefreshing] = useState(false);
+    const [tracked, setTracked] = useState(new Set());
     const [activity, setActivity] = useState([]);
     const [lastUpdated, setLastUpdated] = useState(null);
     const [secSinceUpdate, setSecSinceUpdate] = useState(0);
@@ -579,7 +630,7 @@ const SignalsPage = () => {
                             const urgency = expiryUrgency(s.expiresAt);
 
                             return (
-                            <Card key={s.id} $status={s.status} $highConf={s.conf>=70} $delay={`${i*.04}s`} onClick={()=>navigate(`/signal/${s.id}`)}>
+                            <Card key={s.id} $status={s.status} $highConf={s.conf>=70} $prox={proximityStatus(s)} $expiring={urgency==='soon'||urgency==='urgent'} $delay={`${i*.04}s`} onClick={()=>navigate(`/signal/${s.id}`)}>
                                 <CardHeader>
                                     <SymbolGroup>
                                         <SymbolName>{s.symbol}</SymbolName>
@@ -619,12 +670,16 @@ const SignalsPage = () => {
                                         <PriceStory $pos={posMove}>
                                             <StoryTop>
                                                 <StoryText $pos={posMove}>{moveStory(s)}</StoryText>
-                                                <StoryPrice>{fmtPrice(s.entry)} → {fmtPrice(s.currentPrice)}</StoryPrice>
+                                                <PriceFlash key={s.currentPrice} $pos={posMove}>
+                                                    <StoryPrice>{fmtPrice(s.entry)} → {fmtPrice(s.currentPrice)}</StoryPrice>
+                                                </PriceFlash>
                                             </StoryTop>
                                             <BarContainer>
-                                                <BarTrack><BarFill $pct={progressPct(s)} $pos={posMove}/></BarTrack>
+                                                <BarTrack><BarFill $pct={progressPct(s)} $pos={posMove}><BarDot $pos={posMove}/></BarFill></BarTrack>
                                                 <BarLabels><span>SL {fmtPrice(s.sl)}</span><span>Entry</span><span>Target {fmtPrice(s.target)}</span></BarLabels>
                                             </BarContainer>
+                                            <MicroCopy>{microCopyText(s)}</MicroCopy>
+                                            <PnlLine $pos={posMove}>If entered at signal: {s.movePct>=0?'+':''}{s.movePct.toFixed(2)}%</PnlLine>
                                         </PriceStory>
                                     )}
 
@@ -658,9 +713,14 @@ const SignalsPage = () => {
                                             {s.idealFor.map((f,k)=>(<IdealTag key={k}>{f}</IdealTag>))}
                                         </TagGroup>
                                         {s.status!=='closed'&&(
-                                            <ActionBtn onClick={(e)=>copySetup(e,s)}>
-                                                <Copy size={12}/> Copy Trade Setup
-                                            </ActionBtn>
+                                            <div style={{display:'flex',gap:'.4rem'}}>
+                                                <TrackBtn $tracked={tracked.has(s.id)} onClick={(e)=>{e.stopPropagation();setTracked(p=>{const n=new Set(p);if(n.has(s.id))n.delete(s.id);else n.add(s.id);return n;});toast.success(tracked.has(s.id)?'Removed from tracked':'Tracking this trade','Trade');}}>
+                                                    {tracked.has(s.id)?<><CheckCircle size={11}/> Tracking</>:<><Activity size={11}/> Track Trade</>}
+                                                </TrackBtn>
+                                                <ActionBtn onClick={(e)=>copySetup(e,s)}>
+                                                    <Copy size={12}/> Copy Setup
+                                                </ActionBtn>
+                                            </div>
                                         )}
                                     </MetaRow>
                                 </CardBody>
