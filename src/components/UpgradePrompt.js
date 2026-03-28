@@ -158,6 +158,31 @@ const CloseButton = styled.button`
     }
 `;
 
+const TrialButton = styled.button`
+    width: 100%;
+    padding: 14px 24px;
+    border: 2px dashed #f97316;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 700;
+    background: rgba(249, 115, 22, 0.1);
+    color: #f97316;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 8px;
+
+    &:hover:not(:disabled) {
+        background: rgba(249, 115, 22, 0.2);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(249, 115, 22, 0.2);
+    }
+
+    &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+`;
+
 const CurrentPlan = styled.div`
     color: #64748b;
     font-size: 0.85rem;
@@ -658,12 +683,17 @@ const UpgradePrompt = ({
     customDescription
 }) => {
     const navigate = useNavigate();
-    const { currentPlan, getPlanDisplayName } = useSubscription();
+    const { currentPlan, getPlanDisplayName, trial, startTrial } = useSubscription();
+    const [trialLoading, setTrialLoading] = React.useState(false);
 
     if (!isOpen) return null;
 
     const featureInfo = FEATURE_INFO[feature] || FEATURE_INFO.default;
     const displayPlan = getPlanDisplayName(requiredPlan);
+
+    // Show trial option if: user hasn't used trial, plan required is premium or below
+    const planHierarchy = ['free', 'starter', 'pro', 'premium', 'elite'];
+    const canUseTrial = !trial?.used && !trial?.active && planHierarchy.indexOf(requiredPlan) <= planHierarchy.indexOf('premium');
 
     const handleUpgrade = () => {
         navigate('/pricing');
@@ -671,6 +701,16 @@ const UpgradePrompt = ({
 
     const handleGoBack = () => {
         navigate(-1);
+    };
+
+    const handleStartTrial = async () => {
+        setTrialLoading(true);
+        const result = await startTrial();
+        setTrialLoading(false);
+        if (!result.success) {
+            // If trial failed, go to pricing
+            navigate('/pricing');
+        }
     };
 
     return (
@@ -696,6 +736,12 @@ const UpgradePrompt = ({
                         </FeatureItem>
                     ))}
                 </FeatureList>
+
+                {canUseTrial && (
+                    <TrialButton onClick={handleStartTrial} disabled={trialLoading}>
+                        {trialLoading ? 'Activating...' : '🎉 Start 7-Day Free Trial'}
+                    </TrialButton>
+                )}
 
                 <ButtonGroup>
                     <CloseButton onClick={handleGoBack}>

@@ -977,6 +977,42 @@ const ActivePlanButton = styled.button`
     }
 `;
 
+const TrialButton = styled.button`
+    width: 100%;
+    padding: 0.7rem 1.5rem;
+    border: 2px dashed #f97316;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    background: rgba(249, 115, 22, 0.08);
+    color: #f97316;
+    cursor: pointer;
+    margin-top: 0.75rem;
+    transition: all 0.2s ease;
+
+    &:hover:not(:disabled) {
+        background: rgba(249, 115, 22, 0.18);
+        transform: translateY(-1px);
+    }
+
+    &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+`;
+
+const TrialActiveBadge = styled.div`
+    width: 100%;
+    padding: 0.6rem 1rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+    text-align: center;
+    margin-top: 0.75rem;
+`;
+
 const StatsSection = styled.div`
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -1098,7 +1134,7 @@ const PricingPage = () => {
     const toast = useToast();
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
-    const { currentPlan } = useSubscription();
+    const { currentPlan, trial, startTrial } = useSubscription();
     const [yearly, setYearly] = useState(false);
     const [loading, setLoading] = useState(null);
     const [ripples, setRipples] = useState({});
@@ -1158,6 +1194,22 @@ const PricingPage = () => {
         } else {
             navigate('/dashboard');
         }
+    };
+
+    const handleStartTrial = async () => {
+        if (!user) {
+            toast.warning('Please log in to start your free trial', 'Login Required');
+            navigate('/login');
+            return;
+        }
+        setLoading('trial');
+        const result = await startTrial();
+        if (result.success) {
+            toast.success('Premium trial activated! Enjoy 7 days of full access.', 'Trial Started');
+        } else {
+            toast.error(result.error || 'Failed to start trial', 'Error');
+        }
+        setLoading(null);
     };
 
     const handleSubscribe = async (plan, e) => {
@@ -1551,6 +1603,18 @@ const PricingPage = () => {
                                     {loading === plan.id ? 'Processing...' : plan.cta}
                                     <ArrowRight size={16} />
                                 </CTAButton>
+                            )}
+
+                            {/* Free Trial button for Premium plan */}
+                            {plan.id === 'premium' && !isCurrentPlan('premium') && !trial?.used && !trial?.active && (
+                                <TrialButton onClick={handleStartTrial} disabled={loading !== null}>
+                                    {loading === 'trial' ? 'Activating...' : '🎉 Start 7-Day Free Trial'}
+                                </TrialButton>
+                            )}
+                            {plan.id === 'premium' && trial?.active && (
+                                <TrialActiveBadge>
+                                    ✅ Trial Active — Expires {new Date(trial.endsAt).toLocaleDateString()}
+                                </TrialActiveBadge>
                             )}
                         </Card>
                     </CardWrapper>

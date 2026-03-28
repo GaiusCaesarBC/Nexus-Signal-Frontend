@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useMemo, useCallback } from 'react';
 import { useAuth } from './AuthContext';
+import API from '../api/axios';
 
 const SubscriptionContext = createContext(null);
 
@@ -275,17 +276,27 @@ const DEFAULT_PLAN_LIMITS = {
 export const SubscriptionProvider = ({ children }) => {
     const { user, isAuthenticated } = useAuth();
 
-    // Get current subscription info
+    // Get current subscription info (including trial)
     const subscription = useMemo(() => {
         if (!isAuthenticated || !user) {
             return {
                 status: 'free',
                 planLimits: DEFAULT_PLAN_LIMITS.free,
-                isActive: false
+                isActive: false,
+                trial: { active: false, used: false, endsAt: null }
             };
         }
 
-        const status = user.subscription?.status || 'free';
+        let status = user.subscription?.status || 'free';
+        let isTrial = false;
+
+        // Check for active free trial (grants premium access)
+        const trialEndsAt = user.subscription?.trialEndsAt;
+        if (status === 'free' && trialEndsAt && new Date() < new Date(trialEndsAt)) {
+            status = 'premium';
+            isTrial = true;
+        }
+
         const planLimits = user.subscription?.planLimits || DEFAULT_PLAN_LIMITS[status] || DEFAULT_PLAN_LIMITS.free;
 
         return {
@@ -294,7 +305,12 @@ export const SubscriptionProvider = ({ children }) => {
             isActive: status !== 'free',
             stripeCustomerId: user.subscription?.stripeCustomerId,
             currentPeriodEnd: user.subscription?.currentPeriodEnd,
-            cancelAtPeriodEnd: user.subscription?.cancelAtPeriodEnd
+            cancelAtPeriodEnd: user.subscription?.cancelAtPeriodEnd,
+            trial: {
+                active: isTrial,
+                used: user.subscription?.trialUsed || false,
+                endsAt: trialEndsAt || null
+            }
         };
     }, [user, isAuthenticated]);
 
@@ -351,11 +367,29 @@ export const SubscriptionProvider = ({ children }) => {
         return names[plan] || plan;
     }, []);
 
+    // Start 7-day free trial
+    const startTrial = useCallback(async () => {
+        try {
+            const response = await API.post('/stripe/start-trial');
+            if (response.data.success) {
+                // Reload user data to pick up trial state
+                window.location.reload();
+            }
+            return response.data;
+        } catch (err) {
+            return { success: false, error: err.response?.data?.error || 'Failed to start trial' };
+        }
+    }, []);
+
     const value = {
         subscription,
         currentPlan: subscription.status,
         planLimits: subscription.planLimits,
         isSubscribed: subscription.isActive,
+
+        // Trial
+        trial: subscription.trial,
+        startTrial,
 
         // Feature checks
         canUseFeature,
