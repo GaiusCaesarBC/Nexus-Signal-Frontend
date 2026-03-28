@@ -176,45 +176,42 @@ const SignalDetailPage = () => {
     const fetchSignal = async () => {
         setLoading(true);
 
-        // Try authenticated live endpoint first (has full data + indicators)
+        // Try authenticated live endpoint first (has full data + indicators + fresh price)
         if (api) {
             try {
                 const res = await api.get(`/predictions/live/${id}`);
-                if (res.data) {
-                    setSignal(buildDetail(res.data));
+                const pred = res.data?.prediction || res.data;
+                if (pred && pred.symbol) {
+                    setSignal(buildDetail(pred));
                     setLoading(false);
                     return;
                 }
             } catch (e) { /* try fallback */ }
         }
 
-        // Fallback: authenticated recent predictions
-        if (api) {
+        // Fallback: fetch from recent (includes system signals)
+        const tryRecent = async (fetcher) => {
             try {
-                const res = await api.get(`/predictions/recent?limit=50`);
-                const data = res.data;
-                const found = (Array.isArray(data) ? data : []).find(p => p._id === id);
-                if (found) {
-                    setSignal(buildDetail(found));
-                    setLoading(false);
-                    return;
-                }
+                const data = typeof fetcher === 'function' ? await fetcher() : null;
+                const list = Array.isArray(data) ? data : [];
+                const found = list.find(p => p._id === id);
+                if (found) { setSignal(buildDetail(found)); setLoading(false); return true; }
             } catch (e) { /* silent */ }
+            return false;
+        };
+
+        // Try authenticated
+        if (api) {
+            const ok = await tryRecent(async () => (await api.get('/predictions/recent?limit=50')).data);
+            if (ok) return;
         }
 
-        // Last resort: unauthenticated fetch
-        try {
+        // Try unauthenticated
+        await tryRecent(async () => {
             const res = await fetch(`${API_URL}/predictions/recent?limit=50`);
-            if (res.ok) {
-                const data = await res.json();
-                const found = (Array.isArray(data) ? data : []).find(p => p._id === id);
-                if (found) {
-                    setSignal(buildDetail(found));
-                    setLoading(false);
-                    return;
-                }
-            }
-        } catch (e) { /* silent */ }
+            return res.ok ? res.json() : [];
+        });
+
         setLoading(false);
     };
 
