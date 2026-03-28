@@ -330,6 +330,31 @@ const AssetTab = styled.button`
     ${p=>p.$active&&p.$variant==='stocks'&&`background:rgba(0,173,237,.12);color:#00adef;`}
 `;
 
+// ─── Trade Score ──────────────────────────────────────────
+const ScoreBadge = styled.div`
+    padding:.25rem .6rem;border-radius:6px;font-size:.7rem;font-weight:800;
+    background:${p=>p.$score>=8?'rgba(16,185,129,.1)':p.$score>=6?'rgba(245,158,11,.1)':'rgba(239,68,68,.1)'};
+    color:${p=>p.$score>=8?'#10b981':p.$score>=6?'#f59e0b':'#ef4444'};
+    border:1px solid ${p=>p.$score>=8?'rgba(16,185,129,.2)':p.$score>=6?'rgba(245,158,11,.2)':'rgba(239,68,68,.2)'};
+    white-space:nowrap;
+`;
+
+const RiskTag = styled.span`
+    padding:.15rem .45rem;border-radius:4px;font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.3px;
+    background:${p=>p.$r==='Low'?'rgba(16,185,129,.06)':p.$r==='Medium'?'rgba(245,158,11,.06)':'rgba(239,68,68,.06)'};
+    color:${p=>p.$r==='Low'?'#10b981':p.$r==='Medium'?'#f59e0b':'#ef4444'};
+    border:1px solid ${p=>p.$r==='Low'?'rgba(16,185,129,.12)':p.$r==='Medium'?'rgba(245,158,11,.12)':'rgba(239,68,68,.12)'};
+`;
+
+const ConfContext = styled.span`
+    font-size:.6rem;color:#475569;font-weight:500;margin-left:.25rem;
+`;
+
+const IdealTag = styled.span`
+    padding:.15rem .4rem;border-radius:3px;font-size:.55rem;font-weight:600;
+    background:rgba(0,173,237,.05);color:#0ea5e9;border:1px solid rgba(0,173,237,.1);
+`;
+
 const Empty = styled.div`text-align:center;padding:3rem;color:#475569;font-size:.9rem;`;
 
 // ═══════════════════════════════════════════════════════════
@@ -386,12 +411,36 @@ function buildSignal(raw, index) {
     else if (days <= 7) tfLabel = 'Swing';
     else tfLabel = `${days}D`;
 
+    // Trade quality score (1-10) based on confidence, R:R, and signal alignment
+    const rrNum = parseFloat(rr) || 2;
+    const rrScore = Math.min(rrNum / 3, 1) * 3;          // max 3 pts
+    const confScore = (conf / 100) * 4;                    // max 4 pts
+    const alignScore = tags.includes('Momentum') || tags.includes('Breakout') ? 2 : tags.includes('High Confidence') ? 1.5 : 1;
+    const tradeScore = Math.min(10, Math.max(1, rrScore + confScore + alignScore + (tags.length > 2 ? 0.5 : 0))).toFixed(1);
+
+    // Risk level
+    const slPct = Math.abs((sl - entry) / entry * 100);
+    const riskLevel = slPct > 5 ? 'High' : slPct > 2.5 ? 'Medium' : 'Low';
+
+    // Confidence context
+    const confLabel = conf >= 70 ? 'Strong Setup' : conf >= 55 ? 'Moderate Setup' : 'Weak Setup';
+
+    // Ideal for tags
+    const idealFor = [];
+    if (days <= 1) idealFor.push('Scalping');
+    if (days >= 3 && days <= 14) idealFor.push('Swing Trade');
+    if (tags.includes('Breakout')) idealFor.push('Breakout');
+    if (tags.includes('Reversal')) idealFor.push('Reversal');
+    if (rrNum >= 2.5) idealFor.push('High R:R');
+    if (idealFor.length === 0) idealFor.push('Day Trade');
+
     return {
         id: raw._id || `sig-${index}`,
         symbol: sym, fullSymbol: raw.symbol, crypto, long, conf, status,
         entry, target, currentPrice, sl, tp1, tp2, tp3, rr,
         changePct, movePct, progress, tfLabel, days, tags,
         isWin, resultText,
+        tradeScore, riskLevel, confLabel, idealFor,
         createdAt: raw.createdAt, expiresAt: raw.expiresAt,
     };
 }
@@ -541,6 +590,7 @@ const SignalsPage = () => {
                                         </DirectionTag>
                                     </SymbolGroup>
                                     <BadgeGroup>
+                                        <ScoreBadge $score={parseFloat(s.tradeScore)} title="Trade Quality Score based on confidence, R:R, and signal alignment">{s.tradeScore}/10</ScoreBadge>
                                         {!isPremium&&s.status==='new'&&<StatusBadge $type="delayed"><Lock size={9}/> Delayed</StatusBadge>}
                                         {proximityStatus(s)==='near-target'&&<StatusBadge $type="new">🎯 Near Target</StatusBadge>}
                                         {proximityStatus(s)==='near-sl'&&<StatusBadge $type="expiring">⚠ Near Stop</StatusBadge>}
@@ -554,9 +604,9 @@ const SignalsPage = () => {
                                 <CardBody>
                                     <LevelsGrid>
                                         <LevelBox><LevelLabel>Entry Price</LevelLabel><LevelValue>{fmtPrice(s.entry)}</LevelValue></LevelBox>
-                                        <LevelBox><LevelLabel>Confidence</LevelLabel><LevelValue $c={s.conf>=75?'#10b981':s.conf>=60?'#f59e0b':'#94a3b8'}>{s.conf}%</LevelValue></LevelBox>
-                                        <LevelBox><LevelLabel>Stop Loss</LevelLabel><LevelValue $c="#ef4444">{fmtPrice(s.sl)}</LevelValue></LevelBox>
-                                        <LevelBox><LevelLabel>Risk / Reward</LevelLabel><LevelValue $c="#00adef">1:{s.rr}</LevelValue></LevelBox>
+                                        <LevelBox><LevelLabel>Confidence</LevelLabel><LevelValue $c={s.conf>=75?'#10b981':s.conf>=60?'#f59e0b':'#94a3b8'} title="AI model confidence in this signal direction">{s.conf}%<ConfContext>— {s.confLabel}</ConfContext></LevelValue></LevelBox>
+                                        <LevelBox><LevelLabel>Stop Loss <RiskTag $r={s.riskLevel}>{s.riskLevel} Risk</RiskTag></LevelLabel><LevelValue $c="#ef4444">{fmtPrice(s.sl)}</LevelValue></LevelBox>
+                                        <LevelBox><LevelLabel>Risk / Reward</LevelLabel><LevelValue $c="#00adef" title="Reward-to-risk ratio: higher = better risk-adjusted trade">1:{s.rr}</LevelValue></LevelBox>
                                     </LevelsGrid>
 
                                     <TPRow>
@@ -605,6 +655,7 @@ const SignalsPage = () => {
                                                 </Tag>
                                             ))}
                                             <Tag>{s.tfLabel}</Tag>
+                                            {s.idealFor.map((f,k)=>(<IdealTag key={k}>{f}</IdealTag>))}
                                         </TagGroup>
                                         {s.status!=='closed'&&(
                                             <ActionBtn onClick={(e)=>copySetup(e,s)}>

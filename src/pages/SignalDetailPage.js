@@ -264,11 +264,40 @@ const SignalDetailPage = () => {
 
         const analysis = raw.analysis || {};
 
+        // Trade quality score
+        const rrNum = parseFloat(rr) || 2;
+        const tradeScore = Math.min(10, Math.max(1, Math.min(rrNum/3,1)*3 + (conf/100)*4 + (tags.some(t=>t.label==='Momentum'||t.label==='Breakout')?2:1.5))).toFixed(1);
+
+        // Risk level
+        const slPct = Math.abs((sl - entry) / entry * 100);
+        const riskLevel = slPct > 5 ? 'High' : slPct > 2.5 ? 'Medium' : 'Low';
+        const confLabel = conf >= 70 ? 'Strong Setup' : conf >= 55 ? 'Moderate Setup' : 'Weak Setup';
+
+        // "Why this trade?" reasons
+        const whyReasons = [];
+        if (indArray.find(i => i.name === 'RSI' && i.signal === 'BUY')) whyReasons.push({ icon: '📊', text: 'RSI indicates oversold conditions' });
+        if (indArray.find(i => i.name === 'MACD' && i.signal === 'BUY')) whyReasons.push({ icon: '📈', text: 'MACD bullish crossover detected' });
+        if (indArray.find(i => i.name === 'MACD' && i.signal === 'SELL')) whyReasons.push({ icon: '📉', text: 'MACD bearish crossover detected' });
+        if (indArray.find(i => i.name === 'Trend' && i.signal === (long?'BUY':'SELL'))) whyReasons.push({ icon: '🔄', text: `${long?'Bullish':'Bearish'} trend confirmed` });
+        if (tags.some(t => t.label === 'Momentum')) whyReasons.push({ icon: '🚀', text: 'Strong directional momentum' });
+        if (tags.some(t => t.label === 'Breakout')) whyReasons.push({ icon: '💥', text: 'Price breaking key level' });
+        if (rrNum >= 2) whyReasons.push({ icon: '⚖️', text: `Favorable R:R ratio (1:${rr})` });
+        if (conf >= 70) whyReasons.push({ icon: '🎯', text: 'High AI confidence score' });
+        if (whyReasons.length === 0) whyReasons.push({ icon: '🤖', text: 'AI pattern detected in price action' });
+
+        // "What to watch" items
+        const watchItems = [];
+        watchItems.push(`Break ${long ? 'below' : 'above'} ${fmtPrice(sl)} invalidates setup`);
+        if (long) watchItems.push(`Watch resistance near ${fmtPrice(tp1)}`);
+        else watchItems.push(`Watch support near ${fmtPrice(tp1)}`);
+        watchItems.push('Volume confirmation strengthens signal');
+        if (days <= 3) watchItems.push('Short timeframe — act quickly');
+
         return {
             id: raw._id, symbol: sym, fullSymbol: raw.symbol, crypto, long, conf, status,
             entry, target, currentPrice, sl, tp1, tp2, tp3, rr,
             changePct, movePct, isWin, resultText, tags, tfLabel, days,
-            indArray, analysis,
+            indArray, analysis, tradeScore, riskLevel, confLabel, whyReasons, watchItems,
             createdAt: raw.createdAt, expiresAt: raw.expiresAt,
             viewCount: raw.viewCount || 0,
         };
@@ -303,7 +332,8 @@ const SignalDetailPage = () => {
                             </DirectionTag>
                         </SymbolRow>
                         <BadgeRow>
-                            <ConfBadge $high={s.conf>=70}><Zap size={12}/> {s.conf}% Confidence</ConfBadge>
+                            <ConfBadge $high={parseFloat(s.tradeScore)>=8} style={{background:parseFloat(s.tradeScore)>=8?'rgba(16,185,129,.1)':parseFloat(s.tradeScore)>=6?'rgba(245,158,11,.1)':'rgba(239,68,68,.1)',color:parseFloat(s.tradeScore)>=8?'#10b981':parseFloat(s.tradeScore)>=6?'#f59e0b':'#ef4444',borderColor:parseFloat(s.tradeScore)>=8?'rgba(16,185,129,.2)':parseFloat(s.tradeScore)>=6?'rgba(245,158,11,.2)':'rgba(239,68,68,.2)'}} title="Trade Quality Score">{s.tradeScore}/10</ConfBadge>
+                            <ConfBadge $high={s.conf>=70}><Zap size={12}/> {s.conf}% — {s.confLabel}</ConfBadge>
                             <StatusBadge $s={s.status}>
                                 {s.status==='new'?'🟢 NEW':s.status==='active'?'🟡 ACTIVE':'🔵 CLOSED'}
                             </StatusBadge>
@@ -434,8 +464,36 @@ const SignalDetailPage = () => {
                     </Card>
                 )}
 
+                {/* ─── Why This Trade ─── */}
+                {s.whyReasons?.length > 0 && (
+                    <Card $d=".25s">
+                        <CardTitle><Zap size={16} color="#f59e0b"/> Why This Trade?</CardTitle>
+                        <div style={{display:'flex',flexDirection:'column',gap:'.5rem'}}>
+                            {s.whyReasons.map((r, i) => (
+                                <div key={i} style={{display:'flex',alignItems:'center',gap:'.6rem',padding:'.55rem .7rem',background:'rgba(255,255,255,.02)',border:'1px solid rgba(255,255,255,.04)',borderRadius:8,fontSize:'.85rem',color:'#c8d0da'}}>
+                                    <span style={{fontSize:'1rem'}}>{r.icon}</span> {r.text}
+                                </div>
+                            ))}
+                        </div>
+                    </Card>
+                )}
+
+                {/* ─── What to Watch ─── */}
+                {s.watchItems?.length > 0 && (
+                    <Card $d=".3s">
+                        <CardTitle><AlertTriangle size={16} color="#f59e0b"/> What to Watch</CardTitle>
+                        <div style={{display:'flex',flexDirection:'column',gap:'.4rem'}}>
+                            {s.watchItems.map((w, i) => (
+                                <div key={i} style={{display:'flex',alignItems:'center',gap:'.5rem',fontSize:'.85rem',color:'#94a3b8',padding:'.4rem 0'}}>
+                                    <span style={{color:'#f59e0b',fontSize:'.7rem'}}>●</span> {w}
+                                </div>
+                            ))}
+                        </div>
+                    </Card>
+                )}
+
                 {/* ─── Signal Tags ─── */}
-                <Card $d=".3s">
+                <Card $d=".35s">
                     <CardTitle><Activity size={16} color="#f59e0b"/> Signal Details</CardTitle>
                     <TagRow>
                         {s.tags.map((t, i) => (
