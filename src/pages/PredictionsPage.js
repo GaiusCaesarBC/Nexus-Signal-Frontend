@@ -1514,15 +1514,22 @@ const PredictionsPage = () => {
         }
     }, [api]);
 
-    // Debounced search
+    // Debounced search — longer delay for contract addresses
     useEffect(() => {
+        const isContractAddr = symbol.startsWith('0x') || /^[1-9A-HJ-NP-Za-km-z]{20,}$/.test(symbol);
+        // Contract addresses: wait 800ms (user is pasting, not typing char-by-char)
+        // Regular symbols: wait 200ms
+        const delay = isContractAddr ? 800 : 200;
+        // For contract addresses, only search once we have a full address (40+ chars for EVM)
+        const minLength = isContractAddr ? (symbol.startsWith('0x') ? 42 : 32) : 1;
+
         const timer = setTimeout(() => {
-            if (symbol.length >= 1) {
+            if (symbol.length >= minLength) {
                 searchSymbols(symbol);
             } else {
                 setSuggestions([]);
             }
-        }, 200);
+        }, delay);
         return () => clearTimeout(timer);
     }, [symbol, searchSymbols]);
 
