@@ -52,11 +52,14 @@ const WarnBox = styled.div`background:rgba(239,68,68,.04);border:1px solid rgba(
 const WarnTitle = styled.h4`font-size:.9rem;font-weight:700;color:#ef4444;margin-bottom:.5rem;display:flex;align-items:center;gap:.4rem;`;
 
 // ─── Comparison Table ─────────────────────────────────────
-const Table = styled.table`width:100%;border-collapse:collapse;margin:1rem 0;font-size:.85rem;`;
-const TH = styled.th`text-align:left;padding:.65rem .75rem;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);color:#e0e6ed;font-weight:700;`;
-const TD = styled.td`padding:.6rem .75rem;border:1px solid rgba(255,255,255,.04);color:#94a3b8;`;
-const TDGreen = styled(TD)`color:#10b981;font-weight:600;`;
-const TDRed = styled(TD)`color:#ef4444;`;
+const Table = styled.table`width:100%;border-collapse:separate;border-spacing:0;margin:1rem 0;font-size:.85rem;border-radius:12px;overflow:hidden;`;
+const TH = styled.th`text-align:left;padding:.7rem .85rem;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.06);color:#94a3b8;font-weight:600;font-size:.75rem;text-transform:uppercase;letter-spacing:.5px;`;
+const THNexus = styled(TH)`background:rgba(0,173,237,.06);color:#00adef;border-bottom-color:rgba(0,173,237,.15);`;
+const TD = styled.td`padding:.7rem .85rem;border-bottom:1px solid rgba(255,255,255,.03);color:#64748b;font-size:.88rem;`;
+const TDGreen = styled(TD)`color:#10b981;font-weight:700;background:rgba(0,173,237,.02);font-size:.88rem;`;
+const TDRed = styled(TD)`color:#ef4444;opacity:.85;`;
+const TDWeak = styled(TD)`color:#64748b;font-style:italic;`;
+const CapTD = styled(TD)`color:#c8d0da;font-weight:600;font-size:.88rem;`;
 
 // ─── Roadmap ──────────────────────────────────────────────
 const RMPhase = styled.div`background:rgba(15,20,38,.7);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:1.25rem;margin-bottom:1rem;position:relative;&::after{content:'';position:absolute;left:1.5rem;top:100%;width:2px;height:1rem;background:rgba(0,173,237,.2);}&:last-child::after{display:none;}`;
@@ -188,26 +191,28 @@ const WhitepaperPage = () => {
                 {/* ═══ 5. WHY NEXUS SIGNAL WINS ═══ */}
                 <Section id="edge">
                     <SH><SIcon $bg="rgba(245,158,11,.1)" $c="#f59e0b"><Star size={18}/></SIcon><STitle>Why Nexus Signal Wins</STitle></SH>
-                    <P>The competitive landscape is crowded with signal providers, trading tools, and AI platforms. Here's how Nexus Signal differentiates:</P>
+                    <P><strong style={{color:'#e0e6ed',fontSize:'1.05rem'}}>Most signal platforms show trades. Nexus Signal proves whether they actually work.</strong></P>
+                    <P>The industry is full of signal providers who show wins and hide losses. There's no tracking, no validation, no proof. We built the opposite.</P>
 
                     <Table>
                         <thead>
-                            <tr><TH>Capability</TH><TH>Telegram / Discord Groups</TH><TH>Traditional Tools</TH><TH>Nexus Signal AI</TH></tr>
+                            <tr><TH></TH><TH>Signal Groups</TH><TH>Trading Tools</TH><THNexus>Nexus Signal AI</THNexus></tr>
                         </thead>
                         <tbody>
-                            <tr><TD>Directional signals</TD><TDRed>Unstructured</TDRed><TD>Manual analysis</TD><TDGreen>AI-generated with confidence</TDGreen></tr>
-                            <tr><TD>Entry / SL / TP levels</TD><TDRed>Sometimes, unverified</TDRed><TD>User-defined</TD><TDGreen>Auto-generated, tracked</TDGreen></tr>
-                            <tr><TD>Performance tracking</TD><TDRed>None</TDRed><TDRed>Self-reported</TDRed><TDGreen>Every signal tracked publicly</TDGreen></tr>
-                            <tr><TD>Outcome validation</TD><TDRed>None</TDRed><TDRed>None</TDRed><TDGreen>TP hit / SL hit / Expired</TDGreen></tr>
-                            <tr><TD>Paper trading</TD><TDRed>No</TDRed><TD>Limited</TD><TDGreen>$100K simulated + leverage</TDGreen></tr>
-                            <tr><TD>Stocks + Crypto</TD><TD>Usually one</TD><TD>Usually one</TD><TDGreen>Both, thousands of assets</TDGreen></tr>
-                            <tr><TD>Accountability</TD><TDRed>Zero</TDRed><TDRed>Zero</TDRed><TDGreen>Full transparency</TDGreen></tr>
+                            <tr><CapTD>Performance tracking</CapTD><TDRed>Not tracked — wins only</TDRed><TDRed>Self-reported, no proof</TDRed><TDGreen>Every signal tracked and validated — no hiding losses</TDGreen></tr>
+                            <tr><CapTD>Outcome validation</CapTD><TDRed>None — no way to verify</TDRed><TDRed>None</TDRed><TDGreen>TP hit, SL hit, or expired — every result recorded</TDGreen></tr>
+                            <tr><CapTD>Trust</CapTD><TDRed>Blind trust — hope they're right</TDRed><TDWeak>Depends entirely on you</TDWeak><TDGreen>Verified performance — transparent, auditable results</TDGreen></tr>
+                            <tr><CapTD>Trade structure</CapTD><TDRed>Unverified — no proof it worked</TDRed><TDWeak>You figure it out yourself</TDWeak><TDGreen>AI-generated entry, stop loss, 3 take profit targets, and confidence score</TDGreen></tr>
+                            <tr><CapTD>Signals</CapTD><TDRed>Random calls, no logic shown</TDRed><TDWeak>Manual charting required</TDWeak><TDGreen>AI-powered LONG/SHORT with supporting analysis and reasoning</TDGreen></tr>
+                            <tr><CapTD>Practice trading</CapTD><TDRed>No</TDRed><TDWeak>Limited or separate app</TDWeak><TDGreen>$100K paper trading with leverage — test every signal risk-free</TDGreen></tr>
+                            <tr><CapTD>Asset coverage</CapTD><TDWeak>Usually crypto only</TDWeak><TDWeak>Usually stocks only</TDWeak><TDGreen>Stocks + crypto — thousands of assets, one platform</TDGreen></tr>
+                            <tr><CapTD>Accountability</CapTD><TDRed>Zero — delete losses, show wins</TDRed><TDRed>Zero</TDRed><TDGreen>Full transparency — accuracy rate visible, results permanent</TDGreen></tr>
                         </tbody>
                     </Table>
 
                     <HighlightBox>
-                        <HBTitle><Target size={14}/> The Core Difference</HBTitle>
-                        <P style={{marginBottom:0}}>Others give you signals. Nexus Signal gives you signals + proof. That's the trust gap we close.</P>
+                        <HBTitle><Target size={14}/> The Bottom Line</HBTitle>
+                        <P style={{marginBottom:0}}>Signal groups give you calls. Nexus Signal gives you structured trades with entry, exit, confidence — and then proves whether they worked. That's the trust gap no one else closes.</P>
                     </HighlightBox>
                 </Section>
 
