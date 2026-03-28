@@ -160,6 +160,8 @@ function AppContent() {
                     <Route path="/portfolio-analytics" element={<ProtectedRoute><PortfolioAnalyticsPage /></ProtectedRoute>} />
                     <Route path="/predict" element={<ProtectedRoute><PredictPage /></ProtectedRoute>} />
                     <Route path="/signals" element={<ProtectedRoute><SignalsPage /></ProtectedRoute>} />
+                    <Route path="/signals/stocks" element={<ProtectedRoute><SignalsPage /></ProtectedRoute>} />
+                    <Route path="/signals/crypto" element={<ProtectedRoute><SignalsPage /></ProtectedRoute>} />
                     <Route path="/signal/:id" element={<ProtectedRoute><SignalDetailPage /></ProtectedRoute>} />
                     <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
                     <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />

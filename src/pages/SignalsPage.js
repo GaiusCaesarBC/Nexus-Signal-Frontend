@@ -1,6 +1,6 @@
 // client/src/pages/SignalsPage.js — Live Signal Feed (Enhanced Terminal)
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import styled, { keyframes, css } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useSubscription } from '../context/SubscriptionContext';
@@ -292,6 +292,23 @@ const UpgradeBtn = styled.button`
     transition:all .2s;&:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,173,237,.3);}
 `;
 
+// ─── Asset Tabs ───────────────────────────────────────────
+const AssetTabs = styled.div`
+    display:flex;gap:0;border-radius:10px;overflow:hidden;
+    border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.02);
+`;
+const AssetTab = styled.button`
+    padding:.5rem 1.1rem;font-size:.82rem;font-weight:700;cursor:pointer;
+    border:none;transition:all .2s;
+    background:${p=>p.$active?'rgba(0,173,237,.15)':'transparent'};
+    color:${p=>p.$active?'#00adef':'#64748b'};
+    border-right:1px solid rgba(255,255,255,.06);
+    &:last-child{border-right:none;}
+    &:hover{color:#00adef;background:rgba(0,173,237,.06);}
+    ${p=>p.$active&&p.$variant==='crypto'&&`background:rgba(247,147,26,.12);color:#f7931a;&:hover{background:rgba(247,147,26,.18);color:#f7931a;}`}
+    ${p=>p.$active&&p.$variant==='stocks'&&`background:rgba(0,173,237,.12);color:#00adef;`}
+`;
+
 const Empty = styled.div`text-align:center;padding:3rem;color:#475569;font-size:.9rem;`;
 
 // ═══════════════════════════════════════════════════════════
@@ -363,10 +380,15 @@ function buildSignal(raw, index) {
 // ═══════════════════════════════════════════════════════════
 const SignalsPage = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const { user } = useAuth();
     const toast = useToast();
     const { hasPlanAccess } = useSubscription();
     const isPremium = hasPlanAccess('starter');
+
+    // Asset tab from URL path
+    const assetTab = location.pathname.endsWith('/stocks') ? 'stocks'
+        : location.pathname.endsWith('/crypto') ? 'crypto' : 'all';
 
     const [signals, setSignals] = useState([]);
     const [filter, setFilter] = useState('all');
@@ -421,16 +443,21 @@ const SignalsPage = () => {
         toast.success('Trade setup copied to clipboard', 'Copied');
     };
 
-    const filtered = filter === 'all' ? signals
-        : filter === 'high' ? signals.filter(s => s.conf >= 70)
-        : signals.filter(s => s.status === filter);
+    // Filter by asset type first, then by status
+    const assetFiltered = assetTab === 'stocks' ? signals.filter(s => !s.crypto)
+        : assetTab === 'crypto' ? signals.filter(s => s.crypto)
+        : signals;
 
-    const counts = { all: signals.length, new: signals.filter(s=>s.status==='new').length, active: signals.filter(s=>s.status==='active').length, closed: signals.filter(s=>s.status==='closed').length };
+    const filtered = filter === 'all' ? assetFiltered
+        : filter === 'high' ? assetFiltered.filter(s => s.conf >= 70)
+        : assetFiltered.filter(s => s.status === filter);
+
+    const counts = { all: assetFiltered.length, new: assetFiltered.filter(s=>s.status==='new').length, active: assetFiltered.filter(s=>s.status==='active').length, closed: assetFiltered.filter(s=>s.status==='closed').length };
     const winRate = (() => { const c = signals.filter(s=>s.status==='closed'); if (!c.length) return 0; return Math.round(c.filter(s=>s.isWin).length / c.length * 100); })();
 
     return (
         <Page>
-            <SEO title="Live Signal Feed — Nexus Signal" description="Real-time AI-generated trade setups for stocks and crypto." />
+            <SEO title={`${assetTab==='stocks'?'Stock':assetTab==='crypto'?'Crypto':'Live'} Signal Feed — Nexus Signal`} description="Real-time AI-generated trade setups for stocks and crypto." />
             <Container>
                 <Header>
                     <HeaderRow>
@@ -441,6 +468,16 @@ const SignalsPage = () => {
                             </Title>
                             <Subtitle>Real-time AI-generated trade setups for stocks and crypto</Subtitle>
                         </TitleGroup>
+                        <AssetTabs>
+                            <AssetTab $active={assetTab==='all'} onClick={()=>navigate('/signals')}>All</AssetTab>
+                            <AssetTab $active={assetTab==='stocks'} $variant="stocks" onClick={()=>navigate('/signals/stocks')}>
+                                <TrendingUp size={13} style={{marginRight:4,verticalAlign:'middle'}}/> Stocks
+                            </AssetTab>
+                            <AssetTab $active={assetTab==='crypto'} $variant="crypto" onClick={()=>navigate('/signals/crypto')}>
+                                <Zap size={13} style={{marginRight:4,verticalAlign:'middle'}}/> Crypto
+                            </AssetTab>
+                        </AssetTabs>
+
                         <Controls>
                             {['all','new','active','closed','high'].map(f => (
                                 <FilterBtn key={f} $active={filter===f} onClick={()=>setFilter(f)}>
