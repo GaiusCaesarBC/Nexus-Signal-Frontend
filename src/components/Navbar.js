@@ -1378,6 +1378,7 @@ const Navbar = () => {
             { path: '/watchlist', label: 'Watchlist', icon: Eye },
             { path: '/alerts', label: 'Price Alerts', icon: Bell },
             { path: '/paper-trading', label: 'Paper Trading', icon: TrendingUp },
+            { path: '/signals', label: 'Live Signals', icon: Radio },
         ],
         analysis: [
             { path: '/screener', label: 'Screener', icon: Filter },
@@ -1387,7 +1388,6 @@ const Navbar = () => {
             { path: '/sentiment', label: 'Sentiment', icon: Activity },
             { path: '/compare', label: 'Stock Comparison', icon: BarChart3 },
             { path: '/whale-alerts', label: 'Whale Alerts', icon: Waves },
-            { path: '/signals', label: 'Live Signals', icon: Radio },
             { path: '/predict', label: 'AI Predict', icon: Brain, section: 'AI Tools' },
             { path: '/backtesting', label: 'Backtesting', icon: History },
             { path: '/accuracy-dashboard', label: 'Prediction Accuracy', icon: Trophy },
