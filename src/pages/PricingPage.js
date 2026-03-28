@@ -466,9 +466,10 @@ const CardWrapper = styled.div`
     transform-style: preserve-3d;
     transition: transform 0.3s ease;
     height: 100%;
+    ${p => p.$premium && 'transform: scale(1.04); z-index: 2;'}
 
     &:hover {
-        transform: translateY(-10px);
+        transform: translateY(-10px) ${p => p.$premium ? 'scale(1.06)' : ''};
     }
 `;
 
@@ -839,10 +840,10 @@ const HighlightFeature = styled(FeatureItem)`
 
 const CTAButton = styled.button`
     width: 100%;
-    padding: 0.85rem 1.5rem;
+    padding: 1rem 1.5rem;
     border: none;
     border-radius: 10px;
-    font-size: 0.95rem;
+    font-size: 1rem;
     font-weight: 700;
     cursor: pointer;
     position: relative;
@@ -1290,12 +1291,12 @@ const PricingPage = () => {
                 ]}
             ],
             comparison: 'Start getting real signals',
-            cta: 'Get Started'
+            cta: 'Start Getting Signals'
         },
         {
             id: 'pro',
             name: 'Pro',
-            description: 'For active traders who want more',
+            description: 'More signals + AI tools for active traders',
             icon: Rocket,
             price: prices.pro,
             gradient: 'linear-gradient(135deg, #3b82f6, #2563eb)',
@@ -1321,7 +1322,7 @@ const PricingPage = () => {
         {
             id: 'premium',
             name: 'Premium',
-            description: 'Full signal access — most popular',
+            description: 'Everything you need to trade with confidence',
             icon: TrendingUp,
             tag: { text: 'Most Popular', type: 'popular', icon: Zap },
             featured: true,
@@ -1352,7 +1353,7 @@ const PricingPage = () => {
         {
             id: 'elite',
             name: 'Elite',
-            description: 'For power users & institutions',
+            description: 'Maximum data, execution, and control',
             icon: Crown,
             tag: { text: 'Best Value', type: 'value', icon: Award },
             featured: true,
@@ -1463,7 +1464,7 @@ const PricingPage = () => {
             {/* Pricing Cards */}
             <PricingGrid>
                 {plans.map((plan, index) => (
-                    <CardWrapper key={plan.id} $delay={index * 0.1}>
+                    <CardWrapper key={plan.id} $delay={index * 0.1} $premium={plan.id === 'premium'}>
                         <AnimatedBorder $gradient={plan.borderGradient} />
                         <Card $featured={plan.featured || isCurrentPlan(plan.id)} $borderGradient={isCurrentPlan(plan.id) ? 'linear-gradient(135deg, #10b981, #059669, #10b981)' : plan.borderGradient}>
                             {isCurrentPlan(plan.id) && (
