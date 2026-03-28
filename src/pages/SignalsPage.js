@@ -337,6 +337,8 @@ const ActItem = styled.div`
     background:rgba(255,255,255,.02);animation:${slideIn} .3s ease-out;
     font-size:.78rem;color:#c8d0da;line-height:1.4;
     border-left:2px solid ${p=>p.$c||'#00adef'};
+    cursor:pointer;transition:all .15s;
+    &:hover{background:rgba(255,255,255,.05);transform:translateX(2px);}
 `;
 const ActIcon = styled.span`font-size:.85rem;flex-shrink:0;`;
 const ActTime = styled.span`display:block;font-size:.6rem;color:#475569;margin-top:.15rem;`;
@@ -550,18 +552,19 @@ const SignalsPage = () => {
             const dir = s.long ? 'LONG' : 'SHORT';
             const pct = `${s.movePct >= 0 ? '+' : ''}${s.movePct.toFixed(1)}%`;
             const prox = proximityStatus(s);
+            const base = { id: s.id, time: timeAgo(s.createdAt) };
 
             if (s.status === 'new')
-                return { icon: '🚨', t: `NEW SIGNAL: ${s.symbol} ${dir} — ${s.conf}%`, c: '#10b981', time: timeAgo(s.createdAt) };
+                return { ...base, icon: '🚨', t: `NEW SIGNAL: ${s.symbol} ${dir} — ${s.conf}%`, c: '#10b981' };
             if (s.status === 'closed' && s.isWin)
-                return { icon: '🎯', t: `${s.symbol} ${s.resultText} ${pct}`, c: '#10b981', time: timeAgo(s.expiresAt) };
+                return { ...base, icon: '🎯', t: `${s.symbol} ${s.resultText} ${pct}`, c: '#10b981', time: timeAgo(s.expiresAt) };
             if (s.status === 'closed')
-                return { icon: '❌', t: `${s.symbol} ${s.resultText} ${pct}`, c: '#ef4444', time: timeAgo(s.expiresAt) };
+                return { ...base, icon: '❌', t: `${s.symbol} ${s.resultText} ${pct}`, c: '#ef4444', time: timeAgo(s.expiresAt) };
             if (prox === 'near-target')
-                return { icon: '🎯', t: `${s.symbol} approaching target ${pct}`, c: '#10b981', time: timeAgo(s.createdAt) };
+                return { ...base, icon: '🎯', t: `${s.symbol} approaching target ${pct}`, c: '#10b981' };
             if (prox === 'near-sl')
-                return { icon: '⚠️', t: `${s.symbol} nearing stop loss ${pct}`, c: '#f59e0b', time: timeAgo(s.createdAt) };
-            return { icon: '📊', t: `${s.symbol} ${dir} active — ${s.conf}%`, c: '#00adef', time: timeAgo(s.createdAt) };
+                return { ...base, icon: '⚠️', t: `${s.symbol} nearing stop loss ${pct}`, c: '#f59e0b' };
+            return { ...base, icon: '📊', t: `${s.symbol} ${dir} active — ${s.conf}%`, c: '#00adef' };
         }));
     }, [signals]);
 
@@ -734,7 +737,7 @@ const SignalsPage = () => {
                             <SideTitle><Activity size={15} color="#00adef"/> Live Activity</SideTitle>
                             <ActivityList>
                                 {activity.map((a,i)=>(
-                                    <ActItem key={i} $c={a.c}>
+                                    <ActItem key={i} $c={a.c} onClick={()=>a.id&&navigate(`/signal/${a.id}`)}>
                                         <ActIcon>{a.icon}</ActIcon>
                                         <div>{a.t}<ActTime>{a.time}</ActTime></div>
                                     </ActItem>
