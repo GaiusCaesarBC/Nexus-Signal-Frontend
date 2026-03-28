@@ -114,8 +114,8 @@ const Card = styled.div`
         'rgba(255, 255, 255, 0.06)'};
     border-radius: 14px; padding: 1.25rem;
     transition: all 0.25s; cursor: pointer;
-    animation: ${fadeIn} 0.4s ease-out ${p => p.$delay || '0s'} backwards;
-    ${p => p.$status === 'new' && `animation: ${fadeIn} 0.4s ease-out, ${newGlow} 3s ease-in-out infinite;`}
+    animation: ${fadeIn} 0.4s ease-out ${p => p.$delay || '0s'} backwards
+        ${p => p.$status === 'new' ? `, ${newGlow} 3s ease-in-out infinite` : ''};
     &:hover { transform: translateY(-3px); border-color: rgba(0, 173, 237, 0.4);
         box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3); }
 `;
