@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import styled, { keyframes } from 'styled-components';
 import {
     Shield, Mail, Smartphone, Eye, EyeOff, RefreshCw, Key,
-    Check, X, AlertCircle, Copy, Download, Lock
+    Check, CheckCircle, X, AlertCircle, Copy, Download, Lock
 } from 'lucide-react';
 import api from '../api/axios';
 import { useToast } from '../context/ToastContext';
@@ -432,6 +432,10 @@ const TwoFactorSettings = () => {
     const [disablePassword, setDisablePassword] = useState('');
     const [showDisableSection, setShowDisableSection] = useState(false);
 
+    // Regenerate backup codes state
+    const [showRegeneratePassword, setShowRegeneratePassword] = useState(false);
+    const [regeneratePassword, setRegeneratePassword] = useState('');
+
     const inputRefs = useRef([]);
 
     // Fetch 2FA status
@@ -561,18 +565,29 @@ const TwoFactorSettings = () => {
     };
 
     // Regenerate backup codes
-    const regenerateBackupCodes = async () => {
+    const handleRegenerateBackupCodes = async () => {
+        if (!regeneratePassword) {
+            setMessage({ type: 'error', text: 'Please enter your password' });
+            return;
+        }
+
         setSetupLoading(true);
+        setMessage({ type: '', text: '' });
 
         try {
-            const response = await api.post('/2fa/regenerate-backup-codes');
+            const response = await api.post('/2fa/regenerate-backup-codes', { password: regeneratePassword });
 
             if (response.data.success) {
                 setBackupCodes(response.data.backupCodes);
+                setShowRegeneratePassword(false);
+                setRegeneratePassword('');
                 toast.success('New backup codes generated!');
             }
         } catch (err) {
-            toast.error(err.response?.data?.msg || 'Failed to regenerate codes');
+            setMessage({
+                type: 'error',
+                text: err.response?.data?.msg || err.response?.data?.error || 'Failed to regenerate codes'
+            });
         } finally {
             setSetupLoading(false);
         }
@@ -888,7 +903,10 @@ const TwoFactorSettings = () => {
                             Backup Codes
                         </SectionTitle>
 
-                        <Button onClick={regenerateBackupCodes} disabled={setupLoading}>
+                        <Button 
+                            onClick={() => setShowRegeneratePassword(true)} 
+                            disabled={setupLoading}
+                        >
                             {setupLoading ? (
                                 <>
                                     <RefreshCw size={18} className="spinning" />
@@ -931,6 +949,62 @@ const TwoFactorSettings = () => {
                             </>
                         )}
                     </SetupSection>
+
+                    {/* Regenerate Backup Codes Modal */}
+                    {showRegeneratePassword && (
+                        <SetupSection>
+                            <SectionTitle>
+                                <RefreshCw size={18} />
+                                Regenerate Backup Codes
+                            </SectionTitle>
+
+                            {message.text && (
+                                <Message $type={message.type}>
+                                    {message.type === 'error' ? <AlertCircle size={16} /> : <CheckCircle size={16} />}
+                                    {message.text}
+                                </Message>
+                            )}
+
+                            <FormGroup>
+                                <Label>Enter your password to regenerate codes</Label>
+                                <Input
+                                    type="password"
+                                    placeholder="Your password"
+                                    value={regeneratePassword}
+                                    onChange={(e) => setRegeneratePassword(e.target.value)}
+                                    onKeyPress={(e) => {
+                                        if (e.key === 'Enter' && regeneratePassword) {
+                                            handleRegenerateBackupCodes();
+                                        }
+                                    }}
+                                />
+                            </FormGroup>
+
+                            <ButtonRow>
+                                <SecondaryButton onClick={() => {
+                                    setShowRegeneratePassword(false);
+                                    setRegeneratePassword('');
+                                    setMessage({ type: '', text: '' });
+                                }}>
+                                    <X size={18} />
+                                    Cancel
+                                </SecondaryButton>
+                                <Button onClick={handleRegenerateBackupCodes} disabled={setupLoading || !regeneratePassword}>
+                                    {setupLoading ? (
+                                        <>
+                                            <RefreshCw size={18} className="spinning" />
+                                            Regenerating...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <RefreshCw size={18} />
+                                            Regenerate Codes
+                                        </>
+                                    )}
+                                </Button>
+                            </ButtonRow>
+                        </SetupSection>
+                    )}
 
                     {/* Disable 2FA */}
                     {!showDisableSection ? (
