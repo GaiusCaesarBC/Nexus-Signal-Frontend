@@ -667,17 +667,14 @@ const UpgradePrompt = ({
 
     const handleUpgrade = () => {
         navigate('/pricing');
-        if (onClose) onClose();
     };
 
-    const handleClose = (e) => {
-        if (e.target === e.currentTarget || e.currentTarget.tagName === 'BUTTON') {
-            if (onClose) onClose();
-        }
+    const handleGoBack = () => {
+        navigate(-1);
     };
 
     return (
-        <Overlay onClick={handleClose}>
+        <Overlay>
             <Modal onClick={e => e.stopPropagation()}>
                 <IconWrapper>{featureInfo.icon}</IconWrapper>
 
@@ -701,8 +698,8 @@ const UpgradePrompt = ({
                 </FeatureList>
 
                 <ButtonGroup>
-                    <CloseButton onClick={handleClose}>
-                        Maybe Later
+                    <CloseButton onClick={handleGoBack}>
+                        Go Back
                     </CloseButton>
                     <UpgradeButton onClick={handleUpgrade}>
                         View Plans
