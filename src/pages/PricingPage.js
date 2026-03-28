@@ -1353,9 +1353,9 @@ const PricingPage = () => {
         {
             id: 'elite',
             name: 'Elite',
-            description: 'Maximum data, execution, and control',
+            description: 'Maximum tools for serious traders',
             icon: Crown,
-            tag: { text: 'Best Value', type: 'value', icon: Award },
+            tag: { text: 'Power User', type: 'value', icon: Award },
             featured: true,
             price: prices.elite,
             gradient: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
@@ -1363,21 +1363,21 @@ const PricingPage = () => {
             borderGradient: 'linear-gradient(135deg, #8b5cf6, #7c3aed, #8b5cf6)',
             features: [
                 { category: '📊 Everything Unlimited +', color: '#8b5cf6', items: [
-                    { text: 'Ultra-low latency signals (<50ms)', highlight: true },
-                    { text: 'Full REST API access', highlight: true },
-                    { text: 'Strategy backtesting engine', highlight: true },
-                    'Custom AI research reports',
-                    'Institutional-grade analytics',
+                    { text: 'Strategy backtesting engine (6 strategies)', highlight: true },
+                    { text: 'Whale alert API + institutional flow data', highlight: true },
+                    { text: 'API key management for integrations', highlight: true },
+                    'Advanced portfolio analytics',
+                    'Multi-account management',
                 ]},
-                { category: '👑 VIP Access', color: '#a78bfa', items: [
-                    { text: '1-on-1 trading mentorship', highlight: true, special: true },
-                    'Whale alert webhooks & API',
-                    'Dedicated account manager',
+                { category: '🔜 Coming Soon', color: '#a78bfa', items: [
+                    'Full REST API for signal access',
+                    'Whale alert webhooks',
                     'VIP Discord community',
-                    'Early access + custom features',
+                    'Priority feature requests',
+                    'Early access to new features',
                 ]}
             ],
-            comparison: 'API + backtesting + mentorship',
+            comparison: 'Backtesting + whale API + multi-account',
             cta: 'Go Elite'
         }
     ];
