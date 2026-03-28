@@ -1638,7 +1638,7 @@ const PaperTradingPage = () => {
         }
     };
 
-    const handleRefreshPrices = async () => {
+    const handleRefreshPrices = async (silent = false) => {
         if (refreshingPrices) return;
         setRefreshingPrices(true);
         try {
@@ -1659,12 +1659,12 @@ const PaperTradingPage = () => {
                         toast.warning(message, triggerLabel);
                     }
                 });
-            } else {
+            } else if (!silent) {
                 toast.success('Prices updated', 'Success');
             }
         } catch (error) {
             console.error('Refresh prices error:', error);
-            toast.error('Failed to refresh prices', 'Error');
+            if (!silent) toast.error('Failed to refresh prices', 'Error');
         } finally {
             setRefreshingPrices(false);
         }
@@ -1849,7 +1849,7 @@ const PaperTradingPage = () => {
             }
         };
         init();
-        const priceRefreshInterval = setInterval(() => { handleRefreshPrices(); }, 15000); // 15 seconds
+        const priceRefreshInterval = setInterval(() => { handleRefreshPrices(true); }, 15000); // 15s silent refresh
         return () => { clearInterval(priceRefreshInterval); };
     }, []);
 
