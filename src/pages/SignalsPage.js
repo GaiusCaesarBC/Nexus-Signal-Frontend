@@ -1,7 +1,7 @@
 // client/src/pages/SignalsPage.js — Live Signals Feed
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import styled, { keyframes } from 'styled-components';
+import styled, { keyframes, css } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useSubscription } from '../context/SubscriptionContext';
 import {
@@ -114,8 +114,9 @@ const Card = styled.div`
         'rgba(255, 255, 255, 0.06)'};
     border-radius: 14px; padding: 1.25rem;
     transition: all 0.25s; cursor: pointer;
-    animation: ${fadeIn} 0.4s ease-out ${p => p.$delay || '0s'} backwards
-        ${p => p.$status === 'new' ? `, ${newGlow} 3s ease-in-out infinite` : ''};
+    animation: ${fadeIn} 0.4s ease-out backwards;
+    animation-delay: ${p => p.$delay || '0s'};
+    ${p => p.$status === 'new' && css`animation: ${fadeIn} 0.4s ease-out backwards, ${newGlow} 3s ease-in-out infinite;`}
     &:hover { transform: translateY(-3px); border-color: rgba(0, 173, 237, 0.4);
         box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3); }
 `;
