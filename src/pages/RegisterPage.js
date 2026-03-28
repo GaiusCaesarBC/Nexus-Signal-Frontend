@@ -538,7 +538,7 @@ const RegisterPage = () => {
         }
 
         let strength = 0;
-        if (password.length >= 6) strength += 25;
+        if (password.length >= 8) strength += 25;
         if (password.length >= 10) strength += 25;
         if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength += 25;
         if (/\d/.test(password)) strength += 15;
@@ -552,7 +552,7 @@ const RegisterPage = () => {
         setValidations({
             username: username.length >= 3,
             email: /\S+@\S+\.\S+/.test(email),
-            password: password.length >= 6,
+            password: password.length >= 8,
             confirmPassword: confirmPassword && password === confirmPassword
         });
     }, [username, email, password, confirmPassword]);
@@ -562,8 +562,8 @@ const RegisterPage = () => {
             setError('All fields are required.');
             return false;
         }
-        if (password.length < 6) {
-            setError('Password must be at least 6 characters long.');
+        if (password.length < 8) {
+            setError('Password must be at least 8 characters long.');
             return false;
         }
         if (password !== confirmPassword) {

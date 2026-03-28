@@ -221,7 +221,8 @@ const refreshUser = useCallback(async () => {
                 return { success: false, error: "Session error" };
             }
         } catch (err) {
-            const errorMessage = err.response?.data?.msg || err.message;
+            const data = err.response?.data;
+            const errorMessage = data?.msg || data?.errors?.[0]?.msg || err.message;
             console.error("Registration failed:", errorMessage);
             setError(errorMessage);
             setIsAuthenticated(false);
