@@ -20,6 +20,8 @@ import {
     CheckCircle, XCircle, ArrowUp, ArrowDown, Users, Radio, Bell
 } from 'lucide-react';
 import CreateAlertModal from '../components/CreateAalertModal';
+import { useSubscription } from '../context/SubscriptionContext';
+import UpgradePrompt from '../components/UpgradePrompt';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid,
     Tooltip, ResponsiveContainer, ReferenceLine
@@ -1457,6 +1459,8 @@ const PredictionsPage = () => {
     const toast = useToast();
     const navigate = useNavigate();
     const { theme } = useTheme();
+    const { hasPlanAccess } = useSubscription();
+    const [showUpgradePrompt, setShowUpgradePrompt] = useState(!hasPlanAccess('starter'));
     
     const [activeTab, setActiveTab] = useState('predict');
     const [symbol, setSymbol] = useState('');
@@ -2518,6 +2522,14 @@ const handleShare = (platform) => {
                 onSubmit={handleCreateAlert}
                 initialSymbol={prediction?.symbol || ''}
                 initialPrice={prediction?.current_price}
+            />
+
+            {/* Upgrade Prompt for free users */}
+            <UpgradePrompt
+                isOpen={showUpgradePrompt}
+                onClose={() => setShowUpgradePrompt(false)}
+                feature="dailySignals"
+                requiredPlan="starter"
             />
         </PageContainer>
     );
