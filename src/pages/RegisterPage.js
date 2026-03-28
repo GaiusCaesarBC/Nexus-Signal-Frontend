@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { UserPlus, User, Mail, Lock, ArrowRight, Zap, Shield, Eye, EyeOff, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 
 // ============ INSANE ANIMATIONS ============
@@ -423,6 +422,11 @@ const StyledButton = styled.button`
     }
 `;
 
+const SpinWrapper = styled.div`
+    display: inline-flex;
+    animation: ${rotate} 0.75s linear infinite;
+`;
+
 const LinksContainer = styled.div`
     margin-top: 2rem;
     font-size: 0.95rem;
@@ -498,10 +502,8 @@ const RegisterPage = () => {
         confirmPassword: false
     });
 
-    const { login } = useAuth();
+    const { register } = useAuth();
     const navigate = useNavigate();
-
-    const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
 
     // Generate background particles and shapes on mount
     useEffect(() => {
@@ -588,27 +590,25 @@ const RegisterPage = () => {
         }
 
         try {
-            const response = await axios.post(`${API_BASE_URL}/auth/register`, {
+            const result = await register({
                 username,
                 email,
                 password,
             });
 
-            setSuccess('🎉 Registration successful! Redirecting to dashboard...');
-
-            if (response.data.token) {
-                login(response.data.token);
+            if (result.success) {
+                setSuccess('🎉 Registration successful! Redirecting to dashboard...');
+                setError('');
                 setTimeout(() => {
                     navigate('/dashboard');
-                }, 2000);
+                }, 1200);
             } else {
-                setTimeout(() => {
-                    navigate('/login');
-                }, 2000);
+                console.error('Registration failed:', result.error);
+                setError(result.error || 'Registration failed. Please try again.');
             }
         } catch (err) {
             console.error('Registration error:', err.response ? err.response.data : err.message);
-            setError(err.response?.data?.message || 'Registration failed. Please try again.');
+            setError(err.response?.data?.message || err.message || 'Registration failed. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -803,9 +803,9 @@ const RegisterPage = () => {
                             <StyledButton type="submit" disabled={loading}>
                                 {loading ? (
                                     <>
-                                        <div style={{ animation: `${rotate} 1s linear infinite` }}>
+                                        <SpinWrapper>
                                             <Zap size={20} />
-                                        </div>
+                                        </SpinWrapper>
                                         Creating Account...
                                     </>
                                 ) : (
