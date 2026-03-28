@@ -53,25 +53,46 @@ const timeLeft = (d) => {
 const expiryUrgency = (d) => {
     const ms = new Date(d) - Date.now();
     if (ms <= 0) return 'expired';
-    if (ms < 3600000) return 'urgent';    // < 1h
-    if (ms < 21600000) return 'soon';     // < 6h
+    if (ms < 3600000) return 'urgent';      // < 1h
+    if (ms < 86400000) return 'soon';       // < 24h
     return 'normal';
 };
 
-// Movement story
+// Movement story — direction-aware (LONG vs SHORT)
 const moveStory = (s) => {
     if (s.status === 'closed') return '';
     const abs = Math.abs(s.movePct);
     const totalRange = Math.abs(s.changePct);
-    const pctToTarget = totalRange > 0 ? Math.round((abs / totalRange) * 100) : 0;
-    const favourable = s.long ? s.movePct >= 0 : s.movePct <= 0;
+    const pctToTP = totalRange > 0 ? Math.min(Math.round((abs / totalRange) * 100), 100) : 0;
     const sign = s.movePct >= 0 ? '+' : '';
+    const pct = `${sign}${s.movePct.toFixed(2)}%`;
 
-    if (!favourable && abs > totalRange * 0.7) return `${sign}${s.movePct.toFixed(2)}% ↓ nearing stop loss`;
-    if (favourable && abs >= totalRange * 0.9) return `${sign}${s.movePct.toFixed(2)}% ↑ approaching target`;
-    if (favourable && abs >= totalRange * 0.35) return `${sign}${s.movePct.toFixed(2)}% • ${pctToTarget}% to target`;
-    if (favourable) return `${sign}${s.movePct.toFixed(2)}% ↑ toward TP1`;
-    return `${sign}${s.movePct.toFixed(2)}% ↓ against position`;
+    // LONG: positive = good, negative = bad
+    // SHORT: negative = good, positive = bad
+    const priceUp = s.movePct >= 0;
+    const favourable = s.long ? priceUp : !priceUp;
+
+    if (favourable) {
+        // Moving toward target
+        if (abs >= totalRange * 0.9) return `${pct} ${s.long ? '↑' : '↓'} approaching target`;
+        if (abs >= totalRange * 0.35) return `${pct} • ${pctToTP}% to target`;
+        return `${pct} ${s.long ? '↑' : '↓'} toward TP1`;
+    } else {
+        // Moving against position
+        if (abs > totalRange * 0.7) return `${pct} ${s.long ? '↓' : '↑'} ⚠ nearing stop loss`;
+        return `${pct} ${s.long ? '↓' : '↑'} against position`;
+    }
+};
+
+// Proximity warnings
+const proximityStatus = (s) => {
+    if (s.status === 'closed') return null;
+    const abs = Math.abs(s.movePct);
+    const totalRange = Math.abs(s.changePct);
+    const favourable = s.long ? s.movePct >= 0 : s.movePct <= 0;
+    if (favourable && abs >= totalRange * 0.85) return 'near-target';
+    if (!favourable && abs >= totalRange * 0.65) return 'near-sl';
+    return null;
 };
 
 // Progress percent between SL and Target
@@ -246,11 +267,11 @@ const Tag = styled.span`
 `;
 
 const ActionBtn = styled.button`
-    padding:.35rem .7rem;border-radius:6px;font-size:.72rem;font-weight:700;
-    background:rgba(0,173,237,.08);border:1px solid rgba(0,173,237,.2);
-    color:#00adef;cursor:pointer;display:flex;align-items:center;gap:.3rem;
-    transition:all .2s;
-    &:hover{background:rgba(0,173,237,.18);transform:translateY(-1px);}
+    padding:.4rem .85rem;border-radius:7px;font-size:.75rem;font-weight:700;
+    background:rgba(0,173,237,.1);border:1px solid rgba(0,173,237,.25);
+    color:#00adef;cursor:pointer;display:flex;align-items:center;gap:.35rem;
+    transition:all .2s;white-space:nowrap;
+    &:hover{background:rgba(0,173,237,.2);transform:translateY(-1px);box-shadow:0 2px 8px rgba(0,173,237,.15);}
 `;
 
 // ─── Sidebar ──────────────────────────────────────────────
@@ -422,16 +443,25 @@ const SignalsPage = () => {
         return () => clearInterval(iv);
     }, [lastUpdated]);
 
-    // Activity feed with alert-style messages
+    // Activity feed — alert-style, direction-aware
     useEffect(() => {
         if (!signals.length) return;
         setActivity(signals.slice(0, 12).map(s => {
-            if (s.status === 'new') return { icon: '🚨', t: `NEW SIGNAL: ${s.symbol} ${s.long?'LONG':'SHORT'} (${s.conf}%)`, c: '#10b981', time: timeAgo(s.createdAt) };
-            if (s.status === 'closed' && s.isWin) return { icon: '🎯', t: `${s.symbol} ${s.resultText} ${s.movePct>=0?'+':''}${s.movePct.toFixed(1)}%`, c: '#10b981', time: timeAgo(s.expiresAt) };
-            if (s.status === 'closed' && !s.isWin) return { icon: '❌', t: `${s.symbol} ${s.resultText} ${s.movePct>=0?'+':''}${s.movePct.toFixed(1)}%`, c: '#ef4444', time: timeAgo(s.expiresAt) };
-            const fav = s.long ? s.movePct >= 0 : s.movePct <= 0;
-            if (fav && Math.abs(s.movePct) > 3) return { icon: '📈', t: `${s.symbol} nearing target ${s.movePct>=0?'+':''}${s.movePct.toFixed(1)}%`, c: '#10b981', time: timeAgo(s.createdAt) };
-            return { icon: '📊', t: `${s.symbol} ${s.long?'LONG':'SHORT'} active — ${s.conf}%`, c: '#00adef', time: timeAgo(s.createdAt) };
+            const dir = s.long ? 'LONG' : 'SHORT';
+            const pct = `${s.movePct >= 0 ? '+' : ''}${s.movePct.toFixed(1)}%`;
+            const prox = proximityStatus(s);
+
+            if (s.status === 'new')
+                return { icon: '🚨', t: `NEW SIGNAL: ${s.symbol} ${dir} — ${s.conf}%`, c: '#10b981', time: timeAgo(s.createdAt) };
+            if (s.status === 'closed' && s.isWin)
+                return { icon: '🎯', t: `${s.symbol} ${s.resultText} ${pct}`, c: '#10b981', time: timeAgo(s.expiresAt) };
+            if (s.status === 'closed')
+                return { icon: '❌', t: `${s.symbol} ${s.resultText} ${pct}`, c: '#ef4444', time: timeAgo(s.expiresAt) };
+            if (prox === 'near-target')
+                return { icon: '🎯', t: `${s.symbol} approaching target ${pct}`, c: '#10b981', time: timeAgo(s.createdAt) };
+            if (prox === 'near-sl')
+                return { icon: '⚠️', t: `${s.symbol} nearing stop loss ${pct}`, c: '#f59e0b', time: timeAgo(s.createdAt) };
+            return { icon: '📊', t: `${s.symbol} ${dir} active — ${s.conf}%`, c: '#00adef', time: timeAgo(s.createdAt) };
         }));
     }, [signals]);
 
@@ -512,7 +542,9 @@ const SignalsPage = () => {
                                     </SymbolGroup>
                                     <BadgeGroup>
                                         {!isPremium&&s.status==='new'&&<StatusBadge $type="delayed"><Lock size={9}/> Delayed</StatusBadge>}
-                                        {urgency==='urgent'&&s.status!=='closed'&&<StatusBadge $type="expiring">Expiring Soon</StatusBadge>}
+                                        {proximityStatus(s)==='near-target'&&<StatusBadge $type="new">🎯 Near Target</StatusBadge>}
+                                        {proximityStatus(s)==='near-sl'&&<StatusBadge $type="expiring">⚠ Near Stop</StatusBadge>}
+                                        {(urgency==='urgent'||urgency==='soon')&&s.status!=='closed'&&<StatusBadge $type="expiring">Expiring Soon</StatusBadge>}
                                         <StatusBadge $type={s.status}>
                                             {s.status==='new'?'🟢 NEW':s.status==='active'?'🟡 ACTIVE':'🔵 CLOSED'}
                                         </StatusBadge>
@@ -576,7 +608,7 @@ const SignalsPage = () => {
                                         </TagGroup>
                                         {s.status!=='closed'&&(
                                             <ActionBtn onClick={(e)=>copySetup(e,s)}>
-                                                <Copy size={11}/> Copy Setup
+                                                <Copy size={12}/> Copy Trade Setup
                                             </ActionBtn>
                                         )}
                                     </MetaRow>

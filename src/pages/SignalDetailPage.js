@@ -330,20 +330,20 @@ const SignalDetailPage = () => {
                     <CardTitle><Target size={16} color="#00adef"/> Trade Setup</CardTitle>
                     <LevelsGrid>
                         <LevelBox>
-                            <LevelLabel>Entry Price</LevelLabel>
+                            <LevelLabel>Entry Zone</LevelLabel>
                             <LevelValue>{fmtPrice(s.entry)}</LevelValue>
                         </LevelBox>
                         <LevelBox $border="rgba(239,68,68,.15)">
-                            <LevelLabel>Stop Loss</LevelLabel>
+                            <LevelLabel>Stop Loss (Invalidation)</LevelLabel>
                             <LevelValue $c="#ef4444">{fmtPrice(s.sl)}</LevelValue>
                         </LevelBox>
                         <LevelBox>
-                            <LevelLabel>Target Price</LevelLabel>
+                            <LevelLabel>Target Range</LevelLabel>
                             <LevelValue $c="#00adef">{fmtPrice(s.target)}</LevelValue>
                         </LevelBox>
                         <LevelBox>
                             <LevelLabel>Risk / Reward</LevelLabel>
-                            <LevelValue $c="#a78bfa">1:{s.rr}</LevelValue>
+                            <LevelValue $c="#a78bfa" style={{fontSize:'1.4rem'}}>1:{s.rr}</LevelValue>
                         </LevelBox>
                     </LevelsGrid>
 
@@ -353,24 +353,47 @@ const SignalDetailPage = () => {
                         <TPBox><TPLabel>Take Profit 3</TPLabel><TPValue>{fmtPrice(s.tp3)}</TPValue></TPBox>
                     </TPGrid>
 
-                    {/* Price Progress */}
-                    {s.status !== 'closed' && (
+                    {/* Position Progress */}
+                    {s.status !== 'closed' && (() => {
+                        const sign = s.movePct >= 0 ? '+' : '';
+                        const abs = Math.abs(s.movePct);
+                        const totalRange = Math.abs(s.changePct);
+                        const pctToTP = totalRange > 0 ? Math.min(Math.round((abs / totalRange) * 100), 100) : 0;
+                        const favourable = s.long ? s.movePct >= 0 : s.movePct <= 0;
+                        let story;
+                        if (favourable && abs >= totalRange * 0.85) story = `${sign}${s.movePct.toFixed(2)}% ${s.long?'↑':'↓'} approaching target`;
+                        else if (favourable) story = `${sign}${s.movePct.toFixed(2)}% ${s.long?'↑':'↓'} toward TP1 • ${pctToTP}% to target`;
+                        else if (!favourable && abs > totalRange * 0.65) story = `${sign}${s.movePct.toFixed(2)}% ${s.long?'↓':'↑'} ⚠ nearing stop loss`;
+                        else story = `${sign}${s.movePct.toFixed(2)}% ${s.long?'↓':'↑'} against position`;
+
+                        return (
                         <ProgressSection $pos={posMove}>
+                            <div style={{fontSize:'.7rem',color:'#475569',fontWeight:600,textTransform:'uppercase',letterSpacing:'.8px',marginBottom:'.5rem'}}>Position Progress</div>
                             <ProgressTop>
-                                <ProgressLabel>
-                                    {fmtPrice(s.entry)} → {fmtPrice(s.currentPrice)}
+                                <ProgressLabel style={{fontWeight:600,color:posMove?'#10b981':'#ef4444'}}>
+                                    {story}
                                 </ProgressLabel>
                                 <ProgressPct $pos={posMove}>
-                                    {s.movePct >= 0 ? '+' : ''}{s.movePct.toFixed(2)}%
+                                    {fmtPrice(s.entry)} → {fmtPrice(s.currentPrice)}
                                 </ProgressPct>
                             </ProgressTop>
-                            <Bar><Fill $pct={Math.abs(s.movePct) * 10} $pos={posMove}/></Bar>
+                            <Bar><Fill $pct={(() => {
+                                const slDist = Math.abs(s.entry - s.sl);
+                                const tpDist = Math.abs(s.target - s.entry);
+                                const total = slDist + tpDist;
+                                if (total === 0) return 50;
+                                return Math.max(2, Math.min(98, s.long
+                                    ? ((s.currentPrice - s.sl) / total) * 100
+                                    : ((s.sl - s.currentPrice) / total) * 100));
+                            })()} $pos={posMove}/></Bar>
                             <ProgressFooter>
                                 <span>SL: {fmtPrice(s.sl)}</span>
+                                <span>Entry: {fmtPrice(s.entry)}</span>
                                 <span>Target: {fmtPrice(s.target)}</span>
                             </ProgressFooter>
                         </ProgressSection>
-                    )}
+                        );
+                    })()}
 
                     {s.status === 'closed' && (
                         <ResultCard $win={s.isWin}>
@@ -403,9 +426,9 @@ const SignalDetailPage = () => {
                         </IndicatorGrid>
 
                         {s.analysis?.message && (
-                            <div style={{marginTop:'1rem',padding:'1rem',background:'rgba(139,92,246,.04)',border:'1px solid rgba(139,92,246,.1)',borderRadius:8}}>
-                                <div style={{fontSize:'.75rem',color:'#a78bfa',fontWeight:700,marginBottom:'.3rem',display:'flex',alignItems:'center',gap:'.3rem'}}><Brain size={12}/> AI Analysis</div>
-                                <div style={{fontSize:'.85rem',color:'#94a3b8',lineHeight:1.5}}>{s.analysis.message}</div>
+                            <div style={{marginTop:'1.25rem',padding:'1.25rem',background:'linear-gradient(135deg,rgba(139,92,246,.05),rgba(0,173,237,.03))',border:'1px solid rgba(139,92,246,.15)',borderRadius:10,boxShadow:'0 0 20px rgba(139,92,246,.06)'}}>
+                                <div style={{fontSize:'.8rem',color:'#a78bfa',fontWeight:700,marginBottom:'.5rem',display:'flex',alignItems:'center',gap:'.4rem'}}><Brain size={14}/> AI Analysis Summary</div>
+                                <div style={{fontSize:'.9rem',color:'#c8d0da',lineHeight:1.6}}>{s.analysis.message}</div>
                             </div>
                         )}
                     </Card>
