@@ -42,6 +42,7 @@ const LoginPage = lazy(() => import('./pages/LoginPage'));
 const RegisterPage = lazy(() => import('./pages/RegisterPage'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const PredictPage = lazy(() => import('./pages/PredictionsPage'));
+const SignalsPage = lazy(() => import('./pages/SignalsPage'));
 const ChatPage = lazy(() => import('./pages/ChatPage'));
 const PricingPage = lazy(() => import('./pages/PricingPage'));
 const PriceComparisonPage = lazy(() => import('./pages/PriceComparisonPage'));
@@ -157,6 +158,7 @@ function AppContent() {
                     <Route path="/portfolio" element={<ProtectedRoute><PortfolioPage /></ProtectedRoute>} />
                     <Route path="/portfolio-analytics" element={<ProtectedRoute><PortfolioAnalyticsPage /></ProtectedRoute>} />
                     <Route path="/predict" element={<ProtectedRoute><PredictPage /></ProtectedRoute>} />
+                    <Route path="/signals" element={<ProtectedRoute><SignalsPage /></ProtectedRoute>} />
                     <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
                     <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
                     <Route path="/account" element={<ProtectedRoute><AccountSettingsPage /></ProtectedRoute>} />
