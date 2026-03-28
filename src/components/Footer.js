@@ -1,649 +1,294 @@
-// client/src/components/Footer.js - FIXED - NO MORE 404s! 🎯
-import React, { useState, useEffect } from 'react';
+// client/src/components/Footer.js — Premium Fintech Footer
+import React, { useState } from 'react';
 import styled, { keyframes } from 'styled-components';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
-    Send, Twitter, Github, MessageSquare,
-    TrendingUp, Zap, Brain, Sparkles, ChevronRight, Star, Shield
+    Send, Github, MessageSquare, ArrowRight,
+    TrendingUp, Zap, Brain, Shield, CheckCircle, Lock,
+    Radio, BarChart3, Activity, Target, Users
 } from 'lucide-react';
-import { useTheme } from '../context/ThemeContext';
 
-// ============ ANIMATIONS ============
-const fadeIn = keyframes`
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+// ─── Animations ───────────────────────────────────────────
+const fadeIn = keyframes`from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}`;
+const shimmer = keyframes`0%{background-position:-200% center}100%{background-position:200% center}`;
+
+// ─── CTA Strip (above footer) ─────────────────────────────
+const CTAStrip = styled.section`
+    padding:4rem 2rem;text-align:center;position:relative;
+    background:linear-gradient(180deg,transparent 0%,rgba(0,173,237,.03) 50%,transparent 100%);
+    @media(max-width:768px){padding:3rem 1.25rem;}
 `;
 
-const float = keyframes`
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-10px); }
+const CTACard = styled.div`
+    max-width:800px;margin:0 auto;
+    background:linear-gradient(135deg,rgba(0,173,237,.06),rgba(139,92,246,.06));
+    border:1px solid rgba(0,173,237,.15);border-radius:20px;
+    padding:3.5rem 3rem;position:relative;overflow:hidden;
+    &::before{content:'';position:absolute;inset:0;background:linear-gradient(45deg,transparent 30%,rgba(0,173,237,.03) 50%,transparent 70%);background-size:200% 200%;animation:${shimmer} 5s linear infinite;}
+    @media(max-width:768px){padding:2.5rem 1.5rem;}
 `;
 
-const shimmer = keyframes`
-    0% { background-position: -200% center; }
-    100% { background-position: 200% center; }
+const CTATitle = styled.h2`font-size:clamp(1.5rem,3vw,2.2rem);font-weight:900;color:#e0e6ed;margin-bottom:.75rem;position:relative;z-index:1;`;
+const CTASub = styled.p`font-size:1rem;color:#94a3b8;margin-bottom:2rem;max-width:450px;margin-left:auto;margin-right:auto;line-height:1.6;position:relative;z-index:1;`;
+
+const CTABtn = styled.button`
+    padding:1rem 2.25rem;background:linear-gradient(135deg,#00adef,#0090d0);
+    border:none;color:#fff;border-radius:12px;font-size:1.1rem;font-weight:700;
+    cursor:pointer;display:inline-flex;align-items:center;gap:.6rem;
+    transition:all .25s;position:relative;z-index:1;
+    &:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,173,237,.35);}
 `;
 
-const pulse = keyframes`
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
+const TrustRow = styled.div`
+    display:flex;justify-content:center;gap:1.5rem;flex-wrap:wrap;
+    margin-top:1.5rem;position:relative;z-index:1;
+`;
+const TrustItem = styled.span`
+    display:flex;align-items:center;gap:.35rem;font-size:.8rem;color:#64748b;
+    svg{width:14px;height:14px;color:#10b981;}
 `;
 
-const particles = keyframes`
-    0% { transform: translateY(0) translateX(0) scale(1); opacity: 1; }
-    100% { transform: translateY(-100px) translateX(30px) scale(0); opacity: 0; }
+// ─── Footer ───────────────────────────────────────────────
+const FooterWrap = styled.footer`
+    width:100%;border-top:1px solid rgba(255,255,255,.04);
+    background:transparent;
 `;
 
-// ============ STYLED COMPONENTS ============
-const FooterContainer = styled.footer`
-    width: 100%;
-    background: ${props => props.theme.bg?.page || 'linear-gradient(180deg, #0a0e27 0%, #1a1f3a 100%)'};
-    position: relative;
-    overflow: hidden;
-    border-top: 1px solid ${props => `${props.theme.brand?.primary || '#00adef'}33`};
+const Inner = styled.div`
+    max-width:1400px;margin:0 auto;padding:4rem 2rem 0;
+    animation:${fadeIn} .6s ease-out;
+    @media(max-width:768px){padding:3rem 1.25rem 0;}
 `;
 
-const ParticleContainer = styled.div`
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 0;
-    overflow: hidden;
+const Grid = styled.div`
+    display:grid;grid-template-columns:2.2fr 1fr 1fr 1.8fr;gap:3rem;margin-bottom:3rem;
+    @media(max-width:1024px){grid-template-columns:1fr 1fr;gap:2rem;}
+    @media(max-width:600px){grid-template-columns:1fr;gap:2rem;}
 `;
 
-const Particle = styled.div`
-    position: absolute;
-    width: ${props => props.$size}px;
-    height: ${props => props.$size}px;
-    background: ${props => props.$color};
-    border-radius: 50%;
-    animation: ${particles} ${props => props.$duration}s linear infinite;
-    animation-delay: ${props => props.$delay}s;
-    left: ${props => props.$left}%;
-    bottom: 0;
-    opacity: 0.4;
+const Col = styled.div`display:flex;flex-direction:column;gap:.75rem;`;
+
+// ─── Brand ────────────────────────────────────────────────
+const Logo = styled(Link)`
+    display:flex;align-items:center;gap:.6rem;text-decoration:none;
+    font-size:1.5rem;font-weight:800;color:#00adef;margin-bottom:.25rem;
+    &:hover{opacity:.9;}
 `;
 
-const FooterContent = styled.div`
-    max-width: 1400px;
-    width: 100%;
-    margin: 0 auto;
-    padding: 4rem 2rem 2rem;
-    position: relative;
-    z-index: 1;
-    animation: ${fadeIn} 0.8s ease-out;
+const BrandDesc = styled.p`font-size:.9rem;color:#94a3b8;line-height:1.6;margin-bottom:.5rem;`;
+
+const TrustBadges = styled.div`display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.75rem;`;
+const TBadge = styled.span`
+    padding:.2rem .6rem;border-radius:4px;font-size:.65rem;font-weight:600;
+    background:rgba(16,185,129,.06);color:#10b981;border:1px solid rgba(16,185,129,.12);
+    letter-spacing:.3px;
 `;
 
-const FooterGrid = styled.div`
-    display: grid;
-    grid-template-columns: 2fr 1fr 1fr 1.5fr;
-    gap: 3rem;
-    margin-bottom: 3rem;
-
-    @media (max-width: 1024px) {
-        grid-template-columns: 1fr 1fr;
-        gap: 2rem;
-    }
-
-    @media (max-width: 768px) {
-        grid-template-columns: 1fr;
-        gap: 2rem;
-    }
+const Socials = styled.div`display:flex;gap:.6rem;`;
+const SocialBtn = styled.a`
+    width:36px;height:36px;border-radius:8px;
+    background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);
+    display:flex;align-items:center;justify-content:center;
+    color:#64748b;text-decoration:none;transition:all .2s;
+    &:hover{color:#00adef;border-color:rgba(0,173,237,.3);background:rgba(0,173,237,.08);
+        transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,173,237,.15);}
 `;
 
-const FooterSection = styled.div`
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
+// ─── Columns ──────────────────────────────────────────────
+const ColTitle = styled.h4`
+    font-size:.85rem;font-weight:700;color:#e0e6ed;margin-bottom:.25rem;
+    text-transform:uppercase;letter-spacing:.5px;
 `;
 
-const BrandSection = styled(FooterSection)`
-    gap: 1.5rem;
+const FLink = styled(Link)`
+    color:#64748b;text-decoration:none;font-size:.88rem;transition:all .2s;
+    display:flex;align-items:center;gap:.35rem;padding:.15rem 0;
+    &:hover{color:#00adef;transform:translateX(3px);}
 `;
 
-const Logo = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    font-size: 1.8rem;
-    font-weight: 900;
-    color: ${props => props.theme.brand?.primary || '#00adef'};
-    text-shadow: 
-        0 0 10px ${props => `${props.theme.brand?.primary || '#00adef'}cc`},
-        0 0 20px ${props => `${props.theme.brand?.primary || '#00adef'}99`};
-    cursor: pointer;
-    transition: transform 0.3s ease;
-
-    &:hover {
-        transform: scale(1.05);
-    }
+const ExtLink = styled.a`
+    color:#64748b;text-decoration:none;font-size:.88rem;transition:all .2s;
+    display:flex;align-items:center;gap:.35rem;padding:.15rem 0;
+    &:hover{color:#00adef;transform:translateX(3px);}
 `;
 
-const LogoIcon = styled.div`
-    animation: ${float} 3s ease-in-out infinite;
+const NewBadge = styled.span`
+    font-size:.55rem;font-weight:700;padding:.1rem .35rem;border-radius:3px;
+    background:rgba(16,185,129,.12);color:#10b981;border:1px solid rgba(16,185,129,.2);
+    text-transform:uppercase;letter-spacing:.3px;
 `;
 
-const BrandText = styled.p`
-    color: ${props => props.theme.text?.secondary || '#94a3b8'};
-    line-height: 1.6;
-    font-size: 0.95rem;
+// ─── Newsletter / CTA Block ──────────────────────────────
+const SignupCol = styled(Col)``;
+const SignupTitle = styled.h4`font-size:1.05rem;font-weight:700;color:#e0e6ed;margin-bottom:.15rem;`;
+const SignupSub = styled.p`font-size:.82rem;color:#64748b;margin-bottom:.5rem;`;
+
+const SignupForm = styled.form`display:flex;gap:.4rem;`;
+const SignupInput = styled.input`
+    flex:1;padding:.65rem .85rem;background:rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.08);border-radius:8px;
+    color:#e0e6ed;font-size:.88rem;transition:all .2s;
+    &::placeholder{color:#475569;}
+    &:focus{outline:none;border-color:rgba(0,173,237,.3);background:rgba(0,173,237,.06);}
+`;
+const SignupBtn = styled.button`
+    padding:.65rem 1rem;background:linear-gradient(135deg,#00adef,#0090d0);
+    border:none;border-radius:8px;color:#fff;font-weight:700;font-size:.85rem;
+    cursor:pointer;display:flex;align-items:center;gap:.3rem;white-space:nowrap;
+    transition:all .2s;
+    &:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,173,237,.3);}
+`;
+const MicroTrust = styled.p`font-size:.7rem;color:#475569;margin-top:.25rem;`;
+
+// ─── Data & Infrastructure ────────────────────────────────
+const InfraSection = styled.div`
+    border-top:1px solid rgba(255,255,255,.04);padding:1.75rem 0;margin-bottom:.5rem;
+`;
+const InfraTitle = styled.div`
+    text-align:center;font-size:.65rem;color:#475569;
+    text-transform:uppercase;letter-spacing:2px;font-weight:600;margin-bottom:1rem;
+`;
+const InfraGrid = styled.div`
+    display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:.75rem 1.5rem;
+`;
+const InfraItem = styled.a`
+    color:#475569;text-decoration:none;font-size:.78rem;font-weight:500;
+    opacity:.6;transition:all .2s;display:flex;align-items:center;gap:.35rem;
+    &:hover{opacity:1;color:#94a3b8;}
+    svg{width:14px;height:14px;}
 `;
 
-const SocialIcons = styled.div`
-    display: flex;
-    gap: 1rem;
-    flex-wrap: wrap;
+// ─── Bottom Bar ───────────────────────────────────────────
+const BottomBar = styled.div`
+    border-top:1px solid rgba(255,255,255,.04);
+    padding:1.5rem 0;display:flex;justify-content:space-between;align-items:center;
+    flex-wrap:wrap;gap:1rem;
+    @media(max-width:768px){flex-direction:column;text-align:center;}
+`;
+const CopyText = styled.p`font-size:.8rem;color:#475569;margin:0;`;
+const LegalRow = styled.div`display:flex;gap:1.25rem;flex-wrap:wrap;@media(max-width:768px){justify-content:center;}`;
+const LegalLink = styled(Link)`color:#475569;text-decoration:none;font-size:.78rem;transition:color .2s;&:hover{color:#94a3b8;}`;
+const Disclaimer = styled.p`
+    width:100%;text-align:center;font-size:.7rem;color:#374151;margin-top:.5rem;
 `;
 
-const SocialIcon = styled.a`
-    width: 44px;
-    height: 44px;
-    background: linear-gradient(135deg, ${props => `${props.theme.brand?.primary || '#00adef'}33`} 0%, ${props => `${props.theme.brand?.accent || props.theme.brand?.secondary || '#8b5cf6'}33`} 100%);
-    border: 1px solid ${props => `${props.theme.brand?.primary || '#00adef'}4D`};
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: ${props => props.theme.brand?.primary || '#00adef'};
-    transition: all 0.3s ease;
-    cursor: pointer;
-
-    &:hover {
-        background: linear-gradient(135deg, ${props => `${props.theme.brand?.primary || '#00adef'}66`} 0%, ${props => `${props.theme.brand?.accent || props.theme.brand?.secondary || '#8b5cf6'}66`} 100%);
-        border-color: ${props => props.theme.brand?.primary || '#00adef'};
-        transform: translateY(-5px) scale(1.1);
-        box-shadow: 0 10px 25px ${props => `${props.theme.brand?.primary || '#00adef'}66`};
-    }
-`;
-
-const SectionTitle = styled.h3`
-    color: ${props => props.theme.text?.primary || '#f8fafc'};
-    font-size: 1.1rem;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-
-    svg {
-        color: ${props => props.theme.brand?.primary || '#00adef'};
-    }
-`;
-
-const FooterLink = styled(Link)`
-    color: ${props => props.theme.text?.secondary || '#94a3b8'};
-    text-decoration: none;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.95rem;
-
-    &:hover {
-        color: ${props => props.theme.brand?.primary || '#00adef'};
-        transform: translateX(5px);
-    }
-`;
-
-const ExternalLink = styled.a`
-    color: ${props => props.theme.text?.secondary || '#94a3b8'};
-    text-decoration: none;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.95rem;
-
-    &:hover {
-        color: ${props => props.theme.brand?.primary || '#00adef'};
-        transform: translateX(5px);
-    }
-`;
-
-const NewsletterSection = styled(FooterSection)`
-    gap: 1rem;
-`;
-
-const NewsletterText = styled.p`
-    color: ${props => props.theme.text?.secondary || '#94a3b8'};
-    font-size: 0.9rem;
-    line-height: 1.5;
-`;
-
-const NewsletterForm = styled.form`
-    display: flex;
-    gap: 0.5rem;
-    position: relative;
-`;
-
-const EmailInput = styled.input`
-    flex: 1;
-    padding: 0.75rem 1rem;
-    background: ${props => `${props.theme.brand?.primary || '#00adef'}1a`};
-    border: 1px solid ${props => `${props.theme.brand?.primary || '#00adef'}4D`};
-    border-radius: 8px;
-    color: ${props => props.theme.text?.primary || '#f8fafc'};
-    font-size: 0.95rem;
-    transition: all 0.3s ease;
-
-    &::placeholder {
-        color: ${props => props.theme.text?.tertiary || '#64748b'};
-    }
-
-    &:focus {
-        outline: none;
-        border-color: ${props => props.theme.brand?.primary || '#00adef'};
-        background: ${props => `${props.theme.brand?.primary || '#00adef'}26`};
-        box-shadow: 0 0 0 3px ${props => `${props.theme.brand?.primary || '#00adef'}33`};
-    }
-`;
-
-const SubscribeButton = styled.button`
-    padding: 0.75rem 1.25rem;
-    background: ${props => props.theme.brand?.gradient || `linear-gradient(135deg, ${props.theme.brand?.primary || '#00adef'} 0%, ${props.theme.brand?.accent || props.theme.brand?.secondary || '#8b5cf6'} 100%)`};
-    border: none;
-    border-radius: 8px;
-    color: white;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    transition: all 0.3s ease;
-    position: relative;
-    overflow: hidden;
-
-    &::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.3) 50%, transparent 70%);
-        background-size: 200% 200%;
-        animation: ${shimmer} 3s linear infinite;
-    }
-
-    &:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 20px ${props => `${props.theme.brand?.primary || '#00adef'}80`};
-    }
-
-    &:active {
-        transform: translateY(-1px);
-    }
-`;
-
-const FooterBottom = styled.div`
-    border-top: 1px solid ${props => `${props.theme.brand?.primary || '#00adef'}33`};
-    padding-top: 2rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 1rem;
-
-    @media (max-width: 768px) {
-        flex-direction: column;
-        text-align: center;
-    }
-`;
-
-const Copyright = styled.p`
-    color: ${props => props.theme.text?.secondary || '#94a3b8'};
-    font-size: 0.9rem;
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-`;
-
-const MadeWithLove = styled.span`
-    display: flex;
-    align-items: center;
-    gap: 0.3rem;
-    color: ${props => props.theme.error || '#ef4444'};
-    animation: ${pulse} 2s ease-in-out infinite;
-`;
-
-const LegalLinks = styled.div`
-    display: flex;
-    gap: 1.5rem;
-    flex-wrap: wrap;
-
-    @media (max-width: 768px) {
-        justify-content: center;
-    }
-`;
-
-const LegalLink = styled(Link)`
-    color: ${props => props.theme.text?.secondary || '#94a3b8'};
-    text-decoration: none;
-    font-size: 0.9rem;
-    transition: all 0.3s ease;
-
-    &:hover {
-        color: ${props => props.theme.brand?.primary || '#00adef'};
-    }
-`;
-
-const Badge = styled.div`
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.4rem 0.8rem;
-    background: linear-gradient(135deg, ${props => `${props.theme.success || '#10b981'}33`} 0%, ${props => `${props.theme.success || '#10b981'}1a`} 100%);
-    border: 1px solid ${props => `${props.theme.success || '#10b981'}66`};
-    border-radius: 20px;
-    color: ${props => props.theme.success || '#10b981'};
-    font-size: 0.85rem;
-    font-weight: 600;
-    box-shadow: 0 0 20px ${props => `${props.theme.success || '#10b981'}66`};
-`;
-
-const FeatureHighlight = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: ${props => props.theme.text?.secondary || '#94a3b8'};
-    font-size: 0.9rem;
-    padding: 0.5rem 0;
-    transition: all 0.3s ease;
-
-    &:hover {
-        color: ${props => props.theme.text?.primary || '#f8fafc'};
-        transform: translateX(5px);
-    }
-
-    svg {
-        color: ${props => props.theme.brand?.primary || '#00adef'};
-        min-width: 18px;
-    }
-`;
-
-const PoweredBySection = styled.div`
-    border-top: 1px solid ${props => `${props.theme.brand?.primary || '#00adef'}22`};
-    padding: 2rem 0;
-    margin-bottom: 1rem;
-`;
-
-const PoweredByTitle = styled.div`
-    text-align: center;
-    font-size: 0.8rem;
-    color: ${props => props.theme.text?.tertiary || '#64748b'};
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    margin-bottom: 1.25rem;
-    font-weight: 600;
-`;
-
-const PoweredByGrid = styled.div`
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 1.5rem 2.5rem;
-
-    @media (max-width: 768px) {
-        gap: 1rem 1.5rem;
-    }
-`;
-
-const PoweredByItem = styled.a`
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: ${props => props.theme.text?.secondary || '#94a3b8'};
-    text-decoration: none;
-    font-size: 0.85rem;
-    font-weight: 500;
-    padding: 0.5rem 0.75rem;
-    border-radius: 8px;
-    transition: all 0.3s ease;
-    opacity: 0.7;
-
-    &:hover {
-        opacity: 1;
-        color: ${props => props.theme.text?.primary || '#f8fafc'};
-        background: ${props => `${props.theme.brand?.primary || '#00adef'}15`};
-        transform: translateY(-2px);
-    }
-
-    svg, img {
-        width: 18px;
-        height: 18px;
-        object-fit: contain;
-    }
-`;
-
-// ============ COMPONENT ============
+// ═══════════════════════════════════════════════════════════
 const Footer = () => {
-    const { theme } = useTheme();
+    const navigate = useNavigate();
     const [email, setEmail] = useState('');
-    const [particleList, setParticleList] = useState([]);
 
-    useEffect(() => {
-        const colors = [
-            theme.brand?.primary || '#3b82f6',
-            theme.brand?.accent || theme.brand?.secondary || '#8b5cf6',
-            theme.success || '#10b981'
-        ];
-        
-        const newParticles = Array.from({ length: 15 }, (_, i) => ({
-            id: i,
-            size: Math.random() * 3 + 2,
-            left: Math.random() * 100,
-            duration: Math.random() * 8 + 8,
-            delay: Math.random() * 5,
-            color: colors[Math.floor(Math.random() * 3)]
-        }));
-        setParticleList(newParticles);
-    }, [theme]);
-
-    const handleSubscribe = (e) => {
+    const handleSignup = (e) => {
         e.preventDefault();
-        console.log('Subscribe:', email);
-        alert('Thanks for subscribing! 🎉');
-        setEmail('');
+        if (email) { alert('Thanks for signing up!'); setEmail(''); }
     };
 
-    const currentYear = new Date().getFullYear();
-
     return (
-        <FooterContainer>
-            <ParticleContainer>
-                {particleList.map(particle => (
-                    <Particle
-                        key={particle.id}
-                        $size={particle.size}
-                        $left={particle.left}
-                        $duration={particle.duration}
-                        $delay={particle.delay}
-                        $color={particle.color}
-                    />
-                ))}
-            </ParticleContainer>
+        <>
+            {/* ─── Pre-Footer CTA Strip ─── */}
+            <CTAStrip>
+                <CTACard>
+                    <CTATitle>Start Finding Better Trades Today</CTATitle>
+                    <CTASub>7-day free Premium trial. Full access to AI signals, pattern scanning, and $100K paper trading. No risk.</CTASub>
+                    <CTABtn onClick={() => navigate('/register')}>
+                        Get Free Access Now <ArrowRight size={18} />
+                    </CTABtn>
+                    <TrustRow>
+                        <TrustItem><CheckCircle /> No credit card required</TrustItem>
+                        <TrustItem><Lock size={14} /> 256-bit encryption</TrustItem>
+                        <TrustItem><Shield size={14} /> Cancel anytime</TrustItem>
+                    </TrustRow>
+                </CTACard>
+            </CTAStrip>
 
-            <FooterContent>
-                <FooterGrid>
-                    {/* Brand Section */}
-                    <BrandSection>
-                        <Logo>
-                            <LogoIcon>
-                                <Brain size={32} />
-                            </LogoIcon>
-                            Nexus Signal.AI
-                        </Logo>
-                        <BrandText>
-                            Empowering traders with cutting-edge AI technology. 
-                            Get real-time insights, predictions, and market analysis 
-                            to stay ahead of the game.
-                        </BrandText>
-                        <Badge>
-                            <Star size={14} />
-                            Made in the USA
-                        </Badge>
-                        <SocialIcons>
-                            <SocialIcon href="https://twitter.com/nexussignalai" target="_blank" rel="noopener noreferrer">
-                                <Twitter size={20} />
-                            </SocialIcon>
-                            <SocialIcon href="https://github.com/GaiusCaesarBC" target="_blank" rel="noopener noreferrer">
-                                <Github size={20} />
-                            </SocialIcon>
-                            <SocialIcon href="https://discord.gg/knef4zSr" target="_blank" rel="noopener noreferrer">
-                                <MessageSquare size={20} />
-                            </SocialIcon>
-                        </SocialIcons>
-                    </BrandSection>
+            {/* ─── Footer ─── */}
+            <FooterWrap>
+                <Inner>
+                    <Grid>
+                        {/* Brand + Trust */}
+                        <Col>
+                            <Logo to="/"><Brain size={24} /> Nexus Signal</Logo>
+                            <BrandDesc>
+                                AI-powered trading signals for stocks & crypto — built for traders who want an edge.
+                            </BrandDesc>
+                            <TrustBadges>
+                                <TBadge>Real-Time Signals</TBadge>
+                                <TBadge>Tracked Performance</TBadge>
+                                <TBadge>Data Driven</TBadge>
+                            </TrustBadges>
+                            <Socials>
+                                <SocialBtn href="https://twitter.com/nexussignalai" target="_blank" rel="noopener noreferrer"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></SocialBtn>
+                                <SocialBtn href="https://github.com/GaiusCaesarBC" target="_blank" rel="noopener noreferrer"><Github size={16} /></SocialBtn>
+                                <SocialBtn href="https://discord.gg/knef4zSr" target="_blank" rel="noopener noreferrer"><MessageSquare size={16} /></SocialBtn>
+                            </Socials>
+                        </Col>
 
-                    {/* Product Section - ✅ FIXED */}
-                    <FooterSection>
-                        <SectionTitle>
-                            <Zap size={18} />
-                            Product
-                        </SectionTitle>
-                        <FooterLink to="/predict">
-                            <ChevronRight size={16} />
-                            AI Predictions
-                        </FooterLink>
-                        <FooterLink to="/chat">
-                            <ChevronRight size={16} />
-                            AI Chat
-                        </FooterLink>
-                        <FooterLink to="/paper-trading">
-                            <ChevronRight size={16} />
-                            Paper Trading
-                        </FooterLink>
-                        <FooterLink to="/screener">
-                            <ChevronRight size={16} />
-                            Stock Screener
-                        </FooterLink>
-                        <FooterLink to="/pricing">
-                            <ChevronRight size={16} />
-                            Pricing
-                        </FooterLink>
-                    </FooterSection>
+                        {/* Product */}
+                        <Col>
+                            <ColTitle>Product</ColTitle>
+                            <FLink to="/signals">Live Signals <NewBadge>New</NewBadge></FLink>
+                            <FLink to="/predict">AI Signals</FLink>
+                            <FLink to="/pattern-scanner">Pattern Scanner</FLink>
+                            <FLink to="/sentiment">Sentiment Analysis</FLink>
+                            <FLink to="/paper-trading">Paper Trading</FLink>
+                            <FLink to="/backtesting">Backtesting</FLink>
+                            <FLink to="/pricing">Pricing</FLink>
+                        </Col>
 
-                    {/* Company Section - ✅ FIXED */}
-                    <FooterSection>
-                        <SectionTitle>
-                            <TrendingUp size={18} />
-                            Company
-                        </SectionTitle>
-                        <FooterLink to="/about">
-                            <ChevronRight size={16} />
-                            About Us
-                        </FooterLink>
-                        <FooterLink to="/whitepaper">
-                            <ChevronRight size={16} />
-                            Whitepaper
-                        </FooterLink>
-                        <FooterLink to="/leaderboard">
-                            <ChevronRight size={16} />
-                            Leaderboard
-                        </FooterLink>
-                        <ExternalLink href="mailto:support@nexussignal.ai">
-                            <ChevronRight size={16} />
-                            Contact Us
-                        </ExternalLink>
-                        <ExternalLink href="https://twitter.com/nexussignalai" target="_blank" rel="noopener noreferrer">
-                            <ChevronRight size={16} />
-                            Follow Us
-                        </ExternalLink>
-                    </FooterSection>
+                        {/* Company */}
+                        <Col>
+                            <ColTitle>Company</ColTitle>
+                            <FLink to="/about">About</FLink>
+                            <FLink to="/leaderboard">Leaderboard</FLink>
+                            <FLink to="/pricing">Plans & Pricing</FLink>
+                            <FLink to="/whitepaper">Whitepaper</FLink>
+                            <ExtLink href="mailto:support@nexussignal.ai">Contact</ExtLink>
+                        </Col>
 
-                    {/* Newsletter Section */}
-                    <NewsletterSection>
-                        <SectionTitle>
-                            <Sparkles size={18} />
-                            Stay Updated
-                        </SectionTitle>
-                        <NewsletterText>
-                            Get the latest market insights, AI predictions, and exclusive 
-                            trading tips delivered to your inbox.
-                        </NewsletterText>
-                        <NewsletterForm onSubmit={handleSubscribe}>
-                            <EmailInput
-                                type="email"
-                                placeholder="Enter your email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                            />
-                            <SubscribeButton type="submit">
-                                <Send size={18} />
-                            </SubscribeButton>
-                        </NewsletterForm>
-                        <FeatureHighlight>
-                            <Sparkles size={16} />
-                            Weekly market insights
-                        </FeatureHighlight>
-                        <FeatureHighlight>
-                            <Zap size={16} />
-                            Exclusive AI predictions
-                        </FeatureHighlight>
-                    </NewsletterSection>
-                </FooterGrid>
+                        {/* Signup / CTA Block */}
+                        <SignupCol>
+                            <SignupTitle>Get High-Probability Trade Setups</SignupTitle>
+                            <SignupSub>Real signals. No noise. Delivered daily.</SignupSub>
+                            <SignupForm onSubmit={handleSignup}>
+                                <SignupInput
+                                    type="email" placeholder="Your email"
+                                    value={email} onChange={e => setEmail(e.target.value)} required
+                                />
+                                <SignupBtn type="submit">Get Free Signals</SignupBtn>
+                            </SignupForm>
+                            <MicroTrust>No spam. Unsubscribe anytime.</MicroTrust>
+                        </SignupCol>
+                    </Grid>
 
-                <PoweredBySection>
-                    <PoweredByTitle>Powered By</PoweredByTitle>
-                    <PoweredByGrid>
-                        <PoweredByItem href="https://www.alphavantage.co" target="_blank" rel="noopener noreferrer">
-                            <TrendingUp size={18} />
-                            Alpha Vantage
-                        </PoweredByItem>
-                        <PoweredByItem href="https://finance.yahoo.com" target="_blank" rel="noopener noreferrer">
-                            <TrendingUp size={18} />
-                            Yahoo Finance
-                        </PoweredByItem>
-                        <PoweredByItem href="https://stripe.com" target="_blank" rel="noopener noreferrer">
-                            <Zap size={18} />
-                            Stripe
-                        </PoweredByItem>
-                        <PoweredByItem href="https://plaid.com" target="_blank" rel="noopener noreferrer">
-                            <Shield size={18} />
-                            Plaid
-                        </PoweredByItem>
-                        <PoweredByItem href="https://sendgrid.com" target="_blank" rel="noopener noreferrer">
-                            <Send size={18} />
-                            SendGrid
-                        </PoweredByItem>
-                        <PoweredByItem href="https://twilio.com" target="_blank" rel="noopener noreferrer">
-                            <MessageSquare size={18} />
-                            Twilio
-                        </PoweredByItem>
-                        <PoweredByItem href="https://cloudinary.com" target="_blank" rel="noopener noreferrer">
-                            <Sparkles size={18} />
-                            Cloudinary
-                        </PoweredByItem>
-                        <PoweredByItem href="https://www.coingecko.com" target="_blank" rel="noopener noreferrer">
-                            <TrendingUp size={18} />
-                            CoinGecko
-                        </PoweredByItem>
-                    </PoweredByGrid>
-                </PoweredBySection>
+                    {/* Data & Infrastructure */}
+                    <InfraSection>
+                        <InfraTitle>Data & Infrastructure</InfraTitle>
+                        <InfraGrid>
+                            <InfraItem href="https://www.alphavantage.co" target="_blank" rel="noopener noreferrer"><TrendingUp size={14}/>Alpha Vantage</InfraItem>
+                            <InfraItem href="https://finance.yahoo.com" target="_blank" rel="noopener noreferrer"><BarChart3 size={14}/>Yahoo Finance</InfraItem>
+                            <InfraItem href="https://www.cryptocompare.com" target="_blank" rel="noopener noreferrer"><Activity size={14}/>CryptoCompare</InfraItem>
+                            <InfraItem href="https://stripe.com" target="_blank" rel="noopener noreferrer"><Zap size={14}/>Stripe</InfraItem>
+                            <InfraItem href="https://plaid.com" target="_blank" rel="noopener noreferrer"><Shield size={14}/>Plaid</InfraItem>
+                            <InfraItem href="https://sendgrid.com" target="_blank" rel="noopener noreferrer"><Send size={14}/>SendGrid</InfraItem>
+                            <InfraItem href="https://cloudinary.com" target="_blank" rel="noopener noreferrer"><Target size={14}/>Cloudinary</InfraItem>
+                        </InfraGrid>
+                    </InfraSection>
 
-                <FooterBottom>
-                    <Copyright>
-                        © {currentYear} NexusSignal.AI. All rights reserved.
-                        <MadeWithLove>
-                            Made with ❤️ in the USA
-                        </MadeWithLove>
-                    </Copyright>
-                    <LegalLinks>
-                        <LegalLink to="/whitepaper">Whitepaper</LegalLink>
-                        <LegalLink to="/terms">Terms of Service</LegalLink>
-                        <LegalLink to="/privacy">Privacy Policy</LegalLink>
-                        <LegalLink to="/disclaimer">Disclaimer</LegalLink>
-                        <LegalLink to="/cookie-policy">Cookie Policy</LegalLink>
-                    </LegalLinks>
-                </FooterBottom>
-            </FooterContent>
-        </FooterContainer>
+                    {/* Bottom Bar */}
+                    <BottomBar>
+                        <CopyText>&copy; {new Date().getFullYear()} Nexus Signal AI. All rights reserved.</CopyText>
+                        <LegalRow>
+                            <LegalLink to="/terms">Terms</LegalLink>
+                            <LegalLink to="/privacy">Privacy</LegalLink>
+                            <LegalLink to="/disclaimer">Disclaimer</LegalLink>
+                            <LegalLink to="/cookie-policy">Cookies</LegalLink>
+                        </LegalRow>
+                    </BottomBar>
+                    <Disclaimer>
+                        Nexus Signal AI does not provide financial advice. Trading involves risk. Past performance does not guarantee future results.
+                    </Disclaimer>
+                </Inner>
+            </FooterWrap>
+        </>
     );
 };
 
