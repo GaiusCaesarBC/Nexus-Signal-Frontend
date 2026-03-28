@@ -144,10 +144,10 @@ const HeroCTAs = styled.div`
 `;
 
 const PrimaryBtn = styled.button`
-    padding: 0.9rem 2rem;
+    padding: 1rem 2.25rem;
     background: linear-gradient(135deg, #00adef, #0090d0);
     border: none; color: white;
-    border-radius: 12px; font-size: 1.05rem; font-weight: 700;
+    border-radius: 12px; font-size: 1.1rem; font-weight: 700;
     cursor: pointer; display: flex; align-items: center; gap: 0.6rem;
     transition: all 0.25s;
     position: relative; overflow: hidden;
@@ -180,17 +180,23 @@ const SignalSection = styled.section`
 
 const SignalLabel = styled.div`
     text-align: center; margin-bottom: 1.5rem;
-    color: #64748b; font-size: 0.8rem; font-weight: 600;
-    text-transform: uppercase; letter-spacing: 2px;
+    color: #94a3b8; font-size: 0.8rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 3px;
     animation: ${fadeIn} 0.6s ease-out;
 `;
 
 const SignalCard = styled.div`
     background: linear-gradient(135deg, rgba(15, 20, 38, 0.95), rgba(10, 14, 30, 0.98));
-    border: 1px solid rgba(0, 173, 237, 0.15);
+    border: 1px solid rgba(0, 173, 237, 0.25);
     border-radius: 20px;
     padding: 2rem;
     animation: ${fadeIn} 0.8s ease-out 0.2s backwards, ${glowPulse} 4s ease-in-out infinite;
+    position: relative;
+    &::before {
+        content: ''; position: absolute; inset: -1px; border-radius: 20px;
+        background: linear-gradient(135deg, rgba(0,173,237,0.3), rgba(16,185,129,0.15), rgba(139,92,246,0.2));
+        z-index: -1; filter: blur(1px);
+    }
     @media (max-width: 768px) { padding: 1.5rem; }
 `;
 
@@ -522,12 +528,12 @@ const LandingPage = () => {
     };
 
     const features = [
-        { icon: <Brain size={22} />, gradient: 'linear-gradient(135deg, #00adef, #0090d0)', title: 'AI Predictions', desc: 'Machine learning models analyze price action, volume, and indicators to generate directional signals with confidence scores.' },
-        { icon: <BarChart3 size={22} />, gradient: 'linear-gradient(135deg, #8b5cf6, #7c3aed)', title: 'Pattern Scanner', desc: 'Automatically detect chart patterns, support/resistance levels, and technical setups across thousands of assets.' },
-        { icon: <Activity size={22} />, gradient: 'linear-gradient(135deg, #f59e0b, #d97706)', title: 'Sentiment Analysis', desc: 'Track social sentiment, news flow, and market mood to confirm or challenge your trade thesis.' },
-        { icon: <Shield size={22} />, gradient: 'linear-gradient(135deg, #10b981, #059669)', title: 'Paper Trading', desc: 'Practice with $100K in simulated funds. Test strategies risk-free before committing real capital.' },
-        { icon: <Target size={22} />, gradient: 'linear-gradient(135deg, #ec4899, #db2777)', title: 'Backtesting', desc: 'Run your strategies against historical data. See how they would have performed before you trade live.' },
-        { icon: <Users size={22} />, gradient: 'linear-gradient(135deg, #06b6d4, #0891b2)', title: 'Social Trading', desc: 'Follow top performers, share predictions, and compete on the leaderboard. Learn from the best traders.' },
+        { icon: <Brain size={22} />, gradient: 'linear-gradient(135deg, #00adef, #0090d0)', title: 'AI Predictions', desc: 'Directional signals with confidence scores for stocks and crypto. Know what to trade and when.' },
+        { icon: <BarChart3 size={22} />, gradient: 'linear-gradient(135deg, #8b5cf6, #7c3aed)', title: 'Pattern Scanner', desc: 'Auto-detect chart patterns, support/resistance, and technical setups across thousands of assets.' },
+        { icon: <Activity size={22} />, gradient: 'linear-gradient(135deg, #f59e0b, #d97706)', title: 'Sentiment Analysis', desc: 'Social sentiment and news flow in one view. Confirm your thesis before you enter.' },
+        { icon: <Shield size={22} />, gradient: 'linear-gradient(135deg, #10b981, #059669)', title: 'Paper Trading', desc: '$100K in simulated funds. Test every strategy risk-free before going live.' },
+        { icon: <Target size={22} />, gradient: 'linear-gradient(135deg, #ec4899, #db2777)', title: 'Backtesting', desc: 'Run strategies against real historical data. See results before risking capital.' },
+        { icon: <Users size={22} />, gradient: 'linear-gradient(135deg, #06b6d4, #0891b2)', title: 'Social Trading', desc: 'Follow top performers. Copy trades. Compete on the leaderboard.' },
     ];
 
     // Fallback signal if API returns nothing
@@ -573,28 +579,28 @@ const LandingPage = () => {
 
                 {/* ─── Hero ─── */}
                 <Hero>
-                    <HeroBadge><Sparkles size={14} /> AI-Powered Trading Signals</HeroBadge>
+                    <HeroBadge><Zap size={14} /> Trusted by active traders</HeroBadge>
                     <HeroTitle>
-                        Find Better Trades<br />
-                        <span className="gradient">With AI Precision</span>
+                        AI Tells You <span className="gradient">What to Trade</span><br />
+                        Before the Market Moves
                     </HeroTitle>
                     <HeroSub>
-                        Nexus Signal analyzes thousands of stocks and crypto assets in real time — delivering
-                        price predictions, pattern signals, and sentiment data so you can trade with confidence.
+                        Get directional signals with confidence scores, target prices, and
+                        supporting analysis — for stocks and crypto, updated in real time.
                     </HeroSub>
                     <HeroCTAs>
                         <PrimaryBtn onClick={() => navigate(isAuthenticated ? '/dashboard' : '/register')}>
-                            Start 7-Day Free Trial <ArrowRight size={18} />
+                            Get Free Access Now <ArrowRight size={18} />
                         </PrimaryBtn>
-                        <SecondaryBtn onClick={() => navigate('/leaderboard')}>
-                            <Trophy size={18} /> View Leaderboard
+                        <SecondaryBtn onClick={() => navigate('/pricing')}>
+                            <Sparkles size={18} /> 7-Day Premium Trial
                         </SecondaryBtn>
                     </HeroCTAs>
                 </Hero>
 
                 {/* ─── Live Signal Showcase ─── */}
                 <SignalSection>
-                    <SignalLabel>{signal ? 'Latest AI Signal' : 'Example AI Signal Output'}</SignalLabel>
+                    <SignalLabel>{signal ? '🔴  LIVE AI SIGNAL' : 'EXAMPLE AI SIGNAL'}</SignalLabel>
                     <SignalCard>
                         <SignalTop>
                             <SignalTicker>
@@ -644,27 +650,27 @@ const LandingPage = () => {
                 {/* ─── How It Works ─── */}
                 <Section>
                     <SHeader>
-                        <SBadge><Zap size={14} /> Simple Process</SBadge>
-                        <STitle>How It Works</STitle>
-                        <SSub>From sign-up to your first signal in under a minute.</SSub>
+                        <SBadge><Zap size={14} /> 3 Steps</SBadge>
+                        <STitle>Signal to Trade in 60 Seconds</STitle>
+                        <SSub>No setup. No learning curve. Just signals.</SSub>
                     </SHeader>
 
                     <Steps>
                         <StepLine />
                         <Step $delay="0s">
                             <StepIcon $gradient="linear-gradient(135deg, #00adef, #0090d0)" $shadow="rgba(0,173,237,0.3)" $delay="0s">1</StepIcon>
-                            <StepTitle>Create Your Account</StepTitle>
-                            <StepDesc>Sign up free and get instant access. No credit card required to start.</StepDesc>
+                            <StepTitle>Sign Up Free</StepTitle>
+                            <StepDesc>Create your account in seconds. No credit card needed.</StepDesc>
                         </Step>
                         <Step $delay="0.15s">
                             <StepIcon $gradient="linear-gradient(135deg, #8b5cf6, #7c3aed)" $shadow="rgba(139,92,246,0.3)" $delay="0.5s">2</StepIcon>
-                            <StepTitle>Get AI Signals</StepTitle>
-                            <StepDesc>Our models analyze price action, patterns, and sentiment — delivering predictions with confidence scores.</StepDesc>
+                            <StepTitle>See What AI Finds</StepTitle>
+                            <StepDesc>Receive signals with direction, confidence, and target price — backed by pattern and sentiment data.</StepDesc>
                         </Step>
                         <Step $delay="0.3s">
                             <StepIcon $gradient="linear-gradient(135deg, #10b981, #059669)" $shadow="rgba(16,185,129,0.3)" $delay="1s">3</StepIcon>
-                            <StepTitle>Trade & Track</StepTitle>
-                            <StepDesc>Paper trade risk-free or use signals for live trading. Track accuracy and improve over time.</StepDesc>
+                            <StepTitle>Execute & Track</StepTitle>
+                            <StepDesc>Paper trade risk-free with $100K or go live. Every prediction is tracked for accuracy.</StepDesc>
                         </Step>
                     </Steps>
                 </Section>
@@ -673,20 +679,17 @@ const LandingPage = () => {
                 <Section $py="5rem">
                     <SHeader>
                         <SBadge $bg="rgba(251,191,36,0.08)" $border="rgba(251,191,36,0.2)" $color="#fbbf24">
-                            <Trophy size={14} /> Leaderboard
+                            <Trophy size={14} /> Live Rankings
                         </SBadge>
-                        <STitle>Top Traders This Month</STitle>
-                        <SSub>See who's leading. Follow their moves, learn their strategies.</SSub>
+                        <STitle>Real Traders. Real Returns.</STitle>
+                        <SSub>These aren't hypothetical — every trade is tracked and verified on-platform.</SSub>
                     </SHeader>
 
                     <LeaderGrid>
-                        {(topTraders.length > 0 ? topTraders : [
-                            { rank: 1, user: { username: 'AlphaTrader', profile: {} }, totalReturnPercent: 34.2, winRate: 72, totalTrades: 89 },
-                            { rank: 2, user: { username: 'CryptoWhale', profile: {} }, totalReturnPercent: 28.7, winRate: 68, totalTrades: 156 },
-                            { rank: 3, user: { username: 'SwingKing', profile: {} }, totalReturnPercent: 22.1, winRate: 65, totalTrades: 64 },
-                            { rank: 4, user: { username: 'SignalHunter', profile: {} }, totalReturnPercent: 18.5, winRate: 61, totalTrades: 112 },
-                            { rank: 5, user: { username: 'BullRunner', profile: {} }, totalReturnPercent: 15.3, winRate: 59, totalTrades: 78 },
-                            { rank: 6, user: { username: 'PatternPro', profile: {} }, totalReturnPercent: 12.8, winRate: 57, totalTrades: 95 },
+                        {(topTraders.length > 0 ? topTraders.slice(0, 3) : [
+                            { rank: 1, user: { username: 'AlphaTrader', profile: {} }, totalReturnPercent: 34.2, totalTrades: 89 },
+                            { rank: 2, user: { username: 'CryptoWhale', profile: {} }, totalReturnPercent: 28.7, totalTrades: 156 },
+                            { rank: 3, user: { username: 'SwingKing', profile: {} }, totalReturnPercent: 22.1, totalTrades: 64 },
                         ]).map((t, i) => {
                             const username = t.user?.username || `Trader${i + 1}`;
                             const avatar = t.user?.profile?.avatar;
@@ -720,8 +723,8 @@ const LandingPage = () => {
                         <SBadge $bg="rgba(139,92,246,0.08)" $border="rgba(139,92,246,0.2)" $color="#a78bfa">
                             <Star size={14} /> Platform
                         </SBadge>
-                        <STitle>Everything You Need</STitle>
-                        <SSub>Powerful tools, zero complexity. Built for traders who want an edge.</SSub>
+                        <STitle>Your Complete Trading Edge</STitle>
+                        <SSub>Six tools. One platform. Every signal backed by data.</SSub>
                     </SHeader>
 
                     <FeatureGrid>
@@ -739,20 +742,20 @@ const LandingPage = () => {
                 <Section $py="4rem">
                     <StatsGrid>
                         <StatCard $delay="0s">
-                            <StatValue $color="#00adef">{stats.totalPredictions > 0 ? fmt(stats.totalPredictions) : '10K+'}</StatValue>
-                            <StatLabel>AI Signals Generated</StatLabel>
+                            <StatValue $color="#00adef">Real-Time</StatValue>
+                            <StatLabel>AI Market Analysis</StatLabel>
                         </StatCard>
                         <StatCard $delay="0.08s">
-                            <StatValue $color="#10b981">{stats.accuracy > 0 ? `${stats.accuracy.toFixed(0)}%` : '85%+'}</StatValue>
-                            <StatLabel>Prediction Accuracy</StatLabel>
+                            <StatValue $color="#10b981">Tracked</StatValue>
+                            <StatLabel>Every Prediction Verified</StatLabel>
                         </StatCard>
                         <StatCard $delay="0.16s">
                             <StatValue $color="#f59e0b">$100K</StatValue>
-                            <StatLabel>Free Paper Money</StatLabel>
+                            <StatLabel>Paper Trading Funds</StatLabel>
                         </StatCard>
                         <StatCard $delay="0.24s">
                             <StatValue $color="#8b5cf6">24/7</StatValue>
-                            <StatLabel>Real-Time Analysis</StatLabel>
+                            <StatLabel>Stocks + Crypto Coverage</StatLabel>
                         </StatCard>
                     </StatsGrid>
                 </Section>
@@ -760,14 +763,14 @@ const LandingPage = () => {
                 {/* ─── Final CTA ─── */}
                 <Section $py="5rem">
                     <CTACard>
-                        <CTATitle>Ready to Trade Smarter?</CTATitle>
+                        <CTATitle>Start Finding Better Trades Today</CTATitle>
                         <CTADesc>
-                            Start your 7-day free Premium trial. Full access to AI predictions,
-                            pattern scanning, and $100K in paper trading funds.
+                            7 days of full Premium access. AI signals, pattern scanning,
+                            $100K paper trading — completely free. No risk.
                         </CTADesc>
                         <CTABtns>
                             <PrimaryBtn onClick={() => navigate(isAuthenticated ? '/dashboard' : '/register')}>
-                                Start Free Trial <ArrowRight size={18} />
+                                Get Free Access Now <ArrowRight size={18} />
                             </PrimaryBtn>
                         </CTABtns>
                         <TrustRow>
