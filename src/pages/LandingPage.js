@@ -456,10 +456,12 @@ const LandingPage = () => {
 
     const [stats, setStats] = useState({ totalPredictions: 0, accuracy: 0 });
     const [topTraders, setTopTraders] = useState([]);
+    const [signal, setSignal] = useState(null);
 
     useEffect(() => {
         fetchStats();
         fetchLeaderboard();
+        fetchLatestSignal();
     }, []);
 
     const fetchStats = async () => {
@@ -487,6 +489,28 @@ const LandingPage = () => {
         } catch (err) { /* silent */ }
     };
 
+    const fetchLatestSignal = async () => {
+        try {
+            const res = await fetch(`${API_URL}/predictions/recent?limit=1`);
+            if (res.ok) {
+                const data = await res.json();
+                const p = Array.isArray(data) ? data[0] : null;
+                if (p) {
+                    const days = Math.max(1, Math.round((new Date(p.expiresAt) - new Date(p.createdAt)) / (1000 * 60 * 60 * 24)));
+                    setSignal({
+                        symbol: p.symbol,
+                        name: p.symbol,
+                        direction: p.direction === 'UP' ? 'BULLISH' : 'BEARISH',
+                        confidence: Math.round(p.confidence || 0),
+                        targetMove: `$${p.targetPrice?.toFixed(2) || '—'}`,
+                        targetPrice: `$${p.targetPrice?.toFixed(2) || '—'}`,
+                        timeframe: `${days} day${days !== 1 ? 's' : ''}`,
+                    });
+                }
+            }
+        } catch (err) { /* silent */ }
+    };
+
     const fmt = (n) => {
         if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
         if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
@@ -506,22 +530,13 @@ const LandingPage = () => {
         { icon: <Users size={22} />, gradient: 'linear-gradient(135deg, #06b6d4, #0891b2)', title: 'Social Trading', desc: 'Follow top performers, share predictions, and compete on the leaderboard. Learn from the best traders.' },
     ];
 
-    // ── Signal showcase data (uses real data if available, else placeholder) ──
-    const signal = {
-        symbol: 'NVDA',
-        name: 'NVIDIA Corporation',
-        direction: 'BULLISH',
-        confidence: 87,
-        targetMove: '+12.4%',
-        currentPrice: '$142.50',
-        targetPrice: '$160.17',
-        timeframe: '7 days',
-        patterns: [
-            { label: 'Bullish Engulfing', color: '#10b981', bg: 'rgba(16,185,129,0.1)', border: 'rgba(16,185,129,0.2)' },
-            { label: 'RSI Oversold', color: '#00adef', bg: 'rgba(0,173,237,0.1)', border: 'rgba(0,173,237,0.2)' },
-            { label: 'Sentiment: Positive', color: '#f59e0b', bg: 'rgba(245,158,11,0.1)', border: 'rgba(245,158,11,0.2)' },
-        ]
+    // Fallback signal if API returns nothing
+    const defaultSignal = {
+        symbol: 'NVDA', name: 'NVIDIA Corporation', direction: 'BULLISH',
+        confidence: 87, targetMove: '+12.4%', targetPrice: '$160.17', timeframe: '7 days',
     };
+
+    const displaySignal = signal || defaultSignal;
 
     return (
         <Page>
@@ -579,20 +594,20 @@ const LandingPage = () => {
 
                 {/* ─── Live Signal Showcase ─── */}
                 <SignalSection>
-                    <SignalLabel>Example AI Signal Output</SignalLabel>
+                    <SignalLabel>{signal ? 'Latest AI Signal' : 'Example AI Signal Output'}</SignalLabel>
                     <SignalCard>
                         <SignalTop>
                             <SignalTicker>
                                 <div>
-                                    <TickerSymbol>{signal.symbol}</TickerSymbol>
-                                    <TickerName>{signal.name}</TickerName>
+                                    <TickerSymbol>{displaySignal.symbol}</TickerSymbol>
+                                    <TickerName>{displaySignal.name}</TickerName>
                                 </div>
                             </SignalTicker>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                <LiveDot>LIVE</LiveDot>
-                                <DirectionBadge $up={signal.direction === 'BULLISH'}>
-                                    {signal.direction === 'BULLISH' ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
-                                    {signal.direction}
+                                <LiveDot>{signal ? 'LIVE' : 'EXAMPLE'}</LiveDot>
+                                <DirectionBadge $up={displaySignal.direction === 'BULLISH'}>
+                                    {displaySignal.direction === 'BULLISH' ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
+                                    {displaySignal.direction}
                                 </DirectionBadge>
                             </div>
                         </SignalTop>
@@ -600,24 +615,28 @@ const LandingPage = () => {
                         <SignalMetrics>
                             <Metric>
                                 <MetricLabel>AI Confidence</MetricLabel>
-                                <MetricValue $color="#10b981">{signal.confidence}%</MetricValue>
+                                <MetricValue $color="#10b981">{displaySignal.confidence}%</MetricValue>
                             </Metric>
                             <Metric>
-                                <MetricLabel>Target Move</MetricLabel>
-                                <MetricValue $color="#00adef">{signal.targetMove}</MetricValue>
+                                <MetricLabel>Target Price</MetricLabel>
+                                <MetricValue $color="#00adef">{displaySignal.targetPrice}</MetricValue>
                             </Metric>
                             <Metric>
                                 <MetricLabel>Timeframe</MetricLabel>
-                                <MetricValue>{signal.timeframe}</MetricValue>
+                                <MetricValue>{displaySignal.timeframe}</MetricValue>
                             </Metric>
                         </SignalMetrics>
 
                         <SignalSignals>
-                            {signal.patterns.map((p, i) => (
-                                <SignalTag key={i} $bg={p.bg} $border={p.border} $color={p.color}>
-                                    <CheckCircle size={12} /> {p.label}
-                                </SignalTag>
-                            ))}
+                            <SignalTag $bg="rgba(16,185,129,0.1)" $border="rgba(16,185,129,0.2)" $color="#10b981">
+                                <CheckCircle size={12} /> AI Analysis
+                            </SignalTag>
+                            <SignalTag $bg="rgba(0,173,237,0.1)" $border="rgba(0,173,237,0.2)" $color="#00adef">
+                                <CheckCircle size={12} /> Technical Indicators
+                            </SignalTag>
+                            <SignalTag $bg="rgba(245,158,11,0.1)" $border="rgba(245,158,11,0.2)" $color="#f59e0b">
+                                <CheckCircle size={12} /> Sentiment Data
+                            </SignalTag>
                         </SignalSignals>
                     </SignalCard>
                 </SignalSection>
