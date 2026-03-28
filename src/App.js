@@ -34,6 +34,7 @@ import { SubscriptionProvider } from './context/SubscriptionContext';
 // Lazy-loaded components (loaded on-demand)
 const AIChatWidget = lazy(() => import('./components/AIChatWidget'));
 const WhaleNotification = lazy(() => import('./components/WhaleNotification'));
+const SignalNotification = lazy(() => import('./components/SignalNotification'));
 const SettingsPage = lazy(() => import('./components/SettingsPage'));
 
 // 🚀 LAZY-LOADED PAGES - Code splitting for faster initial load
@@ -230,6 +231,11 @@ function AppContent() {
             {/* 🐋 WHALE NOTIFICATIONS */}
             <Suspense fallback={null}>
                 <WhaleNotification />
+            </Suspense>
+
+            {/* 📊 SIGNAL NOTIFICATIONS */}
+            <Suspense fallback={null}>
+                <SignalNotification />
             </Suspense>
             
             {/* 📊 VERCEL ANALYTICS */}
