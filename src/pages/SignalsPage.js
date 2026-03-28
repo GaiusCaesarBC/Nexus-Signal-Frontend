@@ -369,7 +369,7 @@ const SignalsPage = () => {
                     <Feed>
                         {filtered.length === 0 && <Empty>No signals match this filter. Check back soon.</Empty>}
                         {filtered.map((s, i) => (
-                            <Card key={s.id} $status={s.status} $delay={`${i*.04}s`} onClick={()=>navigate('/predict')}>
+                            <Card key={s.id} $status={s.status} $delay={`${i*.04}s`} onClick={()=>navigate(`/signal/${s.id}`)}>
                                 <CardHeader>
                                     <SymbolGroup>
                                         <SymbolName>{s.symbol}</SymbolName>
