@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { Link, useNavigate } from 'react-router-dom';
+import { useSubscription } from '../context/SubscriptionContext';
 import {
     Send, Github, MessageSquare, ArrowRight,
     TrendingUp, Zap, Brain, Shield, CheckCircle, Lock,
@@ -176,6 +177,7 @@ const Disclaimer = styled.p`
 const Footer = () => {
     const navigate = useNavigate();
     const [email, setEmail] = useState('');
+    const { isSubscribed, trial } = useSubscription();
 
     const handleSignup = (e) => {
         e.preventDefault();
@@ -184,8 +186,8 @@ const Footer = () => {
 
     return (
         <>
-            {/* ─── Pre-Footer CTA Strip ─── */}
-            <CTAStrip>
+            {/* ─── Pre-Footer CTA Strip (hidden for paid/trial users) ─── */}
+            {!isSubscribed && !trial?.active && <CTAStrip>
                 <CTACard>
                     <CTATitle>Start Finding Better Trades Today</CTATitle>
                     <CTASub>7-day free Premium trial. Full access to AI signals, pattern scanning, and $100K paper trading. No risk.</CTASub>
@@ -198,7 +200,7 @@ const Footer = () => {
                         <TrustItem><Shield size={14} /> Cancel anytime</TrustItem>
                     </TrustRow>
                 </CTACard>
-            </CTAStrip>
+            </CTAStrip>}
 
             {/* ─── Footer ─── */}
             <FooterWrap>
