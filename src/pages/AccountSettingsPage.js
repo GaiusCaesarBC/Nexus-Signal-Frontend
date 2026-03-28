@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import TelegramSettings from '../components/TelegramSettings';
 import DiscordSettings from '../components/DiscordSettings';
+import TwoFactorSettings from '../components/TwoFactorSettings';
 
 const AccountSettingsPage = () => {
     const { user, loading: authLoading, isAuthenticated, logout } = useAuth();
@@ -271,7 +272,7 @@ const AccountSettingsPage = () => {
                                 <Shield size={20} />
                                 <span>Security</span>
                             </SectionHeader>
-                            
+
                             <SettingsList>
                                 <SettingRow onClick={() => {}}>
                                     <SettingRowLeft>
@@ -283,18 +284,11 @@ const AccountSettingsPage = () => {
                                     </SettingRowLeft>
                                     <ComingSoonBadge>Coming Soon</ComingSoonBadge>
                                 </SettingRow>
-                                
-                                <SettingRow onClick={() => {}}>
-                                    <SettingRowLeft>
-                                        <SettingRowIcon><Shield size={18} /></SettingRowIcon>
-                                        <div>
-                                            <SettingRowTitle>Two-Factor Authentication</SettingRowTitle>
-                                            <SettingRowDesc>Add an extra layer of security</SettingRowDesc>
-                                        </div>
-                                    </SettingRowLeft>
-                                    <ComingSoonBadge>Coming Soon</ComingSoonBadge>
-                                </SettingRow>
                             </SettingsList>
+
+                            <TwoFactorWrapper>
+                                <TwoFactorSettings />
+                            </TwoFactorWrapper>
                         </SettingsSection>
 
                         {/* Telegram Notifications */}
@@ -747,6 +741,10 @@ const SettingRowDesc = styled.div`
     color: ${props => props.theme.text?.tertiary || '#64748b'};
     font-size: 12px;
     margin-top: 2px;
+`;
+
+const TwoFactorWrapper = styled.div`
+    padding: 4px 16px 16px;
 `;
 
 const ComingSoonBadge = styled.span`

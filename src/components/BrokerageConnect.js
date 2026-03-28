@@ -358,6 +358,14 @@ const BrokerOptionName = styled.span`
     font-size: 0.85rem;
 `;
 
+const BrokerOptionNote = styled.span`
+    font-size: 0.65rem;
+    color: ${props => props.theme.text?.tertiary || '#64748b'};
+    text-align: center;
+    line-height: 1.3;
+    margin-top: -2px;
+`;
+
 const Modal = styled.div`
     position: fixed;
     top: 0;
@@ -518,7 +526,16 @@ const BrokerageConnect = () => {
                     setSelectedBroker(null);
                 }
             } catch (err) {
-                setError(err.response?.data?.error || 'Failed to connect brokerage');
+                const errorMsg = err.response?.data?.error || 'Failed to connect brokerage';
+                const institutionName = (metadata.institution?.name || '').toLowerCase();
+                if (institutionName.includes('schwab') && err.response?.status >= 400) {
+                    setError(
+                        `${errorMsg}. Charles Schwab may require additional Plaid configuration. ` +
+                        'Try connecting with Robinhood, Webull, or E*TRADE instead, or contact support for Schwab setup assistance.'
+                    );
+                } else {
+                    setError(errorMsg);
+                }
             } finally {
                 setConnecting(false);
                 isPlaidLinkingRef.current = false;
@@ -762,6 +779,9 @@ const BrokerageConnect = () => {
                                                 {broker.name.charAt(0)}
                                             </BrokerLogo>
                                             <BrokerOptionName>{broker.name}</BrokerOptionName>
+                                            {key === 'schwab' && (
+                                                <BrokerOptionNote>May require additional Plaid setup</BrokerOptionNote>
+                                            )}
                                         </BrokerOption>
                                     ))}
                                 </BrokerGrid>
