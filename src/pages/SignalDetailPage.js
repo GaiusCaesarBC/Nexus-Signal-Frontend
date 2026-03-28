@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
 import { useSubscription } from '../context/SubscriptionContext';
+import { useAuth } from '../context/AuthContext';
 import {
     TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, Clock,
     Target, Shield, CheckCircle, XCircle, ArrowLeft, Timer, Zap,
@@ -161,6 +162,7 @@ const Loading = styled.div`text-align:center;padding:4rem;color:#475569;font-siz
 const SignalDetailPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { api } = useAuth();
     const { hasPlanAccess } = useSubscription();
     const isPremium = hasPlanAccess('starter');
 
@@ -173,20 +175,34 @@ const SignalDetailPage = () => {
 
     const fetchSignal = async () => {
         setLoading(true);
-        try {
-            // Try the live prediction endpoint first
-            const res = await fetch(`${API_URL}/predictions/live/${id}`);
-            if (res.ok) {
-                const data = await res.json();
-                if (data) {
-                    setSignal(buildDetail(data));
+
+        // Try authenticated live endpoint first (has full data + indicators)
+        if (api) {
+            try {
+                const res = await api.get(`/predictions/live/${id}`);
+                if (res.data) {
+                    setSignal(buildDetail(res.data));
                     setLoading(false);
                     return;
                 }
-            }
-        } catch (e) { /* try fallback */ }
+            } catch (e) { /* try fallback */ }
+        }
 
-        // Fallback: fetch from recent and find by id
+        // Fallback: authenticated recent predictions
+        if (api) {
+            try {
+                const res = await api.get(`/predictions/recent?limit=50`);
+                const data = res.data;
+                const found = (Array.isArray(data) ? data : []).find(p => p._id === id);
+                if (found) {
+                    setSignal(buildDetail(found));
+                    setLoading(false);
+                    return;
+                }
+            } catch (e) { /* silent */ }
+        }
+
+        // Last resort: unauthenticated fetch
         try {
             const res = await fetch(`${API_URL}/predictions/recent?limit=50`);
             if (res.ok) {
