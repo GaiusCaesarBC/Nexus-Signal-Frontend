@@ -1228,16 +1228,24 @@ const CryptoPage = () => {
             s.status === 'pending'
           );
           if (match) {
-            // Use the real signal data
+            // Use the real signal data — map to the format the prediction panel expects
             const dir = match.direction === 'UP' ? 'Up' : 'Down';
             const conf = match.confidence || 50;
+            const entry = match.currentPrice || match.targetPrice;
+            const target = match.targetPrice;
+            const pctChange = entry > 0 ? ((target - entry) / entry) * 100 : 0;
+            const strength = conf >= 70 ? 'strong' : conf >= 55 ? 'moderate' : 'weak';
+
             setPrediction({
+              predictedDirection: dir,
               prediction: dir,
               confidence: conf,
-              currentPrice: match.currentPrice || match.targetPrice,
-              predictedPrice: match.targetPrice,
-              priceChangePercent: match.priceChangePercent || ((match.targetPrice - (match.currentPrice || match.targetPrice)) / (match.currentPrice || 1) * 100),
-              analysis: match.analysis?.message || `AI signal: ${dir} with ${conf}% confidence`,
+              signalStrength: strength,
+              isActionable: conf >= 55,
+              currentPrice: entry,
+              predictedPrice: target,
+              percentageChange: pctChange,
+              predictionMessage: match.analysis?.message || `AI signal: ${dir} with ${conf}% confidence`,
               indicators: match.indicators || {},
               fromSignalEngine: true,
             });
