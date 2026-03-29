@@ -1497,34 +1497,37 @@ useEffect(() => {
                 setWatchlistTicker([]);
             }
 
-            // Market movers ticker
+            // Market movers — pull from live signals (same data as signal feed)
             try {
-                const screenRes = await api.get('/screener/stocks?changeFilter=gainers&limit=10');
-                
-                console.log('Screener API response:', screenRes.data);
-                
-                let screenData = [];
-                if (Array.isArray(screenRes.data)) {
-                    screenData = screenRes.data;
-                } else if (screenRes.data?.stocks && Array.isArray(screenRes.data.stocks)) {
-                    screenData = screenRes.data.stocks;
-                } else if (screenRes.data?.data && Array.isArray(screenRes.data.data)) {
-                    screenData = screenRes.data.data;
-                }
-                
-                if (screenData && screenData.length > 0) {
-                    const moversWithPrices = screenData.slice(0, 10).map(stock => ({
-                        symbol: stock.symbol,
-                        price: stock.price || stock.currentPrice || stock.latestPrice || stock.regularMarketPrice || 0,
-                        change: stock.changePercent || stock.percentChange || stock.change || stock.regularMarketChangePercent || 0
-                    }));
-                    
-                    setMoversTicker(moversWithPrices);
+                const API_URL = process.env.REACT_APP_API_URL || process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
+                const sigRes = await fetch(`${API_URL}/predictions/recent?limit=20`);
+                if (sigRes.ok) {
+                    const signals = await sigRes.json();
+                    const sigArray = Array.isArray(signals) ? signals : [];
+                    if (sigArray.length > 0) {
+                        const movers = sigArray
+                            .filter(s => s.currentPrice && s.confidence >= 65)
+                            .slice(0, 10)
+                            .map(s => ({
+                                symbol: s.symbol?.split(':')[0]?.replace(/USDT|USD/i, '') || s.symbol,
+                                price: s.currentPrice || 0,
+                                change: s.priceChangePercent || 0,
+                                direction: s.direction,
+                                confidence: s.confidence
+                            }));
+                        if (movers.length > 0) {
+                            setMoversTicker(movers);
+                        } else {
+                            await fetchDefaultMovers();
+                        }
+                    } else {
+                        await fetchDefaultMovers();
+                    }
                 } else {
                     await fetchDefaultMovers();
                 }
             } catch (screenError) {
-                console.error('Error fetching movers:', screenError);
+                console.error('Error fetching movers from signals:', screenError);
                 await fetchDefaultMovers();
             }
         } catch (error) {
@@ -1534,52 +1537,33 @@ useEffect(() => {
         }
     };
 
-    // Fetch default market movers
+    // Fetch default market movers from CryptoCompare (top by volume)
     const fetchDefaultMovers = async () => {
-        const moverSymbols = ['NVDA', 'AMD', 'SMCI', 'PLTR', 'MSTR'];
         try {
-            console.log('Fetching default movers for symbols:', moverSymbols);
-            
-            const pricePromises = moverSymbols.map(async (symbol) => {
-                try {
-                    const res = await api.get(`/stocks/${symbol}/quote`);
-                    const data = res.data;
-                    const quote = data?.quote || data;
-                    return {
-                        symbol,
-                        price: quote?.price || quote?.latestPrice || quote?.regularMarketPrice || quote?.currentPrice || quote?.c || 0,
-                        change: quote?.changePercent || quote?.percentChange || quote?.regularMarketChangePercent || quote?.dp || 0
-                    };
-                } catch {
-                    return { symbol, price: 0, change: 0 };
+            const res = await fetch('https://min-api.cryptocompare.com/data/top/totalvolfull?limit=8&tsym=USD');
+            if (res.ok) {
+                const data = await res.json();
+                const coins = (data?.Data || [])
+                    .filter(c => !['USDT','USDC','BUSD','DAI'].includes(c.CoinInfo?.Name))
+                    .slice(0, 8)
+                    .map(c => ({
+                        symbol: c.CoinInfo?.Name || '?',
+                        price: c.RAW?.USD?.PRICE || 0,
+                        change: c.RAW?.USD?.CHANGEPCT24HOUR || 0
+                    }));
+                if (coins.length > 0) {
+                    setMoversTicker(coins);
+                    return;
                 }
-            });
-            
-            const prices = await Promise.all(pricePromises);
-            const validPrices = prices.filter(p => p.price > 0);
-            
-            console.log('Default movers prices:', validPrices);
-            
-            if (validPrices.length > 0) {
-                setMoversTicker(validPrices);
-            } else {
-                // Fallback placeholder data
-                console.log('Using placeholder movers data');
-                setMoversTicker([
-                    { symbol: 'NVDA', price: 495.20, change: 5.8 },
-                    { symbol: 'AMD', price: 142.70, change: 4.5 },
-                    { symbol: 'SMCI', price: 890.50, change: 8.2 },
-                    { symbol: 'PLTR', price: 22.40, change: 6.1 },
-                ]);
             }
-        } catch (error) {
-            console.error('Error fetching default movers:', error);
-            // Fallback
-            setMoversTicker([
-                { symbol: 'NVDA', price: 495.20, change: 5.8 },
-                { symbol: 'AMD', price: 142.70, change: 4.5 },
-            ]);
-        }
+        } catch (e) { /* fallback below */ }
+
+        // Absolute last resort
+        setMoversTicker([
+            { symbol: 'BTC', price: 0, change: 0 },
+            { symbol: 'ETH', price: 0, change: 0 },
+            { symbol: 'SOL', price: 0, change: 0 },
+        ]);
     };
 
     // Fetch DEX trending tokens from GeckoTerminal
