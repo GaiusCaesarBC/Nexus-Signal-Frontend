@@ -437,11 +437,24 @@ const BROKERS = {
         type: 'plaid',
         description: 'Connect securely via Plaid'
     },
+    fidelity: {
+        name: 'Fidelity',
+        color: '#4a8c2a',
+        type: 'plaid',
+        description: 'Connect securely via Plaid'
+    },
+    etrade: {
+        name: 'E*TRADE',
+        color: '#6633cc',
+        type: 'plaid',
+        description: 'Connect securely via Plaid'
+    },
     schwab: {
         name: 'Schwab',
         color: '#00a0df',
         type: 'plaid',
-        description: 'Connect securely via Plaid'
+        description: 'Coming Soon — pending approval',
+        disabled: true
     }
 };
 
@@ -541,9 +554,26 @@ const BrokerageConnect = () => {
                 isPlaidLinkingRef.current = false;
             }
         },
-        onExit: () => {
+        onExit: (err, metadata) => {
             setPlaidToken(null);
-            isPlaidLinkingRef.current = false; // Plaid flow cancelled/closed
+            isPlaidLinkingRef.current = false;
+
+            if (err) {
+                const code = err.error_code || '';
+                const inst = metadata?.institution?.name || 'this institution';
+
+                if (code === 'INSTITUTION_REGISTRATION_REQUIRED') {
+                    setError(`${inst} is not yet available. We're working on getting it approved. Try Fidelity, Robinhood, or Webull instead.`);
+                } else if (code === 'INSTITUTION_NOT_FOUND' || code === 'INSTITUTION_DOWN') {
+                    setError(`${inst} is temporarily unavailable. Please try again later or use a different brokerage.`);
+                } else if (code === 'INVALID_CREDENTIALS') {
+                    setError(`Login failed for ${inst}. Please check your credentials and try again.`);
+                } else if (err.error_message) {
+                    setError(err.error_message);
+                }
+
+                console.error('[Plaid] Link exit error:', { code, institution: inst, error: err });
+            }
         }
     });
 
@@ -773,14 +803,15 @@ const BrokerageConnect = () => {
                                     {Object.entries(BROKERS).map(([key, broker]) => (
                                         <BrokerOption
                                             key={key}
-                                            onClick={() => handleBrokerSelect(key)}
+                                            onClick={() => !broker.disabled && handleBrokerSelect(key)}
+                                            style={broker.disabled ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
                                         >
                                             <BrokerLogo $color={broker.color} style={{ width: 48, height: 48, fontSize: '1.2rem' }}>
                                                 {broker.name.charAt(0)}
                                             </BrokerLogo>
                                             <BrokerOptionName>{broker.name}</BrokerOptionName>
-                                            {key === 'schwab' && (
-                                                <BrokerOptionNote>May require additional Plaid setup</BrokerOptionNote>
+                                            {broker.disabled && (
+                                                <BrokerOptionNote style={{ color: '#f59e0b' }}>Coming Soon</BrokerOptionNote>
                                             )}
                                         </BrokerOption>
                                     ))}
