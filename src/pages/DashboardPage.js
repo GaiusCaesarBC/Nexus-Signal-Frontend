@@ -576,6 +576,19 @@ const SymbolSelector = styled.div`
     display: flex;
     gap: 0.4rem;
     flex-wrap: wrap;
+    align-items: center;
+`;
+
+const SymbolCategoryLabel = styled.span`
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: ${props => props.theme.text?.tertiary || '#475569'};
+    padding: 0.3rem 0.5rem;
+    width: 100%;
+    margin-top: 0.25rem;
+    &:first-child { margin-top: 0; }
 `;
 
 const SymbolButton = styled.button`
@@ -2113,7 +2126,14 @@ const handleOpenRewardModal = () => {
                             <Eye size={18} /> Load
                         </SearchButton>
                         <SymbolSelector>
-                            {['XRP-USD', 'BTC-USD', 'ETH-USD', 'SOL-USD', 'AAPL', 'TSLA', 'NVDA', 'MSFT', 'GOOGL'].map(sym => (
+                            <SymbolCategoryLabel>Crypto</SymbolCategoryLabel>
+                            {['BTC', 'ETH', 'SOL', 'XRP', 'DOGE', 'ADA', 'AVAX', 'DOT', 'LINK', 'MATIC', 'PEPE', 'BONK', 'SHIB', 'LTC', 'UNI', 'NEAR', 'APT', 'OP', 'ARB', 'SUI'].map(sym => (
+                                <SymbolButton key={sym} $active={selectedSymbol === sym} onClick={() => handleSymbolChange(sym)}>
+                                    {sym}
+                                </SymbolButton>
+                            ))}
+                            <SymbolCategoryLabel>Stocks</SymbolCategoryLabel>
+                            {['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'META', 'TSLA', 'AMD', 'NFLX', 'JPM', 'V', 'DIS', 'BA', 'CRM', 'INTC', 'ORCL', 'PYPL', 'COIN', 'HOOD', 'PLTR'].map(sym => (
                                 <SymbolButton key={sym} $active={selectedSymbol === sym} onClick={() => handleSymbolChange(sym)}>
                                     {sym}
                                 </SymbolButton>
