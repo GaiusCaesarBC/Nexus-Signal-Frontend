@@ -760,30 +760,7 @@ const LandingPage = () => {
                     </StatsGrid>
                 </Section>
 
-                {/* ─── Final CTA ─── */}
-                <Section $py="5rem">
-                    <CTACard>
-                        <CTATitle>Start Finding Better Trades Today</CTATitle>
-                        <CTADesc>
-                            7 days of full Premium access. AI signals, pattern scanning,
-                            $100K paper trading — completely free. No risk.
-                        </CTADesc>
-                        <CTABtns>
-                            <PrimaryBtn onClick={() => navigate(isAuthenticated ? '/dashboard' : '/register')}>
-                                Get Free Access Now <ArrowRight size={18} />
-                            </PrimaryBtn>
-                        </CTABtns>
-                        <TrustRow>
-                            <TrustItem><CheckCircle /> No credit card required</TrustItem>
-                            <TrustItem><Lock size={16} /> 256-bit encryption</TrustItem>
-                            <TrustItem><Shield size={16} /> Cancel anytime</TrustItem>
-                        </TrustRow>
-                    </CTACard>
-                </Section>
-
-                <Footer>
-                    <FooterText>&copy; {new Date().getFullYear()} Nexus Signal. All rights reserved.</FooterText>
-                </Footer>
+                {/* Footer CTA is handled by the global Footer component */}
             </Content>
         </Page>
     );
