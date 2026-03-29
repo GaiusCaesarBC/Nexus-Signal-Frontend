@@ -198,7 +198,7 @@ const CardHeader = styled.div`
 `;
 
 const SymbolGroup = styled.div`display:flex;align-items:center;gap:.65rem;`;
-const SymbolName = styled.div`font-size:1.3rem;font-weight:800;color:#fff;letter-spacing:.5px;`;
+const SymbolName = styled.div`font-size:1.3rem;font-weight:800;color:#fff;letter-spacing:.5px;&:hover{color:#00adef;text-decoration:underline;}`;
 const AssetBadge = styled.span`
     padding:.15rem .5rem;border-radius:4px;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
     background:${p=>p.$crypto?'rgba(247,147,26,.1)':'rgba(0,173,237,.08)'};
@@ -425,7 +425,7 @@ function buildSignal(raw, index) {
     if (expired) status = 'closed';
 
     const sym = raw.symbol?.split(':')[0]?.replace(/USDT|USD/i, '') || raw.symbol;
-    const crypto = isCrypto(raw.symbol);
+    const crypto = raw.assetType === 'crypto' || raw.assetType === 'dex' || isCrypto(raw.symbol);
     const long = raw.direction === 'UP';
     const conf = Math.round(raw.confidence || 50);
     const entry = raw.currentPrice || raw.targetPrice / (1 + (long ? 0.05 : -0.05));
@@ -636,7 +636,7 @@ const SignalsPage = () => {
                             <Card key={s.id} $status={s.status} $highConf={s.conf>=70} $prox={proximityStatus(s)} $expiring={urgency==='soon'||urgency==='urgent'} $delay={`${i*.04}s`} onClick={()=>navigate(`/signal/${s.id}`)}>
                                 <CardHeader>
                                     <SymbolGroup>
-                                        <SymbolName>{s.symbol}</SymbolName>
+                                        <SymbolName onClick={(e)=>{e.stopPropagation();navigate(s.crypto?`/crypto/${s.symbol}`:`/stock/${s.symbol}`);}} style={{cursor:'pointer',textDecoration:'none'}} title={`View ${s.symbol} details`}>{s.symbol}</SymbolName>
                                         <AssetBadge $crypto={s.crypto}>{s.crypto?'Crypto':'Stock'}</AssetBadge>
                                         <DirectionTag $long={s.long}>
                                             {s.long?<ArrowUpRight size={14}/>:<ArrowDownRight size={14}/>}

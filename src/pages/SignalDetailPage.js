@@ -43,7 +43,7 @@ const SignalHeader = styled.div`
 
 const HeaderTop = styled.div`display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:1rem;`;
 const SymbolRow = styled.div`display:flex;align-items:center;gap:.75rem;`;
-const Symbol = styled.h1`font-size:2rem;font-weight:900;color:#fff;margin:0;`;
+const Symbol = styled.h1`font-size:2rem;font-weight:900;color:#fff;margin:0;&:hover{color:#00adef;text-decoration:underline;}`;
 const AssetBadge = styled.span`
     padding:.2rem .6rem;border-radius:5px;font-size:.7rem;font-weight:700;text-transform:uppercase;
     background:${p=>p.$crypto?'rgba(247,147,26,.1)':'rgba(0,173,237,.1)'};
@@ -228,7 +228,7 @@ const SignalDetailPage = () => {
         if (expired || raw.status === 'correct' || raw.status === 'incorrect') status = 'closed';
 
         const sym = raw.symbol?.split(':')[0]?.replace(/USDT|USD/i, '') || raw.symbol;
-        const crypto = isCrypto(raw.symbol);
+        const crypto = raw.assetType === 'crypto' || raw.assetType === 'dex' || isCrypto(raw.symbol);
         const long = raw.direction === 'UP';
         const conf = Math.round(raw.confidence || raw.liveConfidence || 50);
         const entry = raw.currentPrice || raw.current_price || raw.targetPrice / (1 + (long ? 0.05 : -0.05));
@@ -337,7 +337,7 @@ const SignalDetailPage = () => {
                 <SignalHeader>
                     <HeaderTop>
                         <SymbolRow>
-                            <Symbol>{s.symbol}</Symbol>
+                            <Symbol onClick={()=>navigate(s.crypto?`/crypto/${s.symbol}`:`/stock/${s.symbol}`)} style={{cursor:'pointer'}} title={`View ${s.symbol} details`}>{s.symbol}</Symbol>
                             <AssetBadge $crypto={s.crypto}>{s.crypto?'Crypto':'Stock'}</AssetBadge>
                             <DirectionTag $long={s.long}>
                                 {s.long?<ArrowUpRight size={16}/>:<ArrowDownRight size={16}/>}
