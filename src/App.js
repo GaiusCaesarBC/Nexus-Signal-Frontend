@@ -45,6 +45,7 @@ const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const PredictPage = lazy(() => import('./pages/PredictionsPage'));
 const SignalsPage = lazy(() => import('./pages/SignalsPage'));
 const SignalDetailPage = lazy(() => import('./pages/SignalDetailPage'));
+const PostDetailPage = lazy(() => import('./pages/PostDetailPage'));
 const ChatPage = lazy(() => import('./pages/ChatPage'));
 const PricingPage = lazy(() => import('./pages/PricingPage'));
 const PriceComparisonPage = lazy(() => import('./pages/PriceComparisonPage'));
@@ -180,6 +181,7 @@ function AppContent() {
                     <Route path="/paper-trading" element={<ProtectedRoute><PaperTradingPage /></ProtectedRoute>} />
                     <Route path="/discover" element={<ProtectedRoute><DiscoveryPage /></ProtectedRoute>} />
                     <Route path="/feed" element={<SocialFeed />} />
+                    <Route path="/post/:id" element={<ProtectedRoute><PostDetailPage /></ProtectedRoute>} />
                     <Route path="/achievements" element={<ProtectedRoute><AchievementsPage /></ProtectedRoute>} />
                     <Route path="/achievements/browse" element={<ProtectedRoute><AchievementsBrowserPage /></ProtectedRoute>} />
                     <Route path="/vault" element={<ProtectedRoute><VaultPage /></ProtectedRoute>} />
