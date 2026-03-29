@@ -1076,8 +1076,25 @@ const CryptoPage = () => {
     }
   };
 
-  // Get contract address - for DEX tokens use pool address
-  const contractAddress = searchParams.get('contract') || dexPoolAddress;
+  // Get contract address - from URL param, DEX pool, or fetched from API
+  const [fetchedContract, setFetchedContract] = useState(null);
+  const [coinInfo, setCoinInfo] = useState(null);
+
+  useEffect(() => {
+    if (!symbol || isDex) return;
+    const fetchInfo = async () => {
+      try {
+        const res = await api.get(`/crypto/info/${symbol}`);
+        if (res.data?.success) {
+          setCoinInfo(res.data);
+          if (res.data.contractAddress) setFetchedContract(res.data.contractAddress);
+        }
+      } catch (e) { /* silent */ }
+    };
+    fetchInfo();
+  }, [symbol, isDex, api]);
+
+  const contractAddress = searchParams.get('contract') || dexPoolAddress || fetchedContract;
 
   // Get current price from chart data
   const currentPrice = chartData.length > 0 ? chartData[chartData.length - 1].close : 0;
