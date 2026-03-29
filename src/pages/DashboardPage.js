@@ -1579,33 +1579,30 @@ useEffect(() => {
         ]);
     };
 
-    // Fetch DEX trending tokens from GeckoTerminal
+    // Fetch trending crypto directly from CryptoCompare (no auth, no server middleman)
     const fetchDexTrending = async () => {
         try {
-            console.log('Fetching DEX trending tokens...');
-            const response = await api.get('/dashboard/dex-trending');
+            const res = await fetch('https://min-api.cryptocompare.com/data/top/totalvolfull?limit=50&tsym=USD');
+            if (!res.ok) throw new Error('CryptoCompare failed');
+            const data = await res.json();
 
-            if (response.data.success && response.data.tokens) {
-                const tokens = response.data.tokens.map(token => ({
-                    symbol: token.symbol,
-                    name: token.name,
-                    price: token.price,
-                    change: token.change,
-                    chain: token.chain || 'BSC',
-                    network: response.data.network || 'bsc',
-                    poolAddress: token.poolAddress,
-                    contractAddress: token.contractAddress,
-                    source: 'geckoterminal'
+            const stablecoins = new Set(['USDT','USDC','BUSD','DAI','TUSD','USDP','FDUSD','PYUSD','EURC','USD1']);
+            const tokens = (data?.Data || [])
+                .filter(c => !stablecoins.has(c.CoinInfo?.Name) && c.RAW?.USD?.CHANGEPCT24HOUR != null)
+                .sort((a, b) => Math.abs(b.RAW?.USD?.CHANGEPCT24HOUR || 0) - Math.abs(a.RAW?.USD?.CHANGEPCT24HOUR || 0))
+                .slice(0, 15)
+                .map(c => ({
+                    symbol: c.CoinInfo?.Name || '?',
+                    name: c.CoinInfo?.FullName || '?',
+                    price: c.RAW?.USD?.PRICE || 0,
+                    change: c.RAW?.USD?.CHANGEPCT24HOUR || 0,
+                    chain: 'Crypto',
+                    source: 'cryptocompare'
                 }));
 
-                console.log('DEX trending tokens:', tokens.length);
-                setDexTrendingTicker(tokens);
-            } else {
-                console.log('No DEX trending tokens returned');
-                setDexTrendingTicker([]);
-            }
+            setDexTrendingTicker(tokens);
         } catch (error) {
-            console.error('Error fetching DEX trending:', error);
+            console.error('Error fetching trending crypto:', error);
             setDexTrendingTicker([]);
         }
     };
