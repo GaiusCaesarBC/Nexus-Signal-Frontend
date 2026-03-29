@@ -241,6 +241,12 @@ const Tab = styled.button`
 `;
 
 // ============ WALLET SECTION ============
+const SolanaLinkSection = styled.div`
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255,255,255,.06);
+`;
+
 const WalletSection = styled.div`
     background: linear-gradient(135deg, ${props => props.theme.brand?.primary || '#00adef'}1A 0%, ${props => props.theme.brand?.accent || '#8b5cf6'}1A 100%);
     border: 2px solid ${props => props.theme.brand?.primary || '#00adef'}4D;
@@ -1203,6 +1209,26 @@ const PortfolioPage = () => {
     const [refreshing, setRefreshing] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [activeTab, setActiveTab] = useState('holdings');
+    const [solanaAddress, setSolanaAddress] = useState('');
+
+    const handleLinkSolana = async () => {
+        if (!solanaAddress || solanaAddress.length < 32) return;
+        try {
+            const response = await api.post('/wallet/link', {
+                address: solanaAddress.trim(),
+                chainId: 'solana'
+            });
+            if (response.data.success) {
+                toast.success('Solana wallet linked!');
+                setSolanaAddress('');
+                window.location.reload();
+            } else {
+                toast.error(response.data.error || 'Failed to link wallet');
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.error || 'Failed to link Solana wallet');
+        }
+    };
 
     // Ref to prevent multiple initial fetches
     const hasInitialFetched = useRef(false);
@@ -1545,6 +1571,29 @@ const PortfolioPage = () => {
                         </WalletText>
                     </WalletInfo>
                     <WalletConnectButton showInfo={true} />
+                    {!linkedWallet && (
+                        <SolanaLinkSection>
+                            <div style={{fontSize:'.85rem',fontWeight:600,color:'#a78bfa',marginBottom:'.5rem',display:'flex',alignItems:'center',gap:'.4rem'}}>
+                                Or link a Solana wallet manually
+                            </div>
+                            <div style={{display:'flex',gap:'.5rem'}}>
+                                <input
+                                    type="text"
+                                    placeholder="Paste your Solana address..."
+                                    value={solanaAddress}
+                                    onChange={e => setSolanaAddress(e.target.value)}
+                                    style={{flex:1,padding:'.6rem .85rem',background:'rgba(255,255,255,.04)',border:'1px solid rgba(255,255,255,.08)',borderRadius:8,color:'#e0e6ed',fontSize:'.85rem'}}
+                                />
+                                <button
+                                    onClick={handleLinkSolana}
+                                    disabled={!solanaAddress || solanaAddress.length < 32}
+                                    style={{padding:'.6rem 1.2rem',background:'linear-gradient(135deg,#8b5cf6,#7c3aed)',border:'none',borderRadius:8,color:'#fff',fontWeight:700,fontSize:'.85rem',cursor:'pointer',opacity:(!solanaAddress||solanaAddress.length<32)?0.5:1}}
+                                >
+                                    Link Solana
+                                </button>
+                            </div>
+                        </SolanaLinkSection>
+                    )}
                 </WalletSection>
 
                 {/* Analytics Tab */}
