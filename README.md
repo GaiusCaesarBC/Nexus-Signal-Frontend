@@ -1,70 +1,173 @@
-# Getting Started with Create React App
+# Nexus Signal AI
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Nexus Signal AI is a real-time AI-powered trading signal platform for stocks and crypto. The platform generates directional trade signals, ranks them by quality, and tracks each signal from entry to outcome.
 
-## Available Scripts
+## Overview
 
-In the project directory, you can run:
+Nexus Signal AI is built to surface high-probability setups using a weighted signal engine that evaluates:
 
-### `npm start`
+* Confidence
+* Risk/Reward
+* Momentum
+* Volume
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+Only signals that meet the platform’s quality threshold are shown. The highest-ranked opportunity is highlighted as the **Best Setup Right Now**.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Core Features
 
-### `npm test`
+* Real-time stock and crypto signal feed
+* AI-ranked trade setups
+* LONG / SHORT directional signals
+* Entry, stop loss, and TP1–TP3 targets
+* Signal confidence scoring
+* Signal lifecycle tracking
+* Results and performance validation
+* Telegram bot integration
+* Subscription paywall with free trial support
+* Multi-source market data infrastructure
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Signal Logic
 
-### `npm run build`
+Signals are ranked using the following weighted model:
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+* Confidence: 40%
+* Risk/Reward: 25%
+* Momentum: 20%
+* Volume: 15%
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### Visibility Rules
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+* 70%+ confidence: Strong Setup
+* 65–69% confidence: Moderate Setup
+* Below 65% confidence: Not shown
 
-### `npm run eject`
+### Feed Rules
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+* Maximum 20 active signals shown
+* Top-ranked signal labeled **🔥 Best Setup Right Now**
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## Tech Stack
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+### Frontend
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+* React
+* Deployed on Vercel
 
-## Learn More
+### Backend
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+* Node.js
+* Express
+* Deployed on Render
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+### ML / Signal Engine
 
-### Code Splitting
+* Python service
+* Deployed on Render
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+### Database
 
-### Analyzing the Bundle Size
+* MongoDB Atlas
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+## Live URLs
 
-### Making a Progressive Web App
+* Website: `https://www.nexussignal.ai`
+* API: `https://api.nexussignal.ai`
+* ML Service: `https://nexus-signal-ml.onrender.com`
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+## Product Structure
 
-### Advanced Configuration
+### Website
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+The website is the full product experience and includes:
 
-### Deployment
+* Signal feed
+* Signal detail pages
+* Analytics
+* Paywall and subscriptions
+* Performance tracking
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+### Telegram
 
-### `npm run build` fails to minify
+Telegram acts as a distribution and teaser layer:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+* Signal previews
+* Pricing access
+* Results updates
+* Community and announcement flow
+
+Telegram does not generate signals independently. It consumes backend data only.
+
+## Getting Started
+
+### Prerequisites
+
+Make sure you have installed:
+
+* Node.js
+* npm
+
+### Install dependencies
+
+```bash
+npm install
+```
+
+### Run locally
+
+```bash
+npm start
+```
+
+### Build for production
+
+```bash
+npm run build
+```
+
+### Run tests
+
+```bash
+npm test
+```
+
+## Environment Variables
+
+Create a `.env` file and configure the required environment variables for your environment.
+
+Typical categories include:
+
+* API base URLs
+* Database connection strings
+* Authentication secrets
+* Telegram bot credentials
+* X integration credentials
+* Third-party market data provider keys
+* Payment provider keys
+
+Do not commit secrets to source control.
+
+## Deployment
+
+Nexus Signal AI is deployed across:
+
+* **Vercel** for frontend hosting
+* **Render** for backend and ML services
+* **MongoDB Atlas** for database infrastructure
+
+## Security
+
+If you discover a security issue, please report it responsibly:
+
+* Security: `security@nexussignal.ai`
+* Support: `support@nexussignal.ai`
+
+See the repository security policy for full disclosure guidelines.
+
+## Status
+
+Nexus Signal AI is actively developed and production deployed.
+
+## License
+
+Proprietary. All rights reserved.
+
