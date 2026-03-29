@@ -555,6 +555,9 @@ const SignalsPage = () => {
         return () => clearInterval(iv);
     }, [lastUpdated]);
 
+    // QUALITY GATE: only show signals >= 65% confidence (closed signals always shown for trust)
+    const qualifiedSignals = signals.filter(s => s.isQualified || s.status === 'closed');
+
     // Activity feed — only qualified signals, contextual messages
     useEffect(() => {
         if (!qualifiedSignals.length) return;
@@ -589,9 +592,6 @@ const SignalsPage = () => {
         navigator.clipboard.writeText(text);
         toast.success('Trade setup copied to clipboard', 'Copied');
     };
-
-    // QUALITY GATE: only show signals >= 65% confidence (closed signals always shown for trust)
-    const qualifiedSignals = signals.filter(s => s.isQualified || s.status === 'closed');
 
     // Sort by trade score (highest first), then by recency
     const ranked = [...qualifiedSignals].sort((a, b) => {
