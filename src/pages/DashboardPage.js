@@ -1804,7 +1804,7 @@ useEffect(() => {
         }
     };
 
-    // Symbol search function for autocomplete
+    // Symbol search function for autocomplete (same endpoint as navbar)
     const searchSymbols = useCallback(async (query) => {
         if (!query || query.length < 1) {
             setSuggestions([]);
@@ -1812,8 +1812,10 @@ useEffect(() => {
         }
         setSearchLoading(true);
         try {
-            const response = await api.get(`/predictions/symbols/search?q=${encodeURIComponent(query)}&type=all`);
-            setSuggestions(response.data.symbols || []);
+            const response = await api.get(`/search?q=${encodeURIComponent(query)}`);
+            const stocks = (response.data.stocks || []).map(s => ({ ...s, type: 'stock' }));
+            const crypto = (response.data.crypto || []).map(c => ({ ...c, type: c.source === 'geckoterminal' ? 'dex' : 'crypto' }));
+            setSuggestions([...stocks, ...crypto].slice(0, 12));
         } catch (error) {
             console.error('Symbol search error:', error);
             setSuggestions([]);
