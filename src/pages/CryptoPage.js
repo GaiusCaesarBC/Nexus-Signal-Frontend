@@ -1218,11 +1218,37 @@ const CryptoPage = () => {
       setPredictionLoading(true);
 
       try {
-        let response;
+        // First: check for an existing AI signal for this symbol (from the signal engine)
+        const sym = symbol.toUpperCase();
+        try {
+          const signalRes = await api.get(`/predictions/recent?limit=30`);
+          const signals = Array.isArray(signalRes.data) ? signalRes.data : [];
+          const match = signals.find(s =>
+            s.symbol?.toUpperCase().replace(/USDT|USD/i, '').split(':')[0] === sym &&
+            s.status === 'pending'
+          );
+          if (match) {
+            // Use the real signal data
+            const dir = match.direction === 'UP' ? 'Up' : 'Down';
+            const conf = match.confidence || 50;
+            setPrediction({
+              prediction: dir,
+              confidence: conf,
+              currentPrice: match.currentPrice || match.targetPrice,
+              predictedPrice: match.targetPrice,
+              priceChangePercent: match.priceChangePercent || ((match.targetPrice - (match.currentPrice || match.targetPrice)) / (match.currentPrice || 1) * 100),
+              analysis: match.analysis?.message || `AI signal: ${dir} with ${conf}% confidence`,
+              indicators: match.indicators || {},
+              fromSignalEngine: true,
+            });
+            setPredictionLoading(false);
+            return;
+          }
+        } catch (e) { /* no signal found, use fallback */ }
 
-        // Use DEX endpoint for GeckoTerminal tokens
+        // Fallback: calculate prediction from chart data
+        let response;
         if (isDex && dexPoolAddress) {
-          console.log(`[CryptoPage] Fetching DEX prediction for ${symbol}`);
           response = await api.get(
             `/crypto/dex/prediction/${dexNetwork}/${dexPoolAddress}`,
             { params: { range: '6M' } }
