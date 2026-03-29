@@ -323,10 +323,8 @@ const StepDesc = styled.p`font-size: 0.95rem; color: #94a3b8; line-height: 1.6;`
 
 // ─── Leaderboard ──────────────────────────────────────────
 const LeaderGrid = styled.div`
-    display: grid; grid-template-columns: repeat(3, 1fr);
-    gap: 1.25rem;
-    @media (max-width: 900px) { grid-template-columns: repeat(2, 1fr); }
-    @media (max-width: 600px) { grid-template-columns: 1fr; }
+    display: flex; flex-direction: column;
+    gap: .75rem; max-width: 700px; margin: 0 auto;
 `;
 
 const LeaderCard = styled.div`
@@ -490,7 +488,7 @@ const LandingPage = () => {
             const res = await fetch(`${API_URL}/leaderboard/top`);
             if (res.ok) {
                 const data = await res.json();
-                setTopTraders((data.topTraders || []).slice(0, 6));
+                setTopTraders((data.topTraders || []).slice(0, 5));
             }
         } catch (err) { /* silent */ }
     };
@@ -686,10 +684,12 @@ const LandingPage = () => {
                     </SHeader>
 
                     <LeaderGrid>
-                        {(topTraders.length > 0 ? topTraders.slice(0, 3) : [
+                        {(topTraders.length >= 3 ? topTraders.slice(0, 5) : [
                             { rank: 1, user: { username: 'AlphaTrader', profile: {} }, totalReturnPercent: 34.2, totalTrades: 89 },
                             { rank: 2, user: { username: 'CryptoWhale', profile: {} }, totalReturnPercent: 28.7, totalTrades: 156 },
                             { rank: 3, user: { username: 'SwingKing', profile: {} }, totalReturnPercent: 22.1, totalTrades: 64 },
+                            { rank: 4, user: { username: 'SignalHunter', profile: {} }, totalReturnPercent: 18.5, totalTrades: 112 },
+                            { rank: 5, user: { username: 'BullRunner', profile: {} }, totalReturnPercent: 15.3, totalTrades: 78 },
                         ]).map((t, i) => {
                             const username = t.user?.username || `Trader${i + 1}`;
                             const avatar = t.user?.profile?.avatar;
