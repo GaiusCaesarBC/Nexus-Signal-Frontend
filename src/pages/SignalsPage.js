@@ -407,6 +407,14 @@ const IdealTag = styled.span`
     background:rgba(0,173,237,.05);color:#0ea5e9;border:1px solid rgba(0,173,237,.1);
 `;
 
+const BestBadge = styled.div`
+    display:flex;align-items:center;gap:.35rem;padding:.35rem .75rem;
+    background:linear-gradient(135deg,rgba(245,158,11,.12),rgba(249,115,22,.08));
+    border:1px solid rgba(245,158,11,.3);border-radius:8px;
+    font-size:.72rem;font-weight:800;color:#f59e0b;
+    margin-bottom:.5rem;letter-spacing:.3px;
+`;
+
 const Empty = styled.div`text-align:center;padding:3rem;color:#475569;font-size:.9rem;`;
 
 // ═══════════════════════════════════════════════════════════
@@ -463,19 +471,21 @@ function buildSignal(raw, index) {
     else if (days <= 7) tfLabel = 'Swing';
     else tfLabel = `${days}D`;
 
-    // Trade quality score (1-10) based on confidence, R:R, and signal alignment
+    // Priority score (weighted composite)
     const rrNum = parseFloat(rr) || 2;
-    const rrScore = Math.min(rrNum / 3, 1) * 3;          // max 3 pts
-    const confScore = (conf / 100) * 4;                    // max 4 pts
-    const alignScore = tags.includes('Momentum') || tags.includes('Breakout') ? 2 : tags.includes('High Confidence') ? 1.5 : 1;
-    const tradeScore = Math.min(10, Math.max(1, rrScore + confScore + alignScore + (tags.length > 2 ? 0.5 : 0))).toFixed(1);
+    const confWeight = (conf / 100) * 4;                     // 40% — confidence
+    const rrWeight = Math.min(rrNum / 3, 1) * 2.5;           // 25% — risk/reward
+    const momentumWeight = (tags.includes('Momentum') || tags.includes('Breakout') ? 2 : 1); // 20% — momentum
+    const volumeWeight = (tags.includes('High Confidence') ? 1.5 : 0.75); // 15% — volume/alignment
+    const tradeScore = Math.min(10, Math.max(1, confWeight + rrWeight + momentumWeight + volumeWeight)).toFixed(1);
 
     // Risk level
     const slPct = Math.abs((sl - entry) / entry * 100);
     const riskLevel = slPct > 5 ? 'High' : slPct > 2.5 ? 'Medium' : 'Low';
 
-    // Confidence context
-    const confLabel = conf >= 70 ? 'Strong Setup' : conf >= 55 ? 'Moderate Setup' : 'Weak Setup';
+    // Quality tier (only 65%+ shown publicly)
+    const confLabel = conf >= 70 ? 'Strong Setup' : conf >= 65 ? 'Moderate Setup' : 'Below Threshold';
+    const isQualified = conf >= 65; // Hard quality gate
 
     // Ideal for tags
     const idealFor = [];
@@ -492,7 +502,7 @@ function buildSignal(raw, index) {
         entry, target, currentPrice, sl, tp1, tp2, tp3, rr,
         changePct, movePct, progress, tfLabel, days, tags,
         isWin, resultText,
-        tradeScore, riskLevel, confLabel, idealFor,
+        tradeScore, riskLevel, confLabel, idealFor, isQualified,
         createdAt: raw.createdAt, expiresAt: raw.expiresAt,
     };
 }
@@ -545,17 +555,18 @@ const SignalsPage = () => {
         return () => clearInterval(iv);
     }, [lastUpdated]);
 
-    // Activity feed — alert-style, direction-aware
+    // Activity feed — only qualified signals, contextual messages
     useEffect(() => {
-        if (!signals.length) return;
-        setActivity(signals.slice(0, 12).map(s => {
+        if (!qualifiedSignals.length) return;
+        setActivity(qualifiedSignals.slice(0, 12).map(s => {
             const dir = s.long ? 'LONG' : 'SHORT';
             const pct = `${s.movePct >= 0 ? '+' : ''}${s.movePct.toFixed(1)}%`;
             const prox = proximityStatus(s);
             const base = { id: s.id, time: timeAgo(s.createdAt) };
+            const tier = s.conf >= 70 ? 'Strong' : 'Moderate';
 
             if (s.status === 'new')
-                return { ...base, icon: '🚨', t: `NEW SIGNAL: ${s.symbol} ${dir} — ${s.conf}%`, c: '#10b981' };
+                return { ...base, icon: '🚨', t: `${s.symbol} ${dir} — ${tier} Setup (${s.conf}%)`, c: '#10b981' };
             if (s.status === 'closed' && s.isWin)
                 return { ...base, icon: '🎯', t: `${s.symbol} ${s.resultText} ${pct}`, c: '#10b981', time: timeAgo(s.expiresAt) };
             if (s.status === 'closed')
@@ -563,10 +574,13 @@ const SignalsPage = () => {
             if (prox === 'near-target')
                 return { ...base, icon: '🎯', t: `${s.symbol} approaching target ${pct}`, c: '#10b981' };
             if (prox === 'near-sl')
-                return { ...base, icon: '⚠️', t: `${s.symbol} nearing stop loss ${pct}`, c: '#f59e0b' };
-            return { ...base, icon: '📊', t: `${s.symbol} ${dir} active — ${s.conf}%`, c: '#00adef' };
+                return { ...base, icon: '⚠️', t: `${s.symbol} nearing stop loss`, c: '#f59e0b' };
+            const fav = s.long ? s.movePct >= 0 : s.movePct <= 0;
+            if (fav && Math.abs(s.movePct) > 1)
+                return { ...base, icon: '📈', t: `Momentum building on ${s.symbol} ${pct}`, c: '#10b981' };
+            return { ...base, icon: '📊', t: `${s.symbol} ${dir} — ${tier} (${s.conf}%)`, c: '#00adef' };
         }));
-    }, [signals]);
+    }, [qualifiedSignals]);
 
     // Copy trade setup
     const copySetup = (e, s) => {
@@ -576,10 +590,28 @@ const SignalsPage = () => {
         toast.success('Trade setup copied to clipboard', 'Copied');
     };
 
-    // Filter by asset type first, then by status
-    const assetFiltered = assetTab === 'stocks' ? signals.filter(s => !s.crypto)
-        : assetTab === 'crypto' ? signals.filter(s => s.crypto)
-        : signals;
+    // QUALITY GATE: only show signals >= 65% confidence (closed signals always shown for trust)
+    const qualifiedSignals = signals.filter(s => s.isQualified || s.status === 'closed');
+
+    // Sort by trade score (highest first), then by recency
+    const ranked = [...qualifiedSignals].sort((a, b) => {
+        if (a.status !== 'closed' && b.status !== 'closed') return parseFloat(b.tradeScore) - parseFloat(a.tradeScore);
+        if (a.status === 'closed' && b.status !== 'closed') return 1;
+        return -1;
+    });
+
+    // Mark top signal as "Best Setup" (highest-scored active/new signal with 70%+ conf)
+    const bestId = ranked.find(s => s.status !== 'closed' && s.conf >= 70)?.id || null;
+
+    // Cap active signals at 20 (closed always shown for trust)
+    const activeRanked = ranked.filter(s => s.status !== 'closed').slice(0, 20);
+    const closedRanked = ranked.filter(s => s.status === 'closed');
+    const capped = [...activeRanked, ...closedRanked];
+
+    // Filter by asset type, then by status
+    const assetFiltered = assetTab === 'stocks' ? capped.filter(s => !s.crypto)
+        : assetTab === 'crypto' ? capped.filter(s => s.crypto)
+        : capped;
 
     const filtered = filter === 'all' ? assetFiltered
         : filter === 'high' ? assetFiltered.filter(s => s.conf >= 70)
@@ -656,6 +688,7 @@ const SignalsPage = () => {
                                 </CardHeader>
 
                                 <CardBody>
+                                    {s.id === bestId && <BestBadge>🔥 Best Setup Right Now</BestBadge>}
                                     <LevelsGrid>
                                         <LevelBox><LevelLabel>Entry Price</LevelLabel><LevelValue>{fmtPrice(s.entry)}</LevelValue></LevelBox>
                                         <LevelBox><LevelLabel>Confidence</LevelLabel><LevelValue $c={s.conf>=75?'#10b981':s.conf>=60?'#f59e0b':'#94a3b8'} title="AI model confidence in this signal direction">{s.conf}%<ConfContext>— {s.confLabel}</ConfContext></LevelValue></LevelBox>
