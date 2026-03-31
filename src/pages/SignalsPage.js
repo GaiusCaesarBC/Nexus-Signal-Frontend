@@ -430,7 +430,7 @@ function buildSignal(raw, index) {
 
     let status = 'active';
     if (ageHours < 12) status = 'new';
-    if (expired) status = 'closed';
+    if (expired || raw.result) status = 'closed';
 
     const sym = raw.symbol?.split(':')[0]?.replace(/USDT|USD/i, '') || raw.symbol;
     const crypto = raw.assetType === 'crypto' || raw.assetType === 'dex' || isCrypto(raw.symbol);
@@ -438,28 +438,25 @@ function buildSignal(raw, index) {
     const conf = Math.round(raw.confidence || 50);
     const target = raw.targetPrice;
 
-    // FIXED: Use stored entry price from backend (set at signal creation)
-    // Falls back to calculation only if backend doesn't provide it
-    const entry = raw.entryPrice || raw.entry || raw.openPrice ||
-                  (raw.targetPrice / (1 + (long ? 0.05 : -0.05)));
+    // Use LOCKED values from backend (never recalculate)
+    const entry = raw.entryPrice || raw.entry || (raw.targetPrice / (1 + (long ? 0.05 : -0.05)));
+    const sl = raw.stopLoss || raw.sl || (long ? entry - Math.abs(target - entry) * 0.4 : entry + Math.abs(target - entry) * 0.4);
+    const tp1 = raw.takeProfit1 || raw.tp1 || (long ? entry + Math.abs(target - entry) * 0.4 : entry - Math.abs(target - entry) * 0.4);
+    const tp2 = raw.takeProfit2 || raw.tp2 || target;
+    const tp3 = raw.takeProfit3 || raw.tp3 || (long ? entry + Math.abs(target - entry) * 1.5 : entry - Math.abs(target - entry) * 1.5);
 
     const changePct = entry ? ((target - entry) / entry * 100) : 0;
     const range = Math.abs(target - entry);
-
-    // FIXED: Use stored SL/TP values from backend instead of recalculating
-    const sl = raw.stopLoss || raw.sl || (long ? entry - range * 0.4 : entry + range * 0.4);
-    const tp1 = raw.takeProfit1 || raw.tp1 || (long ? entry + range * 0.4 : entry - range * 0.4);
-    const tp2 = raw.takeProfit2 || raw.tp2 || target;
-    const tp3 = raw.takeProfit3 || raw.tp3 || (long ? entry + range * 1.5 : entry - range * 1.5);
     const rr = range > 0 ? (Math.abs(target - entry) / Math.abs(entry - sl)).toFixed(1) : '2.0';
 
-    // FIXED: Use actual current price from backend instead of simulating
-    const currentPrice = raw.currentPrice || raw.lastPrice || entry;
+    // Use LIVE price from backend
+    const currentPrice = raw.livePrice || raw.currentPrice || raw.lastPrice || entry;
     const progress = expired ? 1 : Math.min(ageHours / (days * 24), 0.95);
-    const movePct = ((currentPrice - entry) / entry * 100);
+    const movePct = raw.liveChangePercent ?? ((currentPrice - entry) / entry * 100);
 
-    const isWin = expired ? (long ? currentPrice > entry : currentPrice < entry) : null;
-    const resultText = expired ? (isWin ? (currentPrice >= tp2 ? 'TP2 Hit' : 'TP1 Hit') : 'SL Hit') : null;
+    // Use result from backend if available
+    const isWin = raw.result ? raw.result === 'win' : (expired ? (long ? currentPrice > entry : currentPrice < entry) : null);
+    const resultText = raw.resultText || (expired ? (isWin ? (currentPrice >= tp2 ? 'TP2 Hit' : 'TP1 Hit') : 'SL Hit') : null);
 
     const tags = [];
     if (conf >= 75) tags.push('High Confidence');
