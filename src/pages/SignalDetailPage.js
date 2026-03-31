@@ -231,23 +231,25 @@ const SignalDetailPage = () => {
         const crypto = raw.assetType === 'crypto' || raw.assetType === 'dex' || isCrypto(raw.symbol);
         const long = raw.direction === 'UP';
         const conf = Math.round(raw.confidence || raw.liveConfidence || 50);
-        const entry = raw.currentPrice || raw.current_price || raw.targetPrice / (1 + (long ? 0.05 : -0.05));
         const target = raw.targetPrice || raw.target_price;
-        const changePct = entry ? ((target - entry) / entry * 100) : 0;
 
+        // FIXED: Use stored entry price from backend (set at signal creation)
+        const entry = raw.entryPrice || raw.entry || raw.openPrice ||
+                      (raw.targetPrice / (1 + (long ? 0.05 : -0.05)));
+
+        const changePct = entry ? ((target - entry) / entry * 100) : 0;
         const range = Math.abs(target - entry);
-        const sl = long ? entry - range * 0.4 : entry + range * 0.4;
-        const tp1 = long ? entry + range * 0.4 : entry - range * 0.4;
-        const tp2 = target;
-        const tp3 = long ? entry + range * 1.5 : entry - range * 1.5;
+
+        // FIXED: Use stored SL/TP values from backend instead of recalculating
+        const sl = raw.stopLoss || raw.sl || (long ? entry - range * 0.4 : entry + range * 0.4);
+        const tp1 = raw.takeProfit1 || raw.tp1 || (long ? entry + range * 0.4 : entry - range * 0.4);
+        const tp2 = raw.takeProfit2 || raw.tp2 || target;
+        const tp3 = raw.takeProfit3 || raw.tp3 || (long ? entry + range * 1.5 : entry - range * 1.5);
         const rr = range > 0 ? (Math.abs(target - entry) / Math.abs(entry - sl)).toFixed(1) : '2.0';
 
-        // Current price
+        // FIXED: Use actual current price from backend or outcome price
         const progress = expired ? 1 : Math.min(ageHours / (days * 24), 0.95);
-        const noise = (Math.random() - 0.4) * range * 0.3;
-        const currentPrice = raw.outcome?.actualPrice || (expired
-            ? (Math.random() > 0.45 ? tp1 + Math.random() * (tp2 - tp1) : sl + (long ? -1 : 1) * Math.random() * range * 0.1)
-            : entry + (target - entry) * progress + noise);
+        const currentPrice = raw.outcome?.actualPrice || raw.currentPrice || raw.lastPrice || entry;
         const movePct = ((currentPrice - entry) / entry * 100);
 
         const isWin = status === 'closed' ? (raw.outcome?.wasCorrect ?? (long ? currentPrice > entry : currentPrice < entry)) : null;
