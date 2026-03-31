@@ -636,7 +636,7 @@ const SignalsPage = () => {
         : assetFiltered.filter(s => s.status === filter);
 
     const counts = { all: assetFiltered.length, new: assetFiltered.filter(s=>s.status==='new').length, active: assetFiltered.filter(s=>s.status!=='closed').length, closed: assetFiltered.filter(s=>s.status==='closed').length };
-    const winRate = (() => { const c = signals.filter(s=>s.status==='closed'); if (!c.length) return 0; return Math.round(c.filter(s=>s.isWin).length / c.length * 100); })();
+    const winRate = (() => { const c = signals.filter(s=>s.status==='closed'&&s.isWin!==undefined); if (!c.length) return null; return Math.round(c.filter(s=>s.isWin).length / c.length * 100); })();
 
     return (
         <Page>
@@ -798,7 +798,7 @@ const SignalsPage = () => {
 
                             <StatsRow>
                                 <StatBox><StatVal $c="#00adef">{signals.length}</StatVal><StatLbl>Signals</StatLbl></StatBox>
-                                <StatBox><StatVal $c="#10b981">{winRate}%</StatVal><StatLbl>Win Rate</StatLbl></StatBox>
+                                <StatBox><StatVal $c="#10b981">{winRate !== null ? `${winRate}%` : '—'}</StatVal><StatLbl>Win Rate</StatLbl></StatBox>
                                 <StatBox><StatVal $c="#f59e0b">{counts.active}</StatVal><StatLbl>Active</StatLbl></StatBox>
                             </StatsRow>
 
