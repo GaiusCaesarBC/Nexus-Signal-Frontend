@@ -420,6 +420,57 @@ const Empty = styled.div`text-align:center;padding:3rem;color:#475569;font-size:
 const ArchiveHeader = styled.div`display:flex;align-items:center;gap:.5rem;padding:.75rem 1rem;margin-bottom:.5rem;background:rgba(100,116,139,.08);border:1px solid rgba(100,116,139,.15);border-radius:8px;color:#94a3b8;font-size:.85rem;font-weight:500;`;
 const DateSeparator = styled.div`display:flex;align-items:center;gap:.5rem;padding:.5rem 0;margin:.25rem 0;color:#64748b;font-size:.8rem;font-weight:600;letter-spacing:.03em;text-transform:uppercase;&::after{content:'';flex:1;height:1px;background:rgba(100,116,139,.2);}`;
 
+// ─── Recent Results ──────────────────────────────────────
+const resultGlow = keyframes`0%,100%{box-shadow:0 0 12px rgba(16,185,129,.06)}50%{box-shadow:0 0 24px rgba(16,185,129,.18)}`;
+const ResultsSection = styled.div`
+    margin-bottom:1.25rem;
+`;
+const ResultsHeader = styled.div`
+    display:flex;align-items:center;justify-content:space-between;margin-bottom:.65rem;
+`;
+const ResultsTitle = styled.h3`
+    font-size:1rem;font-weight:700;color:#e2e8f0;margin:0;display:flex;align-items:center;gap:.4rem;
+`;
+const ResultsSub = styled.span`font-size:.72rem;color:#64748b;font-weight:400;letter-spacing:.02em;`;
+const ResultsStrip = styled.div`
+    display:flex;gap:.5rem;overflow-x:auto;padding-bottom:.25rem;
+    scrollbar-width:thin;scrollbar-color:rgba(100,116,139,.2) transparent;
+    &::-webkit-scrollbar{height:4px;}
+    &::-webkit-scrollbar-thumb{background:rgba(100,116,139,.2);border-radius:4px;}
+`;
+const ResultCard = styled.div`
+    flex:0 0 auto;min-width:175px;
+    background:linear-gradient(135deg,rgba(16,185,129,.04) 0%,rgba(6,30,22,.6) 100%);
+    border:1px solid rgba(16,185,129,.18);border-radius:10px;
+    padding:.7rem .85rem;cursor:pointer;
+    transition:all .2s ease;
+    animation:${resultGlow} 4s ease-in-out infinite;
+    animation-delay:${p => p.$delay || '0s'};
+    &:hover{border-color:rgba(16,185,129,.4);transform:translateY(-2px);box-shadow:0 6px 20px rgba(16,185,129,.12);}
+`;
+const RCTop = styled.div`display:flex;align-items:center;justify-content:space-between;margin-bottom:.35rem;`;
+const RCSymbol = styled.span`font-size:.9rem;font-weight:700;color:#e2e8f0;`;
+const RCDir = styled.span`
+    font-size:.58rem;font-weight:700;letter-spacing:.04em;padding:2px 5px;border-radius:3px;
+    background:${p => p.$long ? 'rgba(16,185,129,.12)' : 'rgba(239,68,68,.12)'};
+    color:${p => p.$long ? '#10b981' : '#ef4444'};
+`;
+const RCPct = styled.div`
+    font-size:1.35rem;font-weight:800;color:#10b981;line-height:1.1;
+    text-shadow:0 0 20px rgba(16,185,129,.3);
+`;
+const RCBadge = styled.span`
+    display:inline-flex;align-items:center;gap:3px;
+    font-size:.65rem;font-weight:600;padding:2px 6px;border-radius:4px;margin-top:.3rem;
+    background:${p => p.$tp === 3 ? 'rgba(16,185,129,.15)' : p.$tp === 2 ? 'rgba(16,185,129,.1)' : 'rgba(16,185,129,.06)'};
+    color:#10b981;border:1px solid rgba(16,185,129,.2);
+`;
+const RCTime = styled.span`font-size:.62rem;color:#475569;margin-top:.2rem;display:block;`;
+const ResultsEmpty = styled.div`
+    padding:.75rem 1rem;color:#475569;font-size:.8rem;font-style:italic;
+    background:rgba(100,116,139,.04);border:1px dashed rgba(100,116,139,.15);border-radius:8px;
+`;
+
 // ═══════════════════════════════════════════════════════════
 // BUILD SIGNAL
 // ═══════════════════════════════════════════════════════════
@@ -663,6 +714,12 @@ const SignalsPage = () => {
     const counts = { all: assetFiltered.length, new: assetFiltered.filter(s=>s.status==='new').length, active: assetFiltered.filter(s=>s.status!=='closed').length, closed: recentClosed.length, archive: archivedClosed.length };
     const winRate = (() => { const c = signals.filter(s=>s.status==='closed'&&s.isWin!==undefined); if (!c.length) return null; return Math.round(c.filter(s=>s.isWin).length / c.length * 100); })();
 
+    // Recent winning results (TP1+ hits, sorted by most recent, max 5)
+    const recentWins = allClosed
+        .filter(s => s.isWin && s.resultText && s.movePct > 0)
+        .sort((a, b) => new Date(b.resultAt || b.createdAt) - new Date(a.resultAt || a.createdAt))
+        .slice(0, 5);
+
     return (
         <Page>
             <SEO title={`${assetTab==='stocks'?'Stock':assetTab==='crypto'?'Crypto':'Live'} Signal Feed — Nexus Signal`} description="Real-time AI-generated trade setups for stocks and crypto." />
@@ -699,6 +756,36 @@ const SignalsPage = () => {
                         </Controls>
                     </HeaderRow>
                 </Header>
+
+                <ResultsSection>
+                    <ResultsHeader>
+                        <ResultsTitle>
+                            <TrendingUp size={16} color="#10b981"/> Recent Results
+                            <ResultsSub>Real trades. Tracked publicly.</ResultsSub>
+                        </ResultsTitle>
+                        {winRate !== null && <ResultsSub style={{color:'#10b981',fontWeight:600}}>Win Rate: {winRate}%</ResultsSub>}
+                    </ResultsHeader>
+                    {recentWins.length > 0 ? (
+                        <ResultsStrip>
+                            {recentWins.map((s, i) => {
+                                const tpNum = s.resultText?.includes('TP3') ? 3 : s.resultText?.includes('TP2') ? 2 : 1;
+                                return (
+                                    <ResultCard key={s.id} $delay={`${i * 0.8}s`} onClick={() => navigate(`/signal/${s.id}`)}>
+                                        <RCTop>
+                                            <RCSymbol>{s.symbol}</RCSymbol>
+                                            <RCDir $long={s.long}>{s.long ? 'LONG' : 'SHORT'}</RCDir>
+                                        </RCTop>
+                                        <RCPct>+{s.movePct.toFixed(1)}%</RCPct>
+                                        <RCBadge $tp={tpNum}><CheckCircle size={10}/> {s.resultText}</RCBadge>
+                                        <RCTime>{timeAgo(s.resultAt || s.createdAt)}</RCTime>
+                                    </ResultCard>
+                                );
+                            })}
+                        </ResultsStrip>
+                    ) : (
+                        <ResultsEmpty>No completed trades yet — results will appear here as signals hit their targets.</ResultsEmpty>
+                    )}
+                </ResultsSection>
 
                 <Grid>
                     <Feed>
