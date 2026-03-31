@@ -617,7 +617,7 @@ const SignalsPage = () => {
         : filter === 'high' ? assetFiltered.filter(s => s.conf >= 70)
         : assetFiltered.filter(s => s.status === filter);
 
-    const counts = { all: assetFiltered.length, new: assetFiltered.filter(s=>s.status==='new').length, active: assetFiltered.filter(s=>s.status==='active').length, closed: assetFiltered.filter(s=>s.status==='closed').length };
+    const counts = { all: assetFiltered.length, new: assetFiltered.filter(s=>s.status==='new').length, active: assetFiltered.filter(s=>s.status!=='closed').length, closed: assetFiltered.filter(s=>s.status==='closed').length };
     const winRate = (() => { const c = signals.filter(s=>s.status==='closed'); if (!c.length) return 0; return Math.round(c.filter(s=>s.isWin).length / c.length * 100); })();
 
     return (
