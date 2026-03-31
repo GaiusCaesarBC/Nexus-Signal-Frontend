@@ -36,6 +36,7 @@ const fmtPrice = (p) => { if (!p) return '—'; if (p >= 1000) return `$${p.toLo
 
 const timeAgo = (d) => {
     const s = Math.floor((Date.now() - new Date(d)) / 1000);
+    if (s < 0) return 'just now';
     if (s < 60) return `${s}s ago`;
     const m = Math.floor(s / 60);
     if (m < 60) return `${m}m ago`;
@@ -506,7 +507,7 @@ function buildSignal(raw, index) {
         changePct, movePct, progress, tfLabel, days, tags,
         isWin, resultText,
         tradeScore, riskLevel, confLabel, idealFor, isQualified,
-        createdAt: raw.createdAt, expiresAt: raw.expiresAt,
+        createdAt: raw.createdAt, expiresAt: raw.expiresAt, resultAt: raw.resultAt,
     };
 }
 
@@ -591,9 +592,9 @@ const SignalsPage = () => {
             if (s.status === 'new')
                 return { ...base, icon: '🚨', t: `${s.symbol} ${dir} — ${tier} Setup (${s.conf}%)`, c: '#10b981' };
             if (s.status === 'closed' && s.isWin)
-                return { ...base, icon: '🎯', t: `${s.symbol} ${s.resultText} ${pct}`, c: '#10b981', time: timeAgo(s.expiresAt) };
+                return { ...base, icon: '🎯', t: `${s.symbol} ${s.resultText} ${pct}`, c: '#10b981', time: timeAgo(s.resultAt || s.createdAt) };
             if (s.status === 'closed')
-                return { ...base, icon: '❌', t: `${s.symbol} ${s.resultText} ${pct}`, c: '#ef4444', time: timeAgo(s.expiresAt) };
+                return { ...base, icon: '❌', t: `${s.symbol} ${s.resultText} ${pct}`, c: '#ef4444', time: timeAgo(s.resultAt || s.createdAt) };
             if (prox === 'near-target')
                 return { ...base, icon: '🎯', t: `${s.symbol} approaching target ${pct}`, c: '#10b981' };
             if (prox === 'near-sl')
