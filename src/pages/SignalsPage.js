@@ -542,14 +542,14 @@ const SignalsPage = () => {
             // Try authenticated API first (returns live prices)
             if (api) {
                 try {
-                    const res = await api.get('/predictions/recent?limit=30&includeLivePrices=true');
+                    const res = await api.get('/predictions/recent?limit=100&includeLivePrices=true');
                     preds = Array.isArray(res.data) ? res.data : [];
                 } catch (e) { /* fall through to public endpoint */ }
             }
 
             // Fallback to public endpoint
             if (!preds.length) {
-                const res = await fetch(`${API_URL}/predictions/recent?limit=30`);
+                const res = await fetch(`${API_URL}/predictions/recent?limit=100`);
                 if (res.ok) {
                     const data = await res.json();
                     preds = Array.isArray(data) ? data : [];
