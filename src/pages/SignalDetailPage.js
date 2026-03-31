@@ -247,7 +247,9 @@ const SignalDetailPage = () => {
         // Use LIVE price from backend
         const progress = expired ? 1 : Math.min(ageHours / (days * 24), 0.95);
         const currentPrice = raw.livePrice || raw.resultPrice || raw.outcome?.actualPrice || raw.currentPrice || entry;
-        const movePct = raw.liveChangePercent ?? ((currentPrice - entry) / entry * 100);
+        const rawMovePct = raw.liveChangePercent ?? ((currentPrice - entry) / entry * 100);
+        // For shorts, invert: price drop = positive profit
+        const movePct = long ? rawMovePct : -rawMovePct;
 
         // Use result from backend if available
         const isWin = raw.result ? raw.result === 'win' : (status === 'closed' ? (raw.outcome?.wasCorrect ?? (long ? currentPrice > entry : currentPrice < entry)) : null);
