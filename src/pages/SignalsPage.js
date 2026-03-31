@@ -517,7 +517,7 @@ function buildSignal(raw, index) {
 const SignalsPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { user } = useAuth();
+    const { user, api } = useAuth();
     const toast = useToast();
     const { hasPlanAccess } = useSubscription();
     const isPremium = hasPlanAccess('starter');
@@ -537,19 +537,36 @@ const SignalsPage = () => {
     const fetchSignals = useCallback(async (showSpin = false) => {
         if (showSpin) setRefreshing(true);
         try {
-            const res = await fetch(`${API_URL}/predictions/recent?limit=30`);
-            if (res.ok) {
-                const data = await res.json();
-                const preds = Array.isArray(data) ? data : [];
+            let preds = [];
+
+            // Try authenticated API first (returns live prices)
+            if (api) {
+                try {
+                    const res = await api.get('/predictions/recent?limit=30&includeLivePrices=true');
+                    preds = Array.isArray(res.data) ? res.data : [];
+                } catch (e) { /* fall through to public endpoint */ }
+            }
+
+            // Fallback to public endpoint
+            if (!preds.length) {
+                const res = await fetch(`${API_URL}/predictions/recent?limit=30`);
+                if (res.ok) {
+                    const data = await res.json();
+                    preds = Array.isArray(data) ? data : [];
+                }
+            }
+
+            if (preds.length) {
                 setSignals(preds.map((p, i) => buildSignal(p, i)));
                 setLastUpdated(Date.now());
             }
         } catch (e) { /* silent */ }
         if (showSpin) setTimeout(() => setRefreshing(false), 500);
-    }, []);
+    }, [api]);
 
     useEffect(() => { fetchSignals(); }, [fetchSignals]);
-    useEffect(() => { const iv = setInterval(() => fetchSignals(), 45000); return () => clearInterval(iv); }, [fetchSignals]);
+    // Refresh every 30s to keep prices in sync
+    useEffect(() => { const iv = setInterval(() => fetchSignals(), 30000); return () => clearInterval(iv); }, [fetchSignals]);
 
     // Seconds since update ticker
     useEffect(() => {
