@@ -244,10 +244,10 @@ const SignalDetailPage = () => {
         const range = Math.abs(target - entry);
         const rr = range > 0 ? (Math.abs(target - entry) / Math.abs(entry - sl)).toFixed(1) : '2.0';
 
-        // Use LIVE price from backend
+        // For closed signals, use the price at result time; for active, use live price
         const progress = expired ? 1 : Math.min(ageHours / (days * 24), 0.95);
-        const currentPrice = raw.livePrice || raw.resultPrice || raw.outcome?.actualPrice || raw.currentPrice || entry;
-        const rawMovePct = raw.liveChangePercent ?? ((currentPrice - entry) / entry * 100);
+        const currentPrice = raw.result ? (raw.resultPrice || raw.livePrice || raw.outcome?.actualPrice || entry) : (raw.livePrice || raw.currentPrice || raw.lastPrice || entry);
+        const rawMovePct = raw.result ? ((currentPrice - entry) / entry * 100) : (raw.liveChangePercent ?? ((currentPrice - entry) / entry * 100));
         // For shorts, invert: price drop = positive profit
         const movePct = long ? rawMovePct : -rawMovePct;
 
