@@ -417,6 +417,8 @@ const BestBadge = styled.div`
 `;
 
 const Empty = styled.div`text-align:center;padding:3rem;color:#475569;font-size:.9rem;`;
+const ArchiveHeader = styled.div`display:flex;align-items:center;gap:.5rem;padding:.75rem 1rem;margin-bottom:.5rem;background:rgba(100,116,139,.08);border:1px solid rgba(100,116,139,.15);border-radius:8px;color:#94a3b8;font-size:.85rem;font-weight:500;`;
+const DateSeparator = styled.div`display:flex;align-items:center;gap:.5rem;padding:.5rem 0;margin:.25rem 0;color:#64748b;font-size:.8rem;font-weight:600;letter-spacing:.03em;text-transform:uppercase;&::after{content:'';flex:1;height:1px;background:rgba(100,116,139,.2);}`;
 
 // ═══════════════════════════════════════════════════════════
 // BUILD SIGNAL
@@ -624,10 +626,29 @@ const SignalsPage = () => {
     // Mark top signal as "Best Setup" (highest-scored active/new signal with 70%+ conf)
     const bestId = ranked.find(s => s.status !== 'closed' && s.conf >= 70)?.id || null;
 
-    // Cap active signals at 20 (closed always shown for trust)
+    // Split closed signals: recent (< 24h) stay in feed, older go to archive
+    const DAY_MS = 24 * 60 * 60 * 1000;
     const activeRanked = ranked.filter(s => s.status !== 'closed').slice(0, 20);
-    const closedRanked = ranked.filter(s => s.status === 'closed');
-    const capped = [...activeRanked, ...closedRanked];
+    const allClosed = ranked.filter(s => s.status === 'closed');
+    const recentClosed = allClosed.filter(s => {
+        const closedTime = new Date(s.resultAt || s.createdAt).getTime();
+        return (Date.now() - closedTime) < DAY_MS;
+    });
+    const archivedClosed = allClosed.filter(s => {
+        const closedTime = new Date(s.resultAt || s.createdAt).getTime();
+        return (Date.now() - closedTime) >= DAY_MS;
+    });
+    const capped = [...activeRanked, ...recentClosed];
+
+    // Group archive by date
+    const archiveByDate = {};
+    archivedClosed.forEach(s => {
+        const d = new Date(s.resultAt || s.createdAt);
+        const key = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        if (!archiveByDate[key]) archiveByDate[key] = [];
+        archiveByDate[key].push(s);
+    });
+    const archiveDates = Object.keys(archiveByDate);
 
     // Filter by asset type, then by status
     const assetFiltered = assetTab === 'stocks' ? capped.filter(s => !s.crypto)
@@ -636,9 +657,10 @@ const SignalsPage = () => {
 
     const filtered = filter === 'all' ? assetFiltered
         : filter === 'high' ? assetFiltered.filter(s => s.conf >= 70)
+        : filter === 'archive' ? (assetTab === 'stocks' ? archivedClosed.filter(s => !s.crypto) : assetTab === 'crypto' ? archivedClosed.filter(s => s.crypto) : archivedClosed)
         : assetFiltered.filter(s => s.status === filter);
 
-    const counts = { all: assetFiltered.length, new: assetFiltered.filter(s=>s.status==='new').length, active: assetFiltered.filter(s=>s.status!=='closed').length, closed: assetFiltered.filter(s=>s.status==='closed').length };
+    const counts = { all: assetFiltered.length, new: assetFiltered.filter(s=>s.status==='new').length, active: assetFiltered.filter(s=>s.status!=='closed').length, closed: recentClosed.length, archive: archivedClosed.length };
     const winRate = (() => { const c = signals.filter(s=>s.status==='closed'&&s.isWin!==undefined); if (!c.length) return null; return Math.round(c.filter(s=>s.isWin).length / c.length * 100); })();
 
     return (
@@ -665,10 +687,10 @@ const SignalsPage = () => {
                         </AssetTabs>
 
                         <Controls>
-                            {['all','new','active','closed','high'].map(f => (
+                            {['all','new','active','closed','high','archive'].map(f => (
                                 <FilterBtn key={f} $active={filter===f} onClick={()=>setFilter(f)}>
-                                    {f==='high'?'High Conf':f.charAt(0).toUpperCase()+f.slice(1)}
-                                    {f!=='high'&&counts[f]>0&&<span style={{opacity:.5}}> ({counts[f]})</span>}
+                                    {f==='high'?'High Conf':f==='archive'?'Archive':f.charAt(0).toUpperCase()+f.slice(1)}
+                                    {counts[f]>0&&<span style={{opacity:.5}}> ({counts[f]})</span>}
                                 </FilterBtn>
                             ))}
                             <RefreshBtn className={refreshing?'spinning':''} onClick={()=>fetchSignals(true)}>
@@ -681,12 +703,27 @@ const SignalsPage = () => {
                 <Grid>
                     <Feed>
                         {filtered.length===0&&<Empty>No signals match this filter. Check back soon.</Empty>}
+                        {filter==='archive'&&archiveDates.length>0&&(
+                            <ArchiveHeader>
+                                <Clock size={14}/> Signal Archive — {archivedClosed.length} closed signals
+                            </ArchiveHeader>
+                        )}
                         {filtered.map((s, i) => {
                             const posMove = s.long ? s.movePct >= 0 : s.movePct <= 0;
                             const urgency = expiryUrgency(s.expiresAt);
 
-                            return (
-                            <Card key={s.id} $status={s.status} $highConf={s.conf>=70} $prox={proximityStatus(s)} $expiring={urgency==='soon'||urgency==='urgent'} $delay={`${i*.04}s`} onClick={()=>navigate(`/signal/${s.id}`)}>
+                            // Date separator for archive view
+                            let dateSep = null;
+                            if (filter === 'archive' && i > 0) {
+                                const prevDate = new Date(filtered[i-1].resultAt || filtered[i-1].createdAt).toLocaleDateString();
+                                const thisDate = new Date(s.resultAt || s.createdAt).toLocaleDateString();
+                                if (prevDate !== thisDate) dateSep = <DateSeparator key={`sep-${i}`}>{new Date(s.resultAt || s.createdAt).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</DateSeparator>;
+                            }
+                            if (filter === 'archive' && i === 0) dateSep = <DateSeparator key="sep-0">{new Date(s.resultAt || s.createdAt).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</DateSeparator>;
+
+                            return (<React.Fragment key={s.id}>
+                            {dateSep}
+                            <Card $status={s.status} $highConf={s.conf>=70} $prox={proximityStatus(s)} $expiring={urgency==='soon'||urgency==='urgent'} $delay={`${i*.04}s`} onClick={()=>navigate(`/signal/${s.id}`)}>
                                 <CardHeader>
                                     <SymbolGroup>
                                         <SymbolName onClick={(e)=>{e.stopPropagation();navigate(s.crypto?`/crypto/${s.symbol}`:`/stock/${s.symbol}`);}} style={{cursor:'pointer',textDecoration:'none'}} title={`View ${s.symbol} details`}>{s.symbol}</SymbolName>
@@ -782,7 +819,7 @@ const SignalsPage = () => {
                                     </MetaRow>
                                 </CardBody>
                             </Card>
-                            );
+                            </React.Fragment>);
                         })}
                     </Feed>
 
