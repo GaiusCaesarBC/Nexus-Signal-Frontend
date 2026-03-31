@@ -437,14 +437,14 @@ function buildSignal(raw, index) {
     const crypto = raw.assetType === 'crypto' || raw.assetType === 'dex' || isCrypto(raw.symbol);
     const long = raw.direction === 'UP';
     const conf = Math.round(raw.confidence || 50);
-    const target = raw.targetPrice;
-
     // Use LOCKED values from backend (never recalculate)
     const entry = raw.entryPrice || raw.entry || (raw.targetPrice / (1 + (long ? 0.05 : -0.05)));
-    const sl = raw.stopLoss || raw.sl || (long ? entry - Math.abs(target - entry) * 0.4 : entry + Math.abs(target - entry) * 0.4);
-    const tp1 = raw.takeProfit1 || raw.tp1 || (long ? entry + Math.abs(target - entry) * 0.4 : entry - Math.abs(target - entry) * 0.4);
-    const tp2 = raw.takeProfit2 || raw.tp2 || target;
-    const tp3 = raw.takeProfit3 || raw.tp3 || (long ? entry + Math.abs(target - entry) * 1.5 : entry - Math.abs(target - entry) * 1.5);
+    const mlTarget = raw.targetPrice;
+    const sl = raw.stopLoss || raw.sl || (long ? entry - Math.abs(mlTarget - entry) * 0.4 : entry + Math.abs(mlTarget - entry) * 0.4);
+    const tp1 = raw.takeProfit1 || raw.tp1 || (long ? entry + Math.abs(mlTarget - entry) * 0.4 : entry - Math.abs(mlTarget - entry) * 0.4);
+    const tp2 = raw.takeProfit2 || raw.tp2 || mlTarget;
+    const tp3 = raw.takeProfit3 || raw.tp3 || (long ? entry + Math.abs(mlTarget - entry) * 1.5 : entry - Math.abs(mlTarget - entry) * 1.5);
+    const target = tp3; // TP3 is the ultimate target
 
     const changePct = entry ? ((target - entry) / entry * 100) : 0;
     const range = Math.abs(target - entry);
