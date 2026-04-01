@@ -667,7 +667,7 @@ function buildSignal(raw, index) {
 
     // Quality tier (only 65%+ shown publicly)
     const confLabel = conf >= 70 ? 'Strong Setup' : conf >= 65 ? 'Moderate Setup' : 'Below Threshold';
-    const isQualified = conf >= 65; // Hard quality gate
+    const isQualified = conf >= 55; // Matches server MIN_CONFIDENCE
 
     // Ideal for tags
     const idealFor = [];
@@ -754,13 +754,22 @@ const SignalsPage = () => {
         return () => clearInterval(iv);
     }, [lastUpdated]);
 
-    // QUALITY GATE: only show signals >= 65% confidence (closed signals always shown for trust)
-    const qualifiedSignals = signals.filter(s => s.isQualified || s.status === 'closed');
+    // QUALITY GATE: show signals >= 55% confidence (matches server MIN_CONFIDENCE) or closed
+    const qualifiedSignals = signals.filter(s => s.conf >= 55 || s.status === 'closed');
 
-    // Activity feed — only qualified signals, contextual messages
+    // Activity feed — prioritize recent results (TP/SL hits), then new signals
     useEffect(() => {
         if (!qualifiedSignals.length) return;
-        setActivity(qualifiedSignals.slice(0, 12).map(s => {
+        // Sort: closed with results first (by resultAt), then active by createdAt
+        const activitySorted = [...qualifiedSignals].sort((a, b) => {
+            const aHasResult = a.status === 'closed' && a.resultText;
+            const bHasResult = b.status === 'closed' && b.resultText;
+            if (aHasResult && !bHasResult) return -1;
+            if (!aHasResult && bHasResult) return 1;
+            if (aHasResult && bHasResult) return new Date(b.resultAt || b.createdAt) - new Date(a.resultAt || a.createdAt);
+            return new Date(b.createdAt) - new Date(a.createdAt);
+        });
+        setActivity(activitySorted.slice(0, 12).map(s => {
             const dir = s.long ? 'LONG' : 'SHORT';
             const pct = `${s.movePct >= 0 ? '+' : ''}${s.movePct.toFixed(1)}%`;
             const prox = proximityStatus(s);
