@@ -51,8 +51,9 @@ const TrustItem = styled.span`
 
 // ─── Footer ───────────────────────────────────────────────
 const FooterWrap = styled.footer`
-    width:100%;border-top:1px solid rgba(255,255,255,.04);
-    background:transparent;
+    width:100%;border-top:1px solid rgba(255,255,255,.06);
+    background:#030712;
+    position:relative;z-index:10;
 `;
 
 const Inner = styled.div`
