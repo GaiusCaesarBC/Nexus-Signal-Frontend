@@ -505,6 +505,23 @@ const RCBadge = styled.span`
     background:${p => p.$tp === 3 ? 'rgba(16,185,129,.18)' : p.$tp === 2 ? 'rgba(16,185,129,.12)' : 'rgba(16,185,129,.06)'};
     color:#10b981;border:1px solid rgba(16,185,129,${p => p.$tp === 3 ? '.3' : '.18'});
 `;
+const LossCard = styled.div`
+    flex:0 0 auto;min-width:155px;
+    background:linear-gradient(135deg,rgba(239,68,68,.03) 0%,rgba(30,6,6,.5) 100%);
+    border:1px solid rgba(239,68,68,.15);border-radius:10px;
+    padding:.65rem .8rem;cursor:pointer;
+    transition:all .2s ease;
+    &:hover{border-color:rgba(239,68,68,.35);transform:translateY(-2px);box-shadow:0 6px 20px rgba(239,68,68,.1);}
+`;
+const LCPct = styled.div`
+    font-size:1.25rem;font-weight:900;color:#ef4444;line-height:1.1;
+    text-shadow:0 0 16px rgba(239,68,68,.25);letter-spacing:-.02em;
+`;
+const LCBadge = styled.span`
+    display:inline-flex;align-items:center;gap:3px;
+    font-size:.6rem;font-weight:600;padding:2px 6px;border-radius:4px;margin-top:.3rem;
+    background:rgba(239,68,68,.08);color:#ef4444;border:1px solid rgba(239,68,68,.18);
+`;
 const RCMeta = styled.div`display:flex;align-items:center;justify-content:space-between;margin-top:.25rem;`;
 const RCTime = styled.span`font-size:.58rem;color:#475569;`;
 const RCEntry = styled.span`font-size:.55rem;color:#334155;`;
@@ -763,16 +780,18 @@ const SignalsPage = () => {
     const counts = { all: assetFiltered.length, new: assetFiltered.filter(s=>s.status==='new').length, active: assetFiltered.filter(s=>s.status!=='closed').length, closed: recentClosed.length, archive: archivedClosed.length };
     const winRate = (() => { const c = signals.filter(s=>s.status==='closed'&&s.isWin!==undefined); if (!c.length) return null; return Math.round(c.filter(s=>s.isWin).length / c.length * 100); })();
 
-    // Verified winning results — sorted by highest gain, featured top trade
-    const recentWins = allClosed
-        .filter(s => s.isWin && s.resultText && s.movePct > 0)
-        .sort((a, b) => b.movePct - a.movePct)
-        .slice(0, 6);
-    const featuredWin = recentWins[0] || null;
-    const otherWins = recentWins.slice(1);
+    // Verified results — featured best win + all recent results (wins AND losses)
+    const recentResults = allClosed
+        .filter(s => s.resultText)
+        .sort((a, b) => new Date(b.resultAt || b.createdAt) - new Date(a.resultAt || a.createdAt))
+        .slice(0, 15);
+    const featuredWin = allClosed
+        .filter(s => s.isWin && s.movePct > 0)
+        .sort((a, b) => b.movePct - a.movePct)[0] || null;
     const totalTracked = signals.length;
     const totalClosed = allClosed.length;
     const totalWins = allClosed.filter(s => s.isWin).length;
+    const totalLosses = allClosed.filter(s => !s.isWin && s.resultText).length;
 
     return (
         <Page>
@@ -828,6 +847,10 @@ const SignalsPage = () => {
                                 <TrustVal $c="#10b981">{totalWins}</TrustVal>
                                 <TrustLbl>Winners</TrustLbl>
                             </TrustStat>
+                            <TrustStat $delay=".15s">
+                                <TrustVal $c="#ef4444">{totalLosses}</TrustVal>
+                                <TrustLbl>Losses</TrustLbl>
+                            </TrustStat>
                             <TrustStat $delay=".2s">
                                 <TrustVal $c={winRate >= 50 ? '#10b981' : '#f59e0b'}>{winRate !== null ? `${winRate}%` : '--'}</TrustVal>
                                 <TrustLbl>Win Rate</TrustLbl>
@@ -838,37 +861,51 @@ const SignalsPage = () => {
                             </TrustStat>
                         </TrustBar>
                     </ResultsHeader>
-                    {featuredWin ? (
+                    {recentResults.length > 0 ? (
                         <ResultsRow>
-                            <FeaturedCard onClick={() => navigate(`/signal/${featuredWin.id}`)}>
-                                <RCTop>
-                                    <RCSymbol $featured>{featuredWin.symbol}</RCSymbol>
-                                    <RCDir $long={featuredWin.long}>{featuredWin.long ? 'LONG' : 'SHORT'}</RCDir>
-                                </RCTop>
-                                <RCPct $featured>+{featuredWin.movePct.toFixed(1)}%</RCPct>
-                                <RCBadge $tp={featuredWin.resultText?.includes('TP3') ? 3 : featuredWin.resultText?.includes('TP2') ? 2 : 1}>
-                                    <CheckCircle size={10}/> {featuredWin.resultText}
-                                </RCBadge>
-                                <RCMeta>
-                                    <RCTime>{timeAgo(featuredWin.resultAt || featuredWin.createdAt)}</RCTime>
-                                    <RCEntry>{fmtPrice(featuredWin.entry)} entry</RCEntry>
-                                </RCMeta>
-                            </FeaturedCard>
-                            {otherWins.map((s, i) => {
-                                const tpNum = s.resultText?.includes('TP3') ? 3 : s.resultText?.includes('TP2') ? 2 : 1;
-                                return (
-                                    <ResultCard key={s.id} $delay={`${i * 0.6}s`} onClick={() => navigate(`/signal/${s.id}`)}>
-                                        <RCTop>
-                                            <RCSymbol>{s.symbol}</RCSymbol>
-                                            <RCDir $long={s.long}>{s.long ? 'LONG' : 'SHORT'}</RCDir>
-                                        </RCTop>
-                                        <RCPct>+{s.movePct.toFixed(1)}%</RCPct>
-                                        <RCBadge $tp={tpNum}><CheckCircle size={10}/> {s.resultText}</RCBadge>
-                                        <RCMeta>
-                                            <RCTime>{timeAgo(s.resultAt || s.createdAt)}</RCTime>
-                                        </RCMeta>
-                                    </ResultCard>
-                                );
+                            {featuredWin && (
+                                <FeaturedCard onClick={() => navigate(`/signal/${featuredWin.id}`)}>
+                                    <RCTop>
+                                        <RCSymbol $featured>{featuredWin.symbol}</RCSymbol>
+                                        <RCDir $long={featuredWin.long}>{featuredWin.long ? 'LONG' : 'SHORT'}</RCDir>
+                                    </RCTop>
+                                    <RCPct $featured>+{featuredWin.movePct.toFixed(1)}%</RCPct>
+                                    <RCBadge $tp={featuredWin.resultText?.includes('TP3') ? 3 : featuredWin.resultText?.includes('TP2') ? 2 : 1}>
+                                        <CheckCircle size={10}/> {featuredWin.resultText}
+                                    </RCBadge>
+                                    <RCMeta>
+                                        <RCTime>{timeAgo(featuredWin.resultAt || featuredWin.createdAt)}</RCTime>
+                                        <RCEntry>{fmtPrice(featuredWin.entry)} entry</RCEntry>
+                                    </RCMeta>
+                                </FeaturedCard>
+                            )}
+                            {recentResults.filter(s => s.id !== featuredWin?.id).map((s, i) => {
+                                if (s.isWin) {
+                                    const tpNum = s.resultText?.includes('TP3') ? 3 : s.resultText?.includes('TP2') ? 2 : 1;
+                                    return (
+                                        <ResultCard key={s.id} $delay={`${i * 0.4}s`} onClick={() => navigate(`/signal/${s.id}`)}>
+                                            <RCTop>
+                                                <RCSymbol>{s.symbol}</RCSymbol>
+                                                <RCDir $long={s.long}>{s.long ? 'LONG' : 'SHORT'}</RCDir>
+                                            </RCTop>
+                                            <RCPct>+{s.movePct.toFixed(1)}%</RCPct>
+                                            <RCBadge $tp={tpNum}><CheckCircle size={10}/> {s.resultText}</RCBadge>
+                                            <RCMeta><RCTime>{timeAgo(s.resultAt || s.createdAt)}</RCTime></RCMeta>
+                                        </ResultCard>
+                                    );
+                                } else {
+                                    return (
+                                        <LossCard key={s.id} onClick={() => navigate(`/signal/${s.id}`)}>
+                                            <RCTop>
+                                                <RCSymbol>{s.symbol}</RCSymbol>
+                                                <RCDir $long={s.long}>{s.long ? 'LONG' : 'SHORT'}</RCDir>
+                                            </RCTop>
+                                            <LCPct>{s.movePct.toFixed(1)}%</LCPct>
+                                            <LCBadge><XCircle size={10}/> {s.resultText}</LCBadge>
+                                            <RCMeta><RCTime>{timeAgo(s.resultAt || s.createdAt)}</RCTime></RCMeta>
+                                        </LossCard>
+                                    );
+                                }
                             })}
                         </ResultsRow>
                     ) : (
