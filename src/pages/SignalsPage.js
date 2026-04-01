@@ -420,55 +420,103 @@ const Empty = styled.div`text-align:center;padding:3rem;color:#475569;font-size:
 const ArchiveHeader = styled.div`display:flex;align-items:center;gap:.5rem;padding:.75rem 1rem;margin-bottom:.5rem;background:rgba(100,116,139,.08);border:1px solid rgba(100,116,139,.15);border-radius:8px;color:#94a3b8;font-size:.85rem;font-weight:500;`;
 const DateSeparator = styled.div`display:flex;align-items:center;gap:.5rem;padding:.5rem 0;margin:.25rem 0;color:#64748b;font-size:.8rem;font-weight:600;letter-spacing:.03em;text-transform:uppercase;&::after{content:'';flex:1;height:1px;background:rgba(100,116,139,.2);}`;
 
-// ─── Recent Results ──────────────────────────────────────
-const resultGlow = keyframes`0%,100%{box-shadow:0 0 12px rgba(16,185,129,.06)}50%{box-shadow:0 0 24px rgba(16,185,129,.18)}`;
-const ResultsSection = styled.div`
-    margin-bottom:1.25rem;
+// ─── Verified Results ─────────────────────────────────────
+const featuredGlow = keyframes`
+    0%,100%{box-shadow:0 0 15px rgba(16,185,129,.08),0 0 40px rgba(16,185,129,.04)}
+    50%{box-shadow:0 0 25px rgba(16,185,129,.2),0 0 60px rgba(16,185,129,.08)}
 `;
+const resultGlow = keyframes`0%,100%{box-shadow:0 0 8px rgba(16,185,129,.04)}50%{box-shadow:0 0 18px rgba(16,185,129,.12)}`;
+const countUp = keyframes`from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}`;
+
+const ResultsSection = styled.div`margin-bottom:1.5rem;`;
+
 const ResultsHeader = styled.div`
-    display:flex;align-items:center;justify-content:space-between;margin-bottom:.65rem;
+    display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:.75rem;
 `;
+const ResultsTitleGroup = styled.div`display:flex;flex-direction:column;gap:.15rem;`;
 const ResultsTitle = styled.h3`
-    font-size:1rem;font-weight:700;color:#e2e8f0;margin:0;display:flex;align-items:center;gap:.4rem;
+    font-size:1.1rem;font-weight:800;color:#e2e8f0;margin:0;display:flex;align-items:center;gap:.45rem;
+    letter-spacing:-.01em;
 `;
 const ResultsSub = styled.span`font-size:.72rem;color:#64748b;font-weight:400;letter-spacing:.02em;`;
-const ResultsStrip = styled.div`
-    display:flex;gap:.5rem;overflow-x:auto;padding-bottom:.25rem;
-    scrollbar-width:thin;scrollbar-color:rgba(100,116,139,.2) transparent;
-    &::-webkit-scrollbar{height:4px;}
-    &::-webkit-scrollbar-thumb{background:rgba(100,116,139,.2);border-radius:4px;}
+
+const TrustBar = styled.div`
+    display:flex;gap:1rem;align-items:center;
+    @media(max-width:640px){display:none;}
 `;
+const TrustStat = styled.div`
+    display:flex;flex-direction:column;align-items:center;gap:1px;
+    animation:${countUp} .5s ease-out both;
+    animation-delay:${p => p.$delay || '0s'};
+`;
+const TrustVal = styled.span`font-size:.95rem;font-weight:800;color:${p => p.$c || '#e2e8f0'};line-height:1;`;
+const TrustLbl = styled.span`font-size:.58rem;color:#64748b;font-weight:500;text-transform:uppercase;letter-spacing:.04em;`;
+
+const ResultsRow = styled.div`
+    display:flex;gap:.6rem;align-items:stretch;overflow-x:auto;padding-bottom:.3rem;
+    scrollbar-width:thin;scrollbar-color:rgba(100,116,139,.15) transparent;
+    &::-webkit-scrollbar{height:3px;}
+    &::-webkit-scrollbar-thumb{background:rgba(100,116,139,.15);border-radius:4px;}
+`;
+
+const FeaturedCard = styled.div`
+    flex:0 0 auto;min-width:200px;position:relative;
+    background:linear-gradient(145deg,rgba(16,185,129,.08) 0%,rgba(6,40,25,.7) 50%,rgba(16,185,129,.03) 100%);
+    border:1.5px solid rgba(16,185,129,.3);border-radius:12px;
+    padding:.85rem 1rem;cursor:pointer;
+    transition:all .25s ease;
+    animation:${featuredGlow} 3s ease-in-out infinite;
+    &:hover{border-color:rgba(16,185,129,.5);transform:translateY(-3px);box-shadow:0 8px 30px rgba(16,185,129,.15);}
+    &::before{
+        content:'TOP TRADE';position:absolute;top:-.45rem;left:.75rem;
+        font-size:.52rem;font-weight:800;letter-spacing:.08em;
+        background:linear-gradient(135deg,#10b981,#059669);color:#fff;
+        padding:2px 8px;border-radius:4px;
+    }
+`;
+
 const ResultCard = styled.div`
-    flex:0 0 auto;min-width:175px;
-    background:linear-gradient(135deg,rgba(16,185,129,.04) 0%,rgba(6,30,22,.6) 100%);
-    border:1px solid rgba(16,185,129,.18);border-radius:10px;
-    padding:.7rem .85rem;cursor:pointer;
+    flex:0 0 auto;min-width:155px;
+    background:linear-gradient(135deg,rgba(16,185,129,.03) 0%,rgba(6,30,22,.5) 100%);
+    border:1px solid rgba(16,185,129,.15);border-radius:10px;
+    padding:.65rem .8rem;cursor:pointer;
     transition:all .2s ease;
     animation:${resultGlow} 4s ease-in-out infinite;
     animation-delay:${p => p.$delay || '0s'};
-    &:hover{border-color:rgba(16,185,129,.4);transform:translateY(-2px);box-shadow:0 6px 20px rgba(16,185,129,.12);}
+    &:hover{border-color:rgba(16,185,129,.35);transform:translateY(-2px);box-shadow:0 6px 20px rgba(16,185,129,.1);}
 `;
-const RCTop = styled.div`display:flex;align-items:center;justify-content:space-between;margin-bottom:.35rem;`;
-const RCSymbol = styled.span`font-size:.9rem;font-weight:700;color:#e2e8f0;`;
+
+const RCTop = styled.div`display:flex;align-items:center;justify-content:space-between;margin-bottom:.3rem;`;
+const RCSymbol = styled.span`font-size:${p => p.$featured ? '1.05rem' : '.88rem'};font-weight:700;color:#e2e8f0;`;
 const RCDir = styled.span`
-    font-size:.58rem;font-weight:700;letter-spacing:.04em;padding:2px 5px;border-radius:3px;
+    font-size:.55rem;font-weight:700;letter-spacing:.04em;padding:2px 5px;border-radius:3px;
     background:${p => p.$long ? 'rgba(16,185,129,.12)' : 'rgba(239,68,68,.12)'};
     color:${p => p.$long ? '#10b981' : '#ef4444'};
 `;
 const RCPct = styled.div`
-    font-size:1.35rem;font-weight:800;color:#10b981;line-height:1.1;
-    text-shadow:0 0 20px rgba(16,185,129,.3);
+    font-size:${p => p.$featured ? '1.7rem' : '1.25rem'};font-weight:900;color:#10b981;line-height:1.1;
+    text-shadow:0 0 ${p => p.$featured ? '30px' : '16px'} rgba(16,185,129,${p => p.$featured ? '.4' : '.25'});
+    letter-spacing:-.02em;
 `;
 const RCBadge = styled.span`
     display:inline-flex;align-items:center;gap:3px;
-    font-size:.65rem;font-weight:600;padding:2px 6px;border-radius:4px;margin-top:.3rem;
-    background:${p => p.$tp === 3 ? 'rgba(16,185,129,.15)' : p.$tp === 2 ? 'rgba(16,185,129,.1)' : 'rgba(16,185,129,.06)'};
-    color:#10b981;border:1px solid rgba(16,185,129,.2);
+    font-size:.6rem;font-weight:600;padding:2px 6px;border-radius:4px;margin-top:.3rem;
+    background:${p => p.$tp === 3 ? 'rgba(16,185,129,.18)' : p.$tp === 2 ? 'rgba(16,185,129,.12)' : 'rgba(16,185,129,.06)'};
+    color:#10b981;border:1px solid rgba(16,185,129,${p => p.$tp === 3 ? '.3' : '.18'});
 `;
-const RCTime = styled.span`font-size:.62rem;color:#475569;margin-top:.2rem;display:block;`;
+const RCMeta = styled.div`display:flex;align-items:center;justify-content:space-between;margin-top:.25rem;`;
+const RCTime = styled.span`font-size:.58rem;color:#475569;`;
+const RCEntry = styled.span`font-size:.55rem;color:#334155;`;
+
 const ResultsEmpty = styled.div`
-    padding:.75rem 1rem;color:#475569;font-size:.8rem;font-style:italic;
-    background:rgba(100,116,139,.04);border:1px dashed rgba(100,116,139,.15);border-radius:8px;
+    padding:1rem 1.25rem;color:#64748b;font-size:.82rem;
+    background:rgba(100,116,139,.04);border:1px dashed rgba(100,116,139,.15);border-radius:10px;
+    text-align:center;
+`;
+const VerifiedDot = styled.span`
+    display:inline-block;width:6px;height:6px;border-radius:50%;
+    background:#10b981;margin-right:2px;
+    box-shadow:0 0 6px rgba(16,185,129,.5);
 `;
 
 // ═══════════════════════════════════════════════════════════
@@ -714,11 +762,16 @@ const SignalsPage = () => {
     const counts = { all: assetFiltered.length, new: assetFiltered.filter(s=>s.status==='new').length, active: assetFiltered.filter(s=>s.status!=='closed').length, closed: recentClosed.length, archive: archivedClosed.length };
     const winRate = (() => { const c = signals.filter(s=>s.status==='closed'&&s.isWin!==undefined); if (!c.length) return null; return Math.round(c.filter(s=>s.isWin).length / c.length * 100); })();
 
-    // Recent winning results (TP1+ hits, sorted by most recent, max 5)
+    // Verified winning results — sorted by highest gain, featured top trade
     const recentWins = allClosed
         .filter(s => s.isWin && s.resultText && s.movePct > 0)
-        .sort((a, b) => new Date(b.resultAt || b.createdAt) - new Date(a.resultAt || a.createdAt))
-        .slice(0, 5);
+        .sort((a, b) => b.movePct - a.movePct)
+        .slice(0, 6);
+    const featuredWin = recentWins[0] || null;
+    const otherWins = recentWins.slice(1);
+    const totalTracked = signals.length;
+    const totalClosed = allClosed.length;
+    const totalWins = allClosed.filter(s => s.isWin).length;
 
     return (
         <Page>
@@ -759,29 +812,64 @@ const SignalsPage = () => {
 
                 <ResultsSection>
                     <ResultsHeader>
-                        <ResultsTitle>
-                            <TrendingUp size={16} color="#10b981"/> Recent Results
-                            <ResultsSub>Real trades. Tracked publicly.</ResultsSub>
-                        </ResultsTitle>
-                        {winRate !== null && <ResultsSub style={{color:'#10b981',fontWeight:600}}>Win Rate: {winRate}%</ResultsSub>}
+                        <ResultsTitleGroup>
+                            <ResultsTitle>
+                                <VerifiedDot/> Verified Results
+                            </ResultsTitle>
+                            <ResultsSub>Every trade tracked. No hiding. No edits.</ResultsSub>
+                        </ResultsTitleGroup>
+                        <TrustBar>
+                            <TrustStat $delay="0s">
+                                <TrustVal $c="#00adef">{totalTracked}</TrustVal>
+                                <TrustLbl>Tracked</TrustLbl>
+                            </TrustStat>
+                            <TrustStat $delay=".1s">
+                                <TrustVal $c="#10b981">{totalWins}</TrustVal>
+                                <TrustLbl>Winners</TrustLbl>
+                            </TrustStat>
+                            <TrustStat $delay=".2s">
+                                <TrustVal $c={winRate >= 50 ? '#10b981' : '#f59e0b'}>{winRate !== null ? `${winRate}%` : '--'}</TrustVal>
+                                <TrustLbl>Win Rate</TrustLbl>
+                            </TrustStat>
+                            <TrustStat $delay=".3s">
+                                <TrustVal $c="#10b981"><VerifiedDot/>Live</TrustVal>
+                                <TrustLbl>Real-Time</TrustLbl>
+                            </TrustStat>
+                        </TrustBar>
                     </ResultsHeader>
-                    {recentWins.length > 0 ? (
-                        <ResultsStrip>
-                            {recentWins.map((s, i) => {
+                    {featuredWin ? (
+                        <ResultsRow>
+                            <FeaturedCard onClick={() => navigate(`/signal/${featuredWin.id}`)}>
+                                <RCTop>
+                                    <RCSymbol $featured>{featuredWin.symbol}</RCSymbol>
+                                    <RCDir $long={featuredWin.long}>{featuredWin.long ? 'LONG' : 'SHORT'}</RCDir>
+                                </RCTop>
+                                <RCPct $featured>+{featuredWin.movePct.toFixed(1)}%</RCPct>
+                                <RCBadge $tp={featuredWin.resultText?.includes('TP3') ? 3 : featuredWin.resultText?.includes('TP2') ? 2 : 1}>
+                                    <CheckCircle size={10}/> {featuredWin.resultText}
+                                </RCBadge>
+                                <RCMeta>
+                                    <RCTime>{timeAgo(featuredWin.resultAt || featuredWin.createdAt)}</RCTime>
+                                    <RCEntry>{fmtPrice(featuredWin.entry)} entry</RCEntry>
+                                </RCMeta>
+                            </FeaturedCard>
+                            {otherWins.map((s, i) => {
                                 const tpNum = s.resultText?.includes('TP3') ? 3 : s.resultText?.includes('TP2') ? 2 : 1;
                                 return (
-                                    <ResultCard key={s.id} $delay={`${i * 0.8}s`} onClick={() => navigate(`/signal/${s.id}`)}>
+                                    <ResultCard key={s.id} $delay={`${i * 0.6}s`} onClick={() => navigate(`/signal/${s.id}`)}>
                                         <RCTop>
                                             <RCSymbol>{s.symbol}</RCSymbol>
                                             <RCDir $long={s.long}>{s.long ? 'LONG' : 'SHORT'}</RCDir>
                                         </RCTop>
                                         <RCPct>+{s.movePct.toFixed(1)}%</RCPct>
                                         <RCBadge $tp={tpNum}><CheckCircle size={10}/> {s.resultText}</RCBadge>
-                                        <RCTime>{timeAgo(s.resultAt || s.createdAt)}</RCTime>
+                                        <RCMeta>
+                                            <RCTime>{timeAgo(s.resultAt || s.createdAt)}</RCTime>
+                                        </RCMeta>
                                     </ResultCard>
                                 );
                             })}
-                        </ResultsStrip>
+                        </ResultsRow>
                     ) : (
                         <ResultsEmpty>No completed trades yet — results will appear here as signals hit their targets.</ResultsEmpty>
                     )}
