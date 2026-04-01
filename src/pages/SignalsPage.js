@@ -551,6 +551,51 @@ const VerifiedDot = styled.span`
     background:#10b981;margin-right:2px;box-shadow:0 0 6px rgba(16,185,129,.5);
 `;
 
+// ─── Hero / Above the Fold ───────────────────────────────
+const heroFade = keyframes`from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}`;
+const HeroSection = styled.div`
+    text-align:center;margin-bottom:1.75rem;animation:${heroFade} .6s ease-out;
+`;
+const HeroHeadline = styled.h1`
+    font-size:clamp(1.4rem,3.5vw,2rem);font-weight:900;color:#e2e8f0;margin:0 0 .4rem;
+    letter-spacing:-.02em;line-height:1.2;
+`;
+const HeroAccent = styled.span`
+    background:linear-gradient(135deg,#10b981,#00adef);-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+`;
+const HeroSub = styled.p`
+    font-size:.9rem;color:#94a3b8;margin:0 auto .9rem;max-width:520px;line-height:1.5;
+`;
+const HeroCTA = styled.button`
+    padding:.65rem 1.6rem;border:none;border-radius:10px;font-size:.95rem;font-weight:700;
+    background:linear-gradient(135deg,#10b981,#059669);color:#fff;cursor:pointer;
+    transition:all .25s;display:inline-flex;align-items:center;gap:.5rem;
+    &:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(16,185,129,.3);}
+`;
+const TrustLine = styled.div`
+    display:flex;justify-content:center;gap:1.25rem;flex-wrap:wrap;margin-top:.7rem;
+`;
+const TrustItem = styled.span`
+    display:flex;align-items:center;gap:.3rem;font-size:.72rem;color:#64748b;
+    svg{width:12px;height:12px;color:#10b981;}
+`;
+
+// ─── How It Works ────────────────────────────────────────
+const HIWRow = styled.div`
+    display:flex;justify-content:center;gap:1rem;flex-wrap:wrap;margin-bottom:1.5rem;
+`;
+const HIWStep = styled.div`
+    display:flex;align-items:center;gap:.5rem;padding:.45rem .8rem;
+    background:rgba(100,116,139,.04);border:1px solid rgba(100,116,139,.08);border-radius:8px;
+    animation:${countUp} .5s ease-out both;animation-delay:${p => p.$delay || '0s'};
+`;
+const HIWNum = styled.span`
+    width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-size:.6rem;font-weight:800;color:#10b981;
+    background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.2);flex-shrink:0;
+`;
+const HIWText = styled.span`font-size:.72rem;color:#94a3b8;font-weight:500;`;
+
 // ═══════════════════════════════════════════════════════════
 // BUILD SIGNAL
 // ═══════════════════════════════════════════════════════════
@@ -816,6 +861,18 @@ const SignalsPage = () => {
         <Page>
             <SEO title={`${assetTab==='stocks'?'Stock':assetTab==='crypto'?'Crypto':'Live'} Signal Feed — Nexus Signal`} description="Real-time AI-generated trade setups for stocks and crypto." />
             <Container>
+                {/* ─── Hero: Above the fold ─── */}
+                <HeroSection>
+                    <HeroHeadline>AI tells you what to trade — <HeroAccent>before the market moves.</HeroAccent></HeroHeadline>
+                    <HeroSub>Real-time trade setups with entry, stop loss, and targets. Every trade tracked publicly.</HeroSub>
+                    {!isPremium && <HeroCTA onClick={() => navigate('/pricing')}><Zap size={16}/> Start Free</HeroCTA>}
+                    <TrustLine>
+                        <TrustItem><CheckCircle/> Tracked live</TrustItem>
+                        <TrustItem><Shield/> No edits</TrustItem>
+                        <TrustItem><Target/> No cherry-picking</TrustItem>
+                    </TrustLine>
+                </HeroSection>
+
                 <Header>
                     <HeaderRow>
                         <TitleGroup>
@@ -944,6 +1001,13 @@ const SignalsPage = () => {
                         </ResultsCTA>
                     )}
                 </ResultsSection>
+
+                {/* ─── How It Works ─── */}
+                <HIWRow>
+                    <HIWStep $delay="0s"><HIWNum>1</HIWNum><HIWText>AI scans the market for setups</HIWText></HIWStep>
+                    <HIWStep $delay=".1s"><HIWNum>2</HIWNum><HIWText>Generates trade with entry, SL & targets</HIWText></HIWStep>
+                    <HIWStep $delay=".2s"><HIWNum>3</HIWNum><HIWText>Tracks performance live — no edits, ever</HIWText></HIWStep>
+                </HIWRow>
 
                 <Grid>
                     <Feed>
