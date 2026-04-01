@@ -429,31 +429,27 @@ const resultGlow = keyframes`0%,100%{box-shadow:0 0 8px rgba(16,185,129,.04)}50%
 const countUp = keyframes`from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}`;
 
 const ResultsSection = styled.div`margin-bottom:1.5rem;overflow:visible;`;
-
-const ResultsHeader = styled.div`
-    display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:.75rem;
-`;
-const ResultsTitleGroup = styled.div`display:flex;flex-direction:column;gap:.15rem;`;
-const ResultsTitle = styled.h3`
-    font-size:1.1rem;font-weight:800;color:#e2e8f0;margin:0;display:flex;align-items:center;gap:.45rem;
-    letter-spacing:-.01em;
-`;
+const ResultsHeader = styled.div`display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:.5rem;`;
+const ResultsTitleGroup = styled.div`display:flex;flex-direction:column;gap:.1rem;`;
+const ResultsTitle = styled.h3`font-size:1.1rem;font-weight:800;color:#e2e8f0;margin:0;display:flex;align-items:center;gap:.45rem;letter-spacing:-.01em;`;
 const ResultsSub = styled.span`font-size:.72rem;color:#64748b;font-weight:400;letter-spacing:.02em;`;
+const ContextLine = styled.div`font-size:.68rem;color:#475569;font-style:italic;margin-bottom:.65rem;`;
 
-const TrustBar = styled.div`
-    display:flex;gap:1rem;align-items:center;
-    @media(max-width:640px){display:none;}
+// Performance summary bar
+const PerfBar = styled.div`
+    display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.75rem;padding:.55rem .75rem;
+    background:rgba(100,116,139,.04);border:1px solid rgba(100,116,139,.1);border-radius:8px;
 `;
-const TrustStat = styled.div`
-    display:flex;flex-direction:column;align-items:center;gap:1px;
-    animation:${countUp} .5s ease-out both;
-    animation-delay:${p => p.$delay || '0s'};
+const PerfStat = styled.div`
+    display:flex;align-items:center;gap:.3rem;font-size:.72rem;color:#94a3b8;
+    animation:${countUp} .5s ease-out both;animation-delay:${p => p.$delay || '0s'};
 `;
-const TrustVal = styled.span`font-size:.95rem;font-weight:800;color:${p => p.$c || '#e2e8f0'};line-height:1;`;
-const TrustLbl = styled.span`font-size:.58rem;color:#64748b;font-weight:500;text-transform:uppercase;letter-spacing:.04em;`;
+const PerfVal = styled.span`font-weight:800;color:${p => p.$c || '#e2e8f0'};`;
+const PerfDivider = styled.span`color:rgba(100,116,139,.3);font-size:.6rem;`;
 
-const ResultsRow = styled.div`
-    display:flex;gap:.6rem;align-items:stretch;overflow-x:auto;overflow-y:visible;
+// Layout: featured + grouped columns
+const ResultsLayout = styled.div`
+    display:flex;gap:.75rem;overflow-x:auto;overflow-y:visible;
     padding-top:.5rem;padding-bottom:.3rem;
     scrollbar-width:thin;scrollbar-color:rgba(100,116,139,.15) transparent;
     &::-webkit-scrollbar{height:3px;}
@@ -461,11 +457,10 @@ const ResultsRow = styled.div`
 `;
 
 const FeaturedCard = styled.div`
-    flex:0 0 auto;min-width:200px;position:relative;
+    flex:0 0 auto;min-width:185px;position:relative;
     background:linear-gradient(145deg,rgba(16,185,129,.08) 0%,rgba(6,40,25,.7) 50%,rgba(16,185,129,.03) 100%);
     border:1.5px solid rgba(16,185,129,.3);border-radius:12px;
-    padding:.85rem 1rem;cursor:pointer;
-    transition:all .25s ease;
+    padding:.85rem 1rem;cursor:pointer;transition:all .25s ease;
     animation:${featuredGlow} 3s ease-in-out infinite;
     &:hover{border-color:rgba(16,185,129,.5);transform:translateY(-3px);box-shadow:0 8px 30px rgba(16,185,129,.15);}
     &::before{
@@ -476,15 +471,39 @@ const FeaturedCard = styled.div`
     }
 `;
 
-const ResultCard = styled.div`
-    flex:0 0 auto;min-width:155px;
-    background:linear-gradient(135deg,rgba(16,185,129,.03) 0%,rgba(6,30,22,.5) 100%);
-    border:1px solid rgba(16,185,129,.15);border-radius:10px;
-    padding:.65rem .8rem;cursor:pointer;
-    transition:all .2s ease;
-    animation:${resultGlow} 4s ease-in-out infinite;
-    animation-delay:${p => p.$delay || '0s'};
-    &:hover{border-color:rgba(16,185,129,.35);transform:translateY(-2px);box-shadow:0 6px 20px rgba(16,185,129,.1);}
+// Grouped column for wins or losses
+const GroupCol = styled.div`
+    flex:0 0 auto;display:flex;flex-direction:column;gap:.35rem;
+`;
+const GroupLabel = styled.div`
+    font-size:.62rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+    color:${p => p.$win ? '#10b981' : '#64748b'};
+    display:flex;align-items:center;gap:.3rem;padding-left:.1rem;
+`;
+const GroupCard = styled.div`
+    min-width:140px;
+    background:${p => p.$win
+        ? 'linear-gradient(135deg,rgba(16,185,129,.03) 0%,rgba(6,30,22,.5) 100%)'
+        : 'linear-gradient(135deg,rgba(100,116,139,.03) 0%,rgba(15,15,20,.5) 100%)'};
+    border:1px solid ${p => p.$win ? 'rgba(16,185,129,.15)' : 'rgba(100,116,139,.12)'};
+    border-radius:8px;padding:.5rem .65rem;cursor:pointer;transition:all .2s ease;
+    ${p => p.$win ? `animation:${resultGlow} 4s ease-in-out infinite;animation-delay:${p.$delay || '0s'};` : ''}
+    &:hover{transform:translateY(-2px);border-color:${p => p.$win ? 'rgba(16,185,129,.35)' : 'rgba(100,116,139,.25)'};}
+`;
+const GCRow = styled.div`display:flex;align-items:center;justify-content:space-between;`;
+const GCSymbol = styled.span`font-size:.78rem;font-weight:700;color:#e2e8f0;`;
+const GCDir = styled.span`
+    font-size:.5rem;font-weight:700;letter-spacing:.04em;padding:1px 4px;border-radius:3px;
+    background:${p => p.$long ? 'rgba(16,185,129,.1)' : 'rgba(239,68,68,.1)'};
+    color:${p => p.$long ? '#10b981' : '#ef4444'};
+`;
+const GCPct = styled.span`
+    font-size:1rem;font-weight:900;letter-spacing:-.02em;
+    color:${p => p.$win ? '#10b981' : '#64748b'};
+    ${p => p.$win ? 'text-shadow:0 0 12px rgba(16,185,129,.2);' : ''}
+`;
+const GCBadge = styled.span`
+    font-size:.52rem;font-weight:600;color:${p => p.$win ? '#10b981' : '#64748b'};opacity:.8;
 `;
 
 const RCTop = styled.div`display:flex;align-items:center;justify-content:space-between;margin-bottom:.3rem;`;
@@ -505,36 +524,16 @@ const RCBadge = styled.span`
     background:${p => p.$tp === 3 ? 'rgba(16,185,129,.18)' : p.$tp === 2 ? 'rgba(16,185,129,.12)' : 'rgba(16,185,129,.06)'};
     color:#10b981;border:1px solid rgba(16,185,129,${p => p.$tp === 3 ? '.3' : '.18'});
 `;
-const LossCard = styled.div`
-    flex:0 0 auto;min-width:155px;
-    background:linear-gradient(135deg,rgba(239,68,68,.03) 0%,rgba(30,6,6,.5) 100%);
-    border:1px solid rgba(239,68,68,.15);border-radius:10px;
-    padding:.65rem .8rem;cursor:pointer;
-    transition:all .2s ease;
-    &:hover{border-color:rgba(239,68,68,.35);transform:translateY(-2px);box-shadow:0 6px 20px rgba(239,68,68,.1);}
-`;
-const LCPct = styled.div`
-    font-size:1.25rem;font-weight:900;color:#ef4444;line-height:1.1;
-    text-shadow:0 0 16px rgba(239,68,68,.25);letter-spacing:-.02em;
-`;
-const LCBadge = styled.span`
-    display:inline-flex;align-items:center;gap:3px;
-    font-size:.6rem;font-weight:600;padding:2px 6px;border-radius:4px;margin-top:.3rem;
-    background:rgba(239,68,68,.08);color:#ef4444;border:1px solid rgba(239,68,68,.18);
-`;
 const RCMeta = styled.div`display:flex;align-items:center;justify-content:space-between;margin-top:.25rem;`;
 const RCTime = styled.span`font-size:.58rem;color:#475569;`;
 const RCEntry = styled.span`font-size:.55rem;color:#334155;`;
-
 const ResultsEmpty = styled.div`
     padding:1rem 1.25rem;color:#64748b;font-size:.82rem;
-    background:rgba(100,116,139,.04);border:1px dashed rgba(100,116,139,.15);border-radius:10px;
-    text-align:center;
+    background:rgba(100,116,139,.04);border:1px dashed rgba(100,116,139,.15);border-radius:10px;text-align:center;
 `;
 const VerifiedDot = styled.span`
     display:inline-block;width:6px;height:6px;border-radius:50%;
-    background:#10b981;margin-right:2px;
-    box-shadow:0 0 6px rgba(16,185,129,.5);
+    background:#10b981;margin-right:2px;box-shadow:0 0 6px rgba(16,185,129,.5);
 `;
 
 // ═══════════════════════════════════════════════════════════
@@ -780,18 +779,18 @@ const SignalsPage = () => {
     const counts = { all: assetFiltered.length, new: assetFiltered.filter(s=>s.status==='new').length, active: assetFiltered.filter(s=>s.status!=='closed').length, closed: recentClosed.length, archive: archivedClosed.length };
     const winRate = (() => { const c = signals.filter(s=>s.status==='closed'&&s.isWin!==undefined); if (!c.length) return null; return Math.round(c.filter(s=>s.isWin).length / c.length * 100); })();
 
-    // Verified results — featured best win + all recent results (wins AND losses)
-    const recentResults = allClosed
-        .filter(s => s.resultText)
-        .sort((a, b) => new Date(b.resultAt || b.createdAt) - new Date(a.resultAt || a.createdAt))
-        .slice(0, 15);
-    const featuredWin = allClosed
-        .filter(s => s.isWin && s.movePct > 0)
-        .sort((a, b) => b.movePct - a.movePct)[0] || null;
+    // Verified results — grouped wins/losses, featured best win, performance stats
+    const closedWithResult = allClosed.filter(s => s.resultText);
+    const winList = closedWithResult.filter(s => s.isWin).sort((a, b) => b.movePct - a.movePct).slice(0, 8);
+    const lossList = closedWithResult.filter(s => !s.isWin).sort((a, b) => new Date(b.resultAt || b.createdAt) - new Date(a.resultAt || a.createdAt)).slice(0, 5);
+    const featuredWin = winList[0] || null;
+    const otherWins = winList.slice(1);
     const totalTracked = signals.length;
-    const totalClosed = allClosed.length;
-    const totalWins = allClosed.filter(s => s.isWin).length;
-    const totalLosses = allClosed.filter(s => !s.isWin && s.resultText).length;
+    const totalClosed = closedWithResult.length;
+    const totalWins = winList.length;
+    const totalLosses = closedWithResult.filter(s => !s.isWin).length;
+    const avgWin = winList.length ? (winList.reduce((s, w) => s + w.movePct, 0) / winList.length) : 0;
+    const avgLoss = lossList.length ? (lossList.reduce((s, l) => s + l.movePct, 0) / lossList.length) : 0;
 
     return (
         <Page>
@@ -833,36 +832,32 @@ const SignalsPage = () => {
                 <ResultsSection>
                     <ResultsHeader>
                         <ResultsTitleGroup>
-                            <ResultsTitle>
-                                <VerifiedDot/> Verified Results
-                            </ResultsTitle>
-                            <ResultsSub>Every trade tracked. No hiding. No edits.</ResultsSub>
+                            <ResultsTitle><VerifiedDot/> Verified Results</ResultsTitle>
+                            <ResultsSub>Wins and losses. Fully transparent. Every trade tracked.</ResultsSub>
                         </ResultsTitleGroup>
-                        <TrustBar>
-                            <TrustStat $delay="0s">
-                                <TrustVal $c="#00adef">{totalTracked}</TrustVal>
-                                <TrustLbl>Tracked</TrustLbl>
-                            </TrustStat>
-                            <TrustStat $delay=".1s">
-                                <TrustVal $c="#10b981">{totalWins}</TrustVal>
-                                <TrustLbl>Winners</TrustLbl>
-                            </TrustStat>
-                            <TrustStat $delay=".15s">
-                                <TrustVal $c="#ef4444">{totalLosses}</TrustVal>
-                                <TrustLbl>Losses</TrustLbl>
-                            </TrustStat>
-                            <TrustStat $delay=".2s">
-                                <TrustVal $c={winRate >= 50 ? '#10b981' : '#f59e0b'}>{winRate !== null ? `${winRate}%` : '--'}</TrustVal>
-                                <TrustLbl>Win Rate</TrustLbl>
-                            </TrustStat>
-                            <TrustStat $delay=".3s">
-                                <TrustVal $c="#10b981"><VerifiedDot/>Live</TrustVal>
-                                <TrustLbl>Real-Time</TrustLbl>
-                            </TrustStat>
-                        </TrustBar>
                     </ResultsHeader>
-                    {recentResults.length > 0 ? (
-                        <ResultsRow>
+
+                    {totalClosed > 0 && (
+                        <PerfBar>
+                            <PerfStat $delay="0s"><PerfVal $c="#00adef">{totalTracked}</PerfVal> tracked</PerfStat>
+                            <PerfDivider>|</PerfDivider>
+                            <PerfStat $delay=".05s"><PerfVal $c={winRate >= 50 ? '#10b981' : '#f59e0b'}>{winRate !== null ? `${winRate}%` : '--'}</PerfVal> win rate</PerfStat>
+                            <PerfDivider>|</PerfDivider>
+                            <PerfStat $delay=".1s">avg win <PerfVal $c="#10b981">+{avgWin.toFixed(1)}%</PerfVal></PerfStat>
+                            <PerfDivider>|</PerfDivider>
+                            <PerfStat $delay=".15s">avg loss <PerfVal $c="#64748b">{avgLoss.toFixed(1)}%</PerfVal></PerfStat>
+                            <PerfDivider>|</PerfDivider>
+                            <PerfStat $delay=".2s"><PerfVal $c="#10b981">{totalWins}</PerfVal> wins</PerfStat>
+                            <PerfDivider>|</PerfDivider>
+                            <PerfStat $delay=".25s"><PerfVal $c="#64748b">{totalLosses}</PerfVal> losses</PerfStat>
+                        </PerfBar>
+                    )}
+
+                    <ContextLine>Winning trades outweigh losses over time. This is a probability-based system — not every trade wins.</ContextLine>
+
+                    {closedWithResult.length > 0 ? (
+                        <ResultsLayout>
+                            {/* Featured best trade */}
                             {featuredWin && (
                                 <FeaturedCard onClick={() => navigate(`/signal/${featuredWin.id}`)}>
                                     <RCTop>
@@ -879,35 +874,45 @@ const SignalsPage = () => {
                                     </RCMeta>
                                 </FeaturedCard>
                             )}
-                            {recentResults.filter(s => s.id !== featuredWin?.id).map((s, i) => {
-                                if (s.isWin) {
-                                    const tpNum = s.resultText?.includes('TP3') ? 3 : s.resultText?.includes('TP2') ? 2 : 1;
-                                    return (
-                                        <ResultCard key={s.id} $delay={`${i * 0.4}s`} onClick={() => navigate(`/signal/${s.id}`)}>
-                                            <RCTop>
-                                                <RCSymbol>{s.symbol}</RCSymbol>
-                                                <RCDir $long={s.long}>{s.long ? 'LONG' : 'SHORT'}</RCDir>
-                                            </RCTop>
-                                            <RCPct>+{s.movePct.toFixed(1)}%</RCPct>
-                                            <RCBadge $tp={tpNum}><CheckCircle size={10}/> {s.resultText}</RCBadge>
-                                            <RCMeta><RCTime>{timeAgo(s.resultAt || s.createdAt)}</RCTime></RCMeta>
-                                        </ResultCard>
-                                    );
-                                } else {
-                                    return (
-                                        <LossCard key={s.id} onClick={() => navigate(`/signal/${s.id}`)}>
-                                            <RCTop>
-                                                <RCSymbol>{s.symbol}</RCSymbol>
-                                                <RCDir $long={s.long}>{s.long ? 'LONG' : 'SHORT'}</RCDir>
-                                            </RCTop>
-                                            <LCPct>{s.movePct.toFixed(1)}%</LCPct>
-                                            <LCBadge><XCircle size={10}/> {s.resultText}</LCBadge>
-                                            <RCMeta><RCTime>{timeAgo(s.resultAt || s.createdAt)}</RCTime></RCMeta>
-                                        </LossCard>
-                                    );
-                                }
-                            })}
-                        </ResultsRow>
+
+                            {/* Winners column */}
+                            {otherWins.length > 0 && (
+                                <GroupCol>
+                                    <GroupLabel $win><CheckCircle size={11}/> Winners</GroupLabel>
+                                    {otherWins.map((s, i) => (
+                                        <GroupCard key={s.id} $win $delay={`${i * 0.3}s`} onClick={() => navigate(`/signal/${s.id}`)}>
+                                            <GCRow>
+                                                <GCSymbol>{s.symbol}</GCSymbol>
+                                                <GCPct $win>+{s.movePct.toFixed(1)}%</GCPct>
+                                            </GCRow>
+                                            <GCRow>
+                                                <GCDir $long={s.long}>{s.long ? 'LONG' : 'SHORT'}</GCDir>
+                                                <GCBadge $win>{s.resultText}</GCBadge>
+                                            </GCRow>
+                                        </GroupCard>
+                                    ))}
+                                </GroupCol>
+                            )}
+
+                            {/* Losses column */}
+                            {lossList.length > 0 && (
+                                <GroupCol>
+                                    <GroupLabel><XCircle size={11}/> Losses</GroupLabel>
+                                    {lossList.map((s, i) => (
+                                        <GroupCard key={s.id} onClick={() => navigate(`/signal/${s.id}`)}>
+                                            <GCRow>
+                                                <GCSymbol>{s.symbol}</GCSymbol>
+                                                <GCPct>{s.movePct.toFixed(1)}%</GCPct>
+                                            </GCRow>
+                                            <GCRow>
+                                                <GCDir $long={s.long}>{s.long ? 'LONG' : 'SHORT'}</GCDir>
+                                                <GCBadge>{s.resultText}</GCBadge>
+                                            </GCRow>
+                                        </GroupCard>
+                                    ))}
+                                </GroupCol>
+                            )}
+                        </ResultsLayout>
                     ) : (
                         <ResultsEmpty>No completed trades yet — results will appear here as signals hit their targets.</ResultsEmpty>
                     )}
