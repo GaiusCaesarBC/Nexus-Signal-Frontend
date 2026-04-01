@@ -1168,6 +1168,12 @@ const PricingPage = () => {
         elite: { monthly: 125, yearly: 1200 }
     };
 
+    // Launch promo: 25% off for 30 days (expires May 1, 2026)
+    const LAUNCH_PROMO_END = new Date('2026-05-01T00:00:00Z');
+    const isLaunchPromo = new Date() < LAUNCH_PROMO_END;
+    const DISCOUNT = 0.25;
+    const daysLeft = isLaunchPromo ? Math.ceil((LAUNCH_PROMO_END - new Date()) / (1000 * 60 * 60 * 24)) : 0;
+
     const createRipple = (e, planId) => {
         const button = e.currentTarget;
         const rect = button.getBoundingClientRect();
@@ -1498,19 +1504,35 @@ const PricingPage = () => {
                             </PlanHeader>
 
                             <PriceContainer>
-                                <OriginalPrice $show={yearly && plan.price.monthly > 0}>
-                                    ${plan.price.monthly * 12}/year
+                                {isLaunchPromo && plan.price.monthly > 0 && (
+                                    <div style={{background:'linear-gradient(135deg,#10b981,#059669)',color:'#fff',padding:'3px 10px',borderRadius:'6px',fontSize:'.7rem',fontWeight:700,letterSpacing:'.03em',marginBottom:'.4rem',display:'inline-block'}}>
+                                        LAUNCH SALE — 25% OFF ({daysLeft}d left)
+                                    </div>
+                                )}
+                                <OriginalPrice $show={(yearly || isLaunchPromo) && plan.price.monthly > 0}>
+                                    {isLaunchPromo
+                                        ? `$${yearly ? Math.round(plan.price.yearly / 12) : plan.price.monthly}/mo`
+                                        : `$${plan.price.monthly * 12}/year`
+                                    }
                                 </OriginalPrice>
                                 <Price>
                                     <Currency>$</Currency>
                                     <Amount $gradient={plan.gradient}>
-                                        {yearly ? Math.round(plan.price.yearly / 12) : plan.price.monthly}
+                                        {(() => {
+                                            const base = yearly ? Math.round(plan.price.yearly / 12) : plan.price.monthly;
+                                            return isLaunchPromo && plan.price.monthly > 0
+                                                ? Math.round(base * (1 - DISCOUNT))
+                                                : base;
+                                        })()}
                                     </Amount>
                                     <Period>/mo</Period>
                                 </Price>
                                 {yearly && plan.price.monthly > 0 && (
                                     <Period style={{ marginTop: '0.5rem', fontSize: '0.85rem' }}>
-                                        Billed ${plan.price.yearly}/year
+                                        {isLaunchPromo
+                                            ? `Billed $${Math.round(plan.price.yearly * (1 - DISCOUNT))}/year`
+                                            : `Billed $${plan.price.yearly}/year`
+                                        }
                                     </Period>
                                 )}
                             </PriceContainer>
