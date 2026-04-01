@@ -428,7 +428,7 @@ const featuredGlow = keyframes`
 const resultGlow = keyframes`0%,100%{box-shadow:0 0 8px rgba(16,185,129,.04)}50%{box-shadow:0 0 18px rgba(16,185,129,.12)}`;
 const countUp = keyframes`from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}`;
 
-const ResultsSection = styled.div`margin-bottom:1.5rem;`;
+const ResultsSection = styled.div`margin-bottom:1.5rem;overflow:visible;`;
 
 const ResultsHeader = styled.div`
     display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:.75rem;
@@ -453,7 +453,8 @@ const TrustVal = styled.span`font-size:.95rem;font-weight:800;color:${p => p.$c 
 const TrustLbl = styled.span`font-size:.58rem;color:#64748b;font-weight:500;text-transform:uppercase;letter-spacing:.04em;`;
 
 const ResultsRow = styled.div`
-    display:flex;gap:.6rem;align-items:stretch;overflow-x:auto;padding-bottom:.3rem;
+    display:flex;gap:.6rem;align-items:stretch;overflow-x:auto;overflow-y:visible;
+    padding-top:.5rem;padding-bottom:.3rem;
     scrollbar-width:thin;scrollbar-color:rgba(100,116,139,.15) transparent;
     &::-webkit-scrollbar{height:3px;}
     &::-webkit-scrollbar-thumb{background:rgba(100,116,139,.15);border-radius:4px;}
