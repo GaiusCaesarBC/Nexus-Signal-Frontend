@@ -437,15 +437,30 @@ const ContextLine = styled.div`font-size:.68rem;color:#475569;font-style:italic;
 
 // Performance summary bar
 const PerfBar = styled.div`
-    display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.75rem;padding:.55rem .75rem;
+    display:flex;gap:.4rem;flex-wrap:wrap;align-items:center;margin-bottom:.6rem;padding:.5rem .7rem;
     background:rgba(100,116,139,.04);border:1px solid rgba(100,116,139,.1);border-radius:8px;
 `;
 const PerfStat = styled.div`
-    display:flex;align-items:center;gap:.3rem;font-size:.72rem;color:#94a3b8;
+    display:flex;align-items:center;gap:.25rem;font-size:.72rem;color:#94a3b8;
     animation:${countUp} .5s ease-out both;animation-delay:${p => p.$delay || '0s'};
 `;
 const PerfVal = styled.span`font-weight:800;color:${p => p.$c || '#e2e8f0'};`;
-const PerfDivider = styled.span`color:rgba(100,116,139,.3);font-size:.6rem;`;
+const PerfDivider = styled.span`color:rgba(100,116,139,.2);font-size:.5rem;`;
+const EdgeBadge = styled.span`
+    display:inline-flex;align-items:center;gap:.25rem;
+    padding:.2rem .55rem;border-radius:6px;font-size:.75rem;font-weight:800;
+    background:linear-gradient(135deg,rgba(16,185,129,.12),rgba(16,185,129,.06));
+    border:1px solid rgba(16,185,129,.25);color:#10b981;
+    text-shadow:0 0 10px rgba(16,185,129,.3);
+    animation:${countUp} .5s ease-out both;animation-delay:.3s;
+`;
+const ResultsCTA = styled.button`
+    display:flex;align-items:center;gap:.4rem;margin-top:.6rem;
+    padding:.5rem 1rem;border:1px solid rgba(0,173,237,.2);border-radius:8px;
+    background:rgba(0,173,237,.06);color:#00adef;font-size:.78rem;font-weight:600;
+    cursor:pointer;transition:all .2s;
+    &:hover{background:rgba(0,173,237,.12);border-color:rgba(0,173,237,.35);transform:translateY(-1px);}
+`;
 
 // Layout: featured + grouped columns
 const ResultsLayout = styled.div`
@@ -781,8 +796,8 @@ const SignalsPage = () => {
 
     // Verified results — grouped wins/losses, featured best win, performance stats
     const closedWithResult = allClosed.filter(s => s.resultText);
-    const winList = closedWithResult.filter(s => s.isWin).sort((a, b) => b.movePct - a.movePct).slice(0, 8);
-    const lossList = closedWithResult.filter(s => !s.isWin).sort((a, b) => new Date(b.resultAt || b.createdAt) - new Date(a.resultAt || a.createdAt)).slice(0, 5);
+    const winList = closedWithResult.filter(s => s.isWin).sort((a, b) => b.movePct - a.movePct).slice(0, 5);
+    const lossList = closedWithResult.filter(s => !s.isWin).sort((a, b) => new Date(b.resultAt || b.createdAt) - new Date(a.resultAt || a.createdAt)).slice(0, 4);
     const featuredWin = winList[0] || null;
     const otherWins = winList.slice(1);
     const totalTracked = signals.length;
@@ -793,6 +808,9 @@ const SignalsPage = () => {
     const allLosses = closedWithResult.filter(s => !s.isWin);
     const avgWin = allWins.length ? (allWins.reduce((s, w) => s + w.movePct, 0) / allWins.length) : 0;
     const avgLoss = allLosses.length ? (allLosses.reduce((s, l) => s + l.movePct, 0) / allLosses.length) : 0;
+    // Edge = (win rate * avg win) + (loss rate * avg loss) — expected value per trade
+    const wr = winRate !== null ? winRate / 100 : 0;
+    const edge = totalClosed > 0 ? (wr * avgWin + (1 - wr) * avgLoss) : 0;
 
     return (
         <Page>
@@ -841,17 +859,19 @@ const SignalsPage = () => {
 
                     {totalClosed > 0 && (
                         <PerfBar>
-                            <PerfStat $delay="0s"><PerfVal $c="#00adef">{totalTracked}</PerfVal> tracked</PerfStat>
+                            <PerfStat $delay="0s"><PerfVal $c={winRate >= 50 ? '#10b981' : '#f59e0b'}>{winRate !== null ? `${winRate}%` : '--'}</PerfVal> win rate</PerfStat>
                             <PerfDivider>|</PerfDivider>
-                            <PerfStat $delay=".05s"><PerfVal $c={winRate >= 50 ? '#10b981' : '#f59e0b'}>{winRate !== null ? `${winRate}%` : '--'}</PerfVal> win rate</PerfStat>
+                            <PerfStat $delay=".05s">avg win <PerfVal $c="#10b981">+{avgWin.toFixed(1)}%</PerfVal></PerfStat>
                             <PerfDivider>|</PerfDivider>
-                            <PerfStat $delay=".1s">avg win <PerfVal $c="#10b981">+{avgWin.toFixed(1)}%</PerfVal></PerfStat>
+                            <PerfStat $delay=".1s">avg loss <PerfVal $c="#64748b">{avgLoss.toFixed(1)}%</PerfVal></PerfStat>
                             <PerfDivider>|</PerfDivider>
-                            <PerfStat $delay=".15s">avg loss <PerfVal $c="#64748b">{avgLoss.toFixed(1)}%</PerfVal></PerfStat>
+                            <PerfStat $delay=".15s"><PerfVal $c="#10b981">{totalWins}</PerfVal>W <PerfVal $c="#64748b">{totalLosses}</PerfVal>L</PerfStat>
                             <PerfDivider>|</PerfDivider>
-                            <PerfStat $delay=".2s"><PerfVal $c="#10b981">{totalWins}</PerfVal> wins</PerfStat>
-                            <PerfDivider>|</PerfDivider>
-                            <PerfStat $delay=".25s"><PerfVal $c="#64748b">{totalLosses}</PerfVal> losses</PerfStat>
+                            <PerfStat $delay=".2s"><PerfVal $c="#00adef">{totalTracked}</PerfVal> tracked</PerfStat>
+                            {edge > 0 && <>
+                                <PerfDivider>|</PerfDivider>
+                                <EdgeBadge>Edge: +{edge.toFixed(1)}% per trade</EdgeBadge>
+                            </>}
                         </PerfBar>
                     )}
 
@@ -896,9 +916,9 @@ const SignalsPage = () => {
                                 </GroupCol>
                             )}
 
-                            {/* Losses column */}
+                            {/* Losses column — visible but de-emphasized */}
                             {lossList.length > 0 && (
-                                <GroupCol>
+                                <GroupCol style={{opacity:.7}}>
                                     <GroupLabel><XCircle size={11}/> Losses</GroupLabel>
                                     {lossList.map((s, i) => (
                                         <GroupCard key={s.id} onClick={() => navigate(`/signal/${s.id}`)}>
@@ -917,6 +937,11 @@ const SignalsPage = () => {
                         </ResultsLayout>
                     ) : (
                         <ResultsEmpty>No completed trades yet — results will appear here as signals hit their targets.</ResultsEmpty>
+                    )}
+                    {!isPremium && closedWithResult.length > 0 && (
+                        <ResultsCTA onClick={() => navigate('/pricing')}>
+                            <Zap size={14}/> Get live signals with entry, SL & TP levels <ArrowUpRight size={13}/>
+                        </ResultsCTA>
                     )}
                 </ResultsSection>
 
