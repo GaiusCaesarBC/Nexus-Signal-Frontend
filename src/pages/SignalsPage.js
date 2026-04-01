@@ -487,7 +487,7 @@ const GroupCard = styled.div`
         : 'linear-gradient(135deg,rgba(100,116,139,.03) 0%,rgba(15,15,20,.5) 100%)'};
     border:1px solid ${p => p.$win ? 'rgba(16,185,129,.15)' : 'rgba(100,116,139,.12)'};
     border-radius:8px;padding:.5rem .65rem;cursor:pointer;transition:all .2s ease;
-    ${p => p.$win ? `animation:${resultGlow} 4s ease-in-out infinite;animation-delay:${p.$delay || '0s'};` : ''}
+    ${p => p.$win ? css`animation:${resultGlow} 4s ease-in-out infinite;animation-delay:${p.$delay || '0s'};` : ''}
     &:hover{transform:translateY(-2px);border-color:${p => p.$win ? 'rgba(16,185,129,.35)' : 'rgba(100,116,139,.25)'};}
 `;
 const GCRow = styled.div`display:flex;align-items:center;justify-content:space-between;`;
