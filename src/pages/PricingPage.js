@@ -138,7 +138,7 @@ const PricingContainer = styled.div`
     padding-right: 1.5rem;
     padding-bottom: 6rem;
     position: relative;
-    overflow: hidden;
+    overflow: visible;
 `;
 
 const CosmicBackground = styled.div`
