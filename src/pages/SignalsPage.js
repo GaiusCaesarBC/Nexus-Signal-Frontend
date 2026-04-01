@@ -787,10 +787,12 @@ const SignalsPage = () => {
     const otherWins = winList.slice(1);
     const totalTracked = signals.length;
     const totalClosed = closedWithResult.length;
-    const totalWins = winList.length;
+    const totalWins = closedWithResult.filter(s => s.isWin).length;
     const totalLosses = closedWithResult.filter(s => !s.isWin).length;
-    const avgWin = winList.length ? (winList.reduce((s, w) => s + w.movePct, 0) / winList.length) : 0;
-    const avgLoss = lossList.length ? (lossList.reduce((s, l) => s + l.movePct, 0) / lossList.length) : 0;
+    const allWins = closedWithResult.filter(s => s.isWin);
+    const allLosses = closedWithResult.filter(s => !s.isWin);
+    const avgWin = allWins.length ? (allWins.reduce((s, w) => s + w.movePct, 0) / allWins.length) : 0;
+    const avgLoss = allLosses.length ? (allLosses.reduce((s, l) => s + l.movePct, 0) / allLosses.length) : 0;
 
     return (
         <Page>
