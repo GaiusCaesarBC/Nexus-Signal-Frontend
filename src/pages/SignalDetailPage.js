@@ -119,7 +119,12 @@ const ResultCard = styled.div`
 `;
 const ResultIcon = styled.div`font-size:2.5rem;margin-bottom:.5rem;`;
 const ResultTitle = styled.div`font-size:1.3rem;font-weight:800;color:${p=>p.$win?'#10b981':'#ef4444'};margin-bottom:.25rem;`;
-const ResultSub = styled.div`font-size:.9rem;color:#64748b;`;
+const ResultPct = styled.div`
+    font-size:2rem;font-weight:900;letter-spacing:-.02em;margin:.3rem 0;
+    color:${p=>p.$win?'#10b981':'#ef4444'};
+    text-shadow:0 0 24px ${p=>p.$win?'rgba(16,185,129,.35)':'rgba(239,68,68,.25)'};
+`;
+const ResultSub = styled.div`font-size:.82rem;color:#64748b;`;
 
 // ─── Analysis ─────────────────────────────────────────────
 const IndicatorGrid = styled.div`display:grid;grid-template-columns:repeat(2,1fr);gap:.6rem;@media(max-width:500px){grid-template-columns:1fr;}`;
@@ -444,8 +449,8 @@ const SignalDetailPage = () => {
                         <ResultCard $win={s.isWin}>
                             <ResultIcon>{s.isWin ? '✅' : '❌'}</ResultIcon>
                             <ResultTitle $win={s.isWin}>{s.resultText}</ResultTitle>
+                            <ResultPct $win={s.isWin}>{s.movePct >= 0 ? '+' : ''}{s.movePct.toFixed(2)}%</ResultPct>
                             <ResultSub>
-                                Final move: {s.movePct >= 0 ? '+' : ''}{s.movePct.toFixed(2)}% |
                                 Entry {fmtPrice(s.entry)} → {fmtPrice(s.currentPrice)}
                             </ResultSub>
                         </ResultCard>
