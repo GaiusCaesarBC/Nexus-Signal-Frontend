@@ -855,7 +855,11 @@ const SignalsPage = () => {
     const lossList = closedWithResult.filter(s => !s.isWin).sort((a, b) => new Date(b.resultAt || b.createdAt) - new Date(a.resultAt || a.createdAt)).slice(0, 4);
     const featuredWin = winList[0] || null;
     const otherWins = winList.slice(1);
-    const totalTracked = signals.length;
+    const [globalStats, setGlobalStats] = useState(null);
+    useEffect(() => {
+        fetch(`${API_URL}/predictions/stats`).then(r => r.json()).then(d => { if (d.success) setGlobalStats(d); }).catch(() => {});
+    }, [lastUpdated]);
+    const totalTracked = globalStats?.total || signals.length;
     const totalClosed = closedWithResult.length;
     const totalWins = closedWithResult.filter(s => s.isWin).length;
     const totalLosses = closedWithResult.filter(s => !s.isWin).length;
