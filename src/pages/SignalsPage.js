@@ -8,7 +8,7 @@ import { useToast } from '../context/ToastContext';
 import {
     TrendingUp, TrendingDown, Clock, Zap, Lock, Activity,
     CheckCircle, XCircle, RefreshCw, Radio, Crown, Copy,
-    Timer, Target, Shield, ArrowUpRight, ArrowDownRight, Send
+    Timer, Target, Shield, ArrowUpRight, ArrowDownRight, Send, DollarSign
 } from 'lucide-react';
 import SEO from '../components/SEO';
 
@@ -551,6 +551,45 @@ const VerifiedDot = styled.span`
     background:#10b981;margin-right:2px;box-shadow:0 0 6px rgba(16,185,129,.5);
 `;
 
+// ─── Copy Modal ──────────────────────────────────────────
+const ModalOverlay = styled.div`
+    position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);
+    z-index:1000;display:flex;align-items:center;justify-content:center;
+    animation:${fadeIn} .15s ease-out;
+`;
+const ModalCard = styled.div`
+    background:#0f1729;border:1px solid rgba(100,116,139,.2);border-radius:16px;
+    padding:1.5rem;width:90%;max-width:380px;position:relative;
+`;
+const ModalTitle = styled.h3`font-size:1.05rem;font-weight:800;color:#e2e8f0;margin:0 0 .25rem;`;
+const ModalSub = styled.p`font-size:.78rem;color:#64748b;margin:0 0 1rem;`;
+const ModalClose = styled.button`
+    position:absolute;top:1rem;right:1rem;background:none;border:none;color:#64748b;cursor:pointer;
+    &:hover{color:#e2e8f0;}
+`;
+const ModalOption = styled.button`
+    width:100%;display:flex;align-items:center;gap:.75rem;
+    padding:.85rem 1rem;border-radius:10px;border:1px solid ${p => p.$disabled ? 'rgba(100,116,139,.1)' : 'rgba(16,185,129,.2)'};
+    background:${p => p.$disabled ? 'rgba(100,116,139,.04)' : 'rgba(16,185,129,.06)'};
+    color:${p => p.$disabled ? '#475569' : '#e2e8f0'};
+    cursor:${p => p.$disabled ? 'not-allowed' : 'pointer'};
+    opacity:${p => p.$disabled ? '.5' : '1'};
+    transition:all .2s;margin-bottom:.5rem;text-align:left;
+    ${p => !p.$disabled && '&:hover{border-color:rgba(16,185,129,.4);background:rgba(16,185,129,.1);transform:translateY(-1px);}'}
+`;
+const ModalOptIcon = styled.div`
+    width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+    background:${p => p.$disabled ? 'rgba(100,116,139,.08)' : 'rgba(16,185,129,.1)'};
+    color:${p => p.$disabled ? '#475569' : '#10b981'};flex-shrink:0;
+`;
+const ModalOptText = styled.div`flex:1;`;
+const ModalOptTitle = styled.div`font-size:.85rem;font-weight:700;`;
+const ModalOptDesc = styled.div`font-size:.68rem;color:#64748b;margin-top:.1rem;`;
+const ComingSoonBadge = styled.span`
+    font-size:.55rem;font-weight:700;color:#f59e0b;background:rgba(245,158,11,.1);
+    border:1px solid rgba(245,158,11,.2);padding:1px 6px;border-radius:4px;letter-spacing:.03em;
+`;
+
 // ─── Hero / Above the Fold ───────────────────────────────
 const heroFade = keyframes`from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}`;
 const HeroSection = styled.div`
@@ -799,24 +838,32 @@ const SignalsPage = () => {
     }, [qualifiedSignals]);
 
     // Copy trade setup
+    const [copyModal, setCopyModal] = useState(null); // holds signal data when modal is open
+
     const copySetup = (e, s) => {
         e.stopPropagation();
+        setCopyModal(s);
+    };
+
+    const executeCopyToPaper = () => {
+        if (!copyModal) return;
         navigate('/paper-trading', {
             state: {
                 signal: {
-                    symbol: s.symbol,
-                    long: s.long,
-                    crypto: s.crypto,
-                    entry: s.entry,
-                    sl: s.sl,
-                    tp1: s.tp1,
-                    tp2: s.tp2,
-                    tp3: s.tp3,
-                    conf: s.conf,
-                    rr: s.rr
+                    symbol: copyModal.symbol,
+                    long: copyModal.long,
+                    crypto: copyModal.crypto,
+                    entry: copyModal.entry,
+                    sl: copyModal.sl,
+                    tp1: copyModal.tp1,
+                    tp2: copyModal.tp2,
+                    tp3: copyModal.tp3,
+                    conf: copyModal.conf,
+                    rr: copyModal.rr
                 }
             }
         });
+        setCopyModal(null);
     };
 
     // Sort by trade score (highest first), then by recency
@@ -1215,6 +1262,35 @@ const SignalsPage = () => {
                     </SideCol>
                 </Grid>
             </Container>
+
+            {/* Copy Setup Modal */}
+            {copyModal && (
+                <ModalOverlay onClick={() => setCopyModal(null)}>
+                    <ModalCard onClick={e => e.stopPropagation()}>
+                        <ModalClose onClick={() => setCopyModal(null)}><XCircle size={18}/></ModalClose>
+                        <ModalTitle>Copy Trade Setup</ModalTitle>
+                        <ModalSub>{copyModal.symbol} {copyModal.long ? 'LONG' : 'SHORT'} — {copyModal.conf}% confidence</ModalSub>
+
+                        <ModalOption onClick={executeCopyToPaper}>
+                            <ModalOptIcon><Activity size={18}/></ModalOptIcon>
+                            <ModalOptText>
+                                <ModalOptTitle>Paper Trade</ModalOptTitle>
+                                <ModalOptDesc>Execute with virtual $100K — no risk</ModalOptDesc>
+                            </ModalOptText>
+                            <ArrowUpRight size={16} color="#10b981"/>
+                        </ModalOption>
+
+                        <ModalOption $disabled>
+                            <ModalOptIcon $disabled><DollarSign size={18}/></ModalOptIcon>
+                            <ModalOptText>
+                                <ModalOptTitle>Real Portfolio</ModalOptTitle>
+                                <ModalOptDesc>Execute with connected brokerage</ModalOptDesc>
+                            </ModalOptText>
+                            <ComingSoonBadge>COMING SOON</ComingSoonBadge>
+                        </ModalOption>
+                    </ModalCard>
+                </ModalOverlay>
+            )}
         </Page>
     );
 };
