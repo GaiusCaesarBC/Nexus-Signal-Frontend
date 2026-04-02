@@ -1,5 +1,5 @@
 // client/src/pages/SocialsPage.js — Community Socials Hub
-import React, { useEffect } from 'react';
+import React from 'react';
 import styled, { keyframes } from 'styled-components';
 import { Send, ExternalLink, ThumbsUp, MessageSquare } from 'lucide-react';
 import SEO from '../components/SEO';
@@ -34,25 +34,8 @@ const CardCTA = styled.div`
     color:${p => p.$c || '#00adef'};margin-top:auto;
 `;
 
-const Section = styled.div`margin-bottom:2rem;`;
-const SectionTitle = styled.h2`font-size:1.1rem;font-weight:700;color:#e2e8f0;margin-bottom:.75rem;display:flex;align-items:center;gap:.4rem;`;
-
-const EmbedContainer = styled.div`
-    border-radius:12px;overflow:hidden;border:1px solid rgba(100,116,139,.12);
-    background:rgba(100,116,139,.04);
-`;
 
 const SocialsPage = () => {
-    // Load Twitter widget script
-    useEffect(() => {
-        const script = document.createElement('script');
-        script.src = 'https://platform.twitter.com/widgets.js';
-        script.async = true;
-        script.charset = 'utf-8';
-        document.body.appendChild(script);
-        return () => { try { document.body.removeChild(script); } catch (e) {} };
-    }, []);
-
     return (
         <Page>
             <SEO title="Socials — Nexus Signal" description="Join the Nexus Signal community on Telegram, X, and Discord." />
@@ -118,24 +101,6 @@ const SocialsPage = () => {
                 </SocialCard>
             </Grid>
 
-            {/* Latest from X */}
-            <Section>
-                <SectionTitle>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="#e2e8f0"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-                    Latest from X
-                </SectionTitle>
-                <EmbedContainer>
-                    <a
-                        className="twitter-timeline"
-                        data-theme="dark"
-                        data-height="500"
-                        data-chrome="noheader nofooter noborders transparent"
-                        href="https://twitter.com/nexussignalai"
-                    >
-                        Loading tweets...
-                    </a>
-                </EmbedContainer>
-            </Section>
         </Page>
     );
 };
