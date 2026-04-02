@@ -849,7 +849,8 @@ const SignalsPage = () => {
     const winRate = (() => { const c = signals.filter(s=>s.status==='closed'&&s.isWin!==undefined); if (!c.length) return null; return Math.round(c.filter(s=>s.isWin).length / c.length * 100); })();
 
     // Verified results — grouped wins/losses, featured best win, performance stats
-    const closedWithResult = allClosed.filter(s => s.resultText);
+    // Filter out broken signals: entry=resultPrice (0% move), or movePct > 50% (old bad data)
+    const closedWithResult = allClosed.filter(s => s.resultText && Math.abs(s.movePct) > 0.01 && Math.abs(s.movePct) < 50);
     const winList = closedWithResult.filter(s => s.isWin).sort((a, b) => b.movePct - a.movePct).slice(0, 5);
     const lossList = closedWithResult.filter(s => !s.isWin).sort((a, b) => new Date(b.resultAt || b.createdAt) - new Date(a.resultAt || a.createdAt)).slice(0, 4);
     const featuredWin = winList[0] || null;
