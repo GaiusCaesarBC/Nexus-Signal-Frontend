@@ -707,7 +707,12 @@ const SignalsPage = () => {
     const [signals, setSignals] = useState([]);
     const [filter, setFilter] = useState('all');
     const [refreshing, setRefreshing] = useState(false);
-    const [tracked, setTracked] = useState(new Set());
+    const [tracked, setTracked] = useState(() => {
+        try { return new Set(JSON.parse(localStorage.getItem('trackedSignals') || '[]')); } catch { return new Set(); }
+    });
+    useEffect(() => {
+        localStorage.setItem('trackedSignals', JSON.stringify([...tracked]));
+    }, [tracked]);
     const [activity, setActivity] = useState([]);
     const [lastUpdated, setLastUpdated] = useState(null);
     const [secSinceUpdate, setSecSinceUpdate] = useState(0);
@@ -842,6 +847,7 @@ const SignalsPage = () => {
 
     const filtered = filter === 'all' ? assetFiltered
         : filter === 'active' ? assetFiltered.filter(s => s.status === 'active' || s.status === 'new')
+        : filter === 'tracking' ? qualifiedSignals.filter(s => tracked.has(s.id))
         : filter === 'closed' ? assetFiltered.filter(s => s.status === 'closed')
         : filter === 'high' ? assetFiltered.filter(s => s.conf >= 70 && s.status !== 'closed')
         : filter === 'archive' ? (assetTab === 'stocks' ? archivedClosed.filter(s => !s.crypto) : assetTab === 'crypto' ? archivedClosed.filter(s => s.crypto) : archivedClosed)
@@ -853,7 +859,7 @@ const SignalsPage = () => {
         fetch(`${API_URL}/predictions/stats`).then(r => r.json()).then(d => { if (d.success) setGlobalStats(d); }).catch(() => {});
     }, [lastUpdated]);
 
-    const counts = { all: assetFiltered.length, new: assetFiltered.filter(s=>s.status==='new').length, active: assetFiltered.filter(s=>s.status!=='closed').length, closed: recentClosed.length, archive: archivedClosed.length };
+    const counts = { all: assetFiltered.length, active: assetFiltered.filter(s=>s.status!=='closed').length, tracking: qualifiedSignals.filter(s=>tracked.has(s.id)).length, closed: recentClosed.length, archive: archivedClosed.length, high: assetFiltered.filter(s=>s.conf>=70&&s.status!=='closed').length };
     const winRate = globalStats?.winRate ?? null;
 
     // Verified results — grouped wins/losses, featured best win, performance stats
@@ -913,11 +919,12 @@ const SignalsPage = () => {
 
                         <Controls>
                             {[
-                                { key: 'all', label: 'All', icon: null },
-                                { key: 'active', label: 'Active', icon: null },
-                                { key: 'closed', label: 'Closed', icon: null },
-                                { key: 'archive', label: 'Archive', icon: null },
-                                { key: 'high', label: 'High Conf', icon: null },
+                                { key: 'all', label: 'All' },
+                                { key: 'active', label: 'Active' },
+                                { key: 'tracking', label: 'Tracking' },
+                                { key: 'closed', label: 'Closed' },
+                                { key: 'archive', label: 'Archive' },
+                                { key: 'high', label: 'High Conf' },
                             ].map(f => (
                                 <FilterBtn key={f.key} $active={filter===f.key} onClick={()=>setFilter(f.key)}>
                                     {f.label}
@@ -1150,8 +1157,8 @@ const SignalsPage = () => {
                                         </TagGroup>
                                         {s.status!=='closed'&&(
                                             <div style={{display:'flex',gap:'.4rem'}}>
-                                                <TrackBtn onClick={(e)=>{e.stopPropagation();navigate(`/signal/${s.id}`);}}>
-                                                    <Activity size={11}/> View Trade
+                                                <TrackBtn $tracked={tracked.has(s.id)} onClick={(e)=>{e.stopPropagation();setTracked(p=>{const n=new Set(p);if(n.has(s.id))n.delete(s.id);else n.add(s.id);return n;});toast.success(tracked.has(s.id)?'Removed from tracking':'Added to tracking','Trade');}}>
+                                                    {tracked.has(s.id)?<><CheckCircle size={11}/> Tracking</>:<><Activity size={11}/> Track</>}
                                                 </TrackBtn>
                                                 <ActionBtn onClick={(e)=>copySetup(e,s)}>
                                                     <Copy size={12}/> Copy Setup
