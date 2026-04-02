@@ -841,7 +841,9 @@ const SignalsPage = () => {
         : capped;
 
     const filtered = filter === 'all' ? assetFiltered
-        : filter === 'high' ? assetFiltered.filter(s => s.conf >= 70)
+        : filter === 'active' ? assetFiltered.filter(s => s.status === 'active' || s.status === 'new')
+        : filter === 'closed' ? assetFiltered.filter(s => s.status === 'closed')
+        : filter === 'high' ? assetFiltered.filter(s => s.conf >= 70 && s.status !== 'closed')
         : filter === 'archive' ? (assetTab === 'stocks' ? archivedClosed.filter(s => !s.crypto) : assetTab === 'crypto' ? archivedClosed.filter(s => s.crypto) : archivedClosed)
         : assetFiltered.filter(s => s.status === filter);
 
@@ -910,10 +912,16 @@ const SignalsPage = () => {
                         </AssetTabs>
 
                         <Controls>
-                            {['all','new','active','closed','high','archive'].map(f => (
-                                <FilterBtn key={f} $active={filter===f} onClick={()=>setFilter(f)}>
-                                    {f==='high'?'High Conf':f==='archive'?'Archive':f.charAt(0).toUpperCase()+f.slice(1)}
-                                    {counts[f]>0&&<span style={{opacity:.5}}> ({counts[f]})</span>}
+                            {[
+                                { key: 'all', label: 'All', icon: null },
+                                { key: 'active', label: 'Active', icon: null },
+                                { key: 'closed', label: 'Closed', icon: null },
+                                { key: 'archive', label: 'Archive', icon: null },
+                                { key: 'high', label: 'High Conf', icon: null },
+                            ].map(f => (
+                                <FilterBtn key={f.key} $active={filter===f.key} onClick={()=>setFilter(f.key)}>
+                                    {f.label}
+                                    {counts[f.key]>0&&<span style={{opacity:.5}}> ({counts[f.key]})</span>}
                                 </FilterBtn>
                             ))}
                             <RefreshBtn className={refreshing?'spinning':''} onClick={()=>fetchSignals(true)}>
