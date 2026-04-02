@@ -1080,6 +1080,14 @@ const SignalsPage = () => {
                                         <LevelBox><LevelLabel>Risk / Reward</LevelLabel><LevelValue $c="#00adef" title="Reward-to-risk ratio: higher = better risk-adjusted trade">1:{s.rr}</LevelValue></LevelBox>
                                     </LevelsGrid>
 
+                                    {s.status !== 'closed' && s.currentPrice && s.currentPrice !== s.entry && (
+                                        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'.4rem .6rem',margin:'.3rem 0',background:'rgba(0,173,237,.04)',border:'1px solid rgba(0,173,237,.12)',borderRadius:'8px'}}>
+                                            <span style={{fontSize:'.7rem',color:'#64748b',fontWeight:500}}>LIVE PRICE</span>
+                                            <span style={{fontSize:'1rem',fontWeight:800,color:posMove?'#10b981':'#ef4444'}}>{fmtPrice(s.currentPrice)}</span>
+                                            <span style={{fontSize:'.75rem',fontWeight:700,color:posMove?'#10b981':'#ef4444'}}>{s.movePct>=0?'+':''}{s.movePct.toFixed(2)}%</span>
+                                        </div>
+                                    )}
+
                                     <TPRow>
                                         <TPBox><TPLabel>TP1</TPLabel><TPValue>{fmtPrice(s.tp1)}</TPValue></TPBox>
                                         <TPBox><TPLabel>TP2</TPLabel><TPValue>{fmtPrice(s.tp2)}</TPValue></TPBox>
@@ -1134,8 +1142,8 @@ const SignalsPage = () => {
                                         </TagGroup>
                                         {s.status!=='closed'&&(
                                             <div style={{display:'flex',gap:'.4rem'}}>
-                                                <TrackBtn $tracked={tracked.has(s.id)} onClick={(e)=>{e.stopPropagation();setTracked(p=>{const n=new Set(p);if(n.has(s.id))n.delete(s.id);else n.add(s.id);return n;});toast.success(tracked.has(s.id)?'Removed from tracked':'Tracking this trade','Trade');}}>
-                                                    {tracked.has(s.id)?<><CheckCircle size={11}/> Tracking</>:<><Activity size={11}/> Track Trade</>}
+                                                <TrackBtn onClick={(e)=>{e.stopPropagation();navigate(`/signal/${s.id}`);}}>
+                                                    <Activity size={11}/> View Trade
                                                 </TrackBtn>
                                                 <ActionBtn onClick={(e)=>copySetup(e,s)}>
                                                     <Copy size={12}/> Copy Setup
