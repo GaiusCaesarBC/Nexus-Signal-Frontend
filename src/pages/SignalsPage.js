@@ -846,7 +846,10 @@ const SignalsPage = () => {
         : assetFiltered.filter(s => s.status === filter);
 
     const counts = { all: assetFiltered.length, new: assetFiltered.filter(s=>s.status==='new').length, active: assetFiltered.filter(s=>s.status!=='closed').length, closed: recentClosed.length, archive: archivedClosed.length };
-    const winRate = (() => { const c = signals.filter(s=>s.status==='closed'&&s.isWin!==undefined); if (!c.length) return null; return Math.round(c.filter(s=>s.isWin).length / c.length * 100); })();
+    // Use server-side stats for accurate win rate (not limited by 200 fetch cap)
+    const winRate = globalStats?.wins && globalStats?.losses
+        ? Math.round((globalStats.wins / (globalStats.wins + globalStats.losses)) * 100)
+        : (() => { const c = signals.filter(s=>s.status==='closed'&&s.isWin!==undefined); if (!c.length) return null; return Math.round(c.filter(s=>s.isWin).length / c.length * 100); })();
 
     // Verified results — grouped wins/losses, featured best win, performance stats
     // Filter out broken signals: entry=resultPrice (0% move), or movePct > 50% (old bad data)
