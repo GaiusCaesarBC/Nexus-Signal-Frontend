@@ -1163,7 +1163,7 @@ const SignalsPage = () => {
                             </ActivityList>
 
                             <StatsRow>
-                                <StatBox><StatVal $c="#00adef">{signals.length}</StatVal><StatLbl>Signals</StatLbl></StatBox>
+                                <StatBox><StatVal $c="#00adef">{totalTracked}</StatVal><StatLbl>Signals</StatLbl></StatBox>
                                 <StatBox><StatVal $c="#10b981">{winRate !== null ? `${winRate}%` : '—'}</StatVal><StatLbl>Win Rate</StatLbl></StatBox>
                                 <StatBox><StatVal $c="#f59e0b">{counts.active}</StatVal><StatLbl>Active</StatLbl></StatBox>
                             </StatsRow>
