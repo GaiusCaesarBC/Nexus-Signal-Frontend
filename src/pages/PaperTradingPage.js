@@ -1491,13 +1491,17 @@ const PaperTradingPage = () => {
     useEffect(() => {
         const s = location.state?.signal;
         if (s) {
+            // Set symbol and type first (triggers price fetch)
             setSymbol(s.symbol || '');
             setType(s.crypto ? 'crypto' : 'stock');
             setPositionType(s.long ? 'long' : 'short');
-            setTakeProfit(s.tp2 ? String(s.tp2) : '');
-            setStopLoss(s.sl ? String(s.sl) : '');
-            setShowTPSL(true);
             setActiveTab('buy');
+            // Delay TP/SL fill slightly to avoid being overwritten by re-renders
+            setTimeout(() => {
+                setTakeProfit(s.tp2 ? String(Number(s.tp2).toFixed(s.tp2 >= 1 ? 2 : 8)) : '');
+                setStopLoss(s.sl ? String(Number(s.sl).toFixed(s.sl >= 1 ? 2 : 8)) : '');
+                setShowTPSL(true);
+            }, 500);
             toast.info(`Signal loaded: ${s.symbol} ${s.long ? 'LONG' : 'SHORT'} — set your quantity and execute`, 'Signal Copied');
         }
     }, [location.state]);
