@@ -1065,11 +1065,10 @@ const PublicProfilePage = () => {
         totalPredictions: profileStats.totalPredictions ?? gamificationStats.predictionsCreated ?? 0,
         predictionAccuracy: profileStats.predictionAccuracy ?? gamificationStats.predictionAccuracy ?? 0,
 
-        // Streak - check multiple sources
-        currentStreak: profileStats.currentStreak ||
-                       profile?.gamification?.loginStreak ||
-                       profile?.gamification?.profitStreak ||
+        // Streak - login streak is the primary metric
+        currentStreak: profile?.gamification?.loginStreak ||
                        profileStats.loginStreak ||
+                       profileStats.currentStreak ||
                        gamificationStats.profitStreak ||
                        0,
 
