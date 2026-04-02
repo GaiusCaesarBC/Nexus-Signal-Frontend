@@ -801,9 +801,22 @@ const SignalsPage = () => {
     // Copy trade setup
     const copySetup = (e, s) => {
         e.stopPropagation();
-        const text = `${s.symbol} ${s.long?'LONG':'SHORT'}\nEntry: ${fmtPrice(s.entry)}\nSL: ${fmtPrice(s.sl)}\nTP1: ${fmtPrice(s.tp1)}\nTP2: ${fmtPrice(s.tp2)}\nTP3: ${fmtPrice(s.tp3)}\nR/R: 1:${s.rr}\nConf: ${s.conf}%`;
-        navigator.clipboard.writeText(text);
-        toast.success('Trade setup copied to clipboard', 'Copied');
+        navigate('/paper-trading', {
+            state: {
+                signal: {
+                    symbol: s.symbol,
+                    long: s.long,
+                    crypto: s.crypto,
+                    entry: s.entry,
+                    sl: s.sl,
+                    tp1: s.tp1,
+                    tp2: s.tp2,
+                    tp3: s.tp3,
+                    conf: s.conf,
+                    rr: s.rr
+                }
+            }
+        });
     };
 
     // Sort by trade score (highest first), then by recency

@@ -1,6 +1,7 @@
 // client/src/pages/PaperTradingPage.js - THEMED VERSION WITH LONG/SHORT TRADING + LEVERAGE + TP/SL
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -1484,6 +1485,22 @@ const PaperTradingPage = () => {
     const [leaderboard, setLeaderboard] = useState([]);
     const [showResetConfirm, setShowResetConfirm] = useState(false);
     const [resetting, setResetting] = useState(false);
+
+    // Pre-fill from signal "Copy Setup" navigation
+    const location = useLocation();
+    useEffect(() => {
+        const s = location.state?.signal;
+        if (s) {
+            setSymbol(s.symbol || '');
+            setType(s.crypto ? 'crypto' : 'stock');
+            setPositionType(s.long ? 'long' : 'short');
+            setTakeProfit(s.tp2 ? String(s.tp2) : '');
+            setStopLoss(s.sl ? String(s.sl) : '');
+            setShowTPSL(true);
+            setActiveTab('buy');
+            toast.info(`Signal loaded: ${s.symbol} ${s.long ? 'LONG' : 'SHORT'} — set your quantity and execute`, 'Signal Copied');
+        }
+    }, [location.state]);
 
     const togglePositionExpand = (positionKey) => {
         setExpandedPositions(prev => ({
