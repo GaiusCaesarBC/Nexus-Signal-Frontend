@@ -1,7 +1,7 @@
 // client/src/pages/SocialsPage.js — Community Socials Hub
-import React from 'react';
+import React, { useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
-import { MessageSquare, Send, ExternalLink } from 'lucide-react';
+import { Send, ExternalLink, ThumbsUp } from 'lucide-react';
 import SEO from '../components/SEO';
 
 const fadeIn = keyframes`from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}`;
@@ -43,6 +43,16 @@ const EmbedContainer = styled.div`
 `;
 
 const SocialsPage = () => {
+    // Load Twitter widget script
+    useEffect(() => {
+        const script = document.createElement('script');
+        script.src = 'https://platform.twitter.com/widgets.js';
+        script.async = true;
+        script.charset = 'utf-8';
+        document.body.appendChild(script);
+        return () => { try { document.body.removeChild(script); } catch (e) {} };
+    }, []);
+
     return (
         <Page>
             <SEO title="Socials — Nexus Signal" description="Join the Nexus Signal community on Telegram, X, and Discord." />
@@ -88,23 +98,23 @@ const SocialsPage = () => {
                     <CardCTA $c="#1da1f2">Follow @nexussignalai <ExternalLink size={12}/></CardCTA>
                 </SocialCard>
 
-                {/* Discord */}
+                {/* Facebook */}
                 <SocialCard
-                    href="https://discord.gg/knef4zSr"
+                    href="https://www.facebook.com/profile.php?id=61582448390461"
                     target="_blank" rel="noopener noreferrer"
-                    $bg="rgba(88,101,242,.05)" $border="rgba(88,101,242,.12)"
-                    $glow="rgba(88,101,242,.12)" $hoverBorder="rgba(88,101,242,.3)"
+                    $bg="rgba(24,119,242,.05)" $border="rgba(24,119,242,.12)"
+                    $glow="rgba(24,119,242,.12)" $hoverBorder="rgba(24,119,242,.3)"
                     $delay=".2s"
                 >
                     <CardTop>
-                        <CardIcon $bg="rgba(88,101,242,.1)">
-                            <MessageSquare size={22} color="#5865f2"/>
+                        <CardIcon $bg="rgba(24,119,242,.1)">
+                            <ThumbsUp size={22} color="#1877f2"/>
                         </CardIcon>
                         <ExternalLink size={14} color="#64748b"/>
                     </CardTop>
-                    <CardTitle>Discord</CardTitle>
-                    <CardDesc>Chat with traders, discuss setups, get support, and access exclusive channels.</CardDesc>
-                    <CardCTA $c="#5865f2">Join Server <ExternalLink size={12}/></CardCTA>
+                    <CardTitle>Facebook</CardTitle>
+                    <CardDesc>Updates, trading insights, and community discussions. Like and follow our page.</CardDesc>
+                    <CardCTA $c="#1877f2">Follow on Facebook <ExternalLink size={12}/></CardCTA>
                 </SocialCard>
             </Grid>
 
@@ -124,7 +134,6 @@ const SocialsPage = () => {
                     >
                         Loading tweets...
                     </a>
-                    <script async src="https://platform.twitter.com/widgets.js" charSet="utf-8"></script>
                 </EmbedContainer>
             </Section>
         </Page>
