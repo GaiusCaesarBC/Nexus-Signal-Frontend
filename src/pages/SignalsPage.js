@@ -845,8 +845,13 @@ const SignalsPage = () => {
         : filter === 'archive' ? (assetTab === 'stocks' ? archivedClosed.filter(s => !s.crypto) : assetTab === 'crypto' ? archivedClosed.filter(s => s.crypto) : archivedClosed)
         : assetFiltered.filter(s => s.status === filter);
 
+    // Server-side stats (single source of truth for all pages)
+    const [globalStats, setGlobalStats] = useState(null);
+    useEffect(() => {
+        fetch(`${API_URL}/predictions/stats`).then(r => r.json()).then(d => { if (d.success) setGlobalStats(d); }).catch(() => {});
+    }, [lastUpdated]);
+
     const counts = { all: assetFiltered.length, new: assetFiltered.filter(s=>s.status==='new').length, active: assetFiltered.filter(s=>s.status!=='closed').length, closed: recentClosed.length, archive: archivedClosed.length };
-    // Use server-side stats for accurate win rate (single source of truth)
     const winRate = globalStats?.winRate ?? null;
 
     // Verified results — grouped wins/losses, featured best win, performance stats
@@ -856,10 +861,6 @@ const SignalsPage = () => {
     const lossList = closedWithResult.filter(s => !s.isWin).sort((a, b) => new Date(b.resultAt || b.createdAt) - new Date(a.resultAt || a.createdAt)).slice(0, 4);
     const featuredWin = winList[0] || null;
     const otherWins = winList.slice(1);
-    const [globalStats, setGlobalStats] = useState(null);
-    useEffect(() => {
-        fetch(`${API_URL}/predictions/stats`).then(r => r.json()).then(d => { if (d.success) setGlobalStats(d); }).catch(() => {});
-    }, [lastUpdated]);
     // Use server stats for accurate counts (not capped by 200 fetch limit)
     const totalTracked = globalStats?.total || signals.length;
     const totalClosed = globalStats?.closed || closedWithResult.length;
