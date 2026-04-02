@@ -2200,6 +2200,12 @@ const PaperTradingPage = () => {
                                                     {position.trailingStopPercent && <TPSLBadge theme={theme} $type="trailing"><TrendUp size={10} />Trail: {position.trailingStopPercent}%{position.trailingStopPrice && ` (${formatAssetPrice(position.trailingStopPrice, position.type)})`}</TPSLBadge>}
                                                 </TPSLBadgeContainer>
                                             )}
+                                            {/* Live Price Bar */}
+                                            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'.5rem .75rem',margin:'.4rem 0',background:position.profitLoss >= 0 ? 'rgba(16,185,129,.06)' : 'rgba(239,68,68,.06)',border:`1px solid ${position.profitLoss >= 0 ? 'rgba(16,185,129,.15)' : 'rgba(239,68,68,.15)'}`,borderRadius:'8px'}}>
+                                                <span style={{fontSize:'.72rem',color:'#94a3b8',fontWeight:600,letterSpacing:'.03em'}}>LIVE PRICE</span>
+                                                <span style={{fontSize:'1.1rem',fontWeight:800,color:position.profitLoss >= 0 ? '#10b981' : '#ef4444'}}>{formatAssetPrice(position.currentPrice, position.type)}</span>
+                                                <span style={{fontSize:'.8rem',fontWeight:700,color:position.profitLoss >= 0 ? '#10b981' : '#ef4444'}}>{position.profitLoss >= 0 ? '+' : ''}{formatCurrency(position.profitLoss || 0)} ({formatPercent(position.profitLossPercent || 0)})</span>
+                                            </div>
                                             <PositionDetails theme={theme}>
                                                 <PositionDetail><DetailLabel theme={theme}>Quantity</DetailLabel><DetailValue theme={theme}>{position.quantity.toLocaleString()}</DetailValue></PositionDetail>
                                                 <PositionDetail><DetailLabel theme={theme}>Avg Price</DetailLabel><DetailValue theme={theme}>{formatAssetPrice(position.averagePrice, position.type)}</DetailValue></PositionDetail>
