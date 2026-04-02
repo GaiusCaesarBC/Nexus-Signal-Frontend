@@ -1,7 +1,7 @@
 // client/src/pages/SocialsPage.js — Community Socials Hub
 import React, { useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
-import { Send, ExternalLink, ThumbsUp } from 'lucide-react';
+import { Send, ExternalLink, ThumbsUp, MessageSquare } from 'lucide-react';
 import SEO from '../components/SEO';
 
 const fadeIn = keyframes`from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}`;
