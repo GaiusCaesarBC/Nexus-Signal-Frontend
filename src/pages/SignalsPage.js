@@ -846,10 +846,8 @@ const SignalsPage = () => {
         : assetFiltered.filter(s => s.status === filter);
 
     const counts = { all: assetFiltered.length, new: assetFiltered.filter(s=>s.status==='new').length, active: assetFiltered.filter(s=>s.status!=='closed').length, closed: recentClosed.length, archive: archivedClosed.length };
-    // Use server-side stats for accurate win rate (not limited by 200 fetch cap)
-    const winRate = globalStats?.wins && globalStats?.losses
-        ? Math.round((globalStats.wins / (globalStats.wins + globalStats.losses)) * 100)
-        : (() => { const c = signals.filter(s=>s.status==='closed'&&s.isWin!==undefined); if (!c.length) return null; return Math.round(c.filter(s=>s.isWin).length / c.length * 100); })();
+    // Use server-side stats for accurate win rate (single source of truth)
+    const winRate = globalStats?.winRate ?? null;
 
     // Verified results — grouped wins/losses, featured best win, performance stats
     // Filter out broken signals: entry=resultPrice (0% move), or movePct > 50% (old bad data)
@@ -862,10 +860,11 @@ const SignalsPage = () => {
     useEffect(() => {
         fetch(`${API_URL}/predictions/stats`).then(r => r.json()).then(d => { if (d.success) setGlobalStats(d); }).catch(() => {});
     }, [lastUpdated]);
+    // Use server stats for accurate counts (not capped by 200 fetch limit)
     const totalTracked = globalStats?.total || signals.length;
-    const totalClosed = closedWithResult.length;
-    const totalWins = closedWithResult.filter(s => s.isWin).length;
-    const totalLosses = closedWithResult.filter(s => !s.isWin).length;
+    const totalClosed = globalStats?.closed || closedWithResult.length;
+    const totalWins = globalStats?.wins || closedWithResult.filter(s => s.isWin).length;
+    const totalLosses = globalStats?.losses || closedWithResult.filter(s => !s.isWin).length;
     const allWins = closedWithResult.filter(s => s.isWin);
     const allLosses = closedWithResult.filter(s => !s.isWin);
     const avgWin = allWins.length ? (allWins.reduce((s, w) => s + w.movePct, 0) / allWins.length) : 0;
