@@ -95,7 +95,7 @@ const microCopyText = (s) => {
     if (s.status === 'closed') return '';
     const abs = Math.abs(s.movePct);
     const totalRange = Math.abs(s.changePct);
-    const fav = s.long ? s.movePct >= 0 : s.movePct <= 0;
+    const fav = s.movePct >= 0;
 
     if (fav && abs >= totalRange * 0.85) return 'Momentum building — approaching target';
     if (fav && abs >= totalRange * 0.5) return 'Strong move — holding direction';
@@ -111,7 +111,7 @@ const proximityStatus = (s) => {
     if (s.status === 'closed') return null;
     const abs = Math.abs(s.movePct);
     const totalRange = Math.abs(s.changePct);
-    const favourable = s.long ? s.movePct >= 0 : s.movePct <= 0;
+    const favourable = s.movePct >= 0;
     if (favourable && abs >= totalRange * 0.85) return 'near-target';
     if (!favourable && abs >= totalRange * 0.65) return 'near-sl';
     return null;
@@ -830,7 +830,7 @@ const SignalsPage = () => {
                 return { ...base, icon: '🎯', t: `${s.symbol} approaching target ${pct}`, c: '#10b981' };
             if (prox === 'near-sl')
                 return { ...base, icon: '⚠️', t: `${s.symbol} nearing stop loss`, c: '#f59e0b' };
-            const fav = s.long ? s.movePct >= 0 : s.movePct <= 0;
+            const fav = s.movePct >= 0;
             if (fav && Math.abs(s.movePct) > 1)
                 return { ...base, icon: '📈', t: `Momentum building on ${s.symbol} ${pct}`, c: '#10b981' };
             return { ...base, icon: '📊', t: `${s.symbol} ${dir} — ${tier} (${s.conf}%)`, c: '#00adef' };
@@ -1110,7 +1110,7 @@ const SignalsPage = () => {
                             </ArchiveHeader>
                         )}
                         {filtered.map((s, i) => {
-                            const posMove = s.long ? s.movePct >= 0 : s.movePct <= 0;
+                            const posMove = s.movePct >= 0; // movePct is already direction-aware (inverted for shorts)
                             const urgency = expiryUrgency(s.expiresAt);
 
                             // Date separator for archive view
