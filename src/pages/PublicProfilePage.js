@@ -969,6 +969,18 @@ const PublicProfilePage = () => {
         fetchProfile();
     }, [fetchProfile]);
 
+    // Fetch user predictions when tab is selected
+    useEffect(() => {
+        if (activeTab === 'predictions' && profile) {
+            const pid = profile.userId || profile._id;
+            if (pid) {
+                api.get(`/predictions/user/${pid}?limit=20`)
+                    .then(res => setUserPredictions(Array.isArray(res.data) ? res.data : []))
+                    .catch(() => setUserPredictions([]));
+            }
+        }
+    }, [activeTab, profile]);
+
     const handleRefresh = () => {
         setRefreshing(true);
         fetchProfile(true);
@@ -1111,18 +1123,6 @@ const PublicProfilePage = () => {
             </PageContainer>
         );
     }
-
-    // Fetch user predictions when tab is selected
-    useEffect(() => {
-        if (activeTab === 'predictions' && profile) {
-            const pid = profile.userId || profile._id;
-            if (pid) {
-                api.get(`/predictions/user/${pid}?limit=20`)
-                    .then(res => setUserPredictions(Array.isArray(res.data) ? res.data : []))
-                    .catch(() => setUserPredictions([]));
-            }
-        }
-    }, [activeTab, profile]);
 
     const currentUserId = currentUser?._id || currentUser?.id;
     const profileUserId = profile.userId || profile._id;
