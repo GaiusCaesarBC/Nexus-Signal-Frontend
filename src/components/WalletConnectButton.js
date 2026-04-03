@@ -173,6 +173,20 @@ const truncateAddress = (address) => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
 };
 
+const SolanaInput = styled.input`
+    width:100%;padding:.6rem .75rem;border-radius:8px;font-size:.82rem;
+    background:rgba(100,116,139,.08);border:1px solid rgba(100,116,139,.2);
+    color:#e2e8f0;outline:none;font-family:monospace;
+    &:focus{border-color:rgba(139,92,246,.4);}
+    &::placeholder{color:#475569;}
+`;
+const SolanaSection = styled.div`
+    margin-top:.75rem;padding:.75rem;background:rgba(139,92,246,.06);
+    border:1px solid rgba(139,92,246,.15);border-radius:10px;
+    display:flex;flex-direction:column;gap:.5rem;
+`;
+const SolanaLabel = styled.div`font-size:.78rem;font-weight:600;color:#a78bfa;display:flex;align-items:center;gap:.4rem;`;
+
 const WalletConnectButton = ({ compact = false, showInfo = true }) => {
     const { user } = useAuth();
     const {
@@ -189,6 +203,37 @@ const WalletConnectButton = ({ compact = false, showInfo = true }) => {
     } = useWallet();
 
     const [isSyncing, setIsSyncing] = useState(false);
+    const [showSolana, setShowSolana] = useState(false);
+    const [solanaAddress, setSolanaAddress] = useState('');
+    const [solanaLinking, setSolanaLinking] = useState(false);
+    const { api } = useAuth();
+    const toast = useToast();
+
+    const handleSolanaLink = async () => {
+        if (!solanaAddress || solanaAddress.length < 32) {
+            toast.error('Please enter a valid Solana address');
+            return;
+        }
+        setSolanaLinking(true);
+        try {
+            const response = await api.post('/wallet/link', {
+                address: solanaAddress.trim(),
+                chainId: 'solana'
+            });
+            if (response.data.success) {
+                toast.success('Solana wallet linked!');
+                setSolanaAddress('');
+                setShowSolana(false);
+                window.location.reload();
+            } else {
+                toast.error(response.data.error || 'Failed to link');
+            }
+        } catch (e) {
+            toast.error(e.response?.data?.error || 'Failed to link Solana wallet');
+        } finally {
+            setSolanaLinking(false);
+        }
+    };
 
     const handleSync = async () => {
         setIsSyncing(true);
@@ -281,7 +326,35 @@ const WalletConnectButton = ({ compact = false, showInfo = true }) => {
                                                 </ActionButton>
                                             </ButtonRow>
 
-                                            {showInfo && !linkedWallet && (
+                                            {!linkedWallet && (
+                                                <div style={{marginTop:'.5rem',textAlign:'center'}}>
+                                                    <span onClick={() => setShowSolana(!showSolana)} style={{fontSize:'.75rem',color:'#a78bfa',cursor:'pointer',textDecoration:'underline'}}>
+                                                        {showSolana ? 'Hide Solana' : 'Link Solana Wallet Instead'}
+                                                    </span>
+                                                </div>
+                                            )}
+
+                                            {showSolana && !linkedWallet && (
+                                                <SolanaSection>
+                                                    <SolanaLabel><Wallet size={14}/> Solana Wallet</SolanaLabel>
+                                                    <SolanaInput
+                                                        placeholder="Enter your Solana address..."
+                                                        value={solanaAddress}
+                                                        onChange={e => setSolanaAddress(e.target.value)}
+                                                    />
+                                                    <ActionButton
+                                                        $variant="success"
+                                                        onClick={handleSolanaLink}
+                                                        disabled={solanaLinking || !solanaAddress}
+                                                        $loading={solanaLinking}
+                                                        style={{width:'100%'}}
+                                                    >
+                                                        {solanaLinking ? <><RefreshCw size={14}/> Linking...</> : <><Link2 size={14}/> Link Solana Wallet</>}
+                                                    </ActionButton>
+                                                </SolanaSection>
+                                            )}
+
+                                            {showInfo && !linkedWallet && !showSolana && (
                                                 <InfoText style={{ marginTop: '0.75rem' }}>
                                                     Connect your wallet to link it to your Nexus Signal account
                                                 </InfoText>
