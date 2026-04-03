@@ -2101,6 +2101,30 @@ const handleOpenRewardModal = () => {
                     </TickerWrapper>
                 </TickerSection>
 
+                {/* AI SIGNAL PERFORMANCE STRIP */}
+                <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))',gap:'.6rem',marginBottom:'1rem'}}>
+                    <div style={{background:'rgba(16,185,129,.06)',border:'1px solid rgba(16,185,129,.15)',borderRadius:12,padding:'.85rem 1rem',cursor:'pointer'}} onClick={() => navigate('/signals')}>
+                        <div style={{fontSize:'.65rem',color:'#64748b',fontWeight:600,textTransform:'uppercase',letterSpacing:'.04em',marginBottom:'.2rem',display:'flex',alignItems:'center',gap:'.3rem'}}><Activity size={12}/> Live Signals</div>
+                        <div style={{fontSize:'1.3rem',fontWeight:900,color:'#10b981'}}>Active</div>
+                        <div style={{fontSize:'.68rem',color:'#475569'}}>View live trade setups</div>
+                    </div>
+                    <div style={{background:'rgba(0,173,237,.06)',border:'1px solid rgba(0,173,237,.15)',borderRadius:12,padding:'.85rem 1rem',cursor:'pointer'}} onClick={() => navigate('/performance')}>
+                        <div style={{fontSize:'.65rem',color:'#64748b',fontWeight:600,textTransform:'uppercase',letterSpacing:'.04em',marginBottom:'.2rem',display:'flex',alignItems:'center',gap:'.3rem'}}><TrendingUp size={12}/> Performance</div>
+                        <div style={{fontSize:'1.3rem',fontWeight:900,color:'#00adef'}}>Track Record</div>
+                        <div style={{fontSize:'.68rem',color:'#475569'}}>Every trade tracked publicly</div>
+                    </div>
+                    <div style={{background:'rgba(139,92,246,.06)',border:'1px solid rgba(139,92,246,.15)',borderRadius:12,padding:'.85rem 1rem',cursor:'pointer'}} onClick={() => navigate('/predict')}>
+                        <div style={{fontSize:'.65rem',color:'#64748b',fontWeight:600,textTransform:'uppercase',letterSpacing:'.04em',marginBottom:'.2rem',display:'flex',alignItems:'center',gap:'.3rem'}}><Zap size={12}/> AI Predict</div>
+                        <div style={{fontSize:'1.3rem',fontWeight:900,color:'#a78bfa'}}>Get Signals</div>
+                        <div style={{fontSize:'.68rem',color:'#475569'}}>AI-powered trade setups</div>
+                    </div>
+                    <div style={{background:'rgba(245,158,11,.06)',border:'1px solid rgba(245,158,11,.15)',borderRadius:12,padding:'.85rem 1rem',cursor:'pointer'}} onClick={() => navigate('/paper-trading')}>
+                        <div style={{fontSize:'.65rem',color:'#64748b',fontWeight:600,textTransform:'uppercase',letterSpacing:'.04em',marginBottom:'.2rem',display:'flex',alignItems:'center',gap:'.3rem'}}><DollarSign size={12}/> Paper Trade</div>
+                        <div style={{fontSize:'1.3rem',fontWeight:900,color:'#f59e0b'}}>{formatCurrency(paperTradingStats?.portfolioValue)}</div>
+                        <div style={{fontSize:'.68rem',color:'#475569'}}>{(paperTradingStats?.winRate || 0).toFixed(0)}% win rate · {paperTradingStats?.totalTrades || 0} trades</div>
+                    </div>
+                </div>
+
                 {/* CHART SECTION */}
                 <ChartSection>
                     <SearchContainer>
@@ -2185,11 +2209,6 @@ const handleOpenRewardModal = () => {
                                 isLive={isLive}
                             />
                             <PatternDetector symbol={selectedSymbol} chartData={advancedChartData} />
-                            <RecentTransactions
-                                symbol={selectedSymbol}
-                                isCrypto={['-USD', '-USDT', '-BUSD', '-EUR', '-GBP'].some(p => selectedSymbol?.toUpperCase().endsWith(p)) ||
-                                         ['BTC', 'ETH', 'SOL', 'ADA', 'DOT', 'MATIC', 'AVAX', 'DOGE', 'SHIB', 'XRP'].includes(selectedSymbol?.toUpperCase())}
-                            />
                         </>
                     )}
                 </ChartSection>
@@ -2236,53 +2255,23 @@ const handleOpenRewardModal = () => {
                     </ViewTradingButton>
                 </PaperTradingHero>
 
-                {/* REAL PORTFOLIO HERO */}
-                <RealPortfolioHero>
-                    {realPortfolioStats && realPortfolioStats.totalValue > 0 ? (
-                        <>
-                            <RealPortfolioTitle>
-                                <RealPortfolioLabel><Briefcase size={16} /> Real Portfolio</RealPortfolioLabel>
-                                <RealPortfolioValue>{formatCurrency(realPortfolioStats.totalValue)}</RealPortfolioValue>
-                                <RealPortfolioChange $positive={realPortfolioStats.totalGain >= 0}>
-                                    {realPortfolioStats.totalGain >= 0 ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
-                                    {formatCurrency(Math.abs(realPortfolioStats.totalGain))}
-                                    ({formatPercent(realPortfolioStats.totalGainPercent)})
-                                </RealPortfolioChange>
-                            </RealPortfolioTitle>
-
-                            <RealPortfolioTitle>
-                                <RealPortfolioLabel><Activity size={16} /> Holdings</RealPortfolioLabel>
-                                <RealPortfolioValue $color={theme.brand?.primary}>
-                                    {realPortfolioStats.holdingsCount}
-                                </RealPortfolioValue>
-                                <RealPortfolioChange $positive>Assets tracked</RealPortfolioChange>
-                            </RealPortfolioTitle>
-
-                            <RealPortfolioTitle>
-                                <RealPortfolioLabel><Link2 size={16} /> Connected</RealPortfolioLabel>
-                                <RealPortfolioValue $color={theme.success}>
-                                    {realPortfolioStats.connectionsCount}
-                                </RealPortfolioValue>
-                                <RealPortfolioChange $positive>Brokerage{realPortfolioStats.connectionsCount !== 1 ? 's' : ''}</RealPortfolioChange>
-                            </RealPortfolioTitle>
-
-                            <ViewPortfolioButton onClick={() => navigate('/portfolio')}>
-                                <Briefcase size={18} /> View Portfolio <ChevronRight size={18} />
-                            </ViewPortfolioButton>
-                        </>
-                    ) : (
-                        <>
-                            <EmptyPortfolioMessage>
-                                <Briefcase size={32} />
-                                <div>Connect your brokerage to track your real portfolio</div>
-                                <span>Link Kraken, Plaid-supported brokerages, or wallets</span>
-                            </EmptyPortfolioMessage>
-                            <ViewPortfolioButton onClick={() => navigate('/portfolio')}>
-                                <Link2 size={18} /> Connect Brokerage <ChevronRight size={18} />
-                            </ViewPortfolioButton>
-                        </>
-                    )}
-                </RealPortfolioHero>
+                {/* REAL PORTFOLIO — only show if connected */}
+                {realPortfolioStats && realPortfolioStats.totalValue > 0 && (
+                    <RealPortfolioHero>
+                        <RealPortfolioTitle>
+                            <RealPortfolioLabel><Briefcase size={16} /> Real Portfolio</RealPortfolioLabel>
+                            <RealPortfolioValue>{formatCurrency(realPortfolioStats.totalValue)}</RealPortfolioValue>
+                            <RealPortfolioChange $positive={realPortfolioStats.totalGain >= 0}>
+                                {realPortfolioStats.totalGain >= 0 ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
+                                {formatCurrency(Math.abs(realPortfolioStats.totalGain))}
+                                ({formatPercent(realPortfolioStats.totalGainPercent)})
+                            </RealPortfolioChange>
+                        </RealPortfolioTitle>
+                        <ViewPortfolioButton onClick={() => navigate('/portfolio')}>
+                            <Briefcase size={18} /> View Portfolio <ChevronRight size={18} />
+                        </ViewPortfolioButton>
+                    </RealPortfolioHero>
+                )}
 
                 {/* THREE COLUMN WIDGETS */}
                 <WidgetsGrid>
