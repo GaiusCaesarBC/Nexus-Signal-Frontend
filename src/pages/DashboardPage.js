@@ -1510,44 +1510,61 @@ useEffect(() => {
                 setWatchlistTicker([]);
             }
 
-            // Market movers — pull from live signals (same data as signal feed)
+            // Market movers — real stocks + crypto trending by 24h change
             try {
-                const API_URL = process.env.REACT_APP_API_URL || process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
-                const sigRes = await fetch(`${API_URL}/predictions/recent?limit=20`);
-                if (sigRes.ok) {
-                    const signals = await sigRes.json();
-                    const sigArray = Array.isArray(signals) ? signals : [];
-                    if (sigArray.length > 0) {
-                        const movers = sigArray
-                            .filter(s => s.entryPrice > 0 && s.confidence >= 55)
-                            .slice(0, 10)
-                            .map(s => {
-                                const entry = s.entryPrice || s.currentPrice;
-                                const live = s.livePrice || s.currentPrice || entry;
-                                const isLong = s.direction === 'UP';
-                                const rawPct = entry > 0 ? ((live - entry) / entry) * 100 : 0;
-                                const changePct = isLong ? rawPct : -rawPct;
-                                return {
-                                    symbol: s.symbol?.split(':')[0]?.replace(/USDT|USD/i, '') || s.symbol,
-                                    price: live || 0,
-                                    change: Math.max(-99, Math.min(99, changePct)), // Cap at +/-99%
-                                    direction: s.direction,
-                                    confidence: s.confidence
-                                };
-                            });
-                        if (movers.length > 0) {
-                            setMoversTicker(movers);
-                        } else {
-                            await fetchDefaultMovers();
-                        }
-                    } else {
-                        await fetchDefaultMovers();
+                const allMovers = [];
+
+                // 1. Crypto movers from CryptoCompare (sorted by 24h change)
+                try {
+                    const ccRes = await fetch('https://min-api.cryptocompare.com/data/top/totalvolfull?limit=30&tsym=USD');
+                    if (ccRes.ok) {
+                        const ccData = await ccRes.json();
+                        const cryptos = (ccData?.Data || [])
+                            .filter(c => !['USDT','USDC','BUSD','DAI','FDUSD','TUSD'].includes(c.CoinInfo?.Name))
+                            .map(c => ({
+                                symbol: c.CoinInfo?.Name || '?',
+                                price: c.RAW?.USD?.PRICE || 0,
+                                change: c.RAW?.USD?.CHANGEPCT24HOUR || 0,
+                                type: 'Crypto'
+                            }))
+                            .filter(c => c.price > 0)
+                            .sort((a, b) => Math.abs(b.change) - Math.abs(a.change))
+                            .slice(0, 6);
+                        allMovers.push(...cryptos);
                     }
+                } catch (e) {}
+
+                // 2. Stock movers from Finnhub or Yahoo (top S&P movers)
+                try {
+                    const stockSymbols = ['AAPL','MSFT','NVDA','TSLA','AMZN','META','GOOGL','AMD','NFLX','BA'];
+                    const API_URL = process.env.REACT_APP_API_URL || 'https://api.nexussignal.ai/api';
+                    const stockRes = await fetch(`${API_URL}/predictions/recent?limit=50`);
+                    if (stockRes.ok) {
+                        const sigs = await stockRes.json();
+                        const stocks = (Array.isArray(sigs) ? sigs : [])
+                            .filter(s => s.assetType === 'stock' && s.livePrice > 0 && s.entryPrice > 0)
+                            .map(s => ({
+                                symbol: s.symbol,
+                                price: s.livePrice || s.currentPrice,
+                                change: ((s.livePrice - s.entryPrice) / s.entryPrice * 100),
+                                type: 'Stock'
+                            }))
+                            .filter(s => Math.abs(s.change) < 50) // filter bad data
+                            .sort((a, b) => Math.abs(b.change) - Math.abs(a.change))
+                            .slice(0, 5);
+                        allMovers.push(...stocks);
+                    }
+                } catch (e) {}
+
+                if (allMovers.length > 0) {
+                    // Sort all by absolute change (biggest movers first)
+                    allMovers.sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
+                    setMoversTicker(allMovers.slice(0, 10));
                 } else {
                     await fetchDefaultMovers();
                 }
             } catch (screenError) {
-                console.error('Error fetching movers from signals:', screenError);
+                console.error('Error fetching movers:', screenError);
                 await fetchDefaultMovers();
             }
         } catch (error) {
@@ -2011,6 +2028,7 @@ const handleOpenRewardModal = () => {
                                             <TickerLink symbol={stock.symbol} bold>
                                                 {stock.symbol}
                                             </TickerLink>
+                                            {stock.type && <span style={{fontSize:'.55rem',color:stock.type==='Crypto'?'#8b5cf6':'#00adef',fontWeight:600,marginRight:'.2rem'}}>{stock.type}</span>}
                                             {stock.price > 0 ? (
                                                 <>
                                                     <TickerPrice>{formatTickerPrice(stock.price, stock.symbol)}</TickerPrice>
