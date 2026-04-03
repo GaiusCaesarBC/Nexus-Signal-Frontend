@@ -77,9 +77,11 @@ export const WalletProvider = ({ children }) => {
 
         try {
             setIsLinking(true);
+            // Detect Solana addresses (base58, 32-44 chars, no 0x prefix)
+            const isSolanaAddress = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(address) && !address.startsWith('0x');
             const response = await api.post('/wallet/link', {
                 address: address,
-                chainId: chain?.id || 1
+                chainId: isSolanaAddress ? 'solana' : (chain?.id || 1)
             });
 
             if (response.data.success) {
