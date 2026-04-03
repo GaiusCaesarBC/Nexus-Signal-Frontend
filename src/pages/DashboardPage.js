@@ -23,6 +23,7 @@ import AvatarWithBorder from '../components/vault/AvatarWithBorder';
 import { useVault } from '../context/VaultContext';
 import DailyRewardModal from '../components/DailyReward/DailyRewardModal';
 import DailyRewardButton from '../components/DailyReward/DailyRewardButton';
+import DashboardHero from '../components/DashboardHero';
 import { formatCryptoPrice, formatStockPrice } from '../utils/priceFormatter';
 import { useLivePrice } from '../hooks/useLivePrice';
 
@@ -1943,35 +1944,13 @@ const handleOpenRewardModal = () => {
     return (
         <PageContainer>
             <ContentWrapper>
-                {/* HEADER */}
-                <Header>
-                    <HeaderLeft>
-                        <StaticLogo src={nexusSignalLogo} alt="Nexus Signal" />
-                        <HeaderContent>
-                            <Title>Mission Control</Title>
-                            <Subtitle>
-                                <Sparkles size={18} />
-                                Welcome back, {user?.name || 'Trader'}
-                            </Subtitle>
-                        </HeaderContent>
-                    </HeaderLeft>
-                    <HeaderRight>
-    <LiveClock>
-        <Clock size={20} />
-        <div>
-            <ClockTime>{formatTime(currentTime)}</ClockTime>
-            <ClockDate>{formatDate(currentTime)}</ClockDate>
-        </div>
-    </LiveClock>
-    <MarketStatus $open={marketOpen}>
-        <StatusDot $open={marketOpen} />
-        <StatusText $open={marketOpen}>
-            {marketOpen ? 'Market Open' : 'Market Closed'}
-        </StatusText>
-    </MarketStatus>
-    <DailyRewardButton onClick={handleOpenRewardModal} />
-</HeaderRight>
-                </Header>
+                {/* TRUST HEADER + ACTION CARDS */}
+                <DashboardHero paperTradingStats={paperTradingStats} formatCurrency={formatCurrency} />
+                <div style={{display:'flex',alignItems:'center',gap:'.75rem',marginBottom:'.75rem',flexWrap:'wrap'}}>
+                    <MarketStatus $open={marketOpen}><StatusDot $open={marketOpen}/><StatusText $open={marketOpen}>{marketOpen ? 'Market Open' : 'Market Closed'}</StatusText></MarketStatus>
+                    <LiveClock><Clock size={16}/><div><ClockTime>{formatTime(currentTime)}</ClockTime></div></LiveClock>
+                    <DailyRewardButton onClick={handleOpenRewardModal} />
+                </div>
 
                 {/* TICKER TAPES */}
                 <TickerSection>
@@ -2091,30 +2070,6 @@ const handleOpenRewardModal = () => {
                         </TickerContainer>
                     </TickerWrapper>
                 </TickerSection>
-
-                {/* AI SIGNAL PERFORMANCE STRIP */}
-                <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))',gap:'.6rem',marginBottom:'1rem'}}>
-                    <div style={{background:'rgba(16,185,129,.06)',border:'1px solid rgba(16,185,129,.15)',borderRadius:12,padding:'.85rem 1rem',cursor:'pointer'}} onClick={() => navigate('/signals')}>
-                        <div style={{fontSize:'.65rem',color:'#64748b',fontWeight:600,textTransform:'uppercase',letterSpacing:'.04em',marginBottom:'.2rem',display:'flex',alignItems:'center',gap:'.3rem'}}><Activity size={12}/> Live Signals</div>
-                        <div style={{fontSize:'1.3rem',fontWeight:900,color:'#10b981'}}>Active</div>
-                        <div style={{fontSize:'.68rem',color:'#475569'}}>View live trade setups</div>
-                    </div>
-                    <div style={{background:'rgba(0,173,237,.06)',border:'1px solid rgba(0,173,237,.15)',borderRadius:12,padding:'.85rem 1rem',cursor:'pointer'}} onClick={() => navigate('/performance')}>
-                        <div style={{fontSize:'.65rem',color:'#64748b',fontWeight:600,textTransform:'uppercase',letterSpacing:'.04em',marginBottom:'.2rem',display:'flex',alignItems:'center',gap:'.3rem'}}><TrendingUp size={12}/> Performance</div>
-                        <div style={{fontSize:'1.3rem',fontWeight:900,color:'#00adef'}}>Track Record</div>
-                        <div style={{fontSize:'.68rem',color:'#475569'}}>Every trade tracked publicly</div>
-                    </div>
-                    <div style={{background:'rgba(139,92,246,.06)',border:'1px solid rgba(139,92,246,.15)',borderRadius:12,padding:'.85rem 1rem',cursor:'pointer'}} onClick={() => navigate('/predict')}>
-                        <div style={{fontSize:'.65rem',color:'#64748b',fontWeight:600,textTransform:'uppercase',letterSpacing:'.04em',marginBottom:'.2rem',display:'flex',alignItems:'center',gap:'.3rem'}}><Zap size={12}/> AI Predict</div>
-                        <div style={{fontSize:'1.3rem',fontWeight:900,color:'#a78bfa'}}>Get Signals</div>
-                        <div style={{fontSize:'.68rem',color:'#475569'}}>AI-powered trade setups</div>
-                    </div>
-                    <div style={{background:'rgba(245,158,11,.06)',border:'1px solid rgba(245,158,11,.15)',borderRadius:12,padding:'.85rem 1rem',cursor:'pointer'}} onClick={() => navigate('/paper-trading')}>
-                        <div style={{fontSize:'.65rem',color:'#64748b',fontWeight:600,textTransform:'uppercase',letterSpacing:'.04em',marginBottom:'.2rem',display:'flex',alignItems:'center',gap:'.3rem'}}><DollarSign size={12}/> Paper Trade</div>
-                        <div style={{fontSize:'1.3rem',fontWeight:900,color:'#f59e0b'}}>{formatCurrency(paperTradingStats?.portfolioValue)}</div>
-                        <div style={{fontSize:'.68rem',color:'#475569'}}>{(paperTradingStats?.winRate || 0).toFixed(0)}% win rate · {paperTradingStats?.totalTrades || 0} trades</div>
-                    </div>
-                </div>
 
                 {/* CHART SECTION */}
                 <ChartSection>
@@ -2371,47 +2326,20 @@ const handleOpenRewardModal = () => {
                     </Widget>
                 </WidgetsGrid>
 
-                {/* ACHIEVEMENTS */}
-                <AchievementsSection>
-                    <AchievementsHeader>
-                        <AchievementsTitle><Award size={20} /> Your Achievements</AchievementsTitle>
-                        <AchievementsProgress>
-                            <ProgressBar><ProgressFill $progress={achievementProgress} /></ProgressBar>
-                            <ProgressText>{unlockedAchievements}/{totalAchievements} Unlocked</ProgressText>
-                        </AchievementsProgress>
-                    </AchievementsHeader>
-
-                    {achievements.length > 0 ? (
-                        <>
-                            <AchievementsGrid>
-                                {achievements.map((achievement) => (
-                                    <AchievementBadge
-                                        key={achievement.id}
-                                        $unlocked={achievement.unlocked}
-                                        $rarity={achievement.rarity}
-                                        onClick={() => navigate('/achievements')}
-                                    >
-                                        {!achievement.unlocked && <BadgeLock><Lock size={12} /></BadgeLock>}
-                                        {achievement.unlocked && achievement.rarity && <RarityDot $rarity={achievement.rarity} />}
-                                        <BadgeIcon $unlocked={achievement.unlocked}>{achievement.icon}</BadgeIcon>
-                                        <BadgeLabel $unlocked={achievement.unlocked}>{achievement.name}</BadgeLabel>
-                                    </AchievementBadge>
-                                ))}
-                            </AchievementsGrid>
-                            <ViewAllButton
-                                onClick={() => navigate('/achievements')}
-                                style={{ marginTop: '1rem' }}
-                            >
-                                View All {totalAchievements} Achievements <ChevronRight size={16} />
-                            </ViewAllButton>
-                        </>
-                    ) : (
-                        <EmptyState>
-                            <Award size={40} />
-                            <p>Start trading to unlock achievements!</p>
-                        </EmptyState>
-                    )}
-                </AchievementsSection>
+                {/* ACHIEVEMENTS — compact summary */}
+                <div onClick={() => navigate('/achievements')} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'.75rem 1rem',background:'rgba(15,23,42,.6)',border:'1px solid rgba(100,116,139,.1)',borderRadius:12,cursor:'pointer',transition:'all .2s',marginBottom:'1rem'}} onMouseOver={e=>e.currentTarget.style.borderColor='rgba(139,92,246,.3)'} onMouseOut={e=>e.currentTarget.style.borderColor='rgba(100,116,139,.1)'}>
+                    <div style={{display:'flex',alignItems:'center',gap:'.6rem'}}>
+                        <Award size={18} color="#a78bfa"/>
+                        <span style={{fontSize:'.85rem',fontWeight:700,color:'#e2e8f0'}}>Achievements</span>
+                        <span style={{fontSize:'.72rem',color:'#a78bfa',fontWeight:600}}>{unlockedAchievements}/{totalAchievements} unlocked</span>
+                    </div>
+                    <div style={{display:'flex',alignItems:'center',gap:'.6rem'}}>
+                        <div style={{width:120,height:5,background:'rgba(100,116,139,.15)',borderRadius:4,overflow:'hidden'}}>
+                            <div style={{width:`${achievementProgress}%`,height:'100%',background:'linear-gradient(90deg,#a78bfa,#10b981)',borderRadius:4,transition:'width 1s'}}/>
+                        </div>
+                        <ChevronRight size={16} color="#64748b"/>
+                    </div>
+                </div>
                 {/* DAILY REWARD MODAL */}
                 <DailyRewardModal
                     isOpen={showDailyReward}
