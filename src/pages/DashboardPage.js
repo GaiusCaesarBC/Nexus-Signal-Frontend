@@ -905,11 +905,11 @@ const WidgetsGrid = styled.div`
 `;
 
 const Widget = styled.div`
-    background: ${props => props.theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
-    border: 1px solid ${props => props.$borderColor || props.theme.border?.secondary || 'rgba(0, 173, 237, 0.2)'};
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(100, 116, 139, 0.1);
     border-radius: 14px;
     padding: 1.25rem;
-    animation: ${fadeIn} 0.8s ease-out;
+    animation: ${fadeIn} 0.5s ease-out;
     display: flex;
     flex-direction: column;
 `;
@@ -922,8 +922,8 @@ const WidgetHeader = styled.div`
 `;
 
 const WidgetTitle = styled.h3`
-    font-size: 1.1rem;
-    color: ${props => props.$color || props.theme.brand?.primary || '#00adef'};
+    font-size: 1rem;
+    color: #e2e8f0;
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -931,56 +931,47 @@ const WidgetTitle = styled.h3`
 `;
 
 const Badge = styled.span`
-    background: ${props => props.$variant === 'success' ? `${props.theme.success || '#10b981'}33` : `${props.theme.brand?.primary || '#00adef'}33`};
-    color: ${props => props.$variant === 'success' ? (props.theme.success || '#10b981') : (props.theme.brand?.primary || '#00adef')};
+    background: ${props => props.$variant === 'success' ? 'rgba(16,185,129,.1)' : 'rgba(0,173,237,.08)'};
+    color: ${props => props.$variant === 'success' ? '#10b981' : '#00adef'};
     padding: 0.2rem 0.6rem;
-    border-radius: 20px;
-    font-size: 0.75rem;
+    border-radius: 6px;
+    font-size: 0.65rem;
     font-weight: 600;
     display: flex;
     align-items: center;
     gap: 0.3rem;
+    border: 1px solid ${props => props.$variant === 'success' ? 'rgba(16,185,129,.2)' : 'rgba(0,173,237,.15)'};
 `;
 
 const WidgetContent = styled.div`
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 0.6rem;
+    gap: 0.5rem;
     max-height: 320px;
     overflow-y: auto;
-
-    &::-webkit-scrollbar {
-        width: 5px;
-    }
-
-    &::-webkit-scrollbar-track {
-        background: ${props => props.theme.brand?.primary || '#00adef'}1a;
-        border-radius: 3px;
-    }
-
-    &::-webkit-scrollbar-thumb {
-        background: ${props => props.theme.brand?.primary || '#00adef'}4D;
-        border-radius: 3px;
-    }
+    scrollbar-width: thin;
+    scrollbar-color: rgba(100,116,139,.15) transparent;
+    &::-webkit-scrollbar{width:3px;}
+    &::-webkit-scrollbar-thumb{background:rgba(100,116,139,.15);border-radius:4px;}
 `;
 
 const ViewAllButton = styled.button`
     width: 100%;
-    padding: 0.75rem;
-    background: ${props => props.$bg || `linear-gradient(135deg, ${props.theme.brand?.primary || '#00adef'}26 0%, ${props.theme.brand?.primary || '#00adef'}0d 100%)`};
-    border: 1px solid ${props => props.$borderColor || props.theme.border?.primary || 'rgba(0, 173, 237, 0.25)'};
+    padding: 0.6rem;
+    background: rgba(100,116,139,.04);
+    border: 1px solid rgba(100,116,139,.12);
     border-radius: 8px;
-    color: ${props => props.$color || props.theme.brand?.primary || '#00adef'};
-    font-weight: 700;
-    font-size: 0.85rem;
+    color: #94a3b8;
+    font-weight: 600;
+    font-size: 0.78rem;
     cursor: pointer;
     transition: all 0.2s ease;
     margin-top: auto;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
+    gap: 0.4rem;
 
     &:hover {
         transform: translateY(-2px);
@@ -1173,11 +1164,11 @@ const EmptyState = styled.div`
 
 // ============ ACHIEVEMENTS ============
 const AchievementsSection = styled.div`
-    background: linear-gradient(135deg, ${props => props.theme.brand?.primary}14 0%, ${props => props.theme.brand?.accent || props.theme.brand?.secondary}14 100%);
-    border: 1px solid ${props => props.theme.brand?.primary}40;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(100, 116, 139, 0.1);
     border-radius: 14px;
     padding: 1.25rem;
-    animation: ${fadeIn} 0.8s ease-out 0.2s backwards;
+    animation: ${fadeIn} 0.5s ease-out;
 `;
 
 const AchievementsHeader = styled.div`
@@ -1190,8 +1181,8 @@ const AchievementsHeader = styled.div`
 `;
 
 const AchievementsTitle = styled.h3`
-    font-size: 1.1rem;
-    color: ${props => props.theme.brand?.accent || props.theme.brand?.primary};
+    font-size: 1rem;
+    color: #e2e8f0;
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -1206,8 +1197,8 @@ const AchievementsProgress = styled.div`
 
 const ProgressBar = styled.div`
     width: 180px;
-    height: 8px;
-    background: ${props => props.theme.brand?.primary}33;
+    height: 6px;
+    background: rgba(100,116,139,.15);
     border-radius: 4px;
     overflow: hidden;
 
@@ -1219,15 +1210,15 @@ const ProgressBar = styled.div`
 const ProgressFill = styled.div`
     height: 100%;
     width: ${props => props.$progress}%;
-    background: linear-gradient(90deg, ${props => props.theme.brand?.primary}, ${props => props.theme.brand?.accent || props.theme.brand?.secondary});
+    background: linear-gradient(90deg, #10b981, #00adef);
     border-radius: 4px;
     transition: width 1s ease-out;
 `;
 
 const ProgressText = styled.span`
-    color: ${props => props.theme.brand?.accent || props.theme.brand?.primary};
-    font-weight: 700;
-    font-size: 0.85rem;
+    color: #94a3b8;
+    font-weight: 600;
+    font-size: 0.78rem;
     white-space: nowrap;
 `;
 
