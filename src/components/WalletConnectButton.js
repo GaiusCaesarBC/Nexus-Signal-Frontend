@@ -370,7 +370,7 @@ const WalletConnectButton = ({ compact = false, showInfo = true }) => {
                                         <WalletHeader>
                                             <WalletTitle>
                                                 <Wallet size={18} />
-                                                {chain.name}
+                                                {linkedWallet?.chainId === 'solana' ? 'Solana' : chain.name}
                                             </WalletTitle>
                                             <StatusBadge $status={linkedWallet ? 'linked' : 'connected'}>
                                                 {linkedWallet ? (
