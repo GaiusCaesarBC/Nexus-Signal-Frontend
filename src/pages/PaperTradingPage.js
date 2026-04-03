@@ -1,6 +1,7 @@
 // client/src/pages/PaperTradingPage.js - THEMED VERSION WITH LONG/SHORT TRADING + LEVERAGE + TP/SL
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -1485,6 +1486,26 @@ const PaperTradingPage = () => {
     const [showResetConfirm, setShowResetConfirm] = useState(false);
     const [resetting, setResetting] = useState(false);
 
+    // Pre-fill from signal "Copy Setup" navigation
+    const location = useLocation();
+    useEffect(() => {
+        const s = location.state?.signal;
+        if (s) {
+            // Set symbol and type first (triggers price fetch)
+            setSymbol(s.symbol || '');
+            setType(s.crypto ? 'crypto' : 'stock');
+            setPositionType(s.long ? 'long' : 'short');
+            setActiveTab('buy');
+            // Delay TP/SL fill slightly to avoid being overwritten by re-renders
+            setTimeout(() => {
+                setTakeProfit(s.tp2 ? String(Number(s.tp2).toFixed(s.tp2 >= 1 ? 2 : 8)) : '');
+                setStopLoss(s.sl ? String(Number(s.sl).toFixed(s.sl >= 1 ? 2 : 8)) : '');
+                setShowTPSL(true);
+            }, 500);
+            toast.info(`Signal loaded: ${s.symbol} ${s.long ? 'LONG' : 'SHORT'} — set your quantity and execute`, 'Signal Copied');
+        }
+    }, [location.state]);
+
     const togglePositionExpand = (positionKey) => {
         setExpandedPositions(prev => ({
             ...prev,
@@ -2179,6 +2200,12 @@ const PaperTradingPage = () => {
                                                     {position.trailingStopPercent && <TPSLBadge theme={theme} $type="trailing"><TrendUp size={10} />Trail: {position.trailingStopPercent}%{position.trailingStopPrice && ` (${formatAssetPrice(position.trailingStopPrice, position.type)})`}</TPSLBadge>}
                                                 </TPSLBadgeContainer>
                                             )}
+                                            {/* Live Price Bar */}
+                                            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'.5rem .75rem',margin:'.4rem 0',background:position.profitLoss >= 0 ? 'rgba(16,185,129,.06)' : 'rgba(239,68,68,.06)',border:`1px solid ${position.profitLoss >= 0 ? 'rgba(16,185,129,.15)' : 'rgba(239,68,68,.15)'}`,borderRadius:'8px'}}>
+                                                <span style={{fontSize:'.72rem',color:'#94a3b8',fontWeight:600,letterSpacing:'.03em'}}>LIVE PRICE</span>
+                                                <span style={{fontSize:'1.1rem',fontWeight:800,color:position.profitLoss >= 0 ? '#10b981' : '#ef4444'}}>{formatAssetPrice(position.currentPrice, position.type)}</span>
+                                                <span style={{fontSize:'.8rem',fontWeight:700,color:position.profitLoss >= 0 ? '#10b981' : '#ef4444'}}>{position.profitLoss >= 0 ? '+' : ''}{formatCurrency(position.profitLoss || 0)} ({formatPercent(position.profitLossPercent || 0)})</span>
+                                            </div>
                                             <PositionDetails theme={theme}>
                                                 <PositionDetail><DetailLabel theme={theme}>Quantity</DetailLabel><DetailValue theme={theme}>{position.quantity.toLocaleString()}</DetailValue></PositionDetail>
                                                 <PositionDetail><DetailLabel theme={theme}>Avg Price</DetailLabel><DetailValue theme={theme}>{formatAssetPrice(position.averagePrice, position.type)}</DetailValue></PositionDetail>

@@ -343,8 +343,13 @@ const WalletAnalytics = () => {
             return `${(num / 1000000).toFixed(2)}M`;
         } else if (num >= 1000) {
             return `${(num / 1000).toFixed(2)}K`;
-        } else if (num < 0.0001 && num > 0) {
-            return num.toExponential(2);
+        } else if (num >= 1) {
+            return num.toFixed(4);
+        } else if (num >= 0.0001) {
+            return num.toFixed(6);
+        } else if (num > 0) {
+            // Show full decimal — no scientific notation
+            return num.toFixed(12).replace(/0+$/, '0');
         }
         return num.toFixed(4);
     };
@@ -561,7 +566,7 @@ const WalletAnalytics = () => {
                         <TransactionRow
                             key={tx.hash}
                             theme={theme}
-                            href={`https://etherscan.io/tx/${tx.hash}`}
+                            href={analytics.overview.nativeSymbol === 'SOL' ? `https://solscan.io/tx/${tx.hash}` : `https://etherscan.io/tx/${tx.hash}`}
                             target="_blank"
                             rel="noopener noreferrer"
                         >

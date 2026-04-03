@@ -899,6 +899,7 @@ const PublicProfilePage = () => {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [activeTab, setActiveTab] = useState('overview');
+    const [userPredictions, setUserPredictions] = useState([]);
     const [isFollowing, setIsFollowing] = useState(false);
     const [followLoading, setFollowLoading] = useState(false);
     const [activities, setActivities] = useState([]);
@@ -967,6 +968,18 @@ const PublicProfilePage = () => {
     useEffect(() => {
         fetchProfile();
     }, [fetchProfile]);
+
+    // Fetch user predictions when tab is selected
+    useEffect(() => {
+        if (activeTab === 'predictions' && profile) {
+            const pid = profile.userId || profile._id;
+            if (pid) {
+                api.get(`/predictions/user/${pid}?limit=20`)
+                    .then(res => setUserPredictions(Array.isArray(res.data) ? res.data : []))
+                    .catch(() => setUserPredictions([]));
+            }
+        }
+    }, [activeTab, profile]);
 
     const handleRefresh = () => {
         setRefreshing(true);
@@ -1052,11 +1065,10 @@ const PublicProfilePage = () => {
         totalPredictions: profileStats.totalPredictions ?? gamificationStats.predictionsCreated ?? 0,
         predictionAccuracy: profileStats.predictionAccuracy ?? gamificationStats.predictionAccuracy ?? 0,
 
-        // Streak - check multiple sources
-        currentStreak: profileStats.currentStreak ||
-                       profile?.gamification?.loginStreak ||
-                       profile?.gamification?.profitStreak ||
+        // Streak - login streak is the primary metric
+        currentStreak: profile?.gamification?.loginStreak ||
                        profileStats.loginStreak ||
+                       profileStats.currentStreak ||
                        gamificationStats.profitStreak ||
                        0,
 
@@ -1248,7 +1260,7 @@ const PublicProfilePage = () => {
                 <Tab $active={activeTab === 'overview'} onClick={() => setActiveTab('overview')}><BarChart3 size={16} /> Overview</Tab>
                 <Tab $active={activeTab === 'posts'} onClick={() => setActiveTab('posts')}><MessageSquare size={16} /> Posts <TabBadge>{profile?.postsCount || 0}</TabBadge></Tab>
                 <Tab $active={activeTab === 'trades'} onClick={() => setActiveTab('trades')}><TrendingUp size={16} /> Trades</Tab>
-                <Tab $active={activeTab === 'predictions'} onClick={() => navigate('/predict')}><Target size={16} /> Predictions <TabBadge>{stats.totalPredictions || 0}</TabBadge></Tab>
+                <Tab $active={activeTab === 'predictions'} onClick={() => setActiveTab('predictions')}><Target size={16} /> Predictions <TabBadge>{stats.totalPredictions || 0}</TabBadge></Tab>
                 <Tab $active={activeTab === 'achievements'} onClick={() => setActiveTab('achievements')}><Trophy size={16} /> Achievements <TabBadge>{achievements.length}</TabBadge></Tab>
             </TabsContainer>
 
@@ -1586,6 +1598,67 @@ const PublicProfilePage = () => {
                                 </ChartWrapper>
                             </ChartContainer>
                         </PerformanceGrid>
+                    </Card>
+                )}
+
+                {activeTab === 'predictions' && (
+                    <Card>
+                        <CardTitle><Target size={20} /> Predictions ({userPredictions.length})</CardTitle>
+                        {userPredictions.length > 0 ? (
+                            <div style={{display:'flex',flexDirection:'column',gap:'.5rem'}}>
+                                {userPredictions.map(p => {
+                                    const isLong = p.direction === 'UP';
+                                    const isWin = p.result === 'win';
+                                    const isLoss = p.result === 'loss';
+                                    const isClosed = isWin || isLoss;
+                                    const sym = p.symbol?.split(':')[0]?.replace(/USDT|USD/i, '') || p.symbol;
+                                    const entry = p.entryPrice || p.currentPrice;
+                                    const resultPrice = p.resultPrice || entry;
+                                    const rawPct = entry ? ((resultPrice - entry) / entry * 100) : 0;
+                                    const movePct = isLong ? rawPct : -rawPct;
+                                    return (
+                                        <div key={p._id} onClick={() => navigate(`/signal/${p._id}`)} style={{
+                                            display:'flex',alignItems:'center',justifyContent:'space-between',
+                                            padding:'.65rem .85rem',borderRadius:'10px',cursor:'pointer',
+                                            background: isClosed ? (isWin ? 'rgba(16,185,129,.05)' : 'rgba(239,68,68,.05)') : 'rgba(100,116,139,.04)',
+                                            border: `1px solid ${isClosed ? (isWin ? 'rgba(16,185,129,.15)' : 'rgba(239,68,68,.15)') : 'rgba(100,116,139,.1)'}`,
+                                            transition:'all .2s',
+                                        }}>
+                                            <div style={{display:'flex',alignItems:'center',gap:'.6rem'}}>
+                                                <span style={{fontSize:'.95rem',fontWeight:700,color:'#e2e8f0'}}>{sym}</span>
+                                                <span style={{fontSize:'.6rem',fontWeight:700,padding:'2px 5px',borderRadius:'3px',
+                                                    background:isLong?'rgba(16,185,129,.12)':'rgba(239,68,68,.12)',
+                                                    color:isLong?'#10b981':'#ef4444'
+                                                }}>{isLong ? 'LONG' : 'SHORT'}</span>
+                                                <span style={{fontSize:'.65rem',color:'#64748b'}}>{p.confidence}%</span>
+                                            </div>
+                                            <div style={{display:'flex',alignItems:'center',gap:'.75rem'}}>
+                                                {isClosed && (
+                                                    <span style={{fontSize:'.65rem',fontWeight:600,padding:'2px 6px',borderRadius:'4px',
+                                                        background:isWin?'rgba(16,185,129,.1)':'rgba(239,68,68,.08)',
+                                                        color:isWin?'#10b981':'#ef4444',
+                                                        border:`1px solid ${isWin?'rgba(16,185,129,.2)':'rgba(239,68,68,.15)'}`
+                                                    }}>{p.resultText}</span>
+                                                )}
+                                                {isClosed ? (
+                                                    <span style={{fontSize:'.95rem',fontWeight:800,color:isWin?'#10b981':'#ef4444'}}>
+                                                        {movePct >= 0 ? '+' : ''}{movePct.toFixed(1)}%
+                                                    </span>
+                                                ) : (
+                                                    <span style={{fontSize:'.7rem',color:'#f59e0b',fontWeight:600}}>ACTIVE</span>
+                                                )}
+                                                <span style={{fontSize:'.6rem',color:'#475569'}}>{new Date(p.createdAt).toLocaleDateString()}</span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <EmptyState>
+                                <EmptyIcon><Target size={28} /></EmptyIcon>
+                                <div>No predictions yet</div>
+                            </EmptyState>
+                        )}
                     </Card>
                 )}
 

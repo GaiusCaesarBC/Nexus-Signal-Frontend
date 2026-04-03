@@ -77,9 +77,11 @@ export const WalletProvider = ({ children }) => {
 
         try {
             setIsLinking(true);
+            // Detect Solana addresses (base58, 32-44 chars, no 0x prefix)
+            const isSolanaAddress = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(address) && !address.startsWith('0x');
             const response = await api.post('/wallet/link', {
                 address: address,
-                chainId: chain?.id || 1
+                chainId: isSolanaAddress ? 'solana' : (chain?.id || 1)
             });
 
             if (response.data.success) {
@@ -171,8 +173,11 @@ export const WalletProvider = ({ children }) => {
     }, [linkedWallet, api, toast, fetchWalletTrades]);
 
     // Check if connected wallet matches linked wallet
-    const isWalletMatched = address && linkedWallet &&
-        address.toLowerCase() === linkedWallet.address.toLowerCase();
+    // For Solana, the wagmi address (EVM) will never match the linked Solana address — that's OK
+    const isSolanaWallet = linkedWallet?.chainId === 'solana';
+    const isWalletMatched = isSolanaWallet
+        ? !!linkedWallet  // Solana wallets are always "matched" since they're manually linked
+        : (address && linkedWallet && address.toLowerCase() === linkedWallet.address.toLowerCase());
 
     // Check if user can trade (has linked wallet OR brokerage - for now just wallet)
     const canTrade = !!linkedWallet;

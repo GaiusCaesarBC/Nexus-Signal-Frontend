@@ -119,7 +119,12 @@ const ResultCard = styled.div`
 `;
 const ResultIcon = styled.div`font-size:2.5rem;margin-bottom:.5rem;`;
 const ResultTitle = styled.div`font-size:1.3rem;font-weight:800;color:${p=>p.$win?'#10b981':'#ef4444'};margin-bottom:.25rem;`;
-const ResultSub = styled.div`font-size:.9rem;color:#64748b;`;
+const ResultPct = styled.div`
+    font-size:2rem;font-weight:900;letter-spacing:-.02em;margin:.3rem 0;
+    color:${p=>p.$win?'#10b981':'#ef4444'};
+    text-shadow:0 0 24px ${p=>p.$win?'rgba(16,185,129,.35)':'rgba(239,68,68,.25)'};
+`;
+const ResultSub = styled.div`font-size:.82rem;color:#64748b;`;
 
 // ─── Analysis ─────────────────────────────────────────────
 const IndicatorGrid = styled.div`display:grid;grid-template-columns:repeat(2,1fr);gap:.6rem;@media(max-width:500px){grid-template-columns:1fr;}`;
@@ -231,10 +236,10 @@ const SignalDetailPage = () => {
         const crypto = raw.assetType === 'crypto' || raw.assetType === 'dex' || isCrypto(raw.symbol);
         const long = raw.direction === 'UP';
         const conf = Math.round(raw.confidence || raw.liveConfidence || 50);
-        const target = raw.targetPrice || raw.target_price;
+        const mlTarget = raw.targetPrice || raw.target_price;
 
-        // Use LOCKED values from backend - with sensible fallbacks
-        const entry = raw.entryPrice || raw.entry || raw.livePrice || raw.currentPrice || target;
+        // Use LOCKED values from backend - with sensible percentage-based fallbacks
+        const entry = raw.entryPrice || raw.entry || raw.livePrice || raw.currentPrice || mlTarget;
 
         // Calculate sensible defaults based on entry price (percentage-based)
         const defaultSlPct = 0.02;  // 2% stop loss
@@ -256,15 +261,18 @@ const SignalDetailPage = () => {
         const tp3 = raw.takeProfit3 || raw.tp3 || (long
             ? entry * (1 + defaultTp3Pct)
             : entry * (1 - defaultTp3Pct));
+        const target = tp3; // TP3 is the ultimate target
 
         const changePct = entry ? ((target - entry) / entry * 100) : 0;
         const range = Math.abs(target - entry);
         const rr = Math.abs(entry - sl) > 0 ? (Math.abs(target - entry) / Math.abs(entry - sl)).toFixed(1) : '2.0';
 
-        // Use LIVE price from backend
+        // For closed signals, use the price at result time; for active, use live price
         const progress = expired ? 1 : Math.min(ageHours / (days * 24), 0.95);
-        const currentPrice = raw.livePrice || raw.resultPrice || raw.outcome?.actualPrice || raw.currentPrice || entry;
-        const movePct = raw.liveChangePercent ?? ((currentPrice - entry) / entry * 100);
+        const currentPrice = raw.result ? (raw.resultPrice || raw.livePrice || raw.outcome?.actualPrice || entry) : (raw.livePrice || raw.currentPrice || raw.lastPrice || entry);
+        const rawMovePct = raw.result ? ((currentPrice - entry) / entry * 100) : (raw.liveChangePercent ?? ((currentPrice - entry) / entry * 100));
+        // For shorts, invert: price drop = positive profit
+        const movePct = long ? rawMovePct : -rawMovePct;
 
         // Use result from backend if available
         const isWin = raw.result ? raw.result === 'win' : (status === 'closed' ? (raw.outcome?.wasCorrect ?? (long ? currentPrice > entry : currentPrice < entry)) : null);
@@ -459,8 +467,8 @@ const SignalDetailPage = () => {
                         <ResultCard $win={s.isWin}>
                             <ResultIcon>{s.isWin ? '✅' : '❌'}</ResultIcon>
                             <ResultTitle $win={s.isWin}>{s.resultText}</ResultTitle>
+                            <ResultPct $win={s.isWin}>{s.movePct >= 0 ? '+' : ''}{s.movePct.toFixed(2)}%</ResultPct>
                             <ResultSub>
-                                Final move: {s.movePct >= 0 ? '+' : ''}{s.movePct.toFixed(2)}% |
                                 Entry {fmtPrice(s.entry)} → {fmtPrice(s.currentPrice)}
                             </ResultSub>
                         </ResultCard>

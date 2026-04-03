@@ -8,7 +8,7 @@ import { useToast } from '../context/ToastContext';
 import {
     TrendingUp, TrendingDown, Clock, Zap, Lock, Activity,
     CheckCircle, XCircle, RefreshCw, Radio, Crown, Copy,
-    Timer, Target, Shield, ArrowUpRight, ArrowDownRight, Send
+    Timer, Target, Shield, ArrowUpRight, ArrowDownRight, Send, DollarSign
 } from 'lucide-react';
 import SEO from '../components/SEO';
 
@@ -36,6 +36,7 @@ const fmtPrice = (p) => { if (!p) return '—'; if (p >= 1000) return `$${p.toLo
 
 const timeAgo = (d) => {
     const s = Math.floor((Date.now() - new Date(d)) / 1000);
+    if (s < 0) return 'just now';
     if (s < 60) return `${s}s ago`;
     const m = Math.floor(s / 60);
     if (m < 60) return `${m}m ago`;
@@ -94,7 +95,7 @@ const microCopyText = (s) => {
     if (s.status === 'closed') return '';
     const abs = Math.abs(s.movePct);
     const totalRange = Math.abs(s.changePct);
-    const fav = s.long ? s.movePct >= 0 : s.movePct <= 0;
+    const fav = s.movePct >= 0;
 
     if (fav && abs >= totalRange * 0.85) return 'Momentum building — approaching target';
     if (fav && abs >= totalRange * 0.5) return 'Strong move — holding direction';
@@ -110,7 +111,7 @@ const proximityStatus = (s) => {
     if (s.status === 'closed') return null;
     const abs = Math.abs(s.movePct);
     const totalRange = Math.abs(s.changePct);
-    const favourable = s.long ? s.movePct >= 0 : s.movePct <= 0;
+    const favourable = s.movePct >= 0;
     if (favourable && abs >= totalRange * 0.85) return 'near-target';
     if (!favourable && abs >= totalRange * 0.65) return 'near-sl';
     return null;
@@ -416,6 +417,223 @@ const BestBadge = styled.div`
 `;
 
 const Empty = styled.div`text-align:center;padding:3rem;color:#475569;font-size:.9rem;`;
+const ArchiveHeader = styled.div`display:flex;align-items:center;gap:.5rem;padding:.75rem 1rem;margin-bottom:.5rem;background:rgba(100,116,139,.08);border:1px solid rgba(100,116,139,.15);border-radius:8px;color:#94a3b8;font-size:.85rem;font-weight:500;`;
+const DateSeparator = styled.div`display:flex;align-items:center;gap:.5rem;padding:.5rem 0;margin:.25rem 0;color:#64748b;font-size:.8rem;font-weight:600;letter-spacing:.03em;text-transform:uppercase;&::after{content:'';flex:1;height:1px;background:rgba(100,116,139,.2);}`;
+
+// ─── Verified Results ─────────────────────────────────────
+const featuredGlow = keyframes`
+    0%,100%{box-shadow:0 0 15px rgba(16,185,129,.08),0 0 40px rgba(16,185,129,.04)}
+    50%{box-shadow:0 0 25px rgba(16,185,129,.2),0 0 60px rgba(16,185,129,.08)}
+`;
+const resultGlow = keyframes`0%,100%{box-shadow:0 0 8px rgba(16,185,129,.04)}50%{box-shadow:0 0 18px rgba(16,185,129,.12)}`;
+const countUp = keyframes`from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}`;
+
+const ResultsSection = styled.div`margin-bottom:1.5rem;overflow:visible;`;
+const ResultsHeader = styled.div`display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:.5rem;`;
+const ResultsTitleGroup = styled.div`display:flex;flex-direction:column;gap:.1rem;`;
+const ResultsTitle = styled.h3`font-size:1.1rem;font-weight:800;color:#e2e8f0;margin:0;display:flex;align-items:center;gap:.45rem;letter-spacing:-.01em;`;
+const ResultsSub = styled.span`font-size:.72rem;color:#64748b;font-weight:400;letter-spacing:.02em;`;
+const ContextLine = styled.div`font-size:.68rem;color:#475569;font-style:italic;margin-bottom:.65rem;`;
+
+// Performance summary bar
+const PerfBar = styled.div`
+    display:flex;gap:.4rem;flex-wrap:wrap;align-items:center;margin-bottom:.6rem;padding:.5rem .7rem;
+    background:rgba(100,116,139,.04);border:1px solid rgba(100,116,139,.1);border-radius:8px;
+`;
+const PerfStat = styled.div`
+    display:flex;align-items:center;gap:.25rem;font-size:.72rem;color:#94a3b8;
+    animation:${countUp} .5s ease-out both;animation-delay:${p => p.$delay || '0s'};
+`;
+const PerfVal = styled.span`font-weight:800;color:${p => p.$c || '#e2e8f0'};`;
+const PerfDivider = styled.span`color:rgba(100,116,139,.2);font-size:.5rem;`;
+const EdgeBadge = styled.span`
+    display:inline-flex;align-items:center;gap:.25rem;
+    padding:.2rem .55rem;border-radius:6px;font-size:.75rem;font-weight:800;
+    background:linear-gradient(135deg,rgba(16,185,129,.12),rgba(16,185,129,.06));
+    border:1px solid rgba(16,185,129,.25);color:#10b981;
+    text-shadow:0 0 10px rgba(16,185,129,.3);
+    animation:${countUp} .5s ease-out both;animation-delay:.3s;
+`;
+const ResultsCTA = styled.button`
+    display:flex;align-items:center;gap:.4rem;margin-top:.6rem;
+    padding:.5rem 1rem;border:1px solid rgba(0,173,237,.2);border-radius:8px;
+    background:rgba(0,173,237,.06);color:#00adef;font-size:.78rem;font-weight:600;
+    cursor:pointer;transition:all .2s;
+    &:hover{background:rgba(0,173,237,.12);border-color:rgba(0,173,237,.35);transform:translateY(-1px);}
+`;
+
+// Layout: featured + grouped columns
+const ResultsLayout = styled.div`
+    display:flex;gap:.75rem;overflow-x:auto;overflow-y:visible;
+    padding-top:.5rem;padding-bottom:.3rem;
+    scrollbar-width:thin;scrollbar-color:rgba(100,116,139,.15) transparent;
+    &::-webkit-scrollbar{height:3px;}
+    &::-webkit-scrollbar-thumb{background:rgba(100,116,139,.15);border-radius:4px;}
+`;
+
+const FeaturedCard = styled.div`
+    flex:0 0 auto;min-width:185px;position:relative;
+    background:linear-gradient(145deg,rgba(16,185,129,.08) 0%,rgba(6,40,25,.7) 50%,rgba(16,185,129,.03) 100%);
+    border:1.5px solid rgba(16,185,129,.3);border-radius:12px;
+    padding:.85rem 1rem;cursor:pointer;transition:all .25s ease;
+    animation:${featuredGlow} 3s ease-in-out infinite;
+    &:hover{border-color:rgba(16,185,129,.5);transform:translateY(-3px);box-shadow:0 8px 30px rgba(16,185,129,.15);}
+    &::before{
+        content:'TOP TRADE';position:absolute;top:-.45rem;left:.75rem;
+        font-size:.52rem;font-weight:800;letter-spacing:.08em;
+        background:linear-gradient(135deg,#10b981,#059669);color:#fff;
+        padding:2px 8px;border-radius:4px;
+    }
+`;
+
+// Grouped column for wins or losses
+const GroupCol = styled.div`
+    flex:0 0 auto;display:flex;flex-direction:column;gap:.35rem;
+`;
+const GroupLabel = styled.div`
+    font-size:.62rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+    color:${p => p.$win ? '#10b981' : '#64748b'};
+    display:flex;align-items:center;gap:.3rem;padding-left:.1rem;
+`;
+const GroupCard = styled.div`
+    min-width:140px;
+    background:${p => p.$win
+        ? 'linear-gradient(135deg,rgba(16,185,129,.03) 0%,rgba(6,30,22,.5) 100%)'
+        : 'linear-gradient(135deg,rgba(100,116,139,.03) 0%,rgba(15,15,20,.5) 100%)'};
+    border:1px solid ${p => p.$win ? 'rgba(16,185,129,.15)' : 'rgba(100,116,139,.12)'};
+    border-radius:8px;padding:.5rem .65rem;cursor:pointer;transition:all .2s ease;
+    ${p => p.$win ? css`animation:${resultGlow} 4s ease-in-out infinite;animation-delay:${p.$delay || '0s'};` : ''}
+    &:hover{transform:translateY(-2px);border-color:${p => p.$win ? 'rgba(16,185,129,.35)' : 'rgba(100,116,139,.25)'};}
+`;
+const GCRow = styled.div`display:flex;align-items:center;justify-content:space-between;`;
+const GCSymbol = styled.span`font-size:.78rem;font-weight:700;color:#e2e8f0;`;
+const GCDir = styled.span`
+    font-size:.5rem;font-weight:700;letter-spacing:.04em;padding:1px 4px;border-radius:3px;
+    background:${p => p.$long ? 'rgba(16,185,129,.1)' : 'rgba(239,68,68,.1)'};
+    color:${p => p.$long ? '#10b981' : '#ef4444'};
+`;
+const GCPct = styled.span`
+    font-size:1rem;font-weight:900;letter-spacing:-.02em;
+    color:${p => p.$win ? '#10b981' : '#64748b'};
+    ${p => p.$win ? 'text-shadow:0 0 12px rgba(16,185,129,.2);' : ''}
+`;
+const GCBadge = styled.span`
+    font-size:.52rem;font-weight:600;color:${p => p.$win ? '#10b981' : '#64748b'};opacity:.8;
+`;
+
+const RCTop = styled.div`display:flex;align-items:center;justify-content:space-between;margin-bottom:.3rem;`;
+const RCSymbol = styled.span`font-size:${p => p.$featured ? '1.05rem' : '.88rem'};font-weight:700;color:#e2e8f0;`;
+const RCDir = styled.span`
+    font-size:.55rem;font-weight:700;letter-spacing:.04em;padding:2px 5px;border-radius:3px;
+    background:${p => p.$long ? 'rgba(16,185,129,.12)' : 'rgba(239,68,68,.12)'};
+    color:${p => p.$long ? '#10b981' : '#ef4444'};
+`;
+const RCPct = styled.div`
+    font-size:${p => p.$featured ? '1.7rem' : '1.25rem'};font-weight:900;color:#10b981;line-height:1.1;
+    text-shadow:0 0 ${p => p.$featured ? '30px' : '16px'} rgba(16,185,129,${p => p.$featured ? '.4' : '.25'});
+    letter-spacing:-.02em;
+`;
+const RCBadge = styled.span`
+    display:inline-flex;align-items:center;gap:3px;
+    font-size:.6rem;font-weight:600;padding:2px 6px;border-radius:4px;margin-top:.3rem;
+    background:${p => p.$tp === 3 ? 'rgba(16,185,129,.18)' : p.$tp === 2 ? 'rgba(16,185,129,.12)' : 'rgba(16,185,129,.06)'};
+    color:#10b981;border:1px solid rgba(16,185,129,${p => p.$tp === 3 ? '.3' : '.18'});
+`;
+const RCMeta = styled.div`display:flex;align-items:center;justify-content:space-between;margin-top:.25rem;`;
+const RCTime = styled.span`font-size:.58rem;color:#475569;`;
+const RCEntry = styled.span`font-size:.55rem;color:#334155;`;
+const ResultsEmpty = styled.div`
+    padding:1rem 1.25rem;color:#64748b;font-size:.82rem;
+    background:rgba(100,116,139,.04);border:1px dashed rgba(100,116,139,.15);border-radius:10px;text-align:center;
+`;
+const VerifiedDot = styled.span`
+    display:inline-block;width:6px;height:6px;border-radius:50%;
+    background:#10b981;margin-right:2px;box-shadow:0 0 6px rgba(16,185,129,.5);
+`;
+
+// ─── Copy Modal ──────────────────────────────────────────
+const ModalOverlay = styled.div`
+    position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);
+    z-index:1000;display:flex;align-items:center;justify-content:center;
+    animation:${fadeIn} .15s ease-out;
+`;
+const ModalCard = styled.div`
+    background:#0f1729;border:1px solid rgba(100,116,139,.2);border-radius:16px;
+    padding:1.5rem;width:90%;max-width:380px;position:relative;
+`;
+const ModalTitle = styled.h3`font-size:1.05rem;font-weight:800;color:#e2e8f0;margin:0 0 .25rem;`;
+const ModalSub = styled.p`font-size:.78rem;color:#64748b;margin:0 0 1rem;`;
+const ModalClose = styled.button`
+    position:absolute;top:1rem;right:1rem;background:none;border:none;color:#64748b;cursor:pointer;
+    &:hover{color:#e2e8f0;}
+`;
+const ModalOption = styled.button`
+    width:100%;display:flex;align-items:center;gap:.75rem;
+    padding:.85rem 1rem;border-radius:10px;border:1px solid ${p => p.$disabled ? 'rgba(100,116,139,.1)' : 'rgba(16,185,129,.2)'};
+    background:${p => p.$disabled ? 'rgba(100,116,139,.04)' : 'rgba(16,185,129,.06)'};
+    color:${p => p.$disabled ? '#475569' : '#e2e8f0'};
+    cursor:${p => p.$disabled ? 'not-allowed' : 'pointer'};
+    opacity:${p => p.$disabled ? '.5' : '1'};
+    transition:all .2s;margin-bottom:.5rem;text-align:left;
+    ${p => !p.$disabled && '&:hover{border-color:rgba(16,185,129,.4);background:rgba(16,185,129,.1);transform:translateY(-1px);}'}
+`;
+const ModalOptIcon = styled.div`
+    width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+    background:${p => p.$disabled ? 'rgba(100,116,139,.08)' : 'rgba(16,185,129,.1)'};
+    color:${p => p.$disabled ? '#475569' : '#10b981'};flex-shrink:0;
+`;
+const ModalOptText = styled.div`flex:1;`;
+const ModalOptTitle = styled.div`font-size:.85rem;font-weight:700;`;
+const ModalOptDesc = styled.div`font-size:.68rem;color:#64748b;margin-top:.1rem;`;
+const ComingSoonBadge = styled.span`
+    font-size:.55rem;font-weight:700;color:#f59e0b;background:rgba(245,158,11,.1);
+    border:1px solid rgba(245,158,11,.2);padding:1px 6px;border-radius:4px;letter-spacing:.03em;
+`;
+
+// ─── Hero / Above the Fold ───────────────────────────────
+const heroFade = keyframes`from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}`;
+const HeroSection = styled.div`
+    text-align:center;margin-bottom:1.75rem;animation:${heroFade} .6s ease-out;
+`;
+const HeroHeadline = styled.h1`
+    font-size:clamp(1.4rem,3.5vw,2rem);font-weight:900;color:#e2e8f0;margin:0 0 .4rem;
+    letter-spacing:-.02em;line-height:1.2;
+`;
+const HeroAccent = styled.span`
+    background:linear-gradient(135deg,#10b981,#00adef);-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+`;
+const HeroSub = styled.p`
+    font-size:.9rem;color:#94a3b8;margin:0 auto .9rem;max-width:520px;line-height:1.5;
+`;
+const HeroCTA = styled.button`
+    padding:.65rem 1.6rem;border:none;border-radius:10px;font-size:.95rem;font-weight:700;
+    background:linear-gradient(135deg,#10b981,#059669);color:#fff;cursor:pointer;
+    transition:all .25s;display:inline-flex;align-items:center;gap:.5rem;
+    &:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(16,185,129,.3);}
+`;
+const TrustLine = styled.div`
+    display:flex;justify-content:center;gap:1.25rem;flex-wrap:wrap;margin-top:.7rem;
+`;
+const TrustItem = styled.span`
+    display:flex;align-items:center;gap:.3rem;font-size:.72rem;color:#64748b;
+    svg{width:12px;height:12px;color:#10b981;}
+`;
+
+// ─── How It Works ────────────────────────────────────────
+const HIWRow = styled.div`
+    display:flex;justify-content:center;gap:1rem;flex-wrap:wrap;margin-bottom:1.5rem;
+`;
+const HIWStep = styled.div`
+    display:flex;align-items:center;gap:.5rem;padding:.45rem .8rem;
+    background:rgba(100,116,139,.04);border:1px solid rgba(100,116,139,.08);border-radius:8px;
+    animation:${countUp} .5s ease-out both;animation-delay:${p => p.$delay || '0s'};
+`;
+const HIWNum = styled.span`
+    width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-size:.6rem;font-weight:800;color:#10b981;
+    background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.2);flex-shrink:0;
+`;
+const HIWText = styled.span`font-size:.72rem;color:#94a3b8;font-weight:500;`;
 
 // ═══════════════════════════════════════════════════════════
 // BUILD SIGNAL
@@ -436,10 +654,10 @@ function buildSignal(raw, index) {
     const crypto = raw.assetType === 'crypto' || raw.assetType === 'dex' || isCrypto(raw.symbol);
     const long = raw.direction === 'UP';
     const conf = Math.round(raw.confidence || 50);
-    const target = raw.targetPrice;
+    const mlTarget = raw.targetPrice;
 
-    // Use LOCKED values from backend - with sensible fallbacks
-    const entry = raw.entryPrice || raw.entry || raw.livePrice || raw.currentPrice || target;
+    // Use LOCKED values from backend - with sensible percentage-based fallbacks
+    const entry = raw.entryPrice || raw.entry || raw.livePrice || raw.currentPrice || mlTarget;
 
     // Calculate sensible defaults based on entry price (percentage-based)
     const defaultSlPct = 0.02;  // 2% stop loss
@@ -461,15 +679,18 @@ function buildSignal(raw, index) {
     const tp3 = raw.takeProfit3 || raw.tp3 || (long
         ? entry * (1 + defaultTp3Pct)
         : entry * (1 - defaultTp3Pct));
+    const target = tp3; // TP3 is the ultimate target
 
     const changePct = entry ? ((target - entry) / entry * 100) : 0;
     const range = Math.abs(target - entry);
     const rr = Math.abs(entry - sl) > 0 ? (Math.abs(target - entry) / Math.abs(entry - sl)).toFixed(1) : '2.0';
 
-    // Use LIVE price from backend
-    const currentPrice = raw.livePrice || raw.currentPrice || raw.lastPrice || entry;
+    // For closed signals, use the price at result time; for active, use live price
+    const currentPrice = raw.result ? (raw.resultPrice || raw.livePrice || raw.currentPrice || entry) : (raw.livePrice || raw.currentPrice || raw.lastPrice || entry);
     const progress = expired ? 1 : Math.min(ageHours / (days * 24), 0.95);
-    const movePct = raw.liveChangePercent ?? ((currentPrice - entry) / entry * 100);
+    const rawMovePct = raw.result ? ((currentPrice - entry) / entry * 100) : (raw.liveChangePercent ?? ((currentPrice - entry) / entry * 100));
+    // For shorts, invert: price drop = positive profit
+    const movePct = long ? rawMovePct : -rawMovePct;
 
     // Use result from backend if available
     const isWin = raw.result ? raw.result === 'win' : (expired ? (long ? currentPrice > entry : currentPrice < entry) : null);
@@ -503,7 +724,7 @@ function buildSignal(raw, index) {
 
     // Quality tier (only 65%+ shown publicly)
     const confLabel = conf >= 70 ? 'Strong Setup' : conf >= 65 ? 'Moderate Setup' : 'Below Threshold';
-    const isQualified = conf >= 65; // Hard quality gate
+    const isQualified = conf >= 55; // Matches server MIN_CONFIDENCE
 
     // Ideal for tags
     const idealFor = [];
@@ -521,7 +742,7 @@ function buildSignal(raw, index) {
         changePct, movePct, progress, tfLabel, days, tags,
         isWin, resultText,
         tradeScore, riskLevel, confLabel, idealFor, isQualified,
-        createdAt: raw.createdAt, expiresAt: raw.expiresAt,
+        createdAt: raw.createdAt, expiresAt: raw.expiresAt, resultAt: raw.resultAt,
     };
 }
 
@@ -543,7 +764,12 @@ const SignalsPage = () => {
     const [signals, setSignals] = useState([]);
     const [filter, setFilter] = useState('all');
     const [refreshing, setRefreshing] = useState(false);
-    const [tracked, setTracked] = useState(new Set());
+    const [tracked, setTracked] = useState(() => {
+        try { return new Set(JSON.parse(localStorage.getItem('trackedSignals') || '[]')); } catch { return new Set(); }
+    });
+    useEffect(() => {
+        localStorage.setItem('trackedSignals', JSON.stringify([...tracked]));
+    }, [tracked]);
     const [activity, setActivity] = useState([]);
     const [lastUpdated, setLastUpdated] = useState(null);
     const [secSinceUpdate, setSecSinceUpdate] = useState(0);
@@ -556,14 +782,14 @@ const SignalsPage = () => {
             // Try authenticated API first (returns live prices)
             if (api) {
                 try {
-                    const res = await api.get('/predictions/recent?limit=30&includeLivePrices=true');
+                    const res = await api.get('/predictions/recent?limit=200&includeLivePrices=true');
                     preds = Array.isArray(res.data) ? res.data : [];
                 } catch (e) { /* fall through to public endpoint */ }
             }
 
             // Fallback to public endpoint
             if (!preds.length) {
-                const res = await fetch(`${API_URL}/predictions/recent?limit=30`);
+                const res = await fetch(`${API_URL}/predictions/recent?limit=200`);
                 if (res.ok) {
                     const data = await res.json();
                     preds = Array.isArray(data) ? data : [];
@@ -590,13 +816,22 @@ const SignalsPage = () => {
         return () => clearInterval(iv);
     }, [lastUpdated]);
 
-    // QUALITY GATE: only show signals >= 65% confidence (closed signals always shown for trust)
-    const qualifiedSignals = signals.filter(s => s.isQualified || s.status === 'closed');
+    // QUALITY GATE: show signals >= 55% confidence (matches server MIN_CONFIDENCE) or closed
+    const qualifiedSignals = signals.filter(s => s.conf >= 55 || s.status === 'closed');
 
-    // Activity feed — only qualified signals, contextual messages
+    // Activity feed — prioritize recent results (TP/SL hits), then new signals
     useEffect(() => {
         if (!qualifiedSignals.length) return;
-        setActivity(qualifiedSignals.slice(0, 12).map(s => {
+        // Sort: closed with results first (by resultAt), then active by createdAt
+        const activitySorted = [...qualifiedSignals].sort((a, b) => {
+            const aHasResult = a.status === 'closed' && a.resultText;
+            const bHasResult = b.status === 'closed' && b.resultText;
+            if (aHasResult && !bHasResult) return -1;
+            if (!aHasResult && bHasResult) return 1;
+            if (aHasResult && bHasResult) return new Date(b.resultAt || b.createdAt) - new Date(a.resultAt || a.createdAt);
+            return new Date(b.createdAt) - new Date(a.createdAt);
+        });
+        setActivity(activitySorted.slice(0, 12).map(s => {
             const dir = s.long ? 'LONG' : 'SHORT';
             const pct = `${s.movePct >= 0 ? '+' : ''}${s.movePct.toFixed(1)}%`;
             const prox = proximityStatus(s);
@@ -606,14 +841,14 @@ const SignalsPage = () => {
             if (s.status === 'new')
                 return { ...base, icon: '🚨', t: `${s.symbol} ${dir} — ${tier} Setup (${s.conf}%)`, c: '#10b981' };
             if (s.status === 'closed' && s.isWin)
-                return { ...base, icon: '🎯', t: `${s.symbol} ${s.resultText} ${pct}`, c: '#10b981', time: timeAgo(s.expiresAt) };
+                return { ...base, icon: '🎯', t: `${s.symbol} ${s.resultText} ${pct}`, c: '#10b981', time: timeAgo(s.resultAt || s.createdAt) };
             if (s.status === 'closed')
-                return { ...base, icon: '❌', t: `${s.symbol} ${s.resultText} ${pct}`, c: '#ef4444', time: timeAgo(s.expiresAt) };
+                return { ...base, icon: '❌', t: `${s.symbol} ${s.resultText} ${pct}`, c: '#ef4444', time: timeAgo(s.resultAt || s.createdAt) };
             if (prox === 'near-target')
                 return { ...base, icon: '🎯', t: `${s.symbol} approaching target ${pct}`, c: '#10b981' };
             if (prox === 'near-sl')
                 return { ...base, icon: '⚠️', t: `${s.symbol} nearing stop loss`, c: '#f59e0b' };
-            const fav = s.long ? s.movePct >= 0 : s.movePct <= 0;
+            const fav = s.movePct >= 0;
             if (fav && Math.abs(s.movePct) > 1)
                 return { ...base, icon: '📈', t: `Momentum building on ${s.symbol} ${pct}`, c: '#10b981' };
             return { ...base, icon: '📊', t: `${s.symbol} ${dir} — ${tier} (${s.conf}%)`, c: '#00adef' };
@@ -621,11 +856,32 @@ const SignalsPage = () => {
     }, [qualifiedSignals]);
 
     // Copy trade setup
+    const [copyModal, setCopyModal] = useState(null); // holds signal data when modal is open
+
     const copySetup = (e, s) => {
         e.stopPropagation();
-        const text = `${s.symbol} ${s.long?'LONG':'SHORT'}\nEntry: ${fmtPrice(s.entry)}\nSL: ${fmtPrice(s.sl)}\nTP1: ${fmtPrice(s.tp1)}\nTP2: ${fmtPrice(s.tp2)}\nTP3: ${fmtPrice(s.tp3)}\nR/R: 1:${s.rr}\nConf: ${s.conf}%`;
-        navigator.clipboard.writeText(text);
-        toast.success('Trade setup copied to clipboard', 'Copied');
+        setCopyModal(s);
+    };
+
+    const executeCopyToPaper = () => {
+        if (!copyModal) return;
+        navigate('/paper-trading', {
+            state: {
+                signal: {
+                    symbol: copyModal.symbol,
+                    long: copyModal.long,
+                    crypto: copyModal.crypto,
+                    entry: copyModal.entry,
+                    sl: copyModal.sl,
+                    tp1: copyModal.tp1,
+                    tp2: copyModal.tp2,
+                    tp3: copyModal.tp3,
+                    conf: copyModal.conf,
+                    rr: copyModal.rr
+                }
+            }
+        });
+        setCopyModal(null);
     };
 
     // Sort by trade score (highest first), then by recency
@@ -638,10 +894,29 @@ const SignalsPage = () => {
     // Mark top signal as "Best Setup" (highest-scored active/new signal with 70%+ conf)
     const bestId = ranked.find(s => s.status !== 'closed' && s.conf >= 70)?.id || null;
 
-    // Cap active signals at 20 (closed always shown for trust)
+    // Split closed signals: recent (< 24h) stay in feed, older go to archive
+    const DAY_MS = 24 * 60 * 60 * 1000;
     const activeRanked = ranked.filter(s => s.status !== 'closed').slice(0, 20);
-    const closedRanked = ranked.filter(s => s.status === 'closed');
-    const capped = [...activeRanked, ...closedRanked];
+    const allClosed = ranked.filter(s => s.status === 'closed');
+    const recentClosed = allClosed.filter(s => {
+        const closedTime = new Date(s.resultAt || s.createdAt).getTime();
+        return (Date.now() - closedTime) < DAY_MS;
+    });
+    const archivedClosed = allClosed.filter(s => {
+        const closedTime = new Date(s.resultAt || s.createdAt).getTime();
+        return (Date.now() - closedTime) >= DAY_MS;
+    });
+    const capped = [...activeRanked, ...recentClosed];
+
+    // Group archive by date
+    const archiveByDate = {};
+    archivedClosed.forEach(s => {
+        const d = new Date(s.resultAt || s.createdAt);
+        const key = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        if (!archiveByDate[key]) archiveByDate[key] = [];
+        archiveByDate[key].push(s);
+    });
+    const archiveDates = Object.keys(archiveByDate);
 
     // Filter by asset type, then by status
     const assetFiltered = assetTab === 'stocks' ? capped.filter(s => !s.crypto)
@@ -649,16 +924,58 @@ const SignalsPage = () => {
         : capped;
 
     const filtered = filter === 'all' ? assetFiltered
-        : filter === 'high' ? assetFiltered.filter(s => s.conf >= 70)
+        : filter === 'active' ? assetFiltered.filter(s => s.status === 'active' || s.status === 'new')
+        : filter === 'tracking' ? qualifiedSignals.filter(s => tracked.has(s.id))
+        : filter === 'closed' ? assetFiltered.filter(s => s.status === 'closed')
+        : filter === 'high' ? assetFiltered.filter(s => s.conf >= 70 && s.status !== 'closed')
+        : filter === 'archive' ? (assetTab === 'stocks' ? archivedClosed.filter(s => !s.crypto) : assetTab === 'crypto' ? archivedClosed.filter(s => s.crypto) : archivedClosed)
         : assetFiltered.filter(s => s.status === filter);
 
-    const counts = { all: assetFiltered.length, new: assetFiltered.filter(s=>s.status==='new').length, active: assetFiltered.filter(s=>s.status!=='closed').length, closed: assetFiltered.filter(s=>s.status==='closed').length };
-    const winRate = (() => { const c = signals.filter(s=>s.status==='closed'); if (!c.length) return 0; return Math.round(c.filter(s=>s.isWin).length / c.length * 100); })();
+    // Server-side stats (single source of truth for all pages)
+    const [globalStats, setGlobalStats] = useState(null);
+    useEffect(() => {
+        fetch(`${API_URL}/predictions/stats`).then(r => r.json()).then(d => { if (d.success) setGlobalStats(d); }).catch(() => {});
+    }, [lastUpdated]);
+
+    const counts = { all: assetFiltered.length, active: assetFiltered.filter(s=>s.status!=='closed').length, tracking: qualifiedSignals.filter(s=>tracked.has(s.id)).length, closed: recentClosed.length, archive: archivedClosed.length, high: assetFiltered.filter(s=>s.conf>=70&&s.status!=='closed').length };
+    const winRate = globalStats?.winRate ?? null;
+
+    // Verified results — grouped wins/losses, featured best win, performance stats
+    // Filter out broken signals: entry=resultPrice (0% move), or movePct > 50% (old bad data)
+    const closedWithResult = allClosed.filter(s => s.resultText && Math.abs(s.movePct) > 0.01 && Math.abs(s.movePct) < 50);
+    const winList = closedWithResult.filter(s => s.isWin).sort((a, b) => b.movePct - a.movePct).slice(0, 5);
+    const lossList = closedWithResult.filter(s => !s.isWin).sort((a, b) => new Date(b.resultAt || b.createdAt) - new Date(a.resultAt || a.createdAt)).slice(0, 4);
+    const featuredWin = winList[0] || null;
+    const otherWins = winList.slice(1);
+    // Use server stats for accurate counts (not capped by 200 fetch limit)
+    const totalTracked = globalStats?.total || signals.length;
+    const totalClosed = globalStats?.closed || closedWithResult.length;
+    const totalWins = globalStats?.wins || closedWithResult.filter(s => s.isWin).length;
+    const totalLosses = globalStats?.losses || closedWithResult.filter(s => !s.isWin).length;
+    const allWins = closedWithResult.filter(s => s.isWin);
+    const allLosses = closedWithResult.filter(s => !s.isWin);
+    const avgWin = allWins.length ? (allWins.reduce((s, w) => s + w.movePct, 0) / allWins.length) : 0;
+    const avgLoss = allLosses.length ? (allLosses.reduce((s, l) => s + l.movePct, 0) / allLosses.length) : 0;
+    // Edge = (win rate * avg win) + (loss rate * avg loss) — expected value per trade
+    const wr = winRate !== null ? winRate / 100 : 0;
+    const edge = totalClosed > 0 ? (wr * avgWin + (1 - wr) * avgLoss) : 0;
 
     return (
         <Page>
             <SEO title={`${assetTab==='stocks'?'Stock':assetTab==='crypto'?'Crypto':'Live'} Signal Feed — Nexus Signal`} description="Real-time AI-generated trade setups for stocks and crypto." />
             <Container>
+                {/* ─── Hero: Above the fold ─── */}
+                <HeroSection>
+                    <HeroHeadline>AI tells you what to trade — <HeroAccent>before the market moves.</HeroAccent></HeroHeadline>
+                    <HeroSub>Real-time trade setups with entry, stop loss, and targets. Every trade tracked publicly.</HeroSub>
+                    {!isPremium && <HeroCTA onClick={() => navigate('/pricing')}><Zap size={16}/> Start Free</HeroCTA>}
+                    <TrustLine>
+                        <TrustItem><CheckCircle/> Tracked live</TrustItem>
+                        <TrustItem><Shield/> No edits</TrustItem>
+                        <TrustItem><Target/> No cherry-picking</TrustItem>
+                    </TrustLine>
+                </HeroSection>
+
                 <Header>
                     <HeaderRow>
                         <TitleGroup>
@@ -679,10 +996,17 @@ const SignalsPage = () => {
                         </AssetTabs>
 
                         <Controls>
-                            {['all','new','active','closed','high'].map(f => (
-                                <FilterBtn key={f} $active={filter===f} onClick={()=>setFilter(f)}>
-                                    {f==='high'?'High Conf':f.charAt(0).toUpperCase()+f.slice(1)}
-                                    {f!=='high'&&counts[f]>0&&<span style={{opacity:.5}}> ({counts[f]})</span>}
+                            {[
+                                { key: 'all', label: 'All' },
+                                { key: 'active', label: 'Active' },
+                                { key: 'tracking', label: 'Tracking' },
+                                { key: 'closed', label: 'Closed' },
+                                { key: 'archive', label: 'Archive' },
+                                { key: 'high', label: 'High Conf' },
+                            ].map(f => (
+                                <FilterBtn key={f.key} $active={filter===f.key} onClick={()=>setFilter(f.key)}>
+                                    {f.label}
+                                    {counts[f.key]>0&&<span style={{opacity:.5}}> ({counts[f.key]})</span>}
                                 </FilterBtn>
                             ))}
                             <RefreshBtn className={refreshing?'spinning':''} onClick={()=>fetchSignals(true)}>
@@ -692,15 +1016,133 @@ const SignalsPage = () => {
                     </HeaderRow>
                 </Header>
 
+                <ResultsSection>
+                    <ResultsHeader>
+                        <ResultsTitleGroup>
+                            <ResultsTitle><VerifiedDot/> Verified Results</ResultsTitle>
+                            <ResultsSub>Wins and losses. Fully transparent. Every trade tracked.</ResultsSub>
+                        </ResultsTitleGroup>
+                    </ResultsHeader>
+
+                    {totalClosed > 0 && (
+                        <PerfBar>
+                            <PerfStat $delay="0s"><PerfVal $c={winRate >= 50 ? '#10b981' : '#f59e0b'}>{winRate !== null ? `${winRate}%` : '--'}</PerfVal> win rate</PerfStat>
+                            <PerfDivider>|</PerfDivider>
+                            <PerfStat $delay=".05s">avg win <PerfVal $c="#10b981">+{avgWin.toFixed(1)}%</PerfVal></PerfStat>
+                            <PerfDivider>|</PerfDivider>
+                            <PerfStat $delay=".1s">avg loss <PerfVal $c="#64748b">{avgLoss.toFixed(1)}%</PerfVal></PerfStat>
+                            <PerfDivider>|</PerfDivider>
+                            <PerfStat $delay=".15s"><PerfVal $c="#10b981">{totalWins}</PerfVal>W <PerfVal $c="#64748b">{totalLosses}</PerfVal>L</PerfStat>
+                            <PerfDivider>|</PerfDivider>
+                            <PerfStat $delay=".2s"><PerfVal $c="#00adef">{totalTracked}</PerfVal> tracked</PerfStat>
+                            {edge > 0 && <>
+                                <PerfDivider>|</PerfDivider>
+                                <EdgeBadge>Edge: +{edge.toFixed(1)}% per trade</EdgeBadge>
+                            </>}
+                        </PerfBar>
+                    )}
+
+                    <ContextLine>Winning trades outweigh losses over time. This is a probability-based system — not every trade wins.</ContextLine>
+
+                    {closedWithResult.length > 0 ? (
+                        <ResultsLayout>
+                            {/* Featured best trade */}
+                            {featuredWin && (
+                                <FeaturedCard onClick={() => navigate(`/signal/${featuredWin.id}`)}>
+                                    <RCTop>
+                                        <RCSymbol $featured>{featuredWin.symbol}</RCSymbol>
+                                        <RCDir $long={featuredWin.long}>{featuredWin.long ? 'LONG' : 'SHORT'}</RCDir>
+                                    </RCTop>
+                                    <RCPct $featured>+{featuredWin.movePct.toFixed(1)}%</RCPct>
+                                    <RCBadge $tp={featuredWin.resultText?.includes('TP3') ? 3 : featuredWin.resultText?.includes('TP2') ? 2 : 1}>
+                                        <CheckCircle size={10}/> {featuredWin.resultText}
+                                    </RCBadge>
+                                    <RCMeta>
+                                        <RCTime>{timeAgo(featuredWin.resultAt || featuredWin.createdAt)}</RCTime>
+                                        <RCEntry>{fmtPrice(featuredWin.entry)} entry</RCEntry>
+                                    </RCMeta>
+                                </FeaturedCard>
+                            )}
+
+                            {/* Winners column */}
+                            {otherWins.length > 0 && (
+                                <GroupCol>
+                                    <GroupLabel $win><CheckCircle size={11}/> Winners</GroupLabel>
+                                    {otherWins.map((s, i) => (
+                                        <GroupCard key={s.id} $win $delay={`${i * 0.3}s`} onClick={() => navigate(`/signal/${s.id}`)}>
+                                            <GCRow>
+                                                <GCSymbol>{s.symbol}</GCSymbol>
+                                                <GCPct $win>+{s.movePct.toFixed(1)}%</GCPct>
+                                            </GCRow>
+                                            <GCRow>
+                                                <GCDir $long={s.long}>{s.long ? 'LONG' : 'SHORT'}</GCDir>
+                                                <GCBadge $win>{s.resultText}</GCBadge>
+                                            </GCRow>
+                                        </GroupCard>
+                                    ))}
+                                </GroupCol>
+                            )}
+
+                            {/* Losses column — visible but de-emphasized */}
+                            {lossList.length > 0 && (
+                                <GroupCol style={{opacity:.7}}>
+                                    <GroupLabel><XCircle size={11}/> Losses</GroupLabel>
+                                    {lossList.map((s, i) => (
+                                        <GroupCard key={s.id} onClick={() => navigate(`/signal/${s.id}`)}>
+                                            <GCRow>
+                                                <GCSymbol>{s.symbol}</GCSymbol>
+                                                <GCPct>{s.movePct.toFixed(1)}%</GCPct>
+                                            </GCRow>
+                                            <GCRow>
+                                                <GCDir $long={s.long}>{s.long ? 'LONG' : 'SHORT'}</GCDir>
+                                                <GCBadge>{s.resultText}</GCBadge>
+                                            </GCRow>
+                                        </GroupCard>
+                                    ))}
+                                </GroupCol>
+                            )}
+                        </ResultsLayout>
+                    ) : (
+                        <ResultsEmpty>No completed trades yet — results will appear here as signals hit their targets.</ResultsEmpty>
+                    )}
+                    {!isPremium && closedWithResult.length > 0 && (
+                        <ResultsCTA onClick={() => navigate('/pricing')}>
+                            <Zap size={14}/> Get live signals with entry, SL & TP levels <ArrowUpRight size={13}/>
+                        </ResultsCTA>
+                    )}
+                </ResultsSection>
+
+                {/* ─── How It Works ─── */}
+                <HIWRow>
+                    <HIWStep $delay="0s"><HIWNum>1</HIWNum><HIWText>AI scans the market for setups</HIWText></HIWStep>
+                    <HIWStep $delay=".1s"><HIWNum>2</HIWNum><HIWText>Generates trade with entry, SL & targets</HIWText></HIWStep>
+                    <HIWStep $delay=".2s"><HIWNum>3</HIWNum><HIWText>Tracks performance live — no edits, ever</HIWText></HIWStep>
+                </HIWRow>
+
                 <Grid>
                     <Feed>
                         {filtered.length===0&&<Empty>No signals match this filter. Check back soon.</Empty>}
+                        {filter==='archive'&&archiveDates.length>0&&(
+                            <ArchiveHeader>
+                                <Clock size={14}/> Signal Archive — {archivedClosed.length} closed signals
+                            </ArchiveHeader>
+                        )}
                         {filtered.map((s, i) => {
-                            const posMove = s.long ? s.movePct >= 0 : s.movePct <= 0;
+                            const posMove = s.movePct >= 0; // movePct is already direction-aware (inverted for shorts)
                             const urgency = expiryUrgency(s.expiresAt);
 
-                            return (
-                            <Card key={s.id} $status={s.status} $highConf={s.conf>=70} $prox={proximityStatus(s)} $expiring={urgency==='soon'||urgency==='urgent'} $delay={`${i*.04}s`} onClick={()=>navigate(`/signal/${s.id}`)}>
+                            // Date separator for archive view
+                            let dateSep = null;
+                            if (filter === 'archive' && i > 0) {
+                                const prevDate = new Date(filtered[i-1].resultAt || filtered[i-1].createdAt).toLocaleDateString();
+                                const thisDate = new Date(s.resultAt || s.createdAt).toLocaleDateString();
+                                if (prevDate !== thisDate) dateSep = <DateSeparator key={`sep-${i}`}>{new Date(s.resultAt || s.createdAt).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</DateSeparator>;
+                            }
+                            if (filter === 'archive' && i === 0) dateSep = <DateSeparator key="sep-0">{new Date(s.resultAt || s.createdAt).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</DateSeparator>;
+
+                            return (<React.Fragment key={s.id}>
+                            {dateSep}
+                            <Card $status={s.status} $highConf={s.conf>=70} $prox={proximityStatus(s)} $expiring={urgency==='soon'||urgency==='urgent'} $delay={`${i*.04}s`} onClick={()=>navigate(`/signal/${s.id}`)}>
                                 <CardHeader>
                                     <SymbolGroup>
                                         <SymbolName onClick={(e)=>{e.stopPropagation();navigate(s.crypto?`/crypto/${s.symbol}`:`/stock/${s.symbol}`);}} style={{cursor:'pointer',textDecoration:'none'}} title={`View ${s.symbol} details`}>{s.symbol}</SymbolName>
@@ -730,6 +1172,14 @@ const SignalsPage = () => {
                                         <LevelBox><LevelLabel>Stop Loss <RiskTag $r={s.riskLevel}>{s.riskLevel} Risk</RiskTag></LevelLabel><LevelValue $c="#ef4444">{fmtPrice(s.sl)}</LevelValue></LevelBox>
                                         <LevelBox><LevelLabel>Risk / Reward</LevelLabel><LevelValue $c="#00adef" title="Reward-to-risk ratio: higher = better risk-adjusted trade">1:{s.rr}</LevelValue></LevelBox>
                                     </LevelsGrid>
+
+                                    {s.status !== 'closed' && s.currentPrice && s.currentPrice !== s.entry && (
+                                        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'.4rem .6rem',margin:'.3rem 0',background:'rgba(0,173,237,.04)',border:'1px solid rgba(0,173,237,.12)',borderRadius:'8px'}}>
+                                            <span style={{fontSize:'.7rem',color:'#64748b',fontWeight:500}}>LIVE PRICE</span>
+                                            <span style={{fontSize:'1rem',fontWeight:800,color:posMove?'#10b981':'#ef4444'}}>{fmtPrice(s.currentPrice)}</span>
+                                            <span style={{fontSize:'.75rem',fontWeight:700,color:posMove?'#10b981':'#ef4444'}}>{s.movePct>=0?'+':''}{s.movePct.toFixed(2)}%</span>
+                                        </div>
+                                    )}
 
                                     <TPRow>
                                         <TPBox><TPLabel>TP1</TPLabel><TPValue>{fmtPrice(s.tp1)}</TPValue></TPBox>
@@ -785,8 +1235,8 @@ const SignalsPage = () => {
                                         </TagGroup>
                                         {s.status!=='closed'&&(
                                             <div style={{display:'flex',gap:'.4rem'}}>
-                                                <TrackBtn $tracked={tracked.has(s.id)} onClick={(e)=>{e.stopPropagation();setTracked(p=>{const n=new Set(p);if(n.has(s.id))n.delete(s.id);else n.add(s.id);return n;});toast.success(tracked.has(s.id)?'Removed from tracked':'Tracking this trade','Trade');}}>
-                                                    {tracked.has(s.id)?<><CheckCircle size={11}/> Tracking</>:<><Activity size={11}/> Track Trade</>}
+                                                <TrackBtn $tracked={tracked.has(s.id)} onClick={(e)=>{e.stopPropagation();setTracked(p=>{const n=new Set(p);if(n.has(s.id))n.delete(s.id);else n.add(s.id);return n;});toast.success(tracked.has(s.id)?'Removed from tracking':'Added to tracking','Trade');}}>
+                                                    {tracked.has(s.id)?<><CheckCircle size={11}/> Tracking</>:<><Activity size={11}/> Track</>}
                                                 </TrackBtn>
                                                 <ActionBtn onClick={(e)=>copySetup(e,s)}>
                                                     <Copy size={12}/> Copy Setup
@@ -796,7 +1246,7 @@ const SignalsPage = () => {
                                     </MetaRow>
                                 </CardBody>
                             </Card>
-                            );
+                            </React.Fragment>);
                         })}
                     </Feed>
 
@@ -814,8 +1264,8 @@ const SignalsPage = () => {
                             </ActivityList>
 
                             <StatsRow>
-                                <StatBox><StatVal $c="#00adef">{signals.length}</StatVal><StatLbl>Signals</StatLbl></StatBox>
-                                <StatBox><StatVal $c="#10b981">{winRate}%</StatVal><StatLbl>Win Rate</StatLbl></StatBox>
+                                <StatBox><StatVal $c="#00adef">{totalTracked}</StatVal><StatLbl>Signals</StatLbl></StatBox>
+                                <StatBox><StatVal $c="#10b981">{winRate !== null ? `${winRate}%` : '—'}</StatVal><StatLbl>Win Rate</StatLbl></StatBox>
                                 <StatBox><StatVal $c="#f59e0b">{counts.active}</StatVal><StatLbl>Active</StatLbl></StatBox>
                             </StatsRow>
 
@@ -830,6 +1280,35 @@ const SignalsPage = () => {
                     </SideCol>
                 </Grid>
             </Container>
+
+            {/* Copy Setup Modal */}
+            {copyModal && (
+                <ModalOverlay onClick={() => setCopyModal(null)}>
+                    <ModalCard onClick={e => e.stopPropagation()}>
+                        <ModalClose onClick={() => setCopyModal(null)}><XCircle size={18}/></ModalClose>
+                        <ModalTitle>Copy Trade Setup</ModalTitle>
+                        <ModalSub>{copyModal.symbol} {copyModal.long ? 'LONG' : 'SHORT'} — {copyModal.conf}% confidence</ModalSub>
+
+                        <ModalOption onClick={executeCopyToPaper}>
+                            <ModalOptIcon><Activity size={18}/></ModalOptIcon>
+                            <ModalOptText>
+                                <ModalOptTitle>Paper Trade</ModalOptTitle>
+                                <ModalOptDesc>Execute with virtual $100K — no risk</ModalOptDesc>
+                            </ModalOptText>
+                            <ArrowUpRight size={16} color="#10b981"/>
+                        </ModalOption>
+
+                        <ModalOption $disabled>
+                            <ModalOptIcon $disabled><DollarSign size={18}/></ModalOptIcon>
+                            <ModalOptText>
+                                <ModalOptTitle>Real Portfolio</ModalOptTitle>
+                                <ModalOptDesc>Execute with connected brokerage</ModalOptDesc>
+                            </ModalOptText>
+                            <ComingSoonBadge>COMING SOON</ComingSoonBadge>
+                        </ModalOption>
+                    </ModalCard>
+                </ModalOverlay>
+            )}
         </Page>
     );
 };
