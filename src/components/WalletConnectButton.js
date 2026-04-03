@@ -4,6 +4,7 @@ import styled, { keyframes, css } from 'styled-components';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useWallet } from '../context/WalletContext';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import {
     Wallet,
     Link2,
