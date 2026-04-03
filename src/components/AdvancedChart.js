@@ -2418,24 +2418,7 @@ const AdvancedChart = ({
             <ChartWrapper $height={height}>
                 <div ref={chartContainerRef} />
 
-                {/* Pattern Overlay - SVG visual overlays for detected patterns */}
-                {patternEnabled && filteredPatterns.length > 0 && chartVisibleRange && sanitizedData.length > 0 && (
-                    <PatternOverlay
-                        patterns={filteredPatterns}
-                        chartDimensions={chartVisibleRange.dimensions}
-                        priceScale={{
-                            min: Math.min(...sanitizedData.slice(
-                                Math.max(0, chartVisibleRange.timeScale.start),
-                                Math.min(sanitizedData.length, chartVisibleRange.timeScale.end + 1)
-                            ).map(d => d.low)),
-                            max: Math.max(...sanitizedData.slice(
-                                Math.max(0, chartVisibleRange.timeScale.start),
-                                Math.min(sanitizedData.length, chartVisibleRange.timeScale.end + 1)
-                            ).map(d => d.high))
-                        }}
-                        timeScale={chartVisibleRange.timeScale}
-                    />
-                )}
+                {/* Pattern info shown in PatternBadge cards below — overlay removed for clarity */}
 
                 {/* Drawing Tools - Trendlines, Fibonacci, Annotations */}
                 {drawingEnabled && chartVisibleRange && sanitizedData.length > 0 && (
@@ -2556,16 +2539,13 @@ const AdvancedChart = ({
                                                 )}
                                             </div>
                                         )}
-                                        <div style={{
-                                            fontSize: '0.65rem',
-                                            color: 'rgba(255,255,255,0.5)',
-                                            marginTop: '4px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '4px'
-                                        }}>
-                                            <Eye size={10} />
-                                            Click to view on chart
+                                        {pattern.description && (
+                                            <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', marginTop: '4px', lineHeight: 1.4 }}>
+                                                {pattern.description}
+                                            </div>
+                                        )}
+                                        <div style={{ fontSize: '0.6rem', color: pattern.type === 'bullish' ? 'rgba(34,197,94,0.6)' : 'rgba(239,68,68,0.6)', marginTop: '3px', fontWeight: 600 }}>
+                                            {pattern.type === 'bullish' ? 'Suggested: Look for long entries' : 'Suggested: Look for short entries or exit longs'}
                                         </div>
                                     </div>
                                 ))}
