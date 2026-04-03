@@ -1519,15 +1519,22 @@ useEffect(() => {
                     const sigArray = Array.isArray(signals) ? signals : [];
                     if (sigArray.length > 0) {
                         const movers = sigArray
-                            .filter(s => s.currentPrice && s.confidence >= 65)
+                            .filter(s => s.entryPrice > 0 && s.confidence >= 55)
                             .slice(0, 10)
-                            .map(s => ({
-                                symbol: s.symbol?.split(':')[0]?.replace(/USDT|USD/i, '') || s.symbol,
-                                price: s.currentPrice || 0,
-                                change: s.priceChangePercent || 0,
-                                direction: s.direction,
-                                confidence: s.confidence
-                            }));
+                            .map(s => {
+                                const entry = s.entryPrice || s.currentPrice;
+                                const live = s.livePrice || s.currentPrice || entry;
+                                const isLong = s.direction === 'UP';
+                                const rawPct = entry > 0 ? ((live - entry) / entry) * 100 : 0;
+                                const changePct = isLong ? rawPct : -rawPct;
+                                return {
+                                    symbol: s.symbol?.split(':')[0]?.replace(/USDT|USD/i, '') || s.symbol,
+                                    price: live || 0,
+                                    change: Math.max(-99, Math.min(99, changePct)), // Cap at +/-99%
+                                    direction: s.direction,
+                                    confidence: s.confidence
+                                };
+                            });
                         if (movers.length > 0) {
                             setMoversTicker(movers);
                         } else {
