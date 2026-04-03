@@ -233,16 +233,33 @@ const SignalDetailPage = () => {
         const conf = Math.round(raw.confidence || raw.liveConfidence || 50);
         const target = raw.targetPrice || raw.target_price;
 
-        // Use LOCKED values from backend (never recalculate)
-        const entry = raw.entryPrice || raw.entry || (raw.targetPrice / (1 + (long ? 0.05 : -0.05)));
-        const sl = raw.stopLoss || raw.sl || (long ? entry - Math.abs(target - entry) * 0.4 : entry + Math.abs(target - entry) * 0.4);
-        const tp1 = raw.takeProfit1 || raw.tp1 || (long ? entry + Math.abs(target - entry) * 0.4 : entry - Math.abs(target - entry) * 0.4);
-        const tp2 = raw.takeProfit2 || raw.tp2 || target;
-        const tp3 = raw.takeProfit3 || raw.tp3 || (long ? entry + Math.abs(target - entry) * 1.5 : entry - Math.abs(target - entry) * 1.5);
+        // Use LOCKED values from backend - with sensible fallbacks
+        const entry = raw.entryPrice || raw.entry || raw.livePrice || raw.currentPrice || target;
+
+        // Calculate sensible defaults based on entry price (percentage-based)
+        const defaultSlPct = 0.02;  // 2% stop loss
+        const defaultTp1Pct = 0.02; // 2% first target
+        const defaultTp2Pct = 0.05; // 5% second target
+        const defaultTp3Pct = 0.08; // 8% third target
+
+        // For LONG: SL below entry, TPs above entry
+        // For SHORT: SL above entry, TPs below entry
+        const sl = raw.stopLoss || raw.sl || (long
+            ? entry * (1 - defaultSlPct)
+            : entry * (1 + defaultSlPct));
+        const tp1 = raw.takeProfit1 || raw.tp1 || (long
+            ? entry * (1 + defaultTp1Pct)
+            : entry * (1 - defaultTp1Pct));
+        const tp2 = raw.takeProfit2 || raw.tp2 || (long
+            ? entry * (1 + defaultTp2Pct)
+            : entry * (1 - defaultTp2Pct));
+        const tp3 = raw.takeProfit3 || raw.tp3 || (long
+            ? entry * (1 + defaultTp3Pct)
+            : entry * (1 - defaultTp3Pct));
 
         const changePct = entry ? ((target - entry) / entry * 100) : 0;
         const range = Math.abs(target - entry);
-        const rr = range > 0 ? (Math.abs(target - entry) / Math.abs(entry - sl)).toFixed(1) : '2.0';
+        const rr = Math.abs(entry - sl) > 0 ? (Math.abs(target - entry) / Math.abs(entry - sl)).toFixed(1) : '2.0';
 
         // Use LIVE price from backend
         const progress = expired ? 1 : Math.min(ageHours / (days * 24), 0.95);
