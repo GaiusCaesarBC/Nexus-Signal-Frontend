@@ -1349,6 +1349,7 @@ const DashboardPage = () => {
     const [loadingChart, setLoadingChart] = useState(false);
     const [isChartRefreshing, setIsChartRefreshing] = useState(false);
     const [searchSymbol, setSearchSymbol] = useState('');
+    const [communityTab, setCommunityTab] = useState('traders');
 
     // Live price streaming (crypto via Binance WebSocket, stocks via SSE)
     const { isConnected: isLive, lastPrice: livePrice } = useLivePrice(selectedSymbol);
@@ -2154,7 +2155,52 @@ const handleOpenRewardModal = () => {
                                 livePrice={livePrice}
                                 isLive={isLive}
                             />
-                            <PatternDetector symbol={selectedSymbol} chartData={advancedChartData} />
+                            {/* AI Insight Panel */}
+                            <div style={{background:'rgba(15,23,42,.6)',border:'1px solid rgba(100,116,139,.1)',borderRadius:12,padding:'1rem',marginTop:'.5rem'}}>
+                                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'.5rem'}}>
+                                    <div style={{display:'flex',alignItems:'center',gap:'.4rem'}}>
+                                        <Brain size={16} color="#a78bfa"/>
+                                        <span style={{fontSize:'.85rem',fontWeight:700,color:'#e2e8f0'}}>AI Market Insight — {selectedSymbol}</span>
+                                    </div>
+                                    <span style={{fontSize:'.6rem',color:'#475569'}}>Updated with latest data</span>
+                                </div>
+                                {advancedChartData.length > 10 ? (() => {
+                                    const last = advancedChartData[advancedChartData.length - 1];
+                                    const prev = advancedChartData[advancedChartData.length - 10];
+                                    const change = prev?.close ? ((last.close - prev.close) / prev.close * 100) : 0;
+                                    const trend = change > 1 ? 'Bullish' : change < -1 ? 'Bearish' : 'Neutral';
+                                    const trendColor = trend === 'Bullish' ? '#10b981' : trend === 'Bearish' ? '#ef4444' : '#f59e0b';
+                                    const vol = advancedChartData.slice(-5).reduce((s, c) => s + (c.volume || 0), 0) / 5;
+                                    const prevVol = advancedChartData.slice(-15, -5).reduce((s, c) => s + (c.volume || 0), 0) / 10;
+                                    const volStatus = vol > prevVol * 1.3 ? 'High' : vol < prevVol * 0.7 ? 'Low' : 'Normal';
+                                    return (
+                                        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(120px,1fr))',gap:'.5rem'}}>
+                                            <div style={{padding:'.5rem',background:'rgba(100,116,139,.04)',borderRadius:8,border:'1px solid rgba(100,116,139,.06)'}}>
+                                                <div style={{fontSize:'.6rem',color:'#64748b',marginBottom:'.15rem'}}>TREND</div>
+                                                <div style={{fontSize:'.9rem',fontWeight:800,color:trendColor}}>{trend}</div>
+                                            </div>
+                                            <div style={{padding:'.5rem',background:'rgba(100,116,139,.04)',borderRadius:8,border:'1px solid rgba(100,116,139,.06)'}}>
+                                                <div style={{fontSize:'.6rem',color:'#64748b',marginBottom:'.15rem'}}>MOMENTUM</div>
+                                                <div style={{fontSize:'.9rem',fontWeight:800,color:trendColor}}>{change >= 0 ? '+' : ''}{change.toFixed(2)}%</div>
+                                            </div>
+                                            <div style={{padding:'.5rem',background:'rgba(100,116,139,.04)',borderRadius:8,border:'1px solid rgba(100,116,139,.06)'}}>
+                                                <div style={{fontSize:'.6rem',color:'#64748b',marginBottom:'.15rem'}}>VOLUME</div>
+                                                <div style={{fontSize:'.9rem',fontWeight:800,color:volStatus==='High'?'#10b981':volStatus==='Low'?'#ef4444':'#94a3b8'}}>{volStatus}</div>
+                                            </div>
+                                            <div style={{padding:'.5rem',background:'rgba(100,116,139,.04)',borderRadius:8,border:'1px solid rgba(100,116,139,.06)'}}>
+                                                <div style={{fontSize:'.6rem',color:'#64748b',marginBottom:'.15rem'}}>PRICE</div>
+                                                <div style={{fontSize:'.9rem',fontWeight:800,color:'#e2e8f0'}}>${last.close >= 1 ? last.close.toFixed(2) : last.close.toFixed(6)}</div>
+                                            </div>
+                                        </div>
+                                    );
+                                })() : (
+                                    <div style={{fontSize:'.8rem',color:'#475569',fontStyle:'italic'}}>AI is monitoring {selectedSymbol} for high-confidence setups. Load a chart to see insights.</div>
+                                )}
+                                <div style={{marginTop:'.6rem',display:'flex',gap:'.4rem'}}>
+                                    <button onClick={() => navigate('/signals')} style={{padding:'.35rem .7rem',borderRadius:6,border:'1px solid rgba(16,185,129,.2)',background:'rgba(16,185,129,.06)',color:'#10b981',fontSize:'.7rem',fontWeight:600,cursor:'pointer'}}>View Signals</button>
+                                    <button onClick={() => navigate(`/predict`)} style={{padding:'.35rem .7rem',borderRadius:6,border:'1px solid rgba(139,92,246,.2)',background:'rgba(139,92,246,.06)',color:'#a78bfa',fontSize:'.7rem',fontWeight:600,cursor:'pointer'}}>Generate Trade Setup</button>
+                                </div>
+                            </div>
                         </>
                     )}
                 </ChartSection>
@@ -2219,9 +2265,18 @@ const handleOpenRewardModal = () => {
                     </RealPortfolioHero>
                 )}
 
-                {/* THREE COLUMN WIDGETS */}
-                <WidgetsGrid>
-                    {/* LEADERBOARD */}
+                {/* MARKET ACTIVITY & COMMUNITY — tabbed */}
+                <div style={{marginBottom:'1.5rem'}}>
+                    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'.75rem'}}>
+                        <h2 style={{fontSize:'1rem',fontWeight:700,color:'#e2e8f0',margin:0,display:'flex',alignItems:'center',gap:'.4rem'}}><Users size={16} color="#00adef"/> Market Activity & Community</h2>
+                        <div style={{display:'flex',gap:'.3rem'}}>
+                            {[{key:'traders',label:'Top Traders'},{key:'whale',label:'Whale Alerts'},{key:'social',label:'Social Feed'}].map(t => (
+                                <button key={t.key} onClick={() => setCommunityTab(t.key)} style={{padding:'.3rem .65rem',borderRadius:6,fontSize:'.7rem',fontWeight:600,cursor:'pointer',border:`1px solid ${communityTab===t.key?'rgba(0,173,237,.3)':'rgba(100,116,139,.12)'}`,background:communityTab===t.key?'rgba(0,173,237,.1)':'transparent',color:communityTab===t.key?'#00adef':'#64748b',transition:'all .2s'}}>{t.label}</button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {communityTab === 'traders' && (
                     <Widget>
                         <WidgetHeader>
                             <WidgetTitle><Crown size={20} /> Top Traders</WidgetTitle>
@@ -2265,11 +2320,13 @@ const handleOpenRewardModal = () => {
                             View Leaderboard <ChevronRight size={16} />
                         </ViewAllButton>
                     </Widget>
+                    )}
 
-                    {/* WHALE ALERTS */}
+                    {communityTab === 'whale' && (
                     <WhaleAlertWidget />
+                    )}
 
-                    {/* SOCIAL FEED */}
+                    {communityTab === 'social' && (
                     <Widget>
                         <WidgetHeader>
                             <WidgetTitle><MessageSquare size={20} /> Social Feed</WidgetTitle>
@@ -2324,7 +2381,8 @@ const handleOpenRewardModal = () => {
                             {socialFeed.length > 0 ? 'View All Posts' : 'Create Post'} <ChevronRight size={16} />
                         </ViewAllButton>
                     </Widget>
-                </WidgetsGrid>
+                    )}
+                </div>
 
                 {/* ACHIEVEMENTS — compact summary */}
                 <div onClick={() => navigate('/achievements')} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'.75rem 1rem',background:'rgba(15,23,42,.6)',border:'1px solid rgba(100,116,139,.1)',borderRadius:12,cursor:'pointer',transition:'all .2s',marginBottom:'1rem'}} onMouseOver={e=>e.currentTarget.style.borderColor='rgba(139,92,246,.3)'} onMouseOut={e=>e.currentTarget.style.borderColor='rgba(100,116,139,.1)'}>
