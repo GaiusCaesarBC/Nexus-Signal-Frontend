@@ -1379,6 +1379,7 @@ const Navbar = () => {
             { path: '/alerts', label: 'Price Alerts', icon: Bell },
             { path: '/paper-trading', label: 'Paper Trading', icon: TrendingUp },
             { path: '/signals', label: 'Live Signals', icon: Radio },
+            { path: '/performance', label: 'Performance', icon: Activity },
         ],
         analysis: [
             { path: '/screener', label: 'Screener', icon: Filter },
