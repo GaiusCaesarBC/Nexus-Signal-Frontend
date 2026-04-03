@@ -343,8 +343,13 @@ const WalletAnalytics = () => {
             return `${(num / 1000000).toFixed(2)}M`;
         } else if (num >= 1000) {
             return `${(num / 1000).toFixed(2)}K`;
-        } else if (num < 0.0001 && num > 0) {
-            return num.toExponential(2);
+        } else if (num >= 1) {
+            return num.toFixed(4);
+        } else if (num >= 0.0001) {
+            return num.toFixed(6);
+        } else if (num > 0) {
+            // Show full decimal — no scientific notation
+            return num.toFixed(12).replace(/0+$/, '0');
         }
         return num.toFixed(4);
     };
