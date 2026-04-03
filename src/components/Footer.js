@@ -278,7 +278,7 @@ const Footer = () => {
 
                     {/* Bottom Bar */}
                     <BottomBar>
-                        <CopyText>&copy; {new Date().getFullYear()} Nexus Signal AI. All rights reserved.</CopyText>
+                        <CopyText>&copy; {new Date().getFullYear()} Nexus Signal AI. All rights reserved. Made with <span style={{color:'#ef4444'}}>&hearts;</span> in the USA. Veteran owned and operated.</CopyText>
                         <LegalRow>
                             <LegalLink to="/terms">Terms</LegalLink>
                             <LegalLink to="/privacy">Privacy</LegalLink>
