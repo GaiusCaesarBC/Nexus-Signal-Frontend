@@ -80,19 +80,36 @@ const LivePerformancePage = () => {
     const [loading, setLoading] = useState(true);
     const [tableFilter, setTableFilter] = useState('all');
     const [sortBy, setSortBy] = useState('time');
+    const [showArchived, setShowArchived] = useState(false);
+    const [visibleCount, setVisibleCount] = useState(50);
 
     useEffect(() => {
-        fetch(`${API_URL}/predictions/performance`)
+        fetch(`${API_URL}/predictions/performance?limit=200`)
             .then(r => r.json())
             .then(d => { if (d.success) setData(d); })
             .catch(() => {})
             .finally(() => setLoading(false));
     }, []);
 
+    // Fetch archived trades when requested
+    const loadArchived = async () => {
+        try {
+            const res = await fetch(`${API_URL}/predictions/performance/archived?limit=200`);
+            const archived = await res.json();
+            if (archived.success && archived.trades) {
+                setData(prev => ({
+                    ...prev,
+                    archivedTrades: archived.trades,
+                    archivedStats: archived.stats
+                }));
+            }
+        } catch (e) { console.error('Failed to load archived:', e); }
+    };
+
     if (loading) return <Page><HeaderArea><Title><Activity size={24}/> Loading...</Title></HeaderArea></Page>;
     if (!data) return <Page><HeaderArea><Title>Performance data unavailable</Title></HeaderArea></Page>;
 
-    const { stats, rolling7d, equityCurve, trades } = data;
+    const { stats, rolling7d, equityCurve, trades, archivedTrades = [], archivedStats } = data;
     const pieData = [{ name: 'Wins', value: stats.wins }, { name: 'Losses', value: stats.losses }];
 
     let filtered = trades;
@@ -178,7 +195,7 @@ const LivePerformancePage = () => {
                 <SectionTitle><Clock size={16} color="#00adef"/> Trade History</SectionTitle>
                 <FilterRow>
                     {['all','open','closed','wins','losses'].map(f => (
-                        <FilterBtn key={f} $active={tableFilter === f} onClick={() => setTableFilter(f)}>
+                        <FilterBtn key={f} $active={tableFilter === f} onClick={() => { setTableFilter(f); setShowArchived(false); }}>
                             {f === 'all' ? `All (${trades.length})` : f === 'open' ? `Open (${trades.filter(t=>t.status==='pending').length})` : f === 'closed' ? `Closed (${trades.filter(t=>t.result).length})` : f === 'wins' ? `Wins (${trades.filter(t=>t.result==='win').length})` : `Losses (${trades.filter(t=>t.result==='loss').length})`}
                         </FilterBtn>
                     ))}
@@ -199,7 +216,7 @@ const LivePerformancePage = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {filtered.map((t, i) => {
+                                {filtered.slice(0, visibleCount).map((t, i) => {
                                     const isLong = t.direction === 'UP';
                                     const isWin = t.result === 'win';
                                     const isOpen = t.status === 'pending';
@@ -225,7 +242,80 @@ const LivePerformancePage = () => {
                             </tbody>
                         </Table>
                     </TableWrap>
+                    {/* Show More Button */}
+                    {filtered.length > visibleCount && (
+                        <div style={{padding:'1rem',textAlign:'center',borderTop:'1px solid rgba(100,116,139,.1)'}}>
+                            <FilterBtn $active onClick={() => setVisibleCount(prev => prev + 50)}>
+                                Show More ({filtered.length - visibleCount} remaining)
+                            </FilterBtn>
+                        </div>
+                    )}
                 </Card>
+            </Section>
+
+            {/* Archived Section */}
+            <Section>
+                <SectionTitle><Filter size={16} color="#64748b"/> Archived Trades</SectionTitle>
+                {!showArchived ? (
+                    <Card style={{textAlign:'center',padding:'2rem'}}>
+                        <p style={{color:'#64748b',fontSize:'.85rem',marginBottom:'1rem'}}>
+                            View older trades that have been archived (30+ days old)
+                        </p>
+                        <FilterBtn $active onClick={() => { setShowArchived(true); loadArchived(); }}>
+                            Load Archived Trades
+                        </FilterBtn>
+                    </Card>
+                ) : archivedTrades.length > 0 ? (
+                    <Card style={{padding:0,overflow:'hidden'}}>
+                        {archivedStats && (
+                            <div style={{padding:'1rem',borderBottom:'1px solid rgba(100,116,139,.1)',display:'flex',gap:'1rem',flexWrap:'wrap'}}>
+                                <Badge $bg="rgba(100,116,139,.1)" $c="#94a3b8">Archived: {archivedTrades.length} trades</Badge>
+                                <Badge $bg="rgba(16,185,129,.08)" $c="#10b981">{archivedStats.winRate}% win rate</Badge>
+                                <Badge $bg="rgba(0,173,237,.08)" $c="#00adef">+{archivedStats.totalReturn}% total</Badge>
+                            </div>
+                        )}
+                        <TableWrap>
+                            <Table>
+                                <thead>
+                                    <tr>
+                                        <Th>Symbol</Th>
+                                        <Th>Direction</Th>
+                                        <Th>Entry</Th>
+                                        <Th>Exit</Th>
+                                        <Th>% Change</Th>
+                                        <Th>Result</Th>
+                                        <Th>Date</Th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {archivedTrades.map((t, i) => {
+                                        const isLong = t.direction === 'UP';
+                                        const isWin = t.result === 'win';
+                                        const sym = t.symbol?.split(':')[0]?.replace(/USDT|USD/i, '') || t.symbol;
+                                        return (
+                                            <Tr key={t._id || i} onClick={() => navigate(`/signal/${t._id}`)}>
+                                                <Td style={{fontWeight:700}}>{sym}</Td>
+                                                <Td><DirBadge $long={isLong}>{isLong ? '\u2191' : '\u2193'}</DirBadge></Td>
+                                                <Td>{fmtPrice(t.entryPrice)}</Td>
+                                                <Td>{fmtPrice(t.exitPrice || t.currentPrice)}</Td>
+                                                <Td><PctText $pos={t.changePct >= 0}>{t.changePct >= 0 ? '+' : ''}{t.changePct}%</PctText></Td>
+                                                <Td>
+                                                    {isWin ? <Badge $bg="rgba(16,185,129,.1)" $c="#10b981">{t.resultText}</Badge>
+                                                        : <Badge $bg="rgba(239,68,68,.08)" $c="#ef4444">{t.resultText}</Badge>}
+                                                </Td>
+                                                <Td style={{color:'#475569',fontSize:'.75rem'}}>{timeAgo(t.resultAt)}</Td>
+                                            </Tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </Table>
+                        </TableWrap>
+                    </Card>
+                ) : (
+                    <Card style={{textAlign:'center',padding:'2rem',color:'#64748b'}}>
+                        Loading archived trades...
+                    </Card>
+                )}
             </Section>
         </Page>
     );
