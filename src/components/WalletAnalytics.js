@@ -561,7 +561,7 @@ const WalletAnalytics = () => {
                         <TransactionRow
                             key={tx.hash}
                             theme={theme}
-                            href={`https://etherscan.io/tx/${tx.hash}`}
+                            href={analytics.overview.nativeSymbol === 'SOL' ? `https://solscan.io/tx/${tx.hash}` : `https://etherscan.io/tx/${tx.hash}`}
                             target="_blank"
                             rel="noopener noreferrer"
                         >

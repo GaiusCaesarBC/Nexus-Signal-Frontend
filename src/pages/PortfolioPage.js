@@ -1195,7 +1195,7 @@ const PortfolioPage = () => {
     const { api: authApi } = useAuth();
     const toast = useToast();
     const { theme } = useTheme();
-    const { linkedWallet } = useWallet();
+    const { linkedWallet, syncWalletToPortfolio } = useWallet();
     const navigate = useNavigate();
 
     const [holdings, setHoldings] = useState([]);
@@ -1615,9 +1615,19 @@ const PortfolioPage = () => {
                                 </EmptyTitle>
                                 <EmptyText theme={theme}>
                                     {linkedWallet
-                                        ? 'Click the Sync button above to import your on-chain holdings'
+                                        ? 'Sync your on-chain holdings to see your balances and transactions'
                                         : 'Connect your wallet or link a brokerage account to start tracking your portfolio'}
                                 </EmptyText>
+                                {linkedWallet && syncWalletToPortfolio && (
+                                    <button onClick={async () => { await syncWalletToPortfolio(); window.location.reload(); }} style={{
+                                        marginTop:'1rem',padding:'.65rem 1.5rem',border:'none',borderRadius:'10px',
+                                        background:'linear-gradient(135deg,#00adef,#0090d0)',color:'#fff',
+                                        fontSize:'.9rem',fontWeight:700,cursor:'pointer',display:'inline-flex',
+                                        alignItems:'center',gap:'.4rem',transition:'all .2s'
+                                    }}>
+                                        <RefreshCw size={16}/> Sync Wallet
+                                    </button>
+                                )}
                             </EmptyState>
                         ) : (
                             <>
