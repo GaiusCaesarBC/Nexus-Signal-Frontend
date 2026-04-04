@@ -740,7 +740,10 @@ const AccuracyDashboardPage = () => {
         );
     }
 
-    const { overview, byDirection, weeklyTrend, bestSymbols, worstSymbols, recentPredictions } = data;
+    const { overview, byDirection, weeklyTrend, bestSymbols: rawBest, worstSymbols: rawWorst, recentPredictions } = data;
+    // Prevent same symbol showing in both best AND worst (happens with small datasets)
+    const bestSymbols = (rawBest || []).filter(s => s.accuracy > 50 || (rawBest || []).length > (rawWorst || []).length);
+    const worstSymbols = (rawWorst || []).filter(s => !bestSymbols.some(b => b.symbol === s.symbol));
     const stats = computedStats || {};
 
     return (
@@ -828,9 +831,16 @@ const AccuracyDashboardPage = () => {
                                         <XAxis
                                             dataKey="date"
                                             stroke="#475569"
-                                            fontSize={11}
+                                            fontSize={10}
                                             tickLine={false}
                                             axisLine={false}
+                                            tickFormatter={v => {
+                                                try {
+                                                    const d = new Date(v);
+                                                    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                                                } catch { return v; }
+                                            }}
+                                            interval="preserveStartEnd"
                                         />
                                         <YAxis
                                             stroke="#475569"
@@ -907,8 +917,15 @@ const AccuracyDashboardPage = () => {
                                     const isPending = p.status === 'pending' || p.status === 'active';
                                     const resultStatus = isWin ? 'correct' : isLoss ? 'incorrect' : 'pending';
                                     const changePct = p.outcome?.actualChangePercent;
+                                    // Direction-aware return: for LONG, positive price move = profit; for SHORT, negative price move = profit
                                     const dirMultiplier = p.direction === 'UP' ? 1 : -1;
-                                    const effectiveChange = changePct !== undefined ? changePct * dirMultiplier : null;
+                                    let effectiveChange = changePct !== undefined ? changePct * dirMultiplier : null;
+                                    // Safety: if result contradicts the math, trust the result status
+                                    // A LOSS should always show negative, a WIN should always show positive
+                                    if (effectiveChange !== null) {
+                                        if (isLoss && effectiveChange > 0) effectiveChange = -Math.abs(effectiveChange);
+                                        if (isWin && effectiveChange < 0) effectiveChange = Math.abs(effectiveChange);
+                                    }
 
                                     return (
                                         <OutcomeCard
