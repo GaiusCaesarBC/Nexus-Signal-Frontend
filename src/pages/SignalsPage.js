@@ -634,9 +634,11 @@ const SignalsPage = () => {
         return () => clearInterval(iv);
     }, [lastUpdated]);
 
-    // Fetch global stats
+    // Fetch global stats + performance data
+    const [perfStats, setPerfStats] = useState(null);
     useEffect(() => {
         fetch(`${API_URL}/predictions/stats`).then(r => r.json()).then(d => { if (d.success) setGlobalStats(d); }).catch(() => {});
+        fetch(`${API_URL}/predictions/performance?limit=1`).then(r => r.json()).then(d => { if (d.success) setPerfStats(d.stats); }).catch(() => {});
     }, [lastUpdated]);
 
     // Quality gate: 55%+ or closed
@@ -679,19 +681,13 @@ const SignalsPage = () => {
     };
     const filtered = getFiltered();
 
-    // Stats
-    const closedClean = closed.filter(s => s.resultText && Math.abs(s.movePct) > 0.01 && Math.abs(s.movePct) < 50);
-    const allWins = closedClean.filter(s => s.isWin);
-    const allLosses = closedClean.filter(s => !s.isWin);
-    const avgWin = allWins.length ? (allWins.reduce((sum, w) => sum + w.movePct, 0) / allWins.length) : 0;
-    const avgLoss = allLosses.length ? (allLosses.reduce((sum, l) => sum + l.movePct, 0) / allLosses.length) : 0;
+    // Stats — use server-computed values for consistency with Performance page
     const winRate = globalStats?.winRate ?? null;
     const totalTracked = globalStats?.total || signals.length;
-    const totalWins = globalStats?.wins || allWins.length;
-    const totalLosses = globalStats?.losses || allLosses.length;
-    const wr = winRate !== null ? winRate / 100 : 0;
-    const edge = (globalStats?.closed || closedClean.length) > 0 ? (wr * avgWin + (1 - wr) * avgLoss) : 0;
-    const avgReturn = closedClean.length > 0 ? (closedClean.reduce((s, t) => s + t.movePct, 0) / closedClean.length) : 0;
+    const totalWins = globalStats?.wins || 0;
+    const totalLosses = globalStats?.losses || 0;
+    const avgReturn = perfStats?.avgReturn ?? 0;
+    const edge = perfStats?.edge ?? 0;
 
     const counts = {
         all: feedSignals.length + recentClosed.length,
