@@ -12,20 +12,20 @@ const fadeIn = keyframes`from{opacity:0;transform:translateY(12px)}to{opacity:1;
 const pulse = keyframes`0%,100%{opacity:1}50%{opacity:.5}`;
 const glowAnim = keyframes`0%,100%{box-shadow:0 0 8px rgba(16,185,129,.1)}50%{box-shadow:0 0 20px rgba(16,185,129,.2)}`;
 
-const Page = styled.div`min-height:100vh;padding:5.5rem 1.5rem 4rem;max-width:1200px;margin:0 auto;`;
+const Page = styled.div`min-height:100vh;padding:5.5rem 1.5rem 4rem;max-width:1200px;margin:0 auto;@media(max-width:768px){padding:5rem 1rem 3rem;}@media(max-width:480px){padding:4.5rem .75rem 2rem;}`;
 const HeaderArea = styled.div`text-align:center;margin-bottom:2rem;animation:${fadeIn} .4s ease-out;`;
 const Title = styled.h1`font-size:clamp(1.5rem,3vw,2.2rem);font-weight:900;color:#e2e8f0;margin:0 0 .3rem;display:flex;align-items:center;justify-content:center;gap:.5rem;`;
 const Subtitle = styled.p`font-size:.9rem;color:#64748b;margin:0;`;
 const LiveDot = styled.span`width:8px;height:8px;border-radius:50%;background:#10b981;display:inline-block;animation:${pulse} 2s infinite;box-shadow:0 0 8px rgba(16,185,129,.5);`;
 const LiveText = styled.span`font-size:.7rem;color:#10b981;font-weight:600;display:flex;align-items:center;gap:.3rem;justify-content:center;margin-top:.4rem;`;
 
-const StatsGrid = styled.div`display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.75rem;margin-bottom:1.5rem;`;
+const StatsGrid = styled.div`display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.75rem;margin-bottom:1.5rem;@media(max-width:480px){grid-template-columns:repeat(2,1fr);gap:.5rem;}`;
 const StatCard = styled.div`
     background:rgba(15,23,42,.6);border:1px solid ${p => p.$color ? `${p.$color}22` : 'rgba(100,116,139,.12)'};
     border-radius:12px;padding:1rem;animation:${fadeIn} .5s ease-out both;animation-delay:${p => p.$d || '0s'};
 `;
 const StatLabel = styled.div`font-size:.7rem;color:#64748b;font-weight:500;text-transform:uppercase;letter-spacing:.04em;margin-bottom:.25rem;display:flex;align-items:center;gap:.3rem;`;
-const StatValue = styled.div`font-size:1.5rem;font-weight:900;color:${p => p.$c || '#e2e8f0'};letter-spacing:-.02em;`;
+const StatValue = styled.div`font-size:1.5rem;font-weight:900;color:${p => p.$c || '#e2e8f0'};letter-spacing:-.02em;@media(max-width:480px){font-size:1.2rem;}`;
 const StatSub = styled.div`font-size:.68rem;color:#475569;margin-top:.15rem;`;
 
 const Section = styled.div`margin-bottom:1.5rem;`;
@@ -36,6 +36,7 @@ const TransparencyBar = styled.div`
     display:flex;align-items:center;justify-content:center;gap:1.5rem;flex-wrap:wrap;
     padding:.75rem;margin-bottom:1.5rem;border-radius:10px;
     background:rgba(16,185,129,.04);border:1px solid rgba(16,185,129,.1);
+    @media(max-width:600px){gap:.75rem;padding:.6rem .5rem;}
 `;
 const TrustItem = styled.span`font-size:.72rem;color:#94a3b8;display:flex;align-items:center;gap:.3rem;svg{color:#10b981;width:13px;height:13px;}`;
 
@@ -58,6 +59,7 @@ const FilterBtn = styled.button`
     background:${p => p.$active ? 'rgba(0,173,237,.1)' : 'transparent'};
     color:${p => p.$active ? '#00adef' : '#64748b'};transition:all .2s;
 `;
+const TwoColGrid = styled.div`display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem;@media(max-width:600px){grid-template-columns:1fr;}`;
 
 const ChartTooltip = ({ active, payload }) => {
     if (!active || !payload?.[0]) return null;
@@ -169,7 +171,7 @@ const LivePerformancePage = () => {
                 </Section>
             )}
 
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem',marginBottom:'1.5rem'}}>
+            <TwoColGrid>
                 <Card style={{display:'flex',alignItems:'center',justifyContent:'center',gap:'1.5rem'}}>
                     <PieChart width={100} height={100}>
                         <Pie data={pieData} cx={50} cy={50} innerRadius={30} outerRadius={45} dataKey="value" strokeWidth={0}>
@@ -189,7 +191,7 @@ const LivePerformancePage = () => {
                         <div><div style={{fontSize:'.65rem',color:'#64748b'}}>EDGE</div><div style={{fontSize:'1rem',fontWeight:800,color:stats.edge >= 0 ? '#10b981' : '#ef4444'}}>+{stats.edge}%</div></div>
                     </div>
                 </Card>
-            </div>
+            </TwoColGrid>
 
             <Section>
                 <SectionTitle><Clock size={16} color="#00adef"/> Trade History</SectionTitle>

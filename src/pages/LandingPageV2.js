@@ -20,7 +20,7 @@ const SectionTitle = styled.h2`font-size:clamp(1.4rem,3vw,2rem);font-weight:900;
 const SectionSub = styled.p`font-size:.9rem;color:#64748b;text-align:center;margin:0 auto 2.5rem;max-width:550px;line-height:1.6;`;
 
 // Hero
-const Hero = styled.section`max-width:1100px;margin:0 auto;padding:7rem 1.5rem 4rem;text-align:center;`;
+const Hero = styled.section`max-width:1100px;margin:0 auto;padding:7rem 1.5rem 4rem;text-align:center;@media(max-width:480px){padding:5rem 1rem 2.5rem;}`;
 const HeroTitle = styled.h1`font-size:clamp(2rem,5vw,3.2rem);font-weight:900;color:#e2e8f0;margin:0 0 .6rem;letter-spacing:-.03em;line-height:1.1;animation:${fadeIn} .6s ease-out;`;
 const HeroAccent = styled.span`color:#10b981;`;
 const HeroSub = styled.p`font-size:clamp(.95rem,1.5vw,1.15rem);color:#94a3b8;margin:0 auto 1.5rem;max-width:600px;line-height:1.6;animation:${fadeIn} .6s ease-out .1s both;`;
@@ -110,7 +110,7 @@ const FeatDesc = styled.div`font-size:.78rem;color:#94a3b8;line-height:1.5;`;
 const FeatProof = styled.div`font-size:.65rem;color:#10b981;font-weight:600;margin-top:.4rem;display:flex;align-items:center;gap:.25rem;`;
 
 // Final CTA
-const FinalCTA = styled.section`text-align:center;padding:4rem 1.5rem;`;
+const FinalCTA = styled.section`text-align:center;padding:4rem 1.5rem;@media(max-width:480px){padding:2.5rem 1rem;}`;
 
 const Divider = styled.div`height:1px;background:rgba(100,116,139,.08);max-width:1100px;margin:0 auto;`;
 

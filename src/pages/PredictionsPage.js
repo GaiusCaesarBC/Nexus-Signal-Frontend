@@ -58,6 +58,8 @@ const PageContainer = styled.div`
     background: transparent;
     color: #e0e6ed;
     position: relative;
+    @media(max-width:768px){padding:80px 1rem 1.5rem;}
+    @media(max-width:480px){padding:70px .75rem 1rem;}
     overflow-x: hidden;
     z-index: 1;
 `;
