@@ -67,7 +67,7 @@ const DEFAULT_PLAN_LIMITS = {
         dailySignals: 5,
         watchlists: 1,
         watchlistAssets: 10,
-        predictionsPerMonth: 3,
+        predictionsPerMonth: 90, // 3/day × 30
         // Free features
         hasGamification: true,
         hasPaperTrading: true,
@@ -118,7 +118,7 @@ const DEFAULT_PLAN_LIMITS = {
         dailySignals: 15,
         watchlists: 3,
         watchlistAssets: 30,
-        predictionsPerMonth: 10,
+        predictionsPerMonth: 300, // 10/day × 30
         // Free features
         hasGamification: true,
         hasPaperTrading: true,

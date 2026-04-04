@@ -1283,7 +1283,7 @@ const PricingPage = () => {
             borderGradient: 'linear-gradient(135deg, #10b981, #059669, #10b981)',
             features: [
                 { category: '📊 AI Predictions', color: '#10b981', items: [
-                    { text: '3 AI price forecasts / month', highlight: true },
+                    { text: '3 AI price forecasts / day', highlight: true },
                     'Confidence scoring & direction',
                     'Prediction outcome tracking',
                 ]},
@@ -1298,7 +1298,7 @@ const PricingPage = () => {
                     'Trade journal & sentiment',
                 ]}
             ],
-            comparison: '5 signals/day + 3 forecasts/month',
+            comparison: '5 signals/day + 3 forecasts/day',
             cta: 'Unlock Starter'
         },
         {
@@ -1312,7 +1312,7 @@ const PricingPage = () => {
             borderGradient: 'linear-gradient(135deg, #3b82f6, #2563eb, #3b82f6)',
             features: [
                 { category: '📊 AI Predictions', color: '#3b82f6', items: [
-                    { text: '10 AI price forecasts / month', highlight: true },
+                    { text: '10 AI price forecasts / day', highlight: true },
                     { text: 'AI Chat — ask about any asset', highlight: true },
                     'Full forecast analysis & reasoning',
                 ]},
@@ -1328,7 +1328,7 @@ const PricingPage = () => {
                     'Stock comparison tools',
                 ]}
             ],
-            comparison: '15 signals/day + 10 forecasts/month + AI chat',
+            comparison: '15 signals/day + 10 forecasts/day + AI chat',
             cta: 'Upgrade to Pro'
         },
         {
