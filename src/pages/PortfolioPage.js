@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useWallet } from '../context/WalletContext';
 import WalletConnectButton from '../components/WalletConnectButton';
+import WalletAnalytics from '../components/WalletAnalytics';
 import BrokerageConnect from '../components/BrokerageConnect';
 import api from '../api/axios';
 import {
@@ -793,7 +794,7 @@ const PortfolioPage = () => {
 
     // UI state
     const [showAllHistory, setShowAllHistory] = useState(false);
-    const [walletOpen, setWalletOpen] = useState(false);
+    const [walletOpen, setWalletOpen] = useState(true);
 
     // Fetch all paper trading data
     const fetchData = useCallback(async (silent = false) => {
@@ -1418,6 +1419,11 @@ const PortfolioPage = () => {
                                 <BrokerageConnect />
                             </div>
                         </WalletGrid>
+                        {linkedWallet && (
+                            <div style={{ marginTop: '1rem' }}>
+                                <WalletAnalytics />
+                            </div>
+                        )}
                     </CollapsibleContent>
                 </Section>
             </Container>
