@@ -168,7 +168,7 @@ const AccountSettingsPage = () => {
                         
                         <ProfileStats>
                             <StatItem>
-                                <StatValue>{getMembershipDuration(user.createdAt)}</StatValue>
+                                <StatValue>{getMembershipDuration(user.createdAt || user.date)}</StatValue>
                                 <StatLabel>Member</StatLabel>
                             </StatItem>
                             <StatDivider />
@@ -232,7 +232,7 @@ const AccountSettingsPage = () => {
                                     <SettingLabel>Member Since</SettingLabel>
                                     <SettingValue>
                                         <Calendar size={14} />
-                                        {formatDate(user.createdAt)}
+                                        {formatDate(user.createdAt || user.date)}
                                     </SettingValue>
                                 </SettingItem>
                             </SettingsList>
