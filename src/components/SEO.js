@@ -2,10 +2,10 @@
 
 import { Helmet } from 'react-helmet-async';
 
-const SEO = ({ 
-    title = 'Nexus Signal AI - AI-Powered Stock Predictions & Portfolio Management',
-    description = 'Get AI-powered stock predictions, real-time market insights, and intelligent portfolio management. Nexus Signal AI uses advanced machine learning to help you make smarter trading decisions.',
-    keywords = 'stock predictions, AI trading, portfolio management, stock market analysis, machine learning, trading platform, investment tools',
+const SEO = ({
+    title = 'Nexus Signal AI — Every Trade. Tracked. Verified.',
+    description = '320+ trades tracked publicly. 52% win rate. No edits. No deletions. AI-powered signals with entry, stop loss, and targets for stocks and crypto.',
+    keywords = 'AI trading signals, stock signals, crypto signals, transparent trading, signal tracking, AI predictions, paper trading, live signals',
     image = '/og-image.png',
     url = window.location.href,
     type = 'website'

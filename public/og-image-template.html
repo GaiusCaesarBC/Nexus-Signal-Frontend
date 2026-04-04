@@ -1,102 +1,124 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            width: 1200px;
-            height: 630px;
-            background: linear-gradient(135deg, #0a0f1c 0%, #1a1f3a 50%, #0a0f1c 100%);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            color: white;
-            position: relative;
-            overflow: hidden;
-        }
-        .glow-orb {
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(80px);
-            opacity: 0.4;
-        }
-        .orb1 { width: 400px; height: 400px; background: #00adef; top: -100px; left: -100px; }
-        .orb2 { width: 300px; height: 300px; background: #8b5cf6; bottom: -50px; right: -50px; }
-        .orb3 { width: 200px; height: 200px; background: #10b981; top: 50%; left: 50%; transform: translate(-50%, -50%); }
-        .content {
-            position: relative;
-            z-index: 1;
-            text-align: center;
-        }
-        .logo-text {
-            font-size: 72px;
-            font-weight: 900;
-            background: linear-gradient(135deg, #00adef 0%, #00ff88 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 20px;
-        }
-        .tagline {
-            font-size: 32px;
-            color: #94a3b8;
-            margin-bottom: 40px;
-        }
-        .features {
-            display: flex;
-            gap: 40px;
-            margin-top: 20px;
-        }
-        .feature {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 12px 24px;
-            background: rgba(0, 173, 237, 0.1);
-            border: 1px solid rgba(0, 173, 237, 0.3);
-            border-radius: 30px;
-            font-size: 18px;
-            color: #e0e6ed;
-        }
-        .feature-icon {
-            width: 24px;
-            height: 24px;
-            background: linear-gradient(135deg, #00adef, #00ff88);
-            border-radius: 50%;
-        }
-        .url {
-            position: absolute;
-            bottom: 30px;
-            font-size: 20px;
-            color: #64748b;
-        }
-    </style>
+<meta charset="utf-8">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    width: 1200px;
+    height: 630px;
+    background: linear-gradient(145deg, #070a14 0%, #0c1020 40%, #0a0e1a 100%);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #e0e6ed;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 60px 80px;
+    position: relative;
+    overflow: hidden;
+}
+body::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image:
+        linear-gradient(rgba(0,173,237,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,173,237,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+}
+.orb1 {
+    position: absolute; width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(0,173,237,0.08) 0%, transparent 70%);
+    border-radius: 50%; top: -100px; right: -50px;
+}
+.orb2 {
+    position: absolute; width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(16,185,129,0.06) 0%, transparent 70%);
+    border-radius: 50%; bottom: -80px; left: 100px;
+}
+.content { position: relative; z-index: 1; display: flex; gap: 60px; align-items: center; flex: 1; }
+.left { flex: 1; }
+.logo-row { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; }
+.logo-dot { width: 10px; height: 10px; background: #00adef; border-radius: 50%; box-shadow: 0 0 12px rgba(0,173,237,0.5); }
+.logo-text { font-size: 16px; font-weight: 700; color: #00adef; letter-spacing: 1px; text-transform: uppercase; }
+.headline { font-size: 52px; font-weight: 900; line-height: 1.1; margin-bottom: 20px; color: #fff; }
+.headline span { color: #10b981; }
+.stats-row { display: flex; gap: 24px; margin-bottom: 24px; }
+.stat { display: flex; align-items: center; gap: 6px; font-size: 16px; color: #94a3b8; font-weight: 600; }
+.stat .val { color: #e0e6ed; font-weight: 800; }
+.stat .green { color: #10b981; }
+.stat .dot { color: rgba(100,116,139,0.4); }
+.trust-line { font-size: 14px; color: #475569; font-style: italic; }
+.signal-card {
+    width: 340px; background: rgba(12,16,32,0.95);
+    border: 1px solid rgba(0,173,237,0.2); border-radius: 16px;
+    padding: 24px; flex-shrink: 0;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4), 0 0 30px rgba(0,173,237,0.05);
+}
+.card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.card-symbol { font-size: 28px; font-weight: 900; color: #fff; }
+.card-dir {
+    display: flex; align-items: center; gap: 4px; padding: 4px 12px; border-radius: 6px;
+    font-size: 13px; font-weight: 800; background: rgba(239,68,68,0.12); color: #ef4444;
+}
+.card-levels { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+.card-level { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); border-radius: 8px; padding: 8px 10px; }
+.card-level-label { font-size: 9px; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; }
+.card-level-value { font-size: 15px; font-weight: 700; color: #e0e6ed; margin-top: 2px; }
+.card-level-value.red { color: #ef4444; }
+.card-level-value.green { color: #10b981; }
+.card-level-value.blue { color: #00adef; }
+.card-conf { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.card-conf-label { font-size: 11px; color: #475569; }
+.card-conf-value { font-size: 14px; font-weight: 800; color: #10b981; }
+.card-conf-bar { width: 100%; height: 4px; background: rgba(255,255,255,0.04); border-radius: 2px; overflow: hidden; }
+.card-conf-fill { height: 100%; width: 82%; background: linear-gradient(90deg, #10b981, #059669); border-radius: 2px; }
+.card-status { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.04); }
+.card-badge { padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; background: rgba(0,173,237,0.1); color: #0ea5e9; border: 1px solid rgba(0,173,237,0.2); }
+.card-time { font-size: 11px; color: #475569; }
+.bottom-bar { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.04); margin-top: 20px; }
+.bottom-url { font-size: 14px; color: #00adef; font-weight: 600; }
+.bottom-cta { padding: 8px 20px; border-radius: 8px; background: linear-gradient(135deg, #10b981, #059669); color: #fff; font-size: 13px; font-weight: 700; }
+</style>
 </head>
 <body>
-    <div class="glow-orb orb1"></div>
-    <div class="glow-orb orb2"></div>
-    <div class="glow-orb orb3"></div>
-
+    <div class="orb1"></div>
+    <div class="orb2"></div>
     <div class="content">
-        <div class="logo-text">Nexus Signal AI</div>
-        <div class="tagline">AI-Powered Stock Predictions & Trading Platform</div>
-        <div class="features">
-            <div class="feature">
-                <div class="feature-icon"></div>
-                AI Predictions
+        <div class="left">
+            <div class="logo-row">
+                <div class="logo-dot"></div>
+                <div class="logo-text">Nexus Signal AI</div>
             </div>
-            <div class="feature">
-                <div class="feature-icon"></div>
-                Real-Time Insights
+            <div class="headline">Every Trade.<br>Tracked.<br><span>Verified.</span></div>
+            <div class="stats-row">
+                <div class="stat"><span class="val">322</span> trades tracked</div>
+                <div class="stat dot">|</div>
+                <div class="stat"><span class="val green">52%</span> win rate</div>
+                <div class="stat dot">|</div>
+                <div class="stat"><span class="val green">+2.3%</span> edge</div>
             </div>
-            <div class="feature">
-                <div class="feature-icon"></div>
-                Portfolio Analytics
+            <div class="trust-line">No edits. No deletions. Full transparency.</div>
+        </div>
+        <div class="signal-card">
+            <div class="card-header">
+                <div class="card-symbol">BTC</div>
+                <div class="card-dir">SHORT</div>
             </div>
+            <div class="card-levels">
+                <div class="card-level"><div class="card-level-label">Entry</div><div class="card-level-value">$66,912</div></div>
+                <div class="card-level"><div class="card-level-label">Stop Loss</div><div class="card-level-value red">$70,258</div></div>
+                <div class="card-level"><div class="card-level-label">Target</div><div class="card-level-value green">$58,882</div></div>
+                <div class="card-level"><div class="card-level-label">R:R</div><div class="card-level-value blue">1:2.4</div></div>
+            </div>
+            <div class="card-conf"><div class="card-conf-label">AI Confidence</div><div class="card-conf-value">82%</div></div>
+            <div class="card-conf-bar"><div class="card-conf-fill"></div></div>
+            <div class="card-status"><div class="card-badge">ACTIVE</div><div class="card-time">7D Swing</div></div>
         </div>
     </div>
-
-    <div class="url">nexussignal.ai</div>
+    <div class="bottom-bar">
+        <div class="bottom-url">nexussignal.ai</div>
+        <div class="bottom-cta">Start Free</div>
+    </div>
 </body>
 </html>
