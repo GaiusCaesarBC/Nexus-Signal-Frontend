@@ -36,7 +36,7 @@ const PageWrapper = styled.div`
     min-height: 100vh;
     background: linear-gradient(180deg, #070a14 0%, #0c1020 40%, #0a0e1a 100%);
     color: #e0e6ed;
-    padding: 0 0 80px 0;
+    padding: 90px 0 80px 0;
 `;
 
 const Container = styled.div`
