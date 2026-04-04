@@ -9,7 +9,8 @@ import styled, { keyframes } from 'styled-components';
 import {
     TrendingUp, TrendingDown, Target, Clock,
     CheckCircle, XCircle, ArrowLeft, Zap,
-    BarChart3, Activity, Eye, Shield, Lock, Brain
+    BarChart3, Activity, Eye, Shield, Lock, Brain,
+    AlertTriangle, ChevronRight, ExternalLink
 } from 'lucide-react';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid,
@@ -505,6 +506,109 @@ const EmptyIcon = styled.div`
     color: #00adef;
 `;
 
+// ─── Sample Size Notice ─────────────────────────────────
+const SampleNotice = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.55rem 0.85rem;
+    background: rgba(245,158,11,.06);
+    border: 1px solid rgba(245,158,11,.15);
+    border-radius: 8px;
+    font-size: 0.75rem;
+    color: #f59e0b;
+    margin-bottom: 1.5rem;
+    animation: ${fadeIn} 0.4s ease-out 0.12s backwards;
+`;
+
+// ─── Risk & Stability ───────────────────────────────────
+const RiskGrid = styled.div`
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    @media (max-width: 600px) { grid-template-columns: 1fr; }
+`;
+
+const RiskCell = styled.div`
+    background: rgba(255,255,255,.02);
+    border: 1px solid rgba(255,255,255,.06);
+    border-radius: 10px;
+    padding: 0.8rem;
+    text-align: center;
+`;
+
+const RiskLabel = styled.div`
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-bottom: 0.3rem;
+`;
+
+const RiskValue = styled.div`
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: ${p => p.$color || '#e0e6ed'};
+`;
+
+const RiskSub = styled.div`
+    font-size: 0.65rem;
+    color: #475569;
+    margin-top: 0.15rem;
+`;
+
+// ─── Expectancy Formula ─────────────────────────────────
+const FormulaRow = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    margin-top: 0.75rem;
+    padding: 0.6rem 0.85rem;
+    background: rgba(255,255,255,.02);
+    border: 1px solid rgba(255,255,255,.04);
+    border-radius: 8px;
+    font-size: 0.72rem;
+    color: #64748b;
+    font-family: 'Monaco', 'Menlo', monospace;
+`;
+
+const FormulaVal = styled.span`
+    font-weight: 700;
+    color: ${p => p.$color || '#e0e6ed'};
+`;
+
+// ─── CTA Section ────────────────────────────────────────
+const CTASection = styled.div`
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 1rem;
+    animation: ${fadeIn} 0.4s ease-out 0.45s backwards;
+`;
+
+const CTAButton = styled.button`
+    padding: 0.65rem 1.25rem;
+    background: ${p => p.$primary ? 'linear-gradient(135deg, #00adef 0%, #0088cc 100%)' : 'rgba(255,255,255,.04)'};
+    border: 1px solid ${p => p.$primary ? 'transparent' : 'rgba(255,255,255,.1)'};
+    border-radius: 8px;
+    color: ${p => p.$primary ? '#fff' : '#94a3b8'};
+    font-weight: 600;
+    font-size: 0.82rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: all 0.2s;
+    &:hover {
+        transform: translateY(-1px);
+        ${p => p.$primary ? 'box-shadow: 0 6px 20px rgba(0,173,239,.3);' : 'background: rgba(255,255,255,.08); color: #e0e6ed;'}
+    }
+`;
+
 // ─── Spacing helper ──────────────────────────────────────
 const Section = styled.div`
     margin-bottom: 1.5rem;
@@ -701,6 +805,38 @@ const AccuracyDashboardPage = () => {
     const hasEquityCurve = perfData?.equityCurve?.length > 0;
     const chartLabel = hasEquityCurve ? 'Cumulative Return (%)' : 'Accuracy (%)';
 
+    // ── Risk metrics ──
+    const riskMetrics = useMemo(() => {
+        // Max drawdown from equity curve
+        let maxDrawdown = 0;
+        if (equityChartData.length > 1) {
+            let peak = equityChartData[0].cumReturn;
+            for (const pt of equityChartData) {
+                if (pt.cumReturn > peak) peak = pt.cumReturn;
+                const dd = peak - pt.cumReturn;
+                if (dd > maxDrawdown) maxDrawdown = dd;
+            }
+        }
+
+        // Longest losing streak
+        let longestLosing = 0;
+        let currentLosing = 0;
+        const preds = data?.recentPredictions || [];
+        // preds are sorted newest first, so reverse for chronological
+        [...preds].reverse().forEach(p => {
+            if (p.status === 'incorrect') {
+                currentLosing++;
+                if (currentLosing > longestLosing) longestLosing = currentLosing;
+            } else if (p.status === 'correct') {
+                currentLosing = 0;
+            }
+        });
+
+        return { maxDrawdown, longestLosing };
+    }, [equityChartData, data]);
+
+    const isSmallSample = (computedStats?.totalPredictions || 0) < 30;
+
     // ═══════════════════════════════════════════════════════
     // RENDER
     // ═══════════════════════════════════════════════════════
@@ -777,9 +913,9 @@ const AccuracyDashboardPage = () => {
                 <Section>
                     <MetricsRow>
                         <MetricCard>
-                            <MetricLabel>Total Predictions</MetricLabel>
+                            <MetricLabel>Tracked Predictions</MetricLabel>
                             <MetricValue>{stats.totalPredictions}</MetricValue>
-                            <MetricSub>All time tracked</MetricSub>
+                            <MetricSub>Verified outcomes</MetricSub>
                         </MetricCard>
                         <MetricCard>
                             <MetricLabel>Win Rate</MetricLabel>
@@ -796,7 +932,7 @@ const AccuracyDashboardPage = () => {
                             <MetricSub>Per closed prediction</MetricSub>
                         </MetricCard>
                         <MetricCard>
-                            <MetricLabel>Edge (Expectancy)</MetricLabel>
+                            <MetricLabel>Edge (Expected Value)</MetricLabel>
                             <MetricValue $color={stats.edge > 0 ? '#10b981' : stats.edge < 0 ? '#ef4444' : '#e0e6ed'}>
                                 {stats.edge !== null ? formatPercent(stats.edge) : '--'}
                             </MetricValue>
@@ -806,6 +942,12 @@ const AccuracyDashboardPage = () => {
                     <MetricExplainer>
                         Profitability comes from positive expectancy — not just win rate.
                     </MetricExplainer>
+                    {isSmallSample && (
+                        <SampleNotice>
+                            <AlertTriangle size={14} />
+                            Early dataset — {stats.totalPredictions} predictions tracked so far. Performance will stabilize as more predictions are recorded.
+                        </SampleNotice>
+                    )}
                 </Section>
 
                 {/* ─── Section 3: Equity Curve ─── */}
@@ -814,8 +956,9 @@ const AccuracyDashboardPage = () => {
                         <SectionTitle><Activity size={16} /> Cumulative Performance</SectionTitle>
                         <SectionSub>
                             {hasEquityCurve
-                                ? 'Performance over all tracked predictions'
+                                ? 'Simulated equity growth based on all tracked predictions'
                                 : 'Accuracy trend over time (weekly)'}
+                            {riskMetrics.maxDrawdown > 0 && ` · Max drawdown: -${riskMetrics.maxDrawdown.toFixed(1)}%`}
                         </SectionSub>
                         {equityChartData.length > 0 ? (
                             <ChartWrap>
@@ -904,7 +1047,7 @@ const AccuracyDashboardPage = () => {
                 {/* ─── Section 4: Recent Outcomes ─── */}
                 <Section>
                     <Card $delay="0.2s">
-                        <SectionTitle><Clock size={16} /> Recent Outcomes</SectionTitle>
+                        <SectionTitle><Clock size={16} /> Verified Outcomes</SectionTitle>
                         <SectionSub>
                             {filteredPredictions.length} prediction{filteredPredictions.length !== 1 ? 's' : ''} shown
                             {activeFilter !== 'all' ? ` (filtered)` : ''}
@@ -957,6 +1100,7 @@ const AccuracyDashboardPage = () => {
                                                 </OutcomeSymbol>
                                                 <OutcomeDetail>
                                                     {formatPrice(p.currentPrice)} → {p.outcome?.actualPrice ? formatPrice(p.outcome.actualPrice) : formatPrice(p.targetPrice)}
+                                                    {p.confidence && <span style={{marginLeft:'0.4rem',color:'#64748b'}}>· {Math.min(95, Math.round(p.confidence))}% conf</span>}
                                                 </OutcomeDetail>
                                             </OutcomeInfo>
                                             <OutcomeRight>
@@ -1040,6 +1184,37 @@ const AccuracyDashboardPage = () => {
                     </Card>
                 </Section>
 
+                {/* ─── Risk & Stability ─── */}
+                <Section>
+                    <Card $delay="0.27s">
+                        <SectionTitle><Shield size={16} /> Risk & Stability</SectionTitle>
+                        <SectionSub>Showing risk builds trust — we hide nothing</SectionSub>
+                        <RiskGrid>
+                            <RiskCell>
+                                <RiskLabel>Max Drawdown</RiskLabel>
+                                <RiskValue $color="#ef4444">
+                                    {riskMetrics.maxDrawdown > 0 ? `-${riskMetrics.maxDrawdown.toFixed(1)}%` : '--'}
+                                </RiskValue>
+                                <RiskSub>Largest peak-to-trough</RiskSub>
+                            </RiskCell>
+                            <RiskCell>
+                                <RiskLabel>Longest Losing Streak</RiskLabel>
+                                <RiskValue $color={riskMetrics.longestLosing >= 5 ? '#ef4444' : riskMetrics.longestLosing >= 3 ? '#f59e0b' : '#e0e6ed'}>
+                                    {riskMetrics.longestLosing > 0 ? riskMetrics.longestLosing : '--'}
+                                </RiskValue>
+                                <RiskSub>Consecutive losses</RiskSub>
+                            </RiskCell>
+                            <RiskCell>
+                                <RiskLabel>Recovery</RiskLabel>
+                                <RiskValue $color={(stats.edge || 0) > 0 ? '#10b981' : '#f59e0b'}>
+                                    {(stats.edge || 0) > 0 ? 'Positive' : 'Building'}
+                                </RiskValue>
+                                <RiskSub>{(stats.edge || 0) > 0 ? 'System recovering from drawdowns' : 'Tracking recovery metrics'}</RiskSub>
+                            </RiskCell>
+                        </RiskGrid>
+                    </Card>
+                </Section>
+
                 {/* ─── Section 6: Expectancy Module ─── */}
                 <Section>
                     <ExpectancyCard $delay="0.3s">
@@ -1055,15 +1230,30 @@ const AccuracyDashboardPage = () => {
                             This system is profitable over time due to positive expectancy, not just win rate.
                             Each prediction has a measured expected value.
                         </ExpectancyExplain>
+                        <FormulaRow>
+                            <span>Expectancy = (</span>
+                            <FormulaVal $color="#10b981">{Math.round(stats.winRate || 0)}% WR</FormulaVal>
+                            <span>×</span>
+                            <FormulaVal $color="#10b981">+{Number(stats.avgWin || 0).toFixed(1)}%</FormulaVal>
+                            <span>) − (</span>
+                            <FormulaVal $color="#ef4444">{100 - Math.round(stats.winRate || 0)}% LR</FormulaVal>
+                            <span>×</span>
+                            <FormulaVal $color="#ef4444">{Math.abs(Number(stats.avgLoss || 0)).toFixed(1)}%</FormulaVal>
+                            <span>) =</span>
+                            <FormulaVal $color={stats.edge > 0 ? '#10b981' : '#ef4444'}>
+                                {stats.edge !== null ? `${stats.edge >= 0 ? '+' : ''}${Number(stats.edge).toFixed(2)}%` : '--'}
+                            </FormulaVal>
+                        </FormulaRow>
                     </ExpectancyCard>
                 </Section>
 
                 {/* ─── Section 7: Transparency Proof Block ─── */}
                 <Section>
                     <Card $delay="0.35s">
-                        <SectionTitle style={{ marginBottom: '1rem' }}>
+                        <SectionTitle style={{ marginBottom: '0.25rem' }}>
                             <Shield size={16} /> Transparency Guarantee
                         </SectionTitle>
+                        <SectionSub style={{ marginBottom: '1rem' }}>You can verify every prediction yourself.</SectionSub>
                         <ProofGrid>
                             <ProofItem>
                                 <ProofIcon><CheckCircle size={18} /></ProofIcon>
@@ -1136,6 +1326,19 @@ const AccuracyDashboardPage = () => {
                         </SymbolColumns>
                     </Card>
                 </Section>
+
+                {/* ─── CTA: Explore Track Record ─── */}
+                <CTASection>
+                    <CTAButton $primary onClick={() => navigate('/prediction-history')}>
+                        <Eye size={15} /> View All Predictions
+                    </CTAButton>
+                    <CTAButton onClick={() => navigate('/performance')}>
+                        <BarChart3 size={15} /> Inspect Trade History
+                    </CTAButton>
+                    <CTAButton onClick={() => navigate('/signals')}>
+                        <Activity size={15} /> Live Signals
+                    </CTAButton>
+                </CTASection>
 
                 {/* ─── Trust Footer ─── */}
                 <TrustFooter>
