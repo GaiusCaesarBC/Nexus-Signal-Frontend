@@ -681,11 +681,11 @@ const SignalsPage = () => {
     };
     const filtered = getFiltered();
 
-    // Stats — use server-computed values for consistency with Performance page
-    const winRate = globalStats?.winRate ?? null;
-    const totalTracked = globalStats?.total || signals.length;
-    const totalWins = globalStats?.wins || 0;
-    const totalLosses = globalStats?.losses || 0;
+    // Stats — single source of truth from /performance endpoint, fallback to /stats
+    const winRate = perfStats?.winRate ?? globalStats?.winRate ?? null;
+    const totalTracked = perfStats?.total ?? globalStats?.total ?? signals.length;
+    const totalWins = perfStats?.wins ?? globalStats?.wins ?? 0;
+    const totalLosses = perfStats?.losses ?? globalStats?.losses ?? 0;
     const avgReturn = perfStats?.avgReturn ?? 0;
     const edge = perfStats?.edge ?? 0;
 
