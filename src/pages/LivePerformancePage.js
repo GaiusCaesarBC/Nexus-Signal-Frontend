@@ -219,15 +219,20 @@ const LivePerformancePage = () => {
                                 {filtered.slice(0, visibleCount).map((t, i) => {
                                     const isLong = t.direction === 'UP';
                                     const isWin = t.result === 'win';
+                                    const isLoss = t.result === 'loss';
                                     const isOpen = t.status === 'pending';
                                     const sym = t.symbol?.split(':')[0]?.replace(/USDT|USD/i, '') || t.symbol;
+                                    // Safety: ensure LOSS shows negative, WIN shows positive
+                                    let displayPct = t.changePct;
+                                    if (isLoss && displayPct > 0) displayPct = -Math.abs(displayPct);
+                                    if (isWin && displayPct < 0) displayPct = Math.abs(displayPct);
                                     return (
                                         <Tr key={t._id || i} onClick={() => navigate(`/signal/${t._id}`)}>
                                             <Td style={{fontWeight:700}}>{sym} <span style={{fontSize:'.6rem',color:'#475569'}}>{t.assetType}</span></Td>
                                             <Td><DirBadge $long={isLong}>{isLong ? '\u2191 LONG' : '\u2193 SHORT'}</DirBadge></Td>
                                             <Td>{fmtPrice(t.entryPrice)}</Td>
                                             <Td>{fmtPrice(t.currentPrice)}</Td>
-                                            <Td><PctText $pos={t.changePct >= 0}>{t.changePct >= 0 ? '+' : ''}{t.changePct}%</PctText></Td>
+                                            <Td><PctText $pos={displayPct >= 0}>{displayPct >= 0 ? '+' : ''}{displayPct}%</PctText></Td>
                                             <Td>
                                                 {isOpen ? <Badge $bg="rgba(245,158,11,.1)" $c="#f59e0b" $bc="rgba(245,158,11,.2)">OPEN</Badge>
                                                     : isWin ? <Badge $bg="rgba(16,185,129,.1)" $c="#10b981" $bc="rgba(16,185,129,.2)">{t.resultText}</Badge>
@@ -291,14 +296,18 @@ const LivePerformancePage = () => {
                                     {archivedTrades.map((t, i) => {
                                         const isLong = t.direction === 'UP';
                                         const isWin = t.result === 'win';
+                                        const isLoss = t.result === 'loss';
                                         const sym = t.symbol?.split(':')[0]?.replace(/USDT|USD/i, '') || t.symbol;
+                                        let archPct = t.changePct;
+                                        if (isLoss && archPct > 0) archPct = -Math.abs(archPct);
+                                        if (isWin && archPct < 0) archPct = Math.abs(archPct);
                                         return (
                                             <Tr key={t._id || i} onClick={() => navigate(`/signal/${t._id}`)}>
                                                 <Td style={{fontWeight:700}}>{sym}</Td>
                                                 <Td><DirBadge $long={isLong}>{isLong ? '\u2191' : '\u2193'}</DirBadge></Td>
                                                 <Td>{fmtPrice(t.entryPrice)}</Td>
                                                 <Td>{fmtPrice(t.exitPrice || t.currentPrice)}</Td>
-                                                <Td><PctText $pos={t.changePct >= 0}>{t.changePct >= 0 ? '+' : ''}{t.changePct}%</PctText></Td>
+                                                <Td><PctText $pos={archPct >= 0}>{archPct >= 0 ? '+' : ''}{archPct}%</PctText></Td>
                                                 <Td>
                                                     {isWin ? <Badge $bg="rgba(16,185,129,.1)" $c="#10b981">{t.resultText}</Badge>
                                                         : <Badge $bg="rgba(239,68,68,.08)" $c="#ef4444">{t.resultText}</Badge>}
