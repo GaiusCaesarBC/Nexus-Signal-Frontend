@@ -1,6 +1,4 @@
-// client/src/pages/PredictionsPage.js - IMPROVED VERSION WITH INDICATORS & DYNAMIC CONFIDENCE
-// PART 1 - Copy this first, then Part 2
-
+// client/src/pages/PredictionsPage.js - AI Market Forecast Engine
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
@@ -27,56 +25,22 @@ import {
     Tooltip, ResponsiveContainer, ReferenceLine
 } from 'recharts';
 
-// ============ ANIMATIONS ============
-const fadeIn = keyframes`
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-`;
-
-
+// ============ PRICE FORMATTER ============
 const formatPredictionPrice = (price, symbol) => {
-    console.log('🔍 Formatting:', { price, symbol, type: typeof price });
-
     if (!price) return '$0.00';
-
-    // Check if it's a DEX token (format: SYMBOL:network)
     const symbolUpper = symbol?.toUpperCase() || '';
     const isDex = symbolUpper.includes(':');
-
-    // Check if it's a crypto symbol
     const cryptoPatterns = ['-USD', '-USDT', '-BUSD', '-EUR', '-GBP'];
     const knownCryptos = ['BTC', 'ETH', 'SOL', 'ADA', 'DOT', 'MATIC', 'AVAX', 'DOGE', 'SHIB', 'XRP', 'PEPE', 'FLOKI', 'BONK'];
-
-    const isCrypto = isDex || cryptoPatterns.some(pattern => symbolUpper.endsWith(pattern)) ||
+    const isCrypto = isDex || cryptoPatterns.some(p => symbolUpper.endsWith(p)) ||
                      knownCryptos.includes(symbolUpper.split(':')[0]);
-
-    console.log('🔍 Is crypto/dex?', isCrypto, 'Symbol:', symbolUpper, 'isDex:', isDex);
-
-    const result = isCrypto ? formatCryptoPrice(price) : formatStockPrice(price);
-    console.log('🔍 Result:', result);
-
-    return result;
+    return isCrypto ? formatCryptoPrice(price) : formatStockPrice(price);
 };
 
-
-const slideIn = keyframes`
-    from { transform: translateX(-100%); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
-`;
-
-const slideInRight = keyframes`
-    from { transform: translateX(100%); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
-`;
-
-const pulse = keyframes`
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-`;
-
-const shimmer = keyframes`
-    0% { background-position: -200% center; }
-    100% { background-position: 200% center; }
+// ============ ANIMATIONS ============
+const fadeIn = keyframes`
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
 `;
 
 const spin = keyframes`
@@ -84,264 +48,167 @@ const spin = keyframes`
     to { transform: rotate(360deg); }
 `;
 
-const float = keyframes`
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-15px); }
-`;
-
-const bounceIn = keyframes`
-    0% { transform: scale(0); opacity: 0; }
-    50% { transform: scale(1.1); }
-    100% { transform: scale(1); opacity: 1; }
-`;
-
-const particles = keyframes`
-    0% { transform: translateY(0) translateX(0) scale(1); opacity: 1; }
-    100% { transform: translateY(-100vh) translateX(50px) scale(0); opacity: 0; }
-`;
-
-const rocketLaunch = keyframes`
-    0% { transform: translateY(0) rotate(-45deg); }
-    100% { transform: translateY(-1000px) translateX(1000px) rotate(-45deg); }
-`;
-
-const rocketCrash = keyframes`
-    0% { transform: translateY(-1000px) rotate(135deg); }
-    100% { transform: translateY(100vh) translateX(-300px) rotate(135deg); }
-`;
-
-const glowPulse = keyframes`
-    0%, 100% { box-shadow: 0 0 20px currentColor; }
-    50% { box-shadow: 0 0 40px currentColor, 0 0 60px currentColor; }
-`;
-
-const countdownPulse = keyframes`
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.02); }
-`;
-
 // ============ STYLED COMPONENTS ============
 const PageContainer = styled.div`
     min-height: 100vh;
-    padding-top: 80px;
+    padding: 80px 2rem 2rem;
     background: transparent;
-    color: ${props => props.theme?.text?.primary || '#e0e6ed'};
-    padding-left: 2rem;
-    padding-right: 2rem;
-    padding-bottom: 2rem;
+    color: #e0e6ed;
     position: relative;
     overflow-x: hidden;
     z-index: 1;
 `;
 
-const ParticleContainer = styled.div`
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 0;
-    overflow: hidden;
-`;
-
-const Particle = styled.div`
-    position: absolute;
-    width: ${props => props.size}px;
-    height: ${props => props.size}px;
-    background: ${props => props.color};
-    border-radius: 50%;
-    animation: ${particles} ${props => props.duration}s linear infinite;
-    animation-delay: ${props => props.delay}s;
-    left: ${props => props.left}%;
-    opacity: 0.6;
-    filter: blur(1px);
-`;
-
 const Header = styled.div`
-    margin-bottom: 3rem;
-    animation: ${fadeIn} 0.8s ease-out;
+    max-width: 900px;
+    margin: 0 auto 1.5rem;
+    animation: ${fadeIn} 0.5s ease-out;
     text-align: center;
-    position: relative;
-    z-index: 1;
 `;
 
 const Title = styled.h1`
-    font-size: 3.5rem;
-    background: ${props => props.theme?.brand?.gradient || 'linear-gradient(135deg, #8b5cf6 0%, #00adef 50%, #00ff88 100%)'};
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    font-size: 2rem;
+    color: #e0e6ed;
+    font-weight: 700;
     margin-bottom: 0.5rem;
-    font-weight: 900;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 1rem;
-
-    @media (max-width: 768px) {
-        font-size: 2rem;
-    }
-`;
-
-const TitleIcon = styled.div`
-    animation: ${float} 3s ease-in-out infinite;
+    @media (max-width: 768px) { font-size: 1.5rem; }
 `;
 
 const Subtitle = styled.p`
-    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
-    font-size: 1.2rem;
-    margin-bottom: 1rem;
+    color: #64748b;
+    font-size: 1rem;
+    margin-bottom: 0;
 `;
 
-const PoweredBy = styled.div`
-    display: inline-flex;
+const TrustStrip = styled.div`
+    max-width: 900px;
+    margin: 0 auto 2rem;
+    padding: 0.75rem 1.5rem;
+    background: rgba(12, 16, 32, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    text-align: center;
+    color: #64748b;
+    font-size: 0.85rem;
+    animation: ${fadeIn} 0.5s ease-out 0.1s both;
+    display: flex;
     align-items: center;
+    justify-content: center;
     gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    background: linear-gradient(135deg, ${props => props.theme?.brand?.accent || '#8b5cf6'}33 0%, ${props => props.theme?.info || '#3b82f6'}33 100%);
-    border: 1px solid ${props => props.theme?.brand?.accent || '#8b5cf6'}66;
-    border-radius: 20px;
-    font-size: 0.9rem;
-    color: ${props => props.theme?.brand?.accent || '#a78bfa'};
+    flex-wrap: wrap;
+
+    span { color: #e0e6ed; font-weight: 600; }
 `;
 
 const TabsContainer = styled.div`
-    max-width: 1400px;
-    margin: 0 auto 2rem;
+    max-width: 1200px;
+    margin: 0 auto 1.5rem;
     display: flex;
-    gap: 1rem;
-    position: relative;
-    z-index: 1;
+    gap: 0.75rem;
     overflow-x: auto;
     padding-bottom: 0.5rem;
 `;
 
 const Tab = styled.button`
-    padding: 0.75rem 1.5rem;
-    background: ${props => props.$active ? 
-        `linear-gradient(135deg, ${props.theme?.brand?.accent || '#8b5cf6'}4D 0%, ${props.theme?.brand?.accent || '#8b5cf6'}26 100%)` :
-        'rgba(30, 41, 59, 0.5)'
-    };
-    border: 1px solid ${props => props.$active ? `${props.theme?.brand?.accent || '#8b5cf6'}80` : `${props.theme?.text?.tertiary || '#64748b'}4D`};
-    border-radius: 12px;
-    color: ${props => props.$active ? (props.theme?.brand?.accent || '#a78bfa') : (props.theme?.text?.secondary || '#94a3b8')};
+    padding: 0.6rem 1.25rem;
+    background: ${p => p.$active ? 'rgba(0, 173, 239, 0.12)' : 'rgba(12, 16, 32, 0.92)'};
+    border: 1px solid ${p => p.$active ? 'rgba(0, 173, 239, 0.4)' : 'rgba(255, 255, 255, 0.06)'};
+    border-radius: 8px;
+    color: ${p => p.$active ? '#00adef' : '#64748b'};
     font-weight: 600;
+    font-size: 0.9rem;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     display: flex;
     align-items: center;
     gap: 0.5rem;
     white-space: nowrap;
-
     &:hover {
-        background: linear-gradient(135deg, ${props => props.theme?.brand?.accent || '#8b5cf6'}4D 0%, ${props => props.theme?.brand?.accent || '#8b5cf6'}26 100%);
-        border-color: ${props => props.theme?.brand?.accent || '#8b5cf6'}80;
-        color: ${props => props.theme?.brand?.accent || '#a78bfa'};
-        transform: translateY(-2px);
+        border-color: rgba(0, 173, 239, 0.4);
+        color: #00adef;
     }
 `;
 
 const StatsBanner = styled.div`
-    max-width: 1200px;
-    margin: 0 auto 3rem;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1.5rem;
-    position: relative;
-    z-index: 1;
-`;
-
-const StatCard = styled.div`
-    background: linear-gradient(135deg, ${props => props.theme?.brand?.accent || '#8b5cf6'}26 0%, ${props => props.theme?.info || '#3b82f6'}26 100%);
-    border: 2px solid ${props => props.theme?.brand?.accent || '#8b5cf6'}4D;
-    border-radius: 16px;
-    padding: 1.5rem;
-    text-align: center;
-    transition: all 0.3s ease;
-    animation: ${fadeIn} 0.6s ease-out;
-    animation-delay: ${props => props.delay}s;
-    cursor: pointer;
-
-    &:hover {
-        transform: translateY(-10px) scale(1.05);
-        border-color: ${props => props.theme?.brand?.accent || '#8b5cf6'}CC;
-        box-shadow: 0 20px 60px ${props => props.theme?.brand?.accent || '#8b5cf6'}66;
-    }
-`;
-
-const StatIcon = styled.div`
-    width: 60px;
-    height: 60px;
-    margin: 0 auto 1rem;
-    background: ${props => props.gradient};
-    border-radius: 50%;
+    max-width: 900px;
+    margin: 0 auto 2rem;
+    padding: 0.75rem 1.5rem;
+    background: rgba(12, 16, 32, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    animation: ${pulse} 2s ease-in-out infinite;
+    gap: 2rem;
+    flex-wrap: wrap;
+    animation: ${fadeIn} 0.5s ease-out 0.15s both;
 `;
 
-const StatValue = styled.div`
-    font-size: 2rem;
-    font-weight: 900;
-    color: ${props => props.theme?.brand?.accent || '#8b5cf6'};
-    margin-bottom: 0.5rem;
-`;
-
-const StatLabel = styled.div`
-    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
+const StatItem = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     font-size: 0.9rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+    color: #64748b;
+    span { color: #e0e6ed; font-weight: 700; }
+`;
+
+const EdgeBadge = styled.span`
+    padding: 0.2rem 0.6rem;
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 6px;
+    color: #10b981;
+    font-size: 0.8rem;
+    font-weight: 600;
 `;
 
 const InputSection = styled.div`
     max-width: 800px;
-    margin: 0 auto 3rem;
-    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
-    backdrop-filter: blur(10px);
-    border: 1px solid ${props => props.theme?.brand?.accent || '#8b5cf6'}4D;
-    border-radius: 20px;
-    padding: 2.5rem;
-    animation: ${fadeIn} 0.8s ease-out;
-    box-shadow: 0 10px 40px ${props => props.theme?.brand?.accent || '#8b5cf6'}33;
+    margin: 0 auto 2rem;
+    background: rgba(12, 16, 32, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 14px;
+    padding: 2rem;
+    animation: ${fadeIn} 0.5s ease-out 0.2s both;
     position: relative;
     z-index: 10;
+`;
+
+const InputHelperText = styled.p`
+    color: #64748b;
+    font-size: 0.85rem;
+    margin: 0 0 1.25rem 0;
 `;
 
 const InputForm = styled.form`
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 1.25rem;
 `;
 
 const InputGroup = styled.div`
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
-
-    @media (max-width: 768px) {
-        grid-template-columns: 1fr;
-    }
+    gap: 1.25rem;
+    @media (max-width: 768px) { grid-template-columns: 1fr; }
 `;
 
 const FormField = styled.div`
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.4rem;
 `;
 
 const Label = styled.label`
-    color: ${props => props.theme?.brand?.accent || '#a78bfa'};
-    font-size: 0.95rem;
+    color: #94a3b8;
+    font-size: 0.85rem;
     font-weight: 600;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.4rem;
 `;
 
-// Autocomplete Dropdown
 const AutocompleteContainer = styled.div`
     position: relative;
     width: 100%;
@@ -353,44 +220,29 @@ const SuggestionsDropdown = styled.div`
     top: 100%;
     left: 0;
     right: 0;
-    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.98)'};
-    border: 1px solid ${props => props.theme?.brand?.primary || '#00adef'}4D;
-    border-radius: 12px;
+    background: rgba(12, 16, 32, 0.98);
+    border: 1px solid rgba(0, 173, 239, 0.25);
+    border-radius: 10px;
     margin-top: 4px;
     max-height: 280px;
     overflow-y: auto;
     z-index: 1000;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(10px);
-
-    &::-webkit-scrollbar {
-        width: 6px;
-    }
-    &::-webkit-scrollbar-track {
-        background: rgba(255,255,255,0.05);
-    }
-    &::-webkit-scrollbar-thumb {
-        background: ${props => props.theme?.brand?.primary || '#00adef'}66;
-        border-radius: 3px;
-    }
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    &::-webkit-scrollbar { width: 6px; }
+    &::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); }
+    &::-webkit-scrollbar-thumb { background: rgba(0, 173, 239, 0.3); border-radius: 3px; }
 `;
 
 const SuggestionItem = styled.div`
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.75rem 1rem;
+    padding: 0.7rem 1rem;
     cursor: pointer;
-    transition: all 0.15s ease;
-    border-bottom: 1px solid rgba(255,255,255,0.05);
-
-    &:last-child {
-        border-bottom: none;
-    }
-
-    &:hover {
-        background: ${props => props.theme?.brand?.primary || '#00adef'}1A;
-    }
+    transition: background 0.15s ease;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    &:last-child { border-bottom: none; }
+    &:hover { background: rgba(0, 173, 239, 0.08); }
 `;
 
 const SuggestionLeft = styled.div`
@@ -401,13 +253,13 @@ const SuggestionLeft = styled.div`
 
 const SuggestionSymbol = styled.span`
     font-weight: 700;
-    font-size: 1rem;
-    color: ${props => props.theme?.text?.primary || '#e0e6ed'};
+    font-size: 0.95rem;
+    color: #e0e6ed;
 `;
 
 const SuggestionName = styled.span`
     font-size: 0.8rem;
-    color: ${props => props.theme?.text?.tertiary || '#64748b'};
+    color: #64748b;
     max-width: 150px;
     white-space: nowrap;
     overflow: hidden;
@@ -417,604 +269,533 @@ const SuggestionName = styled.span`
 const SuggestionType = styled.span`
     font-size: 0.7rem;
     font-weight: 600;
-    padding: 0.2rem 0.5rem;
+    padding: 0.15rem 0.45rem;
     border-radius: 4px;
     text-transform: uppercase;
-    background: ${props => {
-        if (props.$type === 'crypto') return `${props.theme?.warning || '#f59e0b'}26`;
-        if (props.$type === 'dex') return `${props.theme?.success || '#10b981'}26`;
-        return `${props.theme?.brand?.primary || '#00adef'}26`;
-    }};
-    color: ${props => {
-        if (props.$type === 'crypto') return props.theme?.warning || '#f59e0b';
-        if (props.$type === 'dex') return props.theme?.success || '#10b981';
-        return props.theme?.brand?.primary || '#00adef';
-    }};
+    background: ${p => p.$type === 'crypto' ? 'rgba(245, 158, 11, 0.15)' : p.$type === 'dex' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(0, 173, 239, 0.15)'};
+    color: ${p => p.$type === 'crypto' ? '#f59e0b' : p.$type === 'dex' ? '#10b981' : '#00adef'};
 `;
 
 const SuggestionChain = styled.span`
     font-size: 0.65rem;
     font-weight: 500;
-    padding: 0.15rem 0.4rem;
+    padding: 0.1rem 0.35rem;
     border-radius: 3px;
     text-transform: uppercase;
-    background: ${props => props.theme?.brand?.accent || '#8b5cf6'}1A;
-    color: ${props => props.theme?.brand?.accent || '#8b5cf6'};
+    background: rgba(139, 92, 246, 0.1);
+    color: #8b5cf6;
     margin-left: 0.25rem;
 `;
 
 const NoResults = styled.div`
     padding: 1rem;
     text-align: center;
-    color: ${props => props.theme?.text?.tertiary || '#64748b'};
+    color: #64748b;
     font-size: 0.9rem;
 `;
 
 const Input = styled.input`
-    padding: 1rem 1.25rem;
-    background: ${props => props.theme?.brand?.accent || '#8b5cf6'}0D;
-    border: 2px solid ${props => props.theme?.brand?.accent || '#8b5cf6'}4D;
-    border-radius: 12px;
-    color: ${props => props.theme?.text?.primary || '#e0e6ed'};
-    font-size: 1.1rem;
+    padding: 0.85rem 1rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: #e0e6ed;
+    font-size: 1rem;
     font-weight: 600;
-    transition: all 0.3s ease;
     text-transform: uppercase;
-
+    transition: border-color 0.2s ease;
     &:focus {
         outline: none;
-        border-color: ${props => props.theme?.brand?.accent || '#8b5cf6'};
-        background: ${props => props.theme?.brand?.accent || '#8b5cf6'}1A;
-        box-shadow: 0 0 0 4px ${props => props.theme?.brand?.accent || '#8b5cf6'}33;
+        border-color: #00adef;
+        box-shadow: 0 0 0 3px rgba(0, 173, 239, 0.15);
     }
+    &::placeholder { color: #475569; text-transform: none; }
+`;
 
-    &::placeholder {
-        color: ${props => props.theme?.text?.tertiary || '#64748b'};
-        text-transform: none;
-    }
+const ExampleText = styled.p`
+    color: #475569;
+    font-size: 0.8rem;
+    margin: -0.5rem 0 0 0;
 `;
 
 const Select = styled.select`
-    padding: 1rem 1.25rem;
-    background: ${props => props.theme?.brand?.accent || '#8b5cf6'}0D;
-    border: 2px solid ${props => props.theme?.brand?.accent || '#8b5cf6'}4D;
-    border-radius: 12px;
-    color: ${props => props.theme?.text?.primary || '#e0e6ed'};
-    font-size: 1.1rem;
+    padding: 0.85rem 1rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: #e0e6ed;
+    font-size: 1rem;
     font-weight: 600;
-    transition: all 0.3s ease;
+    transition: border-color 0.2s ease;
     cursor: pointer;
-
     &:focus {
         outline: none;
-        border-color: ${props => props.theme?.brand?.accent || '#8b5cf6'};
-        background: ${props => props.theme?.brand?.accent || '#8b5cf6'}1A;
-        box-shadow: 0 0 0 4px ${props => props.theme?.brand?.accent || '#8b5cf6'}33;
+        border-color: #00adef;
+        box-shadow: 0 0 0 3px rgba(0, 173, 239, 0.15);
     }
-
-    option {
-        background: #1e293b;
-        color: ${props => props.theme?.text?.primary || '#e0e6ed'};
-    }
+    option { background: #0c1020; color: #e0e6ed; }
 `;
 
 const PredictButton = styled.button`
-    flex: 1;
-    padding: 1.25rem 2rem;
-    background: ${props => props.theme?.brand?.gradient || 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)'};
+    padding: 1rem 2rem;
+    background: linear-gradient(135deg, #00adef 0%, #0088cc 100%);
     color: white;
     border: none;
-    border-radius: 12px;
-    font-size: 1.2rem;
+    border-radius: 10px;
+    font-size: 1.05rem;
     font-weight: 700;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.75rem;
-    transition: all 0.3s ease;
-    position: relative;
-    overflow: hidden;
-
-    &::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.3) 50%, transparent 70%);
-        background-size: 200% 200%;
-        animation: ${shimmer} 3s linear infinite;
-    }
-
+    gap: 0.6rem;
+    transition: all 0.2s ease;
     &:hover:not(:disabled) {
-        transform: translateY(-3px) scale(1.02);
-        box-shadow: 0 15px 40px ${props => props.theme?.brand?.accent || '#8b5cf6'}80;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(0, 173, 239, 0.35);
     }
-
-    &:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-        animation: ${pulse} 1.5s ease-in-out infinite;
-    }
+    &:disabled { opacity: 0.6; cursor: not-allowed; }
 `;
 
-const LoadingSpinner = styled(Sparkles)`
+const LoadingSpinner = styled(RefreshCw)`
     animation: ${spin} 1s linear infinite;
 `;
 
-// ============ LIVE COUNTDOWN SECTION ============
-const LiveStatusCard = styled.div`
-    background: linear-gradient(135deg, ${props => props.theme?.brand?.accent || '#8b5cf6'}1A 0%, ${props => props.theme?.info || '#3b82f6'}1A 100%);
-    border: 2px solid ${props => props.theme?.brand?.accent || '#8b5cf6'}4D;
-    border-radius: 20px;
-    padding: 1.5rem 2rem;
-    margin-bottom: 2rem;
-    animation: ${countdownPulse} 2s ease-in-out infinite;
-`;
-
-const LiveStatusHeader = styled.div`
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-    flex-wrap: wrap;
-    gap: 1rem;
-`;
-
-const LiveStatusTitle = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: ${props => props.theme?.brand?.accent || '#a78bfa'};
-`;
-
-const LiveDot = styled.div`
-    width: 12px;
-    height: 12px;
-    background: ${props => props.theme?.success || '#10b981'};
-    border-radius: 50%;
-    animation: ${pulse} 1s ease-in-out infinite;
-    box-shadow: 0 0 10px ${props => props.theme?.success || '#10b981'};
-`;
-
-const CountdownDisplay = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-`;
-
-const CountdownUnit = styled.div`
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 0.75rem 1rem;
-    background: rgba(15, 23, 42, 0.8);
-    border-radius: 12px;
-    border: 1px solid ${props => props.$urgent ? props.theme?.error || '#ef4444' : props.theme?.brand?.accent || '#8b5cf6'}4D;
-    min-width: 70px;
-`;
-
-const CountdownValue = styled.div`
-    font-size: 1.8rem;
-    font-weight: 900;
-    color: ${props => props.$urgent ? props.theme?.error || '#ef4444' : props.theme?.text?.primary || '#e0e6ed'};
-`;
-
-const CountdownLabel = styled.div`
-    font-size: 0.7rem;
-    color: ${props => props.theme?.text?.tertiary || '#64748b'};
-    text-transform: uppercase;
-    letter-spacing: 1px;
-`;
-
-const CountdownSeparator = styled.span`
-    font-size: 1.5rem;
-    color: ${props => props.theme?.text?.tertiary || '#64748b'};
-    font-weight: 700;
-`;
-
-// ============ DYNAMIC CONFIDENCE SECTION ============
-const DynamicConfidenceCard = styled.div`
-    background: linear-gradient(135deg, 
-        ${props => props.$trend === 'up' 
-            ? `${props.theme?.success || '#10b981'}1A` 
-            : props.$trend === 'down' 
-                ? `${props.theme?.error || '#ef4444'}1A` 
-                : `${props.theme?.brand?.accent || '#8b5cf6'}1A`} 0%, 
-        rgba(15, 23, 42, 0.8) 100%);
-    border: 2px solid ${props => props.$trend === 'up' 
-        ? `${props.theme?.success || '#10b981'}4D` 
-        : props.$trend === 'down' 
-            ? `${props.theme?.error || '#ef4444'}4D` 
-            : `${props.theme?.brand?.accent || '#8b5cf6'}4D`};
-    border-radius: 16px;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-`;
-
-const ConfidenceHeader = styled.div`
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-`;
-
-const ConfidenceTitle = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 1rem;
-    font-weight: 600;
-    color: ${props => props.theme?.brand?.accent || '#a78bfa'};
-`;
-
-const ConfidenceValueLarge = styled.div`
-    font-size: 2.5rem;
-    font-weight: 900;
-    color: ${props => {
-        if (props.$value >= 70) return props.theme?.success || '#10b981';
-        if (props.$value >= 50) return props.theme?.warning || '#f59e0b';
-        return props.theme?.error || '#ef4444';
-    }};
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-`;
-
-const ConfidenceChange = styled.span`
-    font-size: 1rem;
-    font-weight: 600;
-    color: ${props => props.$positive ? props.theme?.success || '#10b981' : props.theme?.error || '#ef4444'};
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-`;
-
-const ConfidenceBarLarge = styled.div`
-    width: 100%;
-    height: 16px;
-    background: rgba(15, 23, 42, 0.6);
-    border-radius: 8px;
-    overflow: hidden;
-    position: relative;
-`;
-
-const ConfidenceBarFill = styled.div`
-    height: 100%;
-    width: ${props => props.$value || 0}%;
-    background: ${props => {
-        if (props.$value >= 70) return `linear-gradient(90deg, ${props.theme?.success || '#10b981'}, ${props.theme?.success || '#059669'})`;
-        if (props.$value >= 50) return `linear-gradient(90deg, ${props.theme?.warning || '#f59e0b'}, ${props.theme?.warning || '#d97706'})`;
-        return `linear-gradient(90deg, ${props.theme?.error || '#ef4444'}, ${props.theme?.error || '#dc2626'})`;
-    }};
-    border-radius: 8px;
-    transition: width 0.5s ease-out, background 0.5s ease;
-    position: relative;
-
-    &::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-        animation: ${shimmer} 2s linear infinite;
-    }
-`;
-
-const ConfidenceMessage = styled.div`
-    margin-top: 1rem;
-    padding: 0.75rem 1rem;
-    background: rgba(15, 23, 42, 0.6);
-    border-radius: 8px;
-    font-size: 0.9rem;
-    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-`;
-
-// END OF PART 1 - Continue with Part 2
-// PART 2 - Add this after Part 1 in your PredictionsPage.js
-
-// ============ PREDICTION CARD STYLED COMPONENTS ============
+// ============ RESULTS ============
 const ResultsContainer = styled.div`
-    max-width: 1400px;
+    max-width: 1200px;
     margin: 0 auto;
-    animation: ${bounceIn} 0.6s ease-out;
-    position: relative;
-    z-index: 1;
+    animation: ${fadeIn} 0.4s ease-out;
 `;
 
 const PredictionCard = styled.div`
-    background: linear-gradient(135deg, ${props => props.theme?.brand?.accent || '#8b5cf6'}26 0%, ${props => props.theme?.info || '#3b82f6'}26 100%);
-    backdrop-filter: blur(10px);
-    border: 2px solid ${props => props.theme?.brand?.accent || '#8b5cf6'}66;
-    border-radius: 20px;
-    padding: 2.5rem;
-    margin-bottom: 2rem;
-    position: relative;
-    overflow: hidden;
-    box-shadow: 0 20px 60px ${props => props.theme?.brand?.accent || '#8b5cf6'}4D;
+    background: rgba(12, 16, 32, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 14px;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+`;
+
+const ForecastLabel = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1rem;
+    background: rgba(0, 173, 239, 0.08);
+    border: 1px solid rgba(0, 173, 239, 0.2);
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    font-size: 0.85rem;
+    color: #00adef;
+    font-weight: 600;
+`;
+
+const ForecastLabelSub = styled.span`
+    color: #64748b;
+    font-weight: 400;
+    margin-left: 0.5rem;
 `;
 
 const PredictionHeader = styled.div`
     display: flex;
     justify-content: space-between;
     align-items: start;
-    margin-bottom: 2rem;
-    position: relative;
-    z-index: 1;
-
-    @media (max-width: 768px) {
-        flex-direction: column;
-        gap: 1.5rem;
-    }
+    margin-bottom: 1.5rem;
+    @media (max-width: 768px) { flex-direction: column; gap: 1rem; }
 `;
 
-const StockInfo = styled.div`
-    animation: ${slideIn} 0.6s ease-out;
-`;
+const StockInfo = styled.div``;
 
 const StockSymbol = styled.h2`
-    font-size: 3rem;
-    font-weight: 900;
-    color: ${props => props.theme?.brand?.accent || '#8b5cf6'};
-    margin-bottom: 0.5rem;
+    font-size: 2rem;
+    font-weight: 800;
+    color: #e0e6ed;
+    margin: 0 0 0.25rem 0;
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.75rem;
 `;
 
 const CompanyName = styled.div`
-    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
-    font-size: 1rem;
-    margin-top: 0.25rem;
+    color: #64748b;
+    font-size: 0.9rem;
     font-weight: 500;
 `;
 
 const CurrentPriceSection = styled.div`
     display: flex;
     align-items: baseline;
-    gap: 1rem;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
 `;
 
 const CurrentPriceLabel = styled.span`
-    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
-    font-size: 1rem;
+    color: #64748b;
+    font-size: 0.85rem;
 `;
 
 const CurrentPriceValue = styled.span`
-    color: ${props => props.theme?.text?.primary || '#e0e6ed'};
-    font-size: 1.8rem;
+    color: #e0e6ed;
+    font-size: 1.4rem;
     font-weight: 700;
-`;
-
-const ActionButtons = styled.div`
-    display: flex;
-    gap: 0.75rem;
-    position: relative;
-    z-index: 1;
-
-    @media (max-width: 768px) {
-        width: 100%;
-        justify-content: center;
-    }
-`;
-
-const ActionButton = styled.button`
-    padding: 0.75rem 1rem;
-    background: ${props => props.theme?.brand?.accent || '#8b5cf6'}1A;
-    border: 1px solid ${props => props.theme?.brand?.accent || '#8b5cf6'}4D;
-    border-radius: 10px;
-    color: ${props => props.theme?.brand?.accent || '#a78bfa'};
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-weight: 600;
-    transition: all 0.2s ease;
-
-    &:hover {
-        background: ${props => props.theme?.brand?.accent || '#8b5cf6'}33;
-        border-color: ${props => props.theme?.brand?.accent || '#8b5cf6'}80;
-        transform: translateY(-2px);
-    }
 `;
 
 const DirectionBadge = styled.div`
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    padding: 1rem 2rem;
-    background: ${props => {
-        if (props.$neutral) return `linear-gradient(135deg, ${props.theme?.warning || '#f59e0b'}4D 0%, ${props.theme?.warning || '#d97706'}4D 100%)`;
-        return props.$up ?
-            `linear-gradient(135deg, ${props.theme?.success || '#10b981'}4D 0%, ${props.theme?.success || '#059669'}4D 100%)` :
-            `linear-gradient(135deg, ${props.theme?.error || '#ef4444'}4D 0%, ${props.theme?.error || '#dc2626'}4D 100%)`;
-    }};
-    border: 2px solid ${props => {
-        if (props.$neutral) return `${props.theme?.warning || '#f59e0b'}80`;
-        return props.$up ? `${props.theme?.success || '#10b981'}80` : `${props.theme?.error || '#ef4444'}80`;
-    }};
-    border-radius: 16px;
-    color: ${props => {
-        if (props.$neutral) return props.theme?.warning || '#f59e0b';
-        return props.$up ? (props.theme?.success || '#10b981') : (props.theme?.error || '#ef4444');
-    }};
-    font-size: 1.5rem;
-    font-weight: 900;
-    animation: ${slideInRight} 0.6s ease-out, ${props => props.$neutral ? 'none' : pulse} 2s ease-in-out infinite 1s;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    background: ${p => p.$neutral ? 'rgba(245, 158, 11, 0.1)' : p.$up ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)'};
+    border: 1px solid ${p => p.$neutral ? 'rgba(245, 158, 11, 0.3)' : p.$up ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'};
+    border-radius: 10px;
+    color: ${p => p.$neutral ? '#f59e0b' : p.$up ? '#10b981' : '#ef4444'};
+    font-size: 1rem;
+    font-weight: 700;
 `;
 
 const SignalStrengthBadge = styled.div`
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    background: ${props => {
-        if (props.$strength === 'strong') return `${props.theme?.success || '#10b981'}20`;
-        if (props.$strength === 'moderate') return `${props.theme?.warning || '#f59e0b'}20`;
-        return `${props.theme?.error || '#ef4444'}20`;
-    }};
-    border: 1px solid ${props => {
-        if (props.$strength === 'strong') return `${props.theme?.success || '#10b981'}60`;
-        if (props.$strength === 'moderate') return `${props.theme?.warning || '#f59e0b'}60`;
-        return `${props.theme?.error || '#ef4444'}60`;
-    }};
-    border-radius: 8px;
-    color: ${props => {
-        if (props.$strength === 'strong') return props.theme?.success || '#10b981';
-        if (props.$strength === 'moderate') return props.theme?.warning || '#f59e0b';
-        return props.theme?.error || '#ef4444';
-    }};
-    font-size: 0.85rem;
+    gap: 0.4rem;
+    padding: 0.4rem 0.8rem;
+    background: ${p => p.$strength === 'strong' ? 'rgba(16,185,129,0.1)' : p.$strength === 'moderate' ? 'rgba(245,158,11,0.1)' : 'rgba(239,68,68,0.1)'};
+    border: 1px solid ${p => p.$strength === 'strong' ? 'rgba(16,185,129,0.3)' : p.$strength === 'moderate' ? 'rgba(245,158,11,0.3)' : 'rgba(239,68,68,0.3)'};
+    border-radius: 6px;
+    color: ${p => p.$strength === 'strong' ? '#10b981' : p.$strength === 'moderate' ? '#f59e0b' : '#ef4444'};
+    font-size: 0.8rem;
     font-weight: 700;
     text-transform: uppercase;
-    margin-left: 1rem;
 `;
 
-// ============ SHARED PREDICTION BADGE ============
-const SharedPredictionBanner = styled.div`
-    background: linear-gradient(135deg, ${props => props.theme?.error || '#ef4444'}1A 0%, ${props => props.theme?.warning || '#f59e0b'}1A 100%);
-    border: 2px solid ${props => props.theme?.error || '#ef4444'}66;
-    border-radius: 16px;
-    padding: 1rem 1.5rem;
+const ActionButtons = styled.div`
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
     margin-bottom: 1.5rem;
+    @media (max-width: 768px) { justify-content: center; }
+`;
+
+const ActionButton = styled.button`
+    padding: 0.5rem 0.85rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    color: #94a3b8;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+    &:hover { background: rgba(255, 255, 255, 0.08); color: #e0e6ed; }
+`;
+
+// Shared prediction banner
+const SharedPredictionBanner = styled.div`
+    background: rgba(239, 68, 68, 0.06);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    border-radius: 10px;
+    padding: 0.75rem 1.25rem;
+    margin-bottom: 1.25rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
-    gap: 1rem;
-    animation: ${fadeIn} 0.5s ease-out;
+    gap: 0.75rem;
 `;
 
 const SharedBadgeLeft = styled.div`
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.75rem;
+`;
+
+const LiveDot = styled.div`
+    width: 10px;
+    height: 10px;
+    background: #10b981;
+    border-radius: 50%;
+    box-shadow: 0 0 6px #10b981;
 `;
 
 const LiveDotLarge = styled.div`
-    width: 16px;
-    height: 16px;
-    background: ${props => props.theme?.error || '#ef4444'};
+    width: 12px;
+    height: 12px;
+    background: #ef4444;
     border-radius: 50%;
-    animation: ${pulse} 1s ease-in-out infinite;
-    box-shadow: 0 0 15px ${props => props.theme?.error || '#ef4444'};
+    box-shadow: 0 0 8px #ef4444;
 `;
 
 const SharedText = styled.div`
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 0.15rem;
 `;
 
 const SharedTitle = styled.span`
-    font-size: 1.1rem;
+    font-size: 0.95rem;
     font-weight: 700;
-    color: ${props => props.theme?.error || '#ef4444'};
+    color: #ef4444;
+    display: flex;
+    align-items: center;
 `;
 
 const SharedSubtitle = styled.span`
-    font-size: 0.85rem;
-    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
+    font-size: 0.8rem;
+    color: #64748b;
 `;
 
 const ViewerCount = styled.div`
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    background: rgba(15, 23, 42, 0.6);
-    border-radius: 20px;
-    font-size: 0.9rem;
-    color: ${props => props.theme?.text?.primary || '#e0e6ed'};
-    
-    svg {
-        color: ${props => props.theme?.brand?.accent || '#8b5cf6'};
-    }
-`;
-
-const MetricsGrid = styled.div`
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 2rem;
-    position: relative;
-    z-index: 1;
-`;
-
-const MetricCard = styled.div`
-    background: rgba(15, 23, 42, 0.8);
-    backdrop-filter: blur(10px);
-    border: 1px solid ${props => props.theme?.brand?.accent || '#8b5cf6'}4D;
+    gap: 0.4rem;
+    padding: 0.35rem 0.75rem;
+    background: rgba(12, 16, 32, 0.6);
     border-radius: 16px;
-    padding: 1.5rem;
-    transition: all 0.3s ease;
-    animation: ${fadeIn} 0.6s ease-out;
-
-    &:hover {
-        transform: translateY(-5px) scale(1.03);
-        border-color: ${props => props.theme?.brand?.accent || '#8b5cf6'}99;
-    }
+    font-size: 0.8rem;
+    color: #e0e6ed;
+    svg { color: #00adef; }
 `;
 
-const MetricIcon = styled.div`
-    width: 48px;
-    height: 48px;
+// ============ LIVE STATUS / COUNTDOWN ============
+const LiveStatusCard = styled.div`
+    background: rgba(12, 16, 32, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 12px;
-    background: ${props => {
-        if (props.$variant === 'success') return `${props.theme?.success || '#10b981'}33`;
-        if (props.$variant === 'danger') return `${props.theme?.error || '#ef4444'}33`;
-        if (props.$variant === 'warning') return `${props.theme?.warning || '#f59e0b'}33`;
-        return `${props.theme?.brand?.accent || '#8b5cf6'}33`;
-    }};
-    color: ${props => {
-        if (props.$variant === 'success') return props.theme?.success || '#10b981';
-        if (props.$variant === 'danger') return props.theme?.error || '#ef4444';
-        if (props.$variant === 'warning') return props.theme?.warning || '#f59e0b';
-        return props.theme?.brand?.accent || '#a78bfa';
-    }};
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+`;
+
+const LiveStatusHeader = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+`;
+
+const LiveStatusTitle = styled.div`
     display: flex;
     align-items: center;
-    justify-content: center;
-    margin-bottom: 1rem;
+    gap: 0.5rem;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #e0e6ed;
 `;
 
-const MetricLabel = styled.div`
-    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
+const CountdownDisplay = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+`;
+
+const CountdownUnit = styled.div`
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    background: rgba(12, 16, 32, 0.8);
+    border-radius: 8px;
+    border: 1px solid ${p => p.$urgent ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.06)'};
+    min-width: 56px;
+`;
+
+const CountdownValue = styled.div`
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: ${p => p.$urgent ? '#ef4444' : '#e0e6ed'};
+`;
+
+const CountdownLabel = styled.div`
+    font-size: 0.65rem;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+`;
+
+const CountdownSeparator = styled.span`
+    font-size: 1.2rem;
+    color: #475569;
+    font-weight: 700;
+`;
+
+// ============ DYNAMIC CONFIDENCE ============
+const DynamicConfidenceCard = styled.div`
+    background: rgba(12, 16, 32, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    padding: 1.25rem;
+`;
+
+const ConfidenceHeader = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+`;
+
+const ConfidenceTitle = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
     font-size: 0.9rem;
+    font-weight: 600;
+    color: #94a3b8;
+`;
+
+const ConfidenceValueLarge = styled.div`
+    font-size: 2rem;
+    font-weight: 800;
+    color: ${p => p.$value >= 70 ? '#10b981' : p.$value >= 50 ? '#f59e0b' : '#ef4444'};
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
     margin-bottom: 0.5rem;
 `;
 
-const MetricValue = styled.div`
-    font-size: 2rem;
-    font-weight: 900;
-    color: ${props => {
-        if (props.$variant === 'success') return props.theme?.success || '#10b981';
-        if (props.$variant === 'danger') return props.theme?.error || '#ef4444';
-        if (props.$variant === 'warning') return props.theme?.warning || '#f59e0b';
-        return props.theme?.brand?.accent || '#a78bfa';
-    }};
+const ConfidenceChange = styled.span`
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: ${p => p.$positive ? '#10b981' : '#ef4444'};
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
 `;
 
-// ============ INDICATORS SECTION ============
+const ConfidenceBarLarge = styled.div`
+    width: 100%;
+    height: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 5px;
+    overflow: hidden;
+`;
+
+const ConfidenceBarFill = styled.div`
+    height: 100%;
+    width: ${p => Math.min(95, p.$value || 0)}%;
+    background: ${p => p.$value >= 70 ? '#10b981' : p.$value >= 50 ? '#f59e0b' : '#ef4444'};
+    border-radius: 5px;
+    transition: width 0.5s ease-out;
+`;
+
+const ConfidenceMessage = styled.div`
+    margin-top: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    background: rgba(12, 16, 32, 0.5);
+    border-radius: 6px;
+    font-size: 0.8rem;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+`;
+
+// ============ METRICS ============
+const MetricsGrid = styled.div`
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+`;
+
+const MetricCard = styled.div`
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    padding: 1.25rem;
+    animation: ${fadeIn} 0.4s ease-out;
+`;
+
+const MetricIcon = styled.div`
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background: ${p => p.$variant === 'success' ? 'rgba(16,185,129,0.12)' : p.$variant === 'danger' ? 'rgba(239,68,68,0.12)' : p.$variant === 'warning' ? 'rgba(245,158,11,0.12)' : 'rgba(0,173,239,0.12)'};
+    color: ${p => p.$variant === 'success' ? '#10b981' : p.$variant === 'danger' ? '#ef4444' : p.$variant === 'warning' ? '#f59e0b' : '#00adef'};
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.75rem;
+`;
+
+const MetricLabel = styled.div`
+    color: #64748b;
+    font-size: 0.8rem;
+    margin-bottom: 0.35rem;
+`;
+
+const MetricValue = styled.div`
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: ${p => p.$variant === 'success' ? '#10b981' : p.$variant === 'danger' ? '#ef4444' : p.$variant === 'warning' ? '#f59e0b' : '#e0e6ed'};
+`;
+
+const MetricsMicrocopy = styled.p`
+    color: #475569;
+    font-size: 0.75rem;
+    margin: -0.5rem 0 1.5rem 0;
+    font-style: italic;
+`;
+
+// ============ AI REASONING ============
+const ReasoningSection = styled.div`
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+`;
+
+const ReasoningTitle = styled.h3`
+    color: #e0e6ed;
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0 0 1rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+`;
+
+const ReasoningGrid = styled.div`
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    @media (max-width: 768px) { grid-template-columns: 1fr; }
+`;
+
+const ReasoningItem = styled.div`
+    padding: 0.75rem 1rem;
+    background: rgba(12, 16, 32, 0.5);
+    border-radius: 8px;
+    border-left: 3px solid ${p => p.$bullish ? '#10b981' : p.$bearish ? '#ef4444' : '#f59e0b'};
+`;
+
+const ReasoningLabel = styled.div`
+    color: #64748b;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.25rem;
+`;
+
+const ReasoningText = styled.div`
+    color: #e0e6ed;
+    font-size: 0.9rem;
+    font-weight: 500;
+`;
+
+// ============ INDICATORS ============
 const IndicatorsSection = styled.div`
-    margin-bottom: 2rem;
-    position: relative;
-    z-index: 1;
+    margin-bottom: 1.5rem;
 `;
 
 const IndicatorsTitle = styled.h3`
-    color: ${props => props.theme?.brand?.accent || '#a78bfa'};
-    font-size: 1.3rem;
-    margin-bottom: 1.5rem;
+    color: #e0e6ed;
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0 0 1rem 0;
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -1023,72 +804,54 @@ const IndicatorsTitle = styled.h3`
 const IndicatorsGrid = styled.div`
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
+    gap: 0.75rem;
 `;
 
 const IndicatorItem = styled.div`
-    background: rgba(15, 23, 42, 0.6);
-    border: 1px solid ${props => {
-        if (props.$signal === 'BUY') return `${props.theme?.success || '#10b981'}4D`;
-        if (props.$signal === 'SELL') return `${props.theme?.error || '#ef4444'}4D`;
-        return `${props.theme?.brand?.accent || '#8b5cf6'}33`;
-    }};
-    border-radius: 12px;
-    padding: 1rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid ${p => p.$signal === 'BUY' ? 'rgba(16,185,129,0.2)' : p.$signal === 'SELL' ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.06)'};
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    transition: all 0.2s ease;
-
-    &:hover {
-        background: rgba(15, 23, 42, 0.8);
-        transform: translateX(5px);
-    }
 `;
 
 const IndicatorInfo = styled.div`
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 2px;
 `;
 
 const IndicatorName = styled.span`
-    color: ${props => props.theme?.text?.primary || '#e0e6ed'};
-    font-size: 0.95rem;
+    color: #e0e6ed;
+    font-size: 0.9rem;
     font-weight: 600;
 `;
 
 const IndicatorNumericValue = styled.span`
-    color: ${props => props.theme?.text?.tertiary || '#64748b'};
-    font-size: 0.8rem;
+    color: #475569;
+    font-size: 0.75rem;
 `;
 
 const IndicatorSignal = styled.div`
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.4rem 0.8rem;
-    border-radius: 8px;
+    gap: 0.35rem;
+    padding: 0.3rem 0.6rem;
+    border-radius: 6px;
     font-weight: 700;
-    font-size: 0.85rem;
-    background: ${props => {
-        if (props.$signal === 'BUY') return `${props.theme?.success || '#10b981'}26`;
-        if (props.$signal === 'SELL') return `${props.theme?.error || '#ef4444'}26`;
-        return `${props.theme?.warning || '#f59e0b'}26`;
-    }};
-    color: ${props => {
-        if (props.$signal === 'BUY') return props.theme?.success || '#10b981';
-        if (props.$signal === 'SELL') return props.theme?.error || '#ef4444';
-        return props.theme?.warning || '#f59e0b';
-    }};
+    font-size: 0.8rem;
+    background: ${p => p.$signal === 'BUY' ? 'rgba(16,185,129,0.12)' : p.$signal === 'SELL' ? 'rgba(239,68,68,0.12)' : 'rgba(245,158,11,0.12)'};
+    color: ${p => p.$signal === 'BUY' ? '#10b981' : p.$signal === 'SELL' ? '#ef4444' : '#f59e0b'};
 `;
 
 const NoIndicatorsMessage = styled.div`
-    padding: 1.5rem;
-    background: rgba(15, 23, 42, 0.6);
-    border: 1px dashed ${props => props.theme?.brand?.accent || '#8b5cf6'}4D;
-    border-radius: 12px;
-    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
+    padding: 1.25rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px dashed rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    color: #64748b;
     text-align: center;
     display: flex;
     align-items: center;
@@ -1096,236 +859,288 @@ const NoIndicatorsMessage = styled.div`
     gap: 0.5rem;
 `;
 
-// ============ CHART SECTION ============
+// ============ CHART ============
 const ChartSection = styled.div`
-    background: rgba(15, 23, 42, 0.8);
-    backdrop-filter: blur(10px);
-    border: 1px solid ${props => props.theme?.brand?.accent || '#8b5cf6'}4D;
-    border-radius: 16px;
-    padding: 2rem;
-    position: relative;
-    z-index: 1;
-    margin-bottom: 2rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
 `;
 
 const ChartTitle = styled.h3`
-    color: ${props => props.theme?.brand?.accent || '#a78bfa'};
-    font-size: 1.3rem;
-    margin-bottom: 1.5rem;
+    color: #e0e6ed;
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0 0 0.25rem 0;
     display: flex;
     align-items: center;
     gap: 0.5rem;
+`;
+
+const ChartSubtitle = styled.p`
+    color: #475569;
+    font-size: 0.75rem;
+    margin: 0 0 1.25rem 0;
+    font-style: italic;
 `;
 
 const ChartLegend = styled.div`
     display: flex;
     justify-content: center;
-    gap: 2rem;
-    margin-top: 1rem;
+    gap: 1.5rem;
+    margin-top: 0.75rem;
 `;
 
 const LegendItem = styled.div`
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.4rem;
 `;
 
 const LegendColor = styled.div`
-    width: 20px;
-    height: 20px;
-    background: ${props => props.color};
-    border-radius: 4px;
+    width: 16px;
+    height: 16px;
+    background: ${p => p.color};
+    border-radius: 3px;
 `;
 
 const LegendText = styled.span`
-    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
+    color: #64748b;
+    font-size: 0.8rem;
+`;
+
+// ============ HISTORICAL VALIDATION ============
+const ValidationSection = styled.div`
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+`;
+
+const ValidationTitle = styled.h3`
+    color: #e0e6ed;
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0 0 1rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+`;
+
+const ValidationStats = styled.div`
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.75rem;
+`;
+
+const ValidationStat = styled.div`
+    span:first-child {
+        color: #64748b;
+        font-size: 0.8rem;
+        display: block;
+        margin-bottom: 0.15rem;
+    }
+    span:last-child {
+        color: #e0e6ed;
+        font-size: 1.25rem;
+        font-weight: 800;
+    }
+`;
+
+const ValidationDisclaimer = styled.p`
+    color: #475569;
+    font-size: 0.75rem;
+    margin: 0;
+    font-style: italic;
+`;
+
+// ============ ACTION CTAS ============
+const CTASection = styled.div`
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+`;
+
+const CTAButton = styled.button`
+    padding: 0.75rem 1.5rem;
+    background: ${p => p.$primary ? 'linear-gradient(135deg, #00adef 0%, #0088cc 100%)' : 'rgba(255,255,255,0.04)'};
+    border: 1px solid ${p => p.$primary ? 'transparent' : 'rgba(255,255,255,0.1)'};
+    border-radius: 8px;
+    color: ${p => p.$primary ? '#fff' : '#94a3b8'};
+    font-weight: 600;
     font-size: 0.9rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+    &:hover {
+        transform: translateY(-1px);
+        ${p => p.$primary ? 'box-shadow: 0 6px 20px rgba(0,173,239,0.3);' : 'background: rgba(255,255,255,0.08); color: #e0e6ed;'}
+    }
+`;
+
+// ============ TRUST LINE ============
+const TrustLine = styled.div`
+    text-align: center;
+    padding: 1rem;
+    color: #475569;
+    font-size: 0.8rem;
+    font-style: italic;
 `;
 
 // ============ EMPTY STATE ============
 const EmptyState = styled.div`
     text-align: center;
-    padding: 4rem 2rem;
-    animation: ${fadeIn} 0.5s ease-out;
-    position: relative;
-    z-index: 1;
+    padding: 3rem 2rem;
+    animation: ${fadeIn} 0.4s ease-out;
 `;
 
 const EmptyIcon = styled.div`
-    width: 150px;
-    height: 150px;
-    margin: 0 auto 2rem;
-    background: linear-gradient(135deg, ${props => props.theme?.brand?.accent || '#8b5cf6'}33 0%, ${props => props.theme?.brand?.accent || '#8b5cf6'}0D 100%);
+    width: 100px;
+    height: 100px;
+    margin: 0 auto 1.5rem;
+    background: rgba(0, 173, 239, 0.08);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 3px dashed ${props => props.theme?.brand?.accent || '#8b5cf6'}66;
-    animation: ${float} 3s ease-in-out infinite;
+    border: 2px dashed rgba(0, 173, 239, 0.2);
 `;
 
 const EmptyTitle = styled.h2`
-    color: ${props => props.theme?.brand?.accent || '#a78bfa'};
-    font-size: 2rem;
-    margin-bottom: 1rem;
+    color: #e0e6ed;
+    font-size: 1.4rem;
+    margin-bottom: 0.5rem;
+    font-weight: 700;
 `;
 
 const EmptyText = styled.p`
-    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
-    font-size: 1.2rem;
+    color: #64748b;
+    font-size: 1rem;
 `;
 
-// ============ ROCKET ANIMATION ============
-const RocketContainer = styled.div`
-    position: fixed;
-    ${props => props.$crash ? 'top: -100px;' : 'bottom: -100px;'}
-    left: ${props => props.left}%;
-    z-index: 1000;
-    animation: ${props => props.$crash ? rocketCrash : rocketLaunch} 3s ease-out forwards;
-    pointer-events: none;
-`;
-
-// ============ MODAL ============
+// ============ MODALS ============
 const ModalOverlay = styled.div`
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(10px);
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(6px);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 2000;
-    animation: ${fadeIn} 0.3s ease-out;
+    animation: ${fadeIn} 0.2s ease-out;
     padding: 1rem;
 `;
 
 const ModalContent = styled.div`
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.98) 100%);
-    border: 2px solid ${props => props.theme?.brand?.accent || '#8b5cf6'}80;
-    border-radius: 20px;
-    padding: 2rem;
-    max-width: 500px;
+    background: rgba(12, 16, 32, 0.98);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    padding: 1.75rem;
+    max-width: 480px;
     width: 100%;
-    animation: ${bounceIn} 0.5s ease-out;
+    animation: ${fadeIn} 0.3s ease-out;
 `;
 
 const ModalHeader = styled.div`
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
 `;
 
 const ModalTitle = styled.h3`
-    color: ${props => props.theme?.brand?.accent || '#a78bfa'};
-    font-size: 1.5rem;
+    color: #e0e6ed;
+    font-size: 1.25rem;
     font-weight: 700;
 `;
 
 const CloseButton = styled.button`
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
-    background: ${props => props.theme?.error || '#ef4444'}33;
-    border: 1px solid ${props => props.theme?.error || '#ef4444'}4D;
-    color: ${props => props.theme?.error || '#ef4444'};
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    color: #ef4444;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.2s ease;
-
-    &:hover {
-        background: ${props => props.theme?.error || '#ef4444'}4D;
-        transform: scale(1.1);
-    }
+    transition: background 0.2s ease;
+    &:hover { background: rgba(239, 68, 68, 0.2); }
 `;
 
 const ShareOptions = styled.div`
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 1rem;
+    gap: 0.75rem;
 `;
 
 const ShareOption = styled.button`
-    padding: 1rem;
-    background: ${props => props.theme?.brand?.accent || '#8b5cf6'}1A;
-    border: 1px solid ${props => props.theme?.brand?.accent || '#8b5cf6'}4D;
-    border-radius: 12px;
-    color: ${props => props.theme?.brand?.accent || '#a78bfa'};
+    padding: 0.85rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    color: #94a3b8;
     cursor: pointer;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.4rem;
     font-weight: 600;
+    font-size: 0.85rem;
     transition: all 0.2s ease;
-
-    &:hover {
-        background: ${props => props.theme?.brand?.accent || '#8b5cf6'}33;
-        transform: translateY(-3px);
-    }
+    &:hover { background: rgba(255, 255, 255, 0.08); color: #e0e6ed; }
 `;
 
 const WatchlistStar = styled.button`
     background: none;
     border: none;
     cursor: pointer;
-    padding: 0.25rem;
+    padding: 0.2rem;
     display: flex;
     align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-    border-radius: 50%;
-    
-    &:hover {
-        transform: scale(1.2);
-    }
+    transition: transform 0.2s ease;
+    &:hover { transform: scale(1.15); }
 `;
 
 // ============ SAVED PREDICTIONS ============
 const SavedPredictionsContainer = styled.div`
-    max-width: 1400px;
+    max-width: 1200px;
     margin: 0 auto;
-    position: relative;
-    z-index: 1;
 `;
 
 const SavedPredictionsGrid = styled.div`
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-    gap: 1.5rem;
-    animation: ${fadeIn} 0.5s ease-out;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 1rem;
+    animation: ${fadeIn} 0.4s ease-out;
 `;
 
 const SavedPredictionCard = styled.div`
-    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
-    border: 2px solid ${props => props.theme?.brand?.accent || '#8b5cf6'}4D;
-    border-radius: 16px;
-    padding: 1.5rem;
-    transition: all 0.3s ease;
+    background: rgba(12, 16, 32, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    padding: 1.25rem;
+    transition: border-color 0.2s ease;
     position: relative;
     overflow: hidden;
-
-    &:hover {
-        transform: translateY(-5px);
-        border-color: ${props => props.theme?.brand?.accent || '#8b5cf6'}99;
-    }
-
+    &:hover { border-color: rgba(255, 255, 255, 0.12); }
     &::before {
         content: '';
         position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 4px;
-        background: ${props => props.$up ? 
-            `linear-gradient(90deg, ${props.theme?.success || '#10b981'}, ${props.theme?.success || '#059669'})` : 
-            `linear-gradient(90deg, ${props.theme?.error || '#ef4444'}, ${props.theme?.error || '#dc2626'})`
-        };
+        top: 0; left: 0; right: 0;
+        height: 3px;
+        background: ${p => p.$up ? '#10b981' : '#ef4444'};
     }
 `;
 
@@ -1333,56 +1148,50 @@ const SavedCardHeader = styled.div`
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
 `;
 
 const SavedSymbol = styled.div`
-    font-size: 1.8rem;
-    font-weight: 900;
-    color: ${props => props.theme?.brand?.accent || '#8b5cf6'};
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #e0e6ed;
 `;
 
 const SavedDirection = styled.div`
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    background: ${props => props.$up ? 
-        `${props.theme?.success || '#10b981'}33` : 
-        `${props.theme?.error || '#ef4444'}33`
-    };
-    border: 1px solid ${props => props.$up ? 
-        `${props.theme?.success || '#10b981'}66` : 
-        `${props.theme?.error || '#ef4444'}66`
-    };
-    border-radius: 8px;
-    color: ${props => props.$up ? (props.theme?.success || '#10b981') : (props.theme?.error || '#ef4444')};
+    gap: 0.4rem;
+    padding: 0.35rem 0.75rem;
+    background: ${p => p.$up ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)'};
+    border: 1px solid ${p => p.$up ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)'};
+    border-radius: 6px;
+    color: ${p => p.$up ? '#10b981' : '#ef4444'};
     font-weight: 700;
-    font-size: 0.9rem;
+    font-size: 0.8rem;
 `;
 
 const SavedCardBody = styled.div`
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-    margin-bottom: 1rem;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
 `;
 
 const SavedMetric = styled.div`
-    background: ${props => props.theme?.brand?.accent || '#8b5cf6'}1A;
-    border-radius: 8px;
-    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 6px;
+    padding: 0.6rem;
 `;
 
 const SavedMetricLabel = styled.div`
-    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
-    font-size: 0.8rem;
-    margin-bottom: 0.25rem;
+    color: #64748b;
+    font-size: 0.75rem;
+    margin-bottom: 0.15rem;
 `;
 
 const SavedMetricValue = styled.div`
-    color: ${props => props.theme?.text?.primary || '#e0e6ed'};
-    font-size: 1.1rem;
+    color: #e0e6ed;
+    font-size: 1rem;
     font-weight: 700;
 `;
 
@@ -1390,68 +1199,53 @@ const SavedCardFooter = styled.div`
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-top: 1rem;
-    border-top: 1px solid ${props => props.theme?.brand?.accent || '#8b5cf6'}33;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
 `;
 
 const SavedDate = styled.div`
-    color: ${props => props.theme?.text?.tertiary || '#64748b'};
-    font-size: 0.85rem;
+    color: #475569;
+    font-size: 0.8rem;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.4rem;
 `;
 
 const SavedActions = styled.div`
     display: flex;
-    gap: 0.5rem;
+    gap: 0.4rem;
 `;
 
 const SavedActionButton = styled.button`
-    padding: 0.5rem;
-    background: ${props => props.$danger ? 
-        `${props.theme?.error || '#ef4444'}1A` : 
-        `${props.theme?.brand?.accent || '#8b5cf6'}1A`
-    };
-    border: 1px solid ${props => props.$danger ? 
-        `${props.theme?.error || '#ef4444'}4D` : 
-        `${props.theme?.brand?.accent || '#8b5cf6'}4D`
-    };
-    border-radius: 8px;
-    color: ${props => props.$danger ? (props.theme?.error || '#ef4444') : (props.theme?.brand?.accent || '#a78bfa')};
+    padding: 0.4rem;
+    background: ${p => p.$danger ? 'rgba(239,68,68,0.08)' : 'rgba(255,255,255,0.04)'};
+    border: 1px solid ${p => p.$danger ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.06)'};
+    border-radius: 6px;
+    color: ${p => p.$danger ? '#ef4444' : '#94a3b8'};
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s ease;
-
-    &:hover {
-        transform: scale(1.1);
-    }
+    transition: all 0.15s ease;
+    &:hover { transform: scale(1.05); }
 `;
 
 const ClearAllButton = styled.button`
-    padding: 0.75rem 1.5rem;
-    background: ${props => props.theme?.error || '#ef4444'}1A;
-    border: 1px solid ${props => props.theme?.error || '#ef4444'}4D;
-    border-radius: 10px;
-    color: ${props => props.theme?.error || '#ef4444'};
+    padding: 0.6rem 1.25rem;
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    border-radius: 8px;
+    color: #ef4444;
     font-weight: 600;
+    font-size: 0.85rem;
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    transition: all 0.2s ease;
-    margin-bottom: 2rem;
-
-    &:hover {
-        background: ${props => props.theme?.error || '#ef4444'}33;
-    }
+    gap: 0.4rem;
+    transition: background 0.2s ease;
+    margin-bottom: 1.5rem;
+    &:hover { background: rgba(239, 68, 68, 0.15); }
 `;
-
-// END OF PART 2 - Continue with Part 3 for the component logic
-// PART 3 - Add this after Part 2 in your PredictionsPage.js
-// This contains the main component logic
 
 // ============ MAIN COMPONENT ============
 const PredictionsPage = () => {
@@ -1461,15 +1255,13 @@ const PredictionsPage = () => {
     const { theme } = useTheme();
     const { hasPlanAccess } = useSubscription();
     const [showUpgradePrompt, setShowUpgradePrompt] = useState(!hasPlanAccess('starter'));
-    
+
     const [activeTab, setActiveTab] = useState('predict');
     const [symbol, setSymbol] = useState('');
     const [days, setDays] = useState('7');
     const [loading, setLoading] = useState(false);
     const [prediction, setPrediction] = useState(null);
     const [liveData, setLiveData] = useState(null);
-    const [showRocket, setShowRocket] = useState(false);
-    const [particlesData, setParticlesData] = useState([]);
     const [showShareModal, setShowShareModal] = useState(false);
     const [showAlertModal, setShowAlertModal] = useState(false);
     const [savedPredictions, setSavedPredictions] = useState([]);
@@ -1479,7 +1271,7 @@ const PredictionsPage = () => {
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [searchLoading, setSearchLoading] = useState(false);
-    const [dexInfo, setDexInfo] = useState(null); // DEX token extra info
+    const [dexInfo, setDexInfo] = useState(null);
 
     // Dynamic confidence state
     const [dynamicConfidence, setDynamicConfidence] = useState(null);
@@ -1489,12 +1281,12 @@ const PredictionsPage = () => {
     // Countdown state
     const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
-    // Theme colors
-    const accentColor = theme?.brand?.accent || '#8b5cf6';
-    const primaryColor = theme?.brand?.primary || '#00adef';
-    const successColor = theme?.success || '#10b981';
-    const errorColor = theme?.error || '#ef4444';
-    const warningColor = theme?.warning || '#f59e0b';
+    const [platformStats, setPlatformStats] = useState({
+        accuracy: 0,
+        totalPredictions: 0,
+        correctPredictions: 0,
+        loading: true
+    });
 
     // Symbol search function
     const searchSymbols = useCallback(async (query) => {
@@ -1514,15 +1306,11 @@ const PredictionsPage = () => {
         }
     }, [api]);
 
-    // Debounced search — longer delay for contract addresses
+    // Debounced search
     useEffect(() => {
         const isContractAddr = symbol.startsWith('0x') || /^[1-9A-HJ-NP-Za-km-z]{20,}$/.test(symbol);
-        // Contract addresses: wait 800ms (user is pasting, not typing char-by-char)
-        // Regular symbols: wait 200ms
         const delay = isContractAddr ? 800 : 200;
-        // For contract addresses, only search once we have a full address (40+ chars for EVM)
         const minLength = isContractAddr ? (symbol.startsWith('0x') ? 42 : 32) : 1;
-
         const timer = setTimeout(() => {
             if (symbol.length >= minLength) {
                 searchSymbols(symbol);
@@ -1538,8 +1326,6 @@ const PredictionsPage = () => {
         setSymbol(suggestion.symbol);
         setShowSuggestions(false);
         setSuggestions([]);
-
-        // Store DEX info if available
         if (suggestion.type === 'dex') {
             setDexInfo({
                 network: suggestion.network,
@@ -1551,13 +1337,6 @@ const PredictionsPage = () => {
             setDexInfo(null);
         }
     };
-
-    const [platformStats, setPlatformStats] = useState({
-        accuracy: 0,
-        totalPredictions: 0,
-        correctPredictions: 0,
-        loading: true
-    });
 
     // Fetch platform stats
     useEffect(() => {
@@ -1582,18 +1361,8 @@ const PredictionsPage = () => {
         return () => clearInterval(interval);
     }, [api]);
 
-    // Initialize particles and load saved predictions
+    // Load saved predictions and watchlist
     useEffect(() => {
-        const newParticles = Array.from({ length: 30 }, (_, i) => ({
-            id: i,
-            size: Math.random() * 4 + 2,
-            left: Math.random() * 100,
-            duration: Math.random() * 10 + 10,
-            delay: Math.random() * 5,
-            color: [accentColor, primaryColor, successColor, warningColor][Math.floor(Math.random() * 4)]
-        }));
-        setParticlesData(newParticles);
-
         const saved = JSON.parse(localStorage.getItem('savedPredictions') || '[]');
         setSavedPredictions(saved);
 
@@ -1608,7 +1377,7 @@ const PredictionsPage = () => {
             }
         };
         fetchWatchlist();
-    }, [api, accentColor, primaryColor, successColor, warningColor]);
+    }, [api]);
 
     // Live data polling
     useEffect(() => {
@@ -1622,8 +1391,7 @@ const PredictionsPage = () => {
                 const response = await api.get(`/predictions/live/${predId}`);
                 const data = response.data.prediction;
                 setLiveData(data);
-                
-                // Update dynamic confidence
+
                 if (data.liveConfidence !== undefined) {
                     setDynamicConfidence(prev => {
                         if (prev !== null) {
@@ -1634,12 +1402,11 @@ const PredictionsPage = () => {
                         return data.liveConfidence;
                     });
                 }
-                
-                // Also store currentPrice from livePrice
+
                 if (data.livePrice !== undefined) {
                     data.currentPrice = data.livePrice;
                 }
-                
+
                 return data.timeRemaining;
             } catch (error) {
                 console.error('Error fetching live data:', error);
@@ -1649,11 +1416,10 @@ const PredictionsPage = () => {
 
         fetchLiveData();
         currentInterval = setInterval(fetchLiveData, 10000);
-        
         return () => { if (currentInterval) clearInterval(currentInterval); };
     }, [prediction?._id, prediction?.predictionId, api]);
 
-    // Initialize countdown from shared prediction data (before liveData loads)
+    // Initialize countdown from shared prediction data
     useEffect(() => {
         if (prediction?.timeRemaining && prediction.timeRemaining > 0 && !liveData) {
             const remaining = prediction.timeRemaining;
@@ -1669,15 +1435,13 @@ const PredictionsPage = () => {
     useEffect(() => {
         if (!liveData?.timeRemaining || liveData.timeRemaining <= 0) return;
 
-        // Store the timestamp when we received the data
         const fetchedAt = Date.now();
         const initialRemaining = liveData.timeRemaining;
 
         const updateCountdown = () => {
-            // Calculate how much time has passed since we fetched
             const elapsed = Date.now() - fetchedAt;
             const remaining = Math.max(0, initialRemaining - elapsed);
-            
+
             if (remaining <= 0) {
                 setCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0 });
                 return;
@@ -1687,7 +1451,7 @@ const PredictionsPage = () => {
             const h = Math.floor((remaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
             const m = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
             const s = Math.floor((remaining % (1000 * 60)) / 1000);
-            
+
             setCountdown({ days: d, hours: h, minutes: m, seconds: s });
         };
 
@@ -1696,13 +1460,11 @@ const PredictionsPage = () => {
         return () => clearInterval(interval);
     }, [liveData?.timeRemaining]);
 
-    // Generate chart data for price projection line
-    // Handles micro-prices like $0.00001234 by preserving precision
+    // Generate chart data
     const generateChartData = (currentPrice, targetPrice, days) => {
         const data = [];
         const priceChange = targetPrice - currentPrice;
 
-        // Determine appropriate decimal precision based on price magnitude
         const getDecimals = (price) => {
             const absPrice = Math.abs(price);
             if (absPrice < 0.000001) return 12;
@@ -1716,7 +1478,6 @@ const PredictionsPage = () => {
 
         for (let i = 0; i <= days; i++) {
             const progress = i / days;
-            // Smooth curve using easing function
             const easedProgress = progress < 0.5
                 ? 2 * progress * progress
                 : 1 - Math.pow(-2 * progress + 2, 2) / 2;
@@ -1742,15 +1503,13 @@ const PredictionsPage = () => {
         setPrediction(null);
         setLiveData(null);
         setDynamicConfidence(null);
-        
+
         try {
-            // Build request payload
             const payload = {
                 symbol: symbol.toUpperCase(),
                 days: parseInt(days)
             };
 
-            // Add DEX info if available
             if (dexInfo) {
                 payload.assetType = 'dex';
                 payload.network = dexInfo.network;
@@ -1759,55 +1518,39 @@ const PredictionsPage = () => {
             }
 
             const response = await api.post('/predictions/predict', payload);
-            
-            console.log('API Response:', response.data);
-            console.log('Indicators:', response.data.indicators);
-            
+
             const chartData = generateChartData(
-                response.data.current_price, 
-                response.data.prediction.target_price, 
+                response.data.current_price,
+                response.data.prediction.target_price,
                 parseInt(days)
             );
-            
-            setPrediction({ 
-                ...response.data, 
-                chartData, 
-                timestamp: new Date().toISOString() 
+
+            setPrediction({
+                ...response.data,
+                chartData,
+                timestamp: new Date().toISOString()
             });
-            
-            // Set initial dynamic confidence (use liveConfidence if shared, otherwise confidence)
+
             setDynamicConfidence(response.data.liveConfidence || response.data.prediction.confidence);
 
-            // Check signal strength and show appropriate message
             const signalStrength = response.data.prediction.signal_strength;
             const isActionable = response.data.prediction.is_actionable;
 
-            // Show different toast based on signal strength
             if (response.data.isShared) {
-                toast.info(`Joined live prediction for ${symbol.toUpperCase()}! ${response.data.viewCount || 1} users watching`, 'Live Prediction');
+                toast.info(`Joined live forecast for ${symbol.toUpperCase()}! ${response.data.viewCount || 1} users watching`, 'Live Forecast');
             } else if (!isActionable || signalStrength === 'weak') {
-                // Weak signal - warn the user
                 toast.warning(
                     response.data.warning || `Low confidence signal for ${symbol.toUpperCase()} - no clear direction detected`,
                     'Weak Signal'
                 );
             } else if (signalStrength === 'moderate') {
-                toast.info(`Moderate signal for ${symbol.toUpperCase()} - proceed with caution`, 'Prediction Created');
+                toast.info(`Moderate signal for ${symbol.toUpperCase()} - proceed with caution`, 'Forecast Created');
             } else {
-                toast.success(`Strong signal detected for ${symbol.toUpperCase()}!`, 'Success');
-            }
-
-            // Only show rocket animation for actionable signals
-            const isGoingUp = response.data.prediction.direction === 'UP';
-            if (isActionable && response.data.prediction.direction !== 'NEUTRAL') {
-                setShowRocket(isGoingUp ? 'up' : 'down');
-                setTimeout(() => setShowRocket(false), 3000);
+                toast.success(`Strong signal detected for ${symbol.toUpperCase()}!`, 'Forecast Ready');
             }
         } catch (error) {
-            const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Failed to generate prediction';
+            const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Failed to generate forecast';
             const errorType = error.response?.data?.error;
-            
-            // Show specific error for invalid symbols
             if (errorType === 'Invalid symbol') {
                 toast.warning(errorMessage, 'Symbol Not Found');
             } else {
@@ -1847,7 +1590,7 @@ const PredictionsPage = () => {
         const saved = [...savedPredictions, { id: Date.now(), ...prediction, savedAt: new Date().toISOString() }];
         setSavedPredictions(saved);
         localStorage.setItem('savedPredictions', JSON.stringify(saved));
-        toast.success('Prediction saved!', 'Saved');
+        toast.success('Forecast saved!', 'Saved');
     };
 
     // Delete saved prediction
@@ -1855,12 +1598,12 @@ const PredictionsPage = () => {
         const updated = savedPredictions.filter(p => p.id !== id);
         setSavedPredictions(updated);
         localStorage.setItem('savedPredictions', JSON.stringify(updated));
-        toast.success('Prediction removed', 'Deleted');
+        toast.success('Forecast removed', 'Deleted');
     };
 
     // Clear all saved
     const handleClearAllSaved = () => {
-        if (window.confirm('Clear all saved predictions?')) {
+        if (window.confirm('Clear all saved forecasts?')) {
             setSavedPredictions([]);
             localStorage.removeItem('savedPredictions');
             toast.success('All cleared', 'Cleared');
@@ -1876,7 +1619,6 @@ const PredictionsPage = () => {
     // Create Price Alert
     const handleCreateAlert = async (alertData) => {
         try {
-            // Map notification methods to API format
             const payload = {
                 type: alertData.type,
                 symbol: alertData.symbol,
@@ -1889,7 +1631,6 @@ const PredictionsPage = () => {
                     push: alertData.notificationMethods?.push ?? false
                 }
             };
-
             await api.post('/alerts', payload);
             toast.success(`Alert created for ${alertData.symbol}!`, 'Alert Set');
             setShowAlertModal(false);
@@ -1901,23 +1642,23 @@ const PredictionsPage = () => {
     };
 
     // Share
-const handleShare = (platform) => {
-    if (!prediction) return;
-    const formattedPrice = formatPredictionPrice(prediction.prediction.target_price, prediction.symbol);
-    const text = `AI prediction: ${prediction.symbol} ${prediction.prediction.direction} to ${formattedPrice}`;
-    const url = window.location.href;
-    let shareUrl = '';
-    if (platform === 'twitter') shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
-    else if (platform === 'facebook') shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
-    else if (platform === 'linkedin') shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
-    else if (platform === 'copy') { 
-        navigator.clipboard.writeText(`${text}\n${url}`); 
-        toast.success('Copied!', 'Copied'); 
-        setShowShareModal(false); 
-        return; 
-    }
-    if (shareUrl) { window.open(shareUrl, '_blank'); setShowShareModal(false); }
-};
+    const handleShare = (platform) => {
+        if (!prediction) return;
+        const formattedPrice = formatPredictionPrice(prediction.prediction.target_price, prediction.symbol);
+        const text = `AI forecast: ${prediction.symbol} ${prediction.prediction.direction} to ${formattedPrice}`;
+        const url = window.location.href;
+        let shareUrl = '';
+        if (platform === 'twitter') shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+        else if (platform === 'facebook') shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
+        else if (platform === 'linkedin') shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
+        else if (platform === 'copy') {
+            navigator.clipboard.writeText(`${text}\n${url}`);
+            toast.success('Copied!', 'Copied');
+            setShowShareModal(false);
+            return;
+        }
+        if (shareUrl) { window.open(shareUrl, '_blank'); setShowShareModal(false); }
+    };
 
     // Export
     const handleExport = () => {
@@ -1933,57 +1674,149 @@ const handleShare = (platform) => {
             days,
             timestamp: new Date().toISOString()
         }, null, 2)], { type: 'application/json' });
-        const a = document.createElement('a'); 
-        a.href = URL.createObjectURL(blob); 
-        a.download = `${prediction.symbol}_prediction.json`; 
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `${prediction.symbol}_forecast.json`;
         a.click();
         toast.success('Exported!', 'Exported');
     };
 
     // Format date
-    const formatSavedDate = (dateString) => new Date(dateString).toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric', 
-        year: 'numeric', 
-        hour: '2-digit', 
-        minute: '2-digit' 
+    const formatSavedDate = (dateString) => new Date(dateString).toLocaleDateString('en-US', {
+        month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
     });
 
     // Get confidence message
     const getConfidenceMessage = (confidence) => {
-        if (confidence >= 80) return { icon: CheckCircle, text: 'Very high confidence - Strong signal detected', color: successColor };
-        if (confidence >= 65) return { icon: CheckCircle, text: 'Good confidence - Favorable conditions', color: successColor };
-        if (confidence >= 50) return { icon: AlertTriangle, text: 'Moderate confidence - Mixed signals', color: warningColor };
-        return { icon: XCircle, text: 'Low confidence - Proceed with caution', color: errorColor };
+        const capped = Math.min(95, confidence);
+        if (capped >= 80) return { icon: CheckCircle, text: 'Very high confidence - Strong signal detected', color: '#10b981' };
+        if (capped >= 65) return { icon: CheckCircle, text: 'Good confidence - Favorable conditions', color: '#10b981' };
+        if (capped >= 50) return { icon: AlertTriangle, text: 'Moderate confidence - Mixed signals', color: '#f59e0b' };
+        return { icon: XCircle, text: 'Low confidence - Proceed with caution', color: '#ef4444' };
     };
 
-    // Render indicators
+    // Get confidence label
+    const getConfidenceLabel = (confidence) => {
+        const capped = Math.min(95, confidence);
+        if (capped >= 70) return `High Confidence (${capped.toFixed(0)}%)`;
+        if (capped >= 50) return `Moderate Confidence (${capped.toFixed(0)}%)`;
+        return `Low Confidence (${capped.toFixed(0)}%)`;
+    };
+
+    // Get direction label
+    const getDirectionLabel = (direction) => {
+        if (direction === 'UP') return 'Bullish Projection (Long Bias)';
+        if (direction === 'DOWN') return 'Bearish Projection (Short Bias)';
+        return 'No Clear Direction';
+    };
+
+    // Generate AI reasoning from indicators
+    const generateReasoning = () => {
+        if (!prediction?.indicators) return [];
+        const indicators = prediction.indicators;
+        const reasons = [];
+
+        // Market Structure from Trend
+        const trend = indicators['Trend'] || indicators['trend'] || indicators['SMA'] || indicators['EMA'];
+        if (trend) {
+            const signal = String(trend.signal || '').toUpperCase();
+            reasons.push({
+                label: 'Market Structure',
+                text: signal === 'BUY' ? 'Price is trading above key moving averages, indicating an uptrend structure.'
+                     : signal === 'SELL' ? 'Price is below key moving averages, suggesting a downtrend structure.'
+                     : 'Price is consolidating near moving averages with no clear directional bias.',
+                bullish: signal === 'BUY',
+                bearish: signal === 'SELL'
+            });
+        }
+
+        // Momentum from MACD
+        const macd = indicators['MACD'] || indicators['macd'];
+        if (macd) {
+            const signal = String(macd.signal || '').toUpperCase();
+            reasons.push({
+                label: 'Momentum',
+                text: signal === 'BUY' ? 'MACD shows bullish momentum with a positive crossover.'
+                     : signal === 'SELL' ? 'MACD indicates bearish momentum with a negative crossover.'
+                     : 'MACD is flat, showing neutral momentum.',
+                bullish: signal === 'BUY',
+                bearish: signal === 'SELL'
+            });
+        }
+
+        // Volume
+        const volume = indicators['Volume'] || indicators['volume'] || indicators['OBV'];
+        if (volume) {
+            const signal = String(volume.signal || '').toUpperCase();
+            reasons.push({
+                label: 'Volume',
+                text: signal === 'BUY' ? 'Volume supports the move with above-average buying pressure.'
+                     : signal === 'SELL' ? 'Selling volume is elevated, confirming distribution.'
+                     : 'Volume is average with no strong conviction either way.',
+                bullish: signal === 'BUY',
+                bearish: signal === 'SELL'
+            });
+        }
+
+        // Pattern from RSI / Bollinger
+        const rsi = indicators['RSI'] || indicators['rsi'];
+        const bollinger = indicators['Bollinger'] || indicators['bollinger'] || indicators['Bollinger Bands'];
+        const patternSource = rsi || bollinger;
+        if (patternSource) {
+            const signal = String(patternSource.signal || '').toUpperCase();
+            const val = patternSource.value;
+            let text;
+            if (rsi && val !== undefined) {
+                text = val > 70 ? `RSI at ${typeof val === 'number' ? val.toFixed(1) : val} - overbought conditions may lead to a pullback.`
+                     : val < 30 ? `RSI at ${typeof val === 'number' ? val.toFixed(1) : val} - oversold conditions suggest a potential bounce.`
+                     : `RSI at ${typeof val === 'number' ? val.toFixed(1) : val} - within normal range.`;
+            } else {
+                text = signal === 'BUY' ? 'Technical patterns suggest a bullish setup.'
+                     : signal === 'SELL' ? 'Technical patterns indicate bearish pressure.'
+                     : 'No strong pattern detected at this time.';
+            }
+            reasons.push({
+                label: 'Pattern',
+                text,
+                bullish: signal === 'BUY',
+                bearish: signal === 'SELL'
+            });
+        }
+
+        return reasons;
+    };
+
+    // Render indicators (max 6)
     const renderIndicators = () => {
         if (!prediction?.indicators || Object.keys(prediction.indicators).length === 0) {
             return (
-                <NoIndicatorsMessage theme={theme}>
-                    <AlertTriangle size={20} />
-                    No technical indicators available for this prediction
+                <NoIndicatorsMessage>
+                    <AlertTriangle size={18} />
+                    No technical indicators available for this forecast
                 </NoIndicatorsMessage>
             );
         }
 
+        const entries = Object.entries(prediction.indicators).slice(0, 6);
+
         return (
             <IndicatorsGrid>
-                {Object.entries(prediction.indicators).map(([name, data]) => {
+                {entries.map(([name, data]) => {
                     const signal = data?.signal ? String(data.signal).toUpperCase() : 'NEUTRAL';
-                    const value = data?.value !== undefined && data?.value !== null ? data.value : '—';
-                    
+                    const value = data?.value !== undefined && data?.value !== null ? data.value : null;
+
                     return (
-                        <IndicatorItem key={name} theme={theme} $signal={signal}>
+                        <IndicatorItem key={name} $signal={signal}>
                             <IndicatorInfo>
-                                <IndicatorName theme={theme}>{name}</IndicatorName>
-                                <IndicatorNumericValue theme={theme}>
-                                    {typeof value === 'number' ? value.toFixed(2) : value}
-                                </IndicatorNumericValue>
+                                <IndicatorName>{name}</IndicatorName>
+                                {value !== null && (
+                                    <IndicatorNumericValue>
+                                        {typeof value === 'number' ? value.toFixed(2) : value}
+                                    </IndicatorNumericValue>
+                                )}
                             </IndicatorInfo>
-                            <IndicatorSignal theme={theme} $signal={signal}>
-                                {signal === 'BUY' ? <ArrowUp size={14} /> : signal === 'SELL' ? <ArrowDown size={14} /> : <ArrowRight size={14} />}
+                            <IndicatorSignal $signal={signal}>
+                                {signal === 'BUY' ? <ArrowUp size={13} /> : signal === 'SELL' ? <ArrowDown size={13} /> : <ArrowRight size={13} />}
                                 {signal === 'BUY' ? 'Bullish' : signal === 'SELL' ? 'Bearish' : 'Neutral'}
                             </IndicatorSignal>
                         </IndicatorItem>
@@ -1994,41 +1827,23 @@ const handleShare = (platform) => {
     };
 
     const isUrgent = countdown.days === 0 && countdown.hours < 6;
-    const confidenceMsg = dynamicConfidence !== null ? getConfidenceMessage(dynamicConfidence) : null;
-
-    // END OF PART 3 - Continue with Part 4 for the JSX return
-// PART 4 - Add this after Part 3 in your PredictionsPage.js
-// This contains the JSX return statement
+    const confidenceMsg = dynamicConfidence !== null ? getConfidenceMessage(Math.min(95, dynamicConfidence)) : null;
 
     return (
-        <PageContainer theme={theme}>
-            {/* Particle Background */}
-            <ParticleContainer>
-                {particlesData.map(p => (
-                    <Particle key={p.id} size={p.size} left={p.left} duration={p.duration} delay={p.delay} color={p.color} />
-                ))}
-            </ParticleContainer>
-
-            {/* Rocket Animation */}
-            {showRocket && (
-                <RocketContainer left={Math.random() * 60 + 20} $crash={showRocket === 'down'}>
-                    <Rocket size={48} color={showRocket === 'up' ? successColor : errorColor} />
-                </RocketContainer>
-            )}
-
+        <PageContainer>
             {/* Share Modal */}
             {showShareModal && (
                 <ModalOverlay onClick={() => setShowShareModal(false)}>
-                    <ModalContent theme={theme} onClick={e => e.stopPropagation()}>
+                    <ModalContent onClick={e => e.stopPropagation()}>
                         <ModalHeader>
-                            <ModalTitle theme={theme}>Share Prediction</ModalTitle>
-                            <CloseButton theme={theme} onClick={() => setShowShareModal(false)}><X size={18} /></CloseButton>
+                            <ModalTitle>Share Forecast</ModalTitle>
+                            <CloseButton onClick={() => setShowShareModal(false)}><X size={16} /></CloseButton>
                         </ModalHeader>
                         <ShareOptions>
-                            <ShareOption theme={theme} onClick={() => handleShare('twitter')}><Twitter size={24} />Twitter</ShareOption>
-                            <ShareOption theme={theme} onClick={() => handleShare('facebook')}><Facebook size={24} />Facebook</ShareOption>
-                            <ShareOption theme={theme} onClick={() => handleShare('linkedin')}><Linkedin size={24} />LinkedIn</ShareOption>
-                            <ShareOption theme={theme} onClick={() => handleShare('copy')}><Copy size={24} />Copy Link</ShareOption>
+                            <ShareOption onClick={() => handleShare('twitter')}><Twitter size={22} />Twitter</ShareOption>
+                            <ShareOption onClick={() => handleShare('facebook')}><Facebook size={22} />Facebook</ShareOption>
+                            <ShareOption onClick={() => handleShare('linkedin')}><Linkedin size={22} />LinkedIn</ShareOption>
+                            <ShareOption onClick={() => handleShare('copy')}><Copy size={22} />Copy Link</ShareOption>
                         </ShareOptions>
                     </ModalContent>
                 </ModalOverlay>
@@ -2036,69 +1851,56 @@ const handleShare = (platform) => {
 
             {/* Header */}
             <Header>
-                <Title theme={theme}>
-                    <TitleIcon><Brain size={48} /></TitleIcon>
-                    AI Price Predictions
-                </Title>
-                <Subtitle theme={theme}>Advanced machine learning predictions for stocks & crypto</Subtitle>
-                <PoweredBy theme={theme}>
-                    <Sparkles size={16} /> Powered by Neural Networks & Technical Analysis
-                </PoweredBy>
+                <Title>AI Market Forecast Engine</Title>
+                <Subtitle>Generate data-driven price projections — fully tracked and measured in real time.</Subtitle>
             </Header>
+
+            {/* Trust Strip */}
+            <TrustStrip>
+                <span>{platformStats.loading ? '...' : platformStats.totalPredictions.toLocaleString()}</span> forecasts tracked
+                <span style={{ margin: '0 0.25rem' }}>|</span>
+                <span>{platformStats.loading ? '...' : `${platformStats.accuracy.toFixed(1)}%`}</span> win rate
+                <span style={{ margin: '0 0.25rem' }}>|</span>
+                All outcomes recorded — no edits
+            </TrustStrip>
 
             {/* Tabs */}
             <TabsContainer>
-                <Tab theme={theme} $active={activeTab === 'predict'} onClick={() => setActiveTab('predict')}>
-                    <Brain size={18} /> New Prediction
+                <Tab $active={activeTab === 'predict'} onClick={() => setActiveTab('predict')}>
+                    <BarChart3 size={16} /> New Forecast
                 </Tab>
-                <Tab theme={theme} $active={activeTab === 'saved'} onClick={() => setActiveTab('saved')}>
-                    <Bookmark size={18} /> Saved ({savedPredictions.length})
+                <Tab $active={activeTab === 'saved'} onClick={() => setActiveTab('saved')}>
+                    <Bookmark size={16} /> Saved Forecasts ({savedPredictions.length})
                 </Tab>
-                <Tab theme={theme} $active={activeTab === 'history'} onClick={() => navigate('/prediction-history')}>
-                    <Clock size={18} /> History
+                <Tab $active={activeTab === 'history'} onClick={() => navigate('/prediction-history')}>
+                    <Clock size={16} /> History
                 </Tab>
             </TabsContainer>
 
             {/* Stats Banner */}
             <StatsBanner>
-                <StatCard theme={theme} delay={0}>
-                    <StatIcon gradient={`linear-gradient(135deg, ${successColor}, ${successColor}99)`}>
-                        <Target size={28} color="#fff" />
-                    </StatIcon>
-                    <StatValue theme={theme}>{platformStats.loading ? '...' : `${platformStats.accuracy.toFixed(1)}%`}</StatValue>
-                    <StatLabel theme={theme}>Platform Accuracy</StatLabel>
-                </StatCard>
-                <StatCard theme={theme} delay={0.1}>
-                    <StatIcon gradient={`linear-gradient(135deg, ${accentColor}, ${accentColor}99)`}>
-                        <Activity size={28} color="#fff" />
-                    </StatIcon>
-                    <StatValue theme={theme}>{platformStats.loading ? '...' : platformStats.totalPredictions.toLocaleString()}</StatValue>
-                    <StatLabel theme={theme}>Total Predictions</StatLabel>
-                </StatCard>
-                <StatCard theme={theme} delay={0.2}>
-                    <StatIcon gradient={`linear-gradient(135deg, ${primaryColor}, ${primaryColor}99)`}>
-                        <Zap size={28} color="#fff" />
-                    </StatIcon>
-                    <StatValue theme={theme}>{platformStats.loading ? '...' : platformStats.correctPredictions.toLocaleString()}</StatValue>
-                    <StatLabel theme={theme}>Correct Predictions</StatLabel>
-                </StatCard>
+                <StatItem>Forecasts Tracked: <span>{platformStats.loading ? '...' : platformStats.totalPredictions.toLocaleString()}</span></StatItem>
+                <StatItem>Win Rate: <span>{platformStats.loading ? '...' : `${platformStats.accuracy.toFixed(1)}%`}</span></StatItem>
+                <StatItem>Correct: <span>{platformStats.loading ? '...' : platformStats.correctPredictions.toLocaleString()}</span></StatItem>
+                {!platformStats.loading && platformStats.accuracy > 50 && (
+                    <EdgeBadge>Positive edge system</EdgeBadge>
+                )}
             </StatsBanner>
 
             {/* PREDICT TAB */}
             {activeTab === 'predict' && (
                 <>
-                    <InputSection theme={theme}>
+                    <InputSection>
+                        <InputHelperText>Generate a forecast with projected move, confidence range, and expected outcome.</InputHelperText>
                         <InputForm onSubmit={fetchPrediction}>
                             <InputGroup>
                                 <FormField>
-                                    <Label theme={theme}><BarChart3 size={18} /> Symbol</Label>
+                                    <Label><BarChart3 size={16} /> Symbol</Label>
                                     <AutocompleteContainer>
                                         <Input
-                                            theme={theme}
                                             value={symbol}
                                             onChange={e => {
                                                 const val = e.target.value;
-                                                // Don't uppercase if it looks like a contract address
                                                 const isContractAddress = val.startsWith('0x') || /^[1-9A-HJ-NP-Za-km-z]{20,}$/.test(val);
                                                 setSymbol(isContractAddress ? val : val.toUpperCase());
                                             }}
@@ -2108,21 +1910,20 @@ const handleShare = (platform) => {
                                             autoComplete="off"
                                         />
                                         {showSuggestions && (suggestions.length > 0 || searchLoading) && (
-                                            <SuggestionsDropdown theme={theme}>
+                                            <SuggestionsDropdown>
                                                 {searchLoading ? (
-                                                    <NoResults theme={theme}>Searching...</NoResults>
+                                                    <NoResults>Searching...</NoResults>
                                                 ) : suggestions.length > 0 ? (
                                                     suggestions.map((s, idx) => (
                                                         <SuggestionItem
                                                             key={`${s.symbol}-${idx}`}
-                                                            theme={theme}
                                                             onMouseDown={() => handleSuggestionClick(s)}
                                                         >
                                                             <SuggestionLeft>
-                                                                <SuggestionSymbol theme={theme}>
+                                                                <SuggestionSymbol>
                                                                     {s.type === 'dex' ? s.symbol.split(':')[0] : s.symbol}
                                                                 </SuggestionSymbol>
-                                                                <SuggestionName theme={theme}>
+                                                                <SuggestionName>
                                                                     {s.name}
                                                                     {s.contractAddress && (
                                                                         <span style={{ opacity: 0.5, fontSize: '0.75em', marginLeft: '0.5rem' }}>
@@ -2132,31 +1933,32 @@ const handleShare = (platform) => {
                                                                 </SuggestionName>
                                                             </SuggestionLeft>
                                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                                                                <SuggestionType theme={theme} $type={s.type}>{s.type}</SuggestionType>
+                                                                <SuggestionType $type={s.type}>{s.type}</SuggestionType>
                                                                 {s.type === 'dex' && s.chain && (
-                                                                    <SuggestionChain theme={theme}>{s.chain}</SuggestionChain>
+                                                                    <SuggestionChain>{s.chain}</SuggestionChain>
                                                                 )}
                                                             </div>
                                                         </SuggestionItem>
                                                     ))
                                                 ) : (
-                                                    <NoResults theme={theme}>No matches found</NoResults>
+                                                    <NoResults>No matches found</NoResults>
                                                 )}
                                             </SuggestionsDropdown>
                                         )}
                                     </AutocompleteContainer>
+                                    <ExampleText>Try: BTC, ETH, NVDA, SOL</ExampleText>
                                 </FormField>
                                 <FormField>
-                                    <Label theme={theme}><Calendar size={18} /> Timeframe</Label>
-                                    <Select theme={theme} value={days} onChange={e => setDays(e.target.value)}>
+                                    <Label><Calendar size={16} /> Timeframe</Label>
+                                    <Select value={days} onChange={e => setDays(e.target.value)}>
                                         <option value="7">7 Days (Short-term)</option>
                                         <option value="30">30 Days (Medium-term)</option>
                                         <option value="90">90 Days (Long-term)</option>
                                     </Select>
                                 </FormField>
                             </InputGroup>
-                            <PredictButton theme={theme} type="submit" disabled={loading || !symbol}>
-                                {loading ? <><LoadingSpinner size={24} /> Analyzing...</> : <><Brain size={24} /> Generate Prediction</>}
+                            <PredictButton type="submit" disabled={loading || !symbol}>
+                                {loading ? <><LoadingSpinner size={20} /> Analyzing...</> : <><Activity size={20} /> Run Forecast</>}
                             </PredictButton>
                         </InputForm>
                     </InputSection>
@@ -2164,24 +1966,31 @@ const handleShare = (platform) => {
                     {/* Prediction Results */}
                     {prediction && (
                         <ResultsContainer>
-                            <PredictionCard theme={theme}>
-                                {/* ✅ SHARED PREDICTION BANNER */}
+                            <PredictionCard>
+                                {/* Live Forecast Label */}
+                                <ForecastLabel>
+                                    <Radio size={16} />
+                                    Live Forecast — Outcome Will Be Tracked
+                                    <ForecastLabelSub>This projection is recorded and measured against actual price movement.</ForecastLabelSub>
+                                </ForecastLabel>
+
+                                {/* Shared prediction banner */}
                                 {prediction.isShared && (
-                                    <SharedPredictionBanner theme={theme}>
+                                    <SharedPredictionBanner>
                                         <SharedBadgeLeft>
-                                            <LiveDotLarge theme={theme} />
+                                            <LiveDotLarge />
                                             <SharedText>
-                                                <SharedTitle theme={theme}>
-                                                    <Radio size={16} style={{ marginRight: '0.5rem' }} />
-                                                    Live Prediction In Progress
+                                                <SharedTitle>
+                                                    <Radio size={14} style={{ marginRight: '0.4rem' }} />
+                                                    Live Forecast In Progress
                                                 </SharedTitle>
-                                                <SharedSubtitle theme={theme}>
-                                                    {prediction.sharedMessage || 'You joined an active prediction for this symbol'}
+                                                <SharedSubtitle>
+                                                    {prediction.sharedMessage || 'You joined an active forecast for this symbol'}
                                                 </SharedSubtitle>
                                             </SharedText>
                                         </SharedBadgeLeft>
-                                        <ViewerCount theme={theme}>
-                                            <Users size={18} />
+                                        <ViewerCount>
+                                            <Users size={16} />
                                             {prediction.viewCount || 1} watching
                                         </ViewerCount>
                                     </SharedPredictionBanner>
@@ -2189,59 +1998,59 @@ const handleShare = (platform) => {
 
                                 {/* Live Status with Countdown */}
                                 {liveData && (
-                                    <LiveStatusCard theme={theme}>
+                                    <LiveStatusCard>
                                         <LiveStatusHeader>
-                                            <LiveStatusTitle theme={theme}>
-                                                <LiveDot theme={theme} />
+                                            <LiveStatusTitle>
+                                                <LiveDot />
                                                 Live Tracking Active
                                             </LiveStatusTitle>
                                             <CountdownDisplay>
-                                                <CountdownUnit theme={theme} $urgent={isUrgent}>
-                                                    <CountdownValue theme={theme} $urgent={isUrgent}>{String(countdown.days).padStart(2, '0')}</CountdownValue>
-                                                    <CountdownLabel theme={theme}>Days</CountdownLabel>
+                                                <CountdownUnit $urgent={isUrgent}>
+                                                    <CountdownValue $urgent={isUrgent}>{String(countdown.days).padStart(2, '0')}</CountdownValue>
+                                                    <CountdownLabel>Days</CountdownLabel>
                                                 </CountdownUnit>
-                                                <CountdownSeparator theme={theme}>:</CountdownSeparator>
-                                                <CountdownUnit theme={theme} $urgent={isUrgent}>
-                                                    <CountdownValue theme={theme} $urgent={isUrgent}>{String(countdown.hours).padStart(2, '0')}</CountdownValue>
-                                                    <CountdownLabel theme={theme}>Hours</CountdownLabel>
+                                                <CountdownSeparator>:</CountdownSeparator>
+                                                <CountdownUnit $urgent={isUrgent}>
+                                                    <CountdownValue $urgent={isUrgent}>{String(countdown.hours).padStart(2, '0')}</CountdownValue>
+                                                    <CountdownLabel>Hours</CountdownLabel>
                                                 </CountdownUnit>
-                                                <CountdownSeparator theme={theme}>:</CountdownSeparator>
-                                                <CountdownUnit theme={theme} $urgent={isUrgent}>
-                                                    <CountdownValue theme={theme} $urgent={isUrgent}>{String(countdown.minutes).padStart(2, '0')}</CountdownValue>
-                                                    <CountdownLabel theme={theme}>Min</CountdownLabel>
+                                                <CountdownSeparator>:</CountdownSeparator>
+                                                <CountdownUnit $urgent={isUrgent}>
+                                                    <CountdownValue $urgent={isUrgent}>{String(countdown.minutes).padStart(2, '0')}</CountdownValue>
+                                                    <CountdownLabel>Min</CountdownLabel>
                                                 </CountdownUnit>
-                                                <CountdownSeparator theme={theme}>:</CountdownSeparator>
-                                                <CountdownUnit theme={theme} $urgent={isUrgent}>
-                                                    <CountdownValue theme={theme} $urgent={isUrgent}>{String(countdown.seconds).padStart(2, '0')}</CountdownValue>
-                                                    <CountdownLabel theme={theme}>Sec</CountdownLabel>
+                                                <CountdownSeparator>:</CountdownSeparator>
+                                                <CountdownUnit $urgent={isUrgent}>
+                                                    <CountdownValue $urgent={isUrgent}>{String(countdown.seconds).padStart(2, '0')}</CountdownValue>
+                                                    <CountdownLabel>Sec</CountdownLabel>
                                                 </CountdownUnit>
                                             </CountdownDisplay>
                                         </LiveStatusHeader>
 
-                                        {/* Dynamic Confidence Display */}
+                                        {/* Dynamic Confidence */}
                                         {dynamicConfidence !== null && (
-                                            <DynamicConfidenceCard theme={theme} $trend={confidenceTrend}>
+                                            <DynamicConfidenceCard $trend={confidenceTrend}>
                                                 <ConfidenceHeader>
-                                                    <ConfidenceTitle theme={theme}>
-                                                        <Activity size={18} />
+                                                    <ConfidenceTitle>
+                                                        <Activity size={16} />
                                                         Live Confidence Score
                                                     </ConfidenceTitle>
                                                     {confidenceChange !== 0 && (
-                                                        <ConfidenceChange theme={theme} $positive={confidenceChange > 0}>
-                                                            {confidenceChange > 0 ? <ArrowUp size={16} /> : <ArrowDown size={16} />}
+                                                        <ConfidenceChange $positive={confidenceChange > 0}>
+                                                            {confidenceChange > 0 ? <ArrowUp size={14} /> : <ArrowDown size={14} />}
                                                             {Math.abs(confidenceChange).toFixed(1)}%
                                                         </ConfidenceChange>
                                                     )}
                                                 </ConfidenceHeader>
-                                                <ConfidenceValueLarge theme={theme} $value={dynamicConfidence}>
-                                                    {dynamicConfidence.toFixed(1)}%
+                                                <ConfidenceValueLarge $value={Math.min(95, dynamicConfidence)}>
+                                                    {getConfidenceLabel(dynamicConfidence)}
                                                 </ConfidenceValueLarge>
-                                                <ConfidenceBarLarge theme={theme}>
-                                                    <ConfidenceBarFill theme={theme} $value={dynamicConfidence} />
+                                                <ConfidenceBarLarge>
+                                                    <ConfidenceBarFill $value={Math.min(95, dynamicConfidence)} />
                                                 </ConfidenceBarLarge>
                                                 {confidenceMsg && (
-                                                    <ConfidenceMessage theme={theme}>
-                                                        <confidenceMsg.icon size={16} color={confidenceMsg.color} />
+                                                    <ConfidenceMessage>
+                                                        <confidenceMsg.icon size={14} color={confidenceMsg.color} />
                                                         {confidenceMsg.text}
                                                     </ConfidenceMessage>
                                                 )}
@@ -2253,46 +2062,45 @@ const handleShare = (platform) => {
                                 {/* Prediction Header */}
                                 <PredictionHeader>
                                     <StockInfo>
-                                        <StockSymbol theme={theme}>
+                                        <StockSymbol>
                                             {prediction.symbol}
                                             <WatchlistStar onClick={() => handleWatchlistToggle(prediction.symbol)}>
-                                                <Star size={24} fill={watchlist.includes(prediction.symbol?.toUpperCase()) ? warningColor : 'none'} color={warningColor} />
+                                                <Star size={20} fill={watchlist.includes(prediction.symbol?.toUpperCase()) ? '#f59e0b' : 'none'} color="#f59e0b" />
                                             </WatchlistStar>
                                         </StockSymbol>
-                                        <CompanyName theme={theme}>{getAssetName(prediction.symbol)}</CompanyName>
+                                        <CompanyName>{getAssetName(prediction.symbol)}</CompanyName>
                                         <CurrentPriceSection>
-                                            <CurrentPriceLabel theme={theme}>Current:</CurrentPriceLabel>
-                                           <CurrentPriceValue theme={theme}>
-    {formatPredictionPrice(
-        liveData?.livePrice || liveData?.currentPrice || prediction.current_price,
-        prediction.symbol
-    )}
-</CurrentPriceValue>
+                                            <CurrentPriceLabel>Current:</CurrentPriceLabel>
+                                            <CurrentPriceValue>
+                                                {formatPredictionPrice(
+                                                    liveData?.livePrice || liveData?.currentPrice || prediction.current_price,
+                                                    prediction.symbol
+                                                )}
+                                            </CurrentPriceValue>
                                         </CurrentPriceSection>
                                     </StockInfo>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
                                         <DirectionBadge
-                                            theme={theme}
                                             $up={prediction.prediction.direction === 'UP'}
                                             $neutral={prediction.prediction.direction === 'NEUTRAL'}
                                         >
                                             {prediction.prediction.direction === 'UP' ? (
-                                                <TrendingUp size={28} />
+                                                <TrendingUp size={22} />
                                             ) : prediction.prediction.direction === 'NEUTRAL' ? (
-                                                <AlertTriangle size={28} />
+                                                <AlertTriangle size={22} />
                                             ) : (
-                                                <TrendingDown size={28} />
+                                                <TrendingDown size={22} />
                                             )}
-                                            {prediction.prediction.direction === 'NEUTRAL' ? 'NO SIGNAL' : prediction.prediction.direction}
+                                            {getDirectionLabel(prediction.prediction.direction)}
                                         </DirectionBadge>
                                         {prediction.prediction.signal_strength && (
-                                            <SignalStrengthBadge theme={theme} $strength={prediction.prediction.signal_strength}>
+                                            <SignalStrengthBadge $strength={prediction.prediction.signal_strength}>
                                                 {prediction.prediction.signal_strength === 'strong' ? (
-                                                    <><Zap size={14} /> Strong Signal</>
+                                                    <><Zap size={13} /> Strong Signal</>
                                                 ) : prediction.prediction.signal_strength === 'moderate' ? (
-                                                    <><Activity size={14} /> Moderate</>
+                                                    <><Activity size={13} /> Moderate</>
                                                 ) : (
-                                                    <><AlertTriangle size={14} /> Weak Signal</>
+                                                    <><AlertTriangle size={13} /> Weak Signal</>
                                                 )}
                                             </SignalStrengthBadge>
                                         )}
@@ -2301,70 +2109,77 @@ const handleShare = (platform) => {
 
                                 {/* Action Buttons */}
                                 <ActionButtons>
-                                    <ActionButton theme={theme} onClick={handleSavePrediction}><BookmarkPlus size={18} /> Save</ActionButton>
-                                    <ActionButton theme={theme} onClick={() => setShowShareModal(true)}><Share2 size={18} /> Share</ActionButton>
-                                    <ActionButton theme={theme} onClick={handleExport}><Download size={18} /> Export</ActionButton>
-                                    <ActionButton theme={theme} onClick={() => setShowAlertModal(true)}><Bell size={18} /> Alert</ActionButton>
-                                    <ActionButton theme={theme} onClick={() => { setSymbol(prediction.symbol); fetchPrediction({ preventDefault: () => {} }); }}>
-                                        <RefreshCw size={18} /> Refresh
+                                    <ActionButton onClick={handleSavePrediction}><BookmarkPlus size={16} /> Save</ActionButton>
+                                    <ActionButton onClick={() => setShowShareModal(true)}><Share2 size={16} /> Share</ActionButton>
+                                    <ActionButton onClick={handleExport}><Download size={16} /> Export</ActionButton>
+                                    <ActionButton onClick={() => setShowAlertModal(true)}><Bell size={16} /> Alert</ActionButton>
+                                    <ActionButton onClick={() => { setSymbol(prediction.symbol); fetchPrediction({ preventDefault: () => {} }); }}>
+                                        <RefreshCw size={16} /> Refresh
                                     </ActionButton>
                                 </ActionButtons>
 
                                 {/* Metrics Grid */}
                                 <MetricsGrid>
-                                 <MetricCard theme={theme}>
-    <MetricIcon theme={theme} $variant="primary"><Target size={24} /></MetricIcon>
-    <MetricLabel theme={theme}>Target Price</MetricLabel>
-    <MetricValue theme={theme}>
-        {(() => {
-            console.log('🎯 Target Price Data:', {
-                raw: prediction.prediction.target_price,
-                type: typeof prediction.prediction.target_price,
-                prediction: prediction.prediction,
-                allPrediction: prediction
-            });
-            return formatPredictionPrice(prediction.prediction.target_price, prediction.symbol);
-        })()}
-    </MetricValue>
-</MetricCard>
-                                    <MetricCard theme={theme}>
-                                        <MetricIcon theme={theme} $variant={prediction.prediction.direction === 'UP' ? 'success' : 'danger'}>
-                                            <Percent size={24} />
+                                    <MetricCard>
+                                        <MetricIcon $variant="primary"><Target size={20} /></MetricIcon>
+                                        <MetricLabel>Target Price</MetricLabel>
+                                        <MetricValue>
+                                            {formatPredictionPrice(prediction.prediction.target_price, prediction.symbol)}
+                                        </MetricValue>
+                                    </MetricCard>
+                                    <MetricCard>
+                                        <MetricIcon $variant={prediction.prediction.direction === 'UP' ? 'success' : 'danger'}>
+                                            <Percent size={20} />
                                         </MetricIcon>
-                                        <MetricLabel theme={theme}>Price Change</MetricLabel>
-                                        <MetricValue theme={theme} $variant={prediction.prediction.direction === 'UP' ? 'success' : 'danger'}>
+                                        <MetricLabel>Price Change</MetricLabel>
+                                        <MetricValue $variant={prediction.prediction.direction === 'UP' ? 'success' : 'danger'}>
                                             {prediction.prediction.direction === 'UP' ? '+' : ''}{prediction.prediction.price_change_percent?.toFixed(2)}%
                                         </MetricValue>
                                     </MetricCard>
-                                    <MetricCard theme={theme}>
-                                        <MetricIcon theme={theme} $variant="warning"><DollarSign size={24} /></MetricIcon>
-                                        <MetricLabel theme={theme}>Dollar Change</MetricLabel>
-                                       <MetricValue theme={theme} $variant="warning">
-    {prediction.prediction.direction === 'UP' ? '+' : ''}
-    {formatPredictionPrice(
-        Math.abs(prediction.prediction.target_price - prediction.current_price),
-        prediction.symbol
-    )}
-</MetricValue>
+                                    <MetricCard>
+                                        <MetricIcon $variant="warning"><DollarSign size={20} /></MetricIcon>
+                                        <MetricLabel>Dollar Change</MetricLabel>
+                                        <MetricValue $variant="warning">
+                                            {prediction.prediction.direction === 'UP' ? '+' : ''}
+                                            {formatPredictionPrice(
+                                                Math.abs(prediction.prediction.target_price - prediction.current_price),
+                                                prediction.symbol
+                                            )}
+                                        </MetricValue>
                                     </MetricCard>
-                                    <MetricCard theme={theme}>
-                                        <MetricIcon theme={theme}><Award size={24} /></MetricIcon>
-                                        <MetricLabel theme={theme}>Initial Confidence</MetricLabel>
-                                        <MetricValue theme={theme}>{prediction.prediction.confidence?.toFixed(1)}%</MetricValue>
+                                    <MetricCard>
+                                        <MetricIcon $variant="primary"><Award size={20} /></MetricIcon>
+                                        <MetricLabel>Confidence</MetricLabel>
+                                        <MetricValue>{getConfidenceLabel(prediction.prediction.confidence)}</MetricValue>
                                     </MetricCard>
                                 </MetricsGrid>
+                                <MetricsMicrocopy>Projection based on current data — not guaranteed outcome.</MetricsMicrocopy>
+
+                                {/* AI Reasoning Section */}
+                                {generateReasoning().length > 0 && (
+                                    <ReasoningSection>
+                                        <ReasoningTitle><Brain size={18} /> Why This Forecast</ReasoningTitle>
+                                        <ReasoningGrid>
+                                            {generateReasoning().map((reason, idx) => (
+                                                <ReasoningItem key={idx} $bullish={reason.bullish} $bearish={reason.bearish}>
+                                                    <ReasoningLabel>{reason.label}</ReasoningLabel>
+                                                    <ReasoningText>{reason.text}</ReasoningText>
+                                                </ReasoningItem>
+                                            ))}
+                                        </ReasoningGrid>
+                                    </ReasoningSection>
+                                )}
 
                                 {/* Technical Indicators */}
-                                <IndicatorsSection theme={theme}>
-                                    <IndicatorsTitle theme={theme}>
-                                        <BarChart3 size={20} /> Technical Indicators
+                                <IndicatorsSection>
+                                    <IndicatorsTitle>
+                                        <BarChart3 size={18} /> Technical Indicators
                                     </IndicatorsTitle>
                                     {renderIndicators()}
                                 </IndicatorsSection>
 
                                 {/* Price Projection Chart */}
                                 {prediction.chartData && (() => {
-                                    // Calculate Y-axis domain with padding for micro-prices
                                     const minPrice = Math.min(prediction.current_price, prediction.prediction.target_price);
                                     const maxPrice = Math.max(prediction.current_price, prediction.prediction.target_price);
                                     const padding = (maxPrice - minPrice) * 0.1 || minPrice * 0.1;
@@ -2372,70 +2187,111 @@ const handleShare = (platform) => {
                                     const yMax = maxPrice + padding;
 
                                     return (
-                                    <ChartSection theme={theme}>
-                                        <ChartTitle theme={theme}><Activity size={20} /> Price Projection</ChartTitle>
-                                        <ResponsiveContainer width="100%" height={350}>
-                                            <AreaChart data={prediction.chartData} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
-                                                <defs>
-                                                    <linearGradient id="priceGradient" x1="0" y1="0" x2="0" y2="1">
-                                                        <stop offset="0%" stopColor={prediction.prediction.direction === 'UP' ? successColor : errorColor} stopOpacity={0.4} />
-                                                        <stop offset="100%" stopColor={prediction.prediction.direction === 'UP' ? successColor : errorColor} stopOpacity={0.05} />
-                                                    </linearGradient>
-                                                </defs>
-                                                <CartesianGrid strokeDasharray="3 3" stroke={`${accentColor}33`} />
-                                                <XAxis
-                                                    dataKey="day"
-                                                    tick={{ fill: theme?.text?.secondary || '#94a3b8', fontSize: 12 }}
-                                                    axisLine={{ stroke: `${accentColor}4D` }}
-                                                />
-                                                <YAxis
-                                                    domain={[yMin, yMax]}
-                                                    tick={{ fill: theme?.text?.secondary || '#94a3b8', fontSize: 10 }}
-                                                    axisLine={{ stroke: `${accentColor}4D` }}
-                                                    tickFormatter={v => formatPredictionPrice(v, prediction.symbol)}
-                                                    width={100}
-                                                    tickCount={6}
-                                                />
-                                                <Tooltip
-                                                    contentStyle={{
-                                                        backgroundColor: theme?.bg?.card || 'rgba(15, 23, 42, 0.95)',
-                                                        border: `1px solid ${accentColor}66`,
-                                                        borderRadius: '12px',
-                                                        color: theme?.text?.primary || '#e0e6ed'
-                                                    }}
-                                                    formatter={(value) => [formatPredictionPrice(value, prediction.symbol), 'Predicted Price']}
-                                                    labelFormatter={(label) => label}
-                                                />
-                                                <ReferenceLine
-                                                    y={prediction.current_price}
-                                                    stroke={primaryColor}
-                                                    strokeDasharray="5 5"
-                                                    label={{ value: 'Current', fill: primaryColor, fontSize: 12, position: 'left' }}
-                                                />
-                                                <ReferenceLine
-                                                    y={prediction.prediction.target_price}
-                                                    stroke={prediction.prediction.direction === 'UP' ? successColor : errorColor}
-                                                    strokeDasharray="5 5"
-                                                    label={{ value: 'Target', fill: prediction.prediction.direction === 'UP' ? successColor : errorColor, fontSize: 12, position: 'right' }}
-                                                />
-                                                <Area
-                                                    type="monotone"
-                                                    dataKey="price"
-                                                    stroke={prediction.prediction.direction === 'UP' ? successColor : errorColor}
-                                                    strokeWidth={3}
-                                                    fill="url(#priceGradient)"
-                                                    dot={{ fill: prediction.prediction.direction === 'UP' ? successColor : errorColor, strokeWidth: 2, r: 4 }}
-                                                    activeDot={{ r: 6, strokeWidth: 2 }}
-                                                />
-                                            </AreaChart>
-                                        </ResponsiveContainer>
-                                        <ChartLegend>
-                                            <LegendItem><LegendColor color={prediction.prediction.direction === 'UP' ? successColor : errorColor} /><LegendText theme={theme}>Predicted Price Path</LegendText></LegendItem>
-                                            <LegendItem><LegendColor color={primaryColor} /><LegendText theme={theme}>Current Price</LegendText></LegendItem>
-                                        </ChartLegend>
-                                    </ChartSection>
+                                        <ChartSection>
+                                            <ChartTitle><Activity size={18} /> Price Projection</ChartTitle>
+                                            <ChartSubtitle>Projected range — not exact path</ChartSubtitle>
+                                            <ResponsiveContainer width="100%" height={320}>
+                                                <AreaChart data={prediction.chartData} margin={{ top: 16, right: 24, left: 8, bottom: 16 }}>
+                                                    <defs>
+                                                        <linearGradient id="priceGradient" x1="0" y1="0" x2="0" y2="1">
+                                                            <stop offset="0%" stopColor={prediction.prediction.direction === 'UP' ? '#10b981' : '#ef4444'} stopOpacity={0.3} />
+                                                            <stop offset="100%" stopColor={prediction.prediction.direction === 'UP' ? '#10b981' : '#ef4444'} stopOpacity={0.03} />
+                                                        </linearGradient>
+                                                    </defs>
+                                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                                                    <XAxis
+                                                        dataKey="day"
+                                                        tick={{ fill: '#64748b', fontSize: 11 }}
+                                                        axisLine={{ stroke: 'rgba(255,255,255,0.06)' }}
+                                                    />
+                                                    <YAxis
+                                                        domain={[yMin, yMax]}
+                                                        tick={{ fill: '#64748b', fontSize: 10 }}
+                                                        axisLine={{ stroke: 'rgba(255,255,255,0.06)' }}
+                                                        tickFormatter={v => formatPredictionPrice(v, prediction.symbol)}
+                                                        width={100}
+                                                        tickCount={6}
+                                                    />
+                                                    <Tooltip
+                                                        contentStyle={{
+                                                            backgroundColor: 'rgba(12, 16, 32, 0.95)',
+                                                            border: '1px solid rgba(255,255,255,0.1)',
+                                                            borderRadius: '8px',
+                                                            color: '#e0e6ed'
+                                                        }}
+                                                        formatter={(value) => [formatPredictionPrice(value, prediction.symbol), 'Projected Price']}
+                                                        labelFormatter={(label) => label}
+                                                    />
+                                                    <ReferenceLine
+                                                        y={prediction.current_price}
+                                                        stroke="#00adef"
+                                                        strokeDasharray="5 5"
+                                                        label={{ value: 'Current', fill: '#00adef', fontSize: 11, position: 'left' }}
+                                                    />
+                                                    <ReferenceLine
+                                                        y={prediction.prediction.target_price}
+                                                        stroke={prediction.prediction.direction === 'UP' ? '#10b981' : '#ef4444'}
+                                                        strokeDasharray="5 5"
+                                                        label={{ value: 'Target', fill: prediction.prediction.direction === 'UP' ? '#10b981' : '#ef4444', fontSize: 11, position: 'right' }}
+                                                    />
+                                                    <Area
+                                                        type="monotone"
+                                                        dataKey="price"
+                                                        stroke={prediction.prediction.direction === 'UP' ? '#10b981' : '#ef4444'}
+                                                        strokeWidth={2}
+                                                        fill="url(#priceGradient)"
+                                                        dot={{ fill: prediction.prediction.direction === 'UP' ? '#10b981' : '#ef4444', strokeWidth: 1, r: 3 }}
+                                                        activeDot={{ r: 5, strokeWidth: 1 }}
+                                                    />
+                                                </AreaChart>
+                                            </ResponsiveContainer>
+                                            <ChartLegend>
+                                                <LegendItem><LegendColor color={prediction.prediction.direction === 'UP' ? '#10b981' : '#ef4444'} /><LegendText>Projected Price Path</LegendText></LegendItem>
+                                                <LegendItem><LegendColor color="#00adef" /><LegendText>Current Price</LegendText></LegendItem>
+                                            </ChartLegend>
+                                        </ChartSection>
                                     );
                                 })()}
+
+                                {/* Historical Validation Section */}
+                                <ValidationSection>
+                                    <ValidationTitle><Award size={18} /> Similar Forecast Performance</ValidationTitle>
+                                    <ValidationStats>
+                                        <ValidationStat>
+                                            <span>Platform Win Rate</span>
+                                            <span>{platformStats.loading ? '...' : `${platformStats.accuracy.toFixed(1)}%`}</span>
+                                        </ValidationStat>
+                                        <ValidationStat>
+                                            <span>Total Tracked</span>
+                                            <span>{platformStats.loading ? '...' : platformStats.totalPredictions.toLocaleString()}</span>
+                                        </ValidationStat>
+                                    </ValidationStats>
+                                    <ValidationDisclaimer>
+                                        Based on {platformStats.loading ? '...' : platformStats.totalPredictions.toLocaleString()} tracked forecasts. Past performance does not guarantee future results.
+                                    </ValidationDisclaimer>
+                                </ValidationSection>
+
+                                {/* Action CTAs */}
+                                <CTASection>
+                                    <CTAButton $primary onClick={() => navigate('/signals')}>
+                                        <Target size={16} /> Track This Forecast
+                                    </CTAButton>
+                                    <CTAButton onClick={() => navigate('/paper-trading', {
+                                        state: {
+                                            symbol: prediction.symbol,
+                                            direction: prediction.prediction.direction,
+                                            targetPrice: prediction.prediction.target_price,
+                                            currentPrice: prediction.current_price
+                                        }
+                                    })}>
+                                        <BarChart3 size={16} /> Convert to Trade Setup
+                                    </CTAButton>
+                                </CTASection>
+
+                                {/* Trust Line */}
+                                <TrustLine>
+                                    Every forecast is tracked publicly — win or lose. No edits. No cherry-picking.
+                                </TrustLine>
                             </PredictionCard>
                         </ResultsContainer>
                     )}
@@ -2443,9 +2299,9 @@ const handleShare = (platform) => {
                     {/* Empty State */}
                     {!prediction && !loading && (
                         <EmptyState>
-                            <EmptyIcon theme={theme}><Brain size={72} color={accentColor} /></EmptyIcon>
-                            <EmptyTitle theme={theme}>Ready to Predict</EmptyTitle>
-                            <EmptyText theme={theme}>Enter a stock, crypto, or DEX token symbol above to generate an AI-powered price prediction</EmptyText>
+                            <EmptyIcon><BarChart3 size={48} color="#00adef" /></EmptyIcon>
+                            <EmptyTitle>Ready to Forecast</EmptyTitle>
+                            <EmptyText>Enter a stock, crypto, or DEX token symbol above to generate an AI-powered price forecast</EmptyText>
                         </EmptyState>
                     )}
                 </>
@@ -2455,63 +2311,63 @@ const handleShare = (platform) => {
             {activeTab === 'saved' && (
                 <SavedPredictionsContainer>
                     {savedPredictions.length > 0 && (
-                        <ClearAllButton theme={theme} onClick={handleClearAllSaved}>
-                            <Trash2 size={18} /> Clear All Saved
+                        <ClearAllButton onClick={handleClearAllSaved}>
+                            <Trash2 size={16} /> Clear All Saved
                         </ClearAllButton>
                     )}
-                    
+
                     {savedPredictions.length === 0 ? (
                         <EmptyState>
-                            <EmptyIcon theme={theme}><Bookmark size={72} color={accentColor} /></EmptyIcon>
-                            <EmptyTitle theme={theme}>No Saved Predictions</EmptyTitle>
-                            <EmptyText theme={theme}>Save predictions to track them here</EmptyText>
+                            <EmptyIcon><Bookmark size={48} color="#00adef" /></EmptyIcon>
+                            <EmptyTitle>No Saved Forecasts</EmptyTitle>
+                            <EmptyText>Save forecasts to track them here</EmptyText>
                         </EmptyState>
                     ) : (
                         <SavedPredictionsGrid>
                             {savedPredictions.map(saved => (
-                                <SavedPredictionCard key={saved.id} theme={theme} $up={saved.prediction?.direction === 'UP'}>
+                                <SavedPredictionCard key={saved.id} $up={saved.prediction?.direction === 'UP'}>
                                     <SavedCardHeader>
-                                        <SavedSymbol theme={theme}>{saved.symbol}</SavedSymbol>
-                                        <SavedDirection theme={theme} $up={saved.prediction?.direction === 'UP'}>
-                                            {saved.prediction?.direction === 'UP' ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
+                                        <SavedSymbol>{saved.symbol}</SavedSymbol>
+                                        <SavedDirection $up={saved.prediction?.direction === 'UP'}>
+                                            {saved.prediction?.direction === 'UP' ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
                                             {saved.prediction?.direction}
                                         </SavedDirection>
                                     </SavedCardHeader>
                                     <SavedCardBody>
-                                      <SavedMetric theme={theme}>
-    <SavedMetricLabel theme={theme}>Target</SavedMetricLabel>
-    <SavedMetricValue theme={theme}>
-        {formatPredictionPrice(saved.prediction?.target_price, saved.symbol)}
-    </SavedMetricValue>
-</SavedMetric>
-                                        <SavedMetric theme={theme}>
-                                            <SavedMetricLabel theme={theme}>Change</SavedMetricLabel>
-                                            <SavedMetricValue theme={theme}>
+                                        <SavedMetric>
+                                            <SavedMetricLabel>Target</SavedMetricLabel>
+                                            <SavedMetricValue>
+                                                {formatPredictionPrice(saved.prediction?.target_price, saved.symbol)}
+                                            </SavedMetricValue>
+                                        </SavedMetric>
+                                        <SavedMetric>
+                                            <SavedMetricLabel>Change</SavedMetricLabel>
+                                            <SavedMetricValue>
                                                 {saved.prediction?.direction === 'UP' ? '+' : ''}{saved.prediction?.price_change_percent?.toFixed(2)}%
                                             </SavedMetricValue>
                                         </SavedMetric>
-                                        <SavedMetric theme={theme}>
-                                            <SavedMetricLabel theme={theme}>Confidence</SavedMetricLabel>
-                                            <SavedMetricValue theme={theme}>{saved.prediction?.confidence?.toFixed(1)}%</SavedMetricValue>
+                                        <SavedMetric>
+                                            <SavedMetricLabel>Confidence</SavedMetricLabel>
+                                            <SavedMetricValue>{getConfidenceLabel(saved.prediction?.confidence || 0)}</SavedMetricValue>
                                         </SavedMetric>
-                                        <SavedMetric theme={theme}>
-    <SavedMetricLabel theme={theme}>Entry Price</SavedMetricLabel>
-    <SavedMetricValue theme={theme}>
-        {formatPredictionPrice(saved.current_price, saved.symbol)}
-    </SavedMetricValue>
-</SavedMetric>
+                                        <SavedMetric>
+                                            <SavedMetricLabel>Entry Price</SavedMetricLabel>
+                                            <SavedMetricValue>
+                                                {formatPredictionPrice(saved.current_price, saved.symbol)}
+                                            </SavedMetricValue>
+                                        </SavedMetric>
                                     </SavedCardBody>
-                                    <SavedCardFooter theme={theme}>
-                                        <SavedDate theme={theme}>
-                                            <Calendar size={14} />
+                                    <SavedCardFooter>
+                                        <SavedDate>
+                                            <Calendar size={13} />
                                             {formatSavedDate(saved.savedAt || saved.timestamp)}
                                         </SavedDate>
                                         <SavedActions>
-                                            <SavedActionButton theme={theme} onClick={() => handleViewSavedPrediction(saved)} title="View">
-                                                <Eye size={16} />
+                                            <SavedActionButton onClick={() => handleViewSavedPrediction(saved)} title="View">
+                                                <Eye size={14} />
                                             </SavedActionButton>
-                                            <SavedActionButton theme={theme} $danger onClick={() => handleDeleteSavedPrediction(saved.id)} title="Delete">
-                                                <Trash2 size={16} />
+                                            <SavedActionButton $danger onClick={() => handleDeleteSavedPrediction(saved.id)} title="Delete">
+                                                <Trash2 size={14} />
                                             </SavedActionButton>
                                         </SavedActions>
                                     </SavedCardFooter>
@@ -2531,7 +2387,7 @@ const handleShare = (platform) => {
                 initialPrice={prediction?.current_price}
             />
 
-            {/* Upgrade Prompt for free users */}
+            {/* Upgrade Prompt */}
             <UpgradePrompt
                 isOpen={showUpgradePrompt}
                 onClose={() => setShowUpgradePrompt(false)}
