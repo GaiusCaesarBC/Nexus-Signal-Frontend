@@ -1241,12 +1241,12 @@ const PricingPage = () => {
         }
     };
 
-    // ============ UPDATED PLAN CONFIGURATIONS - ACCURATE FEATURES ============
+    // ============ PLAN CONFIGURATIONS — SIGNALS vs PREDICTIONS SPLIT ============
     const plans = [
         {
             id: 'free',
             name: 'Free',
-            description: 'Explore the Platform',
+            description: 'Explore the platform — see how it works',
             icon: Gift,
             tag: { text: 'Forever Free', type: 'free', icon: Sparkles },
             price: { monthly: 0, yearly: 0 },
@@ -1254,81 +1254,88 @@ const PricingPage = () => {
             shadow: 'rgba(99, 102, 241, 0.4)',
             borderGradient: 'linear-gradient(135deg, #6366f1, #4f46e5, #6366f1)',
             features: [
-                { category: '📊 AI Signals', color: '#6366f1', items: [
-                    'Delayed signal access',
-                    'View signal outcomes',
-                    'Basic signal feed',
+                { category: '📊 AI Predictions', color: '#6366f1', items: [
+                    'Limited AI forecasts (delayed)',
+                    'View prediction outcomes',
+                    'Basic confidence scoring',
                 ]},
-                { category: '📈 Trading Tools', color: '#3b82f6', items: [
+                { category: '⚡ Trade Signals', color: '#475569', items: [
+                    'Delayed signal access (15 min)',
+                    'View signal results (no trade levels)',
+                ]},
+                { category: '🛠 Platform Tools', color: '#3b82f6', items: [
                     '$100K Paper Trading portfolio',
-                    'Trade history & P/L tracking',
-                ]},
-                { category: '🎮 Social & Gamification', color: '#10b981', items: [
-                    '93 achievements & level progression',
-                    'Leaderboards & social feed',
-                    'Nexus Coins & cosmetic vault',
+                    'Social feed & leaderboards',
+                    '93 achievements & cosmetic vault',
                 ]}
             ],
-            cta: user ? 'Go to Dashboard' : 'Get Started Free',
+            cta: user ? 'Go to Dashboard' : 'Start Free',
             ctaAction: handleFreeTier,
-            comparison: 'See what AI signals look like'
+            comparison: 'Preview the system — upgrade for full access'
         },
         {
             id: 'starter',
             name: 'Starter',
-            description: 'Best for beginners testing signals',
+            description: 'Start trading with real predictions and signals',
             icon: Star,
             price: prices.starter,
             gradient: 'linear-gradient(135deg, #10b981, #059669)',
             shadow: 'rgba(16, 185, 129, 0.4)',
             borderGradient: 'linear-gradient(135deg, #10b981, #059669, #10b981)',
             features: [
-                { category: '📊 AI Signals', color: '#10b981', items: [
-                    { text: '5 real-time AI signals / day', highlight: true },
-                    'Entry, stop loss & target levels',
-                    'Confidence scoring on every signal',
-                    'Signal outcome tracking',
+                { category: '📊 AI Predictions', color: '#10b981', items: [
+                    { text: '5 AI price forecasts / day', highlight: true },
+                    'Confidence scoring & direction',
+                    'Prediction outcome tracking',
                 ]},
-                { category: '📈 Trading Tools', color: '#3b82f6', items: [
+                { category: '⚡ Trade Signals', color: '#10b981', items: [
+                    { text: 'Real-time signal access', highlight: true },
+                    'Entry, stop loss & take profit levels',
+                    'Signal reasoning & analysis',
+                ]},
+                { category: '🛠 Platform Tools', color: '#3b82f6', items: [
                     'Watchlist (10 stocks)',
                     'Stock screener & news feed',
-                    'Basic sentiment analysis',
                     'Trade journal',
                 ]}
             ],
-            comparison: 'Start getting real signals',
-            cta: 'Start Getting Signals'
+            comparison: 'Real-time signals + 5 forecasts / day',
+            cta: 'Unlock Starter'
         },
         {
             id: 'pro',
             name: 'Pro',
-            description: 'More signals + AI tools for active traders',
+            description: 'More forecasts + AI chat for active traders',
             icon: Rocket,
             price: prices.pro,
             gradient: 'linear-gradient(135deg, #3b82f6, #2563eb)',
             shadow: 'rgba(59, 130, 246, 0.4)',
             borderGradient: 'linear-gradient(135deg, #3b82f6, #2563eb, #3b82f6)',
             features: [
-                { category: '📊 AI Signals', color: '#3b82f6', items: [
-                    { text: '15 real-time AI signals / day', highlight: true },
-                    { text: 'AI Chat — ask about any trade', highlight: true },
-                    'Full signal analysis & reasoning',
-                    'Pattern scanner access',
+                { category: '📊 AI Predictions', color: '#3b82f6', items: [
+                    { text: '15 AI price forecasts / day', highlight: true },
+                    { text: 'AI Chat — ask about any asset', highlight: true },
+                    'Full forecast analysis & reasoning',
                 ]},
-                { category: '📈 Trading Tools', color: '#10b981', items: [
+                { category: '⚡ Trade Signals', color: '#3b82f6', items: [
+                    { text: 'All real-time trade signals', highlight: true },
+                    'Pattern scanner access',
+                    'Full signal breakdown & conviction',
+                ]},
+                { category: '🛠 Platform Tools', color: '#10b981', items: [
                     '3 watchlists (30 stocks each)',
-                    'Market heatmap & technical indicators',
+                    'Market heatmap & indicators',
                     'Real-time price alerts',
-                    'Stock comparison tools',
+                    'Sentiment analysis',
                 ]}
             ],
-            comparison: '3x more signals + AI chat',
+            comparison: '3x more forecasts + AI chat + pattern scanner',
             cta: 'Upgrade to Pro'
         },
         {
             id: 'premium',
             name: 'Premium',
-            description: 'Everything you need to trade with confidence',
+            description: 'Full System Access — Signals + Predictions + Intelligence',
             icon: TrendingUp,
             tag: { text: 'Most Popular', type: 'popular', icon: Zap },
             featured: true,
@@ -1337,29 +1344,33 @@ const PricingPage = () => {
             shadow: 'rgba(249, 115, 22, 0.4)',
             borderGradient: 'linear-gradient(135deg, #f97316, #ea580c, #f97316)',
             features: [
-                { category: '📊 Unlimited AI Signals', color: '#f97316', items: [
-                    { text: 'Unlimited real-time AI signals', highlight: true },
-                    { text: 'Track every signal outcome', highlight: true },
-                    { text: 'See what actually works (accuracy analytics)', highlight: true },
+                { category: '📊 Unlimited AI Predictions', color: '#f97316', items: [
+                    { text: 'Unlimited AI price forecasts', highlight: true },
+                    { text: 'Prediction accuracy analytics', highlight: true },
                     'GPT-4 Turbo AI chat assistant',
                     'Pattern recognition + live data',
                 ]},
+                { category: '⚡ Full Trade Signals', color: '#f97316', items: [
+                    { text: 'Unlimited real-time trade signals', highlight: true },
+                    { text: 'Full entry / SL / TP breakdown', highlight: true },
+                    'Live signal tracking & outcomes',
+                    'Signal-to-trade conversion tools',
+                ]},
                 { category: '🐋 Whale Intelligence', color: '#f59e0b', items: [
-                    { text: 'Whale alerts — see large trades first', highlight: true, special: true },
+                    { text: 'Whale alerts — large trades first', highlight: true, special: true },
                     'Dark pool + institutional flow',
-                    'Congressional trade alerts',
                     'Portfolio tracking & optimization',
                     'Unlimited watchlists',
                     '24/7 priority support',
                 ]}
             ],
-            comparison: 'Unlimited signals + whale intel',
+            comparison: 'Unlimited predictions + signals + whale intel',
             cta: 'Go Premium'
         },
         {
             id: 'elite',
             name: 'Elite',
-            description: 'Maximum tools for serious traders',
+            description: 'Maximum tools for professional traders',
             icon: Crown,
             tag: { text: 'Power User', type: 'value', icon: Award },
             featured: true,
@@ -1370,20 +1381,18 @@ const PricingPage = () => {
             features: [
                 { category: '📊 Everything Unlimited +', color: '#8b5cf6', items: [
                     { text: 'Strategy backtesting engine (6 strategies)', highlight: true },
-                    { text: 'Whale alert API + institutional flow data', highlight: true },
-                    { text: 'API key management for integrations', highlight: true },
+                    { text: 'Whale alert API + institutional flow', highlight: true },
+                    { text: 'API key management', highlight: true },
                     'Advanced portfolio analytics',
-                    'Multi-account management',
                 ]},
-                { category: '🔜 Coming Soon', color: '#a78bfa', items: [
-                    'Full REST API for signal access',
-                    'Whale alert webhooks',
-                    'VIP Discord community',
+                { category: '⚡ Full Signal + Prediction Access', color: '#8b5cf6', items: [
+                    'All Premium features included',
+                    'Multi-account management',
                     'Priority feature requests',
                     'Early access to new features',
                 ]}
             ],
-            comparison: 'Backtesting + whale API + multi-account',
+            comparison: 'Backtesting + whale API + everything unlimited',
             cta: 'Go Elite'
         }
     ];
@@ -1434,12 +1443,12 @@ const PricingPage = () => {
                 </LogoContainer>
                 
                 <Title>
-                    Choose Your <GradientText>Trading Edge</GradientText>
+                    Stop guessing. Start trading with <GradientText>verified data.</GradientText>
                 </Title>
 
                 <Subtitle>
-                    Start free. Upgrade when you want better signals.
-                    Every plan includes paper trading, gamification, and social features.
+                    Every signal and prediction is tracked publicly — so you know exactly what works.
+                    Upgrade for real-time trade signals, unlimited AI forecasts, and full analytics.
                 </Subtitle>
             </HeaderSection>
 
@@ -1455,15 +1464,15 @@ const PricingPage = () => {
             <TrustBadges>
                 <TrustBadge>
                     <Shield size={18} />
-                    256-bit Encryption
+                    Secure Payments via Stripe
+                </TrustBadge>
+                <TrustBadge>
+                    <CheckCircle size={18} />
+                    Every Trade Tracked Publicly
                 </TrustBadge>
                 <TrustBadge>
                     <Lock size={18} />
-                    SOC 2 Compliant
-                </TrustBadge>
-                <TrustBadge>
-                    <Award size={18} />
-                    #1 AI Trading Platform
+                    Cancel Anytime
                 </TrustBadge>
             </TrustBadges>
 
@@ -1638,27 +1647,27 @@ const PricingPage = () => {
             {/* Stats Section */}
             <StatsSection>
                 <StatCard>
-                    <StatNumber>Real-Time</StatNumber>
-                    <StatLabel>AI Signal Engine</StatLabel>
+                    <StatNumber>Tracked</StatNumber>
+                    <StatLabel>Every prediction verified</StatLabel>
                 </StatCard>
                 <StatCard>
-                    <StatNumber>Tracked</StatNumber>
-                    <StatLabel>Every Signal Validated</StatLabel>
+                    <StatNumber>Transparent</StatNumber>
+                    <StatLabel>Wins & losses shown publicly</StatLabel>
                 </StatCard>
                 <StatCard>
                     <StatNumber>$100K</StatNumber>
-                    <StatLabel>Paper Trading Funds</StatLabel>
+                    <StatLabel>Paper trading on every plan</StatLabel>
                 </StatCard>
                 <StatCard>
                     <StatNumber>24/7</StatNumber>
-                    <StatLabel>Stocks + Crypto</StatLabel>
+                    <StatLabel>Stocks + Crypto coverage</StatLabel>
                 </StatCard>
             </StatsSection>
 
             <FooterSection>
                 <Guarantee>
-                    <Sparkles />
-                    Cancel Anytime • No Credit Card for Trial • Secure Payments via Stripe
+                    <Shield />
+                    Cancel Anytime · No Credit Card for Trial · Secure Payments via Stripe · 7-Day Free Trial on Premium
                 </Guarantee>
             </FooterSection>
         </PricingContainer>
