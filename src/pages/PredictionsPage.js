@@ -42,10 +42,13 @@ const fadeIn = keyframes`
     from { opacity: 0; transform: translateY(12px); }
     to { opacity: 1; transform: translateY(0); }
 `;
-
 const spin = keyframes`
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
+`;
+const pulseGlow = keyframes`
+    0%, 100% { box-shadow: 0 0 4px rgba(16,185,129,0.3); }
+    50% { box-shadow: 0 0 12px rgba(16,185,129,0.6); }
 `;
 
 // ============ STYLED COMPONENTS ============
@@ -59,9 +62,10 @@ const PageContainer = styled.div`
     z-index: 1;
 `;
 
+// --- Header ---
 const HeaderRow = styled.div`
     max-width: 900px;
-    margin: 0 auto 1.25rem;
+    margin: 0 auto 1rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -71,979 +75,854 @@ const HeaderRow = styled.div`
     @media(max-width:768px){flex-direction:column;text-align:center;}
 `;
 const HeaderLeft = styled.div``;
-const Header = styled.div`
-    max-width: 900px;
-    margin: 0 auto 1.5rem;
-    animation: ${fadeIn} 0.5s ease-out;
-    text-align: center;
-`;
-
 const Title = styled.h1`
-    font-size: 2rem;
+    font-size: 1.6rem;
     color: #e0e6ed;
     font-weight: 700;
-    margin-bottom: 0.5rem;
-    @media (max-width: 768px) { font-size: 1.5rem; }
+    margin: 0 0 0.2rem 0;
+    @media(max-width:768px){font-size:1.35rem;}
 `;
-
 const Subtitle = styled.p`
     color: #64748b;
-    font-size: 1rem;
-    margin-bottom: 0;
-`;
-
-const TrustStrip = styled.div`
-    max-width: 900px;
-    margin: 0 auto 2rem;
-    padding: 0.75rem 1.5rem;
-    background: rgba(12, 16, 32, 0.92);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 10px;
-    text-align: center;
-    color: #64748b;
     font-size: 0.85rem;
-    animation: ${fadeIn} 0.5s ease-out 0.1s both;
+    margin: 0;
+`;
+const TrustStripInline = styled.div`
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
+    gap: 0.4rem;
     flex-wrap: wrap;
-
+    font-size: 0.75rem;
+    color: #64748b;
     span { color: #e0e6ed; font-weight: 600; }
+    @media(max-width:768px){justify-content:center;}
+`;
+const TrustDivider = styled.span`color:rgba(100,116,139,.3);font-size:0.55rem;`;
+const EdgeBadge = styled.span`
+    padding: 0.15rem 0.5rem;
+    background: rgba(16,185,129,0.1);
+    border: 1px solid rgba(16,185,129,0.25);
+    border-radius: 5px;
+    color: #10b981;
+    font-size: 0.72rem;
+    font-weight: 600;
 `;
 
+// --- Tabs ---
 const TabsContainer = styled.div`
-    max-width: 1200px;
-    margin: 0 auto 1.5rem;
+    max-width: 900px;
+    margin: 0 auto 1.25rem;
     display: flex;
-    gap: 0.75rem;
+    gap: 0.5rem;
     overflow-x: auto;
-    padding-bottom: 0.5rem;
+    padding-bottom: 0.25rem;
+    animation: ${fadeIn} 0.5s ease-out 0.05s both;
 `;
-
 const Tab = styled.button`
-    padding: 0.6rem 1.25rem;
-    background: ${p => p.$active ? 'rgba(0, 173, 239, 0.12)' : 'rgba(12, 16, 32, 0.92)'};
-    border: 1px solid ${p => p.$active ? 'rgba(0, 173, 239, 0.4)' : 'rgba(255, 255, 255, 0.06)'};
-    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    background: ${p => p.$active ? 'rgba(0,173,239,0.1)' : 'rgba(12,16,32,.92)'};
+    border: 1px solid ${p => p.$active ? 'rgba(0,173,239,0.35)' : 'rgba(255,255,255,.06)'};
+    border-radius: 7px;
     color: ${p => p.$active ? '#00adef' : '#64748b'};
     font-weight: 600;
-    font-size: 0.9rem;
+    font-size: 0.82rem;
     cursor: pointer;
     transition: all 0.2s ease;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.4rem;
     white-space: nowrap;
-    &:hover {
-        border-color: rgba(0, 173, 239, 0.4);
-        color: #00adef;
-    }
+    &:hover { border-color: rgba(0,173,239,0.35); color: #00adef; }
 `;
 
-const StatsBanner = styled.div`
-    max-width: 900px;
-    margin: 0 auto 2rem;
-    padding: 0.75rem 1.5rem;
-    background: rgba(12, 16, 32, 0.92);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 2rem;
-    flex-wrap: wrap;
-    animation: ${fadeIn} 0.5s ease-out 0.15s both;
-`;
-
-const StatItem = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.9rem;
-    color: #64748b;
-    span { color: #e0e6ed; font-weight: 700; }
-`;
-
-const EdgeBadge = styled.span`
-    padding: 0.2rem 0.6rem;
-    background: rgba(16, 185, 129, 0.12);
-    border: 1px solid rgba(16, 185, 129, 0.3);
-    border-radius: 6px;
-    color: #10b981;
-    font-size: 0.8rem;
-    font-weight: 600;
-`;
-
+// --- Input Section ---
 const InputSection = styled.div`
     max-width: 800px;
-    margin: 0 auto 2rem;
-    background: rgba(12, 16, 32, 0.92);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 14px;
-    padding: 2rem;
-    animation: ${fadeIn} 0.5s ease-out 0.2s both;
+    margin: 0 auto 1.5rem;
+    background: rgba(12,16,32,.92);
+    border: 1px solid rgba(0,173,239,0.15);
+    border-radius: 12px;
+    padding: 1.5rem;
+    animation: ${fadeIn} 0.5s ease-out 0.1s both;
     position: relative;
     z-index: 10;
 `;
-
 const InputHelperText = styled.p`
     color: #64748b;
-    font-size: 0.85rem;
-    margin: 0 0 1.25rem 0;
+    font-size: 0.82rem;
+    margin: 0 0 1rem 0;
 `;
-
 const InputForm = styled.form`
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
+    gap: 1rem;
 `;
-
 const InputGroup = styled.div`
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 1.25rem;
-    @media (max-width: 768px) { grid-template-columns: 1fr; }
+    gap: 1rem;
+    @media(max-width:768px){grid-template-columns:1fr;}
 `;
-
 const FormField = styled.div`
     display: flex;
     flex-direction: column;
-    gap: 0.4rem;
+    gap: 0.35rem;
 `;
-
 const Label = styled.label`
     color: #94a3b8;
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     font-weight: 600;
     display: flex;
     align-items: center;
     gap: 0.4rem;
 `;
-
 const AutocompleteContainer = styled.div`
     position: relative;
     width: 100%;
     z-index: 100;
 `;
+const Input = styled.input`
+    padding: 0.75rem 0.9rem;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 7px;
+    color: #e0e6ed;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    transition: border-color 0.2s ease;
+    &:focus {
+        outline: none;
+        border-color: #00adef;
+        box-shadow: 0 0 0 3px rgba(0,173,239,0.12);
+    }
+    &::placeholder { color: #475569; text-transform: none; }
+`;
+const ExampleText = styled.p`
+    color: #475569;
+    font-size: 0.72rem;
+    margin: 0;
+`;
+const Select = styled.select`
+    padding: 0.75rem 0.9rem;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 7px;
+    color: #e0e6ed;
+    font-size: 0.95rem;
+    font-weight: 600;
+    transition: border-color 0.2s ease;
+    cursor: pointer;
+    &:focus {
+        outline: none;
+        border-color: #00adef;
+        box-shadow: 0 0 0 3px rgba(0,173,239,0.12);
+    }
+    option { background: #0c1020; color: #e0e6ed; }
+`;
+const PredictButton = styled.button`
+    padding: 0.85rem 1.75rem;
+    background: linear-gradient(135deg, #00adef 0%, #0088cc 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+    &:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(0,173,239,0.3);
+    }
+    &:disabled { opacity: 0.6; cursor: not-allowed; }
+`;
+const LoadingSpinner = styled(RefreshCw)`
+    animation: ${spin} 1s linear infinite;
+`;
 
+// --- Suggestions Dropdown ---
 const SuggestionsDropdown = styled.div`
     position: absolute;
     top: 100%;
     left: 0;
     right: 0;
-    background: rgba(12, 16, 32, 0.98);
-    border: 1px solid rgba(0, 173, 239, 0.25);
-    border-radius: 10px;
+    background: rgba(12,16,32,0.98);
+    border: 1px solid rgba(0,173,239,0.25);
+    border-radius: 8px;
     margin-top: 4px;
-    max-height: 280px;
+    max-height: 260px;
     overflow-y: auto;
     z-index: 1000;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-    &::-webkit-scrollbar { width: 6px; }
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    &::-webkit-scrollbar { width: 5px; }
     &::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); }
-    &::-webkit-scrollbar-thumb { background: rgba(0, 173, 239, 0.3); border-radius: 3px; }
+    &::-webkit-scrollbar-thumb { background: rgba(0,173,239,0.3); border-radius: 3px; }
 `;
-
 const SuggestionItem = styled.div`
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.7rem 1rem;
+    padding: 0.6rem 0.9rem;
     cursor: pointer;
     transition: background 0.15s ease;
     border-bottom: 1px solid rgba(255,255,255,0.04);
     &:last-child { border-bottom: none; }
-    &:hover { background: rgba(0, 173, 239, 0.08); }
+    &:hover { background: rgba(0,173,239,0.08); }
 `;
-
-const SuggestionLeft = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-`;
-
-const SuggestionSymbol = styled.span`
-    font-weight: 700;
-    font-size: 0.95rem;
-    color: #e0e6ed;
-`;
-
-const SuggestionName = styled.span`
-    font-size: 0.8rem;
-    color: #64748b;
-    max-width: 150px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-`;
-
+const SuggestionLeft = styled.div`display:flex;align-items:center;gap:0.6rem;`;
+const SuggestionSymbol = styled.span`font-weight:700;font-size:0.9rem;color:#e0e6ed;`;
+const SuggestionName = styled.span`font-size:0.75rem;color:#64748b;max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;`;
 const SuggestionType = styled.span`
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     font-weight: 600;
-    padding: 0.15rem 0.45rem;
+    padding: 0.12rem 0.4rem;
     border-radius: 4px;
     text-transform: uppercase;
-    background: ${p => p.$type === 'crypto' ? 'rgba(245, 158, 11, 0.15)' : p.$type === 'dex' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(0, 173, 239, 0.15)'};
+    background: ${p => p.$type === 'crypto' ? 'rgba(245,158,11,0.15)' : p.$type === 'dex' ? 'rgba(16,185,129,0.15)' : 'rgba(0,173,239,0.15)'};
     color: ${p => p.$type === 'crypto' ? '#f59e0b' : p.$type === 'dex' ? '#10b981' : '#00adef'};
 `;
-
 const SuggestionChain = styled.span`
-    font-size: 0.65rem;
+    font-size: 0.6rem;
     font-weight: 500;
-    padding: 0.1rem 0.35rem;
+    padding: 0.08rem 0.3rem;
     border-radius: 3px;
     text-transform: uppercase;
-    background: rgba(139, 92, 246, 0.1);
+    background: rgba(139,92,246,0.1);
     color: #8b5cf6;
-    margin-left: 0.25rem;
+    margin-left: 0.2rem;
 `;
+const NoResults = styled.div`padding:0.85rem;text-align:center;color:#64748b;font-size:0.85rem;`;
 
-const NoResults = styled.div`
-    padding: 1rem;
-    text-align: center;
-    color: #64748b;
-    font-size: 0.9rem;
-`;
-
-const Input = styled.input`
-    padding: 0.85rem 1rem;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    color: #e0e6ed;
-    font-size: 1rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    transition: border-color 0.2s ease;
-    &:focus {
-        outline: none;
-        border-color: #00adef;
-        box-shadow: 0 0 0 3px rgba(0, 173, 239, 0.15);
-    }
-    &::placeholder { color: #475569; text-transform: none; }
-`;
-
-const ExampleText = styled.p`
-    color: #475569;
-    font-size: 0.8rem;
-    margin: -0.5rem 0 0 0;
-`;
-
-const Select = styled.select`
-    padding: 0.85rem 1rem;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    color: #e0e6ed;
-    font-size: 1rem;
-    font-weight: 600;
-    transition: border-color 0.2s ease;
-    cursor: pointer;
-    &:focus {
-        outline: none;
-        border-color: #00adef;
-        box-shadow: 0 0 0 3px rgba(0, 173, 239, 0.15);
-    }
-    option { background: #0c1020; color: #e0e6ed; }
-`;
-
-const PredictButton = styled.button`
-    padding: 1rem 2rem;
-    background: linear-gradient(135deg, #00adef 0%, #0088cc 100%);
-    color: white;
-    border: none;
-    border-radius: 10px;
-    font-size: 1.05rem;
-    font-weight: 700;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.6rem;
-    transition: all 0.2s ease;
-    &:hover:not(:disabled) {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 24px rgba(0, 173, 239, 0.35);
-    }
-    &:disabled { opacity: 0.6; cursor: not-allowed; }
-`;
-
-const LoadingSpinner = styled(RefreshCw)`
-    animation: ${spin} 1s linear infinite;
-`;
-
-// ============ RESULTS ============
+// --- Results Container ---
 const ResultsContainer = styled.div`
-    max-width: 1200px;
+    max-width: 900px;
     margin: 0 auto;
     animation: ${fadeIn} 0.4s ease-out;
 `;
-
-const PredictionCard = styled.div`
-    background: rgba(12, 16, 32, 0.92);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 14px;
-    padding: 2rem;
-    margin-bottom: 1.5rem;
+const Card = styled.div`
+    background: rgba(12,16,32,.92);
+    border: 1px solid rgba(255,255,255,.06);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
 `;
 
+// --- Forecast Label ---
 const ForecastLabel = styled.div`
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.6rem 1rem;
-    background: rgba(0, 173, 239, 0.08);
-    border: 1px solid rgba(0, 173, 239, 0.2);
-    border-radius: 8px;
-    margin-bottom: 1.5rem;
-    font-size: 0.85rem;
+    gap: 0.4rem;
+    padding: 0.5rem 0.85rem;
+    background: rgba(0,173,239,0.07);
+    border: 1px solid rgba(0,173,239,0.18);
+    border-radius: 7px;
+    margin-bottom: 1.25rem;
+    font-size: 0.8rem;
     color: #00adef;
     font-weight: 600;
 `;
-
 const ForecastLabelSub = styled.span`
     color: #64748b;
     font-weight: 400;
-    margin-left: 0.5rem;
+    margin-left: 0.4rem;
+    font-size: 0.75rem;
 `;
 
-const PredictionHeader = styled.div`
-    display: flex;
-    justify-content: space-between;
-    align-items: start;
-    margin-bottom: 1.5rem;
-    @media (max-width: 768px) { flex-direction: column; gap: 1rem; }
-`;
-
-const StockInfo = styled.div``;
-
-const StockSymbol = styled.h2`
-    font-size: 2rem;
-    font-weight: 800;
-    color: #e0e6ed;
-    margin: 0 0 0.25rem 0;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-`;
-
-const CompanyName = styled.div`
-    color: #64748b;
-    font-size: 0.9rem;
-    font-weight: 500;
-`;
-
-const CurrentPriceSection = styled.div`
-    display: flex;
-    align-items: baseline;
-    gap: 0.5rem;
-    margin-top: 0.5rem;
-`;
-
-const CurrentPriceLabel = styled.span`
-    color: #64748b;
-    font-size: 0.85rem;
-`;
-
-const CurrentPriceValue = styled.span`
-    color: #e0e6ed;
-    font-size: 1.4rem;
-    font-weight: 700;
-`;
-
-const DirectionBadge = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.25rem;
-    background: ${p => p.$neutral ? 'rgba(245, 158, 11, 0.1)' : p.$up ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)'};
-    border: 1px solid ${p => p.$neutral ? 'rgba(245, 158, 11, 0.3)' : p.$up ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'};
+// --- Signal Potential Module ---
+const SignalPotentialCard = styled.div`
+    padding: 1rem 1.25rem;
     border-radius: 10px;
-    color: ${p => p.$neutral ? '#f59e0b' : p.$up ? '#10b981' : '#ef4444'};
-    font-size: 1rem;
-    font-weight: 700;
+    margin-bottom: 1.25rem;
+    background: ${p => p.$level === 'high' ? 'rgba(16,185,129,0.06)' : p.$level === 'moderate' ? 'rgba(245,158,11,0.06)' : 'rgba(255,255,255,0.02)'};
+    border: 1px solid ${p => p.$level === 'high' ? 'rgba(16,185,129,0.2)' : p.$level === 'moderate' ? 'rgba(245,158,11,0.2)' : 'rgba(255,255,255,0.06)'};
+    border-left: 3px solid ${p => p.$level === 'high' ? '#10b981' : p.$level === 'moderate' ? '#f59e0b' : '#64748b'};
 `;
-
-const SignalStrengthBadge = styled.div`
-    display: inline-flex;
+const SignalPotentialTitle = styled.div`
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: ${p => p.$color || '#e0e6ed'};
+    display: flex;
     align-items: center;
     gap: 0.4rem;
-    padding: 0.4rem 0.8rem;
-    background: ${p => p.$strength === 'strong' ? 'rgba(16,185,129,0.1)' : p.$strength === 'moderate' ? 'rgba(245,158,11,0.1)' : 'rgba(239,68,68,0.1)'};
-    border: 1px solid ${p => p.$strength === 'strong' ? 'rgba(16,185,129,0.3)' : p.$strength === 'moderate' ? 'rgba(245,158,11,0.3)' : 'rgba(239,68,68,0.3)'};
-    border-radius: 6px;
-    color: ${p => p.$strength === 'strong' ? '#10b981' : p.$strength === 'moderate' ? '#f59e0b' : '#ef4444'};
-    font-size: 0.8rem;
-    font-weight: 700;
-    text-transform: uppercase;
+    margin-bottom: 0.3rem;
 `;
-
-const ActionButtons = styled.div`
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-    margin-bottom: 1.5rem;
-    @media (max-width: 768px) { justify-content: center; }
-`;
-
-const ActionButton = styled.button`
-    padding: 0.5rem 0.85rem;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 8px;
+const SignalPotentialText = styled.div`
+    font-size: 0.78rem;
     color: #94a3b8;
+    line-height: 1.5;
+    margin-bottom: 0.5rem;
+`;
+const SignalPotentialCTA = styled.button`
+    padding: 0.4rem 0.85rem;
+    background: ${p => p.$color || '#10b981'}15;
+    border: 1px solid ${p => p.$color || '#10b981'}30;
+    border-radius: 6px;
+    color: ${p => p.$color || '#10b981'};
+    font-size: 0.75rem;
+    font-weight: 600;
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 0.4rem;
-    font-weight: 600;
-    font-size: 0.85rem;
+    gap: 0.3rem;
     transition: all 0.2s ease;
-    &:hover { background: rgba(255, 255, 255, 0.08); color: #e0e6ed; }
+    &:hover { background: ${p => p.$color || '#10b981'}25; }
 `;
 
-// Shared prediction banner
+// --- Shared Prediction Banner ---
 const SharedPredictionBanner = styled.div`
-    background: rgba(239, 68, 68, 0.06);
-    border: 1px solid rgba(239, 68, 68, 0.2);
-    border-radius: 10px;
-    padding: 0.75rem 1.25rem;
-    margin-bottom: 1.25rem;
+    background: rgba(239,68,68,0.05);
+    border: 1px solid rgba(239,68,68,0.18);
+    border-radius: 8px;
+    padding: 0.65rem 1rem;
+    margin-bottom: 1rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
-    gap: 0.75rem;
+    gap: 0.5rem;
 `;
-
-const SharedBadgeLeft = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-`;
-
-const LiveDot = styled.div`
+const SharedBadgeLeft = styled.div`display:flex;align-items:center;gap:0.6rem;`;
+const LiveDotLarge = styled.div`
     width: 10px;
     height: 10px;
-    background: #10b981;
-    border-radius: 50%;
-    box-shadow: 0 0 6px #10b981;
-`;
-
-const LiveDotLarge = styled.div`
-    width: 12px;
-    height: 12px;
     background: #ef4444;
     border-radius: 50%;
-    box-shadow: 0 0 8px #ef4444;
+    box-shadow: 0 0 6px #ef4444;
 `;
-
-const SharedText = styled.div`
-    display: flex;
-    flex-direction: column;
-    gap: 0.15rem;
-`;
-
-const SharedTitle = styled.span`
-    font-size: 0.95rem;
-    font-weight: 700;
-    color: #ef4444;
-    display: flex;
-    align-items: center;
-`;
-
-const SharedSubtitle = styled.span`
-    font-size: 0.8rem;
-    color: #64748b;
-`;
-
+const SharedText = styled.div`display:flex;flex-direction:column;gap:0.1rem;`;
+const SharedTitle = styled.span`font-size:0.85rem;font-weight:700;color:#ef4444;display:flex;align-items:center;`;
+const SharedSubtitle = styled.span`font-size:0.72rem;color:#64748b;`;
 const ViewerCount = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.35rem 0.75rem;
-    background: rgba(12, 16, 32, 0.6);
-    border-radius: 16px;
-    font-size: 0.8rem;
-    color: #e0e6ed;
-    svg { color: #00adef; }
-`;
-
-// ============ LIVE STATUS / COUNTDOWN ============
-const LiveStatusCard = styled.div`
-    background: rgba(12, 16, 32, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 12px;
-    padding: 1.25rem 1.5rem;
-    margin-bottom: 1.5rem;
-`;
-
-const LiveStatusHeader = styled.div`
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.25rem;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-`;
-
-const LiveStatusTitle = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 1rem;
-    font-weight: 700;
-    color: #e0e6ed;
-`;
-
-const CountdownDisplay = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-`;
-
-const CountdownUnit = styled.div`
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 0.5rem 0.75rem;
-    background: rgba(12, 16, 32, 0.8);
-    border-radius: 8px;
-    border: 1px solid ${p => p.$urgent ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.06)'};
-    min-width: 56px;
-`;
-
-const CountdownValue = styled.div`
-    font-size: 1.4rem;
-    font-weight: 800;
-    color: ${p => p.$urgent ? '#ef4444' : '#e0e6ed'};
-`;
-
-const CountdownLabel = styled.div`
-    font-size: 0.65rem;
-    color: #475569;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-`;
-
-const CountdownSeparator = styled.span`
-    font-size: 1.2rem;
-    color: #475569;
-    font-weight: 700;
-`;
-
-// ============ DYNAMIC CONFIDENCE ============
-const DynamicConfidenceCard = styled.div`
-    background: rgba(12, 16, 32, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 10px;
-    padding: 1.25rem;
-`;
-
-const ConfidenceHeader = styled.div`
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.75rem;
-`;
-
-const ConfidenceTitle = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: #94a3b8;
-`;
-
-const ConfidenceValueLarge = styled.div`
-    font-size: 2rem;
-    font-weight: 800;
-    color: ${p => p.$value >= 70 ? '#10b981' : p.$value >= 50 ? '#f59e0b' : '#ef4444'};
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    margin-bottom: 0.5rem;
-`;
-
-const ConfidenceChange = styled.span`
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: ${p => p.$positive ? '#10b981' : '#ef4444'};
-    display: flex;
-    align-items: center;
-    gap: 0.2rem;
-`;
-
-const ConfidenceBarLarge = styled.div`
-    width: 100%;
-    height: 10px;
-    background: rgba(255, 255, 255, 0.04);
-    border-radius: 5px;
-    overflow: hidden;
-`;
-
-const ConfidenceBarFill = styled.div`
-    height: 100%;
-    width: ${p => Math.min(95, p.$value || 0)}%;
-    background: ${p => p.$value >= 70 ? '#10b981' : p.$value >= 50 ? '#f59e0b' : '#ef4444'};
-    border-radius: 5px;
-    transition: width 0.5s ease-out;
-`;
-
-const ConfidenceMessage = styled.div`
-    margin-top: 0.75rem;
-    padding: 0.5rem 0.75rem;
-    background: rgba(12, 16, 32, 0.5);
-    border-radius: 6px;
-    font-size: 0.8rem;
-    color: #94a3b8;
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-`;
-
-// ============ METRICS ============
-const MetricsGrid = styled.div`
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-`;
-
-const MetricCard = styled.div`
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 10px;
-    padding: 1.25rem;
-    animation: ${fadeIn} 0.4s ease-out;
-`;
-
-const MetricIcon = styled.div`
-    width: 40px;
-    height: 40px;
-    border-radius: 8px;
-    background: ${p => p.$variant === 'success' ? 'rgba(16,185,129,0.12)' : p.$variant === 'danger' ? 'rgba(239,68,68,0.12)' : p.$variant === 'warning' ? 'rgba(245,158,11,0.12)' : 'rgba(0,173,239,0.12)'};
-    color: ${p => p.$variant === 'success' ? '#10b981' : p.$variant === 'danger' ? '#ef4444' : p.$variant === 'warning' ? '#f59e0b' : '#00adef'};
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 0.75rem;
-`;
-
-const MetricLabel = styled.div`
-    color: #64748b;
-    font-size: 0.8rem;
-    margin-bottom: 0.35rem;
-`;
-
-const MetricValue = styled.div`
-    font-size: 1.5rem;
-    font-weight: 800;
-    color: ${p => p.$variant === 'success' ? '#10b981' : p.$variant === 'danger' ? '#ef4444' : p.$variant === 'warning' ? '#f59e0b' : '#e0e6ed'};
-`;
-
-const MetricsMicrocopy = styled.p`
-    color: #475569;
-    font-size: 0.75rem;
-    margin: -0.5rem 0 1.5rem 0;
-    font-style: italic;
-`;
-
-// ============ AI REASONING ============
-const ReasoningSection = styled.div`
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 10px;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-`;
-
-const ReasoningTitle = styled.h3`
-    color: #e0e6ed;
-    font-size: 1.1rem;
-    font-weight: 700;
-    margin: 0 0 1rem 0;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-`;
-
-const ReasoningGrid = styled.div`
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.75rem;
-    @media (max-width: 768px) { grid-template-columns: 1fr; }
-`;
-
-const ReasoningItem = styled.div`
-    padding: 0.75rem 1rem;
-    background: rgba(12, 16, 32, 0.5);
-    border-radius: 8px;
-    border-left: 3px solid ${p => p.$bullish ? '#10b981' : p.$bearish ? '#ef4444' : '#f59e0b'};
-`;
-
-const ReasoningLabel = styled.div`
-    color: #64748b;
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 0.25rem;
-`;
-
-const ReasoningText = styled.div`
-    color: #e0e6ed;
-    font-size: 0.9rem;
-    font-weight: 500;
-`;
-
-// ============ INDICATORS ============
-const IndicatorsSection = styled.div`
-    margin-bottom: 1.5rem;
-`;
-
-const IndicatorsTitle = styled.h3`
-    color: #e0e6ed;
-    font-size: 1.1rem;
-    font-weight: 700;
-    margin: 0 0 1rem 0;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-`;
-
-const IndicatorsGrid = styled.div`
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 0.75rem;
-`;
-
-const IndicatorItem = styled.div`
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid ${p => p.$signal === 'BUY' ? 'rgba(16,185,129,0.2)' : p.$signal === 'SELL' ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.06)'};
-    border-radius: 8px;
-    padding: 0.75rem 1rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-`;
-
-const IndicatorInfo = styled.div`
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-`;
-
-const IndicatorName = styled.span`
-    color: #e0e6ed;
-    font-size: 0.9rem;
-    font-weight: 600;
-`;
-
-const IndicatorNumericValue = styled.span`
-    color: #475569;
-    font-size: 0.75rem;
-`;
-
-const IndicatorSignal = styled.div`
     display: flex;
     align-items: center;
     gap: 0.35rem;
     padding: 0.3rem 0.6rem;
-    border-radius: 6px;
-    font-weight: 700;
-    font-size: 0.8rem;
-    background: ${p => p.$signal === 'BUY' ? 'rgba(16,185,129,0.12)' : p.$signal === 'SELL' ? 'rgba(239,68,68,0.12)' : 'rgba(245,158,11,0.12)'};
-    color: ${p => p.$signal === 'BUY' ? '#10b981' : p.$signal === 'SELL' ? '#ef4444' : '#f59e0b'};
+    background: rgba(12,16,32,0.6);
+    border-radius: 14px;
+    font-size: 0.72rem;
+    color: #e0e6ed;
+    svg { color: #00adef; }
 `;
 
-const NoIndicatorsMessage = styled.div`
-    padding: 1.25rem;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px dashed rgba(255, 255, 255, 0.08);
+// --- Live Status / Countdown (compact) ---
+const LiveStatusCard = styled.div`
+    background: rgba(12,16,32,0.5);
+    border: 1px solid rgba(255,255,255,.06);
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+    margin-bottom: 1.25rem;
+`;
+const LiveStatusHeader = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+`;
+const LiveStatusTitle = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #e0e6ed;
+`;
+const LiveDot = styled.div`
+    width: 8px;
+    height: 8px;
+    background: #10b981;
+    border-radius: 50%;
+    animation: ${pulseGlow} 2s ease-in-out infinite;
+`;
+const CountdownDisplay = styled.div`display:flex;align-items:center;gap:0.3rem;`;
+const CountdownUnit = styled.div`
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.3rem 0.5rem;
+    background: rgba(12,16,32,0.7);
+    border-radius: 6px;
+    border: 1px solid ${p => p.$urgent ? 'rgba(239,68,68,0.25)' : 'rgba(255,255,255,.05)'};
+    min-width: 42px;
+`;
+const CountdownValue = styled.div`
+    font-size: 1rem;
+    font-weight: 800;
+    color: ${p => p.$urgent ? '#ef4444' : '#e0e6ed'};
+`;
+const CountdownLabel = styled.div`
+    font-size: 0.55rem;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+`;
+const CountdownSeparator = styled.span`font-size:0.9rem;color:#475569;font-weight:700;`;
+
+// --- Badge Row ---
+const BadgeRow = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+`;
+const DirectionBadge = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 0.85rem;
+    background: ${p => p.$neutral ? 'rgba(245,158,11,0.08)' : p.$up ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)'};
+    border: 1px solid ${p => p.$neutral ? 'rgba(245,158,11,0.25)' : p.$up ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)'};
     border-radius: 8px;
-    color: #64748b;
-    text-align: center;
+    color: ${p => p.$neutral ? '#f59e0b' : p.$up ? '#10b981' : '#ef4444'};
+    font-size: 0.85rem;
+    font-weight: 700;
+`;
+const ConvictionBadge = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.35rem 0.7rem;
+    background: ${p => p.$color || '#64748b'}12;
+    border: 1px solid ${p => p.$color || '#64748b'}25;
+    border-radius: 6px;
+    color: ${p => p.$color || '#64748b'};
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+`;
+const SignalPotentialBadge = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.35rem 0.7rem;
+    background: ${p => p.$level === 'high' ? 'rgba(16,185,129,0.1)' : p.$level === 'moderate' ? 'rgba(245,158,11,0.1)' : 'rgba(255,255,255,0.04)'};
+    border: 1px solid ${p => p.$level === 'high' ? 'rgba(16,185,129,0.25)' : p.$level === 'moderate' ? 'rgba(245,158,11,0.25)' : 'rgba(255,255,255,0.08)'};
+    border-radius: 6px;
+    color: ${p => p.$level === 'high' ? '#10b981' : p.$level === 'moderate' ? '#f59e0b' : '#64748b'};
+    font-size: 0.72rem;
+    font-weight: 600;
+`;
+
+// --- Prediction Header ---
+const PredictionHeader = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    margin-bottom: 1rem;
+    @media(max-width:768px){flex-direction:column;gap:0.75rem;}
+`;
+const StockInfo = styled.div``;
+const StockSymbol = styled.h2`
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #e0e6ed;
+    margin: 0 0 0.15rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+`;
+const CompanyName = styled.div`color:#64748b;font-size:0.82rem;font-weight:500;`;
+const CurrentPriceSection = styled.div`display:flex;align-items:baseline;gap:0.4rem;margin-top:0.35rem;`;
+const CurrentPriceLabel = styled.span`color:#64748b;font-size:0.78rem;`;
+const CurrentPriceValue = styled.span`color:#e0e6ed;font-size:1.2rem;font-weight:700;`;
+const WatchlistStar = styled.button`
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.15rem;
+    display: flex;
+    align-items: center;
+    transition: transform 0.2s ease;
+    &:hover { transform: scale(1.15); }
+`;
+
+// --- Compact Confidence ---
+const CompactConfidence = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    padding: 0.5rem 0.85rem;
+    border-radius: 7px;
+    margin-top: 0.6rem;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid ${p => `${p.$color || '#64748b'}25`};
+`;
+const CompactConfLabel = styled.div`font-size:0.78rem;font-weight:700;color:#e0e6ed;white-space:nowrap;`;
+const CompactConfBar = styled.div`flex:1;min-width:70px;height:3px;background:rgba(255,255,255,0.04);border-radius:2px;overflow:hidden;`;
+const CompactConfFill = styled.div`height:100%;width:${p=>p.$w||0}%;background:${p=>p.$color||'#64748b'};border-radius:2px;transition:width 0.5s;`;
+const CompactConfChange = styled.span`
+    font-size:0.7rem;font-weight:600;display:flex;align-items:center;gap:0.12rem;
+    color:${p => p.$positive ? '#10b981' : '#ef4444'};
+`;
+
+// --- Metrics ---
+const MetricsGrid = styled.div`
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+`;
+const MetricCard = styled.div`
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,.06);
+    border-radius: 8px;
+    padding: 1rem;
+    animation: ${fadeIn} 0.4s ease-out;
+`;
+const MetricIcon = styled.div`
+    width: 34px;
+    height: 34px;
+    border-radius: 7px;
+    background: ${p => p.$variant === 'success' ? 'rgba(16,185,129,0.1)' : p.$variant === 'danger' ? 'rgba(239,68,68,0.1)' : p.$variant === 'warning' ? 'rgba(245,158,11,0.1)' : 'rgba(0,173,239,0.1)'};
+    color: ${p => p.$variant === 'success' ? '#10b981' : p.$variant === 'danger' ? '#ef4444' : p.$variant === 'warning' ? '#f59e0b' : '#00adef'};
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
+    margin-bottom: 0.5rem;
 `;
-
-// ============ CHART ============
-const ChartSection = styled.div`
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 10px;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
+const MetricLabel = styled.div`color:#64748b;font-size:0.72rem;margin-bottom:0.2rem;`;
+const MetricValue = styled.div`
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: ${p => p.$variant === 'success' ? '#10b981' : p.$variant === 'danger' ? '#ef4444' : p.$variant === 'warning' ? '#f59e0b' : '#e0e6ed'};
 `;
-
-const ChartTitle = styled.h3`
-    color: #e0e6ed;
-    font-size: 1.1rem;
-    font-weight: 700;
-    margin: 0 0 0.25rem 0;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-`;
-
-const ChartSubtitle = styled.p`
+const MetricsMicrocopy = styled.p`
     color: #475569;
-    font-size: 0.75rem;
-    margin: 0 0 1.25rem 0;
+    font-size: 0.68rem;
+    margin: -0.25rem 0 1rem 0;
     font-style: italic;
 `;
 
-const ChartLegend = styled.div`
-    display: flex;
-    justify-content: center;
-    gap: 1.5rem;
-    margin-top: 0.75rem;
+// --- Recommendation ---
+const RecommendationBlock = styled.div`
+    padding: 0.85rem 1.1rem;
+    border-radius: 8px;
+    margin-bottom: 1.25rem;
+    background: ${p => `${p.$color || '#64748b'}08`};
+    border: 1px solid ${p => `${p.$color || '#64748b'}1a`};
+    border-left: 3px solid ${p => p.$color || '#64748b'};
 `;
+const RecommendationTitle = styled.div`
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: ${p => p.$color || '#e0e6ed'};
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-bottom: 0.25rem;
+`;
+const RecommendationText = styled.div`font-size:0.78rem;color:#94a3b8;line-height:1.5;`;
 
-const LegendItem = styled.div`
+// --- Reasoning ---
+const ReasoningSection = styled.div`
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,.06);
+    border-radius: 10px;
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+`;
+const SectionTitle = styled.h3`
+    color: #e0e6ed;
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0 0 0.85rem 0;
     display: flex;
     align-items: center;
     gap: 0.4rem;
 `;
-
-const LegendColor = styled.div`
-    width: 16px;
-    height: 16px;
-    background: ${p => p.color};
-    border-radius: 3px;
+const ReasoningGrid = styled.div`
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+    @media(max-width:768px){grid-template-columns:1fr;}
 `;
-
-const LegendText = styled.span`
+const ReasoningItem = styled.div`
+    padding: 0.65rem 0.85rem;
+    background: rgba(12,16,32,0.5);
+    border-radius: 7px;
+    border-left: 3px solid ${p => p.$bullish ? '#10b981' : p.$bearish ? '#ef4444' : '#f59e0b'};
+`;
+const ReasoningLabel = styled.div`
     color: #64748b;
-    font-size: 0.8rem;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.15rem;
 `;
+const ReasoningText = styled.div`color:#e0e6ed;font-size:0.82rem;font-weight:500;`;
 
-// ============ HISTORICAL VALIDATION ============
-const ValidationSection = styled.div`
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 10px;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
+// --- Technical Indicators ---
+const IndicatorsGrid = styled.div`
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.6rem;
 `;
-
-const ValidationTitle = styled.h3`
-    color: #e0e6ed;
-    font-size: 1.1rem;
-    font-weight: 700;
-    margin: 0 0 1rem 0;
+const IndicatorItem = styled.div`
+    background: rgba(255,255,255,0.03);
+    border: 1px solid ${p => p.$signal === 'BUY' ? 'rgba(16,185,129,0.18)' : p.$signal === 'SELL' ? 'rgba(239,68,68,0.18)' : 'rgba(255,255,255,.06)'};
+    border-radius: 7px;
+    padding: 0.6rem 0.85rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+`;
+const IndicatorInfo = styled.div`display:flex;flex-direction:column;gap:1px;`;
+const IndicatorName = styled.span`color:#e0e6ed;font-size:0.82rem;font-weight:600;`;
+const IndicatorNumericValue = styled.span`color:#475569;font-size:0.68rem;`;
+const IndicatorSignal = styled.div`
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.3rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 5px;
+    font-weight: 700;
+    font-size: 0.72rem;
+    background: ${p => p.$signal === 'BUY' ? 'rgba(16,185,129,0.1)' : p.$signal === 'SELL' ? 'rgba(239,68,68,0.1)' : 'rgba(245,158,11,0.1)'};
+    color: ${p => p.$signal === 'BUY' ? '#10b981' : p.$signal === 'SELL' ? '#ef4444' : '#f59e0b'};
 `;
-
-const ValidationStats = styled.div`
+const NoIndicatorsMessage = styled.div`
+    padding: 1rem;
+    background: rgba(255,255,255,0.02);
+    border: 1px dashed rgba(255,255,255,0.08);
+    border-radius: 7px;
+    color: #64748b;
+    text-align: center;
     display: flex;
-    gap: 2rem;
-    flex-wrap: wrap;
-    margin-bottom: 0.75rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    font-size: 0.82rem;
 `;
-
-const ValidationStat = styled.div`
-    span:first-child {
-        color: #64748b;
-        font-size: 0.8rem;
-        display: block;
-        margin-bottom: 0.15rem;
-    }
-    span:last-child {
-        color: #e0e6ed;
-        font-size: 1.25rem;
-        font-weight: 800;
-    }
-`;
-
-const ValidationDisclaimer = styled.p`
-    color: #475569;
+const TechSummaryLine = styled.div`
+    padding: 0.4rem 0.65rem;
+    border-radius: 5px;
+    margin-bottom: 0.6rem;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.04);
     font-size: 0.75rem;
-    margin: 0;
+    font-weight: 600;
+    color: ${p => p.$color || '#94a3b8'};
+`;
+
+// --- Chart ---
+const ChartSection = styled.div`
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,.06);
+    border-radius: 10px;
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+`;
+const ChartSubtitle = styled.p`
+    color: #475569;
+    font-size: 0.68rem;
+    margin: 0 0 1rem 0;
     font-style: italic;
 `;
+const ChartLegend = styled.div`display:flex;justify-content:center;gap:1.25rem;margin-top:0.6rem;`;
+const LegendItem = styled.div`display:flex;align-items:center;gap:0.35rem;`;
+const LegendColor = styled.div`width:14px;height:14px;background:${p => p.color};border-radius:3px;`;
+const LegendText = styled.span`color:#64748b;font-size:0.72rem;`;
 
-// ============ ACTION CTAS ============
-const CTASection = styled.div`
-    display: flex;
-    gap: 0.75rem;
-    flex-wrap: wrap;
-    margin-bottom: 1.5rem;
+// --- Validation ---
+const ValidationSection = styled.div`
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,.06);
+    border-radius: 10px;
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+`;
+const ValidationStats = styled.div`display:flex;gap:1.5rem;flex-wrap:wrap;margin-bottom:0.5rem;`;
+const ValidationStat = styled.div`
+    span:first-child { color:#64748b;font-size:0.72rem;display:block;margin-bottom:0.1rem; }
+    span:last-child { color:#e0e6ed;font-size:1.1rem;font-weight:800; }
+`;
+const ValidationDisclaimer = styled.p`color:#475569;font-size:0.68rem;margin:0;font-style:italic;`;
+const MarketRegimeTag = styled.span`
+    padding: 0.2rem 0.6rem;
+    border-radius: 5px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    background: ${p => p.$regime === 'trending' ? 'rgba(0,173,239,0.1)' : p.$regime === 'volatile' ? 'rgba(245,158,11,0.1)' : 'rgba(255,255,255,0.04)'};
+    border: 1px solid ${p => p.$regime === 'trending' ? 'rgba(0,173,239,0.25)' : p.$regime === 'volatile' ? 'rgba(245,158,11,0.25)' : 'rgba(255,255,255,0.08)'};
+    color: ${p => p.$regime === 'trending' ? '#00adef' : p.$regime === 'volatile' ? '#f59e0b' : '#64748b'};
 `;
 
-const CTAButton = styled.button`
-    padding: 0.75rem 1.5rem;
-    background: ${p => p.$primary ? 'linear-gradient(135deg, #00adef 0%, #0088cc 100%)' : 'rgba(255,255,255,0.04)'};
-    border: 1px solid ${p => p.$primary ? 'transparent' : 'rgba(255,255,255,0.1)'};
+// --- Info Strip ---
+const InfoStrip = styled.div`
+    max-width: 900px;
+    margin: 0 auto 1.25rem;
+    padding: 0.6rem 1rem;
+    background: rgba(12,16,32,.92);
+    border: 1px solid rgba(255,255,255,.05);
     border-radius: 8px;
-    color: ${p => p.$primary ? '#fff' : '#94a3b8'};
-    font-weight: 600;
-    font-size: 0.9rem;
+    color: #64748b;
+    font-size: 0.72rem;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    animation: ${fadeIn} 0.5s ease-out 0.15s both;
+    span { color: #94a3b8; font-weight: 600; }
+`;
+
+// --- Action Row ---
+const ActionRow = styled.div`
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+    @media(max-width:768px){justify-content:center;}
+`;
+const ActionButton = styled.button`
+    padding: 0.4rem 0.7rem;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,.07);
+    border-radius: 6px;
+    color: #94a3b8;
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.3rem;
+    font-weight: 600;
+    font-size: 0.78rem;
+    transition: all 0.2s ease;
+    &:hover { background: rgba(255,255,255,0.07); color: #e0e6ed; }
+`;
+const CTAButton = styled.button`
+    padding: 0.5rem 1rem;
+    background: ${p => p.$primary ? 'linear-gradient(135deg, #00adef 0%, #0088cc 100%)' : 'rgba(255,255,255,0.04)'};
+    border: 1px solid ${p => p.$primary ? 'transparent' : 'rgba(255,255,255,0.08)'};
+    border-radius: 7px;
+    color: ${p => p.$primary ? '#fff' : '#94a3b8'};
+    font-weight: 600;
+    font-size: 0.82rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
     transition: all 0.2s ease;
     &:hover {
         transform: translateY(-1px);
-        ${p => p.$primary ? 'box-shadow: 0 6px 20px rgba(0,173,239,0.3);' : 'background: rgba(255,255,255,0.08); color: #e0e6ed;'}
+        ${p => p.$primary ? 'box-shadow: 0 4px 14px rgba(0,173,239,0.25);' : 'background: rgba(255,255,255,0.07); color: #e0e6ed;'}
     }
 `;
 
-// ============ TRUST LINE ============
+// --- Trust Line ---
 const TrustLine = styled.div`
     text-align: center;
-    padding: 1rem;
+    padding: 0.75rem;
     color: #475569;
-    font-size: 0.8rem;
+    font-size: 0.72rem;
     font-style: italic;
 `;
 
-// ============ EMPTY STATE ============
-const EmptyState = styled.div`
-    text-align: center;
-    padding: 3rem 2rem;
+// --- Empty State ---
+const EmptyStateContainer = styled.div`
+    max-width: 900px;
+    margin: 0 auto;
     animation: ${fadeIn} 0.4s ease-out;
 `;
-
+const EmptyHero = styled.div`
+    text-align: center;
+    padding: 2rem 1.5rem 1.5rem;
+`;
 const EmptyIcon = styled.div`
-    width: 100px;
-    height: 100px;
-    margin: 0 auto 1.5rem;
-    background: rgba(0, 173, 239, 0.08);
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 1rem;
+    background: rgba(0,173,239,0.07);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px dashed rgba(0, 173, 239, 0.2);
+    border: 2px dashed rgba(0,173,239,0.18);
 `;
-
 const EmptyTitle = styled.h2`
     color: #e0e6ed;
-    font-size: 1.4rem;
-    margin-bottom: 0.5rem;
+    font-size: 1.2rem;
+    margin: 0 0 0.35rem 0;
     font-weight: 700;
 `;
-
 const EmptyText = styled.p`
     color: #64748b;
-    font-size: 1rem;
+    font-size: 0.85rem;
+    margin: 0 0 1.5rem 0;
 `;
 
-// ============ MODALS ============
+// Example cards for empty state
+const ExampleCardsGrid = styled.div`
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    @media(max-width:768px){grid-template-columns:1fr;}
+`;
+const ExampleCard = styled.div`
+    background: rgba(12,16,32,.92);
+    border: 1px solid rgba(255,255,255,.06);
+    border-radius: 10px;
+    padding: 1rem;
+    border-top: 2px solid ${p => p.$color || '#00adef'};
+    cursor: pointer;
+    transition: all 0.2s ease;
+    &:hover { border-color: rgba(255,255,255,.12); transform: translateY(-2px); }
+`;
+const ExampleSymbol = styled.div`font-size:1.1rem;font-weight:800;color:#e0e6ed;margin-bottom:0.2rem;`;
+const ExampleName = styled.div`font-size:0.72rem;color:#64748b;margin-bottom:0.5rem;`;
+const ExampleMeta = styled.div`
+    display: flex;
+    gap: 0.5rem;
+    font-size: 0.72rem;
+`;
+const ExampleChip = styled.span`
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    background: ${p => p.$color || 'rgba(255,255,255,0.04)'};
+    color: ${p => p.$textColor || '#94a3b8'};
+    font-weight: 600;
+`;
+
+// How it works strip
+const HowItWorksStrip = styled.div`
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    padding: 1rem;
+`;
+const HowStep = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.72rem;
+    color: #64748b;
+`;
+const StepNumber = styled.span`
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: rgba(0,173,239,0.1);
+    color: #00adef;
+    font-size: 0.6rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+`;
+const StepArrow = styled.span`color:rgba(100,116,139,.3);font-size:0.7rem;`;
+
+// --- Modals ---
 const ModalOverlay = styled.div`
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.75);
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.75);
     backdrop-filter: blur(6px);
     display: flex;
     align-items: center;
@@ -1052,187 +931,114 @@ const ModalOverlay = styled.div`
     animation: ${fadeIn} 0.2s ease-out;
     padding: 1rem;
 `;
-
 const ModalContent = styled.div`
-    background: rgba(12, 16, 32, 0.98);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 14px;
-    padding: 1.75rem;
-    max-width: 480px;
+    background: rgba(12,16,32,0.98);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 1.5rem;
+    max-width: 440px;
     width: 100%;
     animation: ${fadeIn} 0.3s ease-out;
 `;
-
-const ModalHeader = styled.div`
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-`;
-
-const ModalTitle = styled.h3`
-    color: #e0e6ed;
-    font-size: 1.25rem;
-    font-weight: 700;
-`;
-
+const ModalHeader = styled.div`display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;`;
+const ModalTitle = styled.h3`color:#e0e6ed;font-size:1.1rem;font-weight:700;margin:0;`;
 const CloseButton = styled.button`
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
-    background: rgba(239, 68, 68, 0.12);
-    border: 1px solid rgba(239, 68, 68, 0.25);
+    background: rgba(239,68,68,0.1);
+    border: 1px solid rgba(239,68,68,0.2);
     color: #ef4444;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: background 0.2s ease;
-    &:hover { background: rgba(239, 68, 68, 0.2); }
+    &:hover { background: rgba(239,68,68,0.2); }
 `;
-
-const ShareOptions = styled.div`
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.75rem;
-`;
-
+const ShareOptions = styled.div`display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;`;
 const ShareOption = styled.button`
-    padding: 0.85rem;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 10px;
+    padding: 0.75rem;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,.07);
+    border-radius: 8px;
     color: #94a3b8;
     cursor: pointer;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.4rem;
+    gap: 0.35rem;
     font-weight: 600;
-    font-size: 0.85rem;
+    font-size: 0.78rem;
     transition: all 0.2s ease;
-    &:hover { background: rgba(255, 255, 255, 0.08); color: #e0e6ed; }
+    &:hover { background: rgba(255,255,255,0.07); color: #e0e6ed; }
 `;
 
-const WatchlistStar = styled.button`
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0.2rem;
-    display: flex;
-    align-items: center;
-    transition: transform 0.2s ease;
-    &:hover { transform: scale(1.15); }
-`;
-
-// ============ SAVED PREDICTIONS ============
-const SavedPredictionsContainer = styled.div`
-    max-width: 1200px;
-    margin: 0 auto;
-`;
-
+// --- Saved Predictions ---
+const SavedPredictionsContainer = styled.div`max-width:900px;margin:0 auto;`;
 const SavedPredictionsGrid = styled.div`
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 0.75rem;
     animation: ${fadeIn} 0.4s ease-out;
 `;
-
 const SavedPredictionCard = styled.div`
-    background: rgba(12, 16, 32, 0.92);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 12px;
-    padding: 1.25rem;
+    background: rgba(12,16,32,.92);
+    border: 1px solid rgba(255,255,255,.06);
+    border-radius: 10px;
+    padding: 1rem;
     transition: border-color 0.2s ease;
     position: relative;
     overflow: hidden;
-    &:hover { border-color: rgba(255, 255, 255, 0.12); }
+    &:hover { border-color: rgba(255,255,255,.12); }
     &::before {
         content: '';
         position: absolute;
         top: 0; left: 0; right: 0;
-        height: 3px;
+        height: 2px;
         background: ${p => p.$up ? '#10b981' : '#ef4444'};
     }
 `;
-
-const SavedCardHeader = styled.div`
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 0.75rem;
-`;
-
-const SavedSymbol = styled.div`
-    font-size: 1.5rem;
-    font-weight: 800;
-    color: #e0e6ed;
-`;
-
+const SavedCardHeader = styled.div`display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.6rem;`;
+const SavedSymbol = styled.div`font-size:1.25rem;font-weight:800;color:#e0e6ed;`;
 const SavedDirection = styled.div`
     display: flex;
     align-items: center;
-    gap: 0.4rem;
-    padding: 0.35rem 0.75rem;
-    background: ${p => p.$up ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)'};
-    border: 1px solid ${p => p.$up ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)'};
-    border-radius: 6px;
+    gap: 0.3rem;
+    padding: 0.25rem 0.6rem;
+    background: ${p => p.$up ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)'};
+    border: 1px solid ${p => p.$up ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'};
+    border-radius: 5px;
     color: ${p => p.$up ? '#10b981' : '#ef4444'};
     font-weight: 700;
-    font-size: 0.8rem;
+    font-size: 0.72rem;
 `;
-
 const SavedCardBody = styled.div`
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 0.75rem;
-    margin-bottom: 0.75rem;
+    gap: 0.5rem;
+    margin-bottom: 0.6rem;
 `;
-
 const SavedMetric = styled.div`
-    background: rgba(255, 255, 255, 0.03);
-    border-radius: 6px;
-    padding: 0.6rem;
+    background: rgba(255,255,255,0.02);
+    border-radius: 5px;
+    padding: 0.5rem;
 `;
-
-const SavedMetricLabel = styled.div`
-    color: #64748b;
-    font-size: 0.75rem;
-    margin-bottom: 0.15rem;
-`;
-
-const SavedMetricValue = styled.div`
-    color: #e0e6ed;
-    font-size: 1rem;
-    font-weight: 700;
-`;
-
+const SavedMetricLabel = styled.div`color:#64748b;font-size:0.68rem;margin-bottom:0.1rem;`;
+const SavedMetricValue = styled.div`color:#e0e6ed;font-size:0.9rem;font-weight:700;`;
 const SavedCardFooter = styled.div`
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-top: 0.75rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.04);
+    padding-top: 0.5rem;
+    border-top: 1px solid rgba(255,255,255,.04);
 `;
-
-const SavedDate = styled.div`
-    color: #475569;
-    font-size: 0.8rem;
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-`;
-
-const SavedActions = styled.div`
-    display: flex;
-    gap: 0.4rem;
-`;
-
+const SavedDate = styled.div`color:#475569;font-size:0.72rem;display:flex;align-items:center;gap:0.3rem;`;
+const SavedActions = styled.div`display:flex;gap:0.3rem;`;
 const SavedActionButton = styled.button`
-    padding: 0.4rem;
-    background: ${p => p.$danger ? 'rgba(239,68,68,0.08)' : 'rgba(255,255,255,0.04)'};
-    border: 1px solid ${p => p.$danger ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.06)'};
-    border-radius: 6px;
+    padding: 0.3rem;
+    background: ${p => p.$danger ? 'rgba(239,68,68,0.07)' : 'rgba(255,255,255,0.03)'};
+    border: 1px solid ${p => p.$danger ? 'rgba(239,68,68,0.18)' : 'rgba(255,255,255,.06)'};
+    border-radius: 5px;
     color: ${p => p.$danger ? '#ef4444' : '#94a3b8'};
     cursor: pointer;
     display: flex;
@@ -1241,62 +1047,20 @@ const SavedActionButton = styled.button`
     transition: all 0.15s ease;
     &:hover { transform: scale(1.05); }
 `;
-
 const ClearAllButton = styled.button`
-    padding: 0.6rem 1.25rem;
-    background: rgba(239, 68, 68, 0.08);
-    border: 1px solid rgba(239, 68, 68, 0.2);
-    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    background: rgba(239,68,68,0.07);
+    border: 1px solid rgba(239,68,68,0.18);
+    border-radius: 7px;
     color: #ef4444;
     font-weight: 600;
-    font-size: 0.85rem;
+    font-size: 0.78rem;
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 0.4rem;
-    transition: background 0.2s ease;
-    margin-bottom: 1.5rem;
-    &:hover { background: rgba(239, 68, 68, 0.15); }
-`;
-
-// ============ NEW COMPONENTS: Conviction Engine UI ============
-const TrustStripInline = styled.div`
-    display:flex;align-items:center;gap:0.4rem;flex-wrap:wrap;
-    font-size:0.78rem;color:#64748b;
-    span { color: #e0e6ed; font-weight: 600; }
-    @media(max-width:768px){justify-content:center;}
-`;
-const TrustDivider = styled.span`color:rgba(100,116,139,.3);font-size:0.6rem;`;
-
-const CompactConfidence = styled.div`
-    display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;
-    padding:0.65rem 1rem;border-radius:8px;margin-top:0.75rem;
-    background:rgba(255,255,255,0.02);border:1px solid ${p => `${p.$color || '#64748b'}30`};
-`;
-const CompactConfLabel = styled.div`font-size:0.85rem;font-weight:700;color:#e0e6ed;white-space:nowrap;`;
-const CompactConfBar = styled.div`flex:1;min-width:80px;height:4px;background:rgba(255,255,255,0.04);border-radius:2px;overflow:hidden;`;
-const CompactConfFill = styled.div`height:100%;width:${p=>p.$w||0}%;background:${p=>p.$color||'#64748b'};border-radius:2px;transition:width 0.5s;`;
-const CompactConfChange = styled.span`
-    font-size:0.75rem;font-weight:600;display:flex;align-items:center;gap:0.15rem;
-    color:${p => p.$positive ? '#10b981' : '#ef4444'};
-`;
-
-const RecommendationBlock = styled.div`
-    padding:1rem 1.25rem;border-radius:10px;margin-bottom:1.5rem;
-    background:${p => `${p.$color || '#64748b'}08`};
-    border:1px solid ${p => `${p.$color || '#64748b'}20`};
-    border-left:3px solid ${p => p.$color || '#64748b'};
-`;
-const RecommendationTitle = styled.div`
-    font-size:0.9rem;font-weight:700;color:${p => p.$color || '#e0e6ed'};
-    display:flex;align-items:center;gap:0.4rem;margin-bottom:0.35rem;
-`;
-const RecommendationText = styled.div`font-size:0.82rem;color:#94a3b8;line-height:1.5;`;
-
-const TechSummaryLine = styled.div`
-    padding:0.5rem 0.75rem;border-radius:6px;margin-bottom:0.75rem;
-    background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);
-    font-size:0.8rem;font-weight:600;color:${p => p.$color || '#94a3b8'};
+    gap: 0.35rem;
+    margin-bottom: 1rem;
+    &:hover { background: rgba(239,68,68,0.12); }
 `;
 
 // ============ MAIN COMPONENT ============
@@ -1933,7 +1697,48 @@ const PredictionsPage = () => {
         );
     };
 
+    // Derive market regime from indicators
+    const getMarketRegime = () => {
+        if (!prediction?.indicators) return { label: 'Mixed Conditions', regime: 'mixed' };
+        const indicators = prediction.indicators;
+        const rsi = indicators['RSI'] || indicators['rsi'];
+        const bollinger = indicators['Bollinger'] || indicators['bollinger'] || indicators['Bollinger Bands'];
+        const macd = indicators['MACD'] || indicators['macd'];
+        const trend = indicators['Trend'] || indicators['trend'] || indicators['SMA'] || indicators['EMA'];
+
+        // High volatility check
+        if (rsi) {
+            const val = rsi.value;
+            if (val !== undefined && (val > 75 || val < 25)) {
+                return { label: 'High Volatility', regime: 'volatile' };
+            }
+        }
+        if (bollinger) {
+            const sig = String(bollinger.signal || '').toUpperCase();
+            if (sig === 'BUY' || sig === 'SELL') {
+                return { label: 'High Volatility', regime: 'volatile' };
+            }
+        }
+
+        // Trending check
+        if (trend) {
+            const sig = String(trend.signal || '').toUpperCase();
+            if (sig === 'BUY' || sig === 'SELL') {
+                if (macd) {
+                    const macdSig = String(macd.signal || '').toUpperCase();
+                    if (macdSig === sig) {
+                        return { label: 'Trending', regime: 'trending' };
+                    }
+                }
+                return { label: 'Trending', regime: 'trending' };
+            }
+        }
+
+        return { label: 'Mixed Conditions', regime: 'mixed' };
+    };
+
     const isUrgent = countdown.days === 0 && countdown.hours < 6;
+    const marketRegime = prediction ? getMarketRegime() : null;
 
     return (
         <PageContainer>
@@ -1943,19 +1748,19 @@ const PredictionsPage = () => {
                     <ModalContent onClick={e => e.stopPropagation()}>
                         <ModalHeader>
                             <ModalTitle>Share Forecast</ModalTitle>
-                            <CloseButton onClick={() => setShowShareModal(false)}><X size={16} /></CloseButton>
+                            <CloseButton onClick={() => setShowShareModal(false)}><X size={14} /></CloseButton>
                         </ModalHeader>
                         <ShareOptions>
-                            <ShareOption onClick={() => handleShare('twitter')}><Twitter size={22} />Twitter</ShareOption>
-                            <ShareOption onClick={() => handleShare('facebook')}><Facebook size={22} />Facebook</ShareOption>
-                            <ShareOption onClick={() => handleShare('linkedin')}><Linkedin size={22} />LinkedIn</ShareOption>
-                            <ShareOption onClick={() => handleShare('copy')}><Copy size={22} />Copy Link</ShareOption>
+                            <ShareOption onClick={() => handleShare('twitter')}><Twitter size={20} />Twitter</ShareOption>
+                            <ShareOption onClick={() => handleShare('facebook')}><Facebook size={20} />Facebook</ShareOption>
+                            <ShareOption onClick={() => handleShare('linkedin')}><Linkedin size={20} />LinkedIn</ShareOption>
+                            <ShareOption onClick={() => handleShare('copy')}><Copy size={20} />Copy Link</ShareOption>
                         </ShareOptions>
                     </ModalContent>
                 </ModalOverlay>
             )}
 
-            {/* ═══ ROW 1: Header + Trust Strip (compact) ═══ */}
+            {/* Section 1: Header + Trust Strip */}
             <HeaderRow>
                 <HeaderLeft>
                     <Title>AI Market Forecast Engine</Title>
@@ -1976,25 +1781,26 @@ const PredictionsPage = () => {
             {/* Tabs */}
             <TabsContainer>
                 <Tab $active={activeTab === 'predict'} onClick={() => setActiveTab('predict')}>
-                    <BarChart3 size={16} /> New Forecast
+                    <BarChart3 size={14} /> New Forecast
                 </Tab>
                 <Tab $active={activeTab === 'saved'} onClick={() => setActiveTab('saved')}>
-                    <Bookmark size={16} /> Saved Forecasts ({savedPredictions.length})
+                    <Bookmark size={14} /> Saved ({savedPredictions.length})
                 </Tab>
                 <Tab $active={activeTab === 'history'} onClick={() => navigate('/prediction-history')}>
-                    <Clock size={16} /> History
+                    <Clock size={14} /> History
                 </Tab>
             </TabsContainer>
 
             {/* PREDICT TAB */}
             {activeTab === 'predict' && (
                 <>
+                    {/* Section 2: Premium Input */}
                     <InputSection>
-                        <InputHelperText>Generate a forecast with projected move, confidence range, and expected outcome.</InputHelperText>
+                        <InputHelperText>Enter any stock, crypto, or DEX token to generate a forecast with projected move, confidence, and expected outcome.</InputHelperText>
                         <InputForm onSubmit={fetchPrediction}>
                             <InputGroup>
                                 <FormField>
-                                    <Label><BarChart3 size={16} /> Symbol</Label>
+                                    <Label><BarChart3 size={14} /> Symbol</Label>
                                     <AutocompleteContainer>
                                         <Input
                                             value={symbol}
@@ -2045,10 +1851,10 @@ const PredictionsPage = () => {
                                             </SuggestionsDropdown>
                                         )}
                                     </AutocompleteContainer>
-                                    <ExampleText>Try: BTC, ETH, NVDA, SOL</ExampleText>
+                                    <ExampleText>Try: BTC, ETH, NVDA, SOL, AAPL</ExampleText>
                                 </FormField>
                                 <FormField>
-                                    <Label><Calendar size={16} /> Timeframe</Label>
+                                    <Label><Calendar size={14} /> Timeframe</Label>
                                     <Select value={days} onChange={e => setDays(e.target.value)}>
                                         <option value="7">7 Days (Short-term)</option>
                                         <option value="30">30 Days (Medium-term)</option>
@@ -2057,18 +1863,27 @@ const PredictionsPage = () => {
                                 </FormField>
                             </InputGroup>
                             <PredictButton type="submit" disabled={loading || !symbol}>
-                                {loading ? <><LoadingSpinner size={20} /> Analyzing...</> : <><Activity size={20} /> Run Forecast</>}
+                                {loading ? <><LoadingSpinner size={18} /> Analyzing...</> : <><Activity size={18} /> Run Forecast</>}
                             </PredictButton>
                         </InputForm>
                     </InputSection>
 
+                    {/* Section 5: How Forecasts Connect to Signals */}
+                    {!prediction && !loading && (
+                        <InfoStrip>
+                            <Sparkles size={13} />
+                            <span>Forecasts identify direction and conviction.</span>
+                            Strong forecasts can become live signal setups. All outcomes are tracked publicly.
+                        </InfoStrip>
+                    )}
+
                     {/* Prediction Results */}
                     {prediction && (
                         <ResultsContainer>
-                            <PredictionCard>
+                            <Card>
                                 {/* Live Forecast Label */}
                                 <ForecastLabel>
-                                    <Radio size={16} />
+                                    <Radio size={14} />
                                     Live Forecast — Outcome Will Be Tracked
                                     <ForecastLabelSub>This projection is recorded and measured against actual price movement.</ForecastLabelSub>
                                 </ForecastLabel>
@@ -2080,7 +1895,7 @@ const PredictionsPage = () => {
                                             <LiveDotLarge />
                                             <SharedText>
                                                 <SharedTitle>
-                                                    <Radio size={14} style={{ marginRight: '0.4rem' }} />
+                                                    <Radio size={12} style={{ marginRight: '0.3rem' }} />
                                                     Live Forecast In Progress
                                                 </SharedTitle>
                                                 <SharedSubtitle>
@@ -2089,19 +1904,52 @@ const PredictionsPage = () => {
                                             </SharedText>
                                         </SharedBadgeLeft>
                                         <ViewerCount>
-                                            <Users size={16} />
+                                            <Users size={14} />
                                             {prediction.viewCount || 1} watching
                                         </ViewerCount>
                                     </SharedPredictionBanner>
                                 )}
 
-                                {/* Live Status with Countdown */}
+                                {/* Section 3: Signal Potential Module */}
+                                {conv && (
+                                    <SignalPotentialCard $level={conv.conviction}>
+                                        <SignalPotentialTitle $color={conv.conviction === 'high' ? '#10b981' : conv.conviction === 'moderate' ? '#f59e0b' : '#64748b'}>
+                                            {conv.conviction === 'high' ? <><Zap size={15} /> Signal Candidate</> :
+                                             conv.conviction === 'moderate' ? <><Eye size={15} /> Watchlist</> :
+                                             <><AlertTriangle size={15} /> No Strong Edge</>}
+                                        </SignalPotentialTitle>
+                                        <SignalPotentialText>
+                                            {conv.conviction === 'high'
+                                                ? 'This forecast has enough conviction to convert into a live signal setup. Multiple indicators align with the projected direction.'
+                                                : conv.conviction === 'moderate'
+                                                ? 'Monitor this setup for confirmation before acting. Some indicators support the direction but conditions are not fully aligned.'
+                                                : 'Wait for better conditions. Indicators are inconclusive and no clear edge is present at this time.'}
+                                        </SignalPotentialText>
+                                        {(conv.conviction === 'high' || conv.conviction === 'moderate') && (
+                                            <SignalPotentialCTA
+                                                $color={conv.conviction === 'high' ? '#10b981' : '#f59e0b'}
+                                                onClick={() => navigate('/paper-trading', {
+                                                    state: {
+                                                        symbol: prediction.symbol,
+                                                        direction: prediction.prediction.direction,
+                                                        targetPrice: prediction.prediction.target_price,
+                                                        currentPrice: prediction.current_price
+                                                    }
+                                                })}
+                                            >
+                                                <ArrowRight size={13} /> Convert to Signal Setup
+                                            </SignalPotentialCTA>
+                                        )}
+                                    </SignalPotentialCard>
+                                )}
+
+                                {/* Compact Live Status + Countdown */}
                                 {liveData && (
                                     <LiveStatusCard>
                                         <LiveStatusHeader>
                                             <LiveStatusTitle>
                                                 <LiveDot />
-                                                Live Tracking Active
+                                                Live Tracking
                                             </LiveStatusTitle>
                                             <CountdownDisplay>
                                                 <CountdownUnit $urgent={isUrgent}>
@@ -2111,7 +1959,7 @@ const PredictionsPage = () => {
                                                 <CountdownSeparator>:</CountdownSeparator>
                                                 <CountdownUnit $urgent={isUrgent}>
                                                     <CountdownValue $urgent={isUrgent}>{String(countdown.hours).padStart(2, '0')}</CountdownValue>
-                                                    <CountdownLabel>Hours</CountdownLabel>
+                                                    <CountdownLabel>Hrs</CountdownLabel>
                                                 </CountdownUnit>
                                                 <CountdownSeparator>:</CountdownSeparator>
                                                 <CountdownUnit $urgent={isUrgent}>
@@ -2126,14 +1974,14 @@ const PredictionsPage = () => {
                                             </CountdownDisplay>
                                         </LiveStatusHeader>
 
-                                                {/* Compact Confidence — restrained, not dominant */}
+                                        {/* Compact Confidence */}
                                         {conv && (
                                             <CompactConfidence $color={conv.color}>
                                                 <CompactConfLabel>Confidence: {conv.label}</CompactConfLabel>
                                                 <CompactConfBar><CompactConfFill $w={conv.effectiveConf} $color={conv.color} /></CompactConfBar>
                                                 {confidenceChange !== 0 && (
                                                     <CompactConfChange $positive={confidenceChange > 0}>
-                                                        {confidenceChange > 0 ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
+                                                        {confidenceChange > 0 ? <ArrowUp size={11} /> : <ArrowDown size={11} />}
                                                         {Math.abs(confidenceChange).toFixed(1)}%
                                                     </CompactConfChange>
                                                 )}
@@ -2148,7 +1996,7 @@ const PredictionsPage = () => {
                                         <StockSymbol>
                                             {prediction.symbol}
                                             <WatchlistStar onClick={() => handleWatchlistToggle(prediction.symbol)}>
-                                                <Star size={20} fill={watchlist.includes(prediction.symbol?.toUpperCase()) ? '#f59e0b' : 'none'} color="#f59e0b" />
+                                                <Star size={18} fill={watchlist.includes(prediction.symbol?.toUpperCase()) ? '#f59e0b' : 'none'} color="#f59e0b" />
                                             </WatchlistStar>
                                         </StockSymbol>
                                         <CompanyName>{getAssetName(prediction.symbol)}</CompanyName>
@@ -2162,49 +2010,41 @@ const PredictionsPage = () => {
                                             </CurrentPriceValue>
                                         </CurrentPriceSection>
                                     </StockInfo>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
-                                        <DirectionBadge
-                                            $up={prediction.prediction.direction === 'UP'}
-                                            $neutral={prediction.prediction.direction === 'NEUTRAL' || conv?.conviction === 'none'}
-                                        >
-                                            {prediction.prediction.direction === 'UP' ? (
-                                                <TrendingUp size={22} />
-                                            ) : prediction.prediction.direction === 'NEUTRAL' || conv?.conviction === 'none' ? (
-                                                <AlertTriangle size={22} />
-                                            ) : (
-                                                <TrendingDown size={22} />
-                                            )}
-                                            {conv?.directionLabel || 'No Clear Direction'}
-                                        </DirectionBadge>
-                                        <SignalStrengthBadge $strength={conv?.conviction === 'high' ? 'strong' : conv?.conviction === 'moderate' ? 'moderate' : 'weak'}>
-                                            {conv?.conviction === 'high' ? (
-                                                <><Zap size={13} /> Strong Setup</>
-                                            ) : conv?.conviction === 'moderate' ? (
-                                                <><Activity size={13} /> Moderate Setup</>
-                                            ) : conv?.conviction === 'low' ? (
-                                                <><AlertTriangle size={13} /> Low Conviction</>
-                                            ) : (
-                                                <><AlertTriangle size={13} /> No Edge</>
-                                            )}
-                                        </SignalStrengthBadge>
-                                    </div>
                                 </PredictionHeader>
 
-                                {/* Action Buttons */}
-                                <ActionButtons>
-                                    <ActionButton onClick={handleSavePrediction}><BookmarkPlus size={16} /> Save</ActionButton>
-                                    <ActionButton onClick={() => setShowShareModal(true)}><Share2 size={16} /> Share</ActionButton>
-                                    <ActionButton onClick={handleExport}><Download size={16} /> Export</ActionButton>
-                                    <ActionButton onClick={() => setShowAlertModal(true)}><Bell size={16} /> Alert</ActionButton>
-                                    <ActionButton onClick={() => { setSymbol(prediction.symbol); fetchPrediction({ preventDefault: () => {} }); }}>
-                                        <RefreshCw size={16} /> Refresh
-                                    </ActionButton>
-                                </ActionButtons>
+                                {/* Section 4: Direction + Conviction + Signal Potential badges */}
+                                <BadgeRow>
+                                    <DirectionBadge
+                                        $up={prediction.prediction.direction === 'UP'}
+                                        $neutral={prediction.prediction.direction === 'NEUTRAL' || conv?.conviction === 'none'}
+                                    >
+                                        {prediction.prediction.direction === 'UP' ? (
+                                            <TrendingUp size={18} />
+                                        ) : prediction.prediction.direction === 'NEUTRAL' || conv?.conviction === 'none' ? (
+                                            <AlertTriangle size={18} />
+                                        ) : (
+                                            <TrendingDown size={18} />
+                                        )}
+                                        {conv?.directionLabel || 'No Clear Direction'}
+                                    </DirectionBadge>
+                                    {conv && (
+                                        <ConvictionBadge $color={conv.color}>
+                                            {conv.conviction === 'high' ? <Zap size={12} /> : conv.conviction === 'moderate' ? <Activity size={12} /> : <AlertTriangle size={12} />}
+                                            {conv.conviction === 'high' ? 'High Conviction' : conv.conviction === 'moderate' ? 'Moderate' : conv.conviction === 'low' ? 'Low Conviction' : 'No Edge'}
+                                        </ConvictionBadge>
+                                    )}
+                                    {conv && (
+                                        <SignalPotentialBadge $level={conv.conviction}>
+                                            <Target size={11} />
+                                            {conv.conviction === 'high' ? 'Signal Candidate' : conv.conviction === 'moderate' ? 'Watchlist' : 'Wait'}
+                                        </SignalPotentialBadge>
+                                    )}
+                                </BadgeRow>
 
                                 {/* Metrics Grid */}
                                 <MetricsGrid>
                                     <MetricCard>
-                                        <MetricIcon $variant="primary"><Target size={20} /></MetricIcon>
+                                        <MetricIcon $variant="primary"><Target size={18} /></MetricIcon>
                                         <MetricLabel>Target Price</MetricLabel>
                                         <MetricValue>
                                             {formatPredictionPrice(prediction.prediction.target_price, prediction.symbol)}
@@ -2212,7 +2052,7 @@ const PredictionsPage = () => {
                                     </MetricCard>
                                     <MetricCard>
                                         <MetricIcon $variant={prediction.prediction.direction === 'UP' ? 'success' : 'danger'}>
-                                            <Percent size={20} />
+                                            <Percent size={18} />
                                         </MetricIcon>
                                         <MetricLabel>Price Change</MetricLabel>
                                         <MetricValue $variant={prediction.prediction.direction === 'UP' ? 'success' : 'danger'}>
@@ -2220,7 +2060,7 @@ const PredictionsPage = () => {
                                         </MetricValue>
                                     </MetricCard>
                                     <MetricCard>
-                                        <MetricIcon $variant="warning"><DollarSign size={20} /></MetricIcon>
+                                        <MetricIcon $variant="warning"><DollarSign size={18} /></MetricIcon>
                                         <MetricLabel>Dollar Change</MetricLabel>
                                         <MetricValue $variant="warning">
                                             {prediction.prediction.direction === 'UP' ? '+' : ''}
@@ -2231,28 +2071,35 @@ const PredictionsPage = () => {
                                         </MetricValue>
                                     </MetricCard>
                                     <MetricCard>
-                                        <MetricIcon $variant="primary"><Award size={20} /></MetricIcon>
+                                        <MetricIcon $variant="primary"><Award size={18} /></MetricIcon>
                                         <MetricLabel>Conviction</MetricLabel>
-                                        <MetricValue style={{fontSize:'1.15rem',color:conv?.color||'#64748b'}}>{conv?.label || 'Analyzing...'}</MetricValue>
+                                        <MetricValue style={{ fontSize: '1rem', color: conv?.color || '#64748b' }}>{conv?.label || 'Analyzing...'}</MetricValue>
                                     </MetricCard>
                                 </MetricsGrid>
                                 <MetricsMicrocopy>Projection based on current data — not guaranteed outcome.</MetricsMicrocopy>
 
-                                {/* ═══ RECOMMENDATION BLOCK ═══ */}
+                                {/* Section 5: How Forecasts Connect to Signals strip */}
+                                <InfoStrip style={{ maxWidth: '100%', margin: '0 0 1.25rem 0' }}>
+                                    <Sparkles size={12} />
+                                    <span>Forecasts identify direction and conviction.</span>
+                                    Strong forecasts can become live signal setups. All outcomes are tracked publicly.
+                                </InfoStrip>
+
+                                {/* Section 6: Recommendation Block */}
                                 {conv?.recommendation && (
                                     <RecommendationBlock $color={conv.recommendation.color}>
                                         <RecommendationTitle $color={conv.recommendation.color}>
-                                            {conv.conviction === 'none' || conv.conviction === 'low' ? <AlertTriangle size={16}/> : <CheckCircle size={16}/>}
+                                            {conv.conviction === 'none' || conv.conviction === 'low' ? <AlertTriangle size={15} /> : <CheckCircle size={15} />}
                                             {conv.recommendation.title}
                                         </RecommendationTitle>
                                         <RecommendationText>{conv.recommendation.text}</RecommendationText>
                                     </RecommendationBlock>
                                 )}
 
-                                {/* AI Reasoning Section */}
+                                {/* Section 7: Why This Forecast */}
                                 {generateReasoning().length > 0 && (
                                     <ReasoningSection>
-                                        <ReasoningTitle><Brain size={18} /> Why This Forecast</ReasoningTitle>
+                                        <SectionTitle><Brain size={16} /> Why This Forecast</SectionTitle>
                                         <ReasoningGrid>
                                             {generateReasoning().map((reason, idx) => (
                                                 <ReasoningItem key={idx} $bullish={reason.bullish} $bearish={reason.bearish}>
@@ -2264,20 +2111,20 @@ const PredictionsPage = () => {
                                     </ReasoningSection>
                                 )}
 
-                                {/* Technical Indicators */}
-                                <IndicatorsSection>
-                                    <IndicatorsTitle>
-                                        <BarChart3 size={18} /> Technical Indicators
-                                    </IndicatorsTitle>
+                                {/* Section 8: Technical Summary + Indicators */}
+                                <div style={{ marginBottom: '1.25rem' }}>
+                                    <SectionTitle>
+                                        <BarChart3 size={16} /> Technical Indicators
+                                    </SectionTitle>
                                     {conv?.techSummary && (
                                         <TechSummaryLine $color={conv.color}>
                                             Technical Summary: {conv.techSummary}
                                         </TechSummaryLine>
                                     )}
                                     {renderIndicators()}
-                                </IndicatorsSection>
+                                </div>
 
-                                {/* Price Projection Chart */}
+                                {/* Section 9: Price Projection Chart */}
                                 {prediction.chartData && (() => {
                                     const minPrice = Math.min(prediction.current_price, prediction.prediction.target_price);
                                     const maxPrice = Math.max(prediction.current_price, prediction.prediction.target_price);
@@ -2287,9 +2134,9 @@ const PredictionsPage = () => {
 
                                     return (
                                         <ChartSection>
-                                            <ChartTitle><Activity size={18} /> Price Projection</ChartTitle>
+                                            <SectionTitle><Activity size={16} /> Price Projection</SectionTitle>
                                             <ChartSubtitle>Projected range — not exact path</ChartSubtitle>
-                                            <ResponsiveContainer width="100%" height={320}>
+                                            <ResponsiveContainer width="100%" height={300}>
                                                 <AreaChart data={prediction.chartData} margin={{ top: 16, right: 24, left: 8, bottom: 16 }}>
                                                     <defs>
                                                         <linearGradient id="priceGradient" x1="0" y1="0" x2="0" y2="1">
@@ -2300,7 +2147,7 @@ const PredictionsPage = () => {
                                                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
                                                     <XAxis
                                                         dataKey="day"
-                                                        tick={{ fill: '#64748b', fontSize: 11 }}
+                                                        tick={{ fill: '#64748b', fontSize: 10 }}
                                                         axisLine={{ stroke: 'rgba(255,255,255,0.06)' }}
                                                     />
                                                     <YAxis
@@ -2313,7 +2160,7 @@ const PredictionsPage = () => {
                                                     />
                                                     <Tooltip
                                                         contentStyle={{
-                                                            backgroundColor: 'rgba(12, 16, 32, 0.95)',
+                                                            backgroundColor: 'rgba(12,16,32,0.95)',
                                                             border: '1px solid rgba(255,255,255,0.1)',
                                                             borderRadius: '8px',
                                                             color: '#e0e6ed'
@@ -2352,28 +2199,41 @@ const PredictionsPage = () => {
                                     );
                                 })()}
 
-                                {/* Historical Validation Section */}
+                                {/* Section 10: Historical Validation + Market Regime */}
                                 <ValidationSection>
-                                    <ValidationTitle><Award size={18} /> Similar Forecast Performance</ValidationTitle>
-                                    <ValidationStats>
-                                        <ValidationStat>
-                                            <span>Platform Win Rate</span>
-                                            <span>{platformStats.loading ? '...' : `${platformStats.accuracy.toFixed(1)}%`}</span>
-                                        </ValidationStat>
-                                        <ValidationStat>
-                                            <span>Total Tracked</span>
-                                            <span>{platformStats.loading ? '...' : platformStats.totalPredictions.toLocaleString()}</span>
-                                        </ValidationStat>
-                                    </ValidationStats>
+                                    <SectionTitle><Award size={16} /> Similar Forecast Performance</SectionTitle>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+                                        <ValidationStats style={{ marginBottom: 0 }}>
+                                            <ValidationStat>
+                                                <span>Platform Win Rate</span>
+                                                <span>{platformStats.loading ? '...' : `${platformStats.accuracy.toFixed(1)}%`}</span>
+                                            </ValidationStat>
+                                            <ValidationStat>
+                                                <span>Total Tracked</span>
+                                                <span>{platformStats.loading ? '...' : platformStats.totalPredictions.toLocaleString()}</span>
+                                            </ValidationStat>
+                                        </ValidationStats>
+                                        {marketRegime && (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                                                <span style={{ color: '#64748b', fontSize: '0.72rem' }}>Market Regime</span>
+                                                <MarketRegimeTag $regime={marketRegime.regime}>
+                                                    {marketRegime.regime === 'volatile' ? <Activity size={11} style={{ marginRight: '0.2rem' }} /> :
+                                                     marketRegime.regime === 'trending' ? <TrendingUp size={11} style={{ marginRight: '0.2rem' }} /> :
+                                                     <ArrowRight size={11} style={{ marginRight: '0.2rem' }} />}
+                                                    {marketRegime.label}
+                                                </MarketRegimeTag>
+                                            </div>
+                                        )}
+                                    </div>
                                     <ValidationDisclaimer>
                                         Based on {platformStats.loading ? '...' : platformStats.totalPredictions.toLocaleString()} tracked forecasts. Past performance does not guarantee future results.
                                     </ValidationDisclaimer>
                                 </ValidationSection>
 
-                                {/* Action CTAs */}
-                                <CTASection>
+                                {/* Section 11: Full Action Row */}
+                                <ActionRow>
                                     <CTAButton $primary onClick={() => navigate('/signals')}>
-                                        <Target size={16} /> Track This Forecast
+                                        <Target size={14} /> Track Forecast
                                     </CTAButton>
                                     <CTAButton onClick={() => navigate('/paper-trading', {
                                         state: {
@@ -2383,25 +2243,83 @@ const PredictionsPage = () => {
                                             currentPrice: prediction.current_price
                                         }
                                     })}>
-                                        <BarChart3 size={16} /> Convert to Trade Setup
+                                        <BarChart3 size={14} /> Convert to Setup
                                     </CTAButton>
-                                </CTASection>
+                                    <ActionButton onClick={() => handleWatchlistToggle(prediction.symbol)}>
+                                        <Star size={14} fill={watchlist.includes(prediction.symbol?.toUpperCase()) ? '#f59e0b' : 'none'} color="#f59e0b" />
+                                        Watchlist
+                                    </ActionButton>
+                                    <ActionButton onClick={handleSavePrediction}><BookmarkPlus size={14} /> Save</ActionButton>
+                                    <ActionButton onClick={() => setShowAlertModal(true)}><Bell size={14} /> Alert</ActionButton>
+                                    <ActionButton onClick={() => setShowShareModal(true)}><Share2 size={14} /> Share</ActionButton>
+                                    <ActionButton onClick={handleExport}><Download size={14} /> Export</ActionButton>
+                                    <ActionButton onClick={() => { setSymbol(prediction.symbol); fetchPrediction({ preventDefault: () => {} }); }}>
+                                        <RefreshCw size={14} /> Refresh
+                                    </ActionButton>
+                                </ActionRow>
 
                                 {/* Trust Line */}
                                 <TrustLine>
                                     Every forecast is tracked publicly — win or lose. No edits. No cherry-picking.
                                 </TrustLine>
-                            </PredictionCard>
+                            </Card>
                         </ResultsContainer>
                     )}
 
-                    {/* Empty State */}
+                    {/* Section 12: Empty State */}
                     {!prediction && !loading && (
-                        <EmptyState>
-                            <EmptyIcon><BarChart3 size={48} color="#00adef" /></EmptyIcon>
-                            <EmptyTitle>Ready to Forecast</EmptyTitle>
-                            <EmptyText>Enter a stock, crypto, or DEX token symbol above to generate an AI-powered price forecast</EmptyText>
-                        </EmptyState>
+                        <EmptyStateContainer>
+                            <EmptyHero>
+                                <EmptyIcon><BarChart3 size={40} color="#00adef" /></EmptyIcon>
+                                <EmptyTitle>Run your first forecast</EmptyTitle>
+                                <EmptyText>Enter a stock, crypto, or DEX token above to generate an AI-powered price projection.</EmptyText>
+                            </EmptyHero>
+
+                            {/* Example Cards */}
+                            <ExampleCardsGrid>
+                                <ExampleCard $color="#f59e0b" onClick={() => { setSymbol('BTC'); }}>
+                                    <ExampleSymbol>BTC</ExampleSymbol>
+                                    <ExampleName>Bitcoin</ExampleName>
+                                    <ExampleMeta>
+                                        <ExampleChip $color="rgba(16,185,129,0.1)" $textColor="#10b981">Bullish</ExampleChip>
+                                        <ExampleChip $color="rgba(245,158,11,0.1)" $textColor="#f59e0b">High Vol</ExampleChip>
+                                        <ExampleChip>7-Day</ExampleChip>
+                                    </ExampleMeta>
+                                </ExampleCard>
+                                <ExampleCard $color="#8b5cf6" onClick={() => { setSymbol('ETH'); }}>
+                                    <ExampleSymbol>ETH</ExampleSymbol>
+                                    <ExampleName>Ethereum</ExampleName>
+                                    <ExampleMeta>
+                                        <ExampleChip $color="rgba(16,185,129,0.1)" $textColor="#10b981">Trending</ExampleChip>
+                                        <ExampleChip $color="rgba(0,173,239,0.1)" $textColor="#00adef">Crypto</ExampleChip>
+                                        <ExampleChip>30-Day</ExampleChip>
+                                    </ExampleMeta>
+                                </ExampleCard>
+                                <ExampleCard $color="#00adef" onClick={() => { setSymbol('NVDA'); }}>
+                                    <ExampleSymbol>NVDA</ExampleSymbol>
+                                    <ExampleName>NVIDIA Corp</ExampleName>
+                                    <ExampleMeta>
+                                        <ExampleChip $color="rgba(16,185,129,0.1)" $textColor="#10b981">Strong</ExampleChip>
+                                        <ExampleChip $color="rgba(0,173,239,0.1)" $textColor="#00adef">Stock</ExampleChip>
+                                        <ExampleChip>7-Day</ExampleChip>
+                                    </ExampleMeta>
+                                </ExampleCard>
+                            </ExampleCardsGrid>
+
+                            {/* How It Works */}
+                            <Card style={{ padding: '1rem' }}>
+                                <div style={{ textAlign: 'center', color: '#64748b', fontSize: '0.75rem', fontWeight: 600, marginBottom: '0.6rem' }}>How It Works</div>
+                                <HowItWorksStrip>
+                                    <HowStep><StepNumber>1</StepNumber> Enter symbol</HowStep>
+                                    <StepArrow><ChevronRight size={12} /></StepArrow>
+                                    <HowStep><StepNumber>2</StepNumber> AI analyzes</HowStep>
+                                    <StepArrow><ChevronRight size={12} /></StepArrow>
+                                    <HowStep><StepNumber>3</StepNumber> Conviction assessed</HowStep>
+                                    <StepArrow><ChevronRight size={12} /></StepArrow>
+                                    <HowStep><StepNumber>4</StepNumber> Track or convert</HowStep>
+                                </HowItWorksStrip>
+                            </Card>
+                        </EmptyStateContainer>
                     )}
                 </>
             )}
@@ -2411,16 +2329,16 @@ const PredictionsPage = () => {
                 <SavedPredictionsContainer>
                     {savedPredictions.length > 0 && (
                         <ClearAllButton onClick={handleClearAllSaved}>
-                            <Trash2 size={16} /> Clear All Saved
+                            <Trash2 size={14} /> Clear All Saved
                         </ClearAllButton>
                     )}
 
                     {savedPredictions.length === 0 ? (
-                        <EmptyState>
-                            <EmptyIcon><Bookmark size={48} color="#00adef" /></EmptyIcon>
+                        <EmptyHero>
+                            <EmptyIcon><Bookmark size={40} color="#00adef" /></EmptyIcon>
                             <EmptyTitle>No Saved Forecasts</EmptyTitle>
                             <EmptyText>Save forecasts to track them here</EmptyText>
-                        </EmptyState>
+                        </EmptyHero>
                     ) : (
                         <SavedPredictionsGrid>
                             {savedPredictions.map(saved => (
@@ -2428,7 +2346,7 @@ const PredictionsPage = () => {
                                     <SavedCardHeader>
                                         <SavedSymbol>{saved.symbol}</SavedSymbol>
                                         <SavedDirection $up={saved.prediction?.direction === 'UP'}>
-                                            {saved.prediction?.direction === 'UP' ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                                            {saved.prediction?.direction === 'UP' ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
                                             {saved.prediction?.direction}
                                         </SavedDirection>
                                     </SavedCardHeader>
@@ -2458,15 +2376,15 @@ const PredictionsPage = () => {
                                     </SavedCardBody>
                                     <SavedCardFooter>
                                         <SavedDate>
-                                            <Calendar size={13} />
+                                            <Calendar size={12} />
                                             {formatSavedDate(saved.savedAt || saved.timestamp)}
                                         </SavedDate>
                                         <SavedActions>
                                             <SavedActionButton onClick={() => handleViewSavedPrediction(saved)} title="View">
-                                                <Eye size={14} />
+                                                <Eye size={13} />
                                             </SavedActionButton>
                                             <SavedActionButton $danger onClick={() => handleDeleteSavedPrediction(saved.id)} title="Delete">
-                                                <Trash2 size={14} />
+                                                <Trash2 size={13} />
                                             </SavedActionButton>
                                         </SavedActions>
                                     </SavedCardFooter>
