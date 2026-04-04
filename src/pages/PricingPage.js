@@ -1255,13 +1255,12 @@ const PricingPage = () => {
             borderGradient: 'linear-gradient(135deg, #6366f1, #4f46e5, #6366f1)',
             features: [
                 { category: '📊 AI Predictions', color: '#6366f1', items: [
-                    'Limited AI forecasts (delayed)',
-                    'View prediction outcomes',
-                    'Basic confidence scoring',
+                    'View prediction outcomes (read-only)',
+                    'No forecast generation',
                 ]},
                 { category: '⚡ Trade Signals', color: '#475569', items: [
-                    'Delayed signal access (15 min)',
-                    'View signal results (no trade levels)',
+                    'Delayed signal feed (no trade levels)',
+                    'View signal results only',
                 ]},
                 { category: '🛠 Platform Tools', color: '#3b82f6', items: [
                     '$100K Paper Trading portfolio',
@@ -1284,22 +1283,22 @@ const PricingPage = () => {
             borderGradient: 'linear-gradient(135deg, #10b981, #059669, #10b981)',
             features: [
                 { category: '📊 AI Predictions', color: '#10b981', items: [
-                    { text: '5 AI price forecasts / day', highlight: true },
+                    { text: '3 AI price forecasts / month', highlight: true },
                     'Confidence scoring & direction',
                     'Prediction outcome tracking',
                 ]},
                 { category: '⚡ Trade Signals', color: '#10b981', items: [
-                    { text: 'Real-time signal access', highlight: true },
+                    { text: '5 real-time signals / day', highlight: true },
                     'Entry, stop loss & take profit levels',
-                    'Signal reasoning & analysis',
+                    'Basic signal analysis',
                 ]},
                 { category: '🛠 Platform Tools', color: '#3b82f6', items: [
-                    'Watchlist (10 stocks)',
+                    '1 watchlist (10 stocks)',
                     'Stock screener & news feed',
-                    'Trade journal',
+                    'Trade journal & sentiment',
                 ]}
             ],
-            comparison: 'Real-time signals + 5 forecasts / day',
+            comparison: '5 signals/day + 3 forecasts/month',
             cta: 'Unlock Starter'
         },
         {
@@ -1313,23 +1312,23 @@ const PricingPage = () => {
             borderGradient: 'linear-gradient(135deg, #3b82f6, #2563eb, #3b82f6)',
             features: [
                 { category: '📊 AI Predictions', color: '#3b82f6', items: [
-                    { text: '15 AI price forecasts / day', highlight: true },
+                    { text: '10 AI price forecasts / month', highlight: true },
                     { text: 'AI Chat — ask about any asset', highlight: true },
                     'Full forecast analysis & reasoning',
                 ]},
                 { category: '⚡ Trade Signals', color: '#3b82f6', items: [
-                    { text: 'All real-time trade signals', highlight: true },
-                    'Pattern scanner access',
+                    { text: '15 real-time signals / day', highlight: true },
                     'Full signal breakdown & conviction',
+                    'Swing trading tools',
                 ]},
                 { category: '🛠 Platform Tools', color: '#10b981', items: [
                     '3 watchlists (30 stocks each)',
-                    'Market heatmap & indicators',
+                    'Market heatmap & technical indicators',
                     'Real-time price alerts',
-                    'Sentiment analysis',
+                    'Stock comparison tools',
                 ]}
             ],
-            comparison: '3x more forecasts + AI chat + pattern scanner',
+            comparison: '15 signals/day + 10 forecasts/month + AI chat',
             cta: 'Upgrade to Pro'
         },
         {
@@ -1347,21 +1346,22 @@ const PricingPage = () => {
                 { category: '📊 Unlimited AI Predictions', color: '#f97316', items: [
                     { text: 'Unlimited AI price forecasts', highlight: true },
                     { text: 'Prediction accuracy analytics', highlight: true },
-                    'GPT-4 Turbo AI chat assistant',
-                    'Pattern recognition + live data',
+                    { text: 'GPT-4 Turbo AI chat assistant', highlight: true },
+                    'Prediction history & tracking',
                 ]},
-                { category: '⚡ Full Trade Signals', color: '#f97316', items: [
+                { category: '⚡ Unlimited Trade Signals', color: '#f97316', items: [
                     { text: 'Unlimited real-time trade signals', highlight: true },
                     { text: 'Full entry / SL / TP breakdown', highlight: true },
+                    { text: 'Pattern scanner & recognition', highlight: true },
                     'Live signal tracking & outcomes',
-                    'Signal-to-trade conversion tools',
+                    'Discovery page + sector analysis',
                 ]},
                 { category: '🐋 Whale Intelligence', color: '#f59e0b', items: [
                     { text: 'Whale alerts — large trades first', highlight: true, special: true },
                     'Dark pool + institutional flow',
+                    'Congressional trade alerts',
                     'Portfolio tracking & optimization',
                     'Unlimited watchlists',
-                    '24/7 priority support',
                 ]}
             ],
             comparison: 'Unlimited predictions + signals + whale intel',
