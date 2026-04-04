@@ -2281,8 +2281,7 @@ const PredictionsPage = () => {
                                     <ExampleSymbol>BTC</ExampleSymbol>
                                     <ExampleName>Bitcoin</ExampleName>
                                     <ExampleMeta>
-                                        <ExampleChip $color="rgba(16,185,129,0.1)" $textColor="#10b981">Bullish</ExampleChip>
-                                        <ExampleChip $color="rgba(245,158,11,0.1)" $textColor="#f59e0b">High Vol</ExampleChip>
+                                        <ExampleChip $color="rgba(247,147,26,0.1)" $textColor="#f7931a">Crypto</ExampleChip>
                                         <ExampleChip>7-Day</ExampleChip>
                                     </ExampleMeta>
                                 </ExampleCard>
@@ -2290,16 +2289,14 @@ const PredictionsPage = () => {
                                     <ExampleSymbol>ETH</ExampleSymbol>
                                     <ExampleName>Ethereum</ExampleName>
                                     <ExampleMeta>
-                                        <ExampleChip $color="rgba(16,185,129,0.1)" $textColor="#10b981">Trending</ExampleChip>
                                         <ExampleChip $color="rgba(0,173,239,0.1)" $textColor="#00adef">Crypto</ExampleChip>
-                                        <ExampleChip>30-Day</ExampleChip>
+                                        <ExampleChip>7-Day</ExampleChip>
                                     </ExampleMeta>
                                 </ExampleCard>
                                 <ExampleCard $color="#00adef" onClick={() => { setSymbol('NVDA'); }}>
                                     <ExampleSymbol>NVDA</ExampleSymbol>
                                     <ExampleName>NVIDIA Corp</ExampleName>
                                     <ExampleMeta>
-                                        <ExampleChip $color="rgba(16,185,129,0.1)" $textColor="#10b981">Strong</ExampleChip>
                                         <ExampleChip $color="rgba(0,173,239,0.1)" $textColor="#00adef">Stock</ExampleChip>
                                         <ExampleChip>7-Day</ExampleChip>
                                     </ExampleMeta>
