@@ -59,6 +59,18 @@ const PageContainer = styled.div`
     z-index: 1;
 `;
 
+const HeaderRow = styled.div`
+    max-width: 900px;
+    margin: 0 auto 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    animation: ${fadeIn} 0.5s ease-out;
+    @media(max-width:768px){flex-direction:column;text-align:center;}
+`;
+const HeaderLeft = styled.div``;
 const Header = styled.div`
     max-width: 900px;
     margin: 0 auto 1.5rem;
@@ -1247,6 +1259,46 @@ const ClearAllButton = styled.button`
     &:hover { background: rgba(239, 68, 68, 0.15); }
 `;
 
+// ============ NEW COMPONENTS: Conviction Engine UI ============
+const TrustStripInline = styled.div`
+    display:flex;align-items:center;gap:0.4rem;flex-wrap:wrap;
+    font-size:0.78rem;color:#64748b;
+    span { color: #e0e6ed; font-weight: 600; }
+    @media(max-width:768px){justify-content:center;}
+`;
+const TrustDivider = styled.span`color:rgba(100,116,139,.3);font-size:0.6rem;`;
+
+const CompactConfidence = styled.div`
+    display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;
+    padding:0.65rem 1rem;border-radius:8px;margin-top:0.75rem;
+    background:rgba(255,255,255,0.02);border:1px solid ${p => `${p.$color || '#64748b'}30`};
+`;
+const CompactConfLabel = styled.div`font-size:0.85rem;font-weight:700;color:#e0e6ed;white-space:nowrap;`;
+const CompactConfBar = styled.div`flex:1;min-width:80px;height:4px;background:rgba(255,255,255,0.04);border-radius:2px;overflow:hidden;`;
+const CompactConfFill = styled.div`height:100%;width:${p=>p.$w||0}%;background:${p=>p.$color||'#64748b'};border-radius:2px;transition:width 0.5s;`;
+const CompactConfChange = styled.span`
+    font-size:0.75rem;font-weight:600;display:flex;align-items:center;gap:0.15rem;
+    color:${p => p.$positive ? '#10b981' : '#ef4444'};
+`;
+
+const RecommendationBlock = styled.div`
+    padding:1rem 1.25rem;border-radius:10px;margin-bottom:1.5rem;
+    background:${p => `${p.$color || '#64748b'}08`};
+    border:1px solid ${p => `${p.$color || '#64748b'}20`};
+    border-left:3px solid ${p => p.$color || '#64748b'};
+`;
+const RecommendationTitle = styled.div`
+    font-size:0.9rem;font-weight:700;color:${p => p.$color || '#e0e6ed'};
+    display:flex;align-items:center;gap:0.4rem;margin-bottom:0.35rem;
+`;
+const RecommendationText = styled.div`font-size:0.82rem;color:#94a3b8;line-height:1.5;`;
+
+const TechSummaryLine = styled.div`
+    padding:0.5rem 0.75rem;border-radius:6px;margin-bottom:0.75rem;
+    background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);
+    font-size:0.8rem;font-weight:600;color:${p => p.$color || '#94a3b8'};
+`;
+
 // ============ MAIN COMPONENT ============
 const PredictionsPage = () => {
     const { api } = useAuth();
@@ -1686,29 +1738,84 @@ const PredictionsPage = () => {
         month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
     });
 
-    // Get confidence message
-    const getConfidenceMessage = (confidence) => {
-        const capped = Math.min(95, confidence);
-        if (capped >= 80) return { icon: CheckCircle, text: 'Very high confidence - Strong signal detected', color: '#10b981' };
-        if (capped >= 65) return { icon: CheckCircle, text: 'Good confidence - Favorable conditions', color: '#10b981' };
-        if (capped >= 50) return { icon: AlertTriangle, text: 'Moderate confidence - Mixed signals', color: '#f59e0b' };
-        return { icon: XCircle, text: 'Low confidence - Proceed with caution', color: '#ef4444' };
-    };
+    // ═══════════════════════════════════════════════════════════
+    // CONVICTION ENGINE — derives realistic confidence from actual indicators
+    // This is the single source of truth for all labels on the page
+    // ═══════════════════════════════════════════════════════════
+    const computeConviction = useCallback((pred) => {
+        if (!pred) return null;
+        const indicators = pred.indicators || {};
+        const entries = Object.entries(indicators);
+        const apiConf = Math.min(95, pred.prediction?.confidence || 50);
+        const direction = pred.prediction?.direction || 'NEUTRAL';
+        const signalStrength = pred.prediction?.signal_strength || 'weak';
 
-    // Get confidence label
-    const getConfidenceLabel = (confidence) => {
-        const capped = Math.min(95, confidence);
-        if (capped >= 70) return `High Confidence (${capped.toFixed(0)}%)`;
-        if (capped >= 50) return `Moderate Confidence (${capped.toFixed(0)}%)`;
-        return `Low Confidence (${capped.toFixed(0)}%)`;
-    };
+        // Count actual indicator signals
+        let buyCount = 0, sellCount = 0, neutralCount = 0;
+        entries.forEach(([, data]) => {
+            const sig = String(data?.signal || '').toUpperCase();
+            if (sig === 'BUY') buyCount++;
+            else if (sig === 'SELL') sellCount++;
+            else neutralCount++;
+        });
+        const total = entries.length || 1;
+        const alignedCount = direction === 'UP' ? buyCount : direction === 'DOWN' ? sellCount : 0;
+        const opposedCount = direction === 'UP' ? sellCount : direction === 'DOWN' ? buyCount : 0;
+        const alignmentRatio = alignedCount / total;
 
-    // Get direction label
-    const getDirectionLabel = (direction) => {
-        if (direction === 'UP') return 'Bullish Projection (Long Bias)';
-        if (direction === 'DOWN') return 'Bearish Projection (Short Bias)';
-        return 'No Clear Direction';
-    };
+        // Derive realistic confidence from indicator alignment
+        let effectiveConf;
+        let conviction; // 'high' | 'moderate' | 'low' | 'none'
+        let recommendation;
+        let techSummary;
+
+        if (direction === 'NEUTRAL' || (neutralCount >= total * 0.7 && alignedCount === 0)) {
+            // Mostly neutral / no direction
+            effectiveConf = Math.min(apiConf, 45);
+            conviction = 'none';
+            recommendation = { title: 'No Strong Edge Detected', text: 'Market conditions are mixed and no clear directional advantage is present. Wait for confirmation before acting.', color: '#64748b' };
+            techSummary = 'Neutral market conditions — no directional edge';
+        } else if (alignmentRatio >= 0.6 && opposedCount === 0 && signalStrength === 'strong') {
+            // Strong alignment
+            effectiveConf = Math.min(apiConf, 88);
+            conviction = 'high';
+            recommendation = { title: 'Directional Support Present', text: `Multiple indicators align for a ${direction === 'UP' ? 'bullish' : 'bearish'} move. Conditions favor this setup.`, color: '#10b981' };
+            techSummary = `${direction === 'UP' ? 'Bullish' : 'Bearish'} alignment across indicators`;
+        } else if (alignmentRatio >= 0.4 || (alignedCount >= 2 && opposedCount <= 1)) {
+            // Moderate alignment
+            effectiveConf = Math.min(apiConf, 68);
+            conviction = 'moderate';
+            recommendation = { title: 'Moderate Conviction Setup', text: `Some indicators support a ${direction === 'UP' ? 'bullish' : 'bearish'} view, but conditions are not fully aligned. Use caution.`, color: '#f59e0b' };
+            techSummary = 'Mixed signals — moderate directional lean';
+        } else {
+            // Weak / contradictory
+            effectiveConf = Math.min(apiConf, 52);
+            conviction = 'low';
+            recommendation = { title: 'Low Conviction — Wait for Confirmation', text: 'Indicators are inconclusive. No strong edge exists right now. Consider waiting for clearer conditions.', color: '#f59e0b' };
+            techSummary = 'Mixed signals, low conviction — no clear edge';
+        }
+
+        return {
+            effectiveConf,
+            conviction,
+            recommendation,
+            techSummary,
+            buyCount, sellCount, neutralCount,
+            label: conviction === 'high' ? `High Confidence (${effectiveConf.toFixed(0)}%)`
+                 : conviction === 'moderate' ? `Moderate Confidence (${effectiveConf.toFixed(0)}%)`
+                 : conviction === 'low' ? `Low Confidence (${effectiveConf.toFixed(0)}%)`
+                 : `No Strong Edge (${effectiveConf.toFixed(0)}%)`,
+            directionLabel: direction === 'UP'
+                ? (conviction === 'high' ? 'Bullish Projection (Long Bias)' : conviction === 'moderate' ? 'Lean Bullish (Moderate)' : 'Slight Bullish Lean')
+                : direction === 'DOWN'
+                ? (conviction === 'high' ? 'Bearish Projection (Short Bias)' : conviction === 'moderate' ? 'Lean Bearish (Moderate)' : 'Slight Bearish Lean')
+                : 'No Clear Direction',
+            color: conviction === 'high' ? '#10b981' : conviction === 'moderate' ? '#f59e0b' : '#64748b',
+        };
+    }, []);
+
+    // Compute conviction for current prediction
+    const conv = prediction ? computeConviction(prediction) : null;
 
     // Generate AI reasoning from indicators
     const generateReasoning = () => {
@@ -1827,7 +1934,6 @@ const PredictionsPage = () => {
     };
 
     const isUrgent = countdown.days === 0 && countdown.hours < 6;
-    const confidenceMsg = dynamicConfidence !== null ? getConfidenceMessage(Math.min(95, dynamicConfidence)) : null;
 
     return (
         <PageContainer>
@@ -1849,20 +1955,23 @@ const PredictionsPage = () => {
                 </ModalOverlay>
             )}
 
-            {/* Header */}
-            <Header>
-                <Title>AI Market Forecast Engine</Title>
-                <Subtitle>Generate data-driven price projections — fully tracked and measured in real time.</Subtitle>
-            </Header>
-
-            {/* Trust Strip */}
-            <TrustStrip>
-                <span>{platformStats.loading ? '...' : platformStats.totalPredictions.toLocaleString()}</span> forecasts tracked
-                <span style={{ margin: '0 0.25rem' }}>|</span>
-                <span>{platformStats.loading ? '...' : `${platformStats.accuracy.toFixed(1)}%`}</span> win rate
-                <span style={{ margin: '0 0.25rem' }}>|</span>
-                All outcomes recorded — no edits
-            </TrustStrip>
+            {/* ═══ ROW 1: Header + Trust Strip (compact) ═══ */}
+            <HeaderRow>
+                <HeaderLeft>
+                    <Title>AI Market Forecast Engine</Title>
+                    <Subtitle>Data-driven price projections — fully tracked and measured.</Subtitle>
+                </HeaderLeft>
+                <TrustStripInline>
+                    <span>{platformStats.loading ? '...' : platformStats.totalPredictions.toLocaleString()}</span> tracked
+                    <TrustDivider>|</TrustDivider>
+                    <span>{platformStats.loading ? '...' : `${platformStats.accuracy.toFixed(1)}%`}</span> win rate
+                    {!platformStats.loading && platformStats.accuracy > 50 && (
+                        <><TrustDivider>|</TrustDivider><EdgeBadge>Positive edge</EdgeBadge></>
+                    )}
+                    <TrustDivider>|</TrustDivider>
+                    All outcomes recorded
+                </TrustStripInline>
+            </HeaderRow>
 
             {/* Tabs */}
             <TabsContainer>
@@ -1876,16 +1985,6 @@ const PredictionsPage = () => {
                     <Clock size={16} /> History
                 </Tab>
             </TabsContainer>
-
-            {/* Stats Banner */}
-            <StatsBanner>
-                <StatItem>Forecasts Tracked: <span>{platformStats.loading ? '...' : platformStats.totalPredictions.toLocaleString()}</span></StatItem>
-                <StatItem>Win Rate: <span>{platformStats.loading ? '...' : `${platformStats.accuracy.toFixed(1)}%`}</span></StatItem>
-                <StatItem>Correct: <span>{platformStats.loading ? '...' : platformStats.correctPredictions.toLocaleString()}</span></StatItem>
-                {!platformStats.loading && platformStats.accuracy > 50 && (
-                    <EdgeBadge>Positive edge system</EdgeBadge>
-                )}
-            </StatsBanner>
 
             {/* PREDICT TAB */}
             {activeTab === 'predict' && (
@@ -2027,34 +2126,18 @@ const PredictionsPage = () => {
                                             </CountdownDisplay>
                                         </LiveStatusHeader>
 
-                                        {/* Dynamic Confidence */}
-                                        {dynamicConfidence !== null && (
-                                            <DynamicConfidenceCard $trend={confidenceTrend}>
-                                                <ConfidenceHeader>
-                                                    <ConfidenceTitle>
-                                                        <Activity size={16} />
-                                                        Live Confidence Score
-                                                    </ConfidenceTitle>
-                                                    {confidenceChange !== 0 && (
-                                                        <ConfidenceChange $positive={confidenceChange > 0}>
-                                                            {confidenceChange > 0 ? <ArrowUp size={14} /> : <ArrowDown size={14} />}
-                                                            {Math.abs(confidenceChange).toFixed(1)}%
-                                                        </ConfidenceChange>
-                                                    )}
-                                                </ConfidenceHeader>
-                                                <ConfidenceValueLarge $value={Math.min(95, dynamicConfidence)}>
-                                                    {getConfidenceLabel(dynamicConfidence)}
-                                                </ConfidenceValueLarge>
-                                                <ConfidenceBarLarge>
-                                                    <ConfidenceBarFill $value={Math.min(95, dynamicConfidence)} />
-                                                </ConfidenceBarLarge>
-                                                {confidenceMsg && (
-                                                    <ConfidenceMessage>
-                                                        <confidenceMsg.icon size={14} color={confidenceMsg.color} />
-                                                        {confidenceMsg.text}
-                                                    </ConfidenceMessage>
+                                                {/* Compact Confidence — restrained, not dominant */}
+                                        {conv && (
+                                            <CompactConfidence $color={conv.color}>
+                                                <CompactConfLabel>Confidence: {conv.label}</CompactConfLabel>
+                                                <CompactConfBar><CompactConfFill $w={conv.effectiveConf} $color={conv.color} /></CompactConfBar>
+                                                {confidenceChange !== 0 && (
+                                                    <CompactConfChange $positive={confidenceChange > 0}>
+                                                        {confidenceChange > 0 ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
+                                                        {Math.abs(confidenceChange).toFixed(1)}%
+                                                    </CompactConfChange>
                                                 )}
-                                            </DynamicConfidenceCard>
+                                            </CompactConfidence>
                                         )}
                                     </LiveStatusCard>
                                 )}
@@ -2082,28 +2165,28 @@ const PredictionsPage = () => {
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
                                         <DirectionBadge
                                             $up={prediction.prediction.direction === 'UP'}
-                                            $neutral={prediction.prediction.direction === 'NEUTRAL'}
+                                            $neutral={prediction.prediction.direction === 'NEUTRAL' || conv?.conviction === 'none'}
                                         >
                                             {prediction.prediction.direction === 'UP' ? (
                                                 <TrendingUp size={22} />
-                                            ) : prediction.prediction.direction === 'NEUTRAL' ? (
+                                            ) : prediction.prediction.direction === 'NEUTRAL' || conv?.conviction === 'none' ? (
                                                 <AlertTriangle size={22} />
                                             ) : (
                                                 <TrendingDown size={22} />
                                             )}
-                                            {getDirectionLabel(prediction.prediction.direction)}
+                                            {conv?.directionLabel || 'No Clear Direction'}
                                         </DirectionBadge>
-                                        {prediction.prediction.signal_strength && (
-                                            <SignalStrengthBadge $strength={prediction.prediction.signal_strength}>
-                                                {prediction.prediction.signal_strength === 'strong' ? (
-                                                    <><Zap size={13} /> Strong Signal</>
-                                                ) : prediction.prediction.signal_strength === 'moderate' ? (
-                                                    <><Activity size={13} /> Moderate</>
-                                                ) : (
-                                                    <><AlertTriangle size={13} /> Weak Signal</>
-                                                )}
-                                            </SignalStrengthBadge>
-                                        )}
+                                        <SignalStrengthBadge $strength={conv?.conviction === 'high' ? 'strong' : conv?.conviction === 'moderate' ? 'moderate' : 'weak'}>
+                                            {conv?.conviction === 'high' ? (
+                                                <><Zap size={13} /> Strong Setup</>
+                                            ) : conv?.conviction === 'moderate' ? (
+                                                <><Activity size={13} /> Moderate Setup</>
+                                            ) : conv?.conviction === 'low' ? (
+                                                <><AlertTriangle size={13} /> Low Conviction</>
+                                            ) : (
+                                                <><AlertTriangle size={13} /> No Edge</>
+                                            )}
+                                        </SignalStrengthBadge>
                                     </div>
                                 </PredictionHeader>
 
@@ -2149,11 +2232,22 @@ const PredictionsPage = () => {
                                     </MetricCard>
                                     <MetricCard>
                                         <MetricIcon $variant="primary"><Award size={20} /></MetricIcon>
-                                        <MetricLabel>Confidence</MetricLabel>
-                                        <MetricValue>{getConfidenceLabel(prediction.prediction.confidence)}</MetricValue>
+                                        <MetricLabel>Conviction</MetricLabel>
+                                        <MetricValue style={{fontSize:'1.15rem',color:conv?.color||'#64748b'}}>{conv?.label || 'Analyzing...'}</MetricValue>
                                     </MetricCard>
                                 </MetricsGrid>
                                 <MetricsMicrocopy>Projection based on current data — not guaranteed outcome.</MetricsMicrocopy>
+
+                                {/* ═══ RECOMMENDATION BLOCK ═══ */}
+                                {conv?.recommendation && (
+                                    <RecommendationBlock $color={conv.recommendation.color}>
+                                        <RecommendationTitle $color={conv.recommendation.color}>
+                                            {conv.conviction === 'none' || conv.conviction === 'low' ? <AlertTriangle size={16}/> : <CheckCircle size={16}/>}
+                                            {conv.recommendation.title}
+                                        </RecommendationTitle>
+                                        <RecommendationText>{conv.recommendation.text}</RecommendationText>
+                                    </RecommendationBlock>
+                                )}
 
                                 {/* AI Reasoning Section */}
                                 {generateReasoning().length > 0 && (
@@ -2175,6 +2269,11 @@ const PredictionsPage = () => {
                                     <IndicatorsTitle>
                                         <BarChart3 size={18} /> Technical Indicators
                                     </IndicatorsTitle>
+                                    {conv?.techSummary && (
+                                        <TechSummaryLine $color={conv.color}>
+                                            Technical Summary: {conv.techSummary}
+                                        </TechSummaryLine>
+                                    )}
                                     {renderIndicators()}
                                 </IndicatorsSection>
 
@@ -2348,7 +2447,7 @@ const PredictionsPage = () => {
                                         </SavedMetric>
                                         <SavedMetric>
                                             <SavedMetricLabel>Confidence</SavedMetricLabel>
-                                            <SavedMetricValue>{getConfidenceLabel(saved.prediction?.confidence || 0)}</SavedMetricValue>
+                                            <SavedMetricValue>{Math.min(95, saved.prediction?.confidence || 0).toFixed(0)}%</SavedMetricValue>
                                         </SavedMetric>
                                         <SavedMetric>
                                             <SavedMetricLabel>Entry Price</SavedMetricLabel>
