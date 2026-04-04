@@ -94,18 +94,28 @@ const LivePerformancePage = () => {
     }, []);
 
     // Fetch archived trades when requested
+    const [archivedLoading, setArchivedLoading] = useState(false);
     const loadArchived = async () => {
+        setArchivedLoading(true);
         try {
             const res = await fetch(`${API_URL}/predictions/performance/archived?limit=200`);
             const archived = await res.json();
-            if (archived.success && archived.trades) {
+            if (archived.success) {
                 setData(prev => ({
                     ...prev,
-                    archivedTrades: archived.trades,
-                    archivedStats: archived.stats
+                    archivedTrades: archived.trades || [],
+                    archivedStats: archived.stats || null,
+                    archivedLoaded: true
                 }));
+            } else {
+                setData(prev => ({ ...prev, archivedTrades: [], archivedLoaded: true }));
             }
-        } catch (e) { console.error('Failed to load archived:', e); }
+        } catch (e) {
+            console.error('Failed to load archived:', e);
+            setData(prev => ({ ...prev, archivedTrades: [], archivedLoaded: true }));
+        } finally {
+            setArchivedLoading(false);
+        }
     };
 
     if (loading) return <Page><HeaderArea><Title><Activity size={24}/> Loading...</Title></HeaderArea></Page>;
@@ -272,6 +282,10 @@ const LivePerformancePage = () => {
                             Load Archived Trades
                         </FilterBtn>
                     </Card>
+                ) : archivedLoading ? (
+                    <Card style={{textAlign:'center',padding:'2rem',color:'#64748b'}}>
+                        Loading archived trades...
+                    </Card>
                 ) : archivedTrades.length > 0 ? (
                     <Card style={{padding:0,overflow:'hidden'}}>
                         {archivedStats && (
@@ -323,8 +337,8 @@ const LivePerformancePage = () => {
                         </TableWrap>
                     </Card>
                 ) : (
-                    <Card style={{textAlign:'center',padding:'2rem',color:'#64748b'}}>
-                        Loading archived trades...
+                    <Card style={{textAlign:'center',padding:'2rem',color:'#64748b',fontSize:'.85rem'}}>
+                        No archived trades yet. Trades older than 30 days will appear here.
                     </Card>
                 )}
             </Section>
