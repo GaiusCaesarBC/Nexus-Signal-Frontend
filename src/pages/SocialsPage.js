@@ -102,7 +102,7 @@ const SocialsPage = () => {
 
                 {/* Discord */}
                 <SocialCard
-                    href="https://discord.gg/nexussignalai"
+                    href="https://discord.gg/eXqRKJXS"
                     target="_blank" rel="noopener noreferrer"
                     $bg="rgba(88,101,242,.05)" $border="rgba(88,101,242,.12)"
                     $glow="rgba(88,101,242,.12)" $hoverBorder="rgba(88,101,242,.3)"
