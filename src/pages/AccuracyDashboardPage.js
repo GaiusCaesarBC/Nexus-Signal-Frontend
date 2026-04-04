@@ -898,7 +898,7 @@ const AccuracyDashboardPage = () => {
                     </PageSubtitle>
                     <TrustStrip>
                         <TrustStripItem>
-                            <TrustStripVal>{stats.totalPredictions}</TrustStripVal> predictions tracked
+                            <TrustStripVal>{stats.totalPredictions}</TrustStripVal> of your predictions tracked
                         </TrustStripItem>
                         <TrustDivider>|</TrustDivider>
                         <TrustStripItem>100% public history</TrustStripItem>
@@ -913,9 +913,9 @@ const AccuracyDashboardPage = () => {
                 <Section>
                     <MetricsRow>
                         <MetricCard>
-                            <MetricLabel>Tracked Predictions</MetricLabel>
+                            <MetricLabel>Your Predictions</MetricLabel>
                             <MetricValue>{stats.totalPredictions}</MetricValue>
-                            <MetricSub>Verified outcomes</MetricSub>
+                            <MetricSub>Your verified outcomes</MetricSub>
                         </MetricCard>
                         <MetricCard>
                             <MetricLabel>Win Rate</MetricLabel>
@@ -945,7 +945,7 @@ const AccuracyDashboardPage = () => {
                     {isSmallSample && (
                         <SampleNotice>
                             <AlertTriangle size={14} />
-                            Early dataset — {stats.totalPredictions} predictions tracked so far. Performance will stabilize as more predictions are recorded.
+                            Early dataset — you have {stats.totalPredictions} predictions tracked so far. Your performance will stabilize as more predictions are recorded.
                         </SampleNotice>
                     )}
                 </Section>
@@ -956,7 +956,7 @@ const AccuracyDashboardPage = () => {
                         <SectionTitle><Activity size={16} /> Cumulative Performance</SectionTitle>
                         <SectionSub>
                             {hasEquityCurve
-                                ? 'Simulated equity growth based on all tracked predictions'
+                                ? 'Simulated equity growth based on your tracked predictions'
                                 : 'Accuracy trend over time (weekly)'}
                             {riskMetrics.maxDrawdown > 0 && ` · Max drawdown: -${riskMetrics.maxDrawdown.toFixed(1)}%`}
                         </SectionSub>
