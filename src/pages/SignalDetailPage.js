@@ -468,20 +468,7 @@ const SignalDetailPage = () => {
         const slPct = Math.abs((sl - entry) / entry * 100);
         const riskLevel = slPct > 5 ? 'HIGH' : slPct > 2.5 ? 'MED' : 'LOW';
 
-        // Confidence label (never say "100%")
-        const confLabel = conf >= 80 ? 'High Confidence' : conf >= 65 ? 'Moderate Confidence' : 'Low Confidence';
-
-        // Setup type
-        const setupType = long
-            ? (conf >= 75 ? 'Bullish Continuation' : 'Bullish Setup')
-            : (conf >= 75 ? 'Bearish Continuation' : 'Bearish Setup');
-
-        // AI Summary (from analysis.message or generated)
         const analysis = raw.analysis || {};
-        const aiSummary = analysis.message || (long
-            ? `${conf >= 75 ? 'Strong bullish' : 'Bullish'} momentum detected with ${riskLevel.toLowerCase()} risk profile. ${conf >= 70 ? 'Multiple indicators align for an upside move' : 'Price action suggests potential upside'} with a ${rr}:1 reward-to-risk ratio.`
-            : `${conf >= 75 ? 'Strong bearish' : 'Bearish'} pressure forming with ${riskLevel.toLowerCase()} risk profile. ${conf >= 70 ? 'Technical indicators confirm downside bias' : 'Price structure suggests potential downside'} targeting ${fmtPrice(target)}.`
-        );
 
         // Indicators
         const indicators = raw.indicators || raw.formattedIndicators || {};
@@ -596,7 +583,9 @@ const SignalDetailPage = () => {
         else if (days <= 7) tfLabel = 'Swing';
         else tfLabel = `${days}D`;
 
-        // ─── Derive intelligence from indicators ───
+        // ═══════════════════════════════════════════════════════════
+        // UNIFIED SIGNAL STATE — single source of truth for the entire page
+        // ═══════════════════════════════════════════════════════════
         let buyCount = 0, sellCount = 0, neutralCount = 0;
         indArray.forEach(ind => {
             const sig = String(ind.signal || '').toUpperCase();
@@ -606,53 +595,108 @@ const SignalDetailPage = () => {
         });
         const indTotal = indArray.length || 1;
         const alignedCount = long ? buyCount : sellCount;
+        const opposedCount = long ? sellCount : buyCount;
         const alignmentRatio = alignedCount / indTotal;
-
-        // Conviction
-        const conviction = alignmentRatio >= 0.6 && conf >= 70 ? 'strong'
-            : alignmentRatio >= 0.4 || conf >= 60 ? 'moderate'
-            : alignmentRatio > 0 ? 'low' : 'none';
-
-        // Sentiment
-        let sentimentTag = 'Mixed';
-        if (buyCount > sellCount + neutralCount) sentimentTag = 'Bullish';
-        else if (sellCount > buyCount + neutralCount) sentimentTag = 'Bearish';
-        else if (neutralCount >= indTotal * 0.7) sentimentTag = 'Neutral';
 
         // Market regime
         const volatilityLevel = analysis?.volatility || 'moderate';
         const rsiVal = rsi ? (typeof rsi.value === 'number' ? rsi.value : parseFloat(rsi.value) || 50) : 50;
-        let regime = 'Mixed Conditions';
-        if (volatilityLevel === 'high' || rsiVal > 70 || rsiVal < 30) regime = 'High Volatility';
+        let regime = 'Mixed';
+        if (volatilityLevel === 'high' || rsiVal > 70 || rsiVal < 30) regime = 'Volatile';
         else if (trend?.signal === 'BUY' || trend?.signal === 'SELL') regime = 'Trending';
-        else if (volatilityLevel === 'low') regime = 'Range-Bound';
+        else if (volatilityLevel === 'low') regime = 'Stable';
+
+        // Sentiment context (from indicator agreement)
+        let sentimentCtx = 'Mixed';
+        if (buyCount > sellCount + neutralCount) sentimentCtx = 'Bullish';
+        else if (sellCount > buyCount + neutralCount) sentimentCtx = 'Bearish';
+        else if (neutralCount >= indTotal * 0.7) sentimentCtx = 'Neutral';
+
+        // Sentiment aligned with direction?
+        const sentimentAligned = sentimentCtx === (long ? 'Bullish' : 'Bearish');
+
+        // ─── SIGNAL STRENGTH (the ONE primary verdict) ───
+        let signalStrength, strengthColor, strengthPct;
+        if (alignmentRatio >= 0.6 && opposedCount === 0 && sentimentAligned) {
+            signalStrength = 'Strong Setup';
+            strengthColor = '#10b981';
+            strengthPct = Math.min(90, Math.max(75, conf));
+        } else if (alignmentRatio >= 0.4 || (alignedCount >= 2 && opposedCount <= 1)) {
+            signalStrength = 'Moderate Setup';
+            strengthColor = '#f59e0b';
+            strengthPct = Math.min(70, Math.max(50, conf * 0.8));
+        } else if (alignedCount >= 1) {
+            signalStrength = 'Weak Setup';
+            strengthColor = '#64748b';
+            strengthPct = Math.min(50, Math.max(30, conf * 0.6));
+        } else {
+            signalStrength = 'No Strong Edge';
+            strengthColor = '#475569';
+            strengthPct = Math.min(35, conf * 0.5);
+        }
+        strengthPct = Math.round(strengthPct);
+
+        // Confirmation level (human-readable, never show raw 0%)
+        const confirmationLevel = alignmentRatio >= 0.6 ? 'Strong' : alignmentRatio >= 0.4 ? 'Moderate' : alignmentRatio > 0 ? 'Weak' : 'Mixed';
+        const confirmationColor = confirmationLevel === 'Strong' ? '#10b981' : confirmationLevel === 'Moderate' ? '#f59e0b' : '#64748b';
 
         // Supporting factors
         const factors = [];
         if (trend?.signal === (long ? 'BUY' : 'SELL')) factors.push('Trend Aligned');
-        if (vol?.value === 'High' || vol?.signal === 'BUY') factors.push('Volume Confirmation');
+        if (vol?.value === 'High' || vol?.signal === 'BUY') factors.push('Volume Support');
         if (rsiVal < 35 && long) factors.push('Oversold Bounce');
         if (rsiVal > 65 && !long) factors.push('Overbought Rejection');
-        if (alignmentRatio >= 0.6) factors.push('Multi-Indicator Alignment');
-        if (conf >= 75) factors.push('High AI Conviction');
-        if (parseFloat(rr) >= 2.5) factors.push('Strong R:R Ratio');
-        if (factors.length === 0) factors.push('AI Pattern Detection');
+        if (alignmentRatio >= 0.6) factors.push('Multi-Indicator');
+        if (parseFloat(rr) >= 2.5) factors.push('Strong R:R');
+        if (sentimentAligned) factors.push('Sentiment Aligned');
+        if (factors.length === 0) factors.push('AI Pattern');
 
-        // Signal quality breakdown (4 dimensions)
-        const qualityBreakdown = {
-            conviction: conviction === 'strong' ? 90 : conviction === 'moderate' ? 60 : 35,
-            sentimentAlign: sentimentTag === (long ? 'Bullish' : 'Bearish') ? 85 : sentimentTag === 'Mixed' ? 50 : 25,
-            technicalAlign: Math.round(alignmentRatio * 100),
-            regimeFit: regime === 'Trending' ? 80 : regime === 'High Volatility' ? 55 : regime === 'Range-Bound' ? 40 : 50,
+        // Direction label (driven by signal strength, not raw confidence)
+        const dirWord = long ? 'Bullish' : 'Bearish';
+        const setupType = signalStrength === 'Strong Setup'
+            ? `${dirWord} Continuation`
+            : signalStrength === 'Moderate Setup'
+            ? `${dirWord} Setup — Moderate`
+            : `${dirWord} Lean — Low Conviction`;
+
+        // AI Summary (MUST match signal strength — the whole page tells one story)
+        const aiSummary = analysis.message || (
+            signalStrength === 'Strong Setup'
+                ? `${dirWord} setup supported by ${confirmationLevel.toLowerCase()} indicator confirmation, ${sentimentCtx.toLowerCase()} sentiment, and ${regime.toLowerCase()} market conditions. Risk/reward of 1:${rr} favors entry.`
+                : signalStrength === 'Moderate Setup'
+                ? `${dirWord} bias present with ${confirmationLevel.toLowerCase()} confirmation. ${sentimentCtx === 'Mixed' || sentimentCtx === 'Neutral' ? 'Sentiment is neutral, reducing conviction.' : `${sentimentCtx} sentiment provides some support.`} Trade with appropriate sizing.`
+                : `${dirWord} lean detected but confirmation is limited. ${sentimentCtx === 'Mixed' || sentimentCtx === 'Neutral' ? 'Neutral sentiment and mixed conditions reduce conviction.' : 'Conditions are not fully aligned.'} Consider waiting for stronger confirmation.`
+        );
+
+        // Recommendation (driven by signal strength)
+        let recommendation;
+        if (signalStrength === 'Strong Setup') {
+            recommendation = { title: 'Actionable Setup', text: 'Conditions support entry. Trade with normal position sizing.', color: '#10b981' };
+        } else if (signalStrength === 'Moderate Setup') {
+            recommendation = { title: 'Trade with Caution', text: 'Setup has merit but confirmation is limited. Consider reduced position size.', color: '#f59e0b' };
+        } else if (signalStrength === 'Weak Setup') {
+            recommendation = { title: 'Low Conviction — Wait', text: 'Weak confirmation increases false signal probability. Wait for stronger conditions or skip.', color: '#64748b' };
+        } else {
+            recommendation = { title: 'No Strong Edge', text: 'Indicators do not support a clear directional trade. Pass on this setup.', color: '#475569' };
+        }
+
+        // Quality breakdown (3 dimensions, human-readable labels, no raw 0%)
+        const quality = {
+            technical: { label: confirmationLevel, pct: Math.max(20, Math.round(alignmentRatio * 100)) },
+            sentiment: { label: sentimentAligned ? 'Supportive' : sentimentCtx === 'Neutral' ? 'Neutral' : 'Conflicting', pct: sentimentAligned ? 80 : sentimentCtx === 'Neutral' || sentimentCtx === 'Mixed' ? 45 : 20 },
+            market: { label: regime === 'Trending' ? 'Favorable' : regime === 'Volatile' ? 'Uncertain' : regime === 'Stable' ? 'Neutral' : 'Mixed', pct: regime === 'Trending' ? 75 : regime === 'Stable' ? 50 : regime === 'Volatile' ? 40 : 45 },
         };
 
         return {
             id: raw._id, symbol: sym, fullSymbol: raw.symbol, crypto, long, conf, status,
             entry, target, currentPrice, sl, tp1, tp2, tp3, rr, riskLevel,
-            movePct, isWin, resultText, tfLabel, days, confLabel, setupType, aiSummary,
+            movePct, isWin, resultText, tfLabel, days,
+            // Unified signal state
+            signalStrength, strengthColor, strengthPct, setupType, aiSummary,
+            sentimentCtx, regime, confirmationLevel, confirmationColor,
+            factors, quality, recommendation,
+            // Raw data for detail sections
             indArray, analysis, whyReasons, risks, distToTP, distToSL,
-            conviction, sentimentTag, regime, factors, qualityBreakdown,
-            buyCount, sellCount, neutralCount,
             createdAt: raw.createdAt, expiresAt: raw.expiresAt,
             viewCount: raw.viewCount || 0,
         };
@@ -714,11 +758,11 @@ const SignalDetailPage = () => {
                                     {s.long ? 'LONG' : 'SHORT'}
                                 </DirBadge>
                             </SymbolRow>
-                            <SetupLabel>{s.confLabel} Setup — {s.setupType}</SetupLabel>
+                            <SetupLabel style={{color: s.strengthColor}}>{s.signalStrength} — {s.setupType}</SetupLabel>
                             <AISummary>{s.aiSummary}</AISummary>
                         </HeaderLeft>
                         <HeaderRight>
-                            <ConfBig $val={s.conf}>{s.conf}%</ConfBig>
+                            <ConfBig $val={s.strengthPct} style={{color: s.strengthColor}}>{s.strengthPct}%</ConfBig>
                             <ConfLabel>AI Confidence</ConfLabel>
                         </HeaderRight>
                     </HeaderTop>
@@ -883,67 +927,66 @@ const SignalDetailPage = () => {
                     </Card>
                 )}
 
-                {/* ═══ SENTIMENT & MARKET CONTEXT ═══ */}
+                {/* ═══ SIGNAL INTELLIGENCE ═══ */}
                 <IntelSection>
                     <IntelTitle><Eye size={15}/> Signal Intelligence</IntelTitle>
                     <IntelGrid>
                         <IntelCell>
-                            <IntelLabel>Conviction</IntelLabel>
-                            <IntelValue $c={s.conviction === 'strong' ? '#10b981' : s.conviction === 'moderate' ? '#f59e0b' : '#64748b'}>
-                                {s.conviction === 'strong' ? 'Strong' : s.conviction === 'moderate' ? 'Moderate' : s.conviction === 'low' ? 'Low' : 'None'}
-                            </IntelValue>
-                            <IntelSub>{s.buyCount}B / {s.sellCount}S / {s.neutralCount}N</IntelSub>
+                            <IntelLabel>Signal Strength</IntelLabel>
+                            <IntelValue $c={s.strengthColor}>{s.signalStrength.replace(' Setup', '').replace('No Strong ', 'No ')}</IntelValue>
+                            <IntelSub>{s.strengthPct}% conviction</IntelSub>
                         </IntelCell>
                         <IntelCell>
-                            <IntelLabel>Sentiment</IntelLabel>
-                            <IntelValue $c={s.sentimentTag === 'Bullish' ? '#10b981' : s.sentimentTag === 'Bearish' ? '#ef4444' : '#f59e0b'}>
-                                {s.sentimentTag}
+                            <IntelLabel>Sentiment Context</IntelLabel>
+                            <IntelValue $c={s.sentimentCtx === 'Bullish' ? '#10b981' : s.sentimentCtx === 'Bearish' ? '#ef4444' : '#f59e0b'}>
+                                {s.sentimentCtx}
                             </IntelValue>
-                            <IntelSub>{s.sentimentTag === (s.long ? 'Bullish' : 'Bearish') ? 'Aligned' : 'Mixed'}</IntelSub>
+                            <IntelSub>{s.sentimentCtx === (s.long ? 'Bullish' : 'Bearish') ? 'Aligned with direction' : 'Not fully aligned'}</IntelSub>
                         </IntelCell>
                         <IntelCell>
-                            <IntelLabel>Market Regime</IntelLabel>
+                            <IntelLabel>Market Conditions</IntelLabel>
                             <IntelValue $c="#a78bfa">{s.regime}</IntelValue>
-                            <IntelSub>{s.regime === 'Trending' ? 'Favorable' : s.regime === 'High Volatility' ? 'Caution' : 'Neutral'}</IntelSub>
+                            <IntelSub>{s.quality.market.label}</IntelSub>
                         </IntelCell>
                         <IntelCell>
-                            <IntelLabel>Alignment</IntelLabel>
-                            <IntelValue $c={s.qualityBreakdown.technicalAlign >= 60 ? '#10b981' : '#f59e0b'}>
-                                {s.qualityBreakdown.technicalAlign}%
-                            </IntelValue>
+                            <IntelLabel>Confirmation</IntelLabel>
+                            <IntelValue $c={s.confirmationColor}>{s.confirmationLevel}</IntelValue>
                             <IntelSub>Indicator agreement</IntelSub>
                         </IntelCell>
                     </IntelGrid>
 
-                    {/* Supporting factors */}
                     <FactorChips>
                         {s.factors.map((f, i) => <FactorChip key={i}>{f}</FactorChip>)}
                     </FactorChips>
                 </IntelSection>
 
-                {/* ═══ SIGNAL QUALITY BREAKDOWN ═══ */}
-                <Card $d=".32s">
-                    <CardTitle><Target size={15} color="#00adef"/> Signal Quality</CardTitle>
+                {/* ═══ RECOMMENDATION ═══ */}
+                <Card $d=".32s" style={{borderLeft: `3px solid ${s.recommendation.color}`, background: `${s.recommendation.color}08`}}>
+                    <div style={{display:'flex',alignItems:'center',gap:'.4rem',marginBottom:'.35rem'}}>
+                        {s.recommendation.color === '#10b981' ? <CheckCircle size={15} color={s.recommendation.color}/> : <AlertTriangle size={15} color={s.recommendation.color}/>}
+                        <span style={{fontSize:'.88rem',fontWeight:700,color:s.recommendation.color}}>{s.recommendation.title}</span>
+                    </div>
+                    <div style={{fontSize:'.82rem',color:'#94a3b8',lineHeight:1.5}}>{s.recommendation.text}</div>
+                </Card>
+
+                {/* ═══ QUALITY BREAKDOWN ═══ */}
+                <Card $d=".35s">
+                    <CardTitle><Target size={15} color="#00adef"/> Quality Breakdown</CardTitle>
                     <QualityRow>
                         <QualityCell>
-                            <QualityLabel>Conviction</QualityLabel>
-                            <QualityBar><QualityFill $w={s.qualityBreakdown.conviction}/></QualityBar>
-                            <QualityValue $w={s.qualityBreakdown.conviction}>{s.qualityBreakdown.conviction}%</QualityValue>
+                            <QualityLabel>Technical Strength</QualityLabel>
+                            <QualityBar><QualityFill $w={s.quality.technical.pct}/></QualityBar>
+                            <QualityValue $w={s.quality.technical.pct}>{s.quality.technical.label}</QualityValue>
                         </QualityCell>
                         <QualityCell>
-                            <QualityLabel>Sentiment Fit</QualityLabel>
-                            <QualityBar><QualityFill $w={s.qualityBreakdown.sentimentAlign}/></QualityBar>
-                            <QualityValue $w={s.qualityBreakdown.sentimentAlign}>{s.qualityBreakdown.sentimentAlign}%</QualityValue>
+                            <QualityLabel>Sentiment Support</QualityLabel>
+                            <QualityBar><QualityFill $w={s.quality.sentiment.pct}/></QualityBar>
+                            <QualityValue $w={s.quality.sentiment.pct}>{s.quality.sentiment.label}</QualityValue>
                         </QualityCell>
                         <QualityCell>
-                            <QualityLabel>Technical</QualityLabel>
-                            <QualityBar><QualityFill $w={s.qualityBreakdown.technicalAlign}/></QualityBar>
-                            <QualityValue $w={s.qualityBreakdown.technicalAlign}>{s.qualityBreakdown.technicalAlign}%</QualityValue>
-                        </QualityCell>
-                        <QualityCell>
-                            <QualityLabel>Regime Fit</QualityLabel>
-                            <QualityBar><QualityFill $w={s.qualityBreakdown.regimeFit}/></QualityBar>
-                            <QualityValue $w={s.qualityBreakdown.regimeFit}>{s.qualityBreakdown.regimeFit}%</QualityValue>
+                            <QualityLabel>Market Clarity</QualityLabel>
+                            <QualityBar><QualityFill $w={s.quality.market.pct}/></QualityBar>
+                            <QualityValue $w={s.quality.market.pct}>{s.quality.market.label}</QualityValue>
                         </QualityCell>
                     </QualityRow>
                 </Card>
