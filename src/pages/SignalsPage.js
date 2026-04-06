@@ -568,12 +568,11 @@ function buildSignal(raw, index, totalCount) {
     // Trade number (reverse from total for display)
     const tradeNum = totalCount - index;
 
-    // ─── Derive intelligence from indicators ───
+    // ─── UNIFIED SIGNAL STATE (same logic as Signal Detail page) ───
     const indicators = raw.indicators || {};
     const analysis = raw.analysis || {};
     const indEntries = Object.entries(indicators);
 
-    // Count indicator alignment
     let buyCount = 0, sellCount = 0, neutralCount = 0;
     indEntries.forEach(([, data]) => {
         const sig = String(data?.signal || '').toUpperCase();
@@ -583,49 +582,59 @@ function buildSignal(raw, index, totalCount) {
     });
     const total = indEntries.length || 1;
     const alignedCount = long ? buyCount : sellCount;
+    const opposedCount = long ? sellCount : buyCount;
     const alignmentRatio = alignedCount / total;
 
-    // Conviction tier (derived from actual indicators, not raw confidence)
-    const conviction = alignmentRatio >= 0.6 && conf >= 70 ? 'strong'
-        : alignmentRatio >= 0.4 || conf >= 60 ? 'moderate'
-        : alignmentRatio > 0 ? 'low' : 'none';
-
-    // Sentiment from analysis or indicators
     const volIndicator = indicators['Volume'] || indicators['volume'];
     const trendIndicator = indicators['Trend'] || indicators['trend'];
     const rsiIndicator = indicators['RSI'] || indicators['rsi'];
     const volatility = analysis?.volatility || 'moderate';
 
-    // Sentiment tag
+    // Sentiment context
     let sentimentTag = 'Mixed';
     if (buyCount > sellCount + neutralCount) sentimentTag = 'Bullish';
     else if (sellCount > buyCount + neutralCount) sentimentTag = 'Bearish';
     else if (neutralCount >= total * 0.7) sentimentTag = 'Neutral';
+    const sentimentAligned = sentimentTag === (long ? 'Bullish' : 'Bearish');
 
     // Market regime
     let regime = 'Mixed';
     if (volatility === 'high' || (rsiIndicator?.value > 70 || rsiIndicator?.value < 30)) regime = 'Volatile';
     else if (trendIndicator?.signal === 'BUY' || trendIndicator?.signal === 'SELL') regime = 'Trending';
-    else if (volatility === 'low') regime = 'Range-Bound';
+    else if (volatility === 'low') regime = 'Stable';
 
-    // Supporting factors (compact chips)
+    // SIGNAL STRENGTH — same logic as Detail page
+    let signalStrength, strengthColor, strengthPct;
+    if (alignmentRatio >= 0.6 && opposedCount === 0 && sentimentAligned) {
+        signalStrength = 'Strong Setup'; strengthColor = '#10b981';
+        strengthPct = Math.min(90, Math.max(75, conf));
+    } else if (alignmentRatio >= 0.4 || (alignedCount >= 2 && opposedCount <= 1)) {
+        signalStrength = 'Moderate Setup'; strengthColor = '#f59e0b';
+        strengthPct = Math.min(70, Math.max(50, Math.round(conf * 0.8)));
+    } else if (alignedCount >= 1) {
+        signalStrength = 'Weak Setup'; strengthColor = '#64748b';
+        strengthPct = Math.min(50, Math.max(30, Math.round(conf * 0.6)));
+    } else {
+        signalStrength = 'No Edge'; strengthColor = '#475569';
+        strengthPct = Math.min(35, Math.round(conf * 0.5));
+    }
+
+    // Supporting factors
     const factors = [];
     if (trendIndicator?.signal === (long ? 'BUY' : 'SELL')) factors.push('Trend Aligned');
-    if (volIndicator?.value === 'High' || volIndicator?.signal === 'BUY') factors.push('Volume Confirm');
-    if (rsiIndicator?.value < 35 && long) factors.push('Oversold Bounce');
-    if (rsiIndicator?.value > 65 && !long) factors.push('Overbought Rejection');
+    if (volIndicator?.value === 'High' || volIndicator?.signal === 'BUY') factors.push('Volume');
+    if (sentimentAligned) factors.push('Sentiment');
     if (alignmentRatio >= 0.6) factors.push('Multi-Indicator');
-    if (conf >= 75) factors.push('High Conviction');
     if (factors.length === 0) factors.push('AI Pattern');
 
-    // AI reason (richer than before)
+    // AI reason (driven by signal strength, not raw confidence)
     const dirWord = long ? 'Bullish' : 'Bearish';
     const reasoning = analysis.message || (
-        conviction === 'strong'
-            ? `${dirWord} continuation with ${sentimentTag.toLowerCase()} sentiment and ${factors[0]?.toLowerCase() || 'multiple indicators aligned'}.`
-            : conviction === 'moderate'
-            ? `${dirWord} setup with ${sentimentTag.toLowerCase()} conditions. ${regime} market regime.`
-            : `${dirWord} lean detected — mixed signals, ${sentimentTag.toLowerCase()} sentiment.`
+        signalStrength === 'Strong Setup'
+            ? `${dirWord} continuation with ${sentimentTag.toLowerCase()} sentiment and strong confirmation.`
+            : signalStrength === 'Moderate Setup'
+            ? `${dirWord} setup — ${sentimentTag.toLowerCase()} conditions, ${regime.toLowerCase()} market.`
+            : `${dirWord} lean — limited confirmation, ${sentimentTag.toLowerCase()} sentiment.`
     );
 
     // Proximity
@@ -648,7 +657,7 @@ function buildSignal(raw, index, totalCount) {
         entry, target, currentPrice, sl, tp1, tp2, tp3, rr, riskLevel,
         movePct, tradeScore, tradeNum, reasoning, prox, urgency,
         isWin, resultText, days,
-        conviction, sentimentTag, regime, factors,
+        signalStrength, strengthColor, strengthPct, sentimentTag, regime, factors,
         createdAt: raw.createdAt, expiresAt: raw.expiresAt, resultAt: raw.resultAt,
     };
 }
@@ -918,7 +927,7 @@ const SignalsPage = () => {
                                                 </FeaturedMeta>
                                             </FeaturedLeft>
                                             <FeaturedRight>
-                                                <FeaturedConfidence>{featured.conf}%</FeaturedConfidence>
+                                                <FeaturedConfidence style={{color: featured.strengthColor}}>{featured.strengthPct}%</FeaturedConfidence>
                                                 <FeaturedConfLabel>AI Confidence</FeaturedConfLabel>
                                             </FeaturedRight>
                                         </FeaturedTop>
@@ -950,8 +959,8 @@ const SignalsPage = () => {
 
                                         {/* Intelligence tags */}
                                         <IntelRow style={{marginBottom:'.5rem'}}>
-                                            <ConvictionTag $level={featured.conviction}>
-                                                {featured.conviction === 'strong' ? 'Strong Setup' : featured.conviction === 'moderate' ? 'Moderate Setup' : 'Low Conviction'}
+                                            <ConvictionTag $level={featured.signalStrength === 'Strong Setup' ? 'strong' : featured.signalStrength === 'Moderate Setup' ? 'moderate' : 'low'}>
+                                                {featured.signalStrength}
                                             </ConvictionTag>
                                             <SentimentTag $sentiment={featured.sentimentTag}>{featured.sentimentTag}</SentimentTag>
                                             <IntelTag $bg="rgba(139,92,246,.08)" $c="#a78bfa" $bc="rgba(139,92,246,.15)">{featured.regime}</IntelTag>
@@ -1169,7 +1178,7 @@ const SignalCard = ({ s, i, navigate, setCopyModal, isPremium }) => {
                         <RiskBadge $r={s.riskLevel}>{s.riskLevel}</RiskBadge>
                     </CardSymbolGroup>
                     <CardRightGroup>
-                        <CardConfidence $val={s.conf}>{s.conf}%</CardConfidence>
+                        <CardConfidence $val={s.strengthPct} style={{color: s.strengthColor}}>{s.strengthPct}%</CardConfidence>
                         {s.status === 'closed' ? (
                             <CardStatus $type={s.isWin ? 'win' : 'loss'}>
                                 {s.isWin ? 'WIN' : 'LOSS'}
@@ -1187,8 +1196,8 @@ const SignalCard = ({ s, i, navigate, setCopyModal, isPremium }) => {
                 {s.status !== 'closed' && (
                     <>
                         <IntelRow>
-                            <ConvictionTag $level={s.conviction}>
-                                {s.conviction === 'strong' ? 'Strong Setup' : s.conviction === 'moderate' ? 'Moderate Setup' : s.conviction === 'low' ? 'Low Conviction' : 'No Edge'}
+                            <ConvictionTag $level={s.signalStrength === 'Strong Setup' ? 'strong' : s.signalStrength === 'Moderate Setup' ? 'moderate' : 'low'}>
+                                {s.signalStrength}
                             </ConvictionTag>
                             <SentimentTag $sentiment={s.sentimentTag}>{s.sentimentTag}</SentimentTag>
                             <IntelTag $bg="rgba(139,92,246,.08)" $c="#a78bfa" $bc="rgba(139,92,246,.15)">{s.regime}</IntelTag>
