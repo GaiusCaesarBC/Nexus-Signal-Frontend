@@ -1382,6 +1382,7 @@ const Navbar = () => {
             { path: '/performance', label: 'Performance', icon: Activity },
         ],
         analysis: [
+            { path: '/opportunities', label: 'Opportunity Engine', icon: Sparkles },
             { path: '/screener', label: 'Screener', icon: Filter },
             { path: '/pattern-scanner', label: 'Pattern Scanner', icon: Layers },
             { path: '/swing-trading', label: 'Swing Trading', icon: Activity },

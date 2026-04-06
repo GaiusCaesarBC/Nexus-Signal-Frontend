@@ -60,6 +60,7 @@ const StockPage = lazy(() => import('./pages/StockPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const CookiePolicyPage = lazy(() => import('./pages/CookiePolicyPage'));
 const ScreenerPage = lazy(() => import('./pages/ScreenerPage'));
+const OpportunityEnginePage = lazy(() => import('./pages/OpportunityEnginePage'));
 const NewsPage = lazy(() => import('./pages/NewsPage'));
 const HeatmapPage = lazy(() => import('./pages/HeatmapPage'));
 const JournalPage = lazy(() => import('./pages/JournalPage'));
@@ -171,6 +172,7 @@ function AppContent() {
                     <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
                     <Route path="/account" element={<ProtectedRoute><AccountSettingsPage /></ProtectedRoute>} />
                     <Route path="/screener" element={<ProtectedRoute><ScreenerPage /></ProtectedRoute>} />
+                    <Route path="/opportunities" element={<ProtectedRoute><OpportunityEnginePage /></ProtectedRoute>} />
                     <Route path="/news" element={<ProtectedRoute><NewsPage /></ProtectedRoute>} />
                     <Route path="/heatmap" element={<ProtectedRoute><HeatmapPage /></ProtectedRoute>} />
                     <Route path="/journal" element={<ProtectedRoute><JournalPage /></ProtectedRoute>} />
