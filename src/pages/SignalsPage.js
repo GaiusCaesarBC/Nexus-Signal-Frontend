@@ -764,6 +764,8 @@ const SignalsPage = () => {
         switch(filter) {
             case 'high': return feedSignals.filter(s => s.conf >= 80);
             case 'active': return feedSignals;
+            case 'long': return feedSignals.filter(s => s.long);
+            case 'short': return feedSignals.filter(s => !s.long);
             case 'closed': return recentClosed;
             case 'archive': return archivedClosed;
             default: return [...feedSignals, ...recentClosed];
@@ -783,6 +785,8 @@ const SignalsPage = () => {
         all: feedSignals.length + recentClosed.length,
         active: feedSignals.length,
         high: feedSignals.filter(s => s.conf >= 80).length,
+        long: feedSignals.filter(s => s.long).length,
+        short: feedSignals.filter(s => !s.long).length,
         closed: recentClosed.length,
         archive: archivedClosed.length,
     };
@@ -893,6 +897,8 @@ const SignalsPage = () => {
                         {[
                             { key: 'all', label: 'All Signals' },
                             { key: 'high', label: 'High Confidence' },
+                            { key: 'long', label: 'Long' },
+                            { key: 'short', label: 'Short' },
                             { key: 'active', label: 'Active' },
                             { key: 'closed', label: 'Recently Closed' },
                             { key: 'archive', label: 'Archive' },
