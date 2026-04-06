@@ -219,15 +219,26 @@ const LivePerformancePage = () => {
                                 {filtered.slice(0, visibleCount).map((t, i) => {
                                     const isLong = t.direction === 'UP';
                                     const isWin = t.result === 'win';
-                                    const isOpen = t.status === 'pending';
+                                    const isOpen = t.status === 'pending' || !t.result;
                                     const sym = t.symbol?.split(':')[0]?.replace(/USDT|USD/i, '') || t.symbol;
+
+                                    // Use correct price: livePrice for open, resultPrice for closed
+                                    const displayPrice = isOpen
+                                        ? (t.livePrice || t.currentPrice || t.entryPrice)
+                                        : (t.resultPrice || t.exitPrice || t.currentPrice || t.entryPrice);
+
+                                    // Use backend's changePct, or calculate if missing
+                                    const pctChange = t.changePct ?? (t.entryPrice > 0
+                                        ? ((displayPrice - t.entryPrice) / t.entryPrice * 100).toFixed(2)
+                                        : 0);
+
                                     return (
                                         <Tr key={t._id || i} onClick={() => navigate(`/signal/${t._id}`)}>
                                             <Td style={{fontWeight:700}}>{sym} <span style={{fontSize:'.6rem',color:'#475569'}}>{t.assetType}</span></Td>
                                             <Td><DirBadge $long={isLong}>{isLong ? '\u2191 LONG' : '\u2193 SHORT'}</DirBadge></Td>
                                             <Td>{fmtPrice(t.entryPrice)}</Td>
-                                            <Td>{fmtPrice(t.currentPrice)}</Td>
-                                            <Td><PctText $pos={t.changePct >= 0}>{t.changePct >= 0 ? '+' : ''}{t.changePct}%</PctText></Td>
+                                            <Td>{fmtPrice(displayPrice)}</Td>
+                                            <Td><PctText $pos={pctChange >= 0}>{pctChange >= 0 ? '+' : ''}{pctChange}%</PctText></Td>
                                             <Td>
                                                 {isOpen ? <Badge $bg="rgba(245,158,11,.1)" $c="#f59e0b" $bc="rgba(245,158,11,.2)">OPEN</Badge>
                                                     : isWin ? <Badge $bg="rgba(16,185,129,.1)" $c="#10b981" $bc="rgba(16,185,129,.2)">{t.resultText}</Badge>
@@ -292,13 +303,17 @@ const LivePerformancePage = () => {
                                         const isLong = t.direction === 'UP';
                                         const isWin = t.result === 'win';
                                         const sym = t.symbol?.split(':')[0]?.replace(/USDT|USD/i, '') || t.symbol;
+                                        const exitPrice = t.resultPrice || t.exitPrice || t.currentPrice || t.entryPrice;
+                                        const pctChange = t.changePct ?? (t.entryPrice > 0
+                                            ? ((exitPrice - t.entryPrice) / t.entryPrice * 100).toFixed(2)
+                                            : 0);
                                         return (
                                             <Tr key={t._id || i} onClick={() => navigate(`/signal/${t._id}`)}>
                                                 <Td style={{fontWeight:700}}>{sym}</Td>
                                                 <Td><DirBadge $long={isLong}>{isLong ? '\u2191' : '\u2193'}</DirBadge></Td>
                                                 <Td>{fmtPrice(t.entryPrice)}</Td>
-                                                <Td>{fmtPrice(t.exitPrice || t.currentPrice)}</Td>
-                                                <Td><PctText $pos={t.changePct >= 0}>{t.changePct >= 0 ? '+' : ''}{t.changePct}%</PctText></Td>
+                                                <Td>{fmtPrice(exitPrice)}</Td>
+                                                <Td><PctText $pos={pctChange >= 0}>{pctChange >= 0 ? '+' : ''}{pctChange}%</PctText></Td>
                                                 <Td>
                                                     {isWin ? <Badge $bg="rgba(16,185,129,.1)" $c="#10b981">{t.resultText}</Badge>
                                                         : <Badge $bg="rgba(239,68,68,.08)" $c="#ef4444">{t.resultText}</Badge>}
