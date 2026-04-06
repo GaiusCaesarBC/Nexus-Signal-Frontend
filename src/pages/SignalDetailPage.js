@@ -334,6 +334,35 @@ const ComingSoonBadge = styled.span`
     border:1px solid rgba(245,158,11,.2);padding:1px 6px;border-radius:4px;
 `;
 
+// Intelligence & Sentiment
+const IntelSection = styled.div`
+    background:rgba(12,16,32,.92);border:1px solid rgba(139,92,246,.12);
+    border-radius:16px;padding:1.25rem;margin-bottom:1.25rem;
+`;
+const IntelTitle = styled.h2`font-size:.88rem;font-weight:700;color:#a78bfa;display:flex;align-items:center;gap:.4rem;margin:0 0 .75rem;`;
+const IntelGrid = styled.div`display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;@media(max-width:600px){grid-template-columns:repeat(2,1fr);}`;
+const IntelCell = styled.div`padding:.6rem;border-radius:8px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.04);text-align:center;`;
+const IntelLabel = styled.div`font-size:.55rem;color:#475569;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.2rem;`;
+const IntelValue = styled.div`font-size:.95rem;font-weight:700;color:${p => p.$c || '#e0e6ed'};`;
+const IntelSub = styled.div`font-size:.58rem;color:#475569;margin-top:.1rem;`;
+const IntelTag = styled.span`
+    display:inline-flex;align-items:center;gap:.2rem;
+    padding:.15rem .45rem;border-radius:4px;font-size:.6rem;font-weight:700;
+    background:${p => p.$bg || 'rgba(100,116,139,.08)'};
+    color:${p => p.$c || '#94a3b8'};
+`;
+const FactorChips = styled.div`display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.5rem;`;
+const FactorChip = styled.span`
+    padding:.15rem .45rem;border-radius:4px;font-size:.6rem;font-weight:600;
+    background:rgba(0,173,237,.06);color:#0ea5e9;border:1px solid rgba(0,173,237,.12);
+`;
+const QualityRow = styled.div`display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;@media(max-width:500px){grid-template-columns:repeat(2,1fr);}`;
+const QualityCell = styled.div`text-align:center;`;
+const QualityLabel = styled.div`font-size:.55rem;color:#475569;text-transform:uppercase;letter-spacing:.3px;margin-bottom:.3rem;`;
+const QualityBar = styled.div`width:100%;height:4px;background:rgba(255,255,255,.04);border-radius:2px;overflow:hidden;`;
+const QualityFill = styled.div`height:100%;width:${p => p.$w || 0}%;border-radius:2px;background:${p => p.$w >= 70 ? '#10b981' : p.$w >= 45 ? '#f59e0b' : '#64748b'};`;
+const QualityValue = styled.div`font-size:.7rem;font-weight:700;color:${p => p.$w >= 70 ? '#10b981' : p.$w >= 45 ? '#f59e0b' : '#64748b'};margin-top:.15rem;`;
+
 const Loading = styled.div`text-align:center;padding:4rem;color:#475569;font-size:1rem;`;
 
 // ═══════════════════════════════════════════════════════════
@@ -567,11 +596,63 @@ const SignalDetailPage = () => {
         else if (days <= 7) tfLabel = 'Swing';
         else tfLabel = `${days}D`;
 
+        // ─── Derive intelligence from indicators ───
+        let buyCount = 0, sellCount = 0, neutralCount = 0;
+        indArray.forEach(ind => {
+            const sig = String(ind.signal || '').toUpperCase();
+            if (sig === 'BUY') buyCount++;
+            else if (sig === 'SELL') sellCount++;
+            else neutralCount++;
+        });
+        const indTotal = indArray.length || 1;
+        const alignedCount = long ? buyCount : sellCount;
+        const alignmentRatio = alignedCount / indTotal;
+
+        // Conviction
+        const conviction = alignmentRatio >= 0.6 && conf >= 70 ? 'strong'
+            : alignmentRatio >= 0.4 || conf >= 60 ? 'moderate'
+            : alignmentRatio > 0 ? 'low' : 'none';
+
+        // Sentiment
+        let sentimentTag = 'Mixed';
+        if (buyCount > sellCount + neutralCount) sentimentTag = 'Bullish';
+        else if (sellCount > buyCount + neutralCount) sentimentTag = 'Bearish';
+        else if (neutralCount >= indTotal * 0.7) sentimentTag = 'Neutral';
+
+        // Market regime
+        const volatilityLevel = analysis?.volatility || 'moderate';
+        const rsiVal = rsi ? (typeof rsi.value === 'number' ? rsi.value : parseFloat(rsi.value) || 50) : 50;
+        let regime = 'Mixed Conditions';
+        if (volatilityLevel === 'high' || rsiVal > 70 || rsiVal < 30) regime = 'High Volatility';
+        else if (trend?.signal === 'BUY' || trend?.signal === 'SELL') regime = 'Trending';
+        else if (volatilityLevel === 'low') regime = 'Range-Bound';
+
+        // Supporting factors
+        const factors = [];
+        if (trend?.signal === (long ? 'BUY' : 'SELL')) factors.push('Trend Aligned');
+        if (vol?.value === 'High' || vol?.signal === 'BUY') factors.push('Volume Confirmation');
+        if (rsiVal < 35 && long) factors.push('Oversold Bounce');
+        if (rsiVal > 65 && !long) factors.push('Overbought Rejection');
+        if (alignmentRatio >= 0.6) factors.push('Multi-Indicator Alignment');
+        if (conf >= 75) factors.push('High AI Conviction');
+        if (parseFloat(rr) >= 2.5) factors.push('Strong R:R Ratio');
+        if (factors.length === 0) factors.push('AI Pattern Detection');
+
+        // Signal quality breakdown (4 dimensions)
+        const qualityBreakdown = {
+            conviction: conviction === 'strong' ? 90 : conviction === 'moderate' ? 60 : 35,
+            sentimentAlign: sentimentTag === (long ? 'Bullish' : 'Bearish') ? 85 : sentimentTag === 'Mixed' ? 50 : 25,
+            technicalAlign: Math.round(alignmentRatio * 100),
+            regimeFit: regime === 'Trending' ? 80 : regime === 'High Volatility' ? 55 : regime === 'Range-Bound' ? 40 : 50,
+        };
+
         return {
             id: raw._id, symbol: sym, fullSymbol: raw.symbol, crypto, long, conf, status,
             entry, target, currentPrice, sl, tp1, tp2, tp3, rr, riskLevel,
             movePct, isWin, resultText, tfLabel, days, confLabel, setupType, aiSummary,
             indArray, analysis, whyReasons, risks, distToTP, distToSL,
+            conviction, sentimentTag, regime, factors, qualityBreakdown,
+            buyCount, sellCount, neutralCount,
             createdAt: raw.createdAt, expiresAt: raw.expiresAt,
             viewCount: raw.viewCount || 0,
         };
@@ -801,6 +882,71 @@ const SignalDetailPage = () => {
                         </ReasonGrid>
                     </Card>
                 )}
+
+                {/* ═══ SENTIMENT & MARKET CONTEXT ═══ */}
+                <IntelSection>
+                    <IntelTitle><Eye size={15}/> Signal Intelligence</IntelTitle>
+                    <IntelGrid>
+                        <IntelCell>
+                            <IntelLabel>Conviction</IntelLabel>
+                            <IntelValue $c={s.conviction === 'strong' ? '#10b981' : s.conviction === 'moderate' ? '#f59e0b' : '#64748b'}>
+                                {s.conviction === 'strong' ? 'Strong' : s.conviction === 'moderate' ? 'Moderate' : s.conviction === 'low' ? 'Low' : 'None'}
+                            </IntelValue>
+                            <IntelSub>{s.buyCount}B / {s.sellCount}S / {s.neutralCount}N</IntelSub>
+                        </IntelCell>
+                        <IntelCell>
+                            <IntelLabel>Sentiment</IntelLabel>
+                            <IntelValue $c={s.sentimentTag === 'Bullish' ? '#10b981' : s.sentimentTag === 'Bearish' ? '#ef4444' : '#f59e0b'}>
+                                {s.sentimentTag}
+                            </IntelValue>
+                            <IntelSub>{s.sentimentTag === (s.long ? 'Bullish' : 'Bearish') ? 'Aligned' : 'Mixed'}</IntelSub>
+                        </IntelCell>
+                        <IntelCell>
+                            <IntelLabel>Market Regime</IntelLabel>
+                            <IntelValue $c="#a78bfa">{s.regime}</IntelValue>
+                            <IntelSub>{s.regime === 'Trending' ? 'Favorable' : s.regime === 'High Volatility' ? 'Caution' : 'Neutral'}</IntelSub>
+                        </IntelCell>
+                        <IntelCell>
+                            <IntelLabel>Alignment</IntelLabel>
+                            <IntelValue $c={s.qualityBreakdown.technicalAlign >= 60 ? '#10b981' : '#f59e0b'}>
+                                {s.qualityBreakdown.technicalAlign}%
+                            </IntelValue>
+                            <IntelSub>Indicator agreement</IntelSub>
+                        </IntelCell>
+                    </IntelGrid>
+
+                    {/* Supporting factors */}
+                    <FactorChips>
+                        {s.factors.map((f, i) => <FactorChip key={i}>{f}</FactorChip>)}
+                    </FactorChips>
+                </IntelSection>
+
+                {/* ═══ SIGNAL QUALITY BREAKDOWN ═══ */}
+                <Card $d=".32s">
+                    <CardTitle><Target size={15} color="#00adef"/> Signal Quality</CardTitle>
+                    <QualityRow>
+                        <QualityCell>
+                            <QualityLabel>Conviction</QualityLabel>
+                            <QualityBar><QualityFill $w={s.qualityBreakdown.conviction}/></QualityBar>
+                            <QualityValue $w={s.qualityBreakdown.conviction}>{s.qualityBreakdown.conviction}%</QualityValue>
+                        </QualityCell>
+                        <QualityCell>
+                            <QualityLabel>Sentiment Fit</QualityLabel>
+                            <QualityBar><QualityFill $w={s.qualityBreakdown.sentimentAlign}/></QualityBar>
+                            <QualityValue $w={s.qualityBreakdown.sentimentAlign}>{s.qualityBreakdown.sentimentAlign}%</QualityValue>
+                        </QualityCell>
+                        <QualityCell>
+                            <QualityLabel>Technical</QualityLabel>
+                            <QualityBar><QualityFill $w={s.qualityBreakdown.technicalAlign}/></QualityBar>
+                            <QualityValue $w={s.qualityBreakdown.technicalAlign}>{s.qualityBreakdown.technicalAlign}%</QualityValue>
+                        </QualityCell>
+                        <QualityCell>
+                            <QualityLabel>Regime Fit</QualityLabel>
+                            <QualityBar><QualityFill $w={s.qualityBreakdown.regimeFit}/></QualityBar>
+                            <QualityValue $w={s.qualityBreakdown.regimeFit}>{s.qualityBreakdown.regimeFit}%</QualityValue>
+                        </QualityCell>
+                    </QualityRow>
+                </Card>
 
                 {/* ═══ SECTION 6: INVALIDATION & RISKS ═══ */}
                 <Card $d=".35s">

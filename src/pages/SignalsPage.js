@@ -488,6 +488,26 @@ const ComingSoonBadge = styled.span`
     border:1px solid rgba(245,158,11,.2);padding:1px 6px;border-radius:4px;
 `;
 
+// Intelligence tags
+const IntelRow = styled.div`display:flex;align-items:center;gap:.3rem;flex-wrap:wrap;margin:.4rem 0;`;
+const IntelTag = styled.span`
+    padding:.12rem .4rem;border-radius:4px;font-size:.55rem;font-weight:700;letter-spacing:.3px;
+    background:${p => p.$bg || 'rgba(100,116,139,.08)'};
+    color:${p => p.$c || '#94a3b8'};
+    border:1px solid ${p => p.$bc || 'rgba(100,116,139,.12)'};
+`;
+const SentimentTag = styled(IntelTag)`
+    background:${p => p.$sentiment === 'Bullish' ? 'rgba(16,185,129,.08)' : p.$sentiment === 'Bearish' ? 'rgba(239,68,68,.08)' : 'rgba(245,158,11,.08)'};
+    color:${p => p.$sentiment === 'Bullish' ? '#10b981' : p.$sentiment === 'Bearish' ? '#ef4444' : '#f59e0b'};
+    border-color:${p => p.$sentiment === 'Bullish' ? 'rgba(16,185,129,.2)' : p.$sentiment === 'Bearish' ? 'rgba(239,68,68,.2)' : 'rgba(245,158,11,.2)'};
+`;
+const ConvictionTag = styled(IntelTag)`
+    background:${p => p.$level === 'strong' ? 'rgba(16,185,129,.08)' : p.$level === 'moderate' ? 'rgba(245,158,11,.08)' : 'rgba(100,116,139,.06)'};
+    color:${p => p.$level === 'strong' ? '#10b981' : p.$level === 'moderate' ? '#f59e0b' : '#64748b'};
+    border-color:${p => p.$level === 'strong' ? 'rgba(16,185,129,.2)' : p.$level === 'moderate' ? 'rgba(245,158,11,.2)' : 'rgba(100,116,139,.12)'};
+`;
+const AIReasonLine = styled.div`font-size:.7rem;color:#94a3b8;font-style:italic;margin:.3rem 0;line-height:1.4;`;
+
 const Empty = styled.div`text-align:center;padding:2.5rem;color:#475569;font-size:.85rem;`;
 const ArchiveHeader = styled.div`display:flex;align-items:center;gap:.5rem;padding:.6rem .85rem;margin-bottom:.5rem;background:rgba(100,116,139,.06);border:1px solid rgba(100,116,139,.1);border-radius:8px;color:#94a3b8;font-size:.8rem;font-weight:500;`;
 const DateSep = styled.div`display:flex;align-items:center;gap:.5rem;padding:.4rem 0;color:#475569;font-size:.72rem;font-weight:600;text-transform:uppercase;&::after{content:'';flex:1;height:1px;background:rgba(100,116,139,.15);}`;
@@ -548,11 +568,65 @@ function buildSignal(raw, index, totalCount) {
     // Trade number (reverse from total for display)
     const tradeNum = totalCount - index;
 
-    // AI reasoning from analysis
+    // ─── Derive intelligence from indicators ───
+    const indicators = raw.indicators || {};
     const analysis = raw.analysis || {};
-    const reasoning = analysis.message || (conf >= 70
-        ? `Strong ${long ? 'bullish' : 'bearish'} setup with ${conf}% confidence. ${riskLevel} risk profile.`
-        : `${long ? 'Bullish' : 'Bearish'} signal detected with moderate conviction.`);
+    const indEntries = Object.entries(indicators);
+
+    // Count indicator alignment
+    let buyCount = 0, sellCount = 0, neutralCount = 0;
+    indEntries.forEach(([, data]) => {
+        const sig = String(data?.signal || '').toUpperCase();
+        if (sig === 'BUY') buyCount++;
+        else if (sig === 'SELL') sellCount++;
+        else neutralCount++;
+    });
+    const total = indEntries.length || 1;
+    const alignedCount = long ? buyCount : sellCount;
+    const alignmentRatio = alignedCount / total;
+
+    // Conviction tier (derived from actual indicators, not raw confidence)
+    const conviction = alignmentRatio >= 0.6 && conf >= 70 ? 'strong'
+        : alignmentRatio >= 0.4 || conf >= 60 ? 'moderate'
+        : alignmentRatio > 0 ? 'low' : 'none';
+
+    // Sentiment from analysis or indicators
+    const volIndicator = indicators['Volume'] || indicators['volume'];
+    const trendIndicator = indicators['Trend'] || indicators['trend'];
+    const rsiIndicator = indicators['RSI'] || indicators['rsi'];
+    const volatility = analysis?.volatility || 'moderate';
+
+    // Sentiment tag
+    let sentimentTag = 'Mixed';
+    if (buyCount > sellCount + neutralCount) sentimentTag = 'Bullish';
+    else if (sellCount > buyCount + neutralCount) sentimentTag = 'Bearish';
+    else if (neutralCount >= total * 0.7) sentimentTag = 'Neutral';
+
+    // Market regime
+    let regime = 'Mixed';
+    if (volatility === 'high' || (rsiIndicator?.value > 70 || rsiIndicator?.value < 30)) regime = 'Volatile';
+    else if (trendIndicator?.signal === 'BUY' || trendIndicator?.signal === 'SELL') regime = 'Trending';
+    else if (volatility === 'low') regime = 'Range-Bound';
+
+    // Supporting factors (compact chips)
+    const factors = [];
+    if (trendIndicator?.signal === (long ? 'BUY' : 'SELL')) factors.push('Trend Aligned');
+    if (volIndicator?.value === 'High' || volIndicator?.signal === 'BUY') factors.push('Volume Confirm');
+    if (rsiIndicator?.value < 35 && long) factors.push('Oversold Bounce');
+    if (rsiIndicator?.value > 65 && !long) factors.push('Overbought Rejection');
+    if (alignmentRatio >= 0.6) factors.push('Multi-Indicator');
+    if (conf >= 75) factors.push('High Conviction');
+    if (factors.length === 0) factors.push('AI Pattern');
+
+    // AI reason (richer than before)
+    const dirWord = long ? 'Bullish' : 'Bearish';
+    const reasoning = analysis.message || (
+        conviction === 'strong'
+            ? `${dirWord} continuation with ${sentimentTag.toLowerCase()} sentiment and ${factors[0]?.toLowerCase() || 'multiple indicators aligned'}.`
+            : conviction === 'moderate'
+            ? `${dirWord} setup with ${sentimentTag.toLowerCase()} conditions. ${regime} market regime.`
+            : `${dirWord} lean detected — mixed signals, ${sentimentTag.toLowerCase()} sentiment.`
+    );
 
     // Proximity
     const prox = status === 'closed' ? null : (() => {
@@ -574,6 +648,7 @@ function buildSignal(raw, index, totalCount) {
         entry, target, currentPrice, sl, tp1, tp2, tp3, rr, riskLevel,
         movePct, tradeScore, tradeNum, reasoning, prox, urgency,
         isWin, resultText, days,
+        conviction, sentimentTag, regime, factors,
         createdAt: raw.createdAt, expiresAt: raw.expiresAt, resultAt: raw.resultAt,
     };
 }
@@ -873,6 +948,18 @@ const SignalsPage = () => {
                                             <FTP><FTPLabel>TP3 (12%)</FTPLabel><FTPValue>{fmtPrice(featured.tp3)}</FTPValue></FTP>
                                         </FeaturedTPs>
 
+                                        {/* Intelligence tags */}
+                                        <IntelRow style={{marginBottom:'.5rem'}}>
+                                            <ConvictionTag $level={featured.conviction}>
+                                                {featured.conviction === 'strong' ? 'Strong Setup' : featured.conviction === 'moderate' ? 'Moderate Setup' : 'Low Conviction'}
+                                            </ConvictionTag>
+                                            <SentimentTag $sentiment={featured.sentimentTag}>{featured.sentimentTag}</SentimentTag>
+                                            <IntelTag $bg="rgba(139,92,246,.08)" $c="#a78bfa" $bc="rgba(139,92,246,.15)">{featured.regime}</IntelTag>
+                                            {featured.factors.slice(0, 3).map((f, j) => (
+                                                <IntelTag key={j}>{f}</IntelTag>
+                                            ))}
+                                        </IntelRow>
+
                                         {/* AI Reasoning */}
                                         <AIReasoning>
                                             <AIReasonIcon><BarChart2 size={14}/></AIReasonIcon>
@@ -1095,6 +1182,23 @@ const SignalCard = ({ s, i, navigate, setCopyModal, isPremium }) => {
                         <TradeId>#{s.tradeNum}</TradeId>
                     </CardRightGroup>
                 </CardTop>
+
+                {/* Intelligence tags */}
+                {s.status !== 'closed' && (
+                    <>
+                        <IntelRow>
+                            <ConvictionTag $level={s.conviction}>
+                                {s.conviction === 'strong' ? 'Strong Setup' : s.conviction === 'moderate' ? 'Moderate Setup' : s.conviction === 'low' ? 'Low Conviction' : 'No Edge'}
+                            </ConvictionTag>
+                            <SentimentTag $sentiment={s.sentimentTag}>{s.sentimentTag}</SentimentTag>
+                            <IntelTag $bg="rgba(139,92,246,.08)" $c="#a78bfa" $bc="rgba(139,92,246,.15)">{s.regime}</IntelTag>
+                            {s.factors.slice(0, 2).map((f, j) => (
+                                <IntelTag key={j}>{f}</IntelTag>
+                            ))}
+                        </IntelRow>
+                        <AIReasonLine>{s.reasoning}</AIReasonLine>
+                    </>
+                )}
 
                 {/* Levels grid */}
                 <CardLevels>
