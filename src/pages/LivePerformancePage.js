@@ -232,18 +232,32 @@ const LivePerformancePage = () => {
                                     const isLong = t.direction === 'UP';
                                     const isWin = t.result === 'win';
                                     const isLoss = t.result === 'loss';
-                                    const isOpen = t.status === 'pending';
+                                    const isOpen = t.status === 'pending' || !t.result;
                                     const sym = t.symbol?.split(':')[0]?.replace(/USDT|USD/i, '') || t.symbol;
+
+                                    // Use correct price: livePrice for open, resultPrice for closed
+                                    const displayPrice = isOpen
+                                        ? (t.livePrice || t.currentPrice || t.entryPrice)
+                                        : (t.resultPrice || t.exitPrice || t.currentPrice || t.entryPrice);
+
+                                    // Use backend's changePct, or calculate if missing
+                                    let pctChange = t.changePct ?? (t.entryPrice > 0
+                                        ? ((displayPrice - t.entryPrice) / t.entryPrice * 100)
+                                        : 0);
+
                                     // Safety: ensure LOSS shows negative, WIN shows positive
-                                    let displayPct = t.changePct;
-                                    if (isLoss && displayPct > 0) displayPct = -Math.abs(displayPct);
-                                    if (isWin && displayPct < 0) displayPct = Math.abs(displayPct);
+                                    if (isLoss && pctChange > 0) pctChange = -Math.abs(pctChange);
+                                    if (isWin && pctChange < 0) pctChange = Math.abs(pctChange);
+
+                                    // Format to 2 decimals
+                                    const displayPct = typeof pctChange === 'number' ? pctChange.toFixed(2) : pctChange;
+
                                     return (
                                         <Tr key={t._id || i} onClick={() => navigate(`/signal/${t._id}`)}>
                                             <Td style={{fontWeight:700}}>{sym} <span style={{fontSize:'.6rem',color:'#475569'}}>{t.assetType}</span></Td>
                                             <Td><DirBadge $long={isLong}>{isLong ? '\u2191 LONG' : '\u2193 SHORT'}</DirBadge></Td>
                                             <Td>{fmtPrice(t.entryPrice)}</Td>
-                                            <Td>{fmtPrice(t.currentPrice)}</Td>
+                                            <Td>{fmtPrice(displayPrice)}</Td>
                                             <Td><PctText $pos={displayPct >= 0}>{displayPct >= 0 ? '+' : ''}{displayPct}%</PctText></Td>
                                             <Td>
                                                 {isOpen ? <Badge $bg="rgba(245,158,11,.1)" $c="#f59e0b" $bc="rgba(245,158,11,.2)">OPEN</Badge>
@@ -314,16 +328,26 @@ const LivePerformancePage = () => {
                                         const isWin = t.result === 'win';
                                         const isLoss = t.result === 'loss';
                                         const sym = t.symbol?.split(':')[0]?.replace(/USDT|USD/i, '') || t.symbol;
-                                        let archPct = t.changePct;
+                                        const exitPrice = t.resultPrice || t.exitPrice || t.currentPrice || t.entryPrice;
+
+                                        // Use backend's changePct, or calculate if missing
+                                        let archPct = t.changePct ?? (t.entryPrice > 0
+                                            ? ((exitPrice - t.entryPrice) / t.entryPrice * 100)
+                                            : 0);
+
+                                        // Safety: ensure LOSS shows negative, WIN shows positive
                                         if (isLoss && archPct > 0) archPct = -Math.abs(archPct);
                                         if (isWin && archPct < 0) archPct = Math.abs(archPct);
+
+                                        const displayArchPct = typeof archPct === 'number' ? archPct.toFixed(2) : archPct;
+
                                         return (
                                             <Tr key={t._id || i} onClick={() => navigate(`/signal/${t._id}`)}>
                                                 <Td style={{fontWeight:700}}>{sym}</Td>
                                                 <Td><DirBadge $long={isLong}>{isLong ? '\u2191' : '\u2193'}</DirBadge></Td>
                                                 <Td>{fmtPrice(t.entryPrice)}</Td>
-                                                <Td>{fmtPrice(t.exitPrice || t.currentPrice)}</Td>
-                                                <Td><PctText $pos={archPct >= 0}>{archPct >= 0 ? '+' : ''}{archPct}%</PctText></Td>
+                                                <Td>{fmtPrice(exitPrice)}</Td>
+                                                <Td><PctText $pos={displayArchPct >= 0}>{displayArchPct >= 0 ? '+' : ''}{displayArchPct}%</PctText></Td>
                                                 <Td>
                                                     {isWin ? <Badge $bg="rgba(16,185,129,.1)" $c="#10b981">{t.resultText}</Badge>
                                                         : <Badge $bg="rgba(239,68,68,.08)" $c="#ef4444">{t.resultText}</Badge>}
