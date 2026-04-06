@@ -913,7 +913,7 @@ const SignalsPage = () => {
                 <Grid>
                     <MainCol>
                         {/* ═══ SECTION 4: FEATURED SIGNAL ═══ */}
-                        {featured && filter !== 'closed' && filter !== 'archive' && (
+                        {featured && filter !== 'closed' && filter !== 'archive' && (filter !== 'long' || featured.long) && (filter !== 'short' || !featured.long) && (
                             <FeaturedSection>
                                 <FeaturedLabel>
                                     <Award size={16} /> Best Setup Right Now
@@ -1029,8 +1029,8 @@ const SignalsPage = () => {
 
                         {/* ═══ SECTION 5: SIGNAL GROUPS ═══ */}
 
-                        {/* High Confidence Group */}
-                        {filter !== 'closed' && filter !== 'archive' && highConf.filter(s => s.id !== featured?.id).length > 0 && (
+                        {/* High Confidence Group — only in 'all', 'high', 'active' views */}
+                        {(filter === 'all' || filter === 'high' || filter === 'active') && highConf.filter(s => s.id !== featured?.id).length > 0 && (
                             <GroupSection>
                                 <GroupHeader>
                                     <GroupTitle><Zap size={14} color="#f59e0b"/> High Confidence Setups</GroupTitle>
@@ -1070,7 +1070,8 @@ const SignalsPage = () => {
                                     </GroupHeader>
                                 )}
                                 {filtered.filter(s => {
-                                    // In "all" view, skip high conf ones already shown above
+                                    // In "all" view, skip high conf ones already shown in the group above
+                                    // But in long/short/other filters, show everything
                                     if (filter === 'all' && s.conf >= 80 && s.status !== 'closed' && s.id !== featured?.id) return false;
                                     return true;
                                 }).map((s, i) => (
@@ -1080,8 +1081,8 @@ const SignalsPage = () => {
                             </GroupSection>
                         )}
 
-                        {/* Recently Closed (in "all" view only, shown below active) */}
-                        {filter === 'all' && recentClosed.length > 0 && regularActive.filter(s => s.id !== featured?.id).length > 0 && (
+                        {/* Recently Closed (only in "all" view, not in directional filters) */}
+                        {filter === 'all' && recentClosed.length > 0 && (
                             <GroupSection>
                                 <GroupHeader>
                                     <GroupTitle><CheckCircle size={14} color="#64748b"/> Recently Closed</GroupTitle>
