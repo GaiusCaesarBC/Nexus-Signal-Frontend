@@ -603,20 +603,26 @@ function buildSignal(raw, index, totalCount) {
     else if (trendIndicator?.signal === 'BUY' || trendIndicator?.signal === 'SELL') regime = 'Trending';
     else if (volatility === 'low') regime = 'Stable';
 
-    // SIGNAL STRENGTH — same logic as Detail page
+    // SIGNAL STRENGTH — blends API confidence with indicator alignment
+    // API confidence = model's real output; indicators = supplementary confirmation
+    const hasGoodAlignment = alignedCount >= 2;
+    const hasStrongAlignment = alignmentRatio >= 0.5 && opposedCount <= 1;
+    const hasConfidence = conf >= 65;
+    const hasHighConfidence = conf >= 80;
+
     let signalStrength, strengthColor, strengthPct;
-    if (alignmentRatio >= 0.6 && opposedCount === 0 && sentimentAligned) {
+    if ((hasStrongAlignment && hasConfidence) || (hasHighConfidence && hasGoodAlignment)) {
         signalStrength = 'Strong Setup'; strengthColor = '#10b981';
-        strengthPct = Math.min(90, Math.max(75, conf));
-    } else if (alignmentRatio >= 0.4 || (alignedCount >= 2 && opposedCount <= 1)) {
+        strengthPct = Math.min(95, conf);
+    } else if (hasGoodAlignment || hasConfidence) {
         signalStrength = 'Moderate Setup'; strengthColor = '#f59e0b';
-        strengthPct = Math.min(70, Math.max(50, Math.round(conf * 0.8)));
-    } else if (alignedCount >= 1) {
+        strengthPct = Math.min(85, Math.max(55, conf));
+    } else if (alignedCount >= 1 || conf >= 55) {
         signalStrength = 'Weak Setup'; strengthColor = '#64748b';
-        strengthPct = Math.min(50, Math.max(30, Math.round(conf * 0.6)));
+        strengthPct = Math.min(60, Math.max(40, conf));
     } else {
         signalStrength = 'No Edge'; strengthColor = '#475569';
-        strengthPct = Math.min(35, Math.round(conf * 0.5));
+        strengthPct = Math.min(40, conf);
     }
 
     // Supporting factors
