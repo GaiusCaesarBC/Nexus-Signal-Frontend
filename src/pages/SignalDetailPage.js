@@ -23,6 +23,24 @@ const isCrypto = (sym) => { const base = sym?.split(':')[0]?.replace(/USDT|USD/i
 const fmtPrice = (p) => { if (!p && p !== 0) return '--'; if (Math.abs(p) >= 1000) return `$${p.toLocaleString(undefined,{maximumFractionDigits:2})}`; if (Math.abs(p) >= 1) return `$${p.toFixed(2)}`; if (Math.abs(p) >= 0.01) return `$${p.toFixed(4)}`; return `$${p.toFixed(8)}`; };
 const timeAgo = (d) => { if (!d) return '--'; const m = Math.floor((Date.now() - new Date(d)) / 60000); if (m < 1) return 'Just now'; if (m < 60) return `${m}m ago`; const h = Math.floor(m / 60); if (h < 24) return `${h}h ago`; return `${Math.floor(h / 24)}d ago`; };
 const timeLeft = (d) => { if (!d) return '--'; const ms = new Date(d) - Date.now(); if (ms <= 0) return 'Expired'; const h = Math.floor(ms / 3600000); if (h < 1) return `${Math.floor(ms/60000)}m left`; if (h < 24) return `${h}h left`; return `${Math.floor(h / 24)}d left`; };
+const fmtBigNum = (n) => {
+    if (n === null || n === undefined || isNaN(n)) return '--';
+    const abs = Math.abs(n);
+    if (abs >= 1e12) return `$${(n / 1e12).toFixed(2)}T`;
+    if (abs >= 1e9) return `$${(n / 1e9).toFixed(2)}B`;
+    if (abs >= 1e6) return `$${(n / 1e6).toFixed(2)}M`;
+    if (abs >= 1e3) return `$${(n / 1e3).toFixed(2)}K`;
+    return `$${n.toFixed(2)}`;
+};
+const fmtSupply = (n) => {
+    if (n === null || n === undefined || isNaN(n)) return '--';
+    const abs = Math.abs(n);
+    if (abs >= 1e12) return `${(n / 1e12).toFixed(2)}T`;
+    if (abs >= 1e9) return `${(n / 1e9).toFixed(2)}B`;
+    if (abs >= 1e6) return `${(n / 1e6).toFixed(2)}M`;
+    if (abs >= 1e3) return `${(n / 1e3).toFixed(2)}K`;
+    return n.toLocaleString();
+};
 
 // ═══════════════════════════════════════════════════════════
 // STYLED COMPONENTS
@@ -363,6 +381,32 @@ const QualityBar = styled.div`width:100%;height:4px;background:rgba(255,255,255,
 const QualityFill = styled.div`height:100%;width:${p => p.$w || 0}%;border-radius:2px;background:${p => p.$w >= 70 ? '#10b981' : p.$w >= 45 ? '#f59e0b' : '#64748b'};`;
 const QualityValue = styled.div`font-size:.7rem;font-weight:700;color:${p => p.$w >= 70 ? '#10b981' : p.$w >= 45 ? '#f59e0b' : '#64748b'};margin-top:.15rem;`;
 
+// ─── Ticker Info Section ─────────────────────────────────
+const TickerSection = styled.div`
+    background:rgba(12,16,32,.92);border:1px solid rgba(0,173,237,.12);
+    border-radius:16px;padding:1.5rem;margin-bottom:1.25rem;
+    animation:${fadeIn} .4s ease-out .42s backwards;
+`;
+const TickerHeader = styled.div`
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:1rem;flex-wrap:wrap;gap:.5rem;
+`;
+const TickerTitle = styled.h2`font-size:.88rem;font-weight:700;color:#e0e6ed;display:flex;align-items:center;gap:.4rem;margin:0;`;
+const TickerSubtitle = styled.div`font-size:.7rem;color:#475569;font-weight:500;`;
+const TickerGrid = styled.div`
+    display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem;
+    @media(max-width:700px){grid-template-columns:repeat(3,1fr);}
+    @media(max-width:450px){grid-template-columns:repeat(2,1fr);}
+`;
+const TickerBox = styled.div`
+    padding:.7rem;border-radius:10px;text-align:center;
+    background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.04);
+`;
+const TickerLabel = styled.div`font-size:.55rem;color:#475569;text-transform:uppercase;letter-spacing:.6px;margin-bottom:.25rem;font-weight:700;`;
+const TickerValue = styled.div`font-size:.95rem;font-weight:800;color:${p=>p.$c||'#e0e6ed'};`;
+const TickerSub = styled.div`font-size:.58rem;color:#475569;margin-top:.15rem;`;
+const TickerLoadingMsg = styled.div`text-align:center;padding:1rem;color:#475569;font-size:.78rem;`;
+
 const Loading = styled.div`text-align:center;padding:4rem;color:#475569;font-size:1rem;`;
 
 // ═══════════════════════════════════════════════════════════
@@ -379,6 +423,8 @@ const SignalDetailPage = () => {
     const [loading, setLoading] = useState(true);
     const [globalStats, setGlobalStats] = useState(null);
     const [copyModal, setCopyModal] = useState(false);
+    const [tickerInfo, setTickerInfo] = useState(null);
+    const [tickerLoading, setTickerLoading] = useState(false);
 
     // Fetch global stats for social proof
     useEffect(() => {
@@ -427,6 +473,22 @@ const SignalDetailPage = () => {
     useEffect(() => { fetchSignal(); }, [fetchSignal]);
     // Refresh price every 30s
     useEffect(() => { const iv = setInterval(() => fetchSignal(), 30000); return () => clearInterval(iv); }, [fetchSignal]);
+
+    // Fetch ticker info (volume / market cap / etc) once we know the symbol
+    useEffect(() => {
+        if (!signal?.symbol) return;
+        let cancelled = false;
+        setTickerLoading(true);
+        const endpoint = signal.crypto
+            ? `${API_URL}/crypto/quote/${encodeURIComponent(signal.symbol)}`
+            : `${API_URL}/stocks/${encodeURIComponent(signal.symbol)}`;
+        fetch(endpoint)
+            .then(r => r.ok ? r.json() : null)
+            .then(data => { if (!cancelled && data && !data.error) setTickerInfo(data); })
+            .catch(() => {})
+            .finally(() => { if (!cancelled) setTickerLoading(false); });
+        return () => { cancelled = true; };
+    }, [signal?.symbol, signal?.crypto]);
 
     const buildDetail = (raw) => {
         const now = new Date();
@@ -1041,6 +1103,106 @@ const SignalDetailPage = () => {
                         </SecondaryBtn>
                     </CTARow>
                 )}
+
+                {/* ═══ TICKER INFO ═══ */}
+                <TickerSection>
+                    <TickerHeader>
+                        <TickerTitle><BarChart3 size={15} color="#00adef"/> {s.symbol} Ticker Info</TickerTitle>
+                        <TickerSubtitle>{s.crypto ? 'Live market data' : '15-min delayed quote'}</TickerSubtitle>
+                    </TickerHeader>
+                    {tickerLoading && !tickerInfo ? (
+                        <TickerLoadingMsg>Loading ticker data...</TickerLoadingMsg>
+                    ) : !tickerInfo ? (
+                        <TickerLoadingMsg>Ticker data unavailable</TickerLoadingMsg>
+                    ) : s.crypto ? (
+                        <TickerGrid>
+                            <TickerBox>
+                                <TickerLabel>Market Cap</TickerLabel>
+                                <TickerValue>{fmtBigNum(tickerInfo.marketCap)}</TickerValue>
+                                {tickerInfo.marketCapRank && <TickerSub>Rank #{tickerInfo.marketCapRank}</TickerSub>}
+                            </TickerBox>
+                            <TickerBox>
+                                <TickerLabel>24h Volume</TickerLabel>
+                                <TickerValue>{fmtBigNum(tickerInfo.volume24h)}</TickerValue>
+                            </TickerBox>
+                            <TickerBox>
+                                <TickerLabel>Circulating Supply</TickerLabel>
+                                <TickerValue>{fmtSupply(tickerInfo.circulatingSupply)}</TickerValue>
+                                <TickerSub>{s.symbol}</TickerSub>
+                            </TickerBox>
+                            <TickerBox>
+                                <TickerLabel>Max Supply</TickerLabel>
+                                <TickerValue>{tickerInfo.maxSupply ? fmtSupply(tickerInfo.maxSupply) : '∞'}</TickerValue>
+                            </TickerBox>
+                            <TickerBox>
+                                <TickerLabel>24h High</TickerLabel>
+                                <TickerValue $c="#10b981">{fmtPrice(tickerInfo.high24h)}</TickerValue>
+                            </TickerBox>
+                            <TickerBox>
+                                <TickerLabel>24h Low</TickerLabel>
+                                <TickerValue $c="#ef4444">{fmtPrice(tickerInfo.low24h)}</TickerValue>
+                            </TickerBox>
+                            <TickerBox>
+                                <TickerLabel>All-Time High</TickerLabel>
+                                <TickerValue>{fmtPrice(tickerInfo.ath)}</TickerValue>
+                                {typeof tickerInfo.athChangePercent === 'number' && (
+                                    <TickerSub style={{color: tickerInfo.athChangePercent >= 0 ? '#10b981' : '#ef4444'}}>
+                                        {tickerInfo.athChangePercent >= 0 ? '+' : ''}{tickerInfo.athChangePercent.toFixed(1)}%
+                                    </TickerSub>
+                                )}
+                            </TickerBox>
+                            <TickerBox>
+                                <TickerLabel>7d Change</TickerLabel>
+                                <TickerValue $c={(tickerInfo.priceChange7d || 0) >= 0 ? '#10b981' : '#ef4444'}>
+                                    {(tickerInfo.priceChange7d || 0) >= 0 ? '+' : ''}{(tickerInfo.priceChange7d || 0).toFixed(2)}%
+                                </TickerValue>
+                            </TickerBox>
+                        </TickerGrid>
+                    ) : (
+                        <TickerGrid>
+                            <TickerBox>
+                                <TickerLabel>Market Cap</TickerLabel>
+                                <TickerValue>{fmtBigNum(tickerInfo.marketCap)}</TickerValue>
+                                {tickerInfo.sector && <TickerSub>{tickerInfo.sector}</TickerSub>}
+                            </TickerBox>
+                            <TickerBox>
+                                <TickerLabel>Volume</TickerLabel>
+                                <TickerValue>{fmtSupply(tickerInfo.volume)}</TickerValue>
+                                <TickerSub>shares</TickerSub>
+                            </TickerBox>
+                            <TickerBox>
+                                <TickerLabel>Float (est.)</TickerLabel>
+                                <TickerValue>
+                                    {tickerInfo.marketCap && tickerInfo.price
+                                        ? fmtSupply(tickerInfo.marketCap / tickerInfo.price)
+                                        : '--'}
+                                </TickerValue>
+                                <TickerSub>shares out</TickerSub>
+                            </TickerBox>
+                            <TickerBox>
+                                <TickerLabel>P/E Ratio</TickerLabel>
+                                <TickerValue>{tickerInfo.pe ? tickerInfo.pe.toFixed(2) : '--'}</TickerValue>
+                                {tickerInfo.eps && <TickerSub>EPS {tickerInfo.eps.toFixed(2)}</TickerSub>}
+                            </TickerBox>
+                            <TickerBox>
+                                <TickerLabel>Day High</TickerLabel>
+                                <TickerValue $c="#10b981">{fmtPrice(tickerInfo.dayHigh)}</TickerValue>
+                            </TickerBox>
+                            <TickerBox>
+                                <TickerLabel>Day Low</TickerLabel>
+                                <TickerValue $c="#ef4444">{fmtPrice(tickerInfo.dayLow)}</TickerValue>
+                            </TickerBox>
+                            <TickerBox>
+                                <TickerLabel>52W High</TickerLabel>
+                                <TickerValue>{fmtPrice(tickerInfo.fiftyTwoWeekHigh)}</TickerValue>
+                            </TickerBox>
+                            <TickerBox>
+                                <TickerLabel>52W Low</TickerLabel>
+                                <TickerValue>{fmtPrice(tickerInfo.fiftyTwoWeekLow)}</TickerValue>
+                            </TickerBox>
+                        </TickerGrid>
+                    )}
+                </TickerSection>
 
                 {/* ═══ SECTION 9: SOCIAL PROOF ═══ */}
                 <ProofStrip>
