@@ -140,6 +140,108 @@ const ChainBadge = styled.span`
     margin-left: 0.25rem;
 `;
 
+// ============ NEW ENGINE BANNER ============
+const EngineBanner = styled.div`
+    max-width: 1800px;
+    margin: 0 auto 1.5rem;
+    padding: 1rem 1.5rem;
+    background: linear-gradient(135deg,
+        ${props => (props.theme?.brand?.primary || '#00adef') + '12'} 0%,
+        ${props => (props.theme?.brand?.secondary || '#a78bfa') + '12'} 100%);
+    border: 1px solid ${props => (props.theme?.brand?.primary || '#00adef') + '40'};
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    ${css`animation: ${fadeIn} 0.5s ease-out;`}
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at 20% 50%,
+            ${props => (props.theme?.brand?.primary || '#00adef') + '15'} 0%,
+            transparent 60%);
+        pointer-events: none;
+    }
+`;
+const EngineBannerLeft = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    position: relative;
+    z-index: 1;
+`;
+const EngineBannerIcon = styled.div`
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: ${props => (props.theme?.brand?.primary || '#00adef') + '20'};
+    border: 1px solid ${props => (props.theme?.brand?.primary || '#00adef') + '50'};
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: ${props => props.theme?.brand?.primary || '#00adef'};
+    flex-shrink: 0;
+`;
+const EngineBannerText = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+`;
+const EngineBannerTitle = styled.div`
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: ${props => props.theme?.text?.primary || '#e0e6ed'};
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+`;
+const EngineBannerNew = styled.span`
+    font-size: 0.55rem;
+    font-weight: 800;
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    background: ${props => (props.theme?.brand?.primary || '#00adef') + '25'};
+    color: ${props => props.theme?.brand?.primary || '#00adef'};
+    border: 1px solid ${props => (props.theme?.brand?.primary || '#00adef') + '50'};
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+`;
+const EngineBannerSub = styled.div`
+    font-size: 0.78rem;
+    color: ${props => props.theme?.text?.secondary || '#94a3b8'};
+    line-height: 1.4;
+    max-width: 540px;
+`;
+const EngineBannerBtn = styled.button`
+    padding: 0.6rem 1.2rem;
+    background: linear-gradient(135deg,
+        ${props => props.theme?.brand?.primary || '#00adef'},
+        ${props => props.theme?.brand?.secondary || '#0090d0'});
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: all 0.2s;
+    position: relative;
+    z-index: 1;
+    white-space: nowrap;
+    &:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px ${props => (props.theme?.brand?.primary || '#00adef') + '40'};
+    }
+`;
+
 // ============ MODE TOGGLE ============
 const ModeToggle = styled.div`
     max-width: 1800px;
@@ -736,6 +838,27 @@ const ScreenerPage = () => {
                     {mode === 'crypto' ? 'GeckoTerminal + CoinGecko • BSC & Global Crypto' : 'Live Market Data'}
                 </PoweredBy>
             </Header>
+
+            {/* New Opportunity Engine banner */}
+            <EngineBanner theme={theme}>
+                <EngineBannerLeft>
+                    <EngineBannerIcon theme={theme}>
+                        <Sparkles size={22} />
+                    </EngineBannerIcon>
+                    <EngineBannerText>
+                        <EngineBannerTitle theme={theme}>
+                            Try the AI Opportunity Engine
+                            <EngineBannerNew theme={theme}>NEW</EngineBannerNew>
+                        </EngineBannerTitle>
+                        <EngineBannerSub theme={theme}>
+                            Stop scanning raw price moves. The Engine surfaces ranked trade setups with AI scores, bias, and a reason for every name.
+                        </EngineBannerSub>
+                    </EngineBannerText>
+                </EngineBannerLeft>
+                <EngineBannerBtn theme={theme} onClick={() => navigate('/opportunities')}>
+                    Open Opportunity Engine →
+                </EngineBannerBtn>
+            </EngineBanner>
 
             {/* Mode Toggle - Stocks vs Crypto */}
             <ModeToggle>
