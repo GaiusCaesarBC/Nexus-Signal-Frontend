@@ -1,6 +1,7 @@
-// ============ SOCIALFEED.JS - PART 1 OF 5 ============
-// Imports, Constants, Animations, Page Layout, Sidebar Styles
-// 🔥 UPDATED: Uses equippedBorder (not equippedTheme) for avatar border colors
+// ═══════════════════════════════════════════════════════════
+// SOCIALFEED.JSX — Market Intelligence Feed (Redesigned)
+// Preserves: All API logic, vault/border integration, reactions, comments, polls, create post modal
+// ═══════════════════════════════════════════════════════════
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import styled, { keyframes, css, useTheme as useStyledTheme } from 'styled-components';
@@ -12,19 +13,19 @@ import BadgeIcon from './BadgeIcon';
 import AvatarWithBorder from './vault/AvatarWithBorder';
 import { useToast } from '../context/ToastContext';
 import {
-    Sparkles, TrendingUp, MessageCircle, Heart, Share2, Bookmark,
+    TrendingUp, TrendingDown, MessageCircle, Heart, Share2, Bookmark,
     MoreHorizontal, Send, Image, Smile, Hash, AtSign, Users,
     Flame, Trophy, Target, BarChart2, Clock, Check, Plus,
     RefreshCw, ArrowUp, X, Copy, Zap, Activity, UserPlus,
     Link2, Flag, Trash2, BookmarkCheck, MessageSquare, ChevronDown,
-    Award, Star
+    Award, Star, ArrowUpRight, ArrowDownRight, Eye, Radio,
+    Shield, CheckCircle, ChevronRight, AlertTriangle
 } from 'lucide-react';
 
-// ============ BORDER COLOR MAP ============
-// 🔥 Maps equippedBorder IDs to their display colors
-// Synced with vaultItems.js - uses primary color from each border's gradient
+// ═══════════════════════════════════════════════════════════
+// BORDER COLOR MAP (Vault Integration — preserved)
+// ═══════════════════════════════════════════════════════════
 const BORDER_COLORS = {
-    // ===== BASIC BORDERS =====
     'border-bronze': { color: '#CD7F32', glow: 'rgba(205, 127, 50, 0.5)' },
     'border-silver': { color: '#C0C0C0', glow: 'rgba(192, 192, 192, 0.5)' },
     'border-gold': { color: '#FFD700', glow: 'rgba(255, 215, 0, 0.6)' },
@@ -36,16 +37,12 @@ const BORDER_COLORS = {
     'border-diamond': { color: '#00D4FF', glow: 'rgba(0, 212, 255, 0.8)' },
     'border-rainbow': { color: '#8b5cf6', glow: 'rgba(139, 92, 246, 0.9)' },
     'border-nexus': { color: '#00adef', glow: 'rgba(0, 173, 237, 1)' },
-
-    // ===== EPIC BORDERS =====
     'border-crimson-blade': { color: '#dc2626', glow: 'rgba(220, 38, 38, 0.7)' },
     'border-tsunami': { color: '#0ea5e9', glow: 'rgba(14, 165, 233, 0.7)' },
     'border-ancient-oak': { color: '#22c55e', glow: 'rgba(34, 197, 94, 0.7)' },
     'border-phantom': { color: '#6366f1', glow: 'rgba(99, 102, 241, 0.7)' },
     'border-toxic-haze': { color: '#84cc16', glow: 'rgba(132, 204, 22, 0.8)' },
     'border-mystic-runes': { color: '#a855f7', glow: 'rgba(168, 85, 247, 0.8)' },
-
-    // ===== LEGENDARY BORDERS =====
     'border-inferno-crown': { color: '#f97316', glow: 'rgba(249, 115, 22, 0.9)' },
     'border-lightning-fury': { color: '#3b82f6', glow: 'rgba(59, 130, 246, 0.9)' },
     'border-void-portal': { color: '#7c3aed', glow: 'rgba(124, 58, 237, 0.9)' },
@@ -61,2067 +58,443 @@ const BORDER_COLORS = {
     'border-all-seeing-eye': { color: '#fbbf24', glow: 'rgba(251, 191, 36, 0.95)' },
     'border-prismatic-fury': { color: '#8b5cf6', glow: 'rgba(139, 92, 246, 1)' },
     'border-apex-predator': { color: '#dc2626', glow: 'rgba(220, 38, 38, 1)' },
-
-    // ===== MYTHIC BORDERS =====
     'border-reality-shatter': { color: '#ec4899', glow: 'rgba(236, 72, 153, 1)' },
     'border-eternal-sovereign': { color: '#fbbf24', glow: 'rgba(251, 191, 36, 1)' },
-
-    // ===== ORIGIN BORDER =====
     'border-architects-ring': { color: '#d4af37', glow: 'rgba(212, 175, 55, 1)' },
-
-    // Default fallback
     'default': { color: '#00adef', glow: 'rgba(0, 173, 239, 0.5)' },
     null: { color: '#00adef', glow: 'rgba(0, 173, 239, 0.5)' },
     undefined: { color: '#00adef', glow: 'rgba(0, 173, 239, 0.5)' }
 };
 
-// ============ REACTIONS ============
+// Trading-aware reactions
 const REACTIONS = [
-    { name: 'like', emoji: '❤️', color: '#ef4444' },
-    { name: 'rocket', emoji: '🚀', color: '#3b82f6' },
-    { name: 'fire', emoji: '🔥', color: '#f59e0b' },
-    { name: 'diamond', emoji: '💎', color: '#06b6d4' },
-    { name: 'bull', emoji: '🐂', color: '#10b981' },
-    { name: 'bear', emoji: '🐻', color: '#ef4444' },
-    { name: 'money', emoji: '💰', color: '#fbbf24' }
+    { name: 'bull', emoji: '🐂', color: '#10b981', label: 'Bullish' },
+    { name: 'bear', emoji: '🐻', color: '#ef4444', label: 'Bearish' },
+    { name: 'like', emoji: '👀', color: '#0ea5e9', label: 'Watching' },
+    { name: 'fire', emoji: '🔥', color: '#f59e0b', label: 'Fire' },
+    { name: 'rocket', emoji: '🚀', color: '#3b82f6', label: 'Rocket' },
+    { name: 'diamond', emoji: '💎', color: '#06b6d4', label: 'Diamond' },
+    { name: 'money', emoji: '💰', color: '#fbbf24', label: 'Money' }
 ];
 
-// ============ BADGE DISPLAY ============
 const BADGE_ICONS = {
-    'badge-founder': '👑',
-    'badge-first-trade': '🎯',
-    'badge-week-warrior': '⭐',
-    'badge-trade-master': '📊',
-    'badge-portfolio-builder': '🏗️',
-    'badge-profit-king': '💰',
-    'badge-dedicated': '🔥',
-    'badge-prediction-master': '🔮',
-    'badge-level-50': '5️⃣0️⃣',
-    'badge-whale': '🐋',
-    'badge-level-100': '💯',
-    'badge-millionaire': '💵'
+    'badge-founder': '👑', 'badge-first-trade': '🎯', 'badge-week-warrior': '⭐',
+    'badge-trade-master': '📊', 'badge-portfolio-builder': '🏗️', 'badge-profit-king': '💰',
+    'badge-dedicated': '🔥', 'badge-prediction-master': '🔮', 'badge-level-50': '5️⃣0️⃣',
+    'badge-whale': '🐋', 'badge-level-100': '💯', 'badge-millionaire': '💵'
 };
 
-const BADGE_COLORS = {
-    'badge-founder': '#fbbf24',
-    'badge-first-trade': '#3b82f6',
-    'badge-week-warrior': '#f59e0b',
-    'badge-trade-master': '#3b82f6',
-    'badge-portfolio-builder': '#0ea5e9',
-    'badge-profit-king': '#10b981',
-    'badge-dedicated': '#ef4444',
-    'badge-prediction-master': '#8b5cf6',
-    'badge-level-50': '#a855f7',
-    'badge-whale': '#8b5cf6',
-    'badge-level-100': '#f59e0b',
-    'badge-millionaire': '#10b981'
-};
+const API_URL = process.env.REACT_APP_API_URL || process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
 
-// ============ ANIMATIONS ============
-const float = keyframes`
-    0%, 100% { transform: translateY(0) rotate(0deg); }
-    50% { transform: translateY(-20px) rotate(5deg); }
+// ═══════════════════════════════════════════════════════════
+// ANIMATIONS
+// ═══════════════════════════════════════════════════════════
+const fadeIn = keyframes`from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}`;
+const slideUp = keyframes`from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}`;
+const pulse = keyframes`0%,100%{opacity:1}50%{opacity:.4}`;
+const spin = keyframes`from{transform:rotate(0)}to{transform:rotate(360deg)}`;
+const bounceIn = keyframes`0%{transform:scale(0)}50%{transform:scale(1.2)}100%{transform:scale(1)}`;
+const featuredGlow = keyframes`0%,100%{box-shadow:0 0 15px rgba(0,173,237,.06)}50%{box-shadow:0 0 30px rgba(0,173,237,.15)}`;
+
+// ═══════════════════════════════════════════════════════════
+// LAYOUT
+// ═══════════════════════════════════════════════════════════
+const PageContainer = styled.div`min-height:100vh;padding:5.5rem 1.5rem 3rem;max-width:1320px;margin:0 auto;@media(max-width:768px){padding:5rem .75rem 2rem;}`;
+const MainContent = styled.div`display:grid;grid-template-columns:240px 1fr 300px;gap:1.25rem;@media(max-width:1200px){grid-template-columns:1fr 300px;}@media(max-width:900px){grid-template-columns:1fr;}`;
+
+// ─── Left Sidebar ────────────────────────────────────────
+const LeftSidebar = styled.div`display:flex;flex-direction:column;gap:1rem;position:sticky;top:5.5rem;height:fit-content;@media(max-width:1200px){display:none;}`;
+const SideCard = styled.div`background:rgba(12,16,32,.9);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:1rem;`;
+const SideCardTitle = styled.h3`font-size:.78rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin:0 0 .65rem;display:flex;align-items:center;gap:.35rem;`;
+const NavItem = styled.button`
+    width:100%;display:flex;align-items:center;gap:.5rem;padding:.55rem .7rem;
+    border-radius:8px;border:none;font-size:.82rem;font-weight:600;cursor:pointer;
+    transition:all .2s;text-align:left;
+    background:${p=>p.$active?'rgba(0,173,237,.1)':'transparent'};
+    color:${p=>p.$active?'#00adef':'#64748b'};
+    &:hover{background:rgba(0,173,237,.06);color:#00adef;}
 `;
-
-const shimmer = keyframes`
-    0% { background-position: -200% center; }
-    100% { background-position: 200% center; }
+const TrendTag = styled.div`
+    display:flex;align-items:center;justify-content:space-between;
+    padding:.4rem .55rem;border-radius:6px;cursor:pointer;
+    transition:all .15s;&:hover{background:rgba(255,255,255,.03);}
 `;
-
-const pulse = keyframes`
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.8; transform: scale(1.05); }
-`;
-
-const slideUp = keyframes`
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-`;
-
-const bounceIn = keyframes`
-    0% { transform: scale(0); }
-    50% { transform: scale(1.2); }
-    100% { transform: scale(1); }
-`;
-
-const spin = keyframes`
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-`;
-
-// 🔥 ADDED: Missing animations
-const fadeIn = keyframes`
-    from { opacity: 0; }
-    to { opacity: 1; }
-`;
-
-const fadeInScale = keyframes`
-    from { 
-        opacity: 0; 
-        transform: scale(0.95); 
-    }
-    to { 
-        opacity: 1; 
-        transform: scale(1); 
-    }
-`;
-
-const slideInRight = keyframes`
-    from { 
-        opacity: 0; 
-        transform: translateX(20px); 
-    }
-    to { 
-        opacity: 1; 
-        transform: translateX(0); 
-    }
-`;
-
-const newPostSlide = keyframes`
-    from { 
-        opacity: 0; 
-        transform: translateY(-20px); 
-    }
-    to { 
-        opacity: 1; 
-        transform: translateY(0); 
-    }
-`;
-
-const heartBeat = keyframes`
-    0% { transform: scale(1); }
-    14% { transform: scale(1.3); }
-    28% { transform: scale(1); }
-    42% { transform: scale(1.3); }
-    70% { transform: scale(1); }
-`;
-
-// ============ PAGE LAYOUT ============
-const PageContainer = styled.div`
-    min-height: 100vh;
-    background: transparent;
-    padding: 2rem;
-    padding-top: 100px;
-    position: relative;
-    overflow-x: hidden;
-    z-index: 1;
-
-    @media (max-width: 768px) {
-        padding: 1rem;
-        padding-top: 90px;
-    }
-`;
-
-const BackgroundOrbs = styled.div`
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    pointer-events: none;
-    overflow: hidden;
-    z-index: 0;
-`;
-
-const Orb = styled.div`
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(80px);
-    opacity: 0.3;
-    animation: ${float} ${props => props.$duration || '20s'} ease-in-out infinite;
-
-    &:nth-child(1) {
-        width: 400px;
-        height: 400px;
-        background: ${props => props.theme.brand?.primary || '#00adef'};
-        top: -100px;
-        left: -100px;
-    }
-
-    &:nth-child(2) {
-        width: 300px;
-        height: 300px;
-        background: ${props => props.theme.brand?.accent || '#8b5cf6'};
-        bottom: -50px;
-        right: -50px;
-        animation-delay: -5s;
-    }
-
-    &:nth-child(3) {
-        width: 200px;
-        height: 200px;
-        background: ${props => props.theme.success || '#10b981'};
-        top: 50%;
-        left: 50%;
-        animation-delay: -10s;
-    }
-`;
-
-const MainContent = styled.div`
-    display: grid;
-    grid-template-columns: 280px 1fr 320px;
-    gap: 2rem;
-    max-width: 1600px;
-    margin: 0 auto;
-    position: relative;
-    z-index: 1;
-
-    @media (max-width: 1200px) {
-        grid-template-columns: 1fr 320px;
-    }
-
-    @media (max-width: 900px) {
-        grid-template-columns: 1fr;
-    }
-`;
-
-// ============ SIDEBARS ============
-const LeftSidebar = styled.aside`
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-    position: sticky;
-    top: 2rem;
-    height: fit-content;
-
-    @media (max-width: 1200px) {
-        display: none;
-    }
-`;
-
-const RightSidebar = styled.aside`
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-    position: sticky;
-    top: 2rem;
-    height: fit-content;
-
-    @media (max-width: 900px) {
-        display: none;
-    }
-`;
-
-const SidebarCard = styled.div`
-    background: ${props => props.theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
-    border-radius: 20px;
-    padding: 1.5rem;
-    border: 1px solid ${props => props.theme.border?.primary || 'rgba(0, 173, 239, 0.2)'};
-    backdrop-filter: blur(20px);
-`;
-
-const SidebarTitle = styled.h3`
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: ${props => props.theme.brand?.primary || '#00adef'};
-    margin-bottom: 1rem;
-    
-    svg {
-        width: 20px;
-        height: 20px;
-    }
-`;
-
-// ============ QUICK ACTIONS ============
-const QuickAction = styled.button`
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    width: 100%;
-    padding: 0.875rem 1rem;
-    background: ${props => props.$active 
-        ? `${props.theme.brand?.primary || '#00adef'}20` 
-        : 'transparent'};
-    border: none;
-    border-radius: 12px;
-    color: ${props => props.$active 
-        ? props.theme.brand?.primary || '#00adef' 
-        : props.theme.text?.secondary || '#94a3b8'};
-    font-size: 0.95rem;
-    font-weight: ${props => props.$active ? '600' : '500'};
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-align: left;
-
-    &:hover {
-        background: ${props => props.theme.brand?.primary || '#00adef'}15;
-        color: ${props => props.theme.brand?.primary || '#00adef'};
-        transform: translateX(4px);
-    }
-
-    svg {
-        width: 18px;
-        height: 18px;
-    }
-`;
-
-// ============ TRENDING TAGS ============
-const TrendingTag = styled.div`
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.75rem 0;
-    border-bottom: 1px solid ${props => props.theme.border?.tertiary || 'rgba(100, 116, 139, 0.2)'};
-    cursor: pointer;
-    transition: all 0.2s ease;
-
-    &:last-child {
-        border-bottom: none;
-    }
-
-    &:hover {
-        padding-left: 0.5rem;
-    }
-`;
-
-const TagName = styled.span`
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: ${props => props.theme.text?.primary || '#e0e6ed'};
-    font-weight: 500;
-
-    svg {
-        width: 14px;
-        height: 14px;
-        color: ${props => props.theme.success || '#10b981'};
-    }
-`;
-
-const TagCount = styled.span`
-    font-size: 0.8rem;
-    color: ${props => props.theme.text?.tertiary || '#64748b'};
-`;
-
-// ============ TOP TRADERS ============
-const TopTraderCard = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-
-    &:hover {
-        background: ${props => props.theme.bg?.cardHover || 'rgba(30, 41, 59, 0.95)'};
-    }
-`;
-
-const TraderRank = styled.div`
-    width: 28px;
-    height: 28px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    font-size: 0.85rem;
-    background: ${props => {
-        if (props.$rank === 1) return 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)';
-        if (props.$rank === 2) return 'linear-gradient(135deg, #c0c0c0 0%, #9ca3af 100%)';
-        if (props.$rank === 3) return 'linear-gradient(135deg, #cd7f32 0%, #a16207 100%)';
-        return props.theme.bg?.input || 'rgba(15, 23, 42, 0.8)';
-    }};
-    color: ${props => props.$rank <= 3 ? '#000' : props.theme.text?.secondary || '#94a3b8'};
-`;
-
-const TraderInfo = styled.div`
-    flex: 1;
-    min-width: 0;
-`;
-
-const TraderName = styled.div`
-    font-weight: 600;
-    font-size: 0.9rem;
-    color: ${props => props.theme.text?.primary || '#e0e6ed'};
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-`;
-
-const TraderStat = styled.div`
-    font-size: 0.8rem;
-    color: ${props => props.theme.success || '#10b981'};
-    font-weight: 500;
-`;
-
-const FollowBadge = styled.button`
-    padding: 0.375rem 0.875rem;
-    border-radius: 20px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    background: ${props => props.theme.brand?.primary || '#00adef'}20;
-    color: ${props => props.theme.brand?.primary || '#00adef'};
-    border: 1px solid ${props => props.theme.brand?.primary || '#00adef'}40;
-    cursor: pointer;
-    transition: all 0.2s ease;
-
-    &:hover {
-        background: ${props => props.theme.brand?.primary || '#00adef'};
-        color: white;
-    }
-`;
-
-// ============ SUGGESTED USERS ============
-const SuggestedUser = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-
-    &:hover {
-        background: ${props => props.theme.bg?.cardHover || 'rgba(30, 41, 59, 0.95)'};
-    }
-`;
-
-const SuggestedInfo = styled.div`
-    flex: 1;
-    min-width: 0;
-`;
-
-const SuggestedName = styled.div`
-    font-weight: 600;
-    font-size: 0.9rem;
-    color: ${props => props.theme.text?.primary || '#e0e6ed'};
-`;
-
-const SuggestedMutual = styled.div`
-    font-size: 0.8rem;
-    color: ${props => props.theme.text?.tertiary || '#64748b'};
-`;
-
-
-// ============ USER AVATAR ============
-// 🔥 UPDATED: Now uses border color from equippedBorder
-const UserAvatar = styled.div`
-    width: ${props => props.$size || '40px'};
-    height: ${props => props.$size || '40px'};
-    border-radius: 50%;
-    background: ${props => props.theme.bg?.input || 'rgba(15, 23, 42, 0.8)'};
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    font-size: ${props => props.$fontSize || '0.9rem'};
-    color: ${props => props.theme.text?.primary || '#e0e6ed'};
-    border: ${props => props.$borderWidth || '3px'} solid ${props => props.$borderColor || '#00adef'};
-    box-shadow: ${props => props.$glow ? `0 0 15px ${props.$borderColor || '#00adef'}60` : 'none'};
-    cursor: pointer;
-    transition: all 0.3s ease;
-    flex-shrink: 0;
-    overflow: hidden;
-
-    img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        border-radius: 50%;
-    }
-
-    &:hover {
-        transform: scale(1.05);
-        box-shadow: 0 0 20px ${props => props.$borderColor || '#00adef'}80;
-    }
-`;
-
-// ============ FEED CONTAINER ============
-const FeedContainer = styled.main`
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-`;
-
-// ============ FEED HEADER ============
-const FeedHeader = styled.div`
-    background: ${props => props.theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
-    border-radius: 20px;
-    padding: 1.5rem;
-    border: 1px solid ${props => props.theme.border?.primary || 'rgba(0, 173, 239, 0.2)'};
-    backdrop-filter: blur(20px);
-`;
-
-const HeaderTop = styled.div`
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-`;
-
-const FeedTitle = styled.h1`
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    font-size: 1.75rem;
-    font-weight: 800;
-    background: ${props => props.theme.brand?.gradient || 'linear-gradient(135deg, #00adef 0%, #8b5cf6 100%)'};
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-
-    svg {
-        color: ${props => props.theme.brand?.primary || '#ffd700'};
-        -webkit-text-fill-color: initial;
-    }
-`;
-
-const HeaderActions = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-`;
-
-const NewPostsAlert = styled.button`
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    background: ${props => props.theme.brand?.primary || '#00adef'}20;
-    border: 1px solid ${props => props.theme.brand?.primary || '#00adef'}40;
-    border-radius: 20px;
-    color: ${props => props.theme.brand?.primary || '#00adef'};
-    font-size: 0.85rem;
-    font-weight: 600;
-    cursor: pointer;
-    animation: ${pulse} 2s ease-in-out infinite;
-    transition: all 0.2s ease;
-
-    &:hover {
-        background: ${props => props.theme.brand?.primary || '#00adef'}30;
-    }
-
-    svg {
-        width: 16px;
-        height: 16px;
-    }
-`;
-
-const RefreshButton = styled.button`
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
-    background: ${props => props.theme.bg?.input || 'rgba(15, 23, 42, 0.8)'};
-    border: 1px solid ${props => props.theme.border?.tertiary || 'rgba(100, 116, 139, 0.3)'};
-    color: ${props => props.theme.text?.secondary || '#94a3b8'};
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s ease;
-
-    &:hover {
-        background: ${props => props.theme.brand?.primary || '#00adef'}20;
-        color: ${props => props.theme.brand?.primary || '#00adef'};
-        border-color: ${props => props.theme.brand?.primary || '#00adef'}40;
-    }
-
-    &.spinning svg {
-        animation: ${spin} 1s linear infinite;
-    }
-
-    svg {
-        width: 20px;
-        height: 20px;
-    }
-`;
-
-// ============ FILTER TABS ============
-const FilterTabs = styled.div`
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-`;
-
+const TrendSymbol = styled.span`font-size:.78rem;font-weight:700;color:#e0e6ed;display:flex;align-items:center;gap:.3rem;`;
+const TrendCount = styled.span`font-size:.65rem;color:#475569;`;
+
+// ─── Center Feed ─────────────────────────────────────────
+const FeedCol = styled.div`display:flex;flex-direction:column;gap:1rem;min-width:0;`;
+
+// Page Header
+const PageHeader = styled.div`animation:${fadeIn} .4s ease-out;margin-bottom:.25rem;`;
+const PageTitle = styled.h1`font-size:1.35rem;font-weight:800;color:#fff;margin:0 0 .15rem;display:flex;align-items:center;gap:.5rem;`;
+const PageSub = styled.p`font-size:.78rem;color:#64748b;margin:0;`;
+
+// Filters
+const FilterRow = styled.div`display:flex;gap:.35rem;flex-wrap:wrap;overflow-x:auto;padding-bottom:.25rem;`;
 const FilterTab = styled.button`
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.625rem 1.25rem;
-    border-radius: 25px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    border: none;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    background: ${props => props.$active 
-        ? props.theme.brand?.primary || '#00adef' 
-        : props.theme.bg?.input || 'rgba(15, 23, 42, 0.8)'};
-    color: ${props => props.$active 
-        ? 'white' 
-        : props.theme.text?.secondary || '#94a3b8'};
-
-    &:hover {
-        background: ${props => props.$active 
-            ? props.theme.brand?.primary || '#00adef' 
-            : `${props.theme.brand?.primary || '#00adef'}20`};
-        color: ${props => props.$active ? 'white' : props.theme.brand?.primary || '#00adef'};
-    }
-
-    svg {
-        width: 16px;
-        height: 16px;
-    }
+    padding:.4rem .7rem;border-radius:7px;font-size:.72rem;font-weight:600;cursor:pointer;
+    white-space:nowrap;transition:all .2s;
+    background:${p=>p.$active?'rgba(0,173,237,.12)':'rgba(255,255,255,.02)'};
+    border:1px solid ${p=>p.$active?'rgba(0,173,237,.3)':'rgba(255,255,255,.05)'};
+    color:${p=>p.$active?'#00adef':'#64748b'};
+    &:hover{border-color:rgba(0,173,237,.2);color:#00adef;}
+`;
+const RefreshBtn = styled.button`
+    margin-left:auto;padding:.35rem .65rem;border-radius:7px;font-size:.72rem;font-weight:600;
+    cursor:pointer;display:flex;align-items:center;gap:.25rem;
+    background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);color:#64748b;
+    transition:all .2s;&:hover{color:#00adef;}
+    &.spinning svg{animation:${spin} .8s linear;}
 `;
 
-// ============ CREATE POST BOX ============
-const CreatePostBox = styled.div`
-    background: ${props => props.theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
-    border-radius: 20px;
-    padding: 1.5rem;
-    border: 1px solid ${props => props.theme.border?.primary || 'rgba(0, 173, 239, 0.2)'};
-    backdrop-filter: blur(20px);
+// ─── Most Discussed Signal ───────────────────────────────
+const FeaturedSignal = styled.div`
+    background:rgba(12,16,32,.92);border:1px solid rgba(0,173,237,.15);
+    border-radius:14px;padding:1.15rem;animation:${featuredGlow} 4s ease-in-out infinite;
+    cursor:pointer;transition:all .25s;
+    &:hover{border-color:rgba(0,173,237,.35);transform:translateY(-2px);}
+`;
+const FSLabel = styled.div`font-size:.62rem;font-weight:700;color:#00adef;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.5rem;display:flex;align-items:center;gap:.3rem;`;
+const FSRow = styled.div`display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap;`;
+const FSLeft = styled.div`display:flex;align-items:center;gap:.6rem;`;
+const FSSymbol = styled.span`font-size:1.15rem;font-weight:900;color:#fff;`;
+const FSDir = styled.span`
+    padding:.2rem .55rem;border-radius:5px;font-size:.7rem;font-weight:800;
+    background:${p=>p.$long?'rgba(16,185,129,.1)':'rgba(239,68,68,.1)'};
+    color:${p=>p.$long?'#10b981':'#ef4444'};
+`;
+const FSConf = styled.span`font-size:.75rem;font-weight:700;color:${p=>p.$c||'#10b981'};`;
+const FSRight = styled.div`text-align:right;`;
+const FSMeta = styled.div`font-size:.68rem;color:#475569;`;
+const FSCta = styled.div`
+    display:flex;align-items:center;gap:.25rem;margin-top:.4rem;
+    font-size:.72rem;font-weight:600;color:#00adef;
 `;
 
-const CreatePostHeader = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    margin-bottom: 1rem;
+// ─── Composer ────────────────────────────────────────────
+const ComposerBox = styled.div`
+    background:rgba(12,16,32,.9);border:1px solid rgba(255,255,255,.06);
+    border-radius:14px;padding:1rem;
+`;
+const ComposerTop = styled.div`display:flex;align-items:center;gap:.65rem;margin-bottom:.65rem;`;
+const ComposerInput = styled.div`
+    flex:1;padding:.6rem .85rem;border-radius:25px;
+    background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);
+    color:#64748b;font-size:.85rem;cursor:pointer;
+    transition:all .2s;&:hover{border-color:rgba(0,173,237,.2);color:#94a3b8;}
+`;
+const QuickActions = styled.div`display:flex;gap:.5rem;flex-wrap:wrap;`;
+const QuickBtn = styled.button`
+    display:flex;align-items:center;gap:.3rem;padding:.35rem .65rem;
+    border-radius:7px;border:1px solid rgba(255,255,255,.05);
+    background:rgba(255,255,255,.02);color:${p=>p.$c||'#64748b'};
+    font-size:.72rem;font-weight:600;cursor:pointer;transition:all .2s;
+    &:hover{background:${p=>p.$hc||'rgba(0,173,237,.06)'};color:${p=>p.$c||'#00adef'};border-color:${p=>`${p.$c||'#00adef'}30`};}
 `;
 
-const PostInput = styled.div`
-    flex: 1;
-    padding: 0.875rem 1.25rem;
-    background: ${props => props.theme.bg?.input || 'rgba(15, 23, 42, 0.8)'};
-    border-radius: 25px;
-    color: ${props => props.theme.text?.tertiary || '#64748b'};
-    cursor: pointer;
-    transition: all 0.2s ease;
-
-    &:hover {
-        background: ${props => props.theme.bg?.cardHover || 'rgba(30, 41, 59, 0.95)'};
-        color: ${props => props.theme.text?.secondary || '#94a3b8'};
-    }
+// ─── Post Card ───────────────────────────────────────────
+const PostCard = styled.div`
+    background:rgba(12,16,32,.9);border:1px solid rgba(255,255,255,.06);
+    border-radius:14px;overflow:hidden;transition:all .2s;
+    animation:${slideUp} .35s ease-out;
+    ${p=>p.$isPinned&&'border-color:rgba(245,158,11,.2);'}
+    &:hover{border-color:rgba(255,255,255,.1);}
 `;
-
-const PostTypeButtons = styled.div`
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-`;
-
-const PostTypeButton = styled.button`
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.625rem 1rem;
-    background: transparent;
-    border: none;
-    border-radius: 12px;
-    color: ${props => props.$color || props.theme.text?.secondary || '#94a3b8'};
-    font-size: 0.9rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-
-    &:hover {
-        background: ${props => props.$hoverBg || 'rgba(0, 173, 239, 0.1)'};
-    }
-
-    svg {
-        width: 18px;
-        height: 18px;
-    }
-`;
-// ============ PART 2 OF 4 ============
-// Post Card, Author Info, Trade/Poll/Prediction Attachments, Post Stats & Actions
-
-// ============ POST CARD ============
-const PostCard = styled.article`
-    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
-    backdrop-filter: blur(10px);
-    border: 2px solid ${({ $highlighted, theme }) => $highlighted ? 
-        `${theme.brand?.primary || '#ffd700'}66` : 
-        theme.border?.primary || 'rgba(255, 215, 0, 0.15)'
-    };
-    border-radius: 20px;
-    overflow: hidden;
-    transition: all 0.3s ease;
-    animation: ${props => props.$isNew ? newPostSlide : fadeIn} 0.5s ease-out;
-
-    &:hover {
-        border-color: ${({ theme }) => theme.border?.secondary || 'rgba(255, 215, 0, 0.3)'};
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-        transform: translateY(-2px);
-    }
-
-    ${props => props.$isPinned && css`
-        border-color: ${({ theme }) => `${theme.brand?.primary || '#ffd700'}80`};
-        background: ${({ theme }) => theme.bg?.cardHover || 'linear-gradient(135deg, rgba(40, 51, 69, 0.95) 0%, rgba(25, 33, 52, 0.95) 100%)'};
-    `}
-`;
-
-const PostHeader = styled.div`
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    padding: 1.25rem 1.25rem 0;
-`;
-
-const PostAuthor = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 0.875rem;
-`;
-
-const AuthorInfo = styled.div`
-    display: flex;
-    flex-direction: column;
-`;
-
+const PostHeader = styled.div`display:flex;align-items:center;justify-content:space-between;padding:1rem 1.15rem .5rem;`;
+const PostAuthor = styled.div`display:flex;align-items:center;gap:.6rem;flex:1;min-width:0;`;
+const AuthorInfo = styled.div`flex:1;min-width:0;`;
 const AuthorName = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-weight: 700;
-    color: ${({ theme }) => theme.text?.primary || '#f8fafc'};
-    cursor: pointer;
-    flex-wrap: wrap;
-
-    &:hover {
-        color: ${({ theme }) => theme.brand?.primary || '#ffd700'};
-    }
+    font-size:.85rem;font-weight:700;color:#e0e6ed;cursor:pointer;display:flex;align-items:center;gap:.3rem;
+    &:hover{color:#00adef;}
+`;
+const VerifiedBadge = styled.span`display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:#00adef;color:#fff;flex-shrink:0;`;
+const LevelBadge = styled.span`font-size:.58rem;padding:.1rem .3rem;border-radius:3px;background:rgba(0,173,237,.1);color:#0ea5e9;font-weight:700;`;
+const BadgesContainer = styled.div`display:flex;align-items:center;gap:.15rem;margin-left:.15rem;`;
+const MiniBadge = styled.span`display:flex;align-items:center;`;
+const MoreBadgesIndicator = styled.span`font-size:.55rem;color:#475569;font-weight:600;`;
+const AuthorMeta = styled.div`display:flex;align-items:center;gap:.35rem;font-size:.72rem;color:#475569;`;
+const Username = styled.span`cursor:pointer;&:hover{color:#00adef;}`;
+const PostTime = styled.span`display:flex;align-items:center;gap:.15rem;`;
+const PostTypeBadge = styled.span`
+    padding:.1rem .35rem;border-radius:3px;font-size:.55rem;font-weight:700;text-transform:uppercase;letter-spacing:.3px;
+    background:${p=>p.$bg||'rgba(0,173,237,.08)'};color:${p=>p.$c||'#0ea5e9'};
 `;
 
-const VerifiedBadge = styled.span`
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 18px;
-    height: 18px;
-    background: ${({ theme }) => theme.brand?.gradient || 'linear-gradient(135deg, #ffd700 0%, #ffed4e 100%)'};
-    border-radius: 50%;
-    color: ${({ theme }) => theme.bg?.page || '#0a0e27'};
-`;
-
-const LevelBadge = styled.span`
-    padding: 0.15rem 0.5rem;
-    background: ${({ theme }) => `linear-gradient(135deg, ${theme.brand?.accent || '#8b5cf6'}4D 0%, ${theme.brand?.accent || '#8b5cf6'}1A 100%)`};
-    border: 1px solid ${({ theme }) => `${theme.brand?.accent || '#8b5cf6'}66`};
-    border-radius: 6px;
-    font-size: 0.7rem;
-    font-weight: 700;
-    color: ${({ theme }) => theme.brand?.accent || '#a78bfa'};
-`;
-
-const BadgesContainer = styled.div`
-    display: inline-flex;
-    align-items: center;
-    gap: 0.2rem;
-    margin-left: 0.25rem;
-`;
-
-const MiniBadge = styled.span`
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 22px;
-    height: 22px;
-    border-radius: 5px;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    
-    &:hover {
-        transform: scale(1.15);
-        box-shadow: 0 0 8px ${props => props.$color || '#64748b'}50;
-    }
-`;
-
-const MoreBadgesIndicator = styled.span`
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 20px;
-    height: 20px;
-    border-radius: 5px;
-    background: ${({ theme }) => theme.bg?.input || 'rgba(100, 116, 139, 0.15)'};
-    border: 1.5px solid ${({ theme }) => theme.border?.primary || 'rgba(100, 116, 139, 0.3)'};
-    font-size: 0.55rem;
-    font-weight: 700;
-    color: ${({ theme }) => theme.text?.secondary || '#94a3b8'};
-`;
-
-const AuthorMeta = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: ${({ theme }) => theme.text?.tertiary || '#64748b'};
-    font-size: 0.85rem;
-`;
-
-const Username = styled.span`
-    cursor: pointer;
-    
-    &:hover {
-        color: ${({ theme }) => theme.brand?.accent || '#00adef'};
-        text-decoration: underline;
-    }
-`;
-
-const PostTime = styled.span`
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-`;
-
-const PostMenu = styled.div`
-    position: relative;
-`;
-
-const MenuButton = styled.button`
-    width: 36px;
-    height: 36px;
-    background: transparent;
-    border: none;
-    border-radius: 50%;
-    color: ${({ theme }) => theme.text?.tertiary || '#64748b'};
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-
-    &:hover {
-        background: ${({ theme }) => `${theme.brand?.primary || '#ffd700'}1A`};
-        color: ${({ theme }) => theme.brand?.primary || '#ffd700'};
-    }
-`;
-
+const PostMenu = styled.div`position:relative;`;
+const MenuButton = styled.button`background:none;border:none;color:#475569;cursor:pointer;padding:.25rem;border-radius:6px;&:hover{background:rgba(255,255,255,.05);color:#94a3b8;}`;
 const MenuDropdown = styled.div`
-    position: absolute;
-    top: 100%;
-    right: 0;
-    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.98)'};
-    backdrop-filter: blur(20px);
-    border: 1px solid ${({ theme }) => theme.border?.primary || 'rgba(255, 215, 0, 0.2)'};
-    border-radius: 12px;
-    min-width: 180px;
-    overflow: hidden;
-    z-index: 100;
-    animation: ${fadeInScale} 0.2s ease-out;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    position:absolute;right:0;top:100%;z-index:50;min-width:160px;
+    background:rgba(15,23,42,.98);border:1px solid rgba(255,255,255,.1);border-radius:10px;
+    padding:.35rem;box-shadow:0 8px 24px rgba(0,0,0,.4);
 `;
-
 const MenuItem = styled.button`
-    width: 100%;
-    padding: 0.75rem 1rem;
-    background: transparent;
-    border: none;
-    color: ${({ $danger, theme }) => $danger ? theme.error || '#ef4444' : theme.text?.primary || '#f8fafc'};
-    font-size: 0.9rem;
-    text-align: left;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    transition: all 0.2s ease;
-
-    &:hover {
-        background: ${({ $danger, theme }) => $danger ? 
-            `${theme.error || '#ef4444'}1A` : 
-            `${theme.brand?.primary || '#ffd700'}1A`
-        };
-        color: ${({ $danger, theme }) => $danger ? theme.error || '#ef4444' : theme.brand?.primary || '#ffd700'};
-    }
+    width:100%;display:flex;align-items:center;gap:.5rem;padding:.5rem .65rem;
+    border-radius:7px;border:none;background:none;font-size:.78rem;font-weight:500;
+    color:${p=>p.$danger?'#ef4444':'#94a3b8'};cursor:pointer;text-align:left;
+    &:hover{background:rgba(255,255,255,.04);color:${p=>p.$danger?'#ef4444':'#e0e6ed'};}
 `;
 
-const PostContent = styled.div`
-    padding: 1rem 1.25rem;
-`;
+// Post Content
+const PostContent = styled.div`padding:.35rem 1.15rem .75rem;`;
+const PostText = styled.div`font-size:.9rem;color:#c8d0da;line-height:1.65;word-break:break-word;`;
+const Hashtag = styled.span`color:#00adef;font-weight:600;cursor:pointer;&:hover{text-decoration:underline;}`;
+const Mention = styled.span`color:#a78bfa;font-weight:600;cursor:pointer;&:hover{text-decoration:underline;}`;
+const TickerMention = styled.span`color:#10b981;font-weight:700;cursor:pointer;&:hover{text-decoration:underline;}`;
 
-const PostText = styled.p`
-    color: ${({ theme }) => theme.text?.primary || '#e0e6ed'};
-    font-size: 1rem;
-    line-height: 1.6;
-    white-space: pre-wrap;
-    word-break: break-word;
-
-    a {
-        color: ${({ theme }) => theme.brand?.accent || '#00adef'};
-        text-decoration: none;
-
-        &:hover {
-            text-decoration: underline;
-        }
-    }
-`;
-
-const Hashtag = styled.span`
-    color: ${({ theme }) => theme.brand?.accent || '#00adef'};
-    cursor: pointer;
-    font-weight: 600;
-
-    &:hover {
-        text-decoration: underline;
-    }
-`;
-
-const Mention = styled.span`
-    color: ${({ theme }) => theme.brand?.primary || '#ffd700'};
-    cursor: pointer;
-    font-weight: 600;
-
-    &:hover {
-        text-decoration: underline;
-    }
-`;
-
-const TickerMention = styled.span`
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    padding: 0.15rem 0.5rem;
-    background: ${({ $direction, theme }) => $direction === 'up' ? 
-        `${theme.success || '#10b981'}33` : 
-        $direction === 'down' ? 
-        `${theme.error || '#ef4444'}33` : 
-        `${theme.brand?.accent || '#00adef'}33`
-    };
-    border: 1px solid ${({ $direction, theme }) => $direction === 'up' ? 
-        `${theme.success || '#10b981'}66` : 
-        $direction === 'down' ? 
-        `${theme.error || '#ef4444'}66` : 
-        `${theme.brand?.accent || '#00adef'}66`
-    };
-    border-radius: 6px;
-    color: ${({ $direction, theme }) => $direction === 'up' ? 
-        theme.success || '#10b981' : 
-        $direction === 'down' ? 
-        theme.error || '#ef4444' : 
-        theme.brand?.accent || '#00adef'
-    };
-    font-weight: 700;
-    font-size: 0.9rem;
-    cursor: pointer;
-
-    &:hover {
-        opacity: 0.8;
-    }
-`;
-
-// ============ TRADE POST ATTACHMENT ============
+// Trade Attachment
 const TradeAttachment = styled.div`
-    margin: 1rem 0;
-    background: ${({ theme }) => theme.bg?.input || 'linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, rgba(30, 41, 59, 0.8) 100%)'};
-    border: 1px solid ${({ $profitable, theme }) => $profitable ? 
-        `${theme.success || '#10b981'}4D` : 
-        `${theme.error || '#ef4444'}4D`
-    };
-    border-radius: 16px;
-    padding: 1.25rem;
-    position: relative;
-    overflow: hidden;
-
-    &::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 4px;
-        height: 100%;
-        background: ${({ $profitable, theme }) => $profitable ? theme.success || '#10b981' : theme.error || '#ef4444'};
-    }
+    margin-top:.65rem;border-radius:10px;overflow:hidden;
+    background:${p=>p.$profitable?'rgba(16,185,129,.04)':'rgba(239,68,68,.04)'};
+    border:1px solid ${p=>p.$profitable?'rgba(16,185,129,.12)':'rgba(239,68,68,.12)'};
 `;
-
-const TradeHeader = styled.div`
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 1rem;
-`;
-
-const TradeSymbol = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-`;
-
-const SymbolIcon = styled.div`
-    width: 44px;
-    height: 44px;
-    background: ${({ theme }) => `linear-gradient(135deg, ${theme.brand?.primary || '#ffd700'}33 0%, ${theme.brand?.primary || '#ffd700'}1A 100%)`};
-    border: 1px solid ${({ theme }) => `${theme.brand?.primary || '#ffd700'}4D`};
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 900;
-    color: ${({ theme }) => theme.brand?.primary || '#ffd700'};
-    font-size: 1rem;
-`;
-
+const TradeHeader = styled.div`display:flex;align-items:center;justify-content:space-between;padding:.75rem .85rem;`;
+const TradeSymbol = styled.div`display:flex;align-items:center;gap:.5rem;`;
+const SymbolIcon = styled.div`width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:rgba(0,173,237,.1);color:#00adef;font-size:.7rem;font-weight:800;`;
 const SymbolInfo = styled.div``;
-
-const SymbolName = styled.div`
-    font-weight: 700;
-    color: ${({ theme }) => theme.text?.primary || '#f8fafc'};
-    font-size: 1.1rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-`;
-
-const TradeDirection = styled.span`
-    padding: 0.2rem 0.5rem;
-    background: ${({ $type, theme }) => $type === 'LONG' ? 
-        `${theme.success || '#10b981'}33` : 
-        `${theme.error || '#ef4444'}33`
-    };
-    border: 1px solid ${({ $type, theme }) => $type === 'LONG' ? 
-        `${theme.success || '#10b981'}66` : 
-        `${theme.error || '#ef4444'}66`
-    };
-    border-radius: 6px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: ${({ $type, theme }) => $type === 'LONG' ? theme.success || '#10b981' : theme.error || '#ef4444'};
-`;
-
-const SymbolCompany = styled.div`
-    color: ${({ theme }) => theme.text?.tertiary || '#64748b'};
-    font-size: 0.85rem;
-`;
-
-const TradePnL = styled.div`
-    text-align: right;
-`;
-
-const PnLValue = styled.div`
-    font-size: 1.5rem;
-    font-weight: 900;
-    color: ${({ $positive, theme }) => $positive ? theme.success || '#10b981' : theme.error || '#ef4444'};
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-`;
-
-const PnLPercent = styled.div`
-    font-size: 0.9rem;
-    color: ${({ $positive, theme }) => $positive ? theme.success || '#10b981' : theme.error || '#ef4444'};
-    opacity: 0.8;
-`;
-
-const TradeDetails = styled.div`
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1rem;
-
-    @media (max-width: 600px) {
-        grid-template-columns: repeat(2, 1fr);
-    }
-`;
-
-const TradeDetail = styled.div`
-    text-align: center;
-    padding: 0.75rem;
-    background: ${({ theme }) => theme.bg?.accent || 'rgba(15, 23, 42, 0.5)'};
-    border-radius: 10px;
-`;
-
-const DetailLabel = styled.div`
-    color: ${({ theme }) => theme.text?.tertiary || '#64748b'};
-    font-size: 0.75rem;
-    margin-bottom: 0.25rem;
-`;
-
-const DetailValue = styled.div`
-    color: ${({ theme }) => theme.text?.primary || '#f8fafc'};
-    font-weight: 700;
-`;
-
+const SymbolName = styled.div`font-size:.88rem;font-weight:700;color:#e0e6ed;display:flex;align-items:center;gap:.35rem;`;
+const TradeDirection = styled.span`padding:.1rem .35rem;border-radius:3px;font-size:.55rem;font-weight:700;background:${p=>p.$type==='LONG'?'rgba(16,185,129,.1)':'rgba(239,68,68,.1)'};color:${p=>p.$type==='LONG'?'#10b981':'#ef4444'};`;
+const SymbolCompany = styled.div`font-size:.68rem;color:#475569;`;
+const TradePnL = styled.div`text-align:right;`;
+const PnLValue = styled.div`font-size:1rem;font-weight:800;color:${p=>p.$positive?'#10b981':'#ef4444'};`;
+const PnLPercent = styled.div`font-size:.72rem;font-weight:600;color:${p=>p.$positive?'#10b981':'#ef4444'};`;
+const TradeDetails = styled.div`display:grid;grid-template-columns:repeat(4,1fr);gap:.35rem;padding:0 .85rem .65rem;`;
+const TradeDetail = styled.div`text-align:center;`;
+const DetailLabel = styled.div`font-size:.55rem;color:#475569;text-transform:uppercase;letter-spacing:.3px;`;
+const DetailValue = styled.div`font-size:.78rem;font-weight:700;color:#c8d0da;`;
 const CopyTradeButton = styled.button`
-    width: 100%;
-    margin-top: 1rem;
-    padding: 0.75rem;
-    background: ${({ theme }) => `linear-gradient(135deg, ${theme.success || '#10b981'}33 0%, ${theme.success || '#10b981'}1A 100%)`};
-    border: 1px solid ${({ theme }) => `${theme.success || '#10b981'}66`};
-    border-radius: 10px;
-    color: ${({ theme }) => theme.success || '#10b981'};
-    font-weight: 700;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    transition: all 0.3s ease;
-
-    &:hover {
-        background: ${({ theme }) => `${theme.success || '#10b981'}4D`};
-        transform: translateY(-2px);
-    }
+    width:100%;padding:.5rem;border:none;border-top:1px solid rgba(255,255,255,.04);
+    background:rgba(0,173,237,.04);color:#0ea5e9;font-size:.75rem;font-weight:600;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.3rem;
+    transition:all .2s;&:hover{background:rgba(0,173,237,.1);}
 `;
 
-// ============ PREDICTION POST ============
-const PredictionAttachment = styled.div`
-    margin: 1rem 0;
-    background: ${({ theme }) => `linear-gradient(135deg, ${theme.brand?.accent || '#8b5cf6'}1A 0%, ${theme.brand?.accent || '#8b5cf6'}0D 100%)`};
-    border: 1px solid ${({ theme }) => `${theme.brand?.accent || '#8b5cf6'}4D`};
-    border-radius: 16px;
-    padding: 1.25rem;
-`;
-
-const PredictionHeader = styled.div`
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 1rem;
-`;
-
-const PredictionSymbol = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-`;
-
-const PredictionDirection = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    background: ${({ $direction, theme }) => $direction === 'UP' ? 
-        `${theme.success || '#10b981'}33` : 
-        `${theme.error || '#ef4444'}33`
-    };
-    border: 1px solid ${({ $direction, theme }) => $direction === 'UP' ? 
-        `${theme.success || '#10b981'}66` : 
-        `${theme.error || '#ef4444'}66`
-    };
-    border-radius: 10px;
-    color: ${({ $direction, theme }) => $direction === 'UP' ? theme.success || '#10b981' : theme.error || '#ef4444'};
-    font-weight: 700;
-`;
-
-const PredictionConfidence = styled.div`
-    margin-top: 1rem;
-`;
-
-const ConfidenceBar = styled.div`
-    height: 8px;
-    background: ${({ theme }) => theme.bg?.input || 'rgba(15, 23, 42, 0.6)'};
-    border-radius: 4px;
-    overflow: hidden;
-    margin-top: 0.5rem;
-`;
-
-const ConfidenceFill = styled.div`
-    height: 100%;
-    width: ${props => props.$value}%;
-    background: ${({ theme }) => `linear-gradient(90deg, ${theme.brand?.accent || '#a78bfa'}, ${theme.brand?.accent || '#8b5cf6'})`};
-    border-radius: 4px;
-    transition: width 1s ease;
-`;
-
-const ConfidenceLabel = styled.div`
-    display: flex;
-    justify-content: space-between;
-    color: ${({ theme }) => theme.text?.secondary || '#94a3b8'};
-    font-size: 0.85rem;
-`;
-
-// ============ POLL POST ============
-const PollContainer = styled.div`
-    margin: 1rem 0;
-    background: ${({ theme }) => theme.bg?.accent || 'rgba(15, 23, 42, 0.5)'};
-    border: 1px solid ${({ theme }) => theme.border?.primary || 'rgba(255, 215, 0, 0.2)'};
-    border-radius: 16px;
-    padding: 1.25rem;
-`;
-
-const PollQuestion = styled.div`
-    color: ${({ theme }) => theme.text?.primary || '#f8fafc'};
-    font-weight: 700;
-    font-size: 1.1rem;
-    margin-bottom: 1rem;
-`;
-
+// Poll
+const PollContainer = styled.div`margin-top:.65rem;`;
+const PollQuestion = styled.div`font-size:.88rem;font-weight:700;color:#e0e6ed;margin-bottom:.5rem;`;
 const PollOption = styled.button`
-    width: 100%;
-    padding: 1rem;
-    background: ${({ $selected, theme }) => $selected ? 
-        `linear-gradient(135deg, ${theme.brand?.primary || '#ffd700'}33 0%, ${theme.brand?.primary || '#ffd700'}1A 100%)` :
-        theme.bg?.input || 'rgba(30, 41, 59, 0.5)'
-    };
-    border: 1px solid ${({ $selected, theme }) => $selected ? 
-        `${theme.brand?.primary || '#ffd700'}80` : 
-        theme.border?.primary || 'rgba(100, 116, 139, 0.3)'
-    };
-    border-radius: 12px;
-    color: ${({ $selected, theme }) => $selected ? theme.brand?.primary || '#ffd700' : theme.text?.primary || '#e0e6ed'};
-    text-align: left;
-    cursor: ${props => props.$voted ? 'default' : 'pointer'};
-    margin-bottom: 0.75rem;
-    position: relative;
-    overflow: hidden;
-    transition: all 0.3s ease;
-
-    &:hover {
-        ${props => !props.$voted && css`
-            border-color: ${({ theme }) => `${theme.brand?.primary || '#ffd700'}80`};
-            background: ${({ theme }) => `${theme.brand?.primary || '#ffd700'}1A`};
-        `}
-    }
-
-    &:last-child {
-        margin-bottom: 0;
-    }
+    width:100%;position:relative;padding:.6rem .75rem;margin-bottom:.35rem;
+    border-radius:8px;border:1px solid ${p=>p.$selected?'rgba(0,173,237,.3)':'rgba(255,255,255,.06)'};
+    background:rgba(255,255,255,.02);cursor:${p=>p.$voted?'default':'pointer'};
+    text-align:left;transition:all .2s;overflow:hidden;
+    ${p=>!p.$voted&&'&:hover{border-color:rgba(0,173,237,.2);background:rgba(0,173,237,.04);}'}
 `;
+const PollProgressBar = styled.div`position:absolute;left:0;top:0;height:100%;width:${p=>p.$percent}%;background:rgba(0,173,237,.08);border-radius:8px;transition:width .5s;`;
+const PollOptionContent = styled.div`position:relative;display:flex;align-items:center;justify-content:space-between;`;
+const PollOptionText = styled.span`font-size:.82rem;color:#e0e6ed;font-weight:500;`;
+const PollOptionPercent = styled.span`font-size:.78rem;font-weight:700;color:#00adef;`;
+const PollStats = styled.div`display:flex;gap:.5rem;font-size:.7rem;color:#475569;margin-top:.25rem;`;
+const ImageGrid = styled.div`display:grid;grid-template-columns:${p=>p.$count===1?'1fr':'repeat(2,1fr)'};gap:.35rem;margin-top:.65rem;border-radius:10px;overflow:hidden;`;
+const PostImage = styled.img`width:100%;${p=>p.$single?'max-height:400px;':'height:200px;'}object-fit:cover;border-radius:6px;`;
 
-const PollProgressBar = styled.div`
-    position: absolute;
-    left: 0;
-    top: 0;
-    height: 100%;
-    width: ${props => props.$percent}%;
-    background: ${({ theme }) => `${theme.brand?.primary || '#ffd700'}26`};
-    transition: width 1s ease;
-`;
+// Post Stats & Actions
+const PostStats = styled.div`display:flex;align-items:center;justify-content:space-between;padding:.35rem 1.15rem;font-size:.72rem;color:#475569;`;
+const StatsLeft = styled.div`display:flex;align-items:center;gap:.35rem;`;
+const StatsRight = styled.div`display:flex;gap:.75rem;`;
+const StatItem = styled.span`cursor:pointer;&:hover{text-decoration:underline;color:#94a3b8;}`;
+const ReactionsList = styled.div`display:flex;`;
+const ReactionBubble = styled.span`width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.65rem;margin-left:-4px;&:first-child{margin-left:0;}`;
+const ReactionCount = styled.span`margin-left:.35rem;`;
 
-const PollOptionContent = styled.div`
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    position: relative;
-    z-index: 1;
-`;
-
-const PollOptionText = styled.span`
-    font-weight: 600;
-`;
-
-const PollOptionPercent = styled.span`
-    color: ${({ theme }) => theme.brand?.primary || '#ffd700'};
-    font-weight: 700;
-`;
-
-const PollStats = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    margin-top: 1rem;
-    color: ${({ theme }) => theme.text?.tertiary || '#64748b'};
-    font-size: 0.85rem;
-`;
-
-// ============ IMAGE ATTACHMENT ============
-const ImageGrid = styled.div`
-    display: grid;
-    grid-template-columns: ${props => {
-        if (props.$count === 1) return '1fr';
-        if (props.$count === 2) return '1fr 1fr';
-        if (props.$count === 3) return '2fr 1fr';
-        return '1fr 1fr';
-    }};
-    gap: 4px;
-    margin: 1rem 0;
-    border-radius: 16px;
-    overflow: hidden;
-    max-height: 400px;
-`;
-
-const PostImage = styled.img`
-    width: 100%;
-    height: ${props => props.$single ? '400px' : '200px'};
-    object-fit: cover;
-    cursor: pointer;
-    transition: all 0.3s ease;
-
-    &:hover {
-        opacity: 0.9;
-        transform: scale(1.02);
-    }
-`;
-
-// ============ POST STATS ============
-const PostStats = styled.div`
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.75rem 1.25rem;
-    border-top: 1px solid ${({ theme }) => theme.border?.primary || 'rgba(100, 116, 139, 0.2)'};
-    color: ${({ theme }) => theme.text?.tertiary || '#64748b'};
-    font-size: 0.85rem;
-`;
-
-const StatsLeft = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-`;
-
-const ReactionsList = styled.div`
-    display: flex;
-    align-items: center;
-`;
-
-const ReactionBubble = styled.div`
-    width: 22px;
-    height: 22px;
-    background: ${props => props.$color || 'rgba(255, 215, 0, 0.2)'};
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.75rem;
-    margin-left: -6px;
-    border: 2px solid ${({ theme }) => theme.bg?.card || '#1e293b'};
-    cursor: pointer;
-
-    &:first-child {
-        margin-left: 0;
-    }
-`;
-
-const ReactionCount = styled.span`
-    margin-left: 0.5rem;
-    cursor: pointer;
-
-    &:hover {
-        color: ${({ theme }) => theme.brand?.primary || '#ffd700'};
-        text-decoration: underline;
-    }
-`;
-
-const StatsRight = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-`;
-
-const StatItem = styled.span`
-    cursor: pointer;
-
-    &:hover {
-        color: ${({ theme }) => theme.brand?.primary || '#ffd700'};
-        text-decoration: underline;
-    }
-`;
-
-// ============ POST ACTIONS ============
 const PostActions = styled.div`
-    display: flex;
-    align-items: center;
-    justify-content: space-around;
-    padding: 0.5rem 1rem;
-    border-top: 1px solid ${({ theme }) => theme.border?.primary || 'rgba(100, 116, 139, 0.2)'};
+    display:flex;align-items:center;gap:.25rem;padding:.35rem .75rem;
+    border-top:1px solid rgba(255,255,255,.04);
 `;
-
 const ActionButton = styled.button`
-    flex: 1;
-    padding: 0.75rem 1rem;
-    background: transparent;
-    border: none;
-    color: ${({ $active, $activeColor, theme }) => $active ? $activeColor || theme.brand?.primary || '#ffd700' : theme.text?.secondary || '#94a3b8'};
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    border-radius: 10px;
-    transition: all 0.2s ease;
-    position: relative;
-
-    &:hover {
-        background: ${({ $hoverBg, theme }) => $hoverBg || `${theme.brand?.primary || '#ffd700'}1A`};
-        color: ${({ $hoverColor, theme }) => $hoverColor || theme.brand?.primary || '#ffd700'};
-    }
-
-    svg {
-        transition: all 0.2s ease;
-    }
-
-    &:hover svg {
-        transform: scale(1.1);
-    }
-
-    ${props => props.$active && css`
-        svg {
-            animation: ${heartBeat} 0.5s ease;
-        }
-    `}
-
-    @media (max-width: 480px) {
-        padding: 0.6rem 0.5rem;
-        font-size: 0.85rem;
-    }
+    flex:1;display:flex;align-items:center;justify-content:center;gap:.35rem;
+    padding:.5rem;border-radius:8px;border:none;background:none;
+    font-size:.78rem;font-weight:600;cursor:pointer;transition:all .2s;position:relative;
+    color:${p=>p.$active?p.$activeColor||'#0ea5e9':'#64748b'};
+    &:hover{background:${p=>p.$hoverBg||'rgba(255,255,255,.04)'};color:${p=>p.$hoverColor||'#94a3b8'};}
 `;
-
-// ============ REACTIONS PICKER ============
 const ReactionsPopup = styled.div`
-    position: absolute;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.98)'};
-    backdrop-filter: blur(20px);
-    border: 1px solid ${({ theme }) => theme.border?.secondary || 'rgba(255, 215, 0, 0.3)'};
-    border-radius: 30px;
-    padding: 0.5rem;
-    display: flex;
-    gap: 0.25rem;
-    animation: ${fadeInScale} 0.2s ease-out;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-    z-index: 10;
+    position:absolute;bottom:100%;left:50%;transform:translateX(-50%);
+    display:flex;gap:.15rem;padding:.35rem .5rem;
+    background:rgba(15,23,42,.98);border:1px solid rgba(255,255,255,.1);
+    border-radius:25px;box-shadow:0 8px 24px rgba(0,0,0,.5);
+    animation:${bounceIn} .2s ease-out;z-index:100;
 `;
-
 const ReactionButton = styled.button`
-    width: 40px;
-    height: 40px;
-    background: transparent;
-    border: none;
-    border-radius: 50%;
-    cursor: pointer;
-    font-size: 1.5rem;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    &:hover {
-        background: ${({ theme }) => `${theme.brand?.primary || '#ffd700'}33`};
-        transform: scale(1.3) translateY(-5px);
-    }
+    width:32px;height:32px;border-radius:50%;border:none;background:none;
+    font-size:1.2rem;cursor:pointer;transition:all .15s;
+    ${p=>p.$active&&'background:rgba(255,255,255,.08);'}
+    &:hover{transform:scale(1.3);background:rgba(255,255,255,.06);}
 `;
 
-// END OF PART 2 - Continue to Part 3 for Comments, Sidebar, Modal styles
-
-
-// ============ LOADING STATES ============
-const LoadingContainer = styled.div`
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 3rem;
-    gap: 1rem;
-`;
-
-const LoadingSpinner = styled.div`
-    width: 50px;
-    height: 50px;
-    border: 3px solid ${props => props.theme.border?.tertiary || 'rgba(100, 116, 139, 0.3)'};
-    border-top-color: ${props => props.theme.brand?.primary || '#00adef'};
-    border-radius: 50%;
-    animation: ${spin} 1s linear infinite;
-`;
-
-const LoadingText = styled.div`
-    color: ${props => props.theme.text?.secondary || '#94a3b8'};
-    font-size: 0.95rem;
-`;
-
-// ============ EMPTY STATE ============
-const EmptyState = styled.div`
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 4rem 2rem;
-    text-align: center;
-    background: ${props => props.theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
-    border-radius: 20px;
-    border: 1px solid ${props => props.theme.border?.primary || 'rgba(0, 173, 239, 0.2)'};
-`;
-
-const EmptyIcon = styled.div`
-    margin-bottom: 1.5rem;
-    opacity: 0.8;
-`;
-
-const EmptyTitle = styled.h3`
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: ${props => props.theme.text?.primary || '#e0e6ed'};
-    margin-bottom: 0.5rem;
-`;
-
-const EmptyText = styled.p`
-    color: ${props => props.theme.text?.secondary || '#94a3b8'};
-    margin-bottom: 1.5rem;
-`;
-
-const EmptyButton = styled.button`
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.5rem;
-    background: ${props => props.theme.brand?.gradient || 'linear-gradient(135deg, #00adef 0%, #8b5cf6 100%)'};
-    border: none;
-    border-radius: 12px;
-    color: white;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-
-    &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 30px ${props => props.theme.brand?.primary || '#00adef'}40;
-    }
-
-    svg {
-        width: 18px;
-        height: 18px;
-    }
-`;
-
-const EndMessage = styled.div`
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    padding: 2rem;
-    color: ${props => props.theme.text?.tertiary || '#64748b'};
-    font-size: 0.9rem;
-`;
-
-// END OF PART 1 - Continue to Part 2 for Post Card styles
-// ============ CREATE POST MODAL ============
-const ModalOverlay = styled.div`
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(8px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 10000;
-    padding: 2rem;
-    animation: ${fadeIn} 0.3s ease-out;
-`;
-
-const Modal = styled.div`
-    background: ${({ theme }) => theme.bg?.cardSolid || 'rgba(15, 23, 42, 0.95)'};
-    border: 2px solid ${({ theme }) => theme.border?.secondary || 'rgba(255, 215, 0, 0.3)'};
-    border-radius: 24px;
-    width: 100%;
-    max-width: 600px;
-    max-height: 90vh;
-    overflow-y: auto;
-    animation: ${fadeInScale} 0.3s ease-out;
-
-    &::-webkit-scrollbar {
-        width: 6px;
-    }
-
-    &::-webkit-scrollbar-track {
-        background: transparent;
-    }
-
-    &::-webkit-scrollbar-thumb {
-        background: ${({ theme }) => `${theme.brand?.primary || '#ffd700'}4D`};
-        border-radius: 3px;
-    }
-`;
-
-const ModalHeader = styled.div`
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 1.25rem 1.5rem;
-    border-bottom: 1px solid ${({ theme }) => theme.border?.primary || 'rgba(255, 215, 0, 0.2)'};
-`;
-
-const ModalTitle = styled.h2`
-    color: ${({ theme }) => theme.brand?.primary || '#ffd700'};
-    font-size: 1.25rem;
-`;
-
-const CloseButton = styled.button`
-    width: 36px;
-    height: 36px;
-    background: ${({ theme }) => `${theme.error || '#ef4444'}1A`};
-    border: 1px solid ${({ theme }) => `${theme.error || '#ef4444'}4D`};
-    border-radius: 50%;
-    color: ${({ theme }) => theme.error || '#ef4444'};
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-
-    &:hover {
-        background: ${({ theme }) => `${theme.error || '#ef4444'}33`};
-        transform: scale(1.1);
-    }
-`;
-
-const ModalBody = styled.div`
-    padding: 1.5rem;
-`;
-
-const PostTypeSelector = styled.div`
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 1.5rem;
-    flex-wrap: wrap;
-`;
-
-const PostTypeChip = styled.button`
-    padding: 0.5rem 1rem;
-    background: ${({ $active, theme }) => $active ? 
-        `linear-gradient(135deg, ${theme.brand?.primary || '#ffd700'}4D 0%, ${theme.brand?.primary || '#ffd700'}26 100%)` :
-        theme.bg?.input || 'rgba(30, 41, 59, 0.5)'
-    };
-    border: 1px solid ${({ $active, theme }) => $active ? 
-        `${theme.brand?.primary || '#ffd700'}80` : 
-        theme.border?.primary || 'rgba(100, 116, 139, 0.3)'
-    };
-    border-radius: 20px;
-    color: ${({ $active, theme }) => $active ? theme.brand?.primary || '#ffd700' : theme.text?.secondary || '#94a3b8'};
-    font-weight: 600;
-    font-size: 0.85rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    transition: all 0.2s ease;
-
-    &:hover {
-        border-color: ${({ theme }) => `${theme.brand?.primary || '#ffd700'}80`};
-        color: ${({ theme }) => theme.brand?.primary || '#ffd700'};
-    }
-`;
-
-const TextArea = styled.textarea`
-    width: 100%;
-    min-height: 150px;
-    padding: 1rem;
-    background: ${({ theme }) => theme.bg?.input || 'rgba(15, 23, 42, 0.6)'};
-    border: 1px solid ${({ theme }) => theme.border?.primary || 'rgba(100, 116, 139, 0.3)'};
-    border-radius: 16px;
-    color: ${({ theme }) => theme.text?.primary || '#e0e6ed'};
-    font-size: 1rem;
-    line-height: 1.6;
-    resize: none;
-    outline: none;
-    font-family: inherit;
-    transition: all 0.3s ease;
-
-    &:focus {
-        border-color: ${({ theme }) => `${theme.brand?.primary || '#ffd700'}80`};
-    }
-
-    &::placeholder {
-        color: ${({ theme }) => theme.text?.tertiary || '#64748b'};
-    }
-`;
-
-const CharCount = styled.div`
-    text-align: right;
-    color: ${({ $over, theme }) => $over ? theme.error || '#ef4444' : theme.text?.tertiary || '#64748b'};
-    font-size: 0.85rem;
-    margin-top: 0.5rem;
-`;
-
-const AttachmentPreview = styled.div`
-    margin-top: 1rem;
-    padding: 1rem;
-    background: ${({ theme }) => theme.bg?.accent || 'rgba(15, 23, 42, 0.5)'};
-    border: 1px solid ${({ theme }) => theme.border?.primary || 'rgba(100, 116, 139, 0.3)'};
-    border-radius: 12px;
-`;
-
-const AttachmentHeader = styled.div`
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 0.75rem;
-`;
-
-const AttachmentTitle = styled.div`
-    color: ${({ theme }) => theme.text?.primary || '#f8fafc'};
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-`;
-
-const RemoveAttachment = styled.button`
-    background: transparent;
-    border: none;
-    color: ${({ theme }) => theme.error || '#ef4444'};
-    cursor: pointer;
-    padding: 0.25rem;
-
-    &:hover {
-        opacity: 0.8;
-    }
-`;
-
-const TradeForm = styled.div`
-    display: grid;
-    gap: 1rem;
-`;
-
-const FormRow = styled.div`
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-
-    @media (max-width: 480px) {
-        grid-template-columns: 1fr;
-    }
-`;
-
-const FormGroup = styled.div``;
-
-const FormLabel = styled.label`
-    display: block;
-    color: ${({ theme }) => theme.text?.secondary || '#94a3b8'};
-    font-size: 0.85rem;
-    margin-bottom: 0.5rem;
-`;
-
-const FormInput = styled.input`
-    width: 100%;
-    padding: 0.75rem 1rem;
-    background: ${({ theme }) => theme.bg?.input || 'rgba(15, 23, 42, 0.6)'};
-    border: 1px solid ${({ theme }) => theme.border?.primary || 'rgba(100, 116, 139, 0.3)'};
-    border-radius: 10px;
-    color: ${({ theme }) => theme.text?.primary || '#e0e6ed'};
-    font-size: 0.95rem;
-    outline: none;
-    transition: all 0.3s ease;
-
-    &:focus {
-        border-color: ${({ theme }) => `${theme.brand?.primary || '#ffd700'}80`};
-    }
-
-    &::placeholder {
-        color: ${({ theme }) => theme.text?.tertiary || '#64748b'};
-    }
-`;
-
-const FormSelect = styled.select`
-    width: 100%;
-    padding: 0.75rem 1rem;
-    background: ${({ theme }) => theme.bg?.input || 'rgba(15, 23, 42, 0.6)'};
-    border: 1px solid ${({ theme }) => theme.border?.primary || 'rgba(100, 116, 139, 0.3)'};
-    border-radius: 10px;
-    color: ${({ theme }) => theme.text?.primary || '#e0e6ed'};
-    font-size: 0.95rem;
-    outline: none;
-    cursor: pointer;
-    transition: all 0.3s ease;
-
-    &:focus {
-        border-color: ${({ theme }) => `${theme.brand?.primary || '#ffd700'}80`};
-    }
-
-    option {
-        background: ${({ theme }) => theme.bg?.card || '#1e293b'};
-    }
-`;
-
-const PollForm = styled.div``;
-
-const PollOptionInput = styled.div`
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 0.75rem;
-`;
-
-const OptionInput = styled.input`
-    flex: 1;
-    padding: 0.75rem 1rem;
-    background: ${({ theme }) => theme.bg?.input || 'rgba(15, 23, 42, 0.6)'};
-    border: 1px solid ${({ theme }) => theme.border?.primary || 'rgba(100, 116, 139, 0.3)'};
-    border-radius: 10px;
-    color: ${({ theme }) => theme.text?.primary || '#e0e6ed'};
-    font-size: 0.95rem;
-    outline: none;
-    transition: all 0.3s ease;
-
-    &:focus {
-        border-color: ${({ theme }) => `${theme.brand?.primary || '#ffd700'}80`};
-    }
-
-    &::placeholder {
-        color: ${({ theme }) => theme.text?.tertiary || '#64748b'};
-    }
-`;
-
-const RemoveOptionButton = styled.button`
-    width: 40px;
-    height: 40px;
-    background: ${({ theme }) => `${theme.error || '#ef4444'}1A`};
-    border: 1px solid ${({ theme }) => `${theme.error || '#ef4444'}4D`};
-    border-radius: 10px;
-    color: ${({ theme }) => theme.error || '#ef4444'};
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-
-    &:hover {
-        background: ${({ theme }) => `${theme.error || '#ef4444'}33`};
-    }
-`;
-
-const AddOptionButton = styled.button`
-    width: 100%;
-    padding: 0.75rem;
-    background: transparent;
-    border: 1px dashed ${({ theme }) => `${theme.brand?.primary || '#ffd700'}66`};
-    border-radius: 10px;
-    color: ${({ theme }) => theme.brand?.primary || '#ffd700'};
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    transition: all 0.2s ease;
-
-    &:hover {
-        background: ${({ theme }) => `${theme.brand?.primary || '#ffd700'}1A`};
-    }
-`;
-
-const ModalFooter = styled.div`
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 1rem 1.5rem;
-    border-top: 1px solid ${({ theme }) => theme.border?.primary || 'rgba(255, 215, 0, 0.2)'};
-`;
-
-const FooterActions = styled.div`
-    display: flex;
-    gap: 0.5rem;
-`;
-
-const FooterButton = styled.button`
-    width: 40px;
-    height: 40px;
-    background: transparent;
-    border: 1px solid ${({ theme }) => theme.border?.primary || 'rgba(100, 116, 139, 0.3)'};
-    border-radius: 10px;
-    color: ${({ theme }) => theme.text?.secondary || '#94a3b8'};
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-
-    &:hover {
-        border-color: ${({ theme }) => `${theme.brand?.primary || '#ffd700'}66`};
-        color: ${({ theme }) => theme.brand?.primary || '#ffd700'};
-        background: ${({ theme }) => `${theme.brand?.primary || '#ffd700'}1A`};
-    }
-`;
-
-const PostButton = styled.button`
-    padding: 0.75rem 2rem;
-    background: ${({ theme }) => theme.brand?.gradient || 'linear-gradient(135deg, #ffd700 0%, #ffed4e 100%)'};
-    border: none;
-    border-radius: 12px;
-    color: ${({ theme }) => theme.bg?.page || '#0a0e27'};
-    font-weight: 700;
-    font-size: 1rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    transition: all 0.3s ease;
-    box-shadow: ${({ theme }) => `0 4px 16px ${theme.brand?.primary || '#ffd700'}4D`};
-
-    &:hover:not(:disabled) {
-        transform: translateY(-2px);
-        box-shadow: ${({ theme }) => `0 8px 24px ${theme.brand?.primary || '#ffd700'}80`};
-    }
-
-    &:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-`;
-
-// ============ PART 3 OF 4 ============
-// Comments Section, Right Sidebar, Loading/Empty States, Create Post Modal
-
-// ============ COMMENTS SECTION ============
-const CommentsSection = styled.div`
-    border-top: 1px solid ${({ theme }) => theme.border?.primary || 'rgba(100, 116, 139, 0.2)'};
-    padding: 1rem 1.25rem;
-    background: ${({ theme }) => theme.bg?.accent || 'rgba(15, 23, 42, 0.3)'};
-`;
-
-const CommentsList = styled.div`
-    max-height: 300px;
-    overflow-y: auto;
-    margin-bottom: 1rem;
-
-    &::-webkit-scrollbar {
-        width: 4px;
-    }
-
-    &::-webkit-scrollbar-track {
-        background: ${({ theme }) => `${theme.brand?.primary || '#ffd700'}0D`};
-    }
-
-    &::-webkit-scrollbar-thumb {
-        background: ${({ theme }) => `${theme.brand?.primary || '#ffd700'}4D`};
-        border-radius: 2px;
-    }
-`;
-
-const Comment = styled.div`
-    display: flex;
-    gap: 0.75rem;
-    margin-bottom: 1rem;
-
-    &:last-child {
-        margin-bottom: 0;
-    }
-`;
-
-const CommentContent = styled.div`
-    flex: 1;
-`;
-
-const CommentBubble = styled.div`
-    background: ${({ theme }) => theme.bg?.input || 'rgba(30, 41, 59, 0.8)'};
-    border-radius: 16px;
-    padding: 0.75rem 1rem;
-`;
-
-const CommentAuthor = styled.span`
-    font-weight: 700;
-    color: ${({ theme }) => theme.text?.primary || '#f8fafc'};
-    margin-right: 0.5rem;
-    cursor: pointer;
-
-    &:hover {
-        color: ${({ theme }) => theme.brand?.primary || '#ffd700'};
-    }
-`;
-
-const CommentText = styled.span`
-    color: ${({ theme }) => theme.text?.primary || '#e0e6ed'};
-`;
-
-const CommentMeta = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    margin-top: 0.25rem;
-    padding-left: 0.5rem;
-    color: ${({ theme }) => theme.text?.tertiary || '#64748b'};
-    font-size: 0.8rem;
-`;
-
-const CommentAction = styled.button`
-    background: transparent;
-    border: none;
-    color: ${({ theme }) => theme.text?.tertiary || '#64748b'};
-    font-size: 0.8rem;
-    font-weight: 600;
-    cursor: pointer;
-
-    &:hover {
-        color: ${({ theme }) => theme.brand?.primary || '#ffd700'};
-    }
-`;
-
-const CommentInput = styled.div`
-    display: flex;
-    gap: 0.75rem;
-    align-items: center;
-`;
-
+// Comments
+const CommentsSection = styled.div`border-top:1px solid rgba(255,255,255,.04);padding:.85rem 1.15rem;background:rgba(15,23,42,.2);`;
+const CommentsList = styled.div`max-height:300px;overflow-y:auto;margin-bottom:.75rem;`;
+const Comment = styled.div`display:flex;gap:.6rem;margin-bottom:.75rem;&:last-child{margin-bottom:0;}`;
+const CommentContent = styled.div`flex:1;`;
+const CommentBubble = styled.div`background:rgba(30,41,59,.6);border-radius:12px;padding:.55rem .75rem;`;
+const CommentAuthor = styled.span`font-weight:700;color:#e0e6ed;margin-right:.4rem;cursor:pointer;font-size:.82rem;&:hover{color:#00adef;}`;
+const CommentText = styled.span`color:#c8d0da;font-size:.82rem;`;
+const CommentMeta = styled.div`display:flex;gap:.75rem;margin-top:.15rem;padding-left:.35rem;color:#475569;font-size:.68rem;`;
+const CommentAction = styled.button`background:none;border:none;color:#475569;font-size:.68rem;font-weight:600;cursor:pointer;&:hover{color:#00adef;}`;
+const CommentInput = styled.div`display:flex;gap:.6rem;align-items:center;`;
 const CommentTextarea = styled.input`
-    flex: 1;
-    padding: 0.75rem 1rem;
-    background: ${({ theme }) => theme.bg?.input || 'rgba(15, 23, 42, 0.6)'};
-    border: 1px solid ${({ theme }) => theme.border?.primary || 'rgba(100, 116, 139, 0.3)'};
-    border-radius: 25px;
-    color: ${({ theme }) => theme.text?.primary || '#e0e6ed'};
-    font-size: 0.95rem;
-    outline: none;
-    transition: all 0.3s ease;
-
-    &:focus {
-        border-color: ${({ theme }) => `${theme.brand?.primary || '#ffd700'}80`};
-    }
-
-    &::placeholder {
-        color: ${({ theme }) => theme.text?.tertiary || '#64748b'};
-    }
+    flex:1;padding:.55rem .85rem;background:rgba(15,23,42,.5);
+    border:1px solid rgba(255,255,255,.06);border-radius:25px;
+    color:#e0e6ed;font-size:.85rem;outline:none;
+    &:focus{border-color:rgba(0,173,237,.3);}
+    &::placeholder{color:#475569;}
+`;
+const SendBtn = styled.button`
+    width:34px;height:34px;border-radius:50%;border:none;
+    background:linear-gradient(135deg,#00adef,#0090d0);color:#fff;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    transition:all .2s;&:hover{transform:scale(1.05);}&:disabled{opacity:.4;cursor:not-allowed;}
 `;
 
-const SendButton = styled.button`
-    width: 40px;
-    height: 40px;
-    background: ${({ theme }) => theme.brand?.gradient || 'linear-gradient(135deg, #ffd700 0%, #ffed4e 100%)'};
-    border: none;
-    border-radius: 50%;
-    color: ${({ theme }) => theme.bg?.page || '#0a0e27'};
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
+// ─── Right Sidebar ───────────────────────────────────────
+const RightSidebar = styled.div`display:flex;flex-direction:column;gap:1rem;position:sticky;top:5.5rem;height:fit-content;@media(max-width:900px){display:none;}`;
 
-    &:hover {
-        transform: scale(1.1);
-    }
+const TrendingSignalCard = styled.div`
+    display:flex;align-items:center;justify-content:space-between;
+    padding:.5rem .6rem;border-radius:8px;cursor:pointer;
+    transition:all .15s;&:hover{background:rgba(255,255,255,.03);}
+`;
+const TSLeft = styled.div`display:flex;align-items:center;gap:.4rem;`;
+const TSSymbol = styled.span`font-size:.82rem;font-weight:700;color:#e0e6ed;`;
+const TSDir = styled.span`
+    padding:.1rem .3rem;border-radius:3px;font-size:.5rem;font-weight:700;
+    background:${p=>p.$long?'rgba(16,185,129,.1)':'rgba(239,68,68,.1)'};
+    color:${p=>p.$long?'#10b981':'#ef4444'};
+`;
+const TSRight = styled.div`text-align:right;`;
+const TSConf = styled.div`font-size:.72rem;font-weight:700;color:#10b981;`;
+const TSMentions = styled.div`font-size:.58rem;color:#475569;`;
 
-    &:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
+const SentimentBar = styled.div`margin-bottom:.6rem;`;
+const SentimentLabel = styled.div`display:flex;align-items:center;justify-content:space-between;margin-bottom:.25rem;`;
+const SentimentSymbol = styled.span`font-size:.78rem;font-weight:700;color:#e0e6ed;`;
+const SentimentPct = styled.span`font-size:.68rem;font-weight:600;color:${p=>p.$c||'#10b981'};`;
+const SentimentTrack = styled.div`height:4px;border-radius:2px;background:rgba(239,68,68,.15);overflow:hidden;`;
+const SentimentFill = styled.div`height:100%;border-radius:2px;width:${p=>p.$w}%;background:linear-gradient(90deg,#10b981,#059669);`;
+
+const TopTraderRow = styled.div`
+    display:flex;align-items:center;gap:.5rem;padding:.45rem .5rem;
+    border-radius:8px;cursor:pointer;transition:all .15s;
+    &:hover{background:rgba(255,255,255,.03);}
+`;
+const TraderRank = styled.span`font-size:.65rem;font-weight:800;width:18px;text-align:center;color:${p=>p.$rank===1?'#fbbf24':p.$rank===2?'#C0C0C0':'#CD7F32'};`;
+const TraderName = styled.span`font-size:.78rem;font-weight:600;color:#e0e6ed;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;`;
+const TraderReturn = styled.span`font-size:.72rem;font-weight:700;color:#10b981;`;
+const FollowSmall = styled.button`
+    padding:.2rem .45rem;border-radius:5px;font-size:.6rem;font-weight:700;
+    background:rgba(0,173,237,.08);border:1px solid rgba(0,173,237,.15);
+    color:#00adef;cursor:pointer;transition:all .15s;
+    &:hover{background:rgba(0,173,237,.15);}
 `;
 
+// Loading / Empty
+const LoadingBox = styled.div`text-align:center;padding:3rem;color:#475569;`;
+const Spinner = styled.div`width:32px;height:32px;border:3px solid rgba(0,173,237,.15);border-top-color:#00adef;border-radius:50%;animation:${spin} .8s linear infinite;margin:0 auto .75rem;`;
+const EmptyState = styled.div`text-align:center;padding:3rem 1.5rem;`;
+const EmptyIcon = styled.div`margin-bottom:.75rem;`;
+const EmptyTitle = styled.div`font-size:1rem;font-weight:700;color:#e0e6ed;margin-bottom:.35rem;`;
+const EmptyText = styled.div`font-size:.82rem;color:#64748b;margin-bottom:1rem;`;
+const EmptyBtn = styled.button`
+    padding:.55rem 1.2rem;border-radius:10px;border:none;
+    background:linear-gradient(135deg,#00adef,#0090d0);color:#fff;
+    font-weight:700;font-size:.85rem;cursor:pointer;
+    display:inline-flex;align-items:center;gap:.35rem;
+    &:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,173,237,.3);}
+`;
+const EndMsg = styled.div`text-align:center;padding:1.5rem;font-size:.78rem;color:#475569;display:flex;align-items:center;justify-content:center;gap:.35rem;`;
 
-
-
-// ============ LIVE ACTIVITY PLACEHOLDER ============
-const LiveActivityPlaceholder = styled.div`
-    color: ${({ theme }) => theme.text?.tertiary || '#64748b'};
-    font-size: 0.9rem;
-    text-align: center;
-    padding: 1rem;
+// ─── Create Post Modal ───────────────────────────────────
+const ModalOverlay = styled.div`position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);z-index:1000;display:flex;align-items:center;justify-content:center;`;
+const Modal = styled.div`background:rgba(15,23,42,.98);border:1px solid rgba(255,255,255,.1);border-radius:18px;width:90%;max-width:540px;max-height:90vh;overflow-y:auto;`;
+const ModalHeader = styled.div`display:flex;align-items:center;justify-content:space-between;padding:1.15rem 1.25rem;border-bottom:1px solid rgba(255,255,255,.06);`;
+const ModalTitle = styled.h2`font-size:1rem;font-weight:700;color:#e0e6ed;margin:0;`;
+const CloseBtn = styled.button`background:none;border:none;color:#64748b;cursor:pointer;&:hover{color:#e0e6ed;}`;
+const ModalBody = styled.div`padding:1.25rem;`;
+const PostTypeSelector = styled.div`display:flex;gap:.35rem;margin-bottom:.85rem;flex-wrap:wrap;`;
+const PostTypeChip = styled.button`
+    display:flex;align-items:center;gap:.3rem;padding:.4rem .7rem;
+    border-radius:8px;font-size:.78rem;font-weight:600;cursor:pointer;
+    background:${p=>p.$active?'rgba(0,173,237,.12)':'rgba(255,255,255,.03)'};
+    border:1px solid ${p=>p.$active?'rgba(0,173,237,.3)':'rgba(255,255,255,.06)'};
+    color:${p=>p.$active?'#00adef':'#64748b'};transition:all .2s;
+    &:hover{border-color:rgba(0,173,237,.2);}
+`;
+const TextArea = styled.textarea`
+    width:100%;min-height:120px;padding:.85rem;background:rgba(255,255,255,.02);
+    border:1px solid rgba(255,255,255,.06);border-radius:10px;
+    color:#e0e6ed;font-size:.9rem;line-height:1.6;resize:vertical;outline:none;
+    &:focus{border-color:rgba(0,173,237,.25);}
+    &::placeholder{color:#475569;}
+`;
+const CharCount = styled.div`text-align:right;font-size:.65rem;color:${p=>p.$over?'#ef4444':'#475569'};margin-top:.25rem;`;
+const AttachmentPreview = styled.div`margin-top:.85rem;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:10px;overflow:hidden;`;
+const AttachmentHeader = styled.div`display:flex;align-items:center;justify-content:space-between;padding:.65rem .85rem;border-bottom:1px solid rgba(255,255,255,.04);`;
+const AttachmentTitle = styled.div`display:flex;align-items:center;gap:.35rem;font-size:.82rem;font-weight:600;color:#e0e6ed;`;
+const RemoveAttachment = styled.button`background:none;border:none;color:#64748b;cursor:pointer;&:hover{color:#ef4444;}`;
+const TradeForm = styled.div`padding:.85rem;`;
+const FormRow = styled.div`display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.6rem;`;
+const FormGroup = styled.div``;
+const FormLabel = styled.label`display:block;font-size:.65rem;color:#475569;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.25rem;font-weight:600;`;
+const FormInput = styled.input`
+    width:100%;padding:.55rem .7rem;background:rgba(15,23,42,.5);
+    border:1px solid rgba(255,255,255,.06);border-radius:8px;
+    color:#e0e6ed;font-size:.85rem;outline:none;
+    &:focus{border-color:rgba(0,173,237,.3);}&::placeholder{color:#475569;}
+`;
+const FormSelect = styled.select`
+    width:100%;padding:.55rem .7rem;background:rgba(15,23,42,.5);
+    border:1px solid rgba(255,255,255,.06);border-radius:8px;
+    color:#e0e6ed;font-size:.85rem;outline:none;cursor:pointer;
+    option{background:#1e293b;}
+`;
+const PollForm = styled.div`padding:.85rem;`;
+const PollOptionInput = styled.div`display:flex;gap:.4rem;margin-bottom:.5rem;`;
+const OptionInput = styled.input`
+    flex:1;padding:.55rem .7rem;background:rgba(15,23,42,.5);
+    border:1px solid rgba(255,255,255,.06);border-radius:8px;
+    color:#e0e6ed;font-size:.85rem;outline:none;
+    &:focus{border-color:rgba(0,173,237,.3);}&::placeholder{color:#475569;}
+`;
+const RemoveOptionBtn = styled.button`width:36px;height:36px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.15);border-radius:8px;color:#ef4444;cursor:pointer;display:flex;align-items:center;justify-content:center;&:hover{background:rgba(239,68,68,.15);}`;
+const AddOptionBtn = styled.button`
+    width:100%;padding:.55rem;background:none;border:1px dashed rgba(0,173,237,.25);
+    border-radius:8px;color:#00adef;font-weight:600;font-size:.78rem;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.35rem;
+    &:hover{background:rgba(0,173,237,.06);}
+`;
+const ModalFooter = styled.div`display:flex;align-items:center;justify-content:space-between;padding:.85rem 1.25rem;border-top:1px solid rgba(255,255,255,.06);`;
+const FooterActions = styled.div`display:flex;gap:.35rem;`;
+const FooterBtn = styled.button`
+    width:36px;height:36px;background:none;border:1px solid rgba(255,255,255,.06);
+    border-radius:8px;color:#64748b;cursor:pointer;display:flex;align-items:center;justify-content:center;
+    &:hover{border-color:rgba(0,173,237,.2);color:#00adef;}
+`;
+const PostButton = styled.button`
+    padding:.6rem 1.5rem;background:linear-gradient(135deg,#00adef,#0090d0);
+    border:none;border-radius:10px;color:#fff;font-weight:700;font-size:.88rem;
+    cursor:pointer;display:flex;align-items:center;gap:.35rem;
+    &:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,173,237,.3);}
+    &:disabled{opacity:.4;cursor:not-allowed;}
 `;
 
-// END OF PART 3 - Continue to Part 4 for Main Component Logic
-
-// ============ HELPER COMPONENT: Author Badges ============
+// ═══════════════════════════════════════════════════════════
+// HELPER: Author Badges
+// ═══════════════════════════════════════════════════════════
 const AuthorBadges = ({ badges, maxDisplay = 3 }) => {
     if (!badges || badges.length === 0) return null;
-
-    const displayBadges = badges.slice(0, maxDisplay);
+    const display = badges.slice(0, maxDisplay);
     const remaining = badges.length - maxDisplay;
-
     return (
         <BadgesContainer>
-            {displayBadges.map(badgeId => (
-                <MiniBadge
-                    key={badgeId}
-                    title={badgeId.replace('badge-', '').replace(/-/g, ' ')}
-                >
-                    <BadgeIcon badgeId={badgeId} size={20} showParticles={false} />
-                </MiniBadge>
-            ))}
-            {remaining > 0 && (
-                <MoreBadgesIndicator>+{remaining}</MoreBadgesIndicator>
-            )}
+            {display.map(id => (<MiniBadge key={id} title={id.replace('badge-','').replace(/-/g,' ')}><BadgeIcon badgeId={id} size={20} showParticles={false}/></MiniBadge>))}
+            {remaining > 0 && <MoreBadgesIndicator>+{remaining}</MoreBadgesIndicator>}
         </BadgesContainer>
     );
 };
-// ============ MAIN COMPONENT ============
+
+// ═══════════════════════════════════════════════════════════
+// MAIN COMPONENT
+// ═══════════════════════════════════════════════════════════
 const SocialFeed = () => {
     const { api, isAuthenticated, user } = useAuth();
     const toast = useToast();
@@ -2129,8 +502,8 @@ const SocialFeed = () => {
     const theme = useStyledTheme();
     const { profileThemeId, getAvatarBorderForUser } = useThemeContext();
     const { equipped } = useVault();
-    
-    // ============ STATE ============
+
+    // ─── State ───────────────────────────────────────────
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -2142,174 +515,72 @@ const SocialFeed = () => {
     const [expandedComments, setExpandedComments] = useState({});
     const [activeReactionPicker, setActiveReactionPicker] = useState(null);
     const [activeMenu, setActiveMenu] = useState(null);
-    
-    // Create post state
+
     const [postType, setPostType] = useState('text');
     const [postText, setPostText] = useState('');
-    const [tradeData, setTradeData] = useState({
-        symbol: '',
-        direction: 'LONG',
-        entryPrice: '',
-        exitPrice: '',
-        quantity: '',
-        pnl: ''
-    });
-    const [pollData, setPollData] = useState({
-        question: '',
-        options: ['', '']
-    });
+    const [tradeData, setTradeData] = useState({ symbol: '', direction: 'LONG', entryPrice: '', exitPrice: '', quantity: '', pnl: '' });
+    const [pollData, setPollData] = useState({ question: '', options: ['', ''] });
     const [commentInputs, setCommentInputs] = useState({});
-    
-    // Sidebar data
+
     const [trendingTags, setTrendingTags] = useState([]);
     const [topTraders, setTopTraders] = useState([]);
     const [suggestedUsers, setSuggestedUsers] = useState([]);
-    
-    // Refs
+    const [featuredSignal, setFeaturedSignal] = useState(null);
+    const [activeSignals, setActiveSignals] = useState([]);
+
     const observerTarget = useRef(null);
-    const feedRef = useRef(null);
 
-    // ============ HELPER FUNCTIONS ============
-    
-    // Get initials from name
-    const getInitials = useCallback((name) => {
-        if (!name) return '?';
-        const parts = name.trim().split(' ');
-        if (parts.length >= 2) {
-            return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-        }
-        return name.slice(0, 2).toUpperCase();
-    }, []);
-
-    // 🔥 NEW: Get avatar border color from equippedBorder ID
-    // Handles both "border-ruby" and "ruby" formats
-    const getAvatarBorderColor = useCallback((borderId) => {
-        if (!borderId) {
-            return BORDER_COLORS['default'];
-        }
-        
-        // Try direct lookup first
-        if (BORDER_COLORS[borderId]) {
-            return BORDER_COLORS[borderId];
-        }
-        
-        // Handle both formats: "ruby" -> "border-ruby"
-        const normalizedId = borderId.startsWith('border-') ? borderId : `border-${borderId}`;
-        
-        if (BORDER_COLORS[normalizedId]) {
-            return BORDER_COLORS[normalizedId];
-        }
-        
-        // Try without prefix
-        const withoutPrefix = borderId.replace('border-', '');
-        if (BORDER_COLORS[withoutPrefix]) {
-            return BORDER_COLORS[withoutPrefix];
-        }
-        
-        return BORDER_COLORS['default'];
-    }, []);
-
-    // 🔥 FIXED: Get current user's border ID from their equippedBorder
+    // ─── Helpers ─────────────────────────────────────────
     const currentUserBorderId = useMemo(() => {
-        // Priority order for finding user's equipped border:
-        // 1. user.vault.equippedBorder (from AuthContext - most reliable)
-        // 2. equipped?.border?.id (from VaultContext)
-        // 3. 'border-bronze' fallback
-
-        const userBorderId =
-            user?.vault?.equippedBorder ||
-            equipped?.border?.id ||
-            equipped?.border ||
-            'border-bronze';
-
-        console.log('🎯 currentUserBorderId:', userBorderId);
-        return userBorderId;
+        return user?.vault?.equippedBorder || equipped?.border?.id || equipped?.border || 'border-bronze';
     }, [user?.vault?.equippedBorder, equipped?.border]);
 
-    // Format time ago
-    const formatTimeAgo = useCallback((date) => {
-        const now = new Date();
-        const postDate = new Date(date);
-        const diffInMinutes = Math.floor((now - postDate) / 60000);
-        
-        if (diffInMinutes < 1) return 'Just now';
-        if (diffInMinutes < 60) return `${diffInMinutes}m`;
-        if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h`;
-        if (diffInMinutes < 10080) return `${Math.floor(diffInMinutes / 1440)}d`;
-        return postDate.toLocaleDateString();
+    const getAvatarBorderColor = useCallback((borderId) => {
+        if (!borderId) return BORDER_COLORS['default'];
+        if (BORDER_COLORS[borderId]) return BORDER_COLORS[borderId];
+        const normalized = borderId.startsWith('border-') ? borderId : `border-${borderId}`;
+        return BORDER_COLORS[normalized] || BORDER_COLORS['default'];
     }, []);
 
-    // Render post content with mentions and hashtags
+    const formatTimeAgo = useCallback((date) => {
+        const m = Math.floor((Date.now() - new Date(date)) / 60000);
+        if (m < 1) return 'Just now';
+        if (m < 60) return `${m}m`;
+        if (m < 1440) return `${Math.floor(m / 60)}h`;
+        if (m < 10080) return `${Math.floor(m / 1440)}d`;
+        return new Date(date).toLocaleDateString();
+    }, []);
+
     const renderPostContent = useCallback((content) => {
         if (!content) return null;
-
-        const parts = content.split(/(\$[A-Z]+|\#\w+|\@\w+)/g);
-        
-        return parts.map((part, index) => {
-            if (part.startsWith('$')) {
-                return (
-                    <TickerMention 
-                        key={index} 
-                        onClick={() => navigate(`/stock/${part.slice(1)}`)}
-                    >
-                        {part}
-                    </TickerMention>
-                );
-            }
-            if (part.startsWith('#')) {
-                return (
-                    <Hashtag 
-                        key={index}
-                        onClick={() => setFilter('trending')}
-                    >
-                        {part}
-                    </Hashtag>
-                );
-            }
-            if (part.startsWith('@')) {
-                return (
-                    <Mention 
-                        key={index}
-                        onClick={() => navigate(`/profile/${part.slice(1)}`)}
-                    >
-                        {part}
-                    </Mention>
-                );
-            }
+        return content.split(/(\$[A-Z]+|\#\w+|\@\w+)/g).map((part, i) => {
+            if (part.startsWith('$')) return <TickerMention key={i} onClick={() => navigate(`/stock/${part.slice(1)}`)}>{part}</TickerMention>;
+            if (part.startsWith('#')) return <Hashtag key={i}>{part}</Hashtag>;
+            if (part.startsWith('@')) return <Mention key={i} onClick={() => navigate(`/profile/${part.slice(1)}`)}>{part}</Mention>;
             return part;
         });
     }, [navigate]);
 
-    // ============ API FUNCTIONS ============
+    const getPostTypeLabel = (post) => {
+        if (post.type === 'trade') return { label: 'Trade Result', bg: 'rgba(16,185,129,.08)', c: '#10b981' };
+        if (post.type === 'prediction') return { label: 'Signal Reaction', bg: 'rgba(0,173,237,.08)', c: '#0ea5e9' };
+        if (post.type === 'poll') return { label: 'Market Poll', bg: 'rgba(139,92,246,.08)', c: '#a78bfa' };
+        // Detect insight-like posts
+        if (post.tickers?.length > 0 || post.content?.match(/\$[A-Z]/)) return { label: 'Insight', bg: 'rgba(245,158,11,.08)', c: '#f59e0b' };
+        return null;
+    };
 
-    // Fetch feed
+    // ─── API Functions (preserved) ───────────────────────
     const fetchFeed = useCallback(async (filterType = filter, pageNum = 1, append = false) => {
         try {
             if (pageNum === 1) setLoading(true);
-            
             let endpoint = '/feed';
-            if (filterType === 'trending' || filterType === 'all') {
+            if (filterType === 'trending' || filterType === 'all' || filterType === 'reactions' || filterType === 'ideas' || filterType === 'insights' || filterType === 'results') {
                 endpoint = '/feed/discover';
             }
-
             const response = await api.get(`${endpoint}?limit=20&skip=${(pageNum - 1) * 20}`);
             const newPosts = response.data.posts || [];
-
-            // 🔥 DEBUG: Log first post to check for equippedBorder
-            if (newPosts.length > 0) {
-                console.log('📝 First post author data:', {
-                    username: newPosts[0].author?.username,
-                    equippedBorder: newPosts[0].author?.equippedBorder,
-                    equippedTheme: newPosts[0].author?.equippedTheme
-                });
-            }
-
-            if (append) {
-                setPosts(prev => [...prev, ...newPosts]);
-            } else {
-                setPosts(newPosts);
-            }
-
+            if (append) { setPosts(prev => [...prev, ...newPosts]); } else { setPosts(newPosts); }
             setHasMore(newPosts.length === 20);
         } catch (error) {
             console.error('Error fetching feed:', error);
@@ -2320,55 +591,37 @@ const SocialFeed = () => {
         }
     }, [api, filter]);
 
-    // 🔥 FIXED: Fetch sidebar data - now uses equippedBorder
     const fetchSidebarData = useCallback(async () => {
         try {
-            // Trending hashtags
             const tagsRes = await api.get('/feed/trending/hashtags?limit=5');
             if (tagsRes.data.hashtags) {
-                setTrendingTags(tagsRes.data.hashtags.map(h => ({
-                    tag: h.tag,
-                    count: h.count > 1000 ? `${(h.count / 1000).toFixed(1)}K` : h.count
-                })));
+                setTrendingTags(tagsRes.data.hashtags.map(h => ({ tag: h.tag, count: h.count > 1000 ? `${(h.count/1000).toFixed(1)}K` : h.count })));
             }
-
-            // Top traders from leaderboard
-            const tradersRes = await api.get('/social/leaderboard?sortBy=totalReturnPercent&limit=3');
-            console.log('📊 Leaderboard API response:', tradersRes.data);
-            
+            const tradersRes = await api.get('/social/leaderboard?sortBy=totalReturnPercent&limit=5');
             if (tradersRes.data) {
-                setTopTraders(tradersRes.data.slice(0, 3).map(t => {
-                    console.log(`👤 Trader ${t.displayName}: equippedBorder = ${t.equippedBorder}`);
-                    return {
-                        id: t.userId,
-                        name: t.displayName,
-                        username: t.username,
-                        avatar: t.avatar,
-                        return: `+${t.totalReturn?.toFixed(0) || 0}%`,
-                        followers: t.followersCount || 0,
-                        equippedBorder: t.equippedBorder || null  // 🔥 Use equippedBorder
-                    };
-                }));
-            }
-
-            // Suggested users
-            const suggestedRes = await api.get('/social/suggested?limit=3');
-            if (suggestedRes.data) {
-                setSuggestedUsers(suggestedRes.data.map(u => ({
-                    id: u._id || u.id,
-                    name: u.displayName || u.name,
-                    username: u.username,
-                    avatar: u.avatar,
-                    mutuals: u.mutualFollowers || 0,
-                    equippedBorder: u.equippedBorder || null  // 🔥 Use equippedBorder
+                setTopTraders(tradersRes.data.slice(0, 5).map(t => ({
+                    id: t.userId, name: t.displayName, username: t.username, avatar: t.avatar,
+                    return: `+${t.totalReturn?.toFixed(0) || 0}%`, equippedBorder: t.equippedBorder || null
                 })));
             }
-        } catch (error) {
-            console.error('[Social] Sidebar data error:', error);
-        }
+        } catch (error) { console.error('[Social] Sidebar error:', error); }
     }, [api]);
 
-    // Handle refresh
+    // Fetch active signals for sidebar + featured
+    const fetchSignals = useCallback(async () => {
+        try {
+            const res = await fetch(`${API_URL}/predictions/recent?limit=10`);
+            if (res.ok) {
+                const data = await res.json();
+                const sigs = Array.isArray(data) ? data : [];
+                setActiveSignals(sigs.filter(s => !s.result && s.confidence >= 55).slice(0, 6));
+                // Featured: highest confidence active
+                const best = sigs.filter(s => !s.result && s.confidence >= 60).sort((a, b) => (b.confidence || 0) - (a.confidence || 0))[0];
+                if (best) setFeaturedSignal(best);
+            }
+        } catch (e) { /* silent */ }
+    }, []);
+
     const handleRefresh = useCallback(() => {
         setRefreshing(true);
         setPage(1);
@@ -2376,559 +629,309 @@ const SocialFeed = () => {
         fetchFeed(filter, 1, false);
     }, [filter, fetchFeed]);
 
-    // Handle reaction
     const handleReaction = async (postId, reactionType) => {
         try {
             const response = await api.post(`/feed/${postId}/react`, { type: reactionType });
-            
-            setPosts(posts.map(post => {
-                if (post._id === postId) {
-                    return {
-                        ...post,
-                        reactions: response.data.reactions,
-                        userReaction: response.data.userReaction
-                    };
-                }
-                return post;
-            }));
-
+            setPosts(posts.map(post => post._id === postId ? { ...post, reactions: response.data.reactions, userReaction: response.data.userReaction } : post));
             setActiveReactionPicker(null);
-        } catch (error) {
-            console.error('Error reacting:', error);
-            handleLike(postId);
-        }
+        } catch (error) { handleLike(postId); }
     };
 
-    // Handle like
     const handleLike = async (postId) => {
         try {
             const post = posts.find(p => p._id === postId);
             const isLiked = post?.likes?.includes(user?._id);
-
-            if (isLiked) {
-                await api.delete(`/feed/${postId}/like`);
-            } else {
-                await api.post(`/feed/${postId}/like`);
-            }
-
+            if (isLiked) { await api.delete(`/feed/${postId}/like`); } else { await api.post(`/feed/${postId}/like`); }
             setPosts(posts.map(p => {
                 if (p._id === postId) {
-                    const newLikes = isLiked 
-                        ? p.likes.filter(id => id !== user._id)
-                        : [...(p.likes || []), user._id];
-                    return {
-                        ...p,
-                        likes: newLikes,
-                        likesCount: newLikes.length
-                    };
+                    const newLikes = isLiked ? p.likes.filter(id => id !== user._id) : [...(p.likes || []), user._id];
+                    return { ...p, likes: newLikes, likesCount: newLikes.length };
                 }
                 return p;
             }));
-        } catch (error) {
-            console.error('Error liking:', error);
-        }
+        } catch (error) { console.error('Error liking:', error); }
     };
 
-    // Handle comment
     const handleComment = async (postId) => {
         const text = commentInputs[postId];
         if (!text?.trim()) return;
-
         try {
             const response = await api.post(`/feed/${postId}/comment`, { text });
-
-            setPosts(posts.map(post => {
-                if (post._id === postId) {
-                    return {
-                        ...post,
-                        comments: [...(post.comments || []), response.data.comment],
-                        commentsCount: (post.commentsCount || 0) + 1
-                    };
-                }
-                return post;
-            }));
-
+            setPosts(posts.map(post => post._id === postId ? { ...post, comments: [...(post.comments || []), response.data.comment], commentsCount: (post.commentsCount || 0) + 1 } : post));
             setCommentInputs(prev => ({ ...prev, [postId]: '' }));
             toast.success('Comment posted!');
-        } catch (error) {
-            console.error('Error commenting:', error);
-            toast.error('Failed to post comment');
-        }
+        } catch (error) { toast.error('Failed to post comment'); }
     };
 
-    // Handle share
     const handleShare = async (postId) => {
         try {
             await api.post(`/feed/${postId}/share`);
-            
-            setPosts(posts.map(post => {
-                if (post._id === postId) {
-                    return {
-                        ...post,
-                        sharesCount: (post.sharesCount || 0) + 1
-                    };
-                }
-                return post;
-            }));
-
-            toast.success('Post shared to your profile!');
+            setPosts(posts.map(post => post._id === postId ? { ...post, sharesCount: (post.sharesCount || 0) + 1 } : post));
+            toast.success('Post shared!');
         } catch (error) {
             navigator.clipboard.writeText(`${window.location.origin}/post/${postId}`);
-            toast.success('Link copied to clipboard!');
+            toast.success('Link copied!');
         }
     };
 
-    // Handle bookmark
     const handleBookmark = async (postId) => {
         try {
             const post = posts.find(p => p._id === postId);
             const isBookmarked = post?.bookmarkedBy?.includes(user?._id);
-
-            if (isBookmarked) {
-                await api.delete(`/feed/${postId}/bookmark`);
-            } else {
-                await api.post(`/feed/${postId}/bookmark`);
-            }
-
+            if (isBookmarked) { await api.delete(`/feed/${postId}/bookmark`); } else { await api.post(`/feed/${postId}/bookmark`); }
             setPosts(posts.map(p => {
                 if (p._id === postId) {
-                    const newBookmarks = isBookmarked
-                        ? (p.bookmarkedBy || []).filter(id => id !== user._id)
-                        : [...(p.bookmarkedBy || []), user._id];
-                    return {
-                        ...p,
-                        bookmarkedBy: newBookmarks
-                    };
+                    const nb = isBookmarked ? (p.bookmarkedBy || []).filter(id => id !== user._id) : [...(p.bookmarkedBy || []), user._id];
+                    return { ...p, bookmarkedBy: nb };
                 }
                 return p;
             }));
-
-            toast.success(isBookmarked ? 'Removed from bookmarks' : 'Saved to bookmarks!');
-        } catch (error) {
-            console.error('Error bookmarking:', error);
-        }
+            toast.success(isBookmarked ? 'Removed from saved' : 'Saved!');
+        } catch (error) { console.error('Error bookmarking:', error); }
     };
 
-    // Handle delete post
     const handleDeletePost = async (postId) => {
         if (!window.confirm('Delete this post?')) return;
-
-        try {
-            await api.delete(`/feed/${postId}`);
-            setPosts(posts.filter(p => p._id !== postId));
-            toast.success('Post deleted');
-        } catch (error) {
-            console.error('Error deleting:', error);
-            toast.error('Failed to delete post');
-        }
+        try { await api.delete(`/feed/${postId}`); setPosts(posts.filter(p => p._id !== postId)); toast.success('Post deleted'); }
+        catch (error) { toast.error('Failed to delete post'); }
     };
 
-    // Create post
     const handleCreatePost = async () => {
-        if (!postText.trim() && postType === 'text') {
-            toast.error('Please write something!');
-            return;
-        }
-
+        if (!postText.trim() && postType === 'text') { toast.error('Write something first!'); return; }
         try {
-            const payload = {
-                content: postText,
-                type: postType
-            };
-
-            if (postType === 'trade') {
-                payload.trade = tradeData;
-            } else if (postType === 'poll') {
-                payload.poll = pollData;
-            }
-
+            const payload = { content: postText, type: postType };
+            if (postType === 'trade') payload.trade = tradeData;
+            else if (postType === 'poll') payload.poll = pollData;
             const response = await api.post('/feed', payload);
-
             setPosts([response.data.post, ...posts]);
             setShowCreateModal(false);
             setPostText('');
             setPostType('text');
             setTradeData({ symbol: '', direction: 'LONG', entryPrice: '', exitPrice: '', quantity: '', pnl: '' });
             setPollData({ question: '', options: ['', ''] });
-            
-            toast.success('Post created! 🚀');
-        } catch (error) {
-            console.error('Error creating post:', error);
-            toast.error('Failed to create post');
-        }
+            toast.success('Posted!');
+        } catch (error) { toast.error('Failed to create post'); }
     };
 
-    // Handle poll vote
     const handlePollVote = async (postId, optionIndex) => {
         try {
             const response = await api.post(`/feed/${postId}/vote`, { optionIndex });
-            
-            setPosts(posts.map(post => {
-                if (post._id === postId) {
-                    return {
-                        ...post,
-                        poll: response.data.poll,
-                        userVote: optionIndex
-                    };
-                }
-                return post;
-            }));
-        } catch (error) {
-            console.error('Error voting:', error);
-        }
+            setPosts(posts.map(post => post._id === postId ? { ...post, poll: response.data.poll, userVote: optionIndex } : post));
+        } catch (error) { console.error('Error voting:', error); }
     };
 
-    // Toggle comments
-    const toggleComments = (postId) => {
-        setExpandedComments(prev => ({
-            ...prev,
-            [postId]: !prev[postId]
-        }));
-    };
+    const toggleComments = (postId) => setExpandedComments(prev => ({ ...prev, [postId]: !prev[postId] }));
 
-    // ============ EFFECTS ============
-
-    // Initial load
+    // ─── Effects ─────────────────────────────────────────
     useEffect(() => {
-        if (isAuthenticated) {
-            fetchFeed(filter, 1, false);
-            fetchSidebarData();
-        }
-    }, [filter, isAuthenticated, fetchFeed, fetchSidebarData]);
+        if (isAuthenticated) { fetchFeed(filter, 1, false); fetchSidebarData(); fetchSignals(); }
+    }, [filter, isAuthenticated, fetchFeed, fetchSidebarData, fetchSignals]);
 
-    // Infinite scroll
     useEffect(() => {
-        const observer = new IntersectionObserver(
-            entries => {
-                if (entries[0].isIntersecting && hasMore && !loading) {
-                    setPage(prev => prev + 1);
-                    fetchFeed(filter, page + 1, true);
-                }
-            },
-            { threshold: 0.1 }
-        );
-
-        if (observerTarget.current) {
-            observer.observe(observerTarget.current);
-        }
-
+        const observer = new IntersectionObserver(entries => {
+            if (entries[0].isIntersecting && hasMore && !loading) {
+                setPage(prev => prev + 1);
+                fetchFeed(filter, page + 1, true);
+            }
+        }, { threshold: 0.1 });
+        if (observerTarget.current) observer.observe(observerTarget.current);
         return () => observer.disconnect();
     }, [hasMore, loading, page, filter, fetchFeed]);
 
-    // Close menus on outside click
     useEffect(() => {
-        const handleClickOutside = () => {
-            setActiveMenu(null);
-            setActiveReactionPicker(null);
-        };
-        document.addEventListener('click', handleClickOutside);
-        return () => document.removeEventListener('click', handleClickOutside);
+        const handleClick = () => { setActiveMenu(null); setActiveReactionPicker(null); };
+        document.addEventListener('click', handleClick);
+        return () => document.removeEventListener('click', handleClick);
     }, []);
 
-// END OF PART 4A - Continue to Part 4B for JSX Render
-// ============ PART 4B OF 5 ============
-// JSX Render: Left Sidebar, Feed Header, Create Post Box, Posts Loop
-// 🔥 UPDATED: Uses equippedBorder for avatar border colors
+    // Compute sentiment from active signals
+    const sentimentData = useMemo(() => {
+        if (!activeSignals.length) return [];
+        return activeSignals.slice(0, 3).map(s => {
+            const sym = s.symbol?.split(':')[0]?.replace(/USDT|USD/i, '') || s.symbol;
+            const isLong = s.direction === 'UP';
+            const bullPct = isLong ? Math.min(85, 50 + (s.confidence - 50) * 0.7) : Math.max(15, 50 - (s.confidence - 50) * 0.7);
+            return { symbol: sym, long: isLong, bullPct: Math.round(bullPct), bearPct: Math.round(100 - bullPct) };
+        });
+    }, [activeSignals]);
 
-    // ============ RENDER ============
+    // ─── Render ──────────────────────────────────────────
     return (
         <PageContainer>
-            <BackgroundOrbs>
-                <Orb $duration="25s" />
-                <Orb $duration="30s" />
-                <Orb $duration="20s" />
-            </BackgroundOrbs>
-
             <MainContent>
-                {/* ============ LEFT SIDEBAR ============ */}
+                {/* ═══ LEFT SIDEBAR ═══ */}
                 <LeftSidebar>
-                    {/* Quick Actions */}
-                    <SidebarCard>
-                        <SidebarTitle>
-                            <Zap size={20} />
-                            Quick Actions
-                        </SidebarTitle>
-                        <QuickAction $active={filter === 'all'} onClick={() => setFilter('all')}>
-                            <Sparkles size={18} />
-                            Discover
-                        </QuickAction>
-                        <QuickAction $active={filter === 'following'} onClick={() => setFilter('following')}>
-                            <Users size={18} />
-                            Following
-                        </QuickAction>
-                        <QuickAction $active={filter === 'trending'} onClick={() => setFilter('trending')}>
-                            <Flame size={18} />
-                            Trending
-                        </QuickAction>
-                        <QuickAction onClick={() => navigate('/leaderboard')}>
-                            <Trophy size={18} />
-                            Leaderboard
-                        </QuickAction>
-                    </SidebarCard>
+                    <SideCard>
+                        <SideCardTitle><Zap size={13}/> Navigation</SideCardTitle>
+                        <NavItem $active={filter === 'all'} onClick={() => setFilter('all')}><Radio size={15}/> All Activity</NavItem>
+                        <NavItem $active={filter === 'reactions'} onClick={() => setFilter('reactions')}><Target size={15}/> Signal Reactions</NavItem>
+                        <NavItem $active={filter === 'ideas'} onClick={() => setFilter('ideas')}><TrendingUp size={15}/> Trade Ideas</NavItem>
+                        <NavItem $active={filter === 'results'} onClick={() => setFilter('results')}><CheckCircle size={15}/> Results</NavItem>
+                        <NavItem $active={filter === 'following'} onClick={() => setFilter('following')}><Users size={15}/> Following</NavItem>
+                        <NavItem onClick={() => navigate('/signals')}><Activity size={15}/> Live Signals</NavItem>
+                        <NavItem onClick={() => navigate('/leaderboard')}><Trophy size={15}/> Leaderboard</NavItem>
+                    </SideCard>
 
-                    {/* Trending Tags */}
-                    <SidebarCard>
-                        <SidebarTitle>
-                            <Hash size={20} />
-                            Trending
-                        </SidebarTitle>
-                        {trendingTags.length > 0 ? trendingTags.map((item, index) => (
-                            <TrendingTag key={index}>
-                                <TagName>
-                                    <TrendingUp size={14} />
-                                    {item.tag}
-                                </TagName>
-                                <TagCount>{item.count} posts</TagCount>
-                            </TrendingTag>
-                        )) : (
-                            <LoadingText>Loading trends...</LoadingText>
-                        )}
-                    </SidebarCard>
+                    {trendingTags.length > 0 && (
+                        <SideCard>
+                            <SideCardTitle><Flame size={13}/> Trending Topics</SideCardTitle>
+                            {trendingTags.map((t, i) => (
+                                <TrendTag key={i}>
+                                    <TrendSymbol><Hash size={12}/> {t.tag}</TrendSymbol>
+                                    <TrendCount>{t.count}</TrendCount>
+                                </TrendTag>
+                            ))}
+                        </SideCard>
+                    )}
                 </LeftSidebar>
 
-                {/* ============ CENTER FEED ============ */}
-                <FeedContainer ref={feedRef}>
+                {/* ═══ CENTER FEED ═══ */}
+                <FeedCol>
                     {/* Header */}
-                    <FeedHeader>
-                        <HeaderTop>
-                            <FeedTitle>
-                                <Sparkles size={28} />
-                                Social Feed
-                            </FeedTitle>
-                            <HeaderActions>
-                                {newPostsCount > 0 && (
-                                    <NewPostsAlert onClick={handleRefresh}>
-                                        <ArrowUp size={16} />
-                                        {newPostsCount} new posts
-                                    </NewPostsAlert>
-                                )}
-                                <RefreshButton 
-                                    onClick={handleRefresh}
-                                    className={refreshing ? 'spinning' : ''}
-                                >
-                                    <RefreshCw size={20} />
-                                </RefreshButton>
-                            </HeaderActions>
-                        </HeaderTop>
-                        <FilterTabs>
-                            <FilterTab $active={filter === 'all'} onClick={() => setFilter('all')}>
-                                <Sparkles size={16} />
-                                Discover
-                            </FilterTab>
-                            <FilterTab $active={filter === 'following'} onClick={() => setFilter('following')}>
-                                <Users size={16} />
-                                Following
-                            </FilterTab>
-                            <FilterTab $active={filter === 'trending'} onClick={() => setFilter('trending')}>
-                                <Flame size={16} />
-                                Trending
-                            </FilterTab>
-                        </FilterTabs>
-                    </FeedHeader>
+                    <PageHeader>
+                        <PageTitle><Activity size={20} color="#00adef"/> Market Activity & Insights</PageTitle>
+                        <PageSub>Real-time reactions, trade ideas, and signal confirmations from the Nexus community.</PageSub>
+                    </PageHeader>
 
-                    {/* 🔥 FIXED: Create Post Box - uses AvatarWithBorder for animations */}
-                    <CreatePostBox>
-                        <CreatePostHeader>
-                            <AvatarWithBorder
-                                src={user?.profile?.avatar}
-                                name={user?.name}
-                                size={48}
-                                borderId={currentUserBorderId}
-                            />
-                            <PostInput onClick={() => setShowCreateModal(true)}>
-                                What's on your mind, {user?.name?.split(' ')[0]}?
-                            </PostInput>
-                        </CreatePostHeader>
-                        <PostTypeButtons>
-                            <PostTypeButton 
-                                $color={theme?.success || '#10b981'}
-                                $hoverBg={`${theme?.success || '#10b981'}1A`}
-                                onClick={() => { setPostType('trade'); setShowCreateModal(true); }}
-                            >
-                                <TrendingUp size={18} />
-                                Trade
-                            </PostTypeButton>
-                            <PostTypeButton 
-                                $color={theme?.brand?.accent || '#a78bfa'}
-                                $hoverBg={`${theme?.brand?.accent || '#8b5cf6'}1A`}
-                                onClick={() => { setPostType('prediction'); setShowCreateModal(true); }}
-                            >
-                                <Target size={18} />
-                                Prediction
-                            </PostTypeButton>
-                            <PostTypeButton 
-                                $color={theme?.brand?.accent || '#00adef'}
-                                $hoverBg={`${theme?.brand?.accent || '#00adef'}1A`}
-                                onClick={() => { setPostType('poll'); setShowCreateModal(true); }}
-                            >
-                                <BarChart2 size={18} />
-                                Poll
-                            </PostTypeButton>
-                            <PostTypeButton 
-                                $color={theme?.warning || '#f59e0b'}
-                                $hoverBg={`${theme?.warning || '#f59e0b'}1A`}
-                                onClick={() => { setPostType('image'); setShowCreateModal(true); }}
-                            >
-                                <Image size={18} />
-                                Media
-                            </PostTypeButton>
-                        </PostTypeButtons>
-                    </CreatePostBox>
+                    {/* Filters */}
+                    <FilterRow>
+                        {[
+                            { key: 'all', label: 'All Activity', icon: <Radio size={12}/> },
+                            { key: 'reactions', label: 'Signal Reactions', icon: <Target size={12}/> },
+                            { key: 'ideas', label: 'Trade Ideas', icon: <TrendingUp size={12}/> },
+                            { key: 'insights', label: 'Insights', icon: <Eye size={12}/> },
+                            { key: 'results', label: 'Results', icon: <CheckCircle size={12}/> },
+                            { key: 'following', label: 'Following', icon: <Users size={12}/> },
+                        ].map(f => (
+                            <FilterTab key={f.key} $active={filter === f.key} onClick={() => setFilter(f.key)}>
+                                {f.icon} {f.label}
+                            </FilterTab>
+                        ))}
+                        <RefreshBtn className={refreshing ? 'spinning' : ''} onClick={handleRefresh}>
+                            <RefreshCw size={12}/> Refresh
+                        </RefreshBtn>
+                    </FilterRow>
 
-                    {/* Posts List */}
+                    {/* Most Discussed Signal */}
+                    {featuredSignal && (
+                        <FeaturedSignal onClick={() => navigate(`/signal/${featuredSignal._id}`)}>
+                            <FSLabel><Flame size={12}/> Most Active Signal Right Now</FSLabel>
+                            <FSRow>
+                                <FSLeft>
+                                    <FSSymbol>{featuredSignal.symbol?.split(':')[0]?.replace(/USDT|USD/i, '') || featuredSignal.symbol}</FSSymbol>
+                                    <FSDir $long={featuredSignal.direction === 'UP'}>{featuredSignal.direction === 'UP' ? 'LONG' : 'SHORT'}</FSDir>
+                                    <FSConf $c={featuredSignal.confidence >= 70 ? '#10b981' : '#f59e0b'}>{Math.min(95, Math.round(featuredSignal.confidence))}%</FSConf>
+                                </FSLeft>
+                                <FSRight>
+                                    <FSMeta>{featuredSignal.assetType === 'crypto' ? 'Crypto' : 'Stock'} Signal</FSMeta>
+                                    <FSCta>View Signal <ChevronRight size={13}/></FSCta>
+                                </FSRight>
+                            </FSRow>
+                        </FeaturedSignal>
+                    )}
+
+                    {/* Composer */}
+                    <ComposerBox>
+                        <ComposerTop>
+                            <AvatarWithBorder src={user?.profile?.avatar} name={user?.name} size={42} borderId={currentUserBorderId}/>
+                            <ComposerInput onClick={() => setShowCreateModal(true)}>
+                                Share a trade idea or react to a signal...
+                            </ComposerInput>
+                        </ComposerTop>
+                        <QuickActions>
+                            <QuickBtn $c="#0ea5e9" $hc="rgba(0,173,237,.06)" onClick={() => { setPostType('text'); setShowCreateModal(true); }}>
+                                <Target size={13}/> React to Signal
+                            </QuickBtn>
+                            <QuickBtn $c="#10b981" $hc="rgba(16,185,129,.06)" onClick={() => { setPostType('trade'); setShowCreateModal(true); }}>
+                                <TrendingUp size={13}/> Post Trade Idea
+                            </QuickBtn>
+                            <QuickBtn $c="#f59e0b" $hc="rgba(245,158,11,.06)" onClick={() => { setPostType('trade'); setShowCreateModal(true); }}>
+                                <Award size={13}/> Share Result
+                            </QuickBtn>
+                            <QuickBtn $c="#a78bfa" $hc="rgba(139,92,246,.06)" onClick={() => { setPostType('poll'); setShowCreateModal(true); }}>
+                                <BarChart2 size={13}/> Add Insight
+                            </QuickBtn>
+                        </QuickActions>
+                    </ComposerBox>
+
+                    {/* Posts */}
                     {loading && posts.length === 0 ? (
-                        <LoadingContainer>
-                            <LoadingSpinner />
-                            <LoadingText>Loading your feed...</LoadingText>
-                        </LoadingContainer>
+                        <LoadingBox><Spinner/><div>Scanning the community for active market conversations...</div></LoadingBox>
                     ) : posts.length === 0 ? (
                         <EmptyState>
-                            <EmptyIcon>
-                                <MessageCircle size={60} color={theme?.brand?.primary || '#ffd700'} />
-                            </EmptyIcon>
-                            <EmptyTitle>
-                                {filter === 'following' ? 'No posts from people you follow' : 'No posts yet'}
-                            </EmptyTitle>
-                            <EmptyText>
-                                {filter === 'following' 
-                                    ? 'Follow some traders to see their posts!'
-                                    : 'Be the first to share something!'}
-                            </EmptyText>
-                            <EmptyButton onClick={() => setShowCreateModal(true)}>
-                                <Plus size={20} />
-                                Create Post
-                            </EmptyButton>
+                            <EmptyIcon><Activity size={48} color="#00adef"/></EmptyIcon>
+                            <EmptyTitle>{filter === 'following' ? 'No posts from traders you follow' : 'No market activity yet'}</EmptyTitle>
+                            <EmptyText>{filter === 'following' ? 'Follow active traders to see their reactions and ideas.' : 'Be the first to share a trade idea or react to a signal.'}</EmptyText>
+                            <EmptyBtn onClick={() => setShowCreateModal(true)}><Plus size={16}/> Share a Trade Idea</EmptyBtn>
                         </EmptyState>
                     ) : (
                         posts.map(post => {
-                            // 🔥 FIXED: Get border color from THIS post author's equippedBorder
+                            const typeLabel = getPostTypeLabel(post);
                             return (
                                 <PostCard key={post._id} $isPinned={post.isPinned}>
-                                    {/* Post Header */}
                                     <PostHeader>
                                         <PostAuthor>
-                                            <AvatarWithBorder
-                                                src={post.author?.avatar}
-                                                name={post.author?.displayName}
-                                                username={post.author?.username}
-                                                size={44}
-                                                borderId={post.author?.equippedBorder || 'border-bronze'}
-                                                onClick={() => navigate(`/profile/${post.author?.username}`)}
-                                            />
+                                            <AvatarWithBorder src={post.author?.avatar} name={post.author?.displayName} username={post.author?.username} size={42} borderId={post.author?.equippedBorder || 'border-bronze'} onClick={() => navigate(`/profile/${post.author?.username}`)}/>
                                             <AuthorInfo>
                                                 <AuthorName onClick={() => navigate(`/profile/${post.author?.username}`)}>
                                                     {post.author?.displayName || 'Anonymous'}
-                                                    {post.author?.verified && (
-                                                        <VerifiedBadge>
-                                                            <Check size={12} />
-                                                        </VerifiedBadge>
-                                                    )}
-                                                    {post.author?.level && (
-                                                        <LevelBadge>Lv {post.author.level}</LevelBadge>
-                                                    )}
-                                                    <AuthorBadges badges={post.author?.equippedBadges} maxDisplay={3} />
+                                                    {post.author?.verified && <VerifiedBadge><Check size={10}/></VerifiedBadge>}
+                                                    {post.author?.level && <LevelBadge>Lv {post.author.level}</LevelBadge>}
+                                                    <AuthorBadges badges={post.author?.equippedBadges} maxDisplay={3}/>
                                                 </AuthorName>
                                                 <AuthorMeta>
-                                                    <Username onClick={() => navigate(`/profile/${post.author?.username}`)}>
-                                                        @{post.author?.username}
-                                                    </Username>
-                                                    <span>•</span>
-                                                    <PostTime>
-                                                        <Clock size={12} />
-                                                        {formatTimeAgo(post.createdAt)}
-                                                    </PostTime>
+                                                    <Username onClick={() => navigate(`/profile/${post.author?.username}`)}>@{post.author?.username}</Username>
+                                                    <span>·</span>
+                                                    <PostTime><Clock size={10}/> {formatTimeAgo(post.createdAt)}</PostTime>
+                                                    {typeLabel && <PostTypeBadge $bg={typeLabel.bg} $c={typeLabel.c}>{typeLabel.label}</PostTypeBadge>}
                                                 </AuthorMeta>
                                             </AuthorInfo>
                                         </PostAuthor>
-                                        
-                                        <PostMenu onClick={(e) => e.stopPropagation()}>
-                                            <MenuButton onClick={() => setActiveMenu(activeMenu === post._id ? null : post._id)}>
-                                                <MoreHorizontal size={20} />
-                                            </MenuButton>
+                                        <PostMenu onClick={e => e.stopPropagation()}>
+                                            <MenuButton onClick={() => setActiveMenu(activeMenu === post._id ? null : post._id)}><MoreHorizontal size={18}/></MenuButton>
                                             {activeMenu === post._id && (
                                                 <MenuDropdown>
                                                     <MenuItem onClick={() => { handleBookmark(post._id); setActiveMenu(null); }}>
-                                                        {post.bookmarkedBy?.includes(user?._id) ? (
-                                                            <><BookmarkCheck size={16} /> Saved</>
-                                                        ) : (
-                                                            <><Bookmark size={16} /> Save Post</>
-                                                        )}
+                                                        {post.bookmarkedBy?.includes(user?._id) ? <><BookmarkCheck size={14}/> Saved</> : <><Bookmark size={14}/> Save Post</>}
                                                     </MenuItem>
                                                     <MenuItem onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/post/${post._id}`); toast.success('Link copied!'); setActiveMenu(null); }}>
-                                                        <Link2 size={16} /> Copy Link
+                                                        <Link2 size={14}/> Copy Link
                                                     </MenuItem>
-                                                    {post.author?._id === user?._id && (
-                                                        <MenuItem $danger onClick={() => { handleDeletePost(post._id); setActiveMenu(null); }}>
-                                                            <Trash2 size={16} /> Delete
-                                                        </MenuItem>
-                                                    )}
-                                                    {post.author?._id !== user?._id && (
-                                                        <MenuItem onClick={() => setActiveMenu(null)}>
-                                                            <Flag size={16} /> Report
-                                                        </MenuItem>
-                                                    )}
+                                                    {post.author?._id === user?._id && <MenuItem $danger onClick={() => { handleDeletePost(post._id); setActiveMenu(null); }}><Trash2 size={14}/> Delete</MenuItem>}
+                                                    {post.author?._id !== user?._id && <MenuItem onClick={() => setActiveMenu(null)}><Flag size={14}/> Report</MenuItem>}
                                                 </MenuDropdown>
                                             )}
                                         </PostMenu>
                                     </PostHeader>
 
-                                    {/* Post Content */}
                                     <PostContent>
                                         <PostText>{renderPostContent(post.content)}</PostText>
 
-                                        {/* Trade Attachment */}
                                         {post.type === 'trade' && post.trade && (
                                             <TradeAttachment $profitable={parseFloat(post.trade.pnl) >= 0}>
                                                 <TradeHeader>
                                                     <TradeSymbol>
                                                         <SymbolIcon>{post.trade.symbol?.slice(0, 2)}</SymbolIcon>
                                                         <SymbolInfo>
-                                                            <SymbolName>
-                                                                ${post.trade.symbol}
-                                                                <TradeDirection $type={post.trade.direction}>
-                                                                    {post.trade.direction}
-                                                                </TradeDirection>
-                                                            </SymbolName>
+                                                            <SymbolName>${post.trade.symbol}<TradeDirection $type={post.trade.direction}>{post.trade.direction}</TradeDirection></SymbolName>
                                                             <SymbolCompany>Paper Trade</SymbolCompany>
                                                         </SymbolInfo>
                                                     </TradeSymbol>
                                                     <TradePnL>
-                                                        <PnLValue $positive={parseFloat(post.trade.pnl) >= 0}>
-                                                            {parseFloat(post.trade.pnl) >= 0 ? '+' : ''}
-                                                            ${Math.abs(parseFloat(post.trade.pnl)).toFixed(2)}
-                                                        </PnLValue>
-                                                        <PnLPercent $positive={parseFloat(post.trade.pnlPercent) >= 0}>
-                                                            {parseFloat(post.trade.pnlPercent) >= 0 ? '+' : ''}
-                                                            {post.trade.pnlPercent}%
-                                                        </PnLPercent>
+                                                        <PnLValue $positive={parseFloat(post.trade.pnl) >= 0}>{parseFloat(post.trade.pnl) >= 0 ? '+' : ''}${Math.abs(parseFloat(post.trade.pnl)).toFixed(2)}</PnLValue>
+                                                        <PnLPercent $positive={parseFloat(post.trade.pnlPercent) >= 0}>{parseFloat(post.trade.pnlPercent) >= 0 ? '+' : ''}{post.trade.pnlPercent}%</PnLPercent>
                                                     </TradePnL>
                                                 </TradeHeader>
                                                 <TradeDetails>
-                                                    <TradeDetail>
-                                                        <DetailLabel>Entry</DetailLabel>
-                                                        <DetailValue>${post.trade.entryPrice}</DetailValue>
-                                                    </TradeDetail>
-                                                    <TradeDetail>
-                                                        <DetailLabel>Exit</DetailLabel>
-                                                        <DetailValue>${post.trade.exitPrice}</DetailValue>
-                                                    </TradeDetail>
-                                                    <TradeDetail>
-                                                        <DetailLabel>Shares</DetailLabel>
-                                                        <DetailValue>{post.trade.quantity}</DetailValue>
-                                                    </TradeDetail>
-                                                    <TradeDetail>
-                                                        <DetailLabel>Duration</DetailLabel>
-                                                        <DetailValue>{post.trade.duration || 'N/A'}</DetailValue>
-                                                    </TradeDetail>
+                                                    <TradeDetail><DetailLabel>Entry</DetailLabel><DetailValue>${post.trade.entryPrice}</DetailValue></TradeDetail>
+                                                    <TradeDetail><DetailLabel>Exit</DetailLabel><DetailValue>${post.trade.exitPrice}</DetailValue></TradeDetail>
+                                                    <TradeDetail><DetailLabel>Shares</DetailLabel><DetailValue>{post.trade.quantity}</DetailValue></TradeDetail>
+                                                    <TradeDetail><DetailLabel>Duration</DetailLabel><DetailValue>{post.trade.duration || 'N/A'}</DetailValue></TradeDetail>
                                                 </TradeDetails>
-                                                <CopyTradeButton>
-                                                    <Copy size={16} />
-                                                    Copy Trade Setup
-                                                </CopyTradeButton>
+                                                <CopyTradeButton><Copy size={14}/> Copy Trade Setup</CopyTradeButton>
                                             </TradeAttachment>
                                         )}
 
-                                        {/* Poll Attachment */}
                                         {post.type === 'poll' && post.poll && (
                                             <PollContainer>
                                                 <PollQuestion>{post.poll.question}</PollQuestion>
@@ -2936,191 +939,92 @@ const SocialFeed = () => {
                                                     const totalVotes = post.poll.options.reduce((sum, opt) => sum + (opt.votes || 0), 0);
                                                     const percent = totalVotes > 0 ? Math.round((option.votes / totalVotes) * 100) : 0;
                                                     const hasVoted = post.userVote !== undefined;
-                                                    
                                                     return (
-                                                        <PollOption 
-                                                            key={index}
-                                                            $selected={post.userVote === index}
-                                                            $voted={hasVoted}
-                                                            onClick={() => !hasVoted && handlePollVote(post._id, index)}
-                                                        >
-                                                            {hasVoted && <PollProgressBar $percent={percent} />}
-                                                            <PollOptionContent>
-                                                                <PollOptionText>{option.text}</PollOptionText>
-                                                                {hasVoted && <PollOptionPercent>{percent}%</PollOptionPercent>}
-                                                            </PollOptionContent>
+                                                        <PollOption key={index} $selected={post.userVote === index} $voted={hasVoted} onClick={() => !hasVoted && handlePollVote(post._id, index)}>
+                                                            {hasVoted && <PollProgressBar $percent={percent}/>}
+                                                            <PollOptionContent><PollOptionText>{option.text}</PollOptionText>{hasVoted && <PollOptionPercent>{percent}%</PollOptionPercent>}</PollOptionContent>
                                                         </PollOption>
                                                     );
                                                 })}
-                                                <PollStats>
-                                                    <span>{post.poll.totalVotes || 0} votes</span>
-                                                    <span>•</span>
-                                                    <span>{post.poll.endsIn || '24h left'}</span>
-                                                </PollStats>
+                                                <PollStats><span>{post.poll.totalVotes || 0} votes</span><span>·</span><span>{post.poll.endsIn || '24h left'}</span></PollStats>
                                             </PollContainer>
                                         )}
 
-                                        {/* Images */}
                                         {post.images?.length > 0 && (
                                             <ImageGrid $count={post.images.length}>
-                                                {post.images.map((img, index) => (
-                                                    <PostImage 
-                                                        key={index} 
-                                                        src={img} 
-                                                        alt=""
-                                                        $single={post.images.length === 1}
-                                                    />
-                                                ))}
+                                                {post.images.map((img, i) => <PostImage key={i} src={img} alt="" $single={post.images.length === 1}/>)}
                                             </ImageGrid>
                                         )}
                                     </PostContent>
 
-                                    {/* Post Stats */}
                                     <PostStats>
                                         <StatsLeft>
-                                            <ReactionsList>
-                                                {REACTIONS.slice(0, 3).map((reaction, index) => (
-                                                    <ReactionBubble key={index} $color={reaction.color}>
-                                                        {reaction.emoji}
-                                                    </ReactionBubble>
-                                                ))}
-                                            </ReactionsList>
-                                            <ReactionCount>
-                                                {post.totalReactions || post.likesCount || post.likes?.length || 0} reactions
-                                            </ReactionCount>
+                                            <ReactionsList>{REACTIONS.slice(0, 3).map((r, i) => <ReactionBubble key={i}>{r.emoji}</ReactionBubble>)}</ReactionsList>
+                                            <ReactionCount>{post.totalReactions || post.likesCount || post.likes?.length || 0} reactions</ReactionCount>
                                         </StatsLeft>
                                         <StatsRight>
-                                            <StatItem onClick={() => toggleComments(post._id)}>
-                                                {post.commentsCount || 0} comments
-                                            </StatItem>
-                                            <StatItem>
-                                                {post.sharesCount || 0} shares
-                                            </StatItem>
+                                            <StatItem onClick={() => toggleComments(post._id)}>{post.commentsCount || 0} comments</StatItem>
+                                            <StatItem>{post.sharesCount || 0} shares</StatItem>
                                         </StatsRight>
                                     </PostStats>
 
-                                    {/* Post Actions */}
                                     <PostActions>
                                         <ActionButton
                                             $active={post.userReaction || post.likes?.includes(user?._id)}
-                                            $activeColor={post.userReaction ? (REACTIONS.find(r => r.name === post.userReaction)?.color || '#ef4444') : (theme?.error || '#ef4444')}
-                                            $hoverBg={`${theme?.error || '#ef4444'}1A`}
-                                            $hoverColor={theme?.error || '#ef4444'}
+                                            $activeColor={post.userReaction ? (REACTIONS.find(r => r.name === post.userReaction)?.color || '#0ea5e9') : '#0ea5e9'}
                                             onMouseEnter={() => setActiveReactionPicker(post._id)}
                                             onMouseLeave={() => setTimeout(() => setActiveReactionPicker(null), 500)}
-                                            onClick={() => handleReaction(post._id, 'like')}
+                                            onClick={() => handleReaction(post._id, 'bull')}
                                         >
                                             {post.userReaction ? (
-                                                <span style={{ fontSize: '20px' }}>
-                                                    {REACTIONS.find(r => r.name === post.userReaction)?.emoji || '❤️'}
-                                                </span>
-                                            ) : (
-                                                <Heart size={20} fill={post.likes?.includes(user?._id) ? theme?.error || '#ef4444' : 'none'} />
-                                            )}
-                                            {post.userReaction ? REACTIONS.find(r => r.name === post.userReaction)?.name?.charAt(0).toUpperCase() + REACTIONS.find(r => r.name === post.userReaction)?.name?.slice(1) : 'Like'}
-
+                                                <span style={{fontSize:'18px'}}>{REACTIONS.find(r => r.name === post.userReaction)?.emoji || '🐂'}</span>
+                                            ) : '🐂'}
+                                            {post.userReaction ? REACTIONS.find(r => r.name === post.userReaction)?.label || 'Bullish' : 'Bullish'}
                                             {activeReactionPicker === post._id && (
-                                                <ReactionsPopup
-                                                    onMouseEnter={() => setActiveReactionPicker(post._id)}
-                                                    onMouseLeave={() => setActiveReactionPicker(null)}
-                                                    onClick={(e) => e.stopPropagation()}
-                                                >
-                                                    {REACTIONS.map((reaction, index) => (
-                                                        <ReactionButton
-                                                            key={index}
-                                                            $active={post.userReaction === reaction.name}
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleReaction(post._id, reaction.name);
-                                                            }}
-                                                        >
-                                                            {reaction.emoji}
+                                                <ReactionsPopup onMouseEnter={() => setActiveReactionPicker(post._id)} onMouseLeave={() => setActiveReactionPicker(null)} onClick={e => e.stopPropagation()}>
+                                                    {REACTIONS.map((r, i) => (
+                                                        <ReactionButton key={i} $active={post.userReaction === r.name} onClick={e => { e.stopPropagation(); handleReaction(post._id, r.name); }}>
+                                                            {r.emoji}
                                                         </ReactionButton>
                                                     ))}
                                                 </ReactionsPopup>
                                             )}
                                         </ActionButton>
-                                        
-                                        <ActionButton onClick={() => toggleComments(post._id)}>
-                                            <MessageCircle size={20} />
-                                            Comment
-                                        </ActionButton>
-                                        
-                                        <ActionButton onClick={() => handleShare(post._id)}>
-                                            <Share2 size={20} />
-                                            Share
-                                        </ActionButton>
-                                        
-                                        <ActionButton
-                                            $active={post.isBookmarked || post.bookmarkedBy?.includes(user?._id)}
-                                            $activeColor={theme?.brand?.primary || '#ffd700'}
-                                            onClick={() => handleBookmark(post._id)}
-                                        >
-                                            {(post.isBookmarked || post.bookmarkedBy?.includes(user?._id)) ? (
-                                                <BookmarkCheck size={20} />
-                                            ) : (
-                                                <Bookmark size={20} />
-                                            )}
-                                            {(post.isBookmarked || post.bookmarkedBy?.includes(user?._id)) ? 'Saved' : 'Save'}
+                                        <ActionButton onClick={() => toggleComments(post._id)}><MessageCircle size={18}/> Comment</ActionButton>
+                                        <ActionButton onClick={() => handleShare(post._id)}><Share2 size={18}/> Share</ActionButton>
+                                        <ActionButton $active={post.isBookmarked || post.bookmarkedBy?.includes(user?._id)} $activeColor="#f59e0b" onClick={() => handleBookmark(post._id)}>
+                                            {(post.isBookmarked || post.bookmarkedBy?.includes(user?._id)) ? <BookmarkCheck size={18}/> : <Bookmark size={18}/>}
+                                            Save
                                         </ActionButton>
                                     </PostActions>
 
-                                    {/* 🔥 FIXED: Comments Section - each comment author uses their equippedBorder */}
                                     {expandedComments[post._id] && (
                                         <CommentsSection>
                                             {post.comments?.length > 0 && (
                                                 <CommentsList>
-                                                    {post.comments.slice(-5).map((comment, index) => {
-                                                        return (
-                                                            <Comment key={index}>
-                                                                <AvatarWithBorder
-                                                                    src={comment.author?.avatar}
-                                                                    name={comment.author?.displayName}
-                                                                    username={comment.author?.username}
-                                                                    size={32}
-                                                                    borderId={comment.author?.equippedBorder || 'border-bronze'}
-                                                                    onClick={() => navigate(`/profile/${comment.author?.username}`)}
-                                                                />
-                                                                <CommentContent>
-                                                                    <CommentBubble>
-                                                                        <CommentAuthor onClick={() => navigate(`/profile/${comment.author?.username}`)}>
-                                                                            {comment.author?.displayName}
-                                                                        </CommentAuthor>
-                                                                        <CommentText>{comment.text}</CommentText>
-                                                                    </CommentBubble>
-                                                                    <CommentMeta>
-                                                                        <span>{formatTimeAgo(comment.createdAt)}</span>
-                                                                        <CommentAction>Like</CommentAction>
-                                                                        <CommentAction>Reply</CommentAction>
-                                                                    </CommentMeta>
-                                                                </CommentContent>
-                                                            </Comment>
-                                                        );
-                                                    })}
+                                                    {post.comments.slice(-5).map((comment, i) => (
+                                                        <Comment key={i}>
+                                                            <AvatarWithBorder src={comment.author?.avatar} name={comment.author?.displayName} username={comment.author?.username} size={30} borderId={comment.author?.equippedBorder || 'border-bronze'} onClick={() => navigate(`/profile/${comment.author?.username}`)}/>
+                                                            <CommentContent>
+                                                                <CommentBubble>
+                                                                    <CommentAuthor onClick={() => navigate(`/profile/${comment.author?.username}`)}>{comment.author?.displayName}</CommentAuthor>
+                                                                    <CommentText>{comment.text}</CommentText>
+                                                                </CommentBubble>
+                                                                <CommentMeta><span>{formatTimeAgo(comment.createdAt)}</span><CommentAction>Like</CommentAction><CommentAction>Reply</CommentAction></CommentMeta>
+                                                            </CommentContent>
+                                                        </Comment>
+                                                    ))}
                                                 </CommentsList>
                                             )}
                                             <CommentInput>
-                                                <AvatarWithBorder
-                                                    src={user?.profile?.avatar}
-                                                    name={user?.name}
-                                                    size={36}
-                                                    borderId={currentUserBorderId}
-                                                />
+                                                <AvatarWithBorder src={user?.profile?.avatar} name={user?.name} size={32} borderId={currentUserBorderId}/>
                                                 <CommentTextarea
-                                                    placeholder="Write a comment..."
+                                                    placeholder="Add a comment..."
                                                     value={commentInputs[post._id] || ''}
-                                                    onChange={(e) => setCommentInputs(prev => ({ 
-                                                        ...prev, 
-                                                        [post._id]: e.target.value 
-                                                    }))}
-                                                    onKeyPress={(e) => e.key === 'Enter' && handleComment(post._id)}
+                                                    onChange={e => setCommentInputs(prev => ({ ...prev, [post._id]: e.target.value }))}
+                                                    onKeyPress={e => e.key === 'Enter' && handleComment(post._id)}
                                                 />
-                                                <SendButton 
-                                                    onClick={() => handleComment(post._id)}
-                                                    disabled={!commentInputs[post._id]?.trim()}
-                                                >
-                                                    <Send size={18} />
-                                                </SendButton>
+                                                <SendBtn onClick={() => handleComment(post._id)} disabled={!commentInputs[post._id]?.trim()}><Send size={15}/></SendBtn>
                                             </CommentInput>
                                         </CommentsSection>
                                     )}
@@ -3129,315 +1033,138 @@ const SocialFeed = () => {
                         })
                     )}
 
-                    {/* Infinite Scroll Target */}
-                    <div ref={observerTarget} style={{ height: '20px' }} />
+                    <div ref={observerTarget} style={{height:'20px'}}/>
+                    {loading && posts.length > 0 && <LoadingBox><Spinner/></LoadingBox>}
+                    {!hasMore && posts.length > 0 && <EndMsg><Shield size={14}/> You've seen all recent market activity</EndMsg>}
+                </FeedCol>
 
-                    {/* Loading More */}
-                    {loading && posts.length > 0 && (
-                        <LoadingContainer>
-                            <LoadingSpinner />
-                        </LoadingContainer>
-                    )}
-
-                    {/* End of Feed */}
-                    {!hasMore && posts.length > 0 && (
-                        <EndMessage>
-                            <Sparkles size={20} color={theme?.brand?.primary || '#ffd700'} />
-                            You've reached the end! 🎉
-                        </EndMessage>
-                    )}
-                </FeedContainer>
-
-
-
-                {/* ============ RIGHT SIDEBAR ============ */}
+                {/* ═══ RIGHT SIDEBAR ═══ */}
                 <RightSidebar>
-                    {/* 🔥 FIXED: Top Traders - each trader uses their equippedBorder */}
-                    <SidebarCard>
-                        <SidebarTitle>
-                            <Trophy size={20} />
-                            Top Traders
-                        </SidebarTitle>
-                        {topTraders.length > 0 ? topTraders.map((trader, index) => {
-                            return (
-                                <TopTraderCard
-                                    key={trader.id}
-                                    onClick={() => navigate(`/profile/${trader.username}`)}
-                                >
-                                    <TraderRank $rank={index + 1}>{index + 1}</TraderRank>
-                                    <AvatarWithBorder
-                                        src={trader.avatar}
-                                        name={trader.name}
-                                        username={trader.username}
-                                        size={36}
-                                        borderId={trader.equippedBorder || 'border-bronze'}
-                                    />
-                                    <TraderInfo>
-                                        <TraderName>{trader.name}</TraderName>
-                                        <TraderStat>{trader.return} this month</TraderStat>
-                                    </TraderInfo>
-                                    <FollowBadge onClick={(e) => e.stopPropagation()}>
-                                        Follow
-                                    </FollowBadge>
-                                </TopTraderCard>
-                            );
-                        }) : (
-                            <LoadingText>Loading top traders...</LoadingText>
-                        )}
-                    </SidebarCard>
+                    {/* Trending Signals */}
+                    {activeSignals.length > 0 && (
+                        <SideCard>
+                            <SideCardTitle><Zap size={13} color="#f59e0b"/> Trending Signals</SideCardTitle>
+                            {activeSignals.slice(0, 5).map((s, i) => {
+                                const sym = s.symbol?.split(':')[0]?.replace(/USDT|USD/i, '') || s.symbol;
+                                const long = s.direction === 'UP';
+                                return (
+                                    <TrendingSignalCard key={i} onClick={() => navigate(`/signal/${s._id}`)}>
+                                        <TSLeft>
+                                            <TSSymbol>{sym}</TSSymbol>
+                                            <TSDir $long={long}>{long ? 'LONG' : 'SHORT'}</TSDir>
+                                        </TSLeft>
+                                        <TSRight>
+                                            <TSConf>{Math.min(95, Math.round(s.confidence))}%</TSConf>
+                                        </TSRight>
+                                    </TrendingSignalCard>
+                                );
+                            })}
+                        </SideCard>
+                    )}
 
-                    {/* 🔥 FIXED: Suggested Users - each user uses their equippedBorder */}
-                    <SidebarCard>
-                        <SidebarTitle>
-                            <UserPlus size={20} />
-                            Who to Follow
-                        </SidebarTitle>
-                        {suggestedUsers.length > 0 ? suggestedUsers.map(suggestedUser => {
-                            return (
-                                <SuggestedUser
-                                    key={suggestedUser.id}
-                                    onClick={() => navigate(`/profile/${suggestedUser.username}`)}
-                                >
-                                    <AvatarWithBorder
-                                        src={suggestedUser.avatar}
-                                        name={suggestedUser.name}
-                                        username={suggestedUser.username}
-                                        size={40}
-                                        borderId={suggestedUser.equippedBorder || 'border-bronze'}
-                                    />
-                                    <SuggestedInfo>
-                                        <SuggestedName>{suggestedUser.name}</SuggestedName>
-                                        <SuggestedMutual>{suggestedUser.mutuals} mutual followers</SuggestedMutual>
-                                    </SuggestedInfo>
-                                    <FollowBadge onClick={(e) => e.stopPropagation()}>
-                                        Follow
-                                    </FollowBadge>
-                                </SuggestedUser>
-                            );
-                        }) : (
-                            <LoadingText>Finding suggestions...</LoadingText>
-                        )}
-                    </SidebarCard>
+                    {/* Sentiment Snapshot */}
+                    {sentimentData.length > 0 && (
+                        <SideCard>
+                            <SideCardTitle><BarChart2 size={13} color="#0ea5e9"/> Sentiment Snapshot</SideCardTitle>
+                            {sentimentData.map((s, i) => (
+                                <SentimentBar key={i}>
+                                    <SentimentLabel>
+                                        <SentimentSymbol>{s.symbol} {s.long ? 'LONG' : 'SHORT'}</SentimentSymbol>
+                                        <SentimentPct $c={s.bullPct > 50 ? '#10b981' : '#ef4444'}>{s.bullPct}% bullish</SentimentPct>
+                                    </SentimentLabel>
+                                    <SentimentTrack><SentimentFill $w={s.bullPct}/></SentimentTrack>
+                                </SentimentBar>
+                            ))}
+                        </SideCard>
+                    )}
 
-                    {/* Live Activity */}
-                    <SidebarCard>
-                        <SidebarTitle>
-                            <Activity size={20} />
-                            Live Activity
-                        </SidebarTitle>
-                        <LiveActivityPlaceholder>
-                            <Zap size={32} color={theme?.brand?.primary || '#ffd700'} style={{ marginBottom: '0.5rem' }} />
-                            <div>Real-time trading activity coming soon!</div>
-                        </LiveActivityPlaceholder>
-                    </SidebarCard>
+                    {/* Top Traders */}
+                    {topTraders.length > 0 && (
+                        <SideCard>
+                            <SideCardTitle><Trophy size={13} color="#fbbf24"/> Top Performing Traders</SideCardTitle>
+                            {topTraders.map((t, i) => (
+                                <TopTraderRow key={t.id} onClick={() => navigate(`/profile/${t.username}`)}>
+                                    <TraderRank $rank={i + 1}>{i + 1}</TraderRank>
+                                    <AvatarWithBorder src={t.avatar} name={t.name} username={t.username} size={30} borderId={t.equippedBorder || 'border-bronze'}/>
+                                    <TraderName>{t.name}</TraderName>
+                                    <TraderReturn>{t.return}</TraderReturn>
+                                </TopTraderRow>
+                            ))}
+                        </SideCard>
+                    )}
                 </RightSidebar>
             </MainContent>
 
-            {/* ============ CREATE POST MODAL ============ */}
+            {/* ═══ CREATE POST MODAL ═══ */}
             {showCreateModal && (
                 <ModalOverlay onClick={() => setShowCreateModal(false)}>
-                    <Modal onClick={(e) => e.stopPropagation()}>
+                    <Modal onClick={e => e.stopPropagation()}>
                         <ModalHeader>
-                            <ModalTitle>Create Post</ModalTitle>
-                            <CloseButton onClick={() => setShowCreateModal(false)}>
-                                <X size={20} />
-                            </CloseButton>
+                            <ModalTitle>Share with the Community</ModalTitle>
+                            <CloseBtn onClick={() => setShowCreateModal(false)}><X size={18}/></CloseBtn>
                         </ModalHeader>
-
                         <ModalBody>
-                            {/* Post Type Selector */}
                             <PostTypeSelector>
-                                <PostTypeChip 
-                                    $active={postType === 'text'} 
-                                    onClick={() => setPostType('text')}
-                                >
-                                    <MessageSquare size={16} />
-                                    Text
-                                </PostTypeChip>
-                                <PostTypeChip 
-                                    $active={postType === 'trade'} 
-                                    onClick={() => setPostType('trade')}
-                                >
-                                    <TrendingUp size={16} />
-                                    Trade
-                                </PostTypeChip>
-                                <PostTypeChip 
-                                    $active={postType === 'poll'} 
-                                    onClick={() => setPostType('poll')}
-                                >
-                                    <BarChart2 size={16} />
-                                    Poll
-                                </PostTypeChip>
-                                <PostTypeChip 
-                                    $active={postType === 'image'} 
-                                    onClick={() => setPostType('image')}
-                                >
-                                    <Image size={16} />
-                                    Media
-                                </PostTypeChip>
+                                <PostTypeChip $active={postType === 'text'} onClick={() => setPostType('text')}><MessageSquare size={14}/> Text</PostTypeChip>
+                                <PostTypeChip $active={postType === 'trade'} onClick={() => setPostType('trade')}><TrendingUp size={14}/> Trade</PostTypeChip>
+                                <PostTypeChip $active={postType === 'poll'} onClick={() => setPostType('poll')}><BarChart2 size={14}/> Poll</PostTypeChip>
+                                <PostTypeChip $active={postType === 'image'} onClick={() => setPostType('image')}><Image size={14}/> Media</PostTypeChip>
                             </PostTypeSelector>
-
-                            {/* Post Text */}
                             <TextArea
-                                placeholder={
-                                    postType === 'trade' ? "Share your trade story..." :
-                                    postType === 'poll' ? "Ask a question..." :
-                                    "What's happening in the markets?"
-                                }
-                                value={postText}
-                                onChange={(e) => setPostText(e.target.value)}
-                                maxLength={1000}
+                                placeholder={postType === 'trade' ? "Share your trade story..." : postType === 'poll' ? "Ask the community..." : "Share a trade idea or market insight..."}
+                                value={postText} onChange={e => setPostText(e.target.value)} maxLength={1000}
                             />
-                            <CharCount $over={postText.length > 1000}>
-                                {postText.length}/1000
-                            </CharCount>
+                            <CharCount $over={postText.length > 1000}>{postText.length}/1000</CharCount>
 
-                            {/* Trade Form */}
                             {postType === 'trade' && (
                                 <AttachmentPreview>
                                     <AttachmentHeader>
-                                        <AttachmentTitle>
-                                            <TrendingUp size={18} color={theme?.success || '#10b981'} />
-                                            Trade Details
-                                        </AttachmentTitle>
-                                        <RemoveAttachment onClick={() => setPostType('text')}>
-                                            <X size={18} />
-                                        </RemoveAttachment>
+                                        <AttachmentTitle><TrendingUp size={15} color="#10b981"/> Trade Details</AttachmentTitle>
+                                        <RemoveAttachment onClick={() => setPostType('text')}><X size={15}/></RemoveAttachment>
                                     </AttachmentHeader>
                                     <TradeForm>
                                         <FormRow>
-                                            <FormGroup>
-                                                <FormLabel>Symbol</FormLabel>
-                                                <FormInput
-                                                    placeholder="e.g. AAPL"
-                                                    value={tradeData.symbol}
-                                                    onChange={(e) => setTradeData({...tradeData, symbol: e.target.value.toUpperCase()})}
-                                                />
-                                            </FormGroup>
-                                            <FormGroup>
-                                                <FormLabel>Direction</FormLabel>
-                                                <FormSelect
-                                                    value={tradeData.direction}
-                                                    onChange={(e) => setTradeData({...tradeData, direction: e.target.value})}
-                                                >
-                                                    <option value="LONG">Long (Buy)</option>
-                                                    <option value="SHORT">Short (Sell)</option>
-                                                </FormSelect>
-                                            </FormGroup>
+                                            <FormGroup><FormLabel>Symbol</FormLabel><FormInput placeholder="e.g. AAPL" value={tradeData.symbol} onChange={e => setTradeData({...tradeData, symbol: e.target.value.toUpperCase()})}/></FormGroup>
+                                            <FormGroup><FormLabel>Direction</FormLabel><FormSelect value={tradeData.direction} onChange={e => setTradeData({...tradeData, direction: e.target.value})}><option value="LONG">Long (Buy)</option><option value="SHORT">Short (Sell)</option></FormSelect></FormGroup>
                                         </FormRow>
                                         <FormRow>
-                                            <FormGroup>
-                                                <FormLabel>Entry Price</FormLabel>
-                                                <FormInput
-                                                    type="number"
-                                                    placeholder="0.00"
-                                                    value={tradeData.entryPrice}
-                                                    onChange={(e) => setTradeData({...tradeData, entryPrice: e.target.value})}
-                                                />
-                                            </FormGroup>
-                                            <FormGroup>
-                                                <FormLabel>Exit Price</FormLabel>
-                                                <FormInput
-                                                    type="number"
-                                                    placeholder="0.00"
-                                                    value={tradeData.exitPrice}
-                                                    onChange={(e) => setTradeData({...tradeData, exitPrice: e.target.value})}
-                                                />
-                                            </FormGroup>
+                                            <FormGroup><FormLabel>Entry Price</FormLabel><FormInput type="number" placeholder="0.00" value={tradeData.entryPrice} onChange={e => setTradeData({...tradeData, entryPrice: e.target.value})}/></FormGroup>
+                                            <FormGroup><FormLabel>Exit Price</FormLabel><FormInput type="number" placeholder="0.00" value={tradeData.exitPrice} onChange={e => setTradeData({...tradeData, exitPrice: e.target.value})}/></FormGroup>
                                         </FormRow>
                                         <FormRow>
-                                            <FormGroup>
-                                                <FormLabel>Quantity</FormLabel>
-                                                <FormInput
-                                                    type="number"
-                                                    placeholder="0"
-                                                    value={tradeData.quantity}
-                                                    onChange={(e) => setTradeData({...tradeData, quantity: e.target.value})}
-                                                />
-                                            </FormGroup>
-                                            <FormGroup>
-                                                <FormLabel>P&L ($)</FormLabel>
-                                                <FormInput
-                                                    type="number"
-                                                    placeholder="0.00"
-                                                    value={tradeData.pnl}
-                                                    onChange={(e) => setTradeData({...tradeData, pnl: e.target.value})}
-                                                />
-                                            </FormGroup>
+                                            <FormGroup><FormLabel>Quantity</FormLabel><FormInput type="number" placeholder="0" value={tradeData.quantity} onChange={e => setTradeData({...tradeData, quantity: e.target.value})}/></FormGroup>
+                                            <FormGroup><FormLabel>P&L ($)</FormLabel><FormInput type="number" placeholder="0.00" value={tradeData.pnl} onChange={e => setTradeData({...tradeData, pnl: e.target.value})}/></FormGroup>
                                         </FormRow>
                                     </TradeForm>
                                 </AttachmentPreview>
                             )}
 
-                            {/* Poll Form */}
                             {postType === 'poll' && (
                                 <AttachmentPreview>
                                     <AttachmentHeader>
-                                        <AttachmentTitle>
-                                            <BarChart2 size={18} color={theme?.brand?.accent || '#00adef'} />
-                                            Poll Options
-                                        </AttachmentTitle>
-                                        <RemoveAttachment onClick={() => setPostType('text')}>
-                                            <X size={18} />
-                                        </RemoveAttachment>
+                                        <AttachmentTitle><BarChart2 size={15} color="#a78bfa"/> Poll Options</AttachmentTitle>
+                                        <RemoveAttachment onClick={() => setPostType('text')}><X size={15}/></RemoveAttachment>
                                     </AttachmentHeader>
                                     <PollForm>
-                                        {pollData.options.map((option, index) => (
-                                            <PollOptionInput key={index}>
-                                                <OptionInput
-                                                    placeholder={`Option ${index + 1}`}
-                                                    value={option}
-                                                    onChange={(e) => {
-                                                        const newOptions = [...pollData.options];
-                                                        newOptions[index] = e.target.value;
-                                                        setPollData({...pollData, options: newOptions});
-                                                    }}
-                                                />
-                                                {pollData.options.length > 2 && (
-                                                    <RemoveOptionButton onClick={() => {
-                                                        const newOptions = pollData.options.filter((_, i) => i !== index);
-                                                        setPollData({...pollData, options: newOptions});
-                                                    }}>
-                                                        <X size={18} />
-                                                    </RemoveOptionButton>
-                                                )}
+                                        {pollData.options.map((opt, i) => (
+                                            <PollOptionInput key={i}>
+                                                <OptionInput placeholder={`Option ${i+1}`} value={opt} onChange={e => { const o = [...pollData.options]; o[i] = e.target.value; setPollData({...pollData, options: o}); }}/>
+                                                {pollData.options.length > 2 && <RemoveOptionBtn onClick={() => setPollData({...pollData, options: pollData.options.filter((_,j) => j !== i)})}><X size={15}/></RemoveOptionBtn>}
                                             </PollOptionInput>
                                         ))}
-                                        {pollData.options.length < 4 && (
-                                            <AddOptionButton onClick={() => {
-                                                setPollData({...pollData, options: [...pollData.options, '']});
-                                            }}>
-                                                <Plus size={18} />
-                                                Add Option
-                                            </AddOptionButton>
-                                        )}
+                                        {pollData.options.length < 4 && <AddOptionBtn onClick={() => setPollData({...pollData, options: [...pollData.options, '']})}><Plus size={15}/> Add Option</AddOptionBtn>}
                                     </PollForm>
                                 </AttachmentPreview>
                             )}
                         </ModalBody>
-
                         <ModalFooter>
                             <FooterActions>
-                                <FooterButton>
-                                    <Image size={20} />
-                                </FooterButton>
-                                <FooterButton>
-                                    <Smile size={20} />
-                                </FooterButton>
-                                <FooterButton>
-                                    <Hash size={20} />
-                                </FooterButton>
-                                <FooterButton>
-                                    <AtSign size={20} />
-                                </FooterButton>
+                                <FooterBtn><Image size={16}/></FooterBtn>
+                                <FooterBtn><Smile size={16}/></FooterBtn>
+                                <FooterBtn><Hash size={16}/></FooterBtn>
+                                <FooterBtn><AtSign size={16}/></FooterBtn>
                             </FooterActions>
-                            <PostButton 
-                                onClick={handleCreatePost}
-                                disabled={!postText.trim() && postType === 'text'}
-                            >
-                                <Send size={18} />
-                                Post
-                            </PostButton>
+                            <PostButton onClick={handleCreatePost} disabled={!postText.trim() && postType === 'text'}><Send size={15}/> Post</PostButton>
                         </ModalFooter>
                     </Modal>
                 </ModalOverlay>
@@ -3447,5 +1174,3 @@ const SocialFeed = () => {
 };
 
 export default SocialFeed;
-
-

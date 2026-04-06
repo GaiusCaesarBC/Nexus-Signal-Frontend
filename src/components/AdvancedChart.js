@@ -716,6 +716,7 @@ const AdvancedChart = ({
     const [patternError, setPatternError] = useState(null);
     const [chartVisibleRange, setChartVisibleRange] = useState(null);
     const [showCandlestickPatterns, setShowCandlestickPatterns] = useState(true);
+    const [expandedPattern, setExpandedPattern] = useState(null);
 
     // Candlestick pattern types (single/multi-candle patterns)
     const CANDLESTICK_PATTERNS = [
@@ -2418,24 +2419,7 @@ const AdvancedChart = ({
             <ChartWrapper $height={height}>
                 <div ref={chartContainerRef} />
 
-                {/* Pattern Overlay - SVG visual overlays for detected patterns */}
-                {patternEnabled && filteredPatterns.length > 0 && chartVisibleRange && sanitizedData.length > 0 && (
-                    <PatternOverlay
-                        patterns={filteredPatterns}
-                        chartDimensions={chartVisibleRange.dimensions}
-                        priceScale={{
-                            min: Math.min(...sanitizedData.slice(
-                                Math.max(0, chartVisibleRange.timeScale.start),
-                                Math.min(sanitizedData.length, chartVisibleRange.timeScale.end + 1)
-                            ).map(d => d.low)),
-                            max: Math.max(...sanitizedData.slice(
-                                Math.max(0, chartVisibleRange.timeScale.start),
-                                Math.min(sanitizedData.length, chartVisibleRange.timeScale.end + 1)
-                            ).map(d => d.high))
-                        }}
-                        timeScale={chartVisibleRange.timeScale}
-                    />
-                )}
+                {/* Pattern info shown in PatternBadge cards below — overlay removed for clarity */}
 
                 {/* Drawing Tools - Trendlines, Fibonacci, Annotations */}
                 {drawingEnabled && chartVisibleRange && sanitizedData.length > 0 && (
@@ -2501,7 +2485,7 @@ const AdvancedChart = ({
                 )}
 
                 {/* NEXUS Pattern Badge */}
-                {patternEnabled && (
+                {patternEnabled && (<>
                     <PatternBadge>
                         <div className="pattern-header">
                             <Brain size={12} />
@@ -2526,8 +2510,9 @@ const AdvancedChart = ({
                                     <div
                                         key={idx}
                                         className="pattern-item"
-                                        onClick={() => handlePatternClick(pattern)}
-                                        title="Click to zoom chart to this pattern"
+                                        onClick={() => setExpandedPattern(expandedPattern?.name === pattern.name ? null : pattern)}
+                                        title="Click for full pattern details"
+                                        style={{ cursor: 'pointer' }}
                                     >
                                         <div className="pattern-name">
                                             {pattern.type === 'bullish' ? (
@@ -2556,26 +2541,101 @@ const AdvancedChart = ({
                                                 )}
                                             </div>
                                         )}
-                                        <div style={{
-                                            fontSize: '0.65rem',
-                                            color: 'rgba(255,255,255,0.5)',
-                                            marginTop: '4px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '4px'
-                                        }}>
-                                            <Eye size={10} />
-                                            Click to view on chart
+                                        {pattern.description && (
+                                            <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', marginTop: '4px', lineHeight: 1.4 }}>
+                                                {pattern.description}
+                                            </div>
+                                        )}
+                                        <div style={{ fontSize: '0.6rem', color: pattern.type === 'bullish' ? 'rgba(34,197,94,0.6)' : 'rgba(239,68,68,0.6)', marginTop: '3px', fontWeight: 600 }}>
+                                            {pattern.type === 'bullish' ? 'Suggested: Look for long entries' : 'Suggested: Look for short entries or exit longs'}
                                         </div>
                                     </div>
                                 ))}
                             </>
                         ) : (
                             <div className="no-patterns">
-                                No patterns detected for current timeframe
+                                AI is scanning {symbol} — no high-confidence patterns detected yet.
                             </div>
                         )}
                     </PatternBadge>
+
+                    {/* Expanded Pattern Detail Panel */}
+                    {expandedPattern && (
+                        <div style={{
+                            background:'rgba(15,23,42,.95)',border:'1px solid rgba(100,116,139,.15)',
+                            borderRadius:12,padding:'1.25rem',marginTop:'.5rem',
+                            animation:'fadeIn .3s ease-out'
+                        }}>
+                            <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:'.75rem'}}>
+                                <div>
+                                    <div style={{display:'flex',alignItems:'center',gap:'.5rem',marginBottom:'.25rem'}}>
+                                        {expandedPattern.type === 'bullish' ? <TrendingUp size={18} color="#22c55e"/> : <TrendingUp size={18} color="#ef4444" style={{transform:'rotate(180deg)'}}/>}
+                                        <span style={{fontSize:'1.1rem',fontWeight:800,color:'#e2e8f0'}}>{expandedPattern.name}</span>
+                                        <span style={{fontSize:'.6rem',fontWeight:700,padding:'2px 8px',borderRadius:4,
+                                            background:expandedPattern.type==='bullish'?'rgba(34,197,94,.15)':'rgba(239,68,68,.15)',
+                                            color:expandedPattern.type==='bullish'?'#22c55e':'#ef4444',
+                                            border:`1px solid ${expandedPattern.type==='bullish'?'rgba(34,197,94,.3)':'rgba(239,68,68,.3)'}`
+                                        }}>{expandedPattern.type?.toUpperCase()}</span>
+                                    </div>
+                                    <div style={{fontSize:'.78rem',color:'#94a3b8',maxWidth:500}}>{expandedPattern.description || 'Technical chart pattern detected by AI analysis.'}</div>
+                                </div>
+                                <button onClick={() => setExpandedPattern(null)} style={{background:'none',border:'none',color:'#64748b',cursor:'pointer',fontSize:'1.2rem',padding:'.25rem'}}>✕</button>
+                            </div>
+
+                            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(130px,1fr))',gap:'.5rem',marginBottom:'.75rem'}}>
+                                <div style={{padding:'.5rem .65rem',background:'rgba(100,116,139,.06)',borderRadius:8,border:'1px solid rgba(100,116,139,.08)'}}>
+                                    <div style={{fontSize:'.58rem',color:'#64748b',textTransform:'uppercase',letterSpacing:'.04em'}}>Confidence</div>
+                                    <div style={{fontSize:'1.1rem',fontWeight:800,color:expandedPattern.confidence>=70?'#22c55e':expandedPattern.confidence>=50?'#f59e0b':'#ef4444'}}>{expandedPattern.confidence?.toFixed(0)}%</div>
+                                </div>
+                                <div style={{padding:'.5rem .65rem',background:'rgba(100,116,139,.06)',borderRadius:8,border:'1px solid rgba(100,116,139,.08)'}}>
+                                    <div style={{fontSize:'.58rem',color:'#64748b',textTransform:'uppercase',letterSpacing:'.04em'}}>Reliability</div>
+                                    <div style={{fontSize:'1.1rem',fontWeight:800,color:'#00adef'}}>{expandedPattern.reliability ? (expandedPattern.reliability * 100).toFixed(0) + '%' : 'N/A'}</div>
+                                </div>
+                                {expandedPattern.target && (
+                                    <div style={{padding:'.5rem .65rem',background:'rgba(100,116,139,.06)',borderRadius:8,border:'1px solid rgba(100,116,139,.08)'}}>
+                                        <div style={{fontSize:'.58rem',color:'#64748b',textTransform:'uppercase',letterSpacing:'.04em'}}>Target Price</div>
+                                        <div style={{fontSize:'1.1rem',fontWeight:800,color:expandedPattern.type==='bullish'?'#22c55e':'#ef4444'}}>{formatChartPrice(expandedPattern.target, symbol)}</div>
+                                    </div>
+                                )}
+                                {expandedPattern.potentialMove && (
+                                    <div style={{padding:'.5rem .65rem',background:'rgba(100,116,139,.06)',borderRadius:8,border:'1px solid rgba(100,116,139,.08)'}}>
+                                        <div style={{fontSize:'.58rem',color:'#64748b',textTransform:'uppercase',letterSpacing:'.04em'}}>Potential Move</div>
+                                        <div style={{fontSize:'1.1rem',fontWeight:800,color:expandedPattern.potentialMove>=0?'#22c55e':'#ef4444'}}>{expandedPattern.potentialMove>=0?'+':''}{expandedPattern.potentialMove}%</div>
+                                    </div>
+                                )}
+                                <div style={{padding:'.5rem .65rem',background:'rgba(100,116,139,.06)',borderRadius:8,border:'1px solid rgba(100,116,139,.08)'}}>
+                                    <div style={{fontSize:'.58rem',color:'#64748b',textTransform:'uppercase',letterSpacing:'.04em'}}>Symbol</div>
+                                    <div style={{fontSize:'1.1rem',fontWeight:800,color:'#e2e8f0'}}>{symbol}</div>
+                                </div>
+                                <div style={{padding:'.5rem .65rem',background:'rgba(100,116,139,.06)',borderRadius:8,border:'1px solid rgba(100,116,139,.08)'}}>
+                                    <div style={{fontSize:'.58rem',color:'#64748b',textTransform:'uppercase',letterSpacing:'.04em'}}>Timeframe</div>
+                                    <div style={{fontSize:'1.1rem',fontWeight:800,color:'#e2e8f0'}}>{timeframe}</div>
+                                </div>
+                            </div>
+
+                            {/* What to do */}
+                            <div style={{padding:'.65rem .85rem',borderRadius:8,
+                                background:expandedPattern.type==='bullish'?'rgba(34,197,94,.06)':'rgba(239,68,68,.06)',
+                                border:`1px solid ${expandedPattern.type==='bullish'?'rgba(34,197,94,.15)':'rgba(239,68,68,.15)'}`,
+                                marginBottom:'.5rem'
+                            }}>
+                                <div style={{fontSize:'.65rem',fontWeight:700,color:expandedPattern.type==='bullish'?'#22c55e':'#ef4444',marginBottom:'.2rem',textTransform:'uppercase',letterSpacing:'.03em'}}>
+                                    {expandedPattern.type === 'bullish' ? '📈 Bullish Signal' : '📉 Bearish Signal'}
+                                </div>
+                                <div style={{fontSize:'.78rem',color:'#94a3b8',lineHeight:1.5}}>
+                                    {expandedPattern.type === 'bullish'
+                                        ? `This pattern suggests upward price movement for ${symbol}. Consider looking for long entry opportunities near support levels. ${expandedPattern.target ? `Target: ${formatChartPrice(expandedPattern.target, symbol)}.` : ''} ${expandedPattern.avgDuration ? `Typical duration: ${expandedPattern.avgDuration}.` : ''}`
+                                        : `This pattern suggests downward price movement for ${symbol}. Consider taking profits on longs or looking for short entries. ${expandedPattern.target ? `Target: ${formatChartPrice(expandedPattern.target, symbol)}.` : ''} ${expandedPattern.avgDuration ? `Typical duration: ${expandedPattern.avgDuration}.` : ''}`
+                                    }
+                                </div>
+                            </div>
+
+                            <div style={{fontSize:'.6rem',color:'#475569',fontStyle:'italic'}}>
+                                Pattern detected by NEXUS AI. Not financial advice. Always use proper risk management.
+                            </div>
+                        </div>
+                    )}
+                    </>
                 )}
 
                 {tooltipData && (

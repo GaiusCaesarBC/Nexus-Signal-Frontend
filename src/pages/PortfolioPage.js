@@ -1,2093 +1,1433 @@
-// client/src/pages/PortfolioPage.js - REDESIGNED PORTFOLIO WITH STUNNING UI
+// client/src/pages/PortfolioPage.js - Trading Performance Hub
 
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import styled, { keyframes, css } from 'styled-components';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import styled, { keyframes } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import { useTheme } from '../context/ThemeContext';
 import { useWallet } from '../context/WalletContext';
 import WalletConnectButton from '../components/WalletConnectButton';
 import WalletAnalytics from '../components/WalletAnalytics';
 import BrokerageConnect from '../components/BrokerageConnect';
 import api from '../api/axios';
 import {
-    TrendingUp, TrendingDown, PieChart, BarChart3,
-    Activity, Brain, Target, Zap,
-    ArrowUpRight, ArrowDownRight, Eye, Flame, Star,
-    Download, RefreshCw, Search, AlertTriangle,
-    CheckCircle, Shield, Lightbulb, Trophy,
-    Wallet, Link2, Building2, Coins, DollarSign,
-    Clock, Sparkles, ChevronRight, ExternalLink,
-    History, ArrowRight, ShoppingCart, Tag, Info
+    TrendingUp, TrendingDown, BarChart3,
+    Activity, Target,
+    ArrowUpRight, ArrowDownRight, Eye,
+    CheckCircle, Trophy,
+    Wallet, DollarSign,
+    Clock, ChevronRight, ChevronDown,
+    ArrowRight, Crosshair, Flame,
+    Zap, Shield, AlertTriangle, ExternalLink
 } from 'lucide-react';
 import {
-    PieChart as RechartsPie, Pie, Cell, ResponsiveContainer,
-    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, AreaChart, Area
+    ResponsiveContainer, AreaChart, Area,
+    XAxis, YAxis, CartesianGrid, Tooltip
 } from 'recharts';
 
-// ============ ANIMATIONS ============
+// ============ ANIMATION ============
 const fadeIn = keyframes`
-    from { opacity: 0; transform: translateY(20px); }
+    from { opacity: 0; transform: translateY(16px); }
     to { opacity: 1; transform: translateY(0); }
-`;
-
-const fadeInScale = keyframes`
-    from { opacity: 0; transform: scale(0.95); }
-    to { opacity: 1; transform: scale(1); }
-`;
-
-const slideUp = keyframes`
-    from { opacity: 0; transform: translateY(40px); }
-    to { opacity: 1; transform: translateY(0); }
-`;
-
-const pulse = keyframes`
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.02); }
-`;
-
-const shimmer = keyframes`
-    0% { background-position: -200% center; }
-    100% { background-position: 200% center; }
-`;
-
-const rotate = keyframes`
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-`;
-
-const float = keyframes`
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-10px); }
-`;
-
-const glow = keyframes`
-    0%, 100% { box-shadow: 0 0 20px rgba(0, 173, 239, 0.3); }
-    50% { box-shadow: 0 0 40px rgba(0, 173, 239, 0.6); }
-`;
-
-const countUp = keyframes`
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-`;
-
-// ============ BACKGROUND ============
-const BackgroundOrbs = styled.div`
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    pointer-events: none;
-    overflow: hidden;
-    z-index: 0;
-`;
-
-const Orb = styled.div`
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(80px);
-    opacity: 0.25;
-    animation: ${float} ${props => props.$duration || '20s'} ease-in-out infinite;
-
-    &:nth-child(1) {
-        width: 500px;
-        height: 500px;
-        background: ${({ theme }) => `radial-gradient(circle, ${theme.brand?.primary || '#00adef'}66 0%, transparent 70%)`};
-        top: 5%;
-        left: -150px;
-    }
-
-    &:nth-child(2) {
-        width: 400px;
-        height: 400px;
-        background: ${({ theme }) => `radial-gradient(circle, ${theme.success || '#10b981'}66 0%, transparent 70%)`};
-        top: 40%;
-        right: -100px;
-        animation-delay: -5s;
-    }
-
-    &:nth-child(3) {
-        width: 350px;
-        height: 350px;
-        background: ${({ theme }) => `radial-gradient(circle, ${theme.brand?.accent || '#8b5cf6'}4D 0%, transparent 70%)`};
-        bottom: 10%;
-        left: 30%;
-        animation-delay: -10s;
-    }
 `;
 
 // ============ LAYOUT ============
-const PageContainer = styled.div`
+const PageWrapper = styled.div`
     min-height: 100vh;
-    background: transparent;
-    color: ${props => props.theme.text?.primary || '#e0e6ed'};
-    padding: 6rem 2rem 2rem;
-    position: relative;
-    z-index: 1;
+    background: linear-gradient(180deg, #070a14 0%, #0c1020 40%, #0a0e1a 100%);
+    color: #e0e6ed;
+    padding: 90px 0 80px 0;
 `;
 
-const ContentWrapper = styled.div`
-    max-width: 1600px;
+const Container = styled.div`
+    max-width: 1200px;
     margin: 0 auto;
-    position: relative;
-    z-index: 1;
+    padding: 0 24px;
 `;
 
 // ============ HEADER ============
-const Header = styled.div`
-    margin-bottom: 2rem;
-    animation: ${fadeIn} 0.6s ease-out;
-    text-align: center;
+const HeaderSection = styled.div`
+    padding: 48px 0 32px;
+    animation: ${fadeIn} 0.5s ease-out;
 `;
 
-const Title = styled.h1`
-    font-size: 3rem;
-    background: ${props => props.theme.brand?.gradient || 'linear-gradient(135deg, #00adef 0%, #00ff88 100%)'};
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    font-weight: 900;
-    margin-bottom: 0.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 1rem;
-
-    @media (max-width: 768px) {
-        font-size: 2rem;
-    }
-`;
-
-const TitleIcon = styled.div`
-    animation: ${float} 3s ease-in-out infinite;
-`;
-
-const Subtitle = styled.p`
-    color: ${props => props.theme.text?.secondary || '#94a3b8'};
-    font-size: 1.1rem;
-`;
-
-const DisclaimerNotice = styled.div`
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    padding: 0.6rem 1.25rem;
-    background: ${props => props.theme.warning || '#f59e0b'}15;
-    border: 1px solid ${props => props.theme.warning || '#f59e0b'}40;
-    border-radius: 12px;
-    margin: 1rem auto 1.5rem;
-    max-width: 700px;
-    animation: ${fadeIn} 0.6s ease-out 0.1s both;
-
-    svg {
-        flex-shrink: 0;
-        color: ${props => props.theme.warning || '#f59e0b'};
-    }
-`;
-
-const DisclaimerText = styled.span`
-    color: ${props => props.theme.text?.secondary || '#94a3b8'};
-    font-size: 0.8rem;
-    line-height: 1.4;
-    text-align: center;
-`;
-
-// ============ TABS ============
-const TabsContainer = styled.div`
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 2rem;
-    background: ${props => props.theme.bg?.tertiary || 'rgba(15, 23, 42, 0.6)'};
-    padding: 0.5rem;
-    border-radius: 16px;
-    width: fit-content;
-    margin-left: auto;
-    margin-right: auto;
-    animation: ${fadeIn} 0.6s ease-out 0.2s both;
-    backdrop-filter: blur(10px);
-    border: 1px solid ${props => props.theme.brand?.primary || '#00adef'}33;
-`;
-
-const Tab = styled.button`
-    padding: 0.85rem 1.75rem;
-    background: ${props => props.$active
-        ? props.theme.brand?.gradient || `linear-gradient(135deg, ${props.theme.brand?.primary || '#00adef'} 0%, ${props.theme.brand?.secondary || '#0088cc'} 100%)`
-        : 'transparent'};
-    border: none;
-    border-radius: 12px;
-    color: ${props => props.$active ? 'white' : props.theme.text?.secondary || '#94a3b8'};
+const PageTitle = styled.h1`
+    font-size: 1.75rem;
     font-weight: 700;
-    font-size: 0.95rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-
-    ${props => props.$active && css`
-        box-shadow: 0 8px 24px ${props.theme.brand?.primary || '#00adef'}4D;
-    `}
-
-    &:hover {
-        background: ${props => props.$active
-            ? props.theme.brand?.gradient
-            : `${props.theme.brand?.primary || '#00adef'}1A`};
-        color: ${props => props.$active ? 'white' : props.theme.text?.primary};
-        transform: translateY(-2px);
-    }
+    color: #f1f5f9;
+    margin: 0 0 6px 0;
 `;
 
-// ============ WALLET SECTION ============
-const SolanaLinkSection = styled.div`
-    margin-top: 1rem;
-    padding-top: 1rem;
-    border-top: 1px solid rgba(255,255,255,.06);
+const PageSubtitle = styled.p`
+    font-size: 0.9rem;
+    color: #64748b;
+    margin: 0;
 `;
 
-const WalletSection = styled.div`
-    background: linear-gradient(135deg, ${props => props.theme.brand?.primary || '#00adef'}1A 0%, ${props => props.theme.brand?.accent || '#8b5cf6'}1A 100%);
-    border: 2px solid ${props => props.theme.brand?.primary || '#00adef'}4D;
-    border-radius: 24px;
-    padding: 1.5rem 2rem;
-    margin-bottom: 2rem;
-    animation: ${fadeIn} 0.6s ease-out 0.3s both;
-    backdrop-filter: blur(10px);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 1rem;
+// ============ METRICS ROW ============
+const MetricsGrid = styled.div`
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+    animation: ${fadeIn} 0.5s ease-out 0.1s both;
 
     @media (max-width: 768px) {
-        flex-direction: column;
-        text-align: center;
+        grid-template-columns: repeat(2, 1fr);
     }
-`;
-
-const WalletInfo = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-`;
-
-const WalletIconWrapper = styled.div`
-    width: 56px;
-    height: 56px;
-    border-radius: 16px;
-    background: ${props => props.theme.brand?.gradient || 'linear-gradient(135deg, #00adef 0%, #00ff88 100%)'};
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 8px 24px ${props => props.theme.brand?.primary || '#00adef'}4D;
-`;
-
-const WalletText = styled.div``;
-
-const WalletTitle = styled.h2`
-    font-size: 1.25rem;
-    color: ${props => props.theme.text?.primary || '#e0e6ed'};
-    font-weight: 800;
-    margin: 0 0 0.25rem 0;
-`;
-
-const WalletStatus = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: ${props => props.$linked ? props.theme.success || '#10b981' : props.theme.warning || '#fbbf24'};
-    font-size: 0.9rem;
-    font-weight: 600;
-`;
-
-// ============ STATS HERO ============
-const StatsHero = styled.div`
-    display: grid;
-    grid-template-columns: 2fr repeat(3, 1fr);
-    gap: 1.5rem;
-    margin-bottom: 2rem;
-    animation: ${slideUp} 0.8s ease-out 0.4s both;
-
-    @media (max-width: 1200px) {
-        grid-template-columns: 1fr 1fr;
-    }
-
-    @media (max-width: 600px) {
+    @media (max-width: 480px) {
         grid-template-columns: 1fr;
     }
 `;
 
-const MainStatCard = styled.div`
-    background: linear-gradient(135deg, ${props => props.theme.brand?.primary || '#00adef'}26 0%, ${props => props.theme.success || '#10b981'}26 100%);
-    border: 2px solid ${props => props.theme.brand?.primary || '#00adef'}4D;
-    border-radius: 24px;
-    padding: 2rem;
-    position: relative;
-    overflow: hidden;
-    backdrop-filter: blur(10px);
-
-    &::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 4px;
-        background: ${props => props.theme.brand?.gradient || `linear-gradient(90deg, ${props.theme.brand?.primary || '#00adef'}, ${props.theme.success || '#10b981'})`};
-    }
-
-    &::after {
-        content: '';
-        position: absolute;
-        top: -50%;
-        right: -50%;
-        width: 100%;
-        height: 100%;
-        background: radial-gradient(circle, ${props => props.theme.brand?.primary || '#00adef'}1A 0%, transparent 70%);
-        pointer-events: none;
-    }
-`;
-
-const MainStatLabel = styled.div`
-    color: ${props => props.theme.text?.secondary || '#94a3b8'};
-    font-size: 0.9rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    margin-bottom: 0.75rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-`;
-
-const MainStatValue = styled.div`
-    font-size: 3.5rem;
-    font-weight: 900;
-    color: ${props => props.theme.text?.primary || '#e0e6ed'};
-    margin-bottom: 0.75rem;
-    animation: ${countUp} 0.6s ease-out;
-
-    @media (max-width: 768px) {
-        font-size: 2.5rem;
-    }
-`;
-
-const MainStatChange = styled.div`
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 1.1rem;
-    font-weight: 700;
-    padding: 0.5rem 1rem;
+const MetricCard = styled.div`
+    background: rgba(12, 16, 32, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 12px;
-    background: ${props => props.$positive
-        ? `${props.theme.success || '#10b981'}26`
-        : `${props.theme.error || '#ef4444'}26`};
-    color: ${props => props.$positive ? props.theme.success || '#10b981' : props.theme.error || '#ef4444'};
-`;
-
-const StatCard = styled.div`
-    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
-    border: 1px solid ${props => props.theme.brand?.primary || '#00adef'}33;
-    border-radius: 20px;
-    padding: 1.5rem;
-    backdrop-filter: blur(10px);
-    transition: all 0.3s ease;
-
-    &:hover {
-        border-color: ${props => props.theme.brand?.primary || '#00adef'}66;
-        transform: translateY(-4px);
-        box-shadow: 0 12px 40px ${props => props.theme.brand?.primary || '#00adef'}26;
-    }
-`;
-
-const StatIcon = styled.div`
-    width: 48px;
-    height: 48px;
-    border-radius: 14px;
-    background: ${props => props.$bg || `${props.theme.brand?.primary || '#00adef'}26`};
+    padding: 20px;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    color: ${props => props.$color || props.theme.brand?.primary || '#00adef'};
-    margin-bottom: 1rem;
+    flex-direction: column;
+    gap: 8px;
 `;
 
-const StatLabel = styled.div`
-    color: ${props => props.theme.text?.tertiary || '#64748b'};
-    font-size: 0.8rem;
-    font-weight: 700;
+const MetricLabel = styled.div`
+    font-size: 0.75rem;
+    color: #64748b;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 `;
 
-const StatValue = styled.div`
-    font-size: 2rem;
-    font-weight: 800;
-    color: ${props => props.$color || props.theme.text?.primary || '#e0e6ed'};
+const MetricValue = styled.div`
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: ${props => props.$color || '#f1f5f9'};
+    line-height: 1.2;
 `;
 
-// ============ AI SECTION ============
-const AISection = styled.div`
-    background: linear-gradient(135deg, ${props => props.theme.brand?.accent || '#8b5cf6'}1A 0%, ${props => props.theme.info || '#3b82f6'}1A 100%);
-    border: 2px solid ${props => props.theme.brand?.accent || '#8b5cf6'}4D;
-    border-radius: 24px;
-    padding: 2rem;
-    margin-bottom: 2rem;
-    animation: ${fadeInScale} 0.6s ease-out;
-    backdrop-filter: blur(10px);
+const MetricSub = styled.div`
+    font-size: 0.75rem;
+    color: ${props => props.$color || '#64748b'};
+`;
+
+// ============ SECTION ============
+const Section = styled.div`
+    margin-bottom: 32px;
+    animation: ${fadeIn} 0.5s ease-out ${props => props.$delay || '0.2s'} both;
+`;
+
+const SectionHeader = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+`;
+
+const SectionTitle = styled.h2`
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #f1f5f9;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+`;
+
+const SectionCount = styled.span`
+    font-size: 0.75rem;
+    color: #64748b;
+    background: rgba(255, 255, 255, 0.06);
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 500;
+`;
+
+// ============ ACTIVE POSITIONS ============
+const PositionCard = styled.div`
+    background: rgba(12, 16, 32, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    transition: border-color 0.2s;
+
+    &:hover {
+        border-color: rgba(255, 255, 255, 0.12);
+    }
+
+    @media (max-width: 768px) {
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+`;
+
+const PositionSymbol = styled.div`
+    min-width: 100px;
+`;
+
+const SymbolName = styled.div`
+    font-size: 1rem;
+    font-weight: 700;
+    color: #f1f5f9;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+`;
+
+const Badge = styled.span`
+    font-size: 0.6rem;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: ${props => props.$bg || 'rgba(255,255,255,0.08)'};
+    color: ${props => props.$color || '#e0e6ed'};
+`;
+
+const PositionDetails = styled.div`
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    flex-wrap: wrap;
+
+    @media (max-width: 768px) {
+        gap: 16px;
+    }
+`;
+
+const DetailItem = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+`;
+
+const DetailLabel = styled.span`
+    font-size: 0.65rem;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+`;
+
+const DetailValue = styled.span`
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: ${props => props.$color || '#e0e6ed'};
+`;
+
+const TPSLBar = styled.div`
+    width: 120px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    @media (max-width: 768px) {
+        width: 100%;
+    }
+`;
+
+const TPSLLabels = styled.div`
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.6rem;
+    color: #475569;
+`;
+
+const ProgressTrack = styled.div`
+    height: 4px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 2px;
     position: relative;
     overflow: hidden;
 `;
 
-const AISectionHeader = styled.div`
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-    flex-wrap: wrap;
-    gap: 1rem;
+const ProgressFill = styled.div`
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: ${props => Math.min(Math.max(props.$pct, 0), 100)}%;
+    background: ${props => props.$color || '#00adef'};
+    border-radius: 2px;
+    transition: width 0.4s ease;
 `;
 
-const AITitle = styled.h2`
-    font-size: 1.5rem;
-    color: ${props => props.theme.brand?.accent || '#a78bfa'};
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    font-weight: 800;
-    margin: 0;
+const PositionPnL = styled.div`
+    min-width: 90px;
+    text-align: right;
 `;
 
-const AIBadge = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    background: ${props => props.theme.success || '#10b981'}33;
-    border: 1px solid ${props => props.theme.success || '#10b981'}66;
-    border-radius: 20px;
-    color: ${props => props.theme.success || '#10b981'};
-    font-size: 0.85rem;
+const PnLPercent = styled.div`
+    font-size: 1rem;
     font-weight: 700;
+    color: ${props => props.$value >= 0 ? '#10b981' : '#ef4444'};
 `;
 
-const AIGrid = styled.div`
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 1.25rem;
+const PnLAmount = styled.div`
+    font-size: 0.7rem;
+    color: ${props => props.$value >= 0 ? 'rgba(16,185,129,0.7)' : 'rgba(239,68,68,0.7)'};
 `;
 
-const InsightCard = styled.div`
-    background: ${props => props.theme.brand?.accent || '#8b5cf6'}14;
-    border: 1px solid ${props => props.theme.brand?.accent || '#8b5cf6'}33;
-    border-radius: 16px;
-    padding: 1.25rem;
-    transition: all 0.3s ease;
-
-    &:hover {
-        background: ${props => props.theme.brand?.accent || '#8b5cf6'}1F;
-        border-color: ${props => props.theme.brand?.accent || '#8b5cf6'}66;
-        transform: translateY(-4px);
-    }
-`;
-
-const InsightHeader = styled.div`
+const PositionActions = styled.div`
     display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 0.75rem;
-`;
-
-const InsightIcon = styled.div`
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
-    background: ${props => props.$bg || `${props.theme.brand?.accent || '#8b5cf6'}33`};
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: ${props => props.$color || props.theme.brand?.accent || '#a78bfa'};
-`;
-
-const InsightTitle = styled.div`
-    font-weight: 700;
-    color: ${props => props.theme.text?.primary || '#e0e6ed'};
-    font-size: 0.95rem;
-`;
-
-const InsightValue = styled.div`
-    font-size: 1.75rem;
-    font-weight: 800;
-    color: ${props => props.$color || props.theme.brand?.accent || '#a78bfa'};
-    margin-bottom: 0.25rem;
-`;
-
-const InsightDescription = styled.div`
-    font-size: 0.85rem;
-    color: ${props => props.theme.text?.secondary || '#94a3b8'};
-    line-height: 1.5;
-`;
-
-const RecommendationsList = styled.div`
-    margin-top: 1.5rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid ${props => props.theme.brand?.accent || '#8b5cf6'}33;
-`;
-
-const RecommendationsTitle = styled.h3`
-    font-size: 1.1rem;
-    color: ${props => props.theme.brand?.accent || '#a78bfa'};
-    margin: 0 0 1rem 0;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-`;
-
-const RecommendationItem = styled.div`
-    display: flex;
-    align-items: flex-start;
-    gap: 0.75rem;
-    padding: 0.85rem 1rem;
-    background: ${props => props.theme.brand?.accent || '#8b5cf6'}0D;
-    border-radius: 12px;
-    margin-bottom: 0.5rem;
-    transition: all 0.2s ease;
-
-    &:hover {
-        background: ${props => props.theme.brand?.accent || '#8b5cf6'}1A;
-    }
-
-    &:last-child {
-        margin-bottom: 0;
-    }
-`;
-
-const RecIcon = styled.div`
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background: ${props => {
-        if (props.$type === 'success') return `${props.theme.success || '#10b981'}33`;
-        if (props.$type === 'warning') return `${props.theme.warning || '#fbbf24'}33`;
-        if (props.$type === 'danger') return `${props.theme.error || '#ef4444'}33`;
-        return `${props.theme.brand?.accent || '#8b5cf6'}33`;
-    }};
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: ${props => {
-        if (props.$type === 'success') return props.theme.success || '#10b981';
-        if (props.$type === 'warning') return props.theme.warning || '#fbbf24';
-        if (props.$type === 'danger') return props.theme.error || '#ef4444';
-        return props.theme.brand?.accent || '#a78bfa';
-    }};
+    gap: 8px;
     flex-shrink: 0;
 `;
 
-const RecText = styled.div`
-    font-size: 0.9rem;
-    color: ${props => props.theme.text?.primary || '#e0e6ed'};
-    line-height: 1.5;
-`;
-
-// ============ MAIN CONTENT ============
-const MainGrid = styled.div`
-    display: grid;
-    grid-template-columns: 1fr 380px;
-    gap: 2rem;
-    margin-bottom: 2rem;
-
-    @media (max-width: 1200px) {
-        grid-template-columns: 1fr;
-    }
-`;
-
-// ============ HOLDINGS ============
-const HoldingsSection = styled.div`
-    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
-    border: 1px solid ${props => props.theme.brand?.primary || '#00adef'}33;
-    border-radius: 24px;
-    padding: 1.5rem;
-    backdrop-filter: blur(10px);
-    animation: ${slideUp} 0.6s ease-out;
-`;
-
-const HoldingsHeader = styled.div`
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-    flex-wrap: wrap;
-    gap: 1rem;
-`;
-
-const HoldingsTitle = styled.h2`
-    font-size: 1.3rem;
-    color: ${props => props.theme.brand?.primary || '#00adef'};
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-weight: 800;
-    margin: 0;
-`;
-
-const HeaderActions = styled.div`
-    display: flex;
-    gap: 0.75rem;
-    flex-wrap: wrap;
-`;
-
-const ActionButton = styled.button`
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.65rem 1.25rem;
-    background: ${props => props.$primary
-        ? props.theme.brand?.gradient || `linear-gradient(135deg, ${props.theme.brand?.primary || '#00adef'} 0%, ${props.theme.brand?.secondary || '#0088cc'} 100%)`
-        : `${props.theme.brand?.primary || '#00adef'}15`};
-    border: 1px solid ${props => props.$primary ? 'transparent' : `${props.theme.brand?.primary || '#00adef'}4D`};
-    border-radius: 12px;
-    color: ${props => props.$primary ? 'white' : props.theme.brand?.primary || '#00adef'};
-    font-weight: 600;
-    font-size: 0.9rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-
-    &:hover {
-        transform: translateY(-2px);
-        box-shadow: ${props => props.$primary
-            ? `0 8px 24px ${props.theme.brand?.primary || '#00adef'}66`
-            : `0 8px 24px ${props.theme.brand?.primary || '#00adef'}33`};
-    }
-
-    &:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-        transform: none;
-    }
-
-    svg {
-        ${props => props.$spinning && css`animation: ${rotate} 1s linear infinite;`}
-    }
-`;
-
-const SearchWrapper = styled.div`
-    position: relative;
-    width: 280px;
-
-    @media (max-width: 600px) {
-        width: 100%;
-    }
-`;
-
-const SearchInput = styled.input`
-    width: 100%;
-    padding: 0.7rem 1rem 0.7rem 2.75rem;
-    background: ${props => props.theme.brand?.primary || '#00adef'}0D;
-    border: 1px solid ${props => props.theme.brand?.primary || '#00adef'}4D;
-    border-radius: 12px;
-    color: ${props => props.theme.text?.primary || '#e0e6ed'};
-    font-size: 0.9rem;
-    transition: all 0.2s ease;
-
-    &:focus {
-        outline: none;
-        border-color: ${props => props.theme.brand?.primary || '#00adef'};
-        background: ${props => props.theme.brand?.primary || '#00adef'}1A;
-        box-shadow: 0 0 0 3px ${props => props.theme.brand?.primary || '#00adef'}26;
-    }
-
-    &::placeholder {
-        color: ${props => props.theme.text?.tertiary || '#64748b'};
-    }
-`;
-
-const SearchIconStyled = styled(Search)`
-    position: absolute;
-    left: 0.85rem;
-    top: 50%;
-    transform: translateY(-50%);
-    color: ${props => props.theme.text?.tertiary || '#64748b'};
-    width: 18px;
-    height: 18px;
-`;
-
-const HoldingsTable = styled.div`
-    overflow-x: auto;
-`;
-
-const Table = styled.table`
-    width: 100%;
-    border-collapse: collapse;
-`;
-
-const Th = styled.th`
-    text-align: left;
-    padding: 1rem 0.75rem;
-    color: ${props => props.theme.text?.tertiary || '#64748b'};
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    border-bottom: 1px solid ${props => props.theme.brand?.primary || '#00adef'}1A;
-`;
-
-const Tr = styled.tr`
-    transition: all 0.2s ease;
-
-    &:hover {
-        background: ${props => props.theme.brand?.primary || '#00adef'}0D;
-    }
-`;
-
-const Td = styled.td`
-    padding: 1.1rem 0.75rem;
-    border-bottom: 1px solid ${props => props.theme.brand?.primary || '#00adef'}0D;
-    vertical-align: middle;
-`;
-
-const SymbolCell = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 0.85rem;
-`;
-
-const SymbolIcon = styled.div`
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
-    background: linear-gradient(135deg, ${props => props.theme.brand?.primary || '#00adef'}33 0%, ${props => props.theme.brand?.accent || '#8b5cf6'}33 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 800;
-    font-size: 0.9rem;
-    color: ${props => props.theme.brand?.primary || '#00adef'};
-`;
-
-const SymbolInfo = styled.div``;
-
-const SymbolName = styled.div`
-    font-weight: 700;
-    color: ${props => props.theme.text?.primary || '#e0e6ed'};
-    font-size: 1rem;
-`;
-
-const SymbolType = styled.div`
-    font-size: 0.75rem;
-    color: ${props => props.theme.text?.tertiary || '#64748b'};
-`;
-
-const PriceCell = styled.div`
-    font-weight: 600;
-    color: ${props => props.theme.text?.primary || '#e0e6ed'};
-`;
-
-const ChangeCell = styled.div`
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    font-weight: 700;
-    padding: 0.35rem 0.75rem;
-    border-radius: 8px;
-    background: ${props => props.$positive
-        ? `${props.theme.success || '#10b981'}26`
-        : `${props.theme.error || '#ef4444'}26`};
-    color: ${props => props.$positive ? props.theme.success || '#10b981' : props.theme.error || '#ef4444'};
-    font-size: 0.9rem;
-`;
-
-const ValueCell = styled.div`
-    font-weight: 700;
-    color: ${props => props.theme.text?.primary || '#e0e6ed'};
-    font-size: 1.05rem;
-`;
-
-const SourceBadge = styled.span`
+const SmallButton = styled.button`
     font-size: 0.7rem;
-    padding: 0.25rem 0.5rem;
+    font-weight: 600;
+    padding: 6px 12px;
     border-radius: 6px;
-    background: ${props => props.theme.success || '#10b981'}26;
-    color: ${props => props.theme.success || '#10b981'};
-    font-weight: 600;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-`;
-
-// ============ SIDEBAR ============
-const Sidebar = styled.div`
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-`;
-
-const ChartCard = styled.div`
-    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
-    border: 1px solid ${props => props.theme.brand?.primary || '#00adef'}33;
-    border-radius: 20px;
-    padding: 1.5rem;
-    backdrop-filter: blur(10px);
-    animation: ${fadeIn} 0.6s ease-out;
-`;
-
-const ChartTitle = styled.h3`
-    font-size: 1.1rem;
-    color: ${props => props.theme.brand?.primary || '#00adef'};
-    margin: 0 0 1.25rem 0;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-weight: 700;
-`;
-
-const ChartLegend = styled.div`
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    justify-content: center;
-    margin-top: 1rem;
-`;
-
-const LegendItem = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 0.35rem;
-    font-size: 0.8rem;
-    color: ${props => props.theme.text?.secondary || '#94a3b8'};
-`;
-
-const LegendDot = styled.div`
-    width: 10px;
-    height: 10px;
-    border-radius: 3px;
-    background: ${props => props.$color};
-`;
-
-// ============ EMPTY STATE ============
-const EmptyState = styled.div`
-    text-align: center;
-    padding: 4rem 2rem;
-    animation: ${fadeIn} 0.6s ease-out;
-`;
-
-const EmptyIcon = styled.div`
-    width: 120px;
-    height: 120px;
-    margin: 0 auto 1.5rem;
-    background: linear-gradient(135deg, ${props => props.theme.brand?.primary || '#00adef'}33 0%, ${props => props.theme.brand?.accent || '#8b5cf6'}33 100%);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 3px dashed ${props => props.theme.brand?.primary || '#00adef'}4D;
-    animation: ${float} 3s ease-in-out infinite;
-`;
-
-const EmptyTitle = styled.h2`
-    color: ${props => props.theme.brand?.primary || '#00adef'};
-    font-size: 1.75rem;
-    margin-bottom: 0.5rem;
-    font-weight: 800;
-`;
-
-const EmptyText = styled.p`
-    color: ${props => props.theme.text?.secondary || '#94a3b8'};
-    margin-bottom: 2rem;
-    font-size: 1.1rem;
-    max-width: 500px;
-    margin-left: auto;
-    margin-right: auto;
-`;
-
-// ============ LOADING ============
-const LoadingContainer = styled.div`
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 4rem 2rem;
-    gap: 1.5rem;
-`;
-
-const LoadingSpinner = styled(Activity)`
-    animation: ${rotate} 1.5s linear infinite;
-    color: ${props => props.theme.brand?.primary || '#00adef'};
-`;
-
-const LoadingText = styled.div`
-    color: ${props => props.theme.text?.secondary || '#94a3b8'};
-    font-size: 1.1rem;
-    font-weight: 600;
-`;
-
-// ============ CLICKABLE SYMBOL ============
-const SymbolLink = styled(Link)`
-    display: flex;
-    align-items: center;
-    gap: 0.85rem;
-    text-decoration: none;
-    color: inherit;
-    transition: all 0.2s ease;
+    border: 1px solid ${props => props.$borderColor || 'rgba(255,255,255,0.1)'};
+    background: ${props => props.$bg || 'transparent'};
+    color: ${props => props.$color || '#e0e6ed'};
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
 
     &:hover {
-        transform: translateX(4px);
-
-        ${props => props.$symbolIcon} {
-            box-shadow: 0 4px 12px ${props => props.theme.brand?.primary || '#00adef'}4D;
-        }
-    }
-`;
-
-const SymbolIconClickable = styled.div`
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
-    background: linear-gradient(135deg, ${props => props.theme.brand?.primary || '#00adef'}33 0%, ${props => props.theme.brand?.accent || '#8b5cf6'}33 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 800;
-    font-size: 0.9rem;
-    color: ${props => props.theme.brand?.primary || '#00adef'};
-    transition: all 0.2s ease;
-
-    &:hover {
-        box-shadow: 0 4px 12px ${props => props.theme.brand?.primary || '#00adef'}4D;
-        transform: scale(1.05);
+        background: ${props => props.$hoverBg || 'rgba(255,255,255,0.06)'};
     }
 `;
 
 // ============ TRADE HISTORY ============
-const TradeHistorySection = styled.div`
-    background: ${({ theme }) => theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
-    border: 1px solid ${props => props.theme.brand?.primary || '#00adef'}33;
-    border-radius: 24px;
-    padding: 1.5rem;
-    margin-top: 2rem;
-    backdrop-filter: blur(10px);
-    animation: ${slideUp} 0.6s ease-out 0.2s both;
+const TradeRow = styled.div`
+    background: rgba(12, 16, 32, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    transition: border-color 0.2s;
+
+    &:hover {
+        border-color: rgba(255, 255, 255, 0.10);
+    }
+
+    @media (max-width: 768px) {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
 `;
 
-const TradeHistoryHeader = styled.div`
+const TradeSymbolBlock = styled.div`
+    min-width: 110px;
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    margin-bottom: 1.5rem;
+    gap: 8px;
+`;
+
+const TradeInfo = styled.div`
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 20px;
     flex-wrap: wrap;
-    gap: 1rem;
-`;
 
-const TradeHistoryTitle = styled.h2`
-    font-size: 1.3rem;
-    color: ${props => props.theme.warning || '#f59e0b'};
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-weight: 800;
-    margin: 0;
-`;
-
-const TradeCount = styled.span`
-    font-size: 0.85rem;
-    color: ${props => props.theme.text?.secondary || '#94a3b8'};
-    font-weight: 600;
-    padding: 0.35rem 0.75rem;
-    background: ${props => props.theme.warning || '#f59e0b'}1A;
-    border-radius: 20px;
-`;
-
-const TradesTable = styled.div`
-    overflow-x: auto;
-`;
-
-const TradeRow = styled.tr`
-    transition: all 0.2s ease;
-
-    &:hover {
-        background: ${props => props.theme.brand?.primary || '#00adef'}0D;
+    @media (max-width: 768px) {
+        gap: 12px;
     }
 `;
 
-const TradeType = styled.span`
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
+const TradeReturn = styled.div`
+    font-size: 0.95rem;
     font-weight: 700;
-    padding: 0.35rem 0.75rem;
+    min-width: 70px;
+    text-align: right;
+    color: ${props => props.$value >= 0 ? '#10b981' : '#ef4444'};
+`;
+
+const TradeTime = styled.div`
+    font-size: 0.7rem;
+    color: #475569;
+    min-width: 80px;
+    text-align: right;
+`;
+
+// ============ CHART ============
+const ChartContainer = styled.div`
+    background: rgba(12, 16, 32, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    padding: 24px;
+    height: 320px;
+`;
+
+const NoDataChart = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #475569;
+    font-size: 0.85rem;
+`;
+
+// ============ INSIGHTS ============
+const InsightsGrid = styled.div`
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+
+    @media (max-width: 768px) {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    @media (max-width: 480px) {
+        grid-template-columns: 1fr;
+    }
+`;
+
+const InsightCard = styled.div`
+    background: rgba(12, 16, 32, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+`;
+
+const InsightLabel = styled.div`
+    font-size: 0.7rem;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+`;
+
+const InsightValue = styled.div`
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: ${props => props.$color || '#f1f5f9'};
+`;
+
+// ============ SIGNAL STRIP ============
+const SignalStrip = styled.div`
+    background: rgba(0, 173, 239, 0.06);
+    border: 1px solid rgba(0, 173, 239, 0.15);
+    border-radius: 12px;
+    padding: 24px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+`;
+
+const StripText = styled.div`
+    flex: 1;
+    min-width: 200px;
+`;
+
+const StripTitle = styled.div`
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #f1f5f9;
+    margin-bottom: 4px;
+`;
+
+const StripDesc = styled.div`
+    font-size: 0.78rem;
+    color: #64748b;
+`;
+
+const StripButton = styled.button`
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 10px 20px;
     border-radius: 8px;
-    font-size: 0.85rem;
-    background: ${props => props.$type === 'buy'
-        ? `${props.theme.success || '#10b981'}26`
-        : `${props.theme.error || '#ef4444'}26`};
-    color: ${props => props.$type === 'buy'
-        ? props.theme.success || '#10b981'
-        : props.theme.error || '#ef4444'};
-`;
-
-const TradePair = styled.div`
-    font-weight: 700;
-    color: ${props => props.theme.text?.primary || '#e0e6ed'};
+    border: none;
+    background: #00adef;
+    color: #fff;
     cursor: pointer;
-    transition: all 0.2s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-
-    &:hover {
-        color: ${props => props.theme.brand?.primary || '#00adef'};
-    }
-`;
-
-const TradeDate = styled.div`
-    color: ${props => props.theme.text?.tertiary || '#64748b'};
-    font-size: 0.85rem;
     display: flex;
     align-items: center;
-    gap: 0.35rem;
+    gap: 6px;
+    transition: background 0.2s;
+    white-space: nowrap;
+
+    &:hover {
+        background: #0098d4;
+    }
 `;
 
-const TradeAmount = styled.div`
+// ============ WALLET SECTION ============
+const CollapsibleHeader = styled.button`
+    width: 100%;
+    background: rgba(12, 16, 32, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    padding: 18px 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    color: #e0e6ed;
+    transition: border-color 0.2s;
+
+    &:hover {
+        border-color: rgba(255, 255, 255, 0.12);
+    }
+`;
+
+const CollapsibleTitle = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.95rem;
     font-weight: 600;
-    color: ${props => props.theme.text?.primary || '#e0e6ed'};
 `;
 
-const TradeCost = styled.div`
-    font-weight: 700;
-    color: ${props => props.theme.text?.primary || '#e0e6ed'};
+const ChevronIcon = styled.span`
+    transition: transform 0.2s;
+    transform: rotate(${props => props.$open ? '180deg' : '0deg'});
+    display: flex;
+    align-items: center;
 `;
 
-const TradeFee = styled.div`
-    color: ${props => props.theme.text?.tertiary || '#64748b'};
-    font-size: 0.85rem;
+const CollapsibleContent = styled.div`
+    margin-top: 12px;
+    background: rgba(12, 16, 32, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    padding: 24px;
+    display: ${props => props.$open ? 'block' : 'none'};
 `;
 
-const NoTradesMessage = styled.div`
+const WalletGrid = styled.div`
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+
+    @media (max-width: 768px) {
+        grid-template-columns: 1fr;
+    }
+`;
+
+// ============ EMPTY STATE ============
+const EmptyState = styled.div`
+    background: rgba(12, 16, 32, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 14px;
+    padding: 56px 32px;
     text-align: center;
-    padding: 3rem 2rem;
-    color: ${props => props.theme.text?.secondary || '#94a3b8'};
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+`;
 
-    svg {
-        margin-bottom: 1rem;
-        opacity: 0.5;
+const EmptyIcon = styled.div`
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: rgba(0, 173, 239, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #00adef;
+    margin-bottom: 4px;
+`;
+
+const EmptyTitle = styled.div`
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: #f1f5f9;
+`;
+
+const EmptyDesc = styled.div`
+    font-size: 0.82rem;
+    color: #64748b;
+    max-width: 360px;
+`;
+
+const EmptyActions = styled.div`
+    display: flex;
+    gap: 12px;
+    margin-top: 8px;
+`;
+
+const PrimaryButton = styled.button`
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    background: #00adef;
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.2s;
+
+    &:hover {
+        background: #0098d4;
     }
 `;
 
-// ============ AI ANALYSIS FUNCTION ============
-const analyzePortfolio = (holdings, stats) => {
-    if (!holdings || holdings.length === 0) return null;
+const SecondaryButton = styled.button`
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: transparent;
+    color: #e0e6ed;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
 
-    const analysis = {
-        diversificationScore: 0,
-        riskLevel: 'Moderate',
-        sectorConcentration: 0,
-        topPerformer: null,
-        worstPerformer: null,
-        recommendations: [],
-        insights: []
+    &:hover {
+        background: rgba(255, 255, 255, 0.04);
+    }
+`;
+
+// ============ LOADING ============
+const LoadingWrapper = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    color: #64748b;
+    font-size: 0.9rem;
+    flex-direction: column;
+    gap: 12px;
+`;
+
+const Spinner = styled.div`
+    width: 32px;
+    height: 32px;
+    border: 3px solid rgba(255, 255, 255, 0.08);
+    border-top-color: #00adef;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+`;
+
+const ShowMoreButton = styled.button`
+    width: 100%;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    color: #64748b;
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover {
+        background: rgba(255, 255, 255, 0.06);
+        color: #e0e6ed;
+    }
+`;
+
+// ============ TOOLTIP ============
+const CustomTooltipWrapper = styled.div`
+    background: rgba(12, 16, 32, 0.96);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 0.75rem;
+`;
+
+const CustomChartTooltip = ({ active, payload, label }) => {
+    if (!active || !payload || !payload.length) return null;
+    return (
+        <CustomTooltipWrapper>
+            <div style={{ color: '#64748b', marginBottom: 4 }}>{label}</div>
+            <div style={{ color: payload[0].value >= 0 ? '#10b981' : '#ef4444', fontWeight: 700 }}>
+                {payload[0].value >= 0 ? '+' : ''}{payload[0].value.toFixed(2)}%
+            </div>
+        </CustomTooltipWrapper>
+    );
+};
+
+// ============ HELPERS ============
+const STARTING_BALANCE = 100000;
+
+const formatCurrency = (val) => {
+    if (val == null || isNaN(val)) return '$0.00';
+    const abs = Math.abs(val);
+    const sign = val < 0 ? '-' : '';
+    if (abs >= 1000000) return `${sign}$${(abs / 1000000).toFixed(2)}M`;
+    if (abs >= 1000) return `${sign}$${(abs / 1000).toFixed(2)}K`;
+    return `${sign}$${abs.toFixed(2)}`;
+};
+
+const formatPercent = (val) => {
+    if (val == null || isNaN(val)) return '0.00%';
+    const sign = val > 0 ? '+' : '';
+    return `${sign}${Number(val).toFixed(2)}%`;
+};
+
+const formatPrice = (val) => {
+    if (val == null || isNaN(val)) return '-';
+    const num = Number(val);
+    if (num >= 1000) return `$${num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    if (num >= 1) return `$${num.toFixed(2)}`;
+    return `$${num.toFixed(6)}`;
+};
+
+const timeAgo = (dateStr) => {
+    if (!dateStr) return '';
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'Just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    const days = Math.floor(hrs / 24);
+    if (days < 30) return `${days}d ago`;
+    return new Date(dateStr).toLocaleDateString();
+};
+
+const formatDate = (dateStr) => {
+    if (!dateStr) return '';
+    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+};
+
+const getTypeBadge = (type) => {
+    const map = {
+        stock: { bg: 'rgba(0,173,239,0.15)', color: '#00adef', label: 'Stock' },
+        crypto: { bg: 'rgba(245,158,11,0.15)', color: '#f59e0b', label: 'Crypto' },
+        forex: { bg: 'rgba(139,92,246,0.15)', color: '#8b5cf6', label: 'Forex' },
     };
+    return map[type] || map.stock;
+};
 
-    const holdingCount = holdings.length;
-    let diversificationBase = Math.min(holdingCount * 10, 50);
+const getDirectionBadge = (positionType) => {
+    if (positionType === 'short') {
+        return { bg: 'rgba(239,68,68,0.15)', color: '#ef4444', label: 'SHORT' };
+    }
+    return { bg: 'rgba(16,185,129,0.15)', color: '#10b981', label: 'LONG' };
+};
 
-    const totalValue = stats?.totalValue || holdings.reduce((sum, h) => sum + (h.value || 0), 0);
-    const allocations = holdings.map(h => ((h.value || 0) / totalValue) * 100);
+const computeTPSLProgress = (position) => {
+    const { averagePrice, currentPrice, takeProfitPrice, stopLossPrice, positionType } = position;
+    if (!takeProfitPrice && !stopLossPrice) return null;
 
-    const maxAllocation = Math.max(...allocations);
-    if (maxAllocation > 50) {
-        analysis.sectorConcentration = maxAllocation;
-        diversificationBase -= 20;
-        analysis.recommendations.push({
-            type: 'warning',
-            text: `High concentration risk: One position is ${maxAllocation.toFixed(0)}% of your portfolio. Consider rebalancing.`
-        });
-    } else if (maxAllocation > 30) {
-        analysis.sectorConcentration = maxAllocation;
-        diversificationBase -= 10;
-        analysis.recommendations.push({
-            type: 'warning',
-            text: `Moderate concentration: Your largest position is ${maxAllocation.toFixed(0)}% of portfolio.`
-        });
+    const entry = Number(averagePrice);
+    const current = Number(currentPrice);
+    const tp = takeProfitPrice ? Number(takeProfitPrice) : null;
+    const sl = stopLossPrice ? Number(stopLossPrice) : null;
+
+    if (!tp || !sl) {
+        // partial: just show what we can
+        if (tp && !sl) {
+            const range = Math.abs(tp - entry);
+            if (range === 0) return { pct: 50, color: '#64748b' };
+            const progress = positionType === 'short'
+                ? ((entry - current) / range) * 100
+                : ((current - entry) / range) * 100;
+            return {
+                pct: Math.min(Math.max(progress, 0), 100),
+                color: progress >= 0 ? '#10b981' : '#ef4444',
+                slLabel: '-',
+                tpLabel: formatPrice(tp),
+            };
+        }
+        if (sl && !tp) {
+            const range = Math.abs(entry - sl);
+            if (range === 0) return { pct: 50, color: '#64748b' };
+            const progress = positionType === 'short'
+                ? ((current - entry) / range) * 100
+                : ((entry - current) / range) * 100;
+            return {
+                pct: 100 - Math.min(Math.max(progress, 0), 100),
+                color: progress <= 50 ? '#10b981' : '#ef4444',
+                slLabel: formatPrice(sl),
+                tpLabel: '-',
+            };
+        }
+        return null;
+    }
+
+    const range = Math.abs(tp - sl);
+    if (range === 0) return { pct: 50, color: '#64748b', slLabel: formatPrice(sl), tpLabel: formatPrice(tp) };
+
+    const isLong = positionType !== 'short';
+    let pct;
+    if (isLong) {
+        pct = ((current - sl) / range) * 100;
     } else {
-        diversificationBase += 20;
-        analysis.recommendations.push({
-            type: 'success',
-            text: 'Good diversification! No single position dominates your portfolio.'
-        });
+        pct = ((sl - current) / range) * 100;
     }
 
-    const avgAllocation = 100 / holdingCount;
-    const allocationVariance = allocations.reduce((sum, a) => sum + Math.pow(a - avgAllocation, 2), 0) / holdingCount;
-    if (allocationVariance < 100) diversificationBase += 15;
-
-    analysis.diversificationScore = Math.min(Math.max(diversificationBase, 0), 100);
-
-    if (analysis.diversificationScore >= 70) analysis.riskLevel = 'Low';
-    else if (analysis.diversificationScore >= 40) analysis.riskLevel = 'Moderate';
-    else analysis.riskLevel = 'High';
-
-    const performanceData = holdings.map(h => {
-        const change = h.change24h || 0;
-        return { symbol: h.symbol, gainPercent: change };
-    }).sort((a, b) => b.gainPercent - a.gainPercent);
-
-    if (performanceData.length > 0) {
-        analysis.topPerformer = performanceData[0];
-        analysis.worstPerformer = performanceData[performanceData.length - 1];
-    }
-
-    if (holdingCount < 5) {
-        analysis.recommendations.push({
-            type: 'info',
-            text: `Consider adding more positions. You have ${holdingCount} holding${holdingCount > 1 ? 's' : ''} - aim for 8-15 for better diversification.`
-        });
-    }
-
-    if (analysis.topPerformer && analysis.topPerformer.gainPercent > 10) {
-        analysis.recommendations.push({
-            type: 'success',
-            text: `${analysis.topPerformer.symbol} is up ${analysis.topPerformer.gainPercent.toFixed(1)}% today! Strong performance.`
-        });
-    }
-
-    if (analysis.worstPerformer && analysis.worstPerformer.gainPercent < -5) {
-        analysis.recommendations.push({
-            type: 'danger',
-            text: `${analysis.worstPerformer.symbol} is down ${Math.abs(analysis.worstPerformer.gainPercent).toFixed(1)}% today. Monitor closely.`
-        });
-    }
-
-    if (analysis.recommendations.length < 3) {
-        analysis.recommendations.push({
-            type: 'info',
-            text: 'Set price alerts for your holdings to stay informed of significant moves.'
-        });
-    }
-
-    return analysis;
+    return {
+        pct: Math.min(Math.max(pct, 0), 100),
+        color: pct >= 50 ? '#10b981' : pct >= 25 ? '#f59e0b' : '#ef4444',
+        slLabel: formatPrice(sl),
+        tpLabel: formatPrice(tp),
+    };
 };
 
-// ============ HELPER FUNCTIONS ============
-// Get the correct route for a symbol
-const getAssetRoute = (symbol, type) => {
-    const cryptoSymbols = ['BTC', 'ETH', 'LTC', 'XRP', 'DOGE', 'SOL', 'ADA', 'DOT', 'LINK', 'AVAX', 'ATOM', 'UNI', 'AAVE', 'XLM', 'XMR', 'ETC', 'ZEC', 'MATIC'];
-    const isCrypto = type === 'crypto' || cryptoSymbols.includes(symbol?.toUpperCase());
-    return isCrypto ? `/crypto/${symbol}` : `/stocks/${symbol}`;
-};
-
-// Parse Kraken pair to get base asset
-const parseKrakenPair = (pair) => {
-    // Kraken pairs like XBTUSD, ETHUSD, XXBTZUSD
-    const usdPairs = pair.replace('ZUSD', 'USD').replace('USD', '');
-    // Handle XBT -> BTC
-    if (usdPairs.includes('XBT')) return 'BTC';
-    // Remove X prefix for crypto
-    if (usdPairs.startsWith('X') && usdPairs.length > 3) return usdPairs.slice(1);
-    return usdPairs;
-};
-
-// ============ COMPONENT ============
+// ============ MAIN COMPONENT ============
 const PortfolioPage = () => {
     const { api: authApi } = useAuth();
     const toast = useToast();
-    const { theme } = useTheme();
-    const { linkedWallet, syncWalletToPortfolio } = useWallet();
     const navigate = useNavigate();
+    const { linkedWallet } = useWallet();
 
-    const [holdings, setHoldings] = useState([]);
-    const [brokerageHoldings, setBrokerageHoldings] = useState([]);
-    const [connections, setConnections] = useState([]);
-    const [tradeHistory, setTradeHistory] = useState([]);
-    const [loadingTrades, setLoadingTrades] = useState(false);
+    // Data state
+    const [account, setAccount] = useState(null);
+    const [orders, setOrders] = useState([]);
     const [stats, setStats] = useState(null);
-    const [portfolioHistory, setPortfolioHistory] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [refreshing, setRefreshing] = useState(false);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [activeTab, setActiveTab] = useState('holdings');
-    const [solanaAddress, setSolanaAddress] = useState('');
+    const [error, setError] = useState(null);
 
-    const handleLinkSolana = async () => {
-        if (!solanaAddress || solanaAddress.length < 32) return;
+    // UI state
+    const [showAllHistory, setShowAllHistory] = useState(false);
+    const [walletOpen, setWalletOpen] = useState(true);
+
+    // Fetch all paper trading data
+    const fetchData = useCallback(async (silent = false) => {
         try {
-            const response = await api.post('/wallet/link', {
-                address: solanaAddress.trim(),
-                chainId: 'solana'
-            });
-            if (response.data.success) {
-                toast.success('Solana wallet linked!');
-                setSolanaAddress('');
-                window.location.reload();
-            } else {
-                toast.error(response.data.error || 'Failed to link wallet');
+            if (!silent) setLoading(true);
+            setError(null);
+
+            const [accountRes, ordersRes, statsRes] = await Promise.all([
+                api.get('/paper-trading/account'),
+                api.get('/paper-trading/orders?limit=100'),
+                api.get('/paper-trading/stats'),
+            ]);
+
+            if (accountRes.data?.success) {
+                setAccount(accountRes.data.account);
             }
-        } catch (error) {
-            toast.error(error.response?.data?.error || 'Failed to link Solana wallet');
-        }
-    };
-
-    // Ref to prevent multiple initial fetches
-    const hasInitialFetched = useRef(false);
-
-    const COLORS = [
-        theme.brand?.primary || '#00adef',
-        theme.success || '#10b981',
-        theme.warning || '#f59e0b',
-        theme.error || '#ef4444',
-        theme.brand?.accent || '#8b5cf6',
-        theme.info || '#ec4899',
-        theme.brand?.secondary || '#06b6d4',
-        '#84cc16'
-    ];
-
-    // Sync a single brokerage connection to get fresh prices
-    const syncBrokerageConnection = useCallback(async (conn) => {
-        try {
-            if (conn.type === 'kraken') {
-                const response = await api.get(`/brokerage/kraken/sync/${conn.id}`);
-                if (response.data.success) {
-                    return response.data.portfolio;
-                }
-            } else if (conn.type === 'plaid') {
-                const response = await api.get(`/brokerage/plaid/sync/${conn.id}`);
-                if (response.data.success) {
-                    return response.data.holdings;
-                }
+            if (ordersRes.data?.success) {
+                setOrders(ordersRes.data.orders || []);
             }
-        } catch (error) {
-            console.error(`Error syncing ${conn.name}:`, error);
-        }
-        return null;
-    }, []);
-
-    // Fetch brokerage connections and their holdings
-    const fetchBrokerageData = useCallback(async (forceSync = false) => {
-        try {
-            const response = await api.get('/brokerage/connections');
-            if (response.data.success) {
-                const conns = response.data.connections || [];
-                setConnections(conns);
-                const allHoldings = [];
-                let totalBrokerageValue = 0;
-
-                // Sync each active connection to get fresh prices
-                for (const conn of conns) {
-                    if (conn.status === 'active') {
-                        // Sync to get fresh prices
-                        const freshPortfolio = await syncBrokerageConnection(conn);
-
-                        // Use fresh data if available, otherwise fall back to cached
-                        const portfolio = freshPortfolio || conn.cachedPortfolio;
-
-                        if (portfolio?.holdings) {
-                            for (const holding of portfolio.holdings) {
-                                allHoldings.push({
-                                    ...holding,
-                                    source: conn.type,
-                                    sourceName: conn.name,
-                                    connectionId: conn.id
-                                });
-                            }
-                            totalBrokerageValue += portfolio?.totalValue || 0;
-                        }
-                    }
-                }
-
-                setBrokerageHoldings(allHoldings);
-                console.log(`[Portfolio] Synced ${conns.length} connections, ${allHoldings.length} holdings, total: $${totalBrokerageValue.toFixed(2)}`);
-                return { holdings: allHoldings, totalValue: totalBrokerageValue, connections: conns };
+            if (statsRes.data?.success) {
+                setStats(statsRes.data.stats);
             }
-        } catch (error) {
-            console.error('Error fetching brokerage data:', error);
-        }
-        return { holdings: [], totalValue: 0, connections: [] };
-    }, [syncBrokerageConnection]);
-
-    // Fetch trade history from all brokerage connections
-    const fetchTradeHistory = useCallback(async (conns) => {
-        if (!conns || conns.length === 0) return;
-
-        setLoadingTrades(true);
-        const allTrades = [];
-
-        try {
-            for (const conn of conns) {
-                if (conn.status !== 'active') continue;
-
-                try {
-                    if (conn.type === 'kraken') {
-                        const response = await api.get(`/brokerage/kraken/trades/${conn.id}`);
-                        if (response.data.success && response.data.trades) {
-                            const trades = response.data.trades.map(trade => ({
-                                ...trade,
-                                source: 'kraken',
-                                sourceName: conn.name,
-                                connectionId: conn.id
-                            }));
-                            allTrades.push(...trades);
-                        }
-                    }
-                    // Add Plaid transactions here when implemented
-                } catch (err) {
-                    console.error(`Error fetching trades from ${conn.name}:`, err);
-                }
+        } catch (err) {
+            console.error('Failed to fetch portfolio data:', err);
+            if (!silent) {
+                setError('Failed to load trading data. Please try again.');
             }
-
-            // Sort by date descending
-            allTrades.sort((a, b) => new Date(b.time) - new Date(a.time));
-            setTradeHistory(allTrades.slice(0, 50)); // Keep last 50 trades
-        } catch (error) {
-            console.error('Error fetching trade history:', error);
         } finally {
-            setLoadingTrades(false);
+            if (!silent) setLoading(false);
         }
     }, []);
 
-    // Track portfolio value in database for persistent gain/loss tracking
-    const trackPortfolioValue = useCallback(async (totalValue, holdingsCount) => {
-        try {
-            const response = await api.post('/brokerage/portfolio-history/track', {
-                totalValue,
-                holdingsCount
-            });
-            if (response.data.success && response.data.history) {
-                setPortfolioHistory(response.data.history);
-                return response.data.history;
-            }
-        } catch (error) {
-            console.error('Error tracking portfolio value:', error);
-        }
-        return null;
-    }, []);
-
-    // Fetch portfolio data
-    const fetchPortfolio = useCallback(async () => {
-        try {
-            setLoading(true);
-
-            // Fetch brokerage data (real portfolio)
-            const brokerageData = await fetchBrokerageData();
-
-            // For now, only show brokerage holdings (real portfolio)
-            // Wallet holdings would come from on-chain data, not paper trading
-            const combinedHoldings = [...brokerageData.holdings];
-
-            setHoldings(combinedHoldings);
-
-            const totalValue = brokerageData.totalValue;
-
-            // Track value in database and get gain/loss from history
-            let totalGain = 0;
-            let totalGainPercent = 0;
-            let initialValue = 0;
-
-            if (totalValue > 0) {
-                const history = await trackPortfolioValue(totalValue, combinedHoldings.length);
-                if (history) {
-                    totalGain = history.totalGain || 0;
-                    totalGainPercent = history.totalGainPercent || 0;
-                    initialValue = history.initialValue || totalValue;
-                }
-            }
-
-            if (combinedHoldings.length > 0 || totalValue > 0) {
-                setStats({
-                    totalValue,
-                    totalCost: initialValue,
-                    totalGain,
-                    totalGainPercent,
-                    holdingsCount: combinedHoldings.length
-                });
-            } else {
-                setStats(null);
-            }
-
-            // Fetch trade history from connections
-            if (brokerageData.connections && brokerageData.connections.length > 0) {
-                fetchTradeHistory(brokerageData.connections);
-            }
-        } catch (error) {
-            console.error('Error fetching portfolio:', error);
-        } finally {
-            setLoading(false);
-        }
-    }, [fetchBrokerageData, fetchTradeHistory, trackPortfolioValue]);
-
+    // Initial load
     useEffect(() => {
-        // Only fetch once on initial mount - prevents re-fetching during Plaid linking
-        if (!hasInitialFetched.current) {
-            hasInitialFetched.current = true;
-            fetchPortfolio();
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+        fetchData();
+    }, [fetchData]);
 
-    const handleRefresh = async () => {
-        setRefreshing(true);
-        await fetchPortfolio();
-        setRefreshing(false);
-        toast.success('Portfolio refreshed!');
-    };
+    // Auto-refresh positions every 30s
+    useEffect(() => {
+        const interval = setInterval(() => {
+            fetchData(true);
+        }, 30000);
+        return () => clearInterval(interval);
+    }, [fetchData]);
 
-    const handleExportCSV = () => {
-        const csv = [
-            ['Symbol', 'Name', 'Quantity', 'Price', 'Value', 'Source'].join(','),
-            ...holdings.map(h => [
-                h.symbol,
-                h.name || h.symbol,
-                h.quantity || h.shares || 0,
-                h.price || 0,
-                h.value || 0,
-                h.sourceName || 'Unknown'
-            ].join(','))
-        ].join('\n');
+    // Derived data
+    const positions = account?.positions || [];
+    const totalPortfolioValue = account?.totalPortfolioValue || STARTING_BALANCE;
+    const totalPnL = totalPortfolioValue - STARTING_BALANCE;
+    const totalPnLPercent = ((totalPnL / STARTING_BALANCE) * 100);
 
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `portfolio-${new Date().toISOString().split('T')[0]}.csv`;
-        a.click();
-        toast.success('Portfolio exported!');
-    };
+    // Closed trades: orders with pnl or sell/cover actions
+    const closedTrades = useMemo(() => {
+        return orders.filter(o =>
+            o.pnl != null ||
+            o.action === 'sell' ||
+            o.action === 'cover' ||
+            o.action === 'tp_hit' ||
+            o.action === 'sl_hit'
+        ).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    }, [orders]);
 
-    const filteredHoldings = useMemo(() => {
-        if (!searchQuery) return holdings;
-        return holdings.filter(h =>
-            h.symbol?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            h.name?.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-    }, [holdings, searchQuery]);
+    const visibleHistory = showAllHistory ? closedTrades : closedTrades.slice(0, 10);
 
-    const aiAnalysis = useMemo(() => analyzePortfolio(holdings, stats), [holdings, stats]);
+    // Equity curve from closed trades
+    const equityCurveData = useMemo(() => {
+        const tradesChron = [...closedTrades].reverse();
+        if (tradesChron.length === 0) return [];
 
-    const pieData = useMemo(() => {
-        return holdings.map(h => ({
-            name: h.symbol,
-            value: h.value || 0
-        })).filter(d => d.value > 0).slice(0, 8);
-    }, [holdings]);
+        let cumPnL = 0;
+        const curve = [{ date: 'Start', cumReturn: 0 }];
 
-    const performanceData = useMemo(() => {
-        return holdings.map(h => ({
-            symbol: h.symbol,
-            gain: h.change24h || 0
-        })).sort((a, b) => b.gain - a.gain).slice(0, 6);
-    }, [holdings]);
+        tradesChron.forEach((trade) => {
+            const pnl = Number(trade.pnlPercent || 0);
+            cumPnL += pnl;
+            curve.push({
+                date: formatDate(trade.createdAt),
+                cumReturn: Number(cumPnL.toFixed(2)),
+            });
+        });
 
+        return curve;
+    }, [closedTrades]);
+
+    // Insight computations
+    const insights = useMemo(() => {
+        const winningOrders = closedTrades.filter(o => Number(o.pnl) > 0);
+        const losingOrders = closedTrades.filter(o => Number(o.pnl) < 0);
+
+        const avgWin = winningOrders.length > 0
+            ? winningOrders.reduce((sum, o) => sum + Number(o.pnlPercent || 0), 0) / winningOrders.length
+            : 0;
+        const avgLoss = losingOrders.length > 0
+            ? losingOrders.reduce((sum, o) => sum + Number(o.pnlPercent || 0), 0) / losingOrders.length
+            : 0;
+
+        return {
+            bestTrade: stats?.biggestWin || 0,
+            worstTrade: stats?.biggestLoss || 0,
+            avgWin,
+            avgLoss,
+            currentStreak: stats?.currentStreak || 0,
+            bestStreak: stats?.bestStreak || 0,
+            tpHits: stats?.takeProfitHits || 0,
+            slHits: stats?.stopLossHits || 0,
+        };
+    }, [closedTrades, stats]);
+
+    const hasNoTrades = !loading && (!stats || stats.totalTrades === 0) && positions.length === 0;
+
+    // ============ RENDER ============
     if (loading) {
         return (
-            <PageContainer theme={theme}>
-                <BackgroundOrbs>
-                    <Orb $duration="25s" />
-                    <Orb $duration="30s" />
-                    <Orb $duration="20s" />
-                </BackgroundOrbs>
-                <ContentWrapper>
-                    <LoadingContainer>
-                        <LoadingSpinner size={64} theme={theme} />
-                        <LoadingText theme={theme}>Loading your portfolio...</LoadingText>
-                    </LoadingContainer>
-                </ContentWrapper>
-            </PageContainer>
+            <PageWrapper>
+                <Container>
+                    <LoadingWrapper>
+                        <Spinner />
+                        Loading your trading data...
+                    </LoadingWrapper>
+                </Container>
+            </PageWrapper>
+        );
+    }
+
+    if (error) {
+        return (
+            <PageWrapper>
+                <Container>
+                    <HeaderSection>
+                        <PageTitle>Your Trading Performance</PageTitle>
+                    </HeaderSection>
+                    <EmptyState>
+                        <EmptyIcon>
+                            <AlertTriangle size={24} />
+                        </EmptyIcon>
+                        <EmptyTitle>Unable to load data</EmptyTitle>
+                        <EmptyDesc>{error}</EmptyDesc>
+                        <EmptyActions>
+                            <PrimaryButton onClick={() => fetchData()}>
+                                Try Again
+                            </PrimaryButton>
+                        </EmptyActions>
+                    </EmptyState>
+                </Container>
+            </PageWrapper>
         );
     }
 
     return (
-        <PageContainer theme={theme}>
-            <BackgroundOrbs>
-                <Orb $duration="25s" />
-                <Orb $duration="30s" />
-                <Orb $duration="20s" />
-            </BackgroundOrbs>
+        <PageWrapper>
+            <Container>
+                {/* SECTION 1: Header */}
+                <HeaderSection>
+                    <PageTitle>Your Trading Performance</PageTitle>
+                    <PageSubtitle>Track every trade, measure your edge, and improve over time.</PageSubtitle>
+                </HeaderSection>
 
-            <ContentWrapper>
-                {/* Header */}
-                <Header>
-                    <Title theme={theme}>
-                        <TitleIcon>
-                            <Coins size={48} color={theme.brand?.primary || '#00adef'} />
-                        </TitleIcon>
-                        My Portfolio
-                    </Title>
-                    <Subtitle theme={theme}>
-                        {holdings.length > 0
-                            ? `${holdings.length} holdings • AI-powered insights`
-                            : 'Track your investments across wallets and brokerages'}
-                    </Subtitle>
-                </Header>
-
-                {/* Leaderboard Disclaimer */}
-                <DisclaimerNotice theme={theme}>
-                    <Info size={16} />
-                    <DisclaimerText theme={theme}>
-                        Leaderboard rankings only track performance after linking your account. Previous gains don't count.
-                    </DisclaimerText>
-                </DisclaimerNotice>
-
-                {/* Tabs */}
-                <TabsContainer theme={theme}>
-                    <Tab theme={theme} $active={activeTab === 'holdings'} onClick={() => setActiveTab('holdings')}>
-                        <Wallet size={18} />
-                        Holdings
-                    </Tab>
-                    {linkedWallet && (
-                        <Tab theme={theme} $active={activeTab === 'analytics'} onClick={() => setActiveTab('analytics')}>
-                            <Activity size={18} />
-                            Analytics
-                        </Tab>
-                    )}
-                    <Tab theme={theme} $active={activeTab === 'brokerages'} onClick={() => setActiveTab('brokerages')}>
-                        <Building2 size={18} />
-                        Brokerages
-                    </Tab>
-                </TabsContainer>
-
-                {/* Wallet Section */}
-                <WalletSection theme={theme}>
-                    <WalletInfo>
-                        <WalletIconWrapper theme={theme}>
-                            <Wallet size={28} color="white" />
-                        </WalletIconWrapper>
-                        <WalletText>
-                            <WalletTitle theme={theme}>Wallet Connection</WalletTitle>
-                            <WalletStatus theme={theme} $linked={!!linkedWallet}>
-                                {linkedWallet ? (
-                                    <>
-                                        <CheckCircle size={16} />
-                                        Wallet Linked
-                                    </>
-                                ) : (
-                                    <>
-                                        <AlertTriangle size={16} />
-                                        No Wallet Linked
-                                    </>
-                                )}
-                            </WalletStatus>
-                        </WalletText>
-                    </WalletInfo>
-                    <WalletConnectButton showInfo={true} />
-                    {!linkedWallet && (
-                        <SolanaLinkSection>
-                            <div style={{fontSize:'.85rem',fontWeight:600,color:'#a78bfa',marginBottom:'.5rem',display:'flex',alignItems:'center',gap:'.4rem'}}>
-                                Or link a Solana wallet manually
-                            </div>
-                            <div style={{display:'flex',gap:'.5rem'}}>
-                                <input
-                                    type="text"
-                                    placeholder="Paste your Solana address..."
-                                    value={solanaAddress}
-                                    onChange={e => setSolanaAddress(e.target.value)}
-                                    style={{flex:1,padding:'.6rem .85rem',background:'rgba(255,255,255,.04)',border:'1px solid rgba(255,255,255,.08)',borderRadius:8,color:'#e0e6ed',fontSize:'.85rem'}}
-                                />
-                                <button
-                                    onClick={handleLinkSolana}
-                                    disabled={!solanaAddress || solanaAddress.length < 32}
-                                    style={{padding:'.6rem 1.2rem',background:'linear-gradient(135deg,#8b5cf6,#7c3aed)',border:'none',borderRadius:8,color:'#fff',fontWeight:700,fontSize:'.85rem',cursor:'pointer',opacity:(!solanaAddress||solanaAddress.length<32)?0.5:1}}
-                                >
-                                    Link Solana
-                                </button>
-                            </div>
-                        </SolanaLinkSection>
-                    )}
-                </WalletSection>
-
-                {/* Analytics Tab */}
-                {activeTab === 'analytics' && linkedWallet && <WalletAnalytics />}
-
-                {/* Brokerages Tab */}
-                {activeTab === 'brokerages' && <BrokerageConnect />}
-
-                {/* Holdings Tab */}
-                {activeTab === 'holdings' && (
+                {/* SECTION 9: Empty State */}
+                {hasNoTrades ? (
+                    <Section $delay="0.15s">
+                        <EmptyState>
+                            <EmptyIcon>
+                                <BarChart3 size={26} />
+                            </EmptyIcon>
+                            <EmptyTitle>You haven't tracked any trades yet.</EmptyTitle>
+                            <EmptyDesc>
+                                Start by following a signal or placing a paper trade.
+                            </EmptyDesc>
+                            <EmptyActions>
+                                <PrimaryButton onClick={() => navigate('/signals')}>
+                                    <Eye size={14} />
+                                    View Signals
+                                </PrimaryButton>
+                                <SecondaryButton onClick={() => navigate('/paper-trading')}>
+                                    <Target size={14} />
+                                    Start Paper Trading
+                                </SecondaryButton>
+                            </EmptyActions>
+                        </EmptyState>
+                    </Section>
+                ) : (
                     <>
-                        {holdings.length === 0 ? (
-                            <EmptyState>
-                                <EmptyIcon theme={theme}>
-                                    <Wallet size={52} color={theme.brand?.primary || '#00adef'} />
-                                </EmptyIcon>
-                                <EmptyTitle theme={theme}>
-                                    {linkedWallet ? 'Ready to Sync' : 'Connect Your Wallet'}
-                                </EmptyTitle>
-                                <EmptyText theme={theme}>
-                                    {linkedWallet
-                                        ? 'Sync your on-chain holdings to see your balances and transactions'
-                                        : 'Connect your wallet or link a brokerage account to start tracking your portfolio'}
-                                </EmptyText>
-                                {linkedWallet && syncWalletToPortfolio && (
-                                    <button onClick={async () => { await syncWalletToPortfolio(); window.location.reload(); }} style={{
-                                        marginTop:'1rem',padding:'.65rem 1.5rem',border:'none',borderRadius:'10px',
-                                        background:'linear-gradient(135deg,#00adef,#0090d0)',color:'#fff',
-                                        fontSize:'.9rem',fontWeight:700,cursor:'pointer',display:'inline-flex',
-                                        alignItems:'center',gap:'.4rem',transition:'all .2s'
-                                    }}>
-                                        <RefreshCw size={16}/> Sync Wallet
-                                    </button>
-                                )}
-                            </EmptyState>
-                        ) : (
-                            <>
-                                {/* Stats Hero */}
-                                {stats && (
-                                    <StatsHero>
-                                        <MainStatCard theme={theme}>
-                                            <MainStatLabel theme={theme}>
-                                                <DollarSign size={18} />
-                                                Total Portfolio Value
-                                            </MainStatLabel>
-                                            <MainStatValue theme={theme}>
-                                                ${stats.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })}
-                                            </MainStatValue>
-                                            <MainStatChange theme={theme} $positive={stats.totalGain >= 0}>
-                                                {stats.totalGain >= 0 ? <ArrowUpRight size={20} /> : <ArrowDownRight size={20} />}
-                                                {stats.totalGain >= 0 ? '+' : ''}${Math.abs(stats.totalGain).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                                ({stats.totalGain >= 0 ? '+' : ''}{stats.totalGainPercent.toFixed(2)}%)
-                                            </MainStatChange>
-                                        </MainStatCard>
+                        {/* SECTION 2: Performance Metrics */}
+                        <MetricsGrid>
+                            <MetricCard>
+                                <MetricLabel>
+                                    <DollarSign size={13} />
+                                    Total P&L
+                                </MetricLabel>
+                                <MetricValue $color={totalPnL >= 0 ? '#10b981' : '#ef4444'}>
+                                    {totalPnL >= 0 ? '+' : ''}{formatCurrency(totalPnL)}
+                                </MetricValue>
+                                <MetricSub $color={totalPnL >= 0 ? 'rgba(16,185,129,0.7)' : 'rgba(239,68,68,0.7)'}>
+                                    {formatPercent(totalPnLPercent)} from ${STARTING_BALANCE.toLocaleString()} start
+                                </MetricSub>
+                            </MetricCard>
 
-                                        <StatCard theme={theme}>
-                                            <StatIcon theme={theme} $bg={`${theme.success || '#10b981'}26`} $color={theme.success || '#10b981'}>
-                                                <TrendingUp size={24} />
-                                            </StatIcon>
-                                            <StatLabel theme={theme}>Total Gain/Loss</StatLabel>
-                                            <StatValue theme={theme} $color={stats.totalGain >= 0 ? theme.success || '#10b981' : theme.error || '#ef4444'}>
-                                                {stats.totalGain >= 0 ? '+' : ''}{stats.totalGainPercent.toFixed(2)}%
-                                            </StatValue>
-                                        </StatCard>
+                            <MetricCard>
+                                <MetricLabel>
+                                    <Target size={13} />
+                                    Win Rate
+                                </MetricLabel>
+                                <MetricValue $color={
+                                    (stats?.winRate || 0) >= 55 ? '#10b981'
+                                        : (stats?.winRate || 0) >= 45 ? '#f59e0b'
+                                            : '#ef4444'
+                                }>
+                                    {stats?.winRate != null ? `${Number(stats.winRate).toFixed(1)}%` : '0.0%'}
+                                </MetricValue>
+                                <MetricSub>
+                                    {stats?.winningTrades || 0}W / {stats?.losingTrades || 0}L
+                                </MetricSub>
+                            </MetricCard>
 
-                                        <StatCard theme={theme}>
-                                            <StatIcon theme={theme} $bg={`${theme.brand?.accent || '#8b5cf6'}26`} $color={theme.brand?.accent || '#a78bfa'}>
-                                                <Target size={24} />
-                                            </StatIcon>
-                                            <StatLabel theme={theme}>Cost Basis</StatLabel>
-                                            <StatValue theme={theme}>
-                                                ${stats.totalCost.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                                            </StatValue>
-                                        </StatCard>
+                            <MetricCard>
+                                <MetricLabel>
+                                    <Activity size={13} />
+                                    Trades Taken
+                                </MetricLabel>
+                                <MetricValue>
+                                    {stats?.totalTrades || 0}
+                                </MetricValue>
+                                <MetricSub>
+                                    {insights.tpHits} TP hits, {insights.slHits} SL hits
+                                </MetricSub>
+                            </MetricCard>
 
-                                        <StatCard theme={theme}>
-                                            <StatIcon theme={theme} $bg={`${theme.warning || '#fbbf24'}26`} $color={theme.warning || '#fbbf24'}>
-                                                <BarChart3 size={24} />
-                                            </StatIcon>
-                                            <StatLabel theme={theme}>Holdings</StatLabel>
-                                            <StatValue theme={theme}>{stats.holdingsCount}</StatValue>
-                                        </StatCard>
-                                    </StatsHero>
-                                )}
+                            <MetricCard>
+                                <MetricLabel>
+                                    <Crosshair size={13} />
+                                    Active Trades
+                                </MetricLabel>
+                                <MetricValue $color="#00adef">
+                                    {positions.length}
+                                </MetricValue>
+                                <MetricSub>
+                                    Open positions
+                                </MetricSub>
+                            </MetricCard>
+                        </MetricsGrid>
 
-                                {/* AI Analysis */}
-                                {aiAnalysis && (
-                                    <AISection theme={theme}>
-                                        <AISectionHeader>
-                                            <AITitle theme={theme}>
-                                                <Brain size={28} />
-                                                AI Portfolio Analysis
-                                            </AITitle>
-                                            <AIBadge theme={theme}>
-                                                <Sparkles size={16} />
-                                                Powered by Nexus AI
-                                            </AIBadge>
-                                        </AISectionHeader>
+                        {/* SECTION 3: Active Positions */}
+                        {positions.length > 0 && (
+                            <Section $delay="0.2s">
+                                <SectionHeader>
+                                    <SectionTitle>
+                                        <Crosshair size={16} color="#00adef" />
+                                        Active Positions
+                                        <SectionCount>{positions.length}</SectionCount>
+                                    </SectionTitle>
+                                </SectionHeader>
 
-                                        <AIGrid>
-                                            <InsightCard theme={theme}>
-                                                <InsightHeader>
-                                                    <InsightIcon theme={theme} $bg={`${theme.success || '#10b981'}33`} $color={theme.success || '#10b981'}>
-                                                        <Shield size={20} />
-                                                    </InsightIcon>
-                                                    <InsightTitle theme={theme}>Diversification Score</InsightTitle>
-                                                </InsightHeader>
-                                                <InsightValue theme={theme} $color={
-                                                    aiAnalysis.diversificationScore >= 70 ? theme.success || '#10b981' :
-                                                    aiAnalysis.diversificationScore >= 40 ? theme.warning || '#fbbf24' : theme.error || '#ef4444'
-                                                }>
-                                                    {aiAnalysis.diversificationScore}/100
-                                                </InsightValue>
-                                                <InsightDescription theme={theme}>
-                                                    {aiAnalysis.diversificationScore >= 70 ? 'Well diversified portfolio' :
-                                                     aiAnalysis.diversificationScore >= 40 ? 'Moderate diversification' :
-                                                     'Consider adding more positions'}
-                                                </InsightDescription>
-                                            </InsightCard>
+                                {positions.map((pos, idx) => {
+                                    const typeBadge = getTypeBadge(pos.type);
+                                    const dirBadge = getDirectionBadge(pos.positionType);
+                                    const tpsl = computeTPSLProgress(pos);
+                                    const unrealizedPnLPct = Number(pos.unrealizedPnLPercent || 0);
+                                    const unrealizedPnLVal = Number(pos.unrealizedPnL || 0);
 
-                                            <InsightCard theme={theme}>
-                                                <InsightHeader>
-                                                    <InsightIcon theme={theme} $bg={
-                                                        aiAnalysis.riskLevel === 'Low' ? `${theme.success || '#10b981'}33` :
-                                                        aiAnalysis.riskLevel === 'Moderate' ? `${theme.warning || '#fbbf24'}33` :
-                                                        `${theme.error || '#ef4444'}33`
-                                                    } $color={
-                                                        aiAnalysis.riskLevel === 'Low' ? theme.success || '#10b981' :
-                                                        aiAnalysis.riskLevel === 'Moderate' ? theme.warning || '#fbbf24' : theme.error || '#ef4444'
-                                                    }>
-                                                        <AlertTriangle size={20} />
-                                                    </InsightIcon>
-                                                    <InsightTitle theme={theme}>Risk Level</InsightTitle>
-                                                </InsightHeader>
-                                                <InsightValue theme={theme} $color={
-                                                    aiAnalysis.riskLevel === 'Low' ? theme.success || '#10b981' :
-                                                    aiAnalysis.riskLevel === 'Moderate' ? theme.warning || '#fbbf24' : theme.error || '#ef4444'
-                                                }>
-                                                    {aiAnalysis.riskLevel}
-                                                </InsightValue>
-                                                <InsightDescription theme={theme}>
-                                                    Based on concentration and diversification
-                                                </InsightDescription>
-                                            </InsightCard>
+                                    return (
+                                        <PositionCard key={`${pos.symbol}-${pos.type}-${idx}`}>
+                                            <PositionSymbol>
+                                                <SymbolName>
+                                                    {pos.symbol}
+                                                    <Badge $bg={typeBadge.bg} $color={typeBadge.color}>
+                                                        {typeBadge.label}
+                                                    </Badge>
+                                                </SymbolName>
+                                                <Badge
+                                                    $bg={dirBadge.bg}
+                                                    $color={dirBadge.color}
+                                                    style={{ marginTop: 4, display: 'inline-block' }}
+                                                >
+                                                    {dirBadge.label}
+                                                    {pos.leverage && pos.leverage > 1 ? ` ${pos.leverage}x` : ''}
+                                                </Badge>
+                                            </PositionSymbol>
 
-                                            {aiAnalysis.topPerformer && (
-                                                <InsightCard theme={theme}>
-                                                    <InsightHeader>
-                                                        <InsightIcon theme={theme} $bg={`${theme.success || '#10b981'}33`} $color={theme.success || '#10b981'}>
-                                                            <Star size={20} />
-                                                        </InsightIcon>
-                                                        <InsightTitle theme={theme}>Top Performer</InsightTitle>
-                                                    </InsightHeader>
-                                                    <InsightValue theme={theme} $color={theme.success || '#10b981'}>
-                                                        {aiAnalysis.topPerformer.symbol}
-                                                    </InsightValue>
-                                                    <InsightDescription theme={theme}>
-                                                        {aiAnalysis.topPerformer.gainPercent >= 0 ? 'Up' : 'Down'} {Math.abs(aiAnalysis.topPerformer.gainPercent).toFixed(1)}% today
-                                                    </InsightDescription>
-                                                </InsightCard>
-                                            )}
+                                            <PositionDetails>
+                                                <DetailItem>
+                                                    <DetailLabel>Entry</DetailLabel>
+                                                    <DetailValue>{formatPrice(pos.averagePrice)}</DetailValue>
+                                                </DetailItem>
+                                                <DetailItem>
+                                                    <DetailLabel>Current</DetailLabel>
+                                                    <DetailValue>{formatPrice(pos.currentPrice)}</DetailValue>
+                                                </DetailItem>
+                                                <DetailItem>
+                                                    <DetailLabel>Qty</DetailLabel>
+                                                    <DetailValue>{Number(pos.quantity).toFixed(pos.type === 'crypto' ? 6 : 2)}</DetailValue>
+                                                </DetailItem>
 
-                                            {aiAnalysis.worstPerformer && aiAnalysis.worstPerformer.symbol !== aiAnalysis.topPerformer?.symbol && (
-                                                <InsightCard theme={theme}>
-                                                    <InsightHeader>
-                                                        <InsightIcon theme={theme} $bg={`${theme.error || '#ef4444'}33`} $color={theme.error || '#ef4444'}>
-                                                            <Flame size={20} />
-                                                        </InsightIcon>
-                                                        <InsightTitle theme={theme}>Needs Attention</InsightTitle>
-                                                    </InsightHeader>
-                                                    <InsightValue theme={theme} $color={theme.error || '#ef4444'}>
-                                                        {aiAnalysis.worstPerformer.symbol}
-                                                    </InsightValue>
-                                                    <InsightDescription theme={theme}>
-                                                        {aiAnalysis.worstPerformer.gainPercent >= 0 ? 'Up' : 'Down'} {Math.abs(aiAnalysis.worstPerformer.gainPercent).toFixed(1)}% today
-                                                    </InsightDescription>
-                                                </InsightCard>
-                                            )}
-                                        </AIGrid>
+                                                {tpsl && (
+                                                    <TPSLBar>
+                                                        <TPSLLabels>
+                                                            <span style={{ color: '#ef4444' }}>SL {tpsl.slLabel}</span>
+                                                            <span style={{ color: '#10b981' }}>TP {tpsl.tpLabel}</span>
+                                                        </TPSLLabels>
+                                                        <ProgressTrack>
+                                                            <ProgressFill $pct={tpsl.pct} $color={tpsl.color} />
+                                                        </ProgressTrack>
+                                                    </TPSLBar>
+                                                )}
+                                            </PositionDetails>
 
-                                        {aiAnalysis.recommendations.length > 0 && (
-                                            <RecommendationsList theme={theme}>
-                                                <RecommendationsTitle theme={theme}>
-                                                    <Lightbulb size={20} />
-                                                    AI Recommendations
-                                                </RecommendationsTitle>
-                                                {aiAnalysis.recommendations.map((rec, i) => (
-                                                    <RecommendationItem theme={theme} key={i}>
-                                                        <RecIcon theme={theme} $type={rec.type}>
-                                                            {rec.type === 'success' && <CheckCircle size={14} />}
-                                                            {rec.type === 'warning' && <AlertTriangle size={14} />}
-                                                            {rec.type === 'danger' && <TrendingDown size={14} />}
-                                                            {rec.type === 'info' && <Lightbulb size={14} />}
-                                                        </RecIcon>
-                                                        <RecText theme={theme}>{rec.text}</RecText>
-                                                    </RecommendationItem>
-                                                ))}
-                                            </RecommendationsList>
-                                        )}
-                                    </AISection>
-                                )}
+                                            <PositionPnL>
+                                                <PnLPercent $value={unrealizedPnLPct}>
+                                                    {formatPercent(unrealizedPnLPct)}
+                                                </PnLPercent>
+                                                <PnLAmount $value={unrealizedPnLVal}>
+                                                    {unrealizedPnLVal >= 0 ? '+' : ''}{formatCurrency(unrealizedPnLVal)}
+                                                </PnLAmount>
+                                            </PositionPnL>
 
-                                {/* Main Content Grid */}
-                                <MainGrid>
-                                    {/* Holdings Table */}
-                                    <HoldingsSection theme={theme}>
-                                        <HoldingsHeader>
-                                            <HoldingsTitle theme={theme}>
-                                                <Eye size={22} />
-                                                Your Holdings
-                                            </HoldingsTitle>
-                                            <HeaderActions>
-                                                <SearchWrapper>
-                                                    <SearchIconStyled theme={theme} />
-                                                    <SearchInput
-                                                        theme={theme}
-                                                        type="text"
-                                                        placeholder="Search holdings..."
-                                                        value={searchQuery}
-                                                        onChange={e => setSearchQuery(e.target.value)}
-                                                    />
-                                                </SearchWrapper>
-                                                <ActionButton theme={theme} onClick={handleRefresh} disabled={refreshing} $spinning={refreshing}>
-                                                    <RefreshCw size={18} />
-                                                    Refresh
-                                                </ActionButton>
-                                                <ActionButton theme={theme} onClick={handleExportCSV}>
-                                                    <Download size={18} />
-                                                    Export
-                                                </ActionButton>
-                                            </HeaderActions>
-                                        </HoldingsHeader>
-
-                                        <HoldingsTable>
-                                            <Table>
-                                                <thead>
-                                                    <tr>
-                                                        <Th theme={theme}>Asset</Th>
-                                                        <Th theme={theme}>Quantity</Th>
-                                                        <Th theme={theme}>Price</Th>
-                                                        <Th theme={theme}>Value</Th>
-                                                        <Th theme={theme}>24h Change</Th>
-                                                        <Th theme={theme}>Source</Th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {filteredHoldings.map((holding, idx) => {
-                                                        const quantity = holding.quantity || holding.shares || 0;
-                                                        const price = holding.price || 0;
-                                                        const value = holding.value || (price * quantity);
-                                                        const change = holding.change24h || 0;
-                                                        const positive = change >= 0;
-
-                                                        return (
-                                                            <Tr theme={theme} key={`${holding.symbol}-${idx}`}>
-                                                                <Td theme={theme}>
-                                                                    <SymbolLink to={getAssetRoute(holding.symbol, holding.type)} theme={theme}>
-                                                                        <SymbolIconClickable theme={theme}>
-                                                                            {holding.symbol?.substring(0, 2)}
-                                                                        </SymbolIconClickable>
-                                                                        <SymbolInfo>
-                                                                            <SymbolName theme={theme}>
-                                                                                {holding.symbol}
-                                                                                <ExternalLink size={12} style={{ marginLeft: '0.35rem', opacity: 0.5 }} />
-                                                                            </SymbolName>
-                                                                            <SymbolType theme={theme}>{holding.name || holding.type || 'Crypto'}</SymbolType>
-                                                                        </SymbolInfo>
-                                                                    </SymbolLink>
-                                                                </Td>
-                                                                <Td theme={theme}>
-                                                                    <PriceCell theme={theme}>
-                                                                        {quantity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 })}
-                                                                    </PriceCell>
-                                                                </Td>
-                                                                <Td theme={theme}>
-                                                                    <PriceCell theme={theme}>
-                                                                        ${price >= 1
-                                                                            ? price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                                                                            : price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })
-                                                                        }
-                                                                    </PriceCell>
-                                                                </Td>
-                                                                <Td theme={theme}>
-                                                                    <ValueCell theme={theme}>
-                                                                        ${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                                    </ValueCell>
-                                                                </Td>
-                                                                <Td theme={theme}>
-                                                                    <ChangeCell theme={theme} $positive={positive}>
-                                                                        {positive ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
-                                                                        {positive ? '+' : ''}{change.toFixed(2)}%
-                                                                    </ChangeCell>
-                                                                </Td>
-                                                                <Td theme={theme}>
-                                                                    <SourceBadge theme={theme}>
-                                                                        {holding.source === 'wallet' ? <Wallet size={12} /> : <Building2 size={12} />}
-                                                                        {holding.sourceName || holding.source}
-                                                                    </SourceBadge>
-                                                                </Td>
-                                                            </Tr>
-                                                        );
-                                                    })}
-                                                </tbody>
-                                            </Table>
-                                        </HoldingsTable>
-                                    </HoldingsSection>
-
-                                    {/* Sidebar Charts */}
-                                    <Sidebar>
-                                        <ChartCard theme={theme}>
-                                            <ChartTitle theme={theme}>
-                                                <PieChart size={20} />
-                                                Allocation
-                                            </ChartTitle>
-                                            <ResponsiveContainer width="100%" height={220}>
-                                                <RechartsPie>
-                                                    <Pie
-                                                        data={pieData}
-                                                        cx="50%"
-                                                        cy="50%"
-                                                        innerRadius={55}
-                                                        outerRadius={85}
-                                                        paddingAngle={3}
-                                                        dataKey="value"
-                                                    >
-                                                        {pieData.map((entry, index) => (
-                                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                                        ))}
-                                                    </Pie>
-                                                    <Tooltip
-                                                        formatter={(value) => `$${value.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
-                                                        contentStyle={{
-                                                            background: '#1e293b',
-                                                            border: `1px solid ${theme.brand?.primary || '#00adef'}4D`,
-                                                            borderRadius: '12px',
-                                                            padding: '0.75rem'
-                                                        }}
-                                                    />
-                                                </RechartsPie>
-                                            </ResponsiveContainer>
-                                            <ChartLegend>
-                                                {pieData.slice(0, 6).map((entry, index) => (
-                                                    <LegendItem key={entry.name} theme={theme}>
-                                                        <LegendDot $color={COLORS[index % COLORS.length]} />
-                                                        {entry.name}
-                                                    </LegendItem>
-                                                ))}
-                                            </ChartLegend>
-                                        </ChartCard>
-
-                                        <ChartCard theme={theme}>
-                                            <ChartTitle theme={theme}>
-                                                <BarChart3 size={20} />
-                                                24h Performance
-                                            </ChartTitle>
-                                            <ResponsiveContainer width="100%" height={220}>
-                                                <BarChart data={performanceData} layout="vertical">
-                                                    <CartesianGrid strokeDasharray="3 3" stroke={`${theme.text?.secondary || '#94a3b8'}1A`} />
-                                                    <XAxis type="number" stroke={theme.text?.tertiary || '#64748b'} tickFormatter={v => `${v}%`} />
-                                                    <YAxis type="category" dataKey="symbol" stroke={theme.text?.tertiary || '#64748b'} width={50} />
-                                                    <Tooltip
-                                                        formatter={(value) => `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`}
-                                                        contentStyle={{
-                                                            background: '#1e293b',
-                                                            border: `1px solid ${theme.brand?.primary || '#00adef'}4D`,
-                                                            borderRadius: '12px',
-                                                            padding: '0.75rem'
-                                                        }}
-                                                    />
-                                                    <Bar dataKey="gain" radius={[0, 6, 6, 0]}>
-                                                        {performanceData.map((entry, index) => (
-                                                            <Cell key={`cell-${index}`} fill={entry.gain >= 0 ? theme.success || '#10b981' : theme.error || '#ef4444'} />
-                                                        ))}
-                                                    </Bar>
-                                                </BarChart>
-                                            </ResponsiveContainer>
-                                        </ChartCard>
-                                    </Sidebar>
-                                </MainGrid>
-
-                                {/* Trade History Section */}
-                                <TradeHistorySection theme={theme}>
-                                    <TradeHistoryHeader>
-                                        <TradeHistoryTitle theme={theme}>
-                                            <History size={22} />
-                                            Trade History
-                                        </TradeHistoryTitle>
-                                        {tradeHistory.length > 0 && (
-                                            <TradeCount theme={theme}>
-                                                {tradeHistory.length} recent trades
-                                            </TradeCount>
-                                        )}
-                                    </TradeHistoryHeader>
-
-                                    {loadingTrades ? (
-                                        <LoadingContainer style={{ padding: '2rem' }}>
-                                            <LoadingSpinner size={32} theme={theme} />
-                                            <LoadingText theme={theme}>Loading trade history...</LoadingText>
-                                        </LoadingContainer>
-                                    ) : tradeHistory.length === 0 ? (
-                                        <NoTradesMessage theme={theme}>
-                                            <History size={48} />
-                                            <div>No trades found</div>
-                                            <div style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>
-                                                Your trading history will appear here once you make trades on connected brokerages.
-                                            </div>
-                                        </NoTradesMessage>
-                                    ) : (
-                                        <TradesTable>
-                                            <Table>
-                                                <thead>
-                                                    <tr>
-                                                        <Th theme={theme}>Type</Th>
-                                                        <Th theme={theme}>Pair</Th>
-                                                        <Th theme={theme}>Amount</Th>
-                                                        <Th theme={theme}>Price</Th>
-                                                        <Th theme={theme}>Total</Th>
-                                                        <Th theme={theme}>Fee</Th>
-                                                        <Th theme={theme}>Date</Th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {tradeHistory.map((trade, idx) => {
-                                                        const baseAsset = parseKrakenPair(trade.pair || '');
-                                                        return (
-                                                            <TradeRow theme={theme} key={trade.id || idx}>
-                                                                <Td theme={theme}>
-                                                                    <TradeType theme={theme} $type={trade.type}>
-                                                                        {trade.type === 'buy' ? (
-                                                                            <>
-                                                                                <ShoppingCart size={14} />
-                                                                                Buy
-                                                                            </>
-                                                                        ) : (
-                                                                            <>
-                                                                                <Tag size={14} />
-                                                                                Sell
-                                                                            </>
-                                                                        )}
-                                                                    </TradeType>
-                                                                </Td>
-                                                                <Td theme={theme}>
-                                                                    <TradePair
-                                                                        theme={theme}
-                                                                        onClick={() => navigate(getAssetRoute(baseAsset, 'crypto'))}
-                                                                    >
-                                                                        {baseAsset || trade.pair}
-                                                                        <ArrowRight size={14} />
-                                                                    </TradePair>
-                                                                </Td>
-                                                                <Td theme={theme}>
-                                                                    <TradeAmount theme={theme}>
-                                                                        {trade.volume?.toLocaleString(undefined, { maximumFractionDigits: 8 })}
-                                                                    </TradeAmount>
-                                                                </Td>
-                                                                <Td theme={theme}>
-                                                                    <PriceCell theme={theme}>
-                                                                        ${trade.price?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                                    </PriceCell>
-                                                                </Td>
-                                                                <Td theme={theme}>
-                                                                    <TradeCost theme={theme}>
-                                                                        ${trade.cost?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                                    </TradeCost>
-                                                                </Td>
-                                                                <Td theme={theme}>
-                                                                    <TradeFee theme={theme}>
-                                                                        ${trade.fee?.toLocaleString(undefined, { minimumFractionDigits: 4 })}
-                                                                    </TradeFee>
-                                                                </Td>
-                                                                <Td theme={theme}>
-                                                                    <TradeDate theme={theme}>
-                                                                        <Clock size={14} />
-                                                                        {new Date(trade.time).toLocaleDateString('en-US', {
-                                                                            month: 'short',
-                                                                            day: 'numeric',
-                                                                            year: 'numeric'
-                                                                        })}
-                                                                    </TradeDate>
-                                                                </Td>
-                                                            </TradeRow>
-                                                        );
-                                                    })}
-                                                </tbody>
-                                            </Table>
-                                        </TradesTable>
-                                    )}
-                                </TradeHistorySection>
-                            </>
+                                            <PositionActions>
+                                                <SmallButton
+                                                    onClick={() => navigate('/paper-trading')}
+                                                    $borderColor="rgba(239,68,68,0.3)"
+                                                    $color="#ef4444"
+                                                    $hoverBg="rgba(239,68,68,0.1)"
+                                                >
+                                                    Close
+                                                </SmallButton>
+                                            </PositionActions>
+                                        </PositionCard>
+                                    );
+                                })}
+                            </Section>
                         )}
+
+                        {/* SECTION 4: Trade History */}
+                        {closedTrades.length > 0 && (
+                            <Section $delay="0.3s">
+                                <SectionHeader>
+                                    <SectionTitle>
+                                        <Clock size={16} color="#64748b" />
+                                        Closed Trades
+                                        <SectionCount>{closedTrades.length}</SectionCount>
+                                    </SectionTitle>
+                                </SectionHeader>
+
+                                {visibleHistory.map((trade, idx) => {
+                                    const pnl = Number(trade.pnl || 0);
+                                    const pnlPct = Number(trade.pnlPercent || 0);
+                                    const isWin = pnl > 0;
+                                    const typeBadge = getTypeBadge(trade.type);
+
+                                    let dirLabel = 'LONG';
+                                    if (trade.positionType === 'short' || trade.action === 'cover') {
+                                        dirLabel = 'SHORT';
+                                    }
+
+                                    let reasonLabel = '';
+                                    if (trade.reason === 'take_profit' || trade.action === 'tp_hit') {
+                                        reasonLabel = 'TP Hit';
+                                    } else if (trade.reason === 'stop_loss' || trade.action === 'sl_hit') {
+                                        reasonLabel = 'SL Hit';
+                                    } else if (trade.reason === 'manual') {
+                                        reasonLabel = 'Manual';
+                                    }
+
+                                    return (
+                                        <TradeRow key={`trade-${idx}-${trade.symbol}`}>
+                                            <TradeSymbolBlock>
+                                                <div>
+                                                    <SymbolName style={{ fontSize: '0.9rem' }}>
+                                                        {trade.symbol}
+                                                    </SymbolName>
+                                                    <div style={{ display: 'flex', gap: 4, marginTop: 3 }}>
+                                                        <Badge $bg={typeBadge.bg} $color={typeBadge.color}>
+                                                            {typeBadge.label}
+                                                        </Badge>
+                                                        <Badge
+                                                            $bg={dirLabel === 'SHORT' ? 'rgba(239,68,68,0.12)' : 'rgba(16,185,129,0.12)'}
+                                                            $color={dirLabel === 'SHORT' ? '#ef4444' : '#10b981'}
+                                                        >
+                                                            {dirLabel}
+                                                        </Badge>
+                                                    </div>
+                                                </div>
+                                            </TradeSymbolBlock>
+
+                                            <TradeInfo>
+                                                <Badge
+                                                    $bg={isWin ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)'}
+                                                    $color={isWin ? '#10b981' : '#ef4444'}
+                                                    style={{ fontSize: '0.65rem', padding: '3px 8px' }}
+                                                >
+                                                    {isWin ? 'WIN' : pnl === 0 ? 'BREAK EVEN' : 'LOSS'}
+                                                </Badge>
+
+                                                {trade.price && (
+                                                    <DetailItem>
+                                                        <DetailLabel>Price</DetailLabel>
+                                                        <DetailValue style={{ fontSize: '0.8rem' }}>
+                                                            {formatPrice(trade.price)}
+                                                        </DetailValue>
+                                                    </DetailItem>
+                                                )}
+
+                                                {reasonLabel && (
+                                                    <Badge
+                                                        $bg="rgba(245,158,11,0.12)"
+                                                        $color="#f59e0b"
+                                                        style={{ fontSize: '0.6rem' }}
+                                                    >
+                                                        {reasonLabel}
+                                                    </Badge>
+                                                )}
+
+                                                <Badge
+                                                    $bg="rgba(255,255,255,0.04)"
+                                                    $color="#475569"
+                                                    style={{ fontSize: '0.58rem' }}
+                                                >
+                                                    Paper Trade
+                                                </Badge>
+                                            </TradeInfo>
+
+                                            <TradeReturn $value={pnl}>
+                                                {formatPercent(pnlPct)}
+                                            </TradeReturn>
+
+                                            <TradeTime>
+                                                {timeAgo(trade.createdAt)}
+                                            </TradeTime>
+                                        </TradeRow>
+                                    );
+                                })}
+
+                                {closedTrades.length > 10 && !showAllHistory && (
+                                    <ShowMoreButton onClick={() => setShowAllHistory(true)}>
+                                        Show all {closedTrades.length} trades
+                                    </ShowMoreButton>
+                                )}
+                                {showAllHistory && closedTrades.length > 10 && (
+                                    <ShowMoreButton onClick={() => setShowAllHistory(false)}>
+                                        Show less
+                                    </ShowMoreButton>
+                                )}
+                            </Section>
+                        )}
+
+                        {/* SECTION 5: Equity Curve */}
+                        <Section $delay="0.35s">
+                            <SectionHeader>
+                                <SectionTitle>
+                                    <TrendingUp size={16} color="#00adef" />
+                                    Performance Over Time
+                                </SectionTitle>
+                            </SectionHeader>
+
+                            <ChartContainer>
+                                {equityCurveData.length > 1 ? (
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <AreaChart data={equityCurveData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                                            <defs>
+                                                <linearGradient id="pnlGradientPos" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="0%" stopColor="#10b981" stopOpacity={0.3} />
+                                                    <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
+                                                </linearGradient>
+                                                <linearGradient id="pnlGradientNeg" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="0%" stopColor="#ef4444" stopOpacity={0.3} />
+                                                    <stop offset="100%" stopColor="#ef4444" stopOpacity={0} />
+                                                </linearGradient>
+                                            </defs>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                                            <XAxis
+                                                dataKey="date"
+                                                stroke="#475569"
+                                                tick={{ fill: '#475569', fontSize: 11 }}
+                                                axisLine={{ stroke: 'rgba(255,255,255,0.06)' }}
+                                                tickLine={false}
+                                            />
+                                            <YAxis
+                                                stroke="#475569"
+                                                tick={{ fill: '#475569', fontSize: 11 }}
+                                                axisLine={{ stroke: 'rgba(255,255,255,0.06)' }}
+                                                tickLine={false}
+                                                tickFormatter={(val) => `${val}%`}
+                                            />
+                                            <Tooltip content={<CustomChartTooltip />} />
+                                            <Area
+                                                type="monotone"
+                                                dataKey="cumReturn"
+                                                stroke={equityCurveData[equityCurveData.length - 1]?.cumReturn >= 0 ? '#10b981' : '#ef4444'}
+                                                strokeWidth={2}
+                                                fill={equityCurveData[equityCurveData.length - 1]?.cumReturn >= 0 ? 'url(#pnlGradientPos)' : 'url(#pnlGradientNeg)'}
+                                            />
+                                        </AreaChart>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <NoDataChart>
+                                        <div style={{ textAlign: 'center' }}>
+                                            <BarChart3 size={32} style={{ marginBottom: 8, opacity: 0.4 }} />
+                                            <div>Complete some trades to see your equity curve</div>
+                                        </div>
+                                    </NoDataChart>
+                                )}
+                            </ChartContainer>
+                        </Section>
+
+                        {/* SECTION 6: Trading Insights */}
+                        <Section $delay="0.4s">
+                            <SectionHeader>
+                                <SectionTitle>
+                                    <Zap size={16} color="#f59e0b" />
+                                    Your Trading Insights
+                                </SectionTitle>
+                            </SectionHeader>
+
+                            <InsightsGrid>
+                                <InsightCard>
+                                    <InsightLabel>
+                                        <Trophy size={12} color="#10b981" />
+                                        Best Trade
+                                    </InsightLabel>
+                                    <InsightValue $color="#10b981">
+                                        {insights.bestTrade > 0 ? `+$${Number(insights.bestTrade).toFixed(2)}` : '-'}
+                                    </InsightValue>
+                                </InsightCard>
+
+                                <InsightCard>
+                                    <InsightLabel>
+                                        <TrendingDown size={12} color="#ef4444" />
+                                        Worst Trade
+                                    </InsightLabel>
+                                    <InsightValue $color="#ef4444">
+                                        {insights.worstTrade < 0 ? `-$${Math.abs(Number(insights.worstTrade)).toFixed(2)}` : insights.worstTrade !== 0 ? `$${Number(insights.worstTrade).toFixed(2)}` : '-'}
+                                    </InsightValue>
+                                </InsightCard>
+
+                                <InsightCard>
+                                    <InsightLabel>
+                                        <ArrowUpRight size={12} color="#10b981" />
+                                        Avg Win
+                                    </InsightLabel>
+                                    <InsightValue $color="#10b981">
+                                        {insights.avgWin !== 0 ? formatPercent(insights.avgWin) : '-'}
+                                    </InsightValue>
+                                </InsightCard>
+
+                                <InsightCard>
+                                    <InsightLabel>
+                                        <ArrowDownRight size={12} color="#ef4444" />
+                                        Avg Loss
+                                    </InsightLabel>
+                                    <InsightValue $color="#ef4444">
+                                        {insights.avgLoss !== 0 ? formatPercent(insights.avgLoss) : '-'}
+                                    </InsightValue>
+                                </InsightCard>
+
+                                <InsightCard>
+                                    <InsightLabel>
+                                        <Flame size={12} color="#f59e0b" />
+                                        Current Streak
+                                    </InsightLabel>
+                                    <InsightValue $color={insights.currentStreak >= 0 ? '#10b981' : '#ef4444'}>
+                                        {insights.currentStreak > 0 ? `${insights.currentStreak}W` : insights.currentStreak < 0 ? `${Math.abs(insights.currentStreak)}L` : '-'}
+                                    </InsightValue>
+                                </InsightCard>
+
+                                <InsightCard>
+                                    <InsightLabel>
+                                        <Shield size={12} color="#00adef" />
+                                        Best Streak
+                                    </InsightLabel>
+                                    <InsightValue $color="#00adef">
+                                        {insights.bestStreak > 0 ? `${insights.bestStreak} wins` : '-'}
+                                    </InsightValue>
+                                </InsightCard>
+                            </InsightsGrid>
+                        </Section>
                     </>
                 )}
-            </ContentWrapper>
-        </PageContainer>
+
+                {/* SECTION 7: Signal Integration Strip */}
+                <Section $delay="0.45s">
+                    <SignalStrip>
+                        <StripText>
+                            <StripTitle>Build your track record from signals</StripTitle>
+                            <StripDesc>
+                                Track trades from signals &rarr; Build your performance record &rarr; See what works
+                            </StripDesc>
+                        </StripText>
+                        <StripButton onClick={() => navigate('/signals')}>
+                            View Live Signals
+                            <ChevronRight size={14} />
+                        </StripButton>
+                    </SignalStrip>
+                </Section>
+
+                {/* SECTION 8: Wallet Section (collapsible, secondary) */}
+                <Section $delay="0.5s">
+                    <CollapsibleHeader onClick={() => setWalletOpen(!walletOpen)}>
+                        <CollapsibleTitle>
+                            <Wallet size={18} color="#64748b" />
+                            Connected Wallets & Brokerages
+                            {linkedWallet && (
+                                <Badge $bg="rgba(16,185,129,0.12)" $color="#10b981">
+                                    Connected
+                                </Badge>
+                            )}
+                        </CollapsibleTitle>
+                        <ChevronIcon $open={walletOpen}>
+                            <ChevronDown size={18} color="#64748b" />
+                        </ChevronIcon>
+                    </CollapsibleHeader>
+
+                    <CollapsibleContent $open={walletOpen}>
+                        <WalletGrid>
+                            <div>
+                                <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: 12, fontWeight: 600 }}>
+                                    Wallet Connection
+                                </div>
+                                <WalletConnectButton showInfo={true} />
+                            </div>
+                            <div>
+                                <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: 12, fontWeight: 600 }}>
+                                    Brokerage Integration
+                                </div>
+                                <BrokerageConnect />
+                            </div>
+                        </WalletGrid>
+                        {linkedWallet && (
+                            <div style={{ marginTop: '1rem' }}>
+                                <WalletAnalytics />
+                            </div>
+                        )}
+                    </CollapsibleContent>
+                </Section>
+            </Container>
+        </PageWrapper>
     );
 };
 

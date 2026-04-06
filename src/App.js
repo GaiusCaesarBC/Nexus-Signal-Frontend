@@ -38,7 +38,7 @@ const SignalNotification = lazy(() => import('./components/SignalNotification'))
 const SettingsPage = lazy(() => import('./components/SettingsPage'));
 
 // 🚀 LAZY-LOADED PAGES - Code splitting for faster initial load
-const LandingPage = lazy(() => import('./pages/LandingPage'));
+const LandingPage = lazy(() => import('./pages/LandingPageV2'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const RegisterPage = lazy(() => import('./pages/RegisterPage'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));

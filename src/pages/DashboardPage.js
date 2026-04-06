@@ -23,6 +23,7 @@ import AvatarWithBorder from '../components/vault/AvatarWithBorder';
 import { useVault } from '../context/VaultContext';
 import DailyRewardModal from '../components/DailyReward/DailyRewardModal';
 import DailyRewardButton from '../components/DailyReward/DailyRewardButton';
+import DashboardHero from '../components/DashboardHero';
 import { formatCryptoPrice, formatStockPrice } from '../utils/priceFormatter';
 import { useLivePrice } from '../hooks/useLivePrice';
 
@@ -905,11 +906,11 @@ const WidgetsGrid = styled.div`
 `;
 
 const Widget = styled.div`
-    background: ${props => props.theme.bg?.card || 'rgba(30, 41, 59, 0.9)'};
-    border: 1px solid ${props => props.$borderColor || props.theme.border?.secondary || 'rgba(0, 173, 237, 0.2)'};
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(100, 116, 139, 0.1);
     border-radius: 14px;
     padding: 1.25rem;
-    animation: ${fadeIn} 0.8s ease-out;
+    animation: ${fadeIn} 0.5s ease-out;
     display: flex;
     flex-direction: column;
 `;
@@ -922,8 +923,8 @@ const WidgetHeader = styled.div`
 `;
 
 const WidgetTitle = styled.h3`
-    font-size: 1.1rem;
-    color: ${props => props.$color || props.theme.brand?.primary || '#00adef'};
+    font-size: 1rem;
+    color: #e2e8f0;
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -931,56 +932,47 @@ const WidgetTitle = styled.h3`
 `;
 
 const Badge = styled.span`
-    background: ${props => props.$variant === 'success' ? `${props.theme.success || '#10b981'}33` : `${props.theme.brand?.primary || '#00adef'}33`};
-    color: ${props => props.$variant === 'success' ? (props.theme.success || '#10b981') : (props.theme.brand?.primary || '#00adef')};
+    background: ${props => props.$variant === 'success' ? 'rgba(16,185,129,.1)' : 'rgba(0,173,237,.08)'};
+    color: ${props => props.$variant === 'success' ? '#10b981' : '#00adef'};
     padding: 0.2rem 0.6rem;
-    border-radius: 20px;
-    font-size: 0.75rem;
+    border-radius: 6px;
+    font-size: 0.65rem;
     font-weight: 600;
     display: flex;
     align-items: center;
     gap: 0.3rem;
+    border: 1px solid ${props => props.$variant === 'success' ? 'rgba(16,185,129,.2)' : 'rgba(0,173,237,.15)'};
 `;
 
 const WidgetContent = styled.div`
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 0.6rem;
+    gap: 0.5rem;
     max-height: 320px;
     overflow-y: auto;
-
-    &::-webkit-scrollbar {
-        width: 5px;
-    }
-
-    &::-webkit-scrollbar-track {
-        background: ${props => props.theme.brand?.primary || '#00adef'}1a;
-        border-radius: 3px;
-    }
-
-    &::-webkit-scrollbar-thumb {
-        background: ${props => props.theme.brand?.primary || '#00adef'}4D;
-        border-radius: 3px;
-    }
+    scrollbar-width: thin;
+    scrollbar-color: rgba(100,116,139,.15) transparent;
+    &::-webkit-scrollbar{width:3px;}
+    &::-webkit-scrollbar-thumb{background:rgba(100,116,139,.15);border-radius:4px;}
 `;
 
 const ViewAllButton = styled.button`
     width: 100%;
-    padding: 0.75rem;
-    background: ${props => props.$bg || `linear-gradient(135deg, ${props.theme.brand?.primary || '#00adef'}26 0%, ${props.theme.brand?.primary || '#00adef'}0d 100%)`};
-    border: 1px solid ${props => props.$borderColor || props.theme.border?.primary || 'rgba(0, 173, 237, 0.25)'};
+    padding: 0.6rem;
+    background: rgba(100,116,139,.04);
+    border: 1px solid rgba(100,116,139,.12);
     border-radius: 8px;
-    color: ${props => props.$color || props.theme.brand?.primary || '#00adef'};
-    font-weight: 700;
-    font-size: 0.85rem;
+    color: #94a3b8;
+    font-weight: 600;
+    font-size: 0.78rem;
     cursor: pointer;
     transition: all 0.2s ease;
     margin-top: auto;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
+    gap: 0.4rem;
 
     &:hover {
         transform: translateY(-2px);
@@ -1173,11 +1165,11 @@ const EmptyState = styled.div`
 
 // ============ ACHIEVEMENTS ============
 const AchievementsSection = styled.div`
-    background: linear-gradient(135deg, ${props => props.theme.brand?.primary}14 0%, ${props => props.theme.brand?.accent || props.theme.brand?.secondary}14 100%);
-    border: 1px solid ${props => props.theme.brand?.primary}40;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(100, 116, 139, 0.1);
     border-radius: 14px;
     padding: 1.25rem;
-    animation: ${fadeIn} 0.8s ease-out 0.2s backwards;
+    animation: ${fadeIn} 0.5s ease-out;
 `;
 
 const AchievementsHeader = styled.div`
@@ -1190,8 +1182,8 @@ const AchievementsHeader = styled.div`
 `;
 
 const AchievementsTitle = styled.h3`
-    font-size: 1.1rem;
-    color: ${props => props.theme.brand?.accent || props.theme.brand?.primary};
+    font-size: 1rem;
+    color: #e2e8f0;
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -1206,8 +1198,8 @@ const AchievementsProgress = styled.div`
 
 const ProgressBar = styled.div`
     width: 180px;
-    height: 8px;
-    background: ${props => props.theme.brand?.primary}33;
+    height: 6px;
+    background: rgba(100,116,139,.15);
     border-radius: 4px;
     overflow: hidden;
 
@@ -1219,15 +1211,15 @@ const ProgressBar = styled.div`
 const ProgressFill = styled.div`
     height: 100%;
     width: ${props => props.$progress}%;
-    background: linear-gradient(90deg, ${props => props.theme.brand?.primary}, ${props => props.theme.brand?.accent || props.theme.brand?.secondary});
+    background: linear-gradient(90deg, #10b981, #00adef);
     border-radius: 4px;
     transition: width 1s ease-out;
 `;
 
 const ProgressText = styled.span`
-    color: ${props => props.theme.brand?.accent || props.theme.brand?.primary};
-    font-weight: 700;
-    font-size: 0.85rem;
+    color: #94a3b8;
+    font-weight: 600;
+    font-size: 0.78rem;
     white-space: nowrap;
 `;
 
@@ -1357,6 +1349,7 @@ const DashboardPage = () => {
     const [loadingChart, setLoadingChart] = useState(false);
     const [isChartRefreshing, setIsChartRefreshing] = useState(false);
     const [searchSymbol, setSearchSymbol] = useState('');
+    const [communityTab, setCommunityTab] = useState('traders');
 
     // Live price streaming (crypto via Binance WebSocket, stocks via SSE)
     const { isConnected: isLive, lastPrice: livePrice } = useLivePrice(selectedSymbol);
@@ -1510,37 +1503,61 @@ useEffect(() => {
                 setWatchlistTicker([]);
             }
 
-            // Market movers — pull from live signals (same data as signal feed)
+            // Market movers — real stocks + crypto trending by 24h change
             try {
-                const API_URL = process.env.REACT_APP_API_URL || process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
-                const sigRes = await fetch(`${API_URL}/predictions/recent?limit=20`);
-                if (sigRes.ok) {
-                    const signals = await sigRes.json();
-                    const sigArray = Array.isArray(signals) ? signals : [];
-                    if (sigArray.length > 0) {
-                        const movers = sigArray
-                            .filter(s => s.currentPrice && s.confidence >= 65)
-                            .slice(0, 10)
-                            .map(s => ({
-                                symbol: s.symbol?.split(':')[0]?.replace(/USDT|USD/i, '') || s.symbol,
-                                price: s.currentPrice || 0,
-                                change: s.priceChangePercent || 0,
-                                direction: s.direction,
-                                confidence: s.confidence
-                            }));
-                        if (movers.length > 0) {
-                            setMoversTicker(movers);
-                        } else {
-                            await fetchDefaultMovers();
-                        }
-                    } else {
-                        await fetchDefaultMovers();
+                const allMovers = [];
+
+                // 1. Crypto movers from CryptoCompare (sorted by 24h change)
+                try {
+                    const ccRes = await fetch('https://min-api.cryptocompare.com/data/top/totalvolfull?limit=30&tsym=USD');
+                    if (ccRes.ok) {
+                        const ccData = await ccRes.json();
+                        const cryptos = (ccData?.Data || [])
+                            .filter(c => !['USDT','USDC','BUSD','DAI','FDUSD','TUSD'].includes(c.CoinInfo?.Name))
+                            .map(c => ({
+                                symbol: c.CoinInfo?.Name || '?',
+                                price: c.RAW?.USD?.PRICE || 0,
+                                change: c.RAW?.USD?.CHANGEPCT24HOUR || 0,
+                                type: 'Crypto'
+                            }))
+                            .filter(c => c.price > 0)
+                            .sort((a, b) => Math.abs(b.change) - Math.abs(a.change))
+                            .slice(0, 6);
+                        allMovers.push(...cryptos);
                     }
+                } catch (e) {}
+
+                // 2. Stock movers from Finnhub or Yahoo (top S&P movers)
+                try {
+                    const stockSymbols = ['AAPL','MSFT','NVDA','TSLA','AMZN','META','GOOGL','AMD','NFLX','BA'];
+                    const API_URL = process.env.REACT_APP_API_URL || 'https://api.nexussignal.ai/api';
+                    const stockRes = await fetch(`${API_URL}/predictions/recent?limit=50`);
+                    if (stockRes.ok) {
+                        const sigs = await stockRes.json();
+                        const stocks = (Array.isArray(sigs) ? sigs : [])
+                            .filter(s => s.assetType === 'stock' && s.livePrice > 0 && s.entryPrice > 0)
+                            .map(s => ({
+                                symbol: s.symbol,
+                                price: s.livePrice || s.currentPrice,
+                                change: ((s.livePrice - s.entryPrice) / s.entryPrice * 100),
+                                type: 'Stock'
+                            }))
+                            .filter(s => Math.abs(s.change) < 50) // filter bad data
+                            .sort((a, b) => Math.abs(b.change) - Math.abs(a.change))
+                            .slice(0, 5);
+                        allMovers.push(...stocks);
+                    }
+                } catch (e) {}
+
+                if (allMovers.length > 0) {
+                    // Sort all by absolute change (biggest movers first)
+                    allMovers.sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
+                    setMoversTicker(allMovers.slice(0, 10));
                 } else {
                     await fetchDefaultMovers();
                 }
             } catch (screenError) {
-                console.error('Error fetching movers from signals:', screenError);
+                console.error('Error fetching movers:', screenError);
                 await fetchDefaultMovers();
             }
         } catch (error) {
@@ -1928,35 +1945,13 @@ const handleOpenRewardModal = () => {
     return (
         <PageContainer>
             <ContentWrapper>
-                {/* HEADER */}
-                <Header>
-                    <HeaderLeft>
-                        <StaticLogo src={nexusSignalLogo} alt="Nexus Signal" />
-                        <HeaderContent>
-                            <Title>Mission Control</Title>
-                            <Subtitle>
-                                <Sparkles size={18} />
-                                Welcome back, {user?.name || 'Trader'}
-                            </Subtitle>
-                        </HeaderContent>
-                    </HeaderLeft>
-                    <HeaderRight>
-    <LiveClock>
-        <Clock size={20} />
-        <div>
-            <ClockTime>{formatTime(currentTime)}</ClockTime>
-            <ClockDate>{formatDate(currentTime)}</ClockDate>
-        </div>
-    </LiveClock>
-    <MarketStatus $open={marketOpen}>
-        <StatusDot $open={marketOpen} />
-        <StatusText $open={marketOpen}>
-            {marketOpen ? 'Market Open' : 'Market Closed'}
-        </StatusText>
-    </MarketStatus>
-    <DailyRewardButton onClick={handleOpenRewardModal} />
-</HeaderRight>
-                </Header>
+                {/* TRUST HEADER + ACTION CARDS */}
+                <DashboardHero paperTradingStats={paperTradingStats} formatCurrency={formatCurrency} />
+                <div style={{display:'flex',alignItems:'center',gap:'.75rem',marginBottom:'.75rem',flexWrap:'wrap'}}>
+                    <MarketStatus $open={marketOpen}><StatusDot $open={marketOpen}/><StatusText $open={marketOpen}>{marketOpen ? 'Market Open' : 'Market Closed'}</StatusText></MarketStatus>
+                    <LiveClock><Clock size={16}/><div><ClockTime>{formatTime(currentTime)}</ClockTime></div></LiveClock>
+                    <DailyRewardButton onClick={handleOpenRewardModal} />
+                </div>
 
                 {/* TICKER TAPES */}
                 <TickerSection>
@@ -2004,6 +1999,7 @@ const handleOpenRewardModal = () => {
                                             <TickerLink symbol={stock.symbol} bold>
                                                 {stock.symbol}
                                             </TickerLink>
+                                            {stock.type && <span style={{fontSize:'.55rem',color:stock.type==='Crypto'?'#8b5cf6':'#00adef',fontWeight:600,marginRight:'.2rem'}}>{stock.type}</span>}
                                             {stock.price > 0 ? (
                                                 <>
                                                     <TickerPrice>{formatTickerPrice(stock.price, stock.symbol)}</TickerPrice>
@@ -2159,12 +2155,52 @@ const handleOpenRewardModal = () => {
                                 livePrice={livePrice}
                                 isLive={isLive}
                             />
-                            <PatternDetector symbol={selectedSymbol} chartData={advancedChartData} />
-                            <RecentTransactions
-                                symbol={selectedSymbol}
-                                isCrypto={['-USD', '-USDT', '-BUSD', '-EUR', '-GBP'].some(p => selectedSymbol?.toUpperCase().endsWith(p)) ||
-                                         ['BTC', 'ETH', 'SOL', 'ADA', 'DOT', 'MATIC', 'AVAX', 'DOGE', 'SHIB', 'XRP'].includes(selectedSymbol?.toUpperCase())}
-                            />
+                            {/* AI Insight Panel */}
+                            <div style={{background:'rgba(15,23,42,.6)',border:'1px solid rgba(100,116,139,.1)',borderRadius:12,padding:'1rem',marginTop:'.5rem'}}>
+                                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'.5rem'}}>
+                                    <div style={{display:'flex',alignItems:'center',gap:'.4rem'}}>
+                                        <Brain size={16} color="#a78bfa"/>
+                                        <span style={{fontSize:'.85rem',fontWeight:700,color:'#e2e8f0'}}>AI Market Insight — {selectedSymbol}</span>
+                                    </div>
+                                    <span style={{fontSize:'.6rem',color:'#475569'}}>Updated with latest data</span>
+                                </div>
+                                {advancedChartData.length > 10 ? (() => {
+                                    const last = advancedChartData[advancedChartData.length - 1];
+                                    const prev = advancedChartData[advancedChartData.length - 10];
+                                    const change = prev?.close ? ((last.close - prev.close) / prev.close * 100) : 0;
+                                    const trend = change > 1 ? 'Bullish' : change < -1 ? 'Bearish' : 'Neutral';
+                                    const trendColor = trend === 'Bullish' ? '#10b981' : trend === 'Bearish' ? '#ef4444' : '#f59e0b';
+                                    const vol = advancedChartData.slice(-5).reduce((s, c) => s + (c.volume || 0), 0) / 5;
+                                    const prevVol = advancedChartData.slice(-15, -5).reduce((s, c) => s + (c.volume || 0), 0) / 10;
+                                    const volStatus = vol > prevVol * 1.3 ? 'High' : vol < prevVol * 0.7 ? 'Low' : 'Normal';
+                                    return (
+                                        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(120px,1fr))',gap:'.5rem'}}>
+                                            <div style={{padding:'.5rem',background:'rgba(100,116,139,.04)',borderRadius:8,border:'1px solid rgba(100,116,139,.06)'}}>
+                                                <div style={{fontSize:'.6rem',color:'#64748b',marginBottom:'.15rem'}}>TREND</div>
+                                                <div style={{fontSize:'.9rem',fontWeight:800,color:trendColor}}>{trend}</div>
+                                            </div>
+                                            <div style={{padding:'.5rem',background:'rgba(100,116,139,.04)',borderRadius:8,border:'1px solid rgba(100,116,139,.06)'}}>
+                                                <div style={{fontSize:'.6rem',color:'#64748b',marginBottom:'.15rem'}}>MOMENTUM</div>
+                                                <div style={{fontSize:'.9rem',fontWeight:800,color:trendColor}}>{change >= 0 ? '+' : ''}{change.toFixed(2)}%</div>
+                                            </div>
+                                            <div style={{padding:'.5rem',background:'rgba(100,116,139,.04)',borderRadius:8,border:'1px solid rgba(100,116,139,.06)'}}>
+                                                <div style={{fontSize:'.6rem',color:'#64748b',marginBottom:'.15rem'}}>VOLUME</div>
+                                                <div style={{fontSize:'.9rem',fontWeight:800,color:volStatus==='High'?'#10b981':volStatus==='Low'?'#ef4444':'#94a3b8'}}>{volStatus}</div>
+                                            </div>
+                                            <div style={{padding:'.5rem',background:'rgba(100,116,139,.04)',borderRadius:8,border:'1px solid rgba(100,116,139,.06)'}}>
+                                                <div style={{fontSize:'.6rem',color:'#64748b',marginBottom:'.15rem'}}>PRICE</div>
+                                                <div style={{fontSize:'.9rem',fontWeight:800,color:'#e2e8f0'}}>${last.close >= 1 ? last.close.toFixed(2) : last.close.toFixed(6)}</div>
+                                            </div>
+                                        </div>
+                                    );
+                                })() : (
+                                    <div style={{fontSize:'.8rem',color:'#475569',fontStyle:'italic'}}>AI is monitoring {selectedSymbol} for high-confidence setups. Load a chart to see insights.</div>
+                                )}
+                                <div style={{marginTop:'.6rem',display:'flex',gap:'.4rem'}}>
+                                    <button onClick={() => navigate('/signals')} style={{padding:'.35rem .7rem',borderRadius:6,border:'1px solid rgba(16,185,129,.2)',background:'rgba(16,185,129,.06)',color:'#10b981',fontSize:'.7rem',fontWeight:600,cursor:'pointer'}}>View Signals</button>
+                                    <button onClick={() => navigate(`/predict`)} style={{padding:'.35rem .7rem',borderRadius:6,border:'1px solid rgba(139,92,246,.2)',background:'rgba(139,92,246,.06)',color:'#a78bfa',fontSize:'.7rem',fontWeight:600,cursor:'pointer'}}>Generate Trade Setup</button>
+                                </div>
+                            </div>
                         </>
                     )}
                 </ChartSection>
@@ -2211,57 +2247,36 @@ const handleOpenRewardModal = () => {
                     </ViewTradingButton>
                 </PaperTradingHero>
 
-                {/* REAL PORTFOLIO HERO */}
-                <RealPortfolioHero>
-                    {realPortfolioStats && realPortfolioStats.totalValue > 0 ? (
-                        <>
-                            <RealPortfolioTitle>
-                                <RealPortfolioLabel><Briefcase size={16} /> Real Portfolio</RealPortfolioLabel>
-                                <RealPortfolioValue>{formatCurrency(realPortfolioStats.totalValue)}</RealPortfolioValue>
-                                <RealPortfolioChange $positive={realPortfolioStats.totalGain >= 0}>
-                                    {realPortfolioStats.totalGain >= 0 ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
-                                    {formatCurrency(Math.abs(realPortfolioStats.totalGain))}
-                                    ({formatPercent(realPortfolioStats.totalGainPercent)})
-                                </RealPortfolioChange>
-                            </RealPortfolioTitle>
+                {/* REAL PORTFOLIO — only show if connected */}
+                {realPortfolioStats && realPortfolioStats.totalValue > 0 && (
+                    <RealPortfolioHero>
+                        <RealPortfolioTitle>
+                            <RealPortfolioLabel><Briefcase size={16} /> Real Portfolio</RealPortfolioLabel>
+                            <RealPortfolioValue>{formatCurrency(realPortfolioStats.totalValue)}</RealPortfolioValue>
+                            <RealPortfolioChange $positive={realPortfolioStats.totalGain >= 0}>
+                                {realPortfolioStats.totalGain >= 0 ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
+                                {formatCurrency(Math.abs(realPortfolioStats.totalGain))}
+                                ({formatPercent(realPortfolioStats.totalGainPercent)})
+                            </RealPortfolioChange>
+                        </RealPortfolioTitle>
+                        <ViewPortfolioButton onClick={() => navigate('/portfolio')}>
+                            <Briefcase size={18} /> View Portfolio <ChevronRight size={18} />
+                        </ViewPortfolioButton>
+                    </RealPortfolioHero>
+                )}
 
-                            <RealPortfolioTitle>
-                                <RealPortfolioLabel><Activity size={16} /> Holdings</RealPortfolioLabel>
-                                <RealPortfolioValue $color={theme.brand?.primary}>
-                                    {realPortfolioStats.holdingsCount}
-                                </RealPortfolioValue>
-                                <RealPortfolioChange $positive>Assets tracked</RealPortfolioChange>
-                            </RealPortfolioTitle>
+                {/* MARKET ACTIVITY & COMMUNITY — tabbed */}
+                <div style={{marginBottom:'1.5rem'}}>
+                    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'.75rem'}}>
+                        <h2 style={{fontSize:'1rem',fontWeight:700,color:'#e2e8f0',margin:0,display:'flex',alignItems:'center',gap:'.4rem'}}><Users size={16} color="#00adef"/> Market Activity & Community</h2>
+                        <div style={{display:'flex',gap:'.3rem'}}>
+                            {[{key:'traders',label:'Top Traders'},{key:'whale',label:'Whale Alerts'},{key:'social',label:'Social Feed'}].map(t => (
+                                <button key={t.key} onClick={() => setCommunityTab(t.key)} style={{padding:'.3rem .65rem',borderRadius:6,fontSize:'.7rem',fontWeight:600,cursor:'pointer',border:`1px solid ${communityTab===t.key?'rgba(0,173,237,.3)':'rgba(100,116,139,.12)'}`,background:communityTab===t.key?'rgba(0,173,237,.1)':'transparent',color:communityTab===t.key?'#00adef':'#64748b',transition:'all .2s'}}>{t.label}</button>
+                            ))}
+                        </div>
+                    </div>
 
-                            <RealPortfolioTitle>
-                                <RealPortfolioLabel><Link2 size={16} /> Connected</RealPortfolioLabel>
-                                <RealPortfolioValue $color={theme.success}>
-                                    {realPortfolioStats.connectionsCount}
-                                </RealPortfolioValue>
-                                <RealPortfolioChange $positive>Brokerage{realPortfolioStats.connectionsCount !== 1 ? 's' : ''}</RealPortfolioChange>
-                            </RealPortfolioTitle>
-
-                            <ViewPortfolioButton onClick={() => navigate('/portfolio')}>
-                                <Briefcase size={18} /> View Portfolio <ChevronRight size={18} />
-                            </ViewPortfolioButton>
-                        </>
-                    ) : (
-                        <>
-                            <EmptyPortfolioMessage>
-                                <Briefcase size={32} />
-                                <div>Connect your brokerage to track your real portfolio</div>
-                                <span>Link Kraken, Plaid-supported brokerages, or wallets</span>
-                            </EmptyPortfolioMessage>
-                            <ViewPortfolioButton onClick={() => navigate('/portfolio')}>
-                                <Link2 size={18} /> Connect Brokerage <ChevronRight size={18} />
-                            </ViewPortfolioButton>
-                        </>
-                    )}
-                </RealPortfolioHero>
-
-                {/* THREE COLUMN WIDGETS */}
-                <WidgetsGrid>
-                    {/* LEADERBOARD */}
+                    {communityTab === 'traders' && (
                     <Widget>
                         <WidgetHeader>
                             <WidgetTitle><Crown size={20} /> Top Traders</WidgetTitle>
@@ -2305,11 +2320,13 @@ const handleOpenRewardModal = () => {
                             View Leaderboard <ChevronRight size={16} />
                         </ViewAllButton>
                     </Widget>
+                    )}
 
-                    {/* WHALE ALERTS */}
+                    {communityTab === 'whale' && (
                     <WhaleAlertWidget />
+                    )}
 
-                    {/* SOCIAL FEED */}
+                    {communityTab === 'social' && (
                     <Widget>
                         <WidgetHeader>
                             <WidgetTitle><MessageSquare size={20} /> Social Feed</WidgetTitle>
@@ -2364,49 +2381,23 @@ const handleOpenRewardModal = () => {
                             {socialFeed.length > 0 ? 'View All Posts' : 'Create Post'} <ChevronRight size={16} />
                         </ViewAllButton>
                     </Widget>
-                </WidgetsGrid>
-
-                {/* ACHIEVEMENTS */}
-                <AchievementsSection>
-                    <AchievementsHeader>
-                        <AchievementsTitle><Award size={20} /> Your Achievements</AchievementsTitle>
-                        <AchievementsProgress>
-                            <ProgressBar><ProgressFill $progress={achievementProgress} /></ProgressBar>
-                            <ProgressText>{unlockedAchievements}/{totalAchievements} Unlocked</ProgressText>
-                        </AchievementsProgress>
-                    </AchievementsHeader>
-
-                    {achievements.length > 0 ? (
-                        <>
-                            <AchievementsGrid>
-                                {achievements.map((achievement) => (
-                                    <AchievementBadge
-                                        key={achievement.id}
-                                        $unlocked={achievement.unlocked}
-                                        $rarity={achievement.rarity}
-                                        onClick={() => navigate('/achievements')}
-                                    >
-                                        {!achievement.unlocked && <BadgeLock><Lock size={12} /></BadgeLock>}
-                                        {achievement.unlocked && achievement.rarity && <RarityDot $rarity={achievement.rarity} />}
-                                        <BadgeIcon $unlocked={achievement.unlocked}>{achievement.icon}</BadgeIcon>
-                                        <BadgeLabel $unlocked={achievement.unlocked}>{achievement.name}</BadgeLabel>
-                                    </AchievementBadge>
-                                ))}
-                            </AchievementsGrid>
-                            <ViewAllButton
-                                onClick={() => navigate('/achievements')}
-                                style={{ marginTop: '1rem' }}
-                            >
-                                View All {totalAchievements} Achievements <ChevronRight size={16} />
-                            </ViewAllButton>
-                        </>
-                    ) : (
-                        <EmptyState>
-                            <Award size={40} />
-                            <p>Start trading to unlock achievements!</p>
-                        </EmptyState>
                     )}
-                </AchievementsSection>
+                </div>
+
+                {/* ACHIEVEMENTS — compact summary */}
+                <div onClick={() => navigate('/achievements')} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'.75rem 1rem',background:'rgba(15,23,42,.6)',border:'1px solid rgba(100,116,139,.1)',borderRadius:12,cursor:'pointer',transition:'all .2s',marginBottom:'1rem'}} onMouseOver={e=>e.currentTarget.style.borderColor='rgba(139,92,246,.3)'} onMouseOut={e=>e.currentTarget.style.borderColor='rgba(100,116,139,.1)'}>
+                    <div style={{display:'flex',alignItems:'center',gap:'.6rem'}}>
+                        <Award size={18} color="#a78bfa"/>
+                        <span style={{fontSize:'.85rem',fontWeight:700,color:'#e2e8f0'}}>Achievements</span>
+                        <span style={{fontSize:'.72rem',color:'#a78bfa',fontWeight:600}}>{unlockedAchievements}/{totalAchievements} unlocked</span>
+                    </div>
+                    <div style={{display:'flex',alignItems:'center',gap:'.6rem'}}>
+                        <div style={{width:120,height:5,background:'rgba(100,116,139,.15)',borderRadius:4,overflow:'hidden'}}>
+                            <div style={{width:`${achievementProgress}%`,height:'100%',background:'linear-gradient(90deg,#a78bfa,#10b981)',borderRadius:4,transition:'width 1s'}}/>
+                        </div>
+                        <ChevronRight size={16} color="#64748b"/>
+                    </div>
+                </div>
                 {/* DAILY REWARD MODAL */}
                 <DailyRewardModal
                     isOpen={showDailyReward}
