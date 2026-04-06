@@ -803,7 +803,7 @@ const SignalDetailPage = () => {
                         </OvBox>
                         <OvBox>
                             <OvLabel>Confidence</OvLabel>
-                            <OvValue $c={s.conf >= 75 ? '#10b981' : s.conf >= 60 ? '#f59e0b' : '#94a3b8'}>{s.conf}%</OvValue>
+                            <OvValue $c={s.strengthColor}>{s.strengthPct}%</OvValue>
                         </OvBox>
                     </OverviewGrid>
                     <TPRow>
@@ -1069,7 +1069,7 @@ const SignalDetailPage = () => {
                     <ModalCard onClick={e => e.stopPropagation()}>
                         <ModalClose onClick={() => setCopyModal(false)}><XCircle size={18}/></ModalClose>
                         <ModalTitle>Take This Trade</ModalTitle>
-                        <ModalSub>{s.symbol} {s.long ? 'LONG' : 'SHORT'} — {s.conf}% confidence</ModalSub>
+                        <ModalSub>{s.symbol} {s.long ? 'LONG' : 'SHORT'} — {s.signalStrength}</ModalSub>
 
                         <ModalOption onClick={executeCopyToPaper}>
                             <ModalOptIcon><Activity size={18}/></ModalOptIcon>
