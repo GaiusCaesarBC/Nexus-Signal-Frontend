@@ -252,6 +252,114 @@ export function ichimoku(candles, tenkanPeriod = 9, kijunPeriod = 26, senkouBPer
 }
 
 // ═══════════════════════════════════════════════════════════
+// STOCHASTIC OSCILLATOR
+// %K = (close - lowestLow) / (highestHigh - lowestLow) * 100
+// %D = SMA of %K over `smoothD` periods
+// Returns { k, d } each as {time, value}[]
+// ═══════════════════════════════════════════════════════════
+export function stochastic(candles, kPeriod = 14, dPeriod = 3) {
+    if (!candles || candles.length < kPeriod) return { k: [], d: [] };
+    const k = [];
+    for (let i = kPeriod - 1; i < candles.length; i++) {
+        let hi = -Infinity, lo = Infinity;
+        for (let j = i - kPeriod + 1; j <= i; j++) {
+            if (candles[j].high > hi) hi = candles[j].high;
+            if (candles[j].low < lo) lo = candles[j].low;
+        }
+        const range = hi - lo;
+        const value = range === 0 ? 50 : ((candles[i].close - lo) / range) * 100;
+        k.push({ time: candles[i].time, value });
+    }
+    // %D = SMA of %K
+    const d = [];
+    for (let i = dPeriod - 1; i < k.length; i++) {
+        let sum = 0;
+        for (let j = i - dPeriod + 1; j <= i; j++) sum += k[j].value;
+        d.push({ time: k[i].time, value: sum / dPeriod });
+    }
+    return { k, d };
+}
+
+// ═══════════════════════════════════════════════════════════
+// ATR — Wilder's Average True Range (volatility)
+// ═══════════════════════════════════════════════════════════
+export function atr(candles, period = 14) {
+    if (!candles || candles.length < period + 1) return [];
+    const trs = [];
+    for (let i = 1; i < candles.length; i++) {
+        const c = candles[i], p = candles[i - 1];
+        const tr = Math.max(
+            c.high - c.low,
+            Math.abs(c.high - p.close),
+            Math.abs(c.low - p.close)
+        );
+        trs.push(tr);
+    }
+    // Wilder smoothing: first ATR is simple avg, then ATR_n = (ATR_{n-1}*(p-1) + TR_n)/p
+    const out = [];
+    let prev = 0;
+    for (let i = 0; i < period; i++) prev += trs[i];
+    prev /= period;
+    out.push({ time: candles[period].time, value: prev });
+    for (let i = period; i < trs.length; i++) {
+        prev = (prev * (period - 1) + trs[i]) / period;
+        out.push({ time: candles[i + 1].time, value: prev });
+    }
+    return out;
+}
+
+// ═══════════════════════════════════════════════════════════
+// PARABOLIC SAR — trailing stop-and-reverse
+// Returns {time, value}[] (one dot per candle, alternates above/below)
+// ═══════════════════════════════════════════════════════════
+export function parabolicSAR(candles, step = 0.02, maxStep = 0.2) {
+    if (!candles || candles.length < 3) return [];
+    const out = [];
+    let isLong = candles[1].close > candles[0].close;
+    let af = step;
+    let ep = isLong ? candles[1].high : candles[1].low; // extreme point
+    let sar = isLong ? candles[0].low : candles[0].high;
+
+    out.push({ time: candles[1].time, value: sar });
+
+    for (let i = 2; i < candles.length; i++) {
+        sar = sar + af * (ep - sar);
+
+        // Clamp SAR to prior two candles' extremes
+        if (isLong) {
+            sar = Math.min(sar, candles[i - 1].low, candles[i - 2].low);
+            if (candles[i].low < sar) {
+                // Reversal
+                isLong = false;
+                sar = ep;
+                ep = candles[i].low;
+                af = step;
+            } else {
+                if (candles[i].high > ep) {
+                    ep = candles[i].high;
+                    af = Math.min(af + step, maxStep);
+                }
+            }
+        } else {
+            sar = Math.max(sar, candles[i - 1].high, candles[i - 2].high);
+            if (candles[i].high > sar) {
+                isLong = true;
+                sar = ep;
+                ep = candles[i].high;
+                af = step;
+            } else {
+                if (candles[i].low < ep) {
+                    ep = candles[i].low;
+                    af = Math.min(af + step, maxStep);
+                }
+            }
+        }
+        out.push({ time: candles[i].time, value: sar });
+    }
+    return out;
+}
+
+// ═══════════════════════════════════════════════════════════
 // VOLUME — convert candles to histogram series with red/green colors
 // ═══════════════════════════════════════════════════════════
 export function volumeSeries(candles) {

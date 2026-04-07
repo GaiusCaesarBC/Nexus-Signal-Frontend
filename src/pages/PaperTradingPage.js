@@ -1,6 +1,6 @@
 // client/src/pages/PaperTradingPage.js - THEMED VERSION WITH LONG/SHORT TRADING + LEVERAGE + TP/SL
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
@@ -21,7 +21,8 @@ import {
     Send, Trophy, Flame, Award, Eye, Heart, MessageCircle,
     Share2, BarChart3, PieChart, Percent, Clock, CheckCircle,
     XCircle, AlertCircle, ThumbsUp, Star, Users, Calendar, Bell,
-    AlertTriangle, Shield, ChevronDown, Crosshair, ShieldAlert, TrendingUp as TrendUp
+    AlertTriangle, Shield, ChevronDown, Crosshair, ShieldAlert, TrendingUp as TrendUp,
+    Sparkles
 } from 'lucide-react';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid,
@@ -221,6 +222,143 @@ const ContentGrid = styled.div`
     @media (max-width: 1400px) {
         grid-template-columns: 1fr;
     }
+`;
+
+// ═══════════════════════════════════════════════════════════
+// TERMINAL LAYOUT — chart left, sticky order panel right
+// ═══════════════════════════════════════════════════════════
+const TerminalGrid = styled.div`
+    max-width: 1800px;
+    margin: 0 auto 2rem;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 420px;
+    gap: 1.5rem;
+    align-items: start;
+
+    @media (max-width: 1400px) {
+        grid-template-columns: 1fr;
+    }
+`;
+
+const ChartCol = styled.div`
+    min-width: 0;
+    animation: ${fadeIn} 0.5s ease-out;
+`;
+
+const OrderCol = styled.div`
+    position: sticky;
+    top: 100px;
+    animation: ${fadeIn} 0.5s ease-out 0.05s backwards;
+
+    @media (max-width: 1400px) {
+        position: static;
+    }
+`;
+
+const InsightStrip = styled.div`
+    max-width: 1800px;
+    margin: 0 auto 1.25rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .55rem;
+    padding: .85rem 1rem;
+    background: ${({ theme }) => theme?.bg?.card || 'rgba(30,41,59,.55)'};
+    border: 1px solid ${({ theme }) => `${theme?.brand?.accent || '#8b5cf6'}33`};
+    border-radius: 12px;
+    align-items: center;
+    animation: ${fadeIn} .5s ease-out;
+`;
+
+const InsightLabel = styled.div`
+    font-size: .65rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: ${({ theme }) => theme?.brand?.accent || '#a78bfa'};
+    margin-right: .5rem;
+    display: flex;
+    align-items: center;
+    gap: .35rem;
+`;
+
+const InsightChip = styled.div`
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    padding: .35rem .7rem;
+    background: ${p => p.$tone === 'bull'
+        ? 'rgba(16,185,129,.12)'
+        : p.$tone === 'bear'
+        ? 'rgba(239,68,68,.12)'
+        : 'rgba(148,163,184,.1)'};
+    border: 1px solid ${p => p.$tone === 'bull'
+        ? 'rgba(16,185,129,.4)'
+        : p.$tone === 'bear'
+        ? 'rgba(239,68,68,.4)'
+        : 'rgba(148,163,184,.25)'};
+    color: ${p => p.$tone === 'bull'
+        ? '#10b981'
+        : p.$tone === 'bear'
+        ? '#ef4444'
+        : (p.theme?.text?.secondary || '#94a3b8')};
+    border-radius: 6px;
+    font-size: .7rem;
+    font-weight: 800;
+    letter-spacing: .3px;
+`;
+
+// Risk-management computed metrics block (R/R, max loss, target profit, liq)
+const RiskBlock = styled.div`
+    margin-top: 1rem;
+    padding: 1rem;
+    background: ${({ theme }) => `${theme?.brand?.primary || '#00adef'}08`};
+    border: 1px solid ${({ theme }) => `${theme?.brand?.primary || '#00adef'}26`};
+    border-radius: 10px;
+`;
+
+const RiskRow = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: .35rem 0;
+    border-bottom: 1px dashed ${({ theme }) => `${theme?.brand?.primary || '#00adef'}1A`};
+    &:last-child { border-bottom: none; }
+`;
+
+const RiskLabel = styled.div`
+    font-size: .72rem;
+    font-weight: 700;
+    color: ${({ theme }) => theme?.text?.secondary || '#94a3b8'};
+    text-transform: uppercase;
+    letter-spacing: .4px;
+`;
+
+const RiskValue = styled.div`
+    font-size: .9rem;
+    font-weight: 900;
+    color: ${p => p.$color || p.theme?.text?.primary || '#e0e6ed'};
+`;
+
+const UseSignalButton = styled.button`
+    width: 100%;
+    margin-bottom: 1rem;
+    padding: .85rem 1rem;
+    background: linear-gradient(135deg, ${({ theme }) => theme?.brand?.accent || '#8b5cf6'}, ${({ theme }) => theme?.brand?.primary || '#00adef'});
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    font-weight: 900;
+    font-size: .85rem;
+    text-transform: uppercase;
+    letter-spacing: .6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .5rem;
+    transition: transform .15s, box-shadow .15s;
+    &:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(139,92,246,.35); }
+    &:disabled { opacity: .5; cursor: not-allowed; }
 `;
 
 const TradingPanel = styled.div`
@@ -1514,6 +1652,109 @@ const PaperTradingPage = () => {
         }));
     };
 
+    // ─── USE NEXUS SIGNAL SETUP — pulls top opportunity and autofills the form ───
+    const [loadingSignalSetup, setLoadingSignalSetup] = useState(false);
+    const handleUseSignalSetup = async () => {
+        setLoadingSignalSetup(true);
+        try {
+            // Try the opportunity engine first (highest-AI-score actionable setup)
+            let topSetup = null;
+            try {
+                const oppRes = await api.get('/opportunities?limit=1');
+                const opps = oppRes?.data?.opportunities || oppRes?.data?.data || oppRes?.data || [];
+                if (Array.isArray(opps) && opps.length > 0) topSetup = opps[0];
+            } catch {}
+            // Fallback: latest signals endpoint
+            if (!topSetup) {
+                try {
+                    const sigRes = await api.get('/signals/latest?limit=1');
+                    const sigs = sigRes?.data?.signals || sigRes?.data?.data || [];
+                    if (Array.isArray(sigs) && sigs.length > 0) topSetup = sigs[0];
+                } catch {}
+            }
+            if (!topSetup) {
+                toast.warning('No active signal setups available right now.', 'No Setup');
+                return;
+            }
+            const sym = topSetup.symbol || topSetup.ticker;
+            const isCryptoSetup = !!(topSetup.isCrypto || topSetup.crypto || topSetup.assetType === 'crypto');
+            const isLong = topSetup.bias === 'long' || topSetup.long === true || topSetup.direction === 'long';
+            const sl = topSetup.sl ?? topSetup.stopLoss;
+            const tp = topSetup.tp2 ?? topSetup.tp1 ?? topSetup.tp3 ?? topSetup.takeProfit;
+            setSymbol(String(sym || '').toUpperCase());
+            setType(isCryptoSetup ? 'crypto' : 'stock');
+            setPositionType(isLong ? 'long' : 'short');
+            setActiveTab('buy');
+            if (sl) setStopLoss(String(sl));
+            if (tp) setTakeProfit(String(tp));
+            setShowTPSL(true);
+            toast.success(`${sym} ${isLong ? 'LONG' : 'SHORT'} loaded — set quantity and execute`, 'Signal Setup Loaded');
+        } catch (e) {
+            console.error('[useSignalSetup]', e);
+            toast.error('Could not load a signal setup right now.', 'Error');
+        } finally {
+            setLoadingSignalSetup(false);
+        }
+    };
+
+    // ─── RISK MANAGEMENT MATH (live R/R, max-loss, target-profit, liq distance) ─
+    const riskMetrics = useMemo(() => {
+        const entry = parseFloat(currentPrice);
+        const tp = parseFloat(takeProfit);
+        const sl = parseFloat(stopLoss);
+        const qty = parseFloat(quantity);
+        const lev = parseFloat(leverage) || 1;
+        if (!entry || entry <= 0) return null;
+
+        const isLong = positionType === 'long';
+        const slDist = sl > 0 ? (isLong ? entry - sl : sl - entry) : null;
+        const tpDist = tp > 0 ? (isLong ? tp - entry : entry - tp) : null;
+
+        const rr = (slDist && tpDist && slDist > 0) ? tpDist / slDist : null;
+        const maxLoss = (slDist && qty > 0 && slDist > 0) ? slDist * qty * lev : null;
+        const targetProfit = (tpDist && qty > 0 && tpDist > 0) ? tpDist * qty * lev : null;
+
+        // Liquidation distance (approx 90% margin loss)
+        const liqDistPct = lev > 1 ? (90 / lev) : null;
+        const liqPrice = liqDistPct
+            ? (isLong ? entry * (1 - liqDistPct / 100) : entry * (1 + liqDistPct / 100))
+            : null;
+
+        return { entry, tp, sl, qty, lev, isLong, rr, maxLoss, targetProfit, liqDistPct, liqPrice, slDist, tpDist };
+    }, [currentPrice, takeProfit, stopLoss, quantity, leverage, positionType]);
+
+    // ─── INSIGHT STRIP — quick context derived from current price + risk math ────
+    const insightChips = useMemo(() => {
+        if (!symbol || !currentPrice) return null;
+        const chips = [];
+        // Position bias chip
+        chips.push({ label: positionType === 'long' ? '↑ Long bias' : '↓ Short bias', tone: positionType === 'long' ? 'bull' : 'bear' });
+        // Leverage chip
+        if (leverage > 1) {
+            chips.push({ label: `${leverage}x leverage`, tone: leverage >= 10 ? 'bear' : 'neutral' });
+        }
+        // R/R chip
+        if (riskMetrics?.rr) {
+            const rrTone = riskMetrics.rr >= 2 ? 'bull' : riskMetrics.rr >= 1 ? 'neutral' : 'bear';
+            chips.push({ label: `R/R 1:${riskMetrics.rr.toFixed(2)}`, tone: rrTone });
+        }
+        // SL distance chip
+        if (riskMetrics?.slDist && riskMetrics.entry) {
+            const pct = (riskMetrics.slDist / riskMetrics.entry) * 100;
+            chips.push({ label: `SL −${pct.toFixed(2)}%`, tone: 'neutral' });
+        }
+        // TP distance chip
+        if (riskMetrics?.tpDist && riskMetrics.entry) {
+            const pct = (riskMetrics.tpDist / riskMetrics.entry) * 100;
+            chips.push({ label: `TP +${pct.toFixed(2)}%`, tone: 'bull' });
+        }
+        // Liquidation chip
+        if (riskMetrics?.liqDistPct) {
+            chips.push({ label: `Liq ~${riskMetrics.liqDistPct.toFixed(1)}% away`, tone: riskMetrics.liqDistPct < 10 ? 'bear' : 'neutral' });
+        }
+        return chips;
+    }, [symbol, currentPrice, positionType, leverage, riskMetrics]);
+
     const loadAccount = async () => {
         setLoading(true);
         try {
@@ -2000,23 +2241,6 @@ const PaperTradingPage = () => {
                     </PoweredBy>
                 </Header>
 
-                {/* Live chart for the symbol being traded — appears as soon as a symbol is entered */}
-                {symbol && symbol.length >= 1 && (
-                    <div style={{ marginBottom: '1.5rem' }}>
-                        <TradingChart
-                            symbol={symbol.toUpperCase()}
-                            isCrypto={type === 'crypto'}
-                            defaultTimeframe="1D"
-                            signal={{
-                                entry: currentPrice,
-                                tp1: takeProfit ? parseFloat(takeProfit) : undefined,
-                                sl: stopLoss ? parseFloat(stopLoss) : undefined
-                            }}
-                            height={440}
-                        />
-                    </div>
-                )}
-
                 <PortfolioOverview>
                     <StatCard theme={theme} $borderColor={`${theme?.brand?.primary || '#00adef'}80`} $shadowColor={`${theme?.brand?.primary || '#00adef'}4D`}>
                         <StatIcon theme={theme} $background={`${theme?.brand?.primary || '#00adef'}33`}><DollarSign size={32} color={theme?.brand?.primary || '#00adef'} /></StatIcon>
@@ -2044,8 +2268,53 @@ const PaperTradingPage = () => {
                     </StatCard>
                 </PortfolioOverview>
 
-                <ContentGrid>
-                    <div>
+                {/* WHY THIS TRADE — quick context strip above the terminal */}
+                {insightChips && insightChips.length > 0 && (
+                    <InsightStrip theme={theme}>
+                        <InsightLabel theme={theme}><Zap size={12} /> Why this trade</InsightLabel>
+                        {insightChips.map((c, i) => (
+                            <InsightChip key={i} theme={theme} $tone={c.tone}>{c.label}</InsightChip>
+                        ))}
+                    </InsightStrip>
+                )}
+
+                {/* TERMINAL — chart on the left, sticky order panel on the right */}
+                <TerminalGrid>
+                    <ChartCol>
+                        {symbol && symbol.length >= 1 ? (
+                            <TradingChart
+                                symbol={symbol.toUpperCase()}
+                                isCrypto={type === 'crypto'}
+                                defaultTimeframe="1D"
+                                signal={{
+                                    entry: currentPrice,
+                                    tp1: takeProfit ? parseFloat(takeProfit) : undefined,
+                                    sl: stopLoss ? parseFloat(stopLoss) : undefined
+                                }}
+                                height={520}
+                            />
+                        ) : (
+                            <div style={{
+                                padding: '4rem 2rem',
+                                textAlign: 'center',
+                                background: theme?.bg?.card || 'rgba(30,41,59,.6)',
+                                border: `1px dashed ${theme?.brand?.primary || '#00adef'}40`,
+                                borderRadius: 14,
+                                color: theme?.text?.tertiary || '#64748b'
+                            }}>
+                                <BarChart3 size={48} style={{ marginBottom: '1rem', opacity: .4 }} />
+                                <div style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '.4rem', color: theme?.text?.secondary || '#94a3b8' }}>
+                                    Search a symbol to load the chart
+                                </div>
+                                <div style={{ fontSize: '.85rem' }}>Type a ticker (AAPL, BTC, NVDA…) in the order panel →</div>
+                            </div>
+                        )}
+                    </ChartCol>
+
+                    <OrderCol>
+                        <UseSignalButton type="button" onClick={handleUseSignalSetup} disabled={loadingSignalSetup}>
+                            {loadingSignalSetup ? <><LoadingSpinner size={14} /> Loading…</> : <><Sparkles size={14} /> Use Nexus Signal Setup</>}
+                        </UseSignalButton>
                         <TradingPanel theme={theme}>
                             <PanelTitle theme={theme}><Send size={24} />Place Order</PanelTitle>
                             <PositionTypeSelector theme={theme}>
@@ -2175,12 +2444,63 @@ const PaperTradingPage = () => {
                                         </div>
                                     </TotalDisplay>
                                 )}
+                                {/* RISK MANAGEMENT METRICS — live R/R, max loss, target profit, liq distance */}
+                                {riskMetrics && (riskMetrics.rr || riskMetrics.maxLoss || riskMetrics.targetProfit || riskMetrics.liqDistPct) && (
+                                    <RiskBlock theme={theme}>
+                                        <div style={{
+                                            fontSize: '.65rem',
+                                            fontWeight: 800,
+                                            color: theme?.brand?.primary || '#00adef',
+                                            textTransform: 'uppercase',
+                                            letterSpacing: '.5px',
+                                            marginBottom: '.5rem',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '.35rem'
+                                        }}>
+                                            <Shield size={11} /> Risk Management
+                                        </div>
+                                        {riskMetrics.rr && (
+                                            <RiskRow theme={theme}>
+                                                <RiskLabel theme={theme}>Risk / Reward</RiskLabel>
+                                                <RiskValue $color={riskMetrics.rr >= 2 ? '#10b981' : riskMetrics.rr >= 1 ? '#f59e0b' : '#ef4444'}>
+                                                    1 : {riskMetrics.rr.toFixed(2)}
+                                                </RiskValue>
+                                            </RiskRow>
+                                        )}
+                                        {riskMetrics.maxLoss && (
+                                            <RiskRow theme={theme}>
+                                                <RiskLabel theme={theme}>Max Loss</RiskLabel>
+                                                <RiskValue $color="#ef4444">−{formatCurrency(riskMetrics.maxLoss)}</RiskValue>
+                                            </RiskRow>
+                                        )}
+                                        {riskMetrics.targetProfit && (
+                                            <RiskRow theme={theme}>
+                                                <RiskLabel theme={theme}>Target Profit</RiskLabel>
+                                                <RiskValue $color="#10b981">+{formatCurrency(riskMetrics.targetProfit)}</RiskValue>
+                                            </RiskRow>
+                                        )}
+                                        {riskMetrics.liqPrice && (
+                                            <RiskRow theme={theme}>
+                                                <RiskLabel theme={theme}>Liq. Price (~{riskMetrics.liqDistPct.toFixed(1)}% away)</RiskLabel>
+                                                <RiskValue $color={riskMetrics.liqDistPct < 10 ? '#ef4444' : '#f59e0b'}>
+                                                    {formatAssetPrice(riskMetrics.liqPrice, type)}
+                                                </RiskValue>
+                                            </RiskRow>
+                                        )}
+                                    </RiskBlock>
+                                )}
                                 <SubmitButton theme={theme} type="submit" disabled={submitting || !currentPrice || !quantity} $variant={activeTab} $positionType={positionType}>
                                     {submitting ? <><LoadingSpinner size={20} />Processing...</> : <>{activeTab === 'buy' ? <Plus size={20} /> : <Minus size={20} />}{positionType === 'short' ? (activeTab === 'buy' ? 'Short' : 'Cover Short') : (activeTab === 'buy' ? 'Buy' : 'Sell')} {symbol || 'Asset'}{leverage > 1 && ` (${leverage}x)`}</>}
                                 </SubmitButton>
                             </Form>
                         </TradingPanel>
+                    </OrderCol>
+                </TerminalGrid>
 
+                {/* Positions / Orders / Sidebar grid (unchanged 1fr 400px layout) */}
+                <ContentGrid>
+                    <div>
                         {account?.positions?.length > 0 && (
                             <PositionsList>
                                 <PositionsHeader>

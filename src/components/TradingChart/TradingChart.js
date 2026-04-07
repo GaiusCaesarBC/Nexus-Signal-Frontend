@@ -14,7 +14,8 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { Loader2, RefreshCw } from 'lucide-react';
 import {
-    sma, ema, bollinger, rsi, macd, vwap, ichimoku, volumeSeries
+    sma, ema, bollinger, rsi, macd, vwap, ichimoku,
+    stochastic, atr, parabolicSAR, volumeSeries
 } from './indicators';
 
 const API_URL = process.env.REACT_APP_API_URL || process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
@@ -41,7 +42,10 @@ const INDICATORS = [
     { id: 'bollinger', label: 'Bollinger', group: 'overlay', color: '#94a3b8' },
     { id: 'vwap',      label: 'VWAP',    group: 'overlay', color: '#fde047' },
     { id: 'ichimoku',  label: 'Ichimoku', group: 'overlay', color: '#10b981' },
+    { id: 'psar',      label: 'P-SAR',   group: 'overlay', color: '#fb923c' },
+    { id: 'atr',       label: 'ATR (14)', group: 'overlay', color: '#facc15' },
     { id: 'rsi',       label: 'RSI (14)', group: 'pane',   color: '#a78bfa' },
+    { id: 'stoch',     label: 'Stoch',   group: 'pane',    color: '#f472b6' },
     { id: 'macd',      label: 'MACD',    group: 'pane',    color: '#0ea5e9' }
 ];
 
@@ -301,7 +305,11 @@ const TradingChart = ({
     const rsiSeriesRef = useRef(null);
     const macdChartRef = useRef(null);
     const macdSeriesRef = useRef({});
+    const stochHostRef = useRef(null);
+    const stochChartRef = useRef(null);
+    const stochSeriesRef = useRef({});
     const lastFitTfRef = useRef(null); // last timeframe we called fitContent for
+    const [atrValue, setAtrValue] = useState(null);
 
     const [timeframe, setTimeframe] = useState(defaultTimeframe);
     const [activeIndicators, setActiveIndicators] = useState(new Set(['sma20', 'sma50']));
@@ -548,7 +556,7 @@ const TradingChart = ({
         };
 
         // Remove all old overlay indicators (we re-add active ones)
-        ['sma20', 'sma50', 'sma200', 'ema12', 'ema26', 'bollinger', 'vwap', 'ichimoku'].forEach(remove);
+        ['sma20', 'sma50', 'sma200', 'ema12', 'ema26', 'bollinger', 'vwap', 'ichimoku', 'psar'].forEach(remove);
 
         // Add active overlay indicators
         if (activeIndicators.has('sma20')) {
@@ -591,6 +599,25 @@ const TradingChart = ({
             s.setData(vwap(candles));
             indicatorSeriesRef.current.vwap = s;
         }
+        if (activeIndicators.has('psar')) {
+            // Render Parabolic SAR as a thin line series with no connection — actually
+            // lightweight-charts doesn't have a native scatter, so we use a line series
+            // with `lineVisible: false` and large point markers via a histogram-style trick.
+            // Simplest portable approach: a line series with very thin lines so it visually
+            // reads as dot trail across the price action.
+            const psarData = parabolicSAR(candles);
+            const s = chart.addLineSeries({
+                color: '#fb923c',
+                lineWidth: 1,
+                priceLineVisible: false,
+                lastValueVisible: false,
+                pointMarkersVisible: true,
+                pointMarkersRadius: 2,
+                lineStyle: 0
+            });
+            s.setData(psarData);
+            indicatorSeriesRef.current.psar = s;
+        }
         if (activeIndicators.has('ichimoku')) {
             const ich = ichimoku(candles);
             // Tenkan (conversion) — fast amber
@@ -618,6 +645,71 @@ const TradingChart = ({
             try { rsiSeriesRef.current.setData(rsi(candles, 14)); } catch {}
         } else {
             try { rsiSeriesRef.current.setData([]); } catch {}
+        }
+    }, [activeIndicators, candles]);
+
+    // ───── Init Stochastic sub-chart on mount ─────
+    useEffect(() => {
+        if (!stochHostRef.current) return undefined;
+        const chart = createChart(stochHostRef.current, {
+            width: stochHostRef.current.clientWidth || 600,
+            height: 100,
+            layout: { background: { color: 'transparent' }, textColor: '#94a3b8', fontSize: 10 },
+            grid: { vertLines: { color: 'rgba(255,255,255,.04)' }, horzLines: { color: 'rgba(255,255,255,.04)' } },
+            rightPriceScale: { borderColor: 'rgba(255,255,255,.06)' },
+            timeScale: { visible: false, borderColor: 'rgba(255,255,255,.06)' },
+            crosshair: {
+                vertLine: { color: 'rgba(244,114,182,.35)', width: 1, style: 2 },
+                horzLine: { color: 'rgba(244,114,182,.35)', width: 1, style: 2 }
+            }
+        });
+        const kSer = chart.addLineSeries({ color: '#f472b6', lineWidth: 2 });
+        const dSer = chart.addLineSeries({ color: '#0ea5e9', lineWidth: 1.5 });
+        kSer.createPriceLine({ price: 80, color: 'rgba(239,68,68,.45)', lineWidth: 1, lineStyle: 2, axisLabelVisible: false });
+        kSer.createPriceLine({ price: 20, color: 'rgba(16,185,129,.45)', lineWidth: 1, lineStyle: 2, axisLabelVisible: false });
+        stochChartRef.current = chart;
+        stochSeriesRef.current = { k: kSer, d: dSer };
+        const ro = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+                chart.applyOptions({ width: Math.floor(entry.contentRect.width) });
+            }
+        });
+        ro.observe(stochHostRef.current);
+        return () => {
+            ro.disconnect();
+            try { chart.remove(); } catch {}
+            stochChartRef.current = null;
+            stochSeriesRef.current = {};
+        };
+    }, []);
+
+    // ───── Sync Stochastic sub-chart ─────
+    useEffect(() => {
+        const series = stochSeriesRef.current;
+        if (!series.k || candles.length === 0) return;
+        if (activeIndicators.has('stoch')) {
+            try {
+                const st = stochastic(candles);
+                series.k.setData(st.k);
+                series.d.setData(st.d);
+            } catch {}
+        } else {
+            try { series.k.setData([]); series.d.setData([]); } catch {}
+        }
+    }, [activeIndicators, candles]);
+
+    // ───── Compute ATR badge value ─────
+    useEffect(() => {
+        if (!activeIndicators.has('atr') || candles.length < 16) {
+            setAtrValue(null);
+            return;
+        }
+        try {
+            const a = atr(candles, 14);
+            const last = a[a.length - 1];
+            setAtrValue(last ? last.value : null);
+        } catch {
+            setAtrValue(null);
         }
     }, [activeIndicators, candles]);
 
@@ -724,6 +816,7 @@ const TradingChart = ({
 
     const showRsiPane = activeIndicators.has('rsi');
     const showMacdPane = activeIndicators.has('macd');
+    const showStochPane = activeIndicators.has('stoch');
 
     // When a sub-pane becomes visible after being hidden via display:none, the chart
     // instance still thinks its width is 0. Force a resize to the host's actual width.
@@ -739,6 +832,12 @@ const TradingChart = ({
             if (w > 0) macdChartRef.current.applyOptions({ width: Math.floor(w) });
         }
     }, [showMacdPane]);
+    useEffect(() => {
+        if (showStochPane && stochChartRef.current && stochHostRef.current) {
+            const w = stochHostRef.current.clientWidth;
+            if (w > 0) stochChartRef.current.applyOptions({ width: Math.floor(w) });
+        }
+    }, [showStochPane]);
 
     return (
         <Wrap theme={theme}>
@@ -802,6 +901,25 @@ const TradingChart = ({
                             ({change >= 0 ? '+' : ''}{change.toFixed(2)}%)
                         </PriceTag>
                     )}
+                    {atrValue !== null && !loading && !error && (
+                        <div style={{
+                            position: 'absolute',
+                            top: '.55rem',
+                            left: '.85rem',
+                            padding: '.3rem .55rem',
+                            background: 'rgba(12,16,32,.85)',
+                            border: '1px solid rgba(250,204,21,.4)',
+                            borderRadius: 6,
+                            fontSize: '.65rem',
+                            fontWeight: 800,
+                            color: '#facc15',
+                            zIndex: 3,
+                            backdropFilter: 'blur(6px)',
+                            letterSpacing: '.4px'
+                        }}>
+                            ATR 14: {atrValue.toLocaleString(undefined, { maximumFractionDigits: atrValue >= 1 ? 2 : 6 })}
+                        </div>
+                    )}
                 </ChartHost>
             </PaneWrap>
 
@@ -810,6 +928,12 @@ const TradingChart = ({
             <PaneWrap style={{ display: showRsiPane ? 'block' : 'none' }}>
                 <RsiHost theme={theme} ref={rsiHostRef} />
                 <PaneLabel theme={theme}>RSI 14</PaneLabel>
+            </PaneWrap>
+
+            {/* Stochastic sub-pane */}
+            <PaneWrap style={{ display: showStochPane ? 'block' : 'none' }}>
+                <RsiHost theme={theme} ref={stochHostRef} />
+                <PaneLabel theme={theme}>STOCH 14/3</PaneLabel>
             </PaneWrap>
 
             {/* MACD sub-pane — same pattern as RSI */}
