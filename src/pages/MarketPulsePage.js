@@ -2,7 +2,7 @@
 // Market Pulse — real-time market intelligence and opportunity discovery.
 // Replaces the legacy HeatmapPage.
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import styled, { keyframes, css } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
@@ -525,6 +525,94 @@ const TtClickHint = styled.div`
     font-weight: 700;
 `;
 
+// ─── Context Menu ─────────────────────────────────────────
+const CtxMenu = styled.div`
+    position: fixed;
+    top: ${p => p.$y}px;
+    left: ${p => p.$x}px;
+    z-index: 9999;
+    min-width: 190px;
+    background: ${p => p.theme?.bg?.elevated || '#0f1729'};
+    border: 1px solid ${p => p.theme?.border?.subtle || 'rgba(255,255,255,.12)'};
+    border-radius: 10px;
+    padding: .35rem;
+    box-shadow: 0 16px 40px rgba(0,0,0,.5);
+    ${css`animation: ${fadeIn} .12s ease-out;`}
+`;
+const CtxItem = styled.button`
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    width: 100%;
+    padding: .55rem .7rem;
+    background: transparent;
+    border: none;
+    color: ${p => p.theme?.text?.secondary || '#c8d0da'};
+    font-size: .78rem;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 7px;
+    text-align: left;
+    &:hover {
+        background: ${p => (p.theme?.brand?.primary || '#00adef') + '15'};
+        color: ${p => p.theme?.brand?.primary || '#00adef'};
+    }
+`;
+const CtxDivider = styled.div`
+    height: 1px;
+    margin: .3rem .25rem;
+    background: ${p => p.theme?.border?.subtle || 'rgba(255,255,255,.06)'};
+`;
+
+// ─── Sector header w/ zoom + zoom-out chip ────────────────
+const SectorHeaderRow = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: .4rem;
+    padding-bottom: .25rem;
+    border-bottom: 1px solid ${p => p.theme?.border?.subtle || 'rgba(255,255,255,.04)'};
+    cursor: pointer;
+    &:hover { color: ${p => p.theme?.brand?.primary || '#00adef'}; }
+`;
+const ZoomOutChip = styled.button`
+    margin-bottom: .85rem;
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    padding: .35rem .8rem;
+    background: ${p => (p.theme?.brand?.primary || '#00adef') + '15'};
+    border: 1px solid ${p => (p.theme?.brand?.primary || '#00adef') + '40'};
+    color: ${p => p.theme?.brand?.primary || '#00adef'};
+    border-radius: 8px;
+    font-size: .72rem;
+    font-weight: 700;
+    cursor: pointer;
+    &:hover {
+        background: ${p => (p.theme?.brand?.primary || '#00adef') + '25'};
+    }
+`;
+
+// ─── Keyboard hint ────────────────────────────────────────
+const KbdHint = styled.div`
+    margin-top: .55rem;
+    text-align: right;
+    font-size: .6rem;
+    color: ${p => p.theme?.text?.tertiary || '#475569'};
+    font-weight: 600;
+`;
+const Kbd = styled.kbd`
+    display: inline-block;
+    padding: .1rem .35rem;
+    background: ${p => p.theme?.bg?.subtle || 'rgba(255,255,255,.05)'};
+    border: 1px solid ${p => p.theme?.border?.subtle || 'rgba(255,255,255,.12)'};
+    border-radius: 4px;
+    font-family: ui-monospace, monospace;
+    font-size: .58rem;
+    color: ${p => p.theme?.text?.secondary || '#94a3b8'};
+    margin: 0 .15rem;
+`;
+
 // ─── Top Movers Breakdown ─────────────────────────────────
 const TopMoversWrap = styled.div`
     margin-bottom: 1.5rem;
@@ -712,6 +800,13 @@ const MarketPulsePage = () => {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [tooltip, setTooltip] = useState(null); // { x, y, tile }
+    const [contextMenu, setContextMenu] = useState(null); // { x, y, tile }
+    const [zoomedSector, setZoomedSector] = useState(null); // sector name
+    const [focusedTileIdx, setFocusedTileIdx] = useState(-1);
+
+    // Pre-fetch cache (symbol -> true once primed)
+    const prefetchCache = useRef(new Set());
+    const hoverTimerRef = useRef(null);
 
     const filters = useMemo(() => ({
         asset: searchParams.get('asset') || 'stocks',
@@ -766,13 +861,143 @@ const MarketPulsePage = () => {
         else navigate(isCrypto ? `/crypto/${sym}` : `/stock/${sym}`);
     };
 
+    // Pre-fetch the by-symbol opportunity after 300ms hover
+    const prefetchSetup = useCallback((symbol) => {
+        if (!symbol || prefetchCache.current.has(symbol) || !api) return;
+        prefetchCache.current.add(symbol);
+        api.get(`/opportunities/by-symbol/${encodeURIComponent(symbol)}`).catch(() => {
+            // remove on failure so we can retry
+            prefetchCache.current.delete(symbol);
+        });
+    }, [api]);
+
     const onTileEnter = (e, tile) => {
         const rect = e.currentTarget.getBoundingClientRect();
         const x = Math.min(rect.right + 12, window.innerWidth - 300);
         const y = Math.max(20, Math.min(rect.top, window.innerHeight - 240));
         setTooltip({ x, y, tile });
+
+        // Pre-fetch after 300ms hover
+        if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+        hoverTimerRef.current = setTimeout(() => {
+            prefetchSetup(tile.symbol);
+        }, 300);
     };
-    const onTileLeave = () => setTooltip(null);
+    const onTileLeave = () => {
+        setTooltip(null);
+        if (hoverTimerRef.current) {
+            clearTimeout(hoverTimerRef.current);
+            hoverTimerRef.current = null;
+        }
+    };
+
+    // Context menu handlers
+    const openContextMenu = (e, tile) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setTooltip(null);
+        const x = Math.min(e.clientX, window.innerWidth - 210);
+        const y = Math.min(e.clientY, window.innerHeight - 280);
+        setContextMenu({ x, y, tile });
+    };
+    const closeContextMenu = () => setContextMenu(null);
+
+    useEffect(() => {
+        if (!contextMenu) return undefined;
+        const onClick = () => closeContextMenu();
+        const onEsc = (e) => { if (e.key === 'Escape') closeContextMenu(); };
+        document.addEventListener('click', onClick);
+        document.addEventListener('keydown', onEsc);
+        return () => {
+            document.removeEventListener('click', onClick);
+            document.removeEventListener('keydown', onEsc);
+        };
+    }, [contextMenu]);
+
+    const ctxAction = (action) => {
+        const t = contextMenu?.tile;
+        if (!t) return;
+        closeContextMenu();
+        if (action === 'asset') goToAsset(t.symbol, t.isCrypto);
+        else if (action === 'newtab') {
+            const url = t.isCrypto ? `/crypto/${t.symbol}` : `/stock/${t.symbol}`;
+            window.open(url, '_blank', 'noopener');
+        } else if (action === 'paper') {
+            navigate('/paper-trading', {
+                state: {
+                    signal: {
+                        symbol: t.symbol,
+                        long: t.change >= 0,
+                        crypto: !!t.isCrypto,
+                        entry: t.price,
+                        sl: null, tp1: null, tp2: null, tp3: null,
+                        conf: null
+                    }
+                }
+            });
+        } else if (action === 'watchlist') {
+            if (api) {
+                api.post('/watchlist/add', { symbol: t.symbol, type: t.isCrypto ? 'crypto' : 'stock' }).catch(() => {});
+            }
+        } else if (action === 'opportunity') {
+            navigate('/opportunities');
+        }
+    };
+
+    // Sector zoom toggle
+    const toggleSectorZoom = (sectorName) => {
+        setZoomedSector(prev => prev === sectorName ? null : sectorName);
+        setFocusedTileIdx(-1);
+    };
+
+    // Flat list of all visible tiles (respecting zoom) — used by keyboard nav
+    const visibleTiles = useMemo(() => {
+        if (!snapshot) return [];
+        const sectors = snapshot.treemap?.sectors || [];
+        const filtered = zoomedSector
+            ? sectors.filter(s => s.name === zoomedSector)
+            : sectors;
+        return filtered
+            .flatMap(s => (s.tiles || []).map(t => ({
+                ...t,
+                isCrypto: s.name === 'Crypto' || s.name === 'DEX'
+            })))
+            .sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
+    }, [snapshot, zoomedSector]);
+
+    // Keyboard navigation: j/k cycles tiles, enter opens
+    useEffect(() => {
+        const onKey = (e) => {
+            // Ignore when typing in inputs
+            const tag = e.target?.tagName?.toLowerCase();
+            if (tag === 'input' || tag === 'textarea' || e.target?.isContentEditable) return;
+            if (visibleTiles.length === 0) return;
+
+            if (e.key === 'j' || e.key === 'ArrowDown') {
+                e.preventDefault();
+                setFocusedTileIdx(i => Math.min(visibleTiles.length - 1, (i < 0 ? -1 : i) + 1));
+            } else if (e.key === 'k' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                setFocusedTileIdx(i => Math.max(0, i - 1));
+            } else if (e.key === 'Enter' && focusedTileIdx >= 0) {
+                e.preventDefault();
+                const t = visibleTiles[focusedTileIdx];
+                if (t) goToAsset(t.symbol, t.isCrypto);
+            }
+        };
+        document.addEventListener('keydown', onKey);
+        return () => document.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [visibleTiles, focusedTileIdx]);
+
+    // When focused tile changes via keyboard, surface its tooltip near the top of the viewport
+    useEffect(() => {
+        if (focusedTileIdx < 0) return;
+        const t = visibleTiles[focusedTileIdx];
+        if (!t) return;
+        setTooltip({ x: 24, y: 110, tile: t });
+        prefetchSetup(t.symbol);
+    }, [focusedTileIdx, visibleTiles, prefetchSetup]);
 
     // Identify the top 3 hottest tiles for pulse rings
     const hottestSymbols = useMemo(() => {
@@ -931,17 +1156,35 @@ const MarketPulsePage = () => {
                     </Empty>
                 ) : (
                     <TreemapWrap theme={theme}>
-                        {snapshot.treemap.sectors.map(sector => (
+                        {zoomedSector && (
+                            <ZoomOutChip theme={theme} onClick={() => setZoomedSector(null)}>
+                                ← Back to all sectors
+                            </ZoomOutChip>
+                        )}
+                        {(zoomedSector
+                            ? snapshot.treemap.sectors.filter(s => s.name === zoomedSector)
+                            : snapshot.treemap.sectors
+                        ).map(sector => (
                             <SectorBlock key={sector.name}>
                                 {snapshot.assetType === 'stocks' && (
-                                    <SectorHeader theme={theme}>
-                                        {sector.name} · {sector.tileCount} {sector.tileCount === 1 ? 'name' : 'names'}
-                                    </SectorHeader>
+                                    <SectorHeaderRow
+                                        theme={theme}
+                                        onClick={() => toggleSectorZoom(sector.name)}
+                                        title={zoomedSector === sector.name ? 'Click to zoom out' : 'Click to zoom in'}
+                                    >
+                                        <SectorHeader theme={theme} as="div" style={{ borderBottom: 'none', marginBottom: 0, paddingBottom: 0 }}>
+                                            {sector.name} · {sector.tileCount} {sector.tileCount === 1 ? 'name' : 'names'}
+                                        </SectorHeader>
+                                        <span style={{ fontSize: '.55rem', color: theme?.text?.tertiary || '#475569', fontWeight: 700 }}>
+                                            {zoomedSector === sector.name ? 'ZOOMED' : 'CLICK TO ZOOM'}
+                                        </span>
+                                    </SectorHeaderRow>
                                 )}
                                 <TilesGrid>
                                     {sector.tiles.map(tile => {
                                         const isCrypto = sector.name === 'Crypto' || sector.name === 'DEX';
                                         const pulsing = hottestSymbols.has(tile.symbol);
+                                        const isFocused = visibleTiles[focusedTileIdx]?.symbol === tile.symbol;
                                         return (
                                             <Tile
                                                 key={`${tile.symbol}-${sector.name}`}
@@ -949,9 +1192,16 @@ const MarketPulsePage = () => {
                                                 className="pulse-tile"
                                                 $change={tile.change}
                                                 $pulsing={pulsing}
+                                                style={isFocused ? {
+                                                    outline: `2px solid ${theme?.brand?.primary || '#00adef'}`,
+                                                    outlineOffset: 1,
+                                                    opacity: 1,
+                                                    transform: 'translateY(-2px)'
+                                                } : undefined}
                                                 onMouseEnter={(e) => onTileEnter(e, { ...tile, isCrypto })}
                                                 onMouseLeave={onTileLeave}
                                                 onClick={() => goToAsset(tile.symbol, isCrypto)}
+                                                onContextMenu={(e) => openContextMenu(e, { ...tile, isCrypto })}
                                             >
                                                 <TileSym theme={theme}>{tile.symbol}</TileSym>
                                                 <TileChange theme={theme}>{fmtPct(tile.change)}</TileChange>
@@ -961,6 +1211,9 @@ const MarketPulsePage = () => {
                                 </TilesGrid>
                             </SectorBlock>
                         ))}
+                        <KbdHint theme={theme}>
+                            <Kbd theme={theme}>j</Kbd> / <Kbd theme={theme}>k</Kbd> to navigate · <Kbd theme={theme}>Enter</Kbd> to open · right-click for actions
+                        </KbdHint>
                     </TreemapWrap>
                 )}
 
@@ -1039,6 +1292,33 @@ const MarketPulsePage = () => {
                     </RefreshBtn>
                 </Methodology>
             </Container>
+
+            {/* ═══ CONTEXT MENU ═══ */}
+            {contextMenu && (
+                <CtxMenu
+                    theme={theme}
+                    $x={contextMenu.x}
+                    $y={contextMenu.y}
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <CtxItem theme={theme} onClick={() => ctxAction('asset')}>
+                        <Eye size={14} /> Open Asset Page
+                    </CtxItem>
+                    <CtxItem theme={theme} onClick={() => ctxAction('paper')}>
+                        <Copy size={14} /> Paper Trade
+                    </CtxItem>
+                    <CtxItem theme={theme} onClick={() => ctxAction('newtab')}>
+                        <ChevronRight size={14} /> Open in New Tab
+                    </CtxItem>
+                    <CtxItem theme={theme} onClick={() => ctxAction('watchlist')}>
+                        <Bookmark size={14} /> Add to Watchlist
+                    </CtxItem>
+                    <CtxDivider theme={theme} />
+                    <CtxItem theme={theme} onClick={() => ctxAction('opportunity')}>
+                        <Sparkles size={14} /> Browse Opportunity Engine
+                    </CtxItem>
+                </CtxMenu>
+            )}
 
             {/* ═══ TOOLTIP ═══ */}
             {tooltip && (
