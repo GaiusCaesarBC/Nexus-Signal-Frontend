@@ -1059,12 +1059,23 @@ const AccuracyDashboardPage = () => {
                                     const isLoss = p.status === 'incorrect';
                                     const isPending = p.status === 'pending' || p.status === 'active';
                                     const resultStatus = isWin ? 'correct' : isLoss ? 'incorrect' : 'pending';
-                                    const changePct = p.outcome?.actualChangePercent;
-                                    // Direction-aware return: for LONG, positive price move = profit; for SHORT, negative price move = profit
+
+                                    // Get raw % move — try outcome first, then compute from prices we already have
+                                    let rawPct = p.outcome?.actualChangePercent;
+                                    if (rawPct === undefined || rawPct === null) {
+                                        const startPrice = p.currentPrice;
+                                        const endPrice = p.outcome?.actualPrice ?? p.resultPrice ?? p.targetPrice;
+                                        if (startPrice && endPrice && startPrice > 0) {
+                                            rawPct = ((endPrice - startPrice) / startPrice) * 100;
+                                        }
+                                    }
+
+                                    // Direction-aware return: LONG profits on price up, SHORT profits on price down
                                     const dirMultiplier = p.direction === 'UP' ? 1 : -1;
-                                    let effectiveChange = changePct !== undefined ? changePct * dirMultiplier : null;
-                                    // Safety: if result contradicts the math, trust the result status
-                                    // A LOSS should always show negative, a WIN should always show positive
+                                    let effectiveChange = (rawPct !== undefined && rawPct !== null)
+                                        ? rawPct * dirMultiplier
+                                        : null;
+                                    // Safety: result text always wins over computed sign
                                     if (effectiveChange !== null) {
                                         if (isLoss && effectiveChange > 0) effectiveChange = -Math.abs(effectiveChange);
                                         if (isWin && effectiveChange < 0) effectiveChange = Math.abs(effectiveChange);
@@ -1104,7 +1115,7 @@ const AccuracyDashboardPage = () => {
                                                 </OutcomeDetail>
                                             </OutcomeInfo>
                                             <OutcomeRight>
-                                                {changePct !== undefined ? (
+                                                {effectiveChange !== null ? (
                                                     <OutcomePercent $positive={effectiveChange >= 0}>
                                                         {formatPercent(effectiveChange)}
                                                     </OutcomePercent>
