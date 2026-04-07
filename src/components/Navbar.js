@@ -1394,7 +1394,7 @@ const Navbar = () => {
             { path: '/chat', label: 'Co-Pilot', icon: Bot },
             { path: '/news', label: 'News Intelligence', icon: Newspaper, section: 'Market' },
             { path: '/earnings', label: 'Earnings Edge', icon: Calendar },
-            { path: '/financials', label: 'Company Financials', icon: Building2 },
+            { path: '/financials', label: 'Financial Verdict', icon: Building2 },
             { path: '/market-reports', label: 'AI Market Reports', icon: FileText },
             { path: '/sector-rotation', label: 'Sector Rotation', icon: ArrowRightLeft },
             { path: '/economic-calendar', label: 'Economic Calendar', icon: Calendar },
