@@ -41,7 +41,7 @@ const SettingsPage = lazy(() => import('./components/SettingsPage'));
 const LandingPage = lazy(() => import('./pages/LandingPageV2'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const RegisterPage = lazy(() => import('./pages/RegisterPage'));
-const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const CommandCenterPage = lazy(() => import('./pages/CommandCenterPage'));
 const PredictPage = lazy(() => import('./pages/PredictionsPage'));
 const SignalsPage = lazy(() => import('./pages/SignalsPage'));
 const SignalDetailPage = lazy(() => import('./pages/SignalDetailPage'));
@@ -157,7 +157,7 @@ function AppContent() {
                     <Route path="/whitepaper" element={<WhitepaperPage />} />
 
                     {/* Protected Routes */}
-                    <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+                    <Route path="/dashboard" element={<ProtectedRoute><CommandCenterPage /></ProtectedRoute>} />
                     <Route path="/watchlist" element={<ProtectedRoute><WatchlistPage /></ProtectedRoute>} />
                     <Route path="/portfolio" element={<ProtectedRoute><PortfolioPage /></ProtectedRoute>} />
                     <Route path="/portfolio-analytics" element={<ProtectedRoute><PortfolioAnalyticsPage /></ProtectedRoute>} />
