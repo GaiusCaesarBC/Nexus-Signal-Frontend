@@ -60,7 +60,7 @@ const StockPage = lazy(() => import('./pages/StockPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const CookiePolicyPage = lazy(() => import('./pages/CookiePolicyPage'));
 const OpportunityEnginePage = lazy(() => import('./pages/OpportunityEnginePage'));
-const NewsPage = lazy(() => import('./pages/NewsPage'));
+const NewsIntelligencePage = lazy(() => import('./pages/NewsIntelligencePage'));
 const MarketPulsePage = lazy(() => import('./pages/MarketPulsePage'));
 const JournalPage = lazy(() => import('./pages/JournalPage'));
 const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage'));
@@ -171,7 +171,7 @@ function AppContent() {
                     <Route path="/account" element={<ProtectedRoute><AccountSettingsPage /></ProtectedRoute>} />
                     <Route path="/screener" element={<Navigate to="/opportunities" replace />} />
                     <Route path="/opportunities" element={<ProtectedRoute><OpportunityEnginePage /></ProtectedRoute>} />
-                    <Route path="/news" element={<ProtectedRoute><NewsPage /></ProtectedRoute>} />
+                    <Route path="/news" element={<ProtectedRoute><NewsIntelligencePage /></ProtectedRoute>} />
                     <Route path="/heatmap" element={<Navigate to="/pulse" replace />} />
                     <Route path="/pulse" element={<ProtectedRoute><MarketPulsePage /></ProtectedRoute>} />
                     <Route path="/journal" element={<ProtectedRoute><JournalPage /></ProtectedRoute>} />

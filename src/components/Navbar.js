@@ -1392,7 +1392,7 @@ const Navbar = () => {
             { path: '/backtesting', label: 'Strategy Lab', icon: History },
             { path: '/accuracy-dashboard', label: 'Prediction Accuracy', icon: Trophy },
             { path: '/chat', label: 'Co-Pilot', icon: Bot },
-            { path: '/news', label: 'News', icon: Newspaper, section: 'Market' },
+            { path: '/news', label: 'News Intelligence', icon: Newspaper, section: 'Market' },
             { path: '/earnings', label: 'Earnings Calendar', icon: Calendar },
             { path: '/financials', label: 'Company Financials', icon: Building2 },
             { path: '/market-reports', label: 'AI Market Reports', icon: FileText },
