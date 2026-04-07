@@ -10,8 +10,10 @@ import { useTheme } from '../context/ThemeContext';
 import { useSubscription } from '../context/SubscriptionContext';
 import {
     ArrowUpRight, ArrowDownRight, BarChart3, Bookmark,
-    Brain, Eye, RefreshCw, Sparkles, TrendingUp, TrendingDown, Zap, Bell, Copy
+    Brain, Eye, RefreshCw, Sparkles, TrendingUp, TrendingDown, Zap, Bell, Copy,
+    Search, Loader2
 } from 'lucide-react';
+import { useToast } from '../context/ToastContext';
 import SEO from '../components/SEO';
 
 const API_URL = process.env.REACT_APP_API_URL || process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
@@ -109,6 +111,100 @@ const StatusDot = styled.span`
     background: #10b981;
     box-shadow: 0 0 8px rgba(16, 185, 129, .6);
     ${css`animation: ${pulse} 2s ease-in-out infinite;`}
+`;
+
+// ─── ANALYZE SEARCH BOX ───────────────────────────────────
+const SearchBar = styled.div`
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    padding: .85rem 1rem;
+    background: ${p => p.theme?.bg?.elevated || 'rgba(12,16,32,.92)'};
+    border: 1px solid ${p => (p.theme?.brand?.primary || '#00adef') + '30'};
+    border-radius: 14px;
+    margin-bottom: 1.25rem;
+    ${css`animation: ${fadeIn} .4s ease-out .03s backwards;`}
+    @media(max-width:600px){flex-wrap:wrap;}
+`;
+const SearchIcon = styled.div`
+    color: ${p => p.theme?.brand?.primary || '#00adef'};
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+`;
+const SearchLabel = styled.div`
+    font-size: .8rem;
+    font-weight: 700;
+    color: ${p => p.theme?.text?.primary || '#e0e6ed'};
+    white-space: nowrap;
+    @media(max-width:600px){display:none;}
+`;
+const SearchInput = styled.input`
+    flex: 1;
+    min-width: 140px;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: ${p => p.theme?.text?.primary || '#e0e6ed'};
+    font-size: .88rem;
+    font-weight: 600;
+    padding: .35rem 0;
+    &::placeholder {
+        color: ${p => p.theme?.text?.tertiary || '#64748b'};
+        font-weight: 500;
+    }
+`;
+const AssetTypeToggle = styled.div`
+    display: flex;
+    gap: .25rem;
+    padding: .15rem;
+    background: ${p => p.theme?.bg?.subtle || 'rgba(255,255,255,.03)'};
+    border-radius: 7px;
+`;
+const AssetTypeBtn = styled.button`
+    padding: .35rem .65rem;
+    border-radius: 5px;
+    background: ${p => p.$active
+        ? (p.theme?.brand?.primary || '#00adef') + '20'
+        : 'transparent'};
+    border: none;
+    color: ${p => p.$active
+        ? (p.theme?.brand?.primary || '#00adef')
+        : (p.theme?.text?.tertiary || '#64748b')};
+    font-size: .68rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+    cursor: pointer;
+    transition: all .15s;
+`;
+const AnalyzeBtn = styled.button`
+    padding: .55rem 1.1rem;
+    background: linear-gradient(135deg,
+        ${p => p.theme?.brand?.primary || '#00adef'},
+        ${p => p.theme?.brand?.secondary || '#0090d0'});
+    border: none;
+    border-radius: 9px;
+    color: #fff;
+    font-size: .78rem;
+    font-weight: 800;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    transition: all .2s;
+    white-space: nowrap;
+    &:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 18px ${p => (p.theme?.brand?.primary || '#00adef') + '40'};
+    }
+    &:disabled {
+        opacity: .55;
+        cursor: not-allowed;
+    }
+`;
+const SpinningLoader = styled(Loader2)`
+    ${css`animation: ${spin} 1s linear infinite;`}
 `;
 
 // ─── MARKET PULSE BAR ─────────────────────────────────────
@@ -572,9 +668,15 @@ const OpportunityEnginePage = () => {
     const navigate = useNavigate();
     const { theme } = useTheme();
     const { api } = useAuth();
+    const toast = useToast();
     const { hasPlanAccess } = useSubscription();
     const isPremium = hasPlanAccess('starter');
     const [searchParams, setSearchParams] = useSearchParams();
+
+    // Manual analyze state
+    const [analyzeQuery, setAnalyzeQuery] = useState('');
+    const [analyzeType, setAnalyzeType] = useState('stocks');
+    const [analyzing, setAnalyzing] = useState(false);
 
     const [opportunities, setOpportunities] = useState([]);
     const [featured, setFeatured] = useState([]);
@@ -686,6 +788,51 @@ const OpportunityEnginePage = () => {
         setSearchParams(next, { replace: true });
     };
 
+    // Manual analyze handler — runs an on-demand prediction
+    const handleAnalyze = async () => {
+        const raw = analyzeQuery.trim().toUpperCase();
+        if (!raw) {
+            toast?.error?.('Enter a symbol to analyze');
+            return;
+        }
+        if (!api) {
+            toast?.error?.('Sign in to run on-demand analysis');
+            navigate('/login');
+            return;
+        }
+        if (!isPremium) {
+            toast?.error?.('On-demand analysis requires a Starter plan or higher');
+            navigate('/pricing');
+            return;
+        }
+
+        setAnalyzing(true);
+        try {
+            const res = await api.post('/predictions/predict', {
+                symbol: raw,
+                days: 7,
+                assetType: analyzeType === 'crypto' ? 'crypto' : 'stock'
+            });
+
+            const pred = res.data?.prediction || res.data;
+            if (pred && pred.symbol) {
+                toast?.success?.(`Analysis complete for ${raw}`);
+                // Refresh opportunities list to include the new one
+                fetchData(false);
+                // Navigate to the asset page so the user sees the full setup
+                const path = analyzeType === 'crypto' ? `/crypto/${raw}` : `/stock/${raw}`;
+                setTimeout(() => navigate(path), 400);
+            } else {
+                toast?.info?.(`No high-confidence setup detected for ${raw}`);
+            }
+        } catch (err) {
+            const msg = err?.response?.data?.message || err?.response?.data?.error || `Failed to analyze ${raw}`;
+            toast?.error?.(msg);
+        } finally {
+            setAnalyzing(false);
+        }
+    };
+
     return (
         <Page theme={theme}>
             <SEO
@@ -710,6 +857,40 @@ const OpportunityEnginePage = () => {
                         Engine Active · {status?.total ?? '--'} opportunities · {status?.lastScanAt ? `Updated ${timeAgo(status.lastScanAt)}` : 'Scanning'}
                     </StatusPill>
                 </HeaderRow>
+
+                {/* ═══ ANALYZE ANY SYMBOL ═══ */}
+                <SearchBar theme={theme}>
+                    <SearchIcon theme={theme}><Search size={18} /></SearchIcon>
+                    <SearchLabel theme={theme}>Analyze any symbol</SearchLabel>
+                    <SearchInput
+                        theme={theme}
+                        placeholder="Type a ticker (e.g., NVDA, BTC, ETH)..."
+                        value={analyzeQuery}
+                        onChange={(e) => setAnalyzeQuery(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') handleAnalyze(); }}
+                        disabled={analyzing}
+                    />
+                    <AssetTypeToggle theme={theme}>
+                        <AssetTypeBtn
+                            theme={theme}
+                            $active={analyzeType === 'stocks'}
+                            onClick={() => setAnalyzeType('stocks')}
+                        >
+                            Stock
+                        </AssetTypeBtn>
+                        <AssetTypeBtn
+                            theme={theme}
+                            $active={analyzeType === 'crypto'}
+                            onClick={() => setAnalyzeType('crypto')}
+                        >
+                            Crypto
+                        </AssetTypeBtn>
+                    </AssetTypeToggle>
+                    <AnalyzeBtn theme={theme} onClick={handleAnalyze} disabled={analyzing || !analyzeQuery.trim()}>
+                        {analyzing ? <SpinningLoader size={14} /> : <Sparkles size={14} />}
+                        {analyzing ? 'Scanning...' : 'Analyze'}
+                    </AnalyzeBtn>
+                </SearchBar>
 
                 {/* ═══ MARKET PULSE BAR ═══ */}
                 <PulseBar theme={theme}>
