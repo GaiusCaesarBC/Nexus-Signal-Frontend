@@ -1074,7 +1074,7 @@ const AccuracyDashboardPage = () => {
                                         <OutcomeCard
                                             key={p._id}
                                             $result={resultStatus}
-                                            onClick={() => navigate(`/predict/${p._id}`)}
+                                            onClick={() => navigate(`/signal/${p._id}`)}
                                         >
                                             <OutcomeIcon $result={resultStatus}>
                                                 {isWin && <CheckCircle size={16} />}
