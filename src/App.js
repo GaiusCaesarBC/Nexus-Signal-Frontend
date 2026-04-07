@@ -81,7 +81,7 @@ const OnboardingFlow = lazy(() => import('./pages/OnboardingFlow'));
 const PredictionsShowcase = lazy(() => import('./pages/PredictionsShowcase'));
 const CryptoPage = lazy(() => import('./pages/CryptoPage'));
 const WhaleAlertsPage = lazy(() => import('./pages/WhaleAlertsPage'));
-const ComparisonPage = lazy(() => import('./pages/ComparisonPage'));
+const ShowdownPage = lazy(() => import('./pages/ShowdownPage'));
 const PredictionHistoryPage = lazy(() => import('./pages/PredictionHistoryPage'));
 const ChartPage = lazy(() => import('./pages/ChartPage'));
 const OAuthCallbackPage = lazy(() => import('./pages/OAuthCallbackPage'));
@@ -199,7 +199,7 @@ function AppContent() {
                     <Route path="/whale-alerts" element={<ProtectedRoute><WhaleAlertsPage /></ProtectedRoute>} />
                     <Route path="/alerts" element={<ProtectedRoute><AlertsPage /></ProtectedRoute>} />
                     <Route path="/profile/:username" element={<ProtectedRoute><PublicProfilePage /></ProtectedRoute>} />
-                    <Route path="/compare" element={<ComparisonPage />} />
+                    <Route path="/compare" element={<ShowdownPage />} />
                     <Route path="/prediction-history" element={<PredictionHistoryPage />} />
                     <Route path="/accuracy-dashboard" element={<ProtectedRoute><AccuracyDashboardPage /></ProtectedRoute>} />
                     <Route path="/backtesting" element={<ProtectedRoute><BacktestingPage /></ProtectedRoute>} />
