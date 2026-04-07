@@ -918,6 +918,28 @@ const EarningsEdgePage = () => {
                     </StatusPill>
                 </HeaderRow>
 
+                {/* ═══ NO DATA EMPTY STATE ═══ */}
+                {!loading && snapshot && (snapshot.weekStats?.total ?? 0) === 0 && (snapshot.calendarDays?.length ?? 0) === 0 && (
+                    <div style={{
+                        background: theme?.bg?.elevated || 'rgba(12,16,32,.92)',
+                        border: '1px dashed rgba(245,158,11,.3)',
+                        borderRadius: 14,
+                        padding: '2rem 1.5rem',
+                        textAlign: 'center',
+                        marginBottom: '1.5rem',
+                        color: theme?.text?.secondary || '#94a3b8'
+                    }}>
+                        <div style={{ fontSize: '1.05rem', fontWeight: 800, color: theme?.text?.primary || '#fff', marginBottom: '.5rem' }}>
+                            No earnings data available right now
+                        </div>
+                        <div style={{ fontSize: '.82rem', maxWidth: 520, margin: '0 auto', lineHeight: 1.5 }}>
+                            The earnings provider returned an empty result for this date range. This usually means the API tier has limited
+                            calendar access or the service is rate-limited. Try refreshing in a moment, or check back during US market hours
+                            when most earnings prints occur.
+                        </div>
+                    </div>
+                )}
+
                 {/* ═══ HIGH IMPACT THIS WEEK ═══ */}
                 {loading ? (
                     <LoadingWrap theme={theme}>
