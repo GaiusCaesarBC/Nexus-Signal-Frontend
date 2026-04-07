@@ -1385,7 +1385,7 @@ const Navbar = () => {
             { path: '/opportunities', label: 'Opportunity Engine', icon: Sparkles },
             { path: '/patterns', label: 'Pattern Intelligence', icon: Brain },
             { path: '/pulse', label: 'Market Pulse', icon: Activity },
-            { path: '/sentiment', label: 'Sentiment', icon: Activity },
+            { path: '/mood', label: 'Sentiment Pulse', icon: Brain },
             { path: '/compare', label: 'Stock Comparison', icon: BarChart3 },
             { path: '/whale-alerts', label: 'Whale Alerts', icon: Waves },
             { path: '/predict', label: 'AI Predict', icon: Brain, section: 'AI Tools' },

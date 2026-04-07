@@ -233,7 +233,7 @@ const Footer = () => {
                             <FLink to="/signals">Live Signals <NewBadge>New</NewBadge></FLink>
                             <FLink to="/predict">AI Signals</FLink>
                             <FLink to="/patterns">Pattern Intelligence</FLink>
-                            <FLink to="/sentiment">Sentiment Analysis</FLink>
+                            <FLink to="/mood">Sentiment Pulse</FLink>
                             <FLink to="/paper-trading">Paper Trading</FLink>
                             <FLink to="/backtesting">Backtesting</FLink>
                             <FLink to="/pricing">Pricing</FLink>

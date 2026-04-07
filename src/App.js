@@ -66,7 +66,7 @@ const JournalPage = lazy(() => import('./pages/JournalPage'));
 const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage'));
 const PublicProfilePage = lazy(() => import('./pages/PublicProfilePage'));
 const CalculatorsPage = lazy(() => import('./pages/CalculatorsPage'));
-const SentimentPage = lazy(() => import('./pages/SentimentPage'));
+const SentimentPulsePage = lazy(() => import('./pages/SentimentPulsePage'));
 const PaperTradingPage = lazy(() => import('./pages/PaperTradingPage'));
 const DiscoveryPage = lazy(() => import('./pages/DiscoveryPage'));
 const SocialFeed = lazy(() => import('./components/SocialFeed'));
@@ -180,7 +180,8 @@ function AppContent() {
                     <Route path="/copy-trading" element={<ProtectedRoute><CopyTradingPage /></ProtectedRoute>} />
                     <Route path="/trader/:username" element={<ProtectedRoute><PublicProfilePage /></ProtectedRoute>} />
                     <Route path="/calculators" element={<CalculatorsPage />} />
-                    <Route path="/sentiment" element={<ProtectedRoute><SentimentPage /></ProtectedRoute>} />
+                    <Route path="/sentiment" element={<Navigate to="/mood" replace />} />
+                    <Route path="/mood" element={<ProtectedRoute><SentimentPulsePage /></ProtectedRoute>} />
                     <Route path="/paper-trading" element={<ProtectedRoute><PaperTradingPage /></ProtectedRoute>} />
                     <Route path="/discover" element={<ProtectedRoute><DiscoveryPage /></ProtectedRoute>} />
                     <Route path="/feed" element={<SocialFeed />} />
