@@ -17,6 +17,7 @@ import {
   Copy, Check
 } from 'lucide-react';
 import SEO from '../components/SEO';
+import TradeSetupCard from '../components/TradeSetupCard';
 
 // Smart price formatter - always uses crypto formatting for crypto page
 const formatPrice = (price) => {
@@ -1430,6 +1431,9 @@ const CryptoPage = () => {
           </ActionButtons>
         </PriceSection>
       </CryptoHeader>
+
+      {/* ═══ TRADE SETUP DECISION ENGINE ═══ */}
+      <TradeSetupCard symbol={symbol?.toUpperCase()} currentPrice={currentPrice} isCrypto={true} />
 
       <MainGrid>
         <LeftColumn>

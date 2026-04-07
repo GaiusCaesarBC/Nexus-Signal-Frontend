@@ -16,6 +16,7 @@ import {
   Minus, Plus, ShoppingCart, Wallet, Share2, Bell, BellOff
 } from 'lucide-react';
 import SEO from '../components/SEO';
+import TradeSetupCard from '../components/TradeSetupCard';
 
 // Smart price formatter based on symbol
 const formatPrice = (price, symbol) => {
@@ -1430,6 +1431,9 @@ const StockPage = () => {
           </ActionButtons>
         </PriceSection>
       </StockHeader>
+
+      {/* ═══ TRADE SETUP DECISION ENGINE ═══ */}
+      <TradeSetupCard symbol={symbol?.toUpperCase()} currentPrice={currentPrice} isCrypto={false} />
 
       <MainGrid>
         <LeftColumn>
