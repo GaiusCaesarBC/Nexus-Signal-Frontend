@@ -120,6 +120,20 @@ function gradeStrategy(metrics, equityCurve, initialCapital = 10000) {
     const buyHoldReturn = computeBuyHoldReturn(equityCurve, initialCapital);
     const vsBuyHold = totalReturn - buyHoldReturn;
 
+    // 0-trade guard — strategy never fired, refuse to grade it
+    if (totalTrades === 0) {
+        return {
+            score: 0,
+            grade: '—',
+            label: 'No Trades Generated',
+            color: '#94a3b8',
+            vsBuyHold,
+            buyHoldReturn,
+            risk: { label: 'N/A', color: '#94a3b8' },
+            noTrades: true
+        };
+    }
+
     let score = 50;
 
     // Returns vs buy & hold (max ±25)
@@ -170,6 +184,15 @@ function gradeStrategy(metrics, equityCurve, initialCapital = 10000) {
 
 function interpretMetric(key, value, ctx) {
     const v = Number(value);
+
+    // No-trades guard — every metric is meaningless without trades
+    if (ctx?.noTrades) {
+        if (key === 'totalTrades') {
+            return { tone: 'warn', text: 'No trades — strategy never fired' };
+        }
+        return { tone: 'mid', text: 'N/A — no trades to evaluate' };
+    }
+
     switch (key) {
         case 'totalReturnPercent': {
             const diff = (ctx?.vsBuyHold ?? 0);
@@ -216,6 +239,12 @@ function buildStrengthsWeaknesses(metrics, equityCurve, initialCapital) {
     const strengths = [];
     const weaknesses = [];
     if (!metrics) return { strengths, weaknesses };
+
+    // No-trades guard — refuse to manufacture strengths/weaknesses
+    if ((metrics.totalTrades || 0) === 0) {
+        weaknesses.push('Strategy never fired — no signals were generated in the selected window');
+        return { strengths, weaknesses };
+    }
 
     const grade = gradeStrategy(metrics, equityCurve, initialCapital);
     const checks = [
@@ -270,6 +299,34 @@ function buildSuggestions(metrics, equityCurve, params, strategyId, initialCapit
     const avgLoss = Math.abs(metrics.averageLoss || 0);
     const buyHold = computeBuyHoldReturn(equityCurve, initialCapital);
     const vsBuyHold = (metrics.totalReturnPercent || 0) - buyHold;
+
+    // 0-trade guard — focus on getting the strategy to fire at all
+    if (totalTrades === 0) {
+        if (strategyId === 'ma-crossover' && params.fastPeriod && params.slowPeriod) {
+            suggestions.push({
+                id: 'tighter-mas',
+                icon: Activity,
+                title: 'Try Tighter MA Periods',
+                body: `Fast=${params.fastPeriod}, Slow=${params.slowPeriod} produced no crossovers in the selected window. Try Fast=5, Slow=20 for more signals.`,
+                action: { params: { ...params, fastPeriod: 5, slowPeriod: 20 } }
+            });
+        }
+        suggestions.push({
+            id: 'longer-period-zero',
+            icon: Activity,
+            title: 'Expand the Date Range',
+            body: 'No trades fired — try a 2Y or 5Y window so the strategy has more chances to generate signals.',
+            action: null
+        });
+        suggestions.push({
+            id: 'try-different-strategy',
+            icon: Sparkles,
+            title: 'Try a Different Strategy',
+            body: `${strategyId === 'ma-crossover' ? 'MA Crossover' : 'This strategy'} may not suit this asset's price action. RSI Reversal or Breakout often fire more frequently.`,
+            action: null
+        });
+        return suggestions;
+    }
 
     if (maxDD > 15) {
         suggestions.push({
@@ -1261,42 +1318,61 @@ const StrategyLabPage = () => {
                             <VerdictText>
                                 <VerdictLabel theme={theme}>🧠 Strategy Verdict</VerdictLabel>
                                 <VerdictBig $c={grade.color}>{grade.label}</VerdictBig>
-                                <VerdictBullets>
-                                    <VerdictBullet theme={theme}>
-                                        {grade.vsBuyHold >= 0
-                                            ? <CheckCircle size={13} color="#10b981" />
-                                            : <AlertTriangle size={13} color="#f59e0b" />}
-                                        {grade.vsBuyHold >= 0
-                                            ? `Beats buy & hold by ${fmtPct(grade.vsBuyHold)}`
-                                            : `Underperforms buy & hold by ${fmtPct(Math.abs(grade.vsBuyHold))}`}
-                                    </VerdictBullet>
-                                    <VerdictBullet theme={theme}>
-                                        {(metrics.sharpeRatio || 0) >= 1
-                                            ? <CheckCircle size={13} color="#10b981" />
-                                            : <AlertTriangle size={13} color="#f59e0b" />}
-                                        Sharpe {fmtNum(metrics.sharpeRatio)} — {(metrics.sharpeRatio || 0) >= 1 ? 'solid risk-adjusted return' : 'choppy returns'}
-                                    </VerdictBullet>
-                                    <VerdictBullet theme={theme}>
-                                        <Shield size={13} color={grade.risk.color} />
-                                        Risk Level: <strong style={{ color: grade.risk.color }}>{grade.risk.label}</strong> (max DD {fmtPct(metrics.maxDrawdownPercent)})
-                                    </VerdictBullet>
-                                </VerdictBullets>
-                                <VerdictCTAs>
-                                    <PrimaryCTA onClick={() => navigate('/paper-trading', {
-                                        state: {
-                                            signal: {
-                                                symbol: config.symbol.toUpperCase(),
-                                                long: true,
-                                                crypto: false
+                                {grade.noTrades ? (
+                                    <VerdictBullets>
+                                        <VerdictBullet theme={theme}>
+                                            <AlertTriangle size={13} color="#f59e0b" />
+                                            The strategy never fired — no entry signals were generated in the selected window
+                                        </VerdictBullet>
+                                        <VerdictBullet theme={theme}>
+                                            <AlertTriangle size={13} color="#f59e0b" />
+                                            Cannot evaluate performance, risk, or edge with zero trades
+                                        </VerdictBullet>
+                                        <VerdictBullet theme={theme}>
+                                            <Sparkles size={13} color="#0ea5e9" />
+                                            See the "How to Improve" section below for tweaks to get the strategy firing
+                                        </VerdictBullet>
+                                    </VerdictBullets>
+                                ) : (
+                                    <VerdictBullets>
+                                        <VerdictBullet theme={theme}>
+                                            {grade.vsBuyHold >= 0
+                                                ? <CheckCircle size={13} color="#10b981" />
+                                                : <AlertTriangle size={13} color="#f59e0b" />}
+                                            {grade.vsBuyHold >= 0
+                                                ? `Beats buy & hold by ${fmtPct(grade.vsBuyHold)}`
+                                                : `Underperforms buy & hold by ${fmtPct(Math.abs(grade.vsBuyHold))}`}
+                                        </VerdictBullet>
+                                        <VerdictBullet theme={theme}>
+                                            {(metrics.sharpeRatio || 0) >= 1
+                                                ? <CheckCircle size={13} color="#10b981" />
+                                                : <AlertTriangle size={13} color="#f59e0b" />}
+                                            Sharpe {fmtNum(metrics.sharpeRatio)} — {(metrics.sharpeRatio || 0) >= 1 ? 'solid risk-adjusted return' : 'choppy returns'}
+                                        </VerdictBullet>
+                                        <VerdictBullet theme={theme}>
+                                            <Shield size={13} color={grade.risk.color} />
+                                            Risk Level: <strong style={{ color: grade.risk.color }}>{grade.risk.label}</strong> (max DD {fmtPct(metrics.maxDrawdownPercent)})
+                                        </VerdictBullet>
+                                    </VerdictBullets>
+                                )}
+                                {!grade.noTrades && (
+                                    <VerdictCTAs>
+                                        <PrimaryCTA onClick={() => navigate('/paper-trading', {
+                                            state: {
+                                                signal: {
+                                                    symbol: config.symbol.toUpperCase(),
+                                                    long: true,
+                                                    crypto: false
+                                                }
                                             }
-                                        }
-                                    })}>
-                                        <Copy size={14} /> Paper Trade Strategy
-                                    </PrimaryCTA>
-                                    <SecondaryCTA theme={theme} onClick={() => navigate('/alerts')}>
-                                        <Bell size={14} /> Get Alerts
-                                    </SecondaryCTA>
-                                </VerdictCTAs>
+                                        })}>
+                                            <Copy size={14} /> Paper Trade Strategy
+                                        </PrimaryCTA>
+                                        <SecondaryCTA theme={theme} onClick={() => navigate('/alerts')}>
+                                            <Bell size={14} /> Get Alerts
+                                        </SecondaryCTA>
+                                    </VerdictCTAs>
+                                )}
                             </VerdictText>
                         </VerdictHead>
                     </VerdictCard>
@@ -1314,14 +1390,14 @@ const StrategyLabPage = () => {
                         </SectionSub>
                         <MetricsGrid>
                             {[
-                                { key: 'totalReturnPercent', label: 'Total Return', val: metrics.totalReturnPercent, fmt: fmtPct, ctx: grade },
+                                { key: 'totalReturnPercent', label: 'Total Return', val: metrics.totalReturnPercent, fmt: fmtPct },
                                 { key: 'sharpeRatio', label: 'Sharpe Ratio', val: metrics.sharpeRatio, fmt: (v) => fmtNum(v) },
                                 { key: 'maxDrawdownPercent', label: 'Max Drawdown', val: metrics.maxDrawdownPercent, fmt: (v) => fmtPct(-Math.abs(v)) },
                                 { key: 'winRate', label: 'Win Rate', val: metrics.winRate, fmt: (v) => `${v?.toFixed(0)}%` },
                                 { key: 'profitFactor', label: 'Profit Factor', val: metrics.profitFactor, fmt: (v) => fmtNum(v) },
                                 { key: 'totalTrades', label: '# Trades', val: metrics.totalTrades, fmt: (v) => v }
                             ].map(m => {
-                                const interp = interpretMetric(m.key, m.val, m.ctx);
+                                const interp = interpretMetric(m.key, m.val, grade);
                                 const color = interp.tone === 'pass' ? '#10b981'
                                     : interp.tone === 'warn' ? '#ef4444'
                                     : (theme?.text?.primary || '#e0e6ed');
