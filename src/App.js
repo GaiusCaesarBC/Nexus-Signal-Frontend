@@ -1,7 +1,7 @@
 // src/App.js - OPTIMIZED WITH LAZY LOADING 🚀
 
 import React, { lazy, Suspense } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider as StyledThemeProvider, createGlobalStyle } from 'styled-components';
 import { HelmetProvider } from 'react-helmet-async';
 import { useAuth } from './context/AuthContext';
@@ -59,7 +59,6 @@ const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 const StockPage = lazy(() => import('./pages/StockPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const CookiePolicyPage = lazy(() => import('./pages/CookiePolicyPage'));
-const ScreenerPage = lazy(() => import('./pages/ScreenerPage'));
 const OpportunityEnginePage = lazy(() => import('./pages/OpportunityEnginePage'));
 const NewsPage = lazy(() => import('./pages/NewsPage'));
 const HeatmapPage = lazy(() => import('./pages/HeatmapPage'));
@@ -171,7 +170,7 @@ function AppContent() {
                     <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
                     <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
                     <Route path="/account" element={<ProtectedRoute><AccountSettingsPage /></ProtectedRoute>} />
-                    <Route path="/screener" element={<ProtectedRoute><ScreenerPage /></ProtectedRoute>} />
+                    <Route path="/screener" element={<Navigate to="/opportunities" replace />} />
                     <Route path="/opportunities" element={<ProtectedRoute><OpportunityEnginePage /></ProtectedRoute>} />
                     <Route path="/news" element={<ProtectedRoute><NewsPage /></ProtectedRoute>} />
                     <Route path="/heatmap" element={<ProtectedRoute><HeatmapPage /></ProtectedRoute>} />
