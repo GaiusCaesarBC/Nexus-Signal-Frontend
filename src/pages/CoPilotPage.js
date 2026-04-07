@@ -880,11 +880,11 @@ const CoPilotPage = () => {
     const [thread, setThread] = useState([]);
     const [sending, setSending] = useState(false);
 
-    // Live insights state
+    // Live insights state — use empty objects (not null) so optional access is safe
     const [insights, setInsights] = useState({
-        opportunity: null,
-        market: null,
-        smartMoney: null,
+        opportunity: {},
+        market: {},
+        smartMoney: {},
         loading: true,
         refreshedAt: null
     });
@@ -1138,11 +1138,12 @@ const CoPilotPage = () => {
                     <InsightCard theme={theme} $accent="#a78bfa" onClick={() => navigate('/opportunities')}>
                         <InsightLabel $accent="#a78bfa">🎯 OPPORTUNITY</InsightLabel>
                         <InsightHead theme={theme}>
-                            {insights.opportunity?.count ?? '--'} active setups
+                            {typeof insights.opportunity?.count === 'number' ? insights.opportunity.count : '--'} active setups
                         </InsightHead>
                         <InsightDetail theme={theme}>
                             {insights.opportunity?.bias ? `${insights.opportunity.bias} bias` : 'Loading...'}
-                            {insights.opportunity?.topSymbol && ` · Top: ${insights.opportunity.topSymbol} AI ${insights.opportunity.topScore}`}
+                            {insights.opportunity?.topSymbol && typeof insights.opportunity?.topScore === 'number'
+                                && ` · Top: ${insights.opportunity.topSymbol} AI ${insights.opportunity.topScore}`}
                         </InsightDetail>
                         <InsightCTA $accent="#a78bfa">Show me the best <ChevronRight size={11} /></InsightCTA>
                     </InsightCard>
@@ -1153,7 +1154,7 @@ const CoPilotPage = () => {
                             {insights.market?.label || 'Loading...'}
                         </InsightHead>
                         <InsightDetail theme={theme}>
-                            {insights.market?.upPct !== null
+                            {typeof insights.market?.upPct === 'number'
                                 ? `${insights.market.upPct}% of names up`
                                 : 'Awaiting market pulse'}
                             {insights.market?.insightSnippet && ` · ${insights.market.insightSnippet}...`}
@@ -1167,8 +1168,8 @@ const CoPilotPage = () => {
                             {insights.smartMoney?.label || 'Loading...'}
                         </InsightHead>
                         <InsightDetail theme={theme}>
-                            {insights.smartMoney?.netFlow !== null
-                                ? `Net ${(insights.smartMoney.netFlow ?? 0) >= 0 ? '+' : '−'}${fmtMoney(Math.abs(insights.smartMoney.netFlow ?? 0))}`
+                            {typeof insights.smartMoney?.netFlow === 'number'
+                                ? `Net ${insights.smartMoney.netFlow >= 0 ? '+' : '−'}${fmtMoney(Math.abs(insights.smartMoney.netFlow))}`
                                 : 'Awaiting flow data'}
                             {insights.smartMoney?.topSymbol && ` · Top: ${insights.smartMoney.topSymbol}`}
                         </InsightDetail>
