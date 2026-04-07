@@ -14,7 +14,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { Loader2, RefreshCw } from 'lucide-react';
 import {
-    sma, ema, bollinger, rsi, macd, vwap, volumeSeries
+    sma, ema, bollinger, rsi, macd, vwap, ichimoku, volumeSeries
 } from './indicators';
 
 const API_URL = process.env.REACT_APP_API_URL || process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
@@ -40,6 +40,7 @@ const INDICATORS = [
     { id: 'ema26',     label: 'EMA 26',  group: 'overlay', color: '#fb7185' },
     { id: 'bollinger', label: 'Bollinger', group: 'overlay', color: '#94a3b8' },
     { id: 'vwap',      label: 'VWAP',    group: 'overlay', color: '#fde047' },
+    { id: 'ichimoku',  label: 'Ichimoku', group: 'overlay', color: '#10b981' },
     { id: 'rsi',       label: 'RSI (14)', group: 'pane',   color: '#a78bfa' },
     { id: 'macd',      label: 'MACD',    group: 'pane',    color: '#0ea5e9' }
 ];
@@ -439,7 +440,8 @@ const TradingChart = ({
     useEffect(() => {
         if (!rsiHostRef.current) return undefined;
         const chart = createChart(rsiHostRef.current, {
-            width: rsiHostRef.current.clientWidth,
+            // Host is display:none until user enables RSI, so clientWidth may be 0 — fall back.
+            width: rsiHostRef.current.clientWidth || 600,
             height: 100,
             layout: { background: { color: 'transparent' }, textColor: '#94a3b8', fontSize: 10 },
             grid: { vertLines: { color: 'rgba(255,255,255,.04)' }, horzLines: { color: 'rgba(255,255,255,.04)' } },
@@ -476,7 +478,8 @@ const TradingChart = ({
     useEffect(() => {
         if (!macdHostRef.current) return undefined;
         const chart = createChart(macdHostRef.current, {
-            width: macdHostRef.current.clientWidth,
+            // Host is display:none until user enables MACD, so clientWidth may be 0 — fall back.
+            width: macdHostRef.current.clientWidth || 600,
             height: 110,
             layout: { background: { color: 'transparent' }, textColor: '#94a3b8', fontSize: 10 },
             grid: { vertLines: { color: 'rgba(255,255,255,.04)' }, horzLines: { color: 'rgba(255,255,255,.04)' } },
@@ -545,7 +548,7 @@ const TradingChart = ({
         };
 
         // Remove all old overlay indicators (we re-add active ones)
-        ['sma20', 'sma50', 'sma200', 'ema12', 'ema26', 'bollinger', 'vwap'].forEach(remove);
+        ['sma20', 'sma50', 'sma200', 'ema12', 'ema26', 'bollinger', 'vwap', 'ichimoku'].forEach(remove);
 
         // Add active overlay indicators
         if (activeIndicators.has('sma20')) {
@@ -587,6 +590,24 @@ const TradingChart = ({
             const s = chart.addLineSeries({ color: '#fde047', lineWidth: 2, priceLineVisible: false, lastValueVisible: false });
             s.setData(vwap(candles));
             indicatorSeriesRef.current.vwap = s;
+        }
+        if (activeIndicators.has('ichimoku')) {
+            const ich = ichimoku(candles);
+            // Tenkan (conversion) — fast amber
+            const tenkan = chart.addLineSeries({ color: '#f59e0b', lineWidth: 1.5, priceLineVisible: false, lastValueVisible: false });
+            tenkan.setData(ich.tenkan);
+            // Kijun (base) — slow sky-blue
+            const kijun = chart.addLineSeries({ color: '#0ea5e9', lineWidth: 1.5, priceLineVisible: false, lastValueVisible: false });
+            kijun.setData(ich.kijun);
+            // Span A & B — semi-transparent thicker lines that visually approximate the cloud
+            const spanA = chart.addLineSeries({ color: 'rgba(16,185,129,.55)', lineWidth: 2, priceLineVisible: false, lastValueVisible: false });
+            spanA.setData(ich.spanA);
+            const spanB = chart.addLineSeries({ color: 'rgba(239,68,68,.55)', lineWidth: 2, priceLineVisible: false, lastValueVisible: false });
+            spanB.setData(ich.spanB);
+            // Chikou (lagging) — dashed violet
+            const chikou = chart.addLineSeries({ color: '#a78bfa', lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false });
+            chikou.setData(ich.chikou);
+            indicatorSeriesRef.current.ichimoku = [tenkan, kijun, spanA, spanB, chikou];
         }
     }, [activeIndicators, candles]);
 
@@ -704,6 +725,21 @@ const TradingChart = ({
     const showRsiPane = activeIndicators.has('rsi');
     const showMacdPane = activeIndicators.has('macd');
 
+    // When a sub-pane becomes visible after being hidden via display:none, the chart
+    // instance still thinks its width is 0. Force a resize to the host's actual width.
+    useEffect(() => {
+        if (showRsiPane && rsiChartRef.current && rsiHostRef.current) {
+            const w = rsiHostRef.current.clientWidth;
+            if (w > 0) rsiChartRef.current.applyOptions({ width: Math.floor(w) });
+        }
+    }, [showRsiPane]);
+    useEffect(() => {
+        if (showMacdPane && macdChartRef.current && macdHostRef.current) {
+            const w = macdHostRef.current.clientWidth;
+            if (w > 0) macdChartRef.current.applyOptions({ width: Math.floor(w) });
+        }
+    }, [showMacdPane]);
+
     return (
         <Wrap theme={theme}>
             {/* Toolbar */}
@@ -769,21 +805,18 @@ const TradingChart = ({
                 </ChartHost>
             </PaneWrap>
 
-            {/* RSI sub-pane */}
-            {showRsiPane && (
-                <PaneWrap>
-                    <RsiHost theme={theme} ref={rsiHostRef} />
-                    <PaneLabel theme={theme}>RSI 14</PaneLabel>
-                </PaneWrap>
-            )}
+            {/* RSI sub-pane — always mounted so the chart instance has a stable host;
+                hidden via display:none when inactive */}
+            <PaneWrap style={{ display: showRsiPane ? 'block' : 'none' }}>
+                <RsiHost theme={theme} ref={rsiHostRef} />
+                <PaneLabel theme={theme}>RSI 14</PaneLabel>
+            </PaneWrap>
 
-            {/* MACD sub-pane */}
-            {showMacdPane && (
-                <PaneWrap>
-                    <MacdHost theme={theme} ref={macdHostRef} />
-                    <PaneLabel theme={theme}>MACD 12/26/9</PaneLabel>
-                </PaneWrap>
-            )}
+            {/* MACD sub-pane — same pattern as RSI */}
+            <PaneWrap style={{ display: showMacdPane ? 'block' : 'none' }}>
+                <MacdHost theme={theme} ref={macdHostRef} />
+                <PaneLabel theme={theme}>MACD 12/26/9</PaneLabel>
+            </PaneWrap>
         </Wrap>
     );
 };

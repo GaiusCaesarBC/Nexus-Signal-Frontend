@@ -186,6 +186,72 @@ export function vwap(candles) {
 }
 
 // ═══════════════════════════════════════════════════════════
+// ICHIMOKU CLOUD
+// Returns { tenkan, kijun, spanA, spanB, chikou } as {time, value}[]
+// SpanA / SpanB are projected `displacement` periods forward.
+// Chikou is the close price displaced backward.
+// ═══════════════════════════════════════════════════════════
+export function ichimoku(candles, tenkanPeriod = 9, kijunPeriod = 26, senkouBPeriod = 52, displacement = 26) {
+    if (!candles || candles.length < senkouBPeriod) {
+        return { tenkan: [], kijun: [], spanA: [], spanB: [], chikou: [] };
+    }
+
+    const tenkan = [];
+    const kijun = [];
+    const spanA = [];
+    const spanB = [];
+    const chikou = [];
+
+    // Period high/low midpoint at index i
+    const midpoint = (i, period) => {
+        if (i < period - 1) return null;
+        let hi = -Infinity, lo = Infinity;
+        for (let k = i - period + 1; k <= i; k++) {
+            if (candles[k].high > hi) hi = candles[k].high;
+            if (candles[k].low < lo) lo = candles[k].low;
+        }
+        return (hi + lo) / 2;
+    };
+
+    // Estimate the bar interval (in seconds) so we can project SpanA/B forward
+    // off the right edge of available candles.
+    const intervalSec = candles.length > 1
+        ? Math.max(1, Math.round((candles[candles.length - 1].time - candles[0].time) / (candles.length - 1)))
+        : 86400;
+
+    for (let i = 0; i < candles.length; i++) {
+        const t = candles[i].time;
+
+        const tk = midpoint(i, tenkanPeriod);
+        if (tk !== null) tenkan.push({ time: t, value: tk });
+
+        const kj = midpoint(i, kijunPeriod);
+        if (kj !== null) kijun.push({ time: t, value: kj });
+
+        // Chikou: today's close, plotted `displacement` bars back
+        if (i - displacement >= 0) {
+            chikou.push({ time: candles[i - displacement].time, value: candles[i].close });
+        }
+
+        // SpanA / SpanB are computed from values at index i but plotted at i+displacement
+        const futureIdx = i + displacement;
+        const futureTime = futureIdx < candles.length
+            ? candles[futureIdx].time
+            : candles[candles.length - 1].time + (futureIdx - candles.length + 1) * intervalSec;
+
+        if (tk !== null && kj !== null) {
+            spanA.push({ time: futureTime, value: (tk + kj) / 2 });
+        }
+        const sb = midpoint(i, senkouBPeriod);
+        if (sb !== null) {
+            spanB.push({ time: futureTime, value: sb });
+        }
+    }
+
+    return { tenkan, kijun, spanA, spanB, chikou };
+}
+
+// ═══════════════════════════════════════════════════════════
 // VOLUME — convert candles to histogram series with red/green colors
 // ═══════════════════════════════════════════════════════════
 export function volumeSeries(candles) {
