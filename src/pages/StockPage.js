@@ -7,7 +7,7 @@ import { formatStockPrice, formatCryptoPrice, formatPriceChange, formatVolume, f
 
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer
+  Tooltip, ResponsiveContainer, ReferenceLine, Label
 } from 'recharts';
 import {
   ArrowLeft, TrendingUp, TrendingDown, Brain, Target, Activity,
@@ -1162,6 +1162,9 @@ const StockPage = () => {
   const [isWatchlisted, setIsWatchlisted] = useState(false);
   const [hasAlerts, setHasAlerts] = useState(false);
 
+  // Setup levels from TradeSetupCard — used for chart overlays
+  const [setupLevels, setSetupLevels] = useState(null);
+
   const timeframes = ['1D', '5D', '1M', '3M', '6M', '1Y', '5Y', 'MAX'];
 
   // Get current price from stock info or chart data
@@ -1433,7 +1436,12 @@ const StockPage = () => {
       </StockHeader>
 
       {/* ═══ TRADE SETUP DECISION ENGINE ═══ */}
-      <TradeSetupCard symbol={symbol?.toUpperCase()} currentPrice={currentPrice} isCrypto={false} />
+      <TradeSetupCard
+        symbol={symbol?.toUpperCase()}
+        currentPrice={currentPrice}
+        isCrypto={false}
+        onSetupLoaded={setSetupLevels}
+      />
 
       <MainGrid>
         <LeftColumn>
@@ -1505,6 +1513,32 @@ const StockPage = () => {
                       strokeWidth={2}
                       fill="url(#priceGradient)"
                     />
+                    {/* Trade setup overlays */}
+                    {setupLevels?.entry && (
+                      <ReferenceLine y={setupLevels.entry} stroke="#fff" strokeDasharray="4 4" strokeWidth={1.5}>
+                        <Label value={`ENTRY ${formatPrice(setupLevels.entry, symbol)}`} position="right" fill="#fff" fontSize={10} fontWeight={700} />
+                      </ReferenceLine>
+                    )}
+                    {setupLevels?.sl && (
+                      <ReferenceLine y={setupLevels.sl} stroke="#ef4444" strokeDasharray="2 2" strokeWidth={1.5}>
+                        <Label value={`SL ${formatPrice(setupLevels.sl, symbol)}`} position="right" fill="#ef4444" fontSize={10} fontWeight={700} />
+                      </ReferenceLine>
+                    )}
+                    {setupLevels?.tp1 && (
+                      <ReferenceLine y={setupLevels.tp1} stroke="#10b981" strokeDasharray="2 2" strokeWidth={1} strokeOpacity={0.6}>
+                        <Label value={`TP1 ${formatPrice(setupLevels.tp1, symbol)}`} position="right" fill="#10b981" fontSize={9} fontWeight={600} />
+                      </ReferenceLine>
+                    )}
+                    {setupLevels?.tp2 && (
+                      <ReferenceLine y={setupLevels.tp2} stroke="#10b981" strokeDasharray="2 2" strokeWidth={1} strokeOpacity={0.8}>
+                        <Label value={`TP2 ${formatPrice(setupLevels.tp2, symbol)}`} position="right" fill="#10b981" fontSize={9} fontWeight={600} />
+                      </ReferenceLine>
+                    )}
+                    {setupLevels?.tp3 && (
+                      <ReferenceLine y={setupLevels.tp3} stroke="#10b981" strokeDasharray="2 2" strokeWidth={1.5}>
+                        <Label value={`TP3 ${formatPrice(setupLevels.tp3, symbol)}`} position="right" fill="#10b981" fontSize={10} fontWeight={700} />
+                      </ReferenceLine>
+                    )}
                   </AreaChart>
                 </ResponsiveContainer>
               )}

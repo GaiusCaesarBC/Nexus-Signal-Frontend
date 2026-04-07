@@ -605,6 +605,93 @@ const RiskTab = styled.button`
     }
 `;
 
+// ─── Related Opportunities ────────────────────────────────
+const RelatedSection = styled.div`margin-top:1.25rem;`;
+const RelatedHeader = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: .65rem;
+    flex-wrap: wrap;
+    gap: .4rem;
+`;
+const RelatedTitle = styled.h3`
+    font-size: .82rem;
+    font-weight: 800;
+    color: ${p => p.theme?.text?.primary || '#e0e6ed'};
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+`;
+const RelatedSub = styled.div`
+    font-size: .68rem;
+    color: ${p => p.theme?.text?.tertiary || '#64748b'};
+`;
+const RelatedGrid = styled.div`
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: .55rem;
+    @media(max-width:900px){grid-template-columns:repeat(2,1fr);}
+    @media(max-width:480px){grid-template-columns:1fr;}
+`;
+const RelatedCard = styled.div`
+    background: ${p => p.theme?.bg?.elevated || 'rgba(12,16,32,.92)'};
+    border: 1px solid ${p => p.theme?.border?.subtle || 'rgba(255,255,255,.08)'};
+    border-radius: 12px;
+    padding: .85rem;
+    cursor: pointer;
+    transition: all .2s;
+    &:hover {
+        transform: translateY(-2px);
+        border-color: ${p => (p.theme?.brand?.primary || '#00adef') + '60'};
+        box-shadow: 0 8px 20px ${p => (p.theme?.brand?.primary || '#00adef') + '20'};
+    }
+`;
+const RelTop = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: .35rem;
+`;
+const RelSym = styled.div`
+    font-size: .92rem;
+    font-weight: 800;
+    color: ${p => p.theme?.text?.primary || '#fff'};
+`;
+const RelScore = styled.div`
+    font-size: .9rem;
+    font-weight: 900;
+    color: ${p => p.$v >= 80 ? '#10b981' : p.$v >= 65 ? '#f59e0b' : '#94a3b8'};
+`;
+const RelBias = styled.div`
+    display: inline-flex;
+    align-items: center;
+    gap: .2rem;
+    padding: .15rem .4rem;
+    border-radius: 5px;
+    font-size: .55rem;
+    font-weight: 800;
+    background: ${p => p.$long ? 'rgba(16,185,129,.1)' : 'rgba(239,68,68,.1)'};
+    color: ${p => p.$long ? '#10b981' : '#ef4444'};
+    border: 1px solid ${p => p.$long ? 'rgba(16,185,129,.25)' : 'rgba(239,68,68,.25)'};
+    margin-bottom: .35rem;
+`;
+const RelSetup = styled.div`
+    font-size: .58rem;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+    color: #a78bfa;
+    font-weight: 700;
+    margin-bottom: .25rem;
+`;
+const RelWhy = styled.div`
+    font-size: .65rem;
+    color: ${p => p.theme?.text?.tertiary || '#64748b'};
+    line-height: 1.4;
+    min-height: 2.6em;
+`;
+
 // ─── Track Record ─────────────────────────────────────────
 const TrackStrip = styled.div`
     margin-top: 1rem;
@@ -659,7 +746,7 @@ const TrackLabel = styled.div`
 // ═══════════════════════════════════════════════════════════
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════
-const TradeSetupCard = ({ symbol, currentPrice, isCrypto = false }) => {
+const TradeSetupCard = ({ symbol, currentPrice, isCrypto = false, onSetupLoaded }) => {
     const navigate = useNavigate();
     const { theme } = useTheme();
     const { api } = useAuth();
@@ -667,6 +754,7 @@ const TradeSetupCard = ({ symbol, currentPrice, isCrypto = false }) => {
     const [setup, setSetup] = useState(null);
     const [loading, setLoading] = useState(true);
     const [trackRecord, setTrackRecord] = useState(null);
+    const [related, setRelated] = useState([]);
     const [riskPct, setRiskPct] = useState(1);
 
     const fetchSetup = useCallback(async () => {
@@ -680,6 +768,16 @@ const TradeSetupCard = ({ symbol, currentPrice, isCrypto = false }) => {
             const oppRes = await fetcher(`/opportunities/by-symbol/${encodeURIComponent(symbol)}`);
             const opp = oppRes?.opportunity || null;
             setSetup(opp);
+            if (onSetupLoaded) {
+                onSetupLoaded(opp ? {
+                    entry: opp.entry,
+                    sl: opp.sl,
+                    tp1: opp.tp1,
+                    tp2: opp.tp2,
+                    tp3: opp.tp3,
+                    bias: opp.bias
+                } : null);
+            }
 
             // Fetch track record for this setup type
             if (opp?.setupType) {
@@ -689,13 +787,18 @@ const TradeSetupCard = ({ symbol, currentPrice, isCrypto = false }) => {
             } else {
                 setTrackRecord(null);
             }
+
+            // Fetch related opportunities
+            const relRes = await fetcher(`/opportunities/related?symbol=${encodeURIComponent(symbol)}&limit=4`)
+                .catch(() => null);
+            setRelated(relRes?.opportunities || []);
         } catch (e) {
             console.error('[TradeSetupCard] Fetch failed:', e);
             setSetup(null);
         } finally {
             setLoading(false);
         }
-    }, [symbol, api]);
+    }, [symbol, api, onSetupLoaded]);
 
     useEffect(() => { fetchSetup(); }, [fetchSetup]);
 
@@ -1070,6 +1173,39 @@ const TradeSetupCard = ({ symbol, currentPrice, isCrypto = false }) => {
                         </TrackNum>
                     </TrackNums>
                 </TrackStrip>
+            )}
+
+            {/* ═══ RELATED OPPORTUNITIES ═══ */}
+            {related && related.length > 0 && (
+                <RelatedSection>
+                    <RelatedHeader>
+                        <RelatedTitle theme={theme}>
+                            <Sparkles size={14} color={theme?.brand?.primary || '#00adef'} />
+                            Other setups the Engine is watching
+                        </RelatedTitle>
+                        <RelatedSub theme={theme}>Similar setups · click to explore</RelatedSub>
+                    </RelatedHeader>
+                    <RelatedGrid>
+                        {related.map(r => (
+                            <RelatedCard
+                                key={r.id}
+                                theme={theme}
+                                onClick={() => navigate(r.isCrypto ? `/crypto/${r.symbol}` : `/stock/${r.symbol}`)}
+                            >
+                                <RelTop>
+                                    <RelSym theme={theme}>{r.symbol}</RelSym>
+                                    <RelScore $v={r.aiScore}>{r.aiScore}</RelScore>
+                                </RelTop>
+                                <RelBias $long={r.bias === 'long'}>
+                                    {r.bias === 'long' ? <ArrowUpRight size={9} /> : <ArrowDownRight size={9} />}
+                                    {r.bias === 'long' ? 'LONG' : 'SHORT'}
+                                </RelBias>
+                                <RelSetup>{r.setupLabel}</RelSetup>
+                                <RelWhy theme={theme}>{r.whySurfaced}</RelWhy>
+                            </RelatedCard>
+                        ))}
+                    </RelatedGrid>
+                </RelatedSection>
             )}
         </Wrap>
     );
