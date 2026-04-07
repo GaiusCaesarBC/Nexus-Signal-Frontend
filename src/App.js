@@ -97,7 +97,7 @@ const EconomicCalendarPage = lazy(() => import('./pages/EconomicCalendarPage'));
 const AccountSettingsPage = lazy(() => import('./pages/AccountSettingsPage'));
 const BacktestingPage = lazy(() => import('./pages/BacktestingPage'));
 const CopyTradingPage = lazy(() => import('./pages/CopyTradingPage'));
-const PatternScannerPage = lazy(() => import('./pages/PatternScannerPage'));
+const PatternIntelligencePage = lazy(() => import('./pages/PatternIntelligencePage'));
 
 // Global styles to set the page background
 const GlobalStyle = createGlobalStyle`
@@ -201,7 +201,8 @@ function AppContent() {
                     <Route path="/prediction-history" element={<PredictionHistoryPage />} />
                     <Route path="/accuracy-dashboard" element={<ProtectedRoute><AccuracyDashboardPage /></ProtectedRoute>} />
                     <Route path="/backtesting" element={<ProtectedRoute><BacktestingPage /></ProtectedRoute>} />
-                    <Route path="/pattern-scanner" element={<ProtectedRoute><PatternScannerPage /></ProtectedRoute>} />
+                    <Route path="/pattern-scanner" element={<Navigate to="/patterns" replace />} />
+                    <Route path="/patterns" element={<ProtectedRoute><PatternIntelligencePage /></ProtectedRoute>} />
                     <Route path="/swing-trading" element={<Navigate to="/opportunities" replace />} />
                     <Route path="/earnings" element={<ProtectedRoute><EarningsCalendarPage /></ProtectedRoute>} />
                     <Route path="/financials" element={<ProtectedRoute><CompanyFinancialsPage /></ProtectedRoute>} />

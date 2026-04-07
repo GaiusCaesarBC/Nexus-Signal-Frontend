@@ -232,7 +232,7 @@ const Footer = () => {
                             <ColTitle>Product</ColTitle>
                             <FLink to="/signals">Live Signals <NewBadge>New</NewBadge></FLink>
                             <FLink to="/predict">AI Signals</FLink>
-                            <FLink to="/pattern-scanner">Pattern Scanner</FLink>
+                            <FLink to="/patterns">Pattern Intelligence</FLink>
                             <FLink to="/sentiment">Sentiment Analysis</FLink>
                             <FLink to="/paper-trading">Paper Trading</FLink>
                             <FLink to="/backtesting">Backtesting</FLink>
