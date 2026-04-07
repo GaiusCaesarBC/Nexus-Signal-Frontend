@@ -88,7 +88,7 @@ const OAuthCallbackPage = lazy(() => import('./pages/OAuthCallbackPage'));
 const WhitepaperPage = lazy(() => import('./pages/WhitepaperPage'));
 const AlertsPage = lazy(() => import('./pages/AlertsPage'));
 const AccuracyDashboardPage = lazy(() => import('./pages/AccuracyDashboardPage'));
-const EarningsCalendarPage = lazy(() => import('./pages/EarningsCalendarPage'));
+const EarningsEdgePage = lazy(() => import('./pages/EarningsEdgePage'));
 const PortfolioAnalyticsPage = lazy(() => import('./pages/PortfolioAnalyticsPage'));
 const CompanyFinancialsPage = lazy(() => import('./pages/CompanyFinancialsPage'));
 const MarketReportsPage = lazy(() => import('./pages/MarketReportsPage'));
@@ -208,7 +208,7 @@ function AppContent() {
                     <Route path="/pattern-scanner" element={<Navigate to="/patterns" replace />} />
                     <Route path="/patterns" element={<ProtectedRoute><PatternIntelligencePage /></ProtectedRoute>} />
                     <Route path="/swing-trading" element={<Navigate to="/opportunities" replace />} />
-                    <Route path="/earnings" element={<ProtectedRoute><EarningsCalendarPage /></ProtectedRoute>} />
+                    <Route path="/earnings" element={<ProtectedRoute><EarningsEdgePage /></ProtectedRoute>} />
                     <Route path="/financials" element={<ProtectedRoute><CompanyFinancialsPage /></ProtectedRoute>} />
                     <Route path="/market-reports" element={<ProtectedRoute><MarketReportsPage /></ProtectedRoute>} />
                     <Route path="/sector-rotation" element={<ProtectedRoute><SectorRotationPage /></ProtectedRoute>} />
