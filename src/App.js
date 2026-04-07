@@ -95,7 +95,7 @@ const MarketReportsPage = lazy(() => import('./pages/MarketReportsPage'));
 const SectorRotationPage = lazy(() => import('./pages/SectorRotationPage'));
 const EconomicCalendarPage = lazy(() => import('./pages/EconomicCalendarPage'));
 const AccountSettingsPage = lazy(() => import('./pages/AccountSettingsPage'));
-const BacktestingPage = lazy(() => import('./pages/BacktestingPage'));
+const StrategyLabPage = lazy(() => import('./pages/StrategyLabPage'));
 const CopyTradingPage = lazy(() => import('./pages/CopyTradingPage'));
 const PatternIntelligencePage = lazy(() => import('./pages/PatternIntelligencePage'));
 
@@ -203,7 +203,8 @@ function AppContent() {
                     <Route path="/compare" element={<ShowdownPage />} />
                     <Route path="/prediction-history" element={<PredictionHistoryPage />} />
                     <Route path="/accuracy-dashboard" element={<ProtectedRoute><AccuracyDashboardPage /></ProtectedRoute>} />
-                    <Route path="/backtesting" element={<ProtectedRoute><BacktestingPage /></ProtectedRoute>} />
+                    <Route path="/backtesting" element={<ProtectedRoute><StrategyLabPage /></ProtectedRoute>} />
+                    <Route path="/lab" element={<Navigate to="/backtesting" replace />} />
                     <Route path="/pattern-scanner" element={<Navigate to="/patterns" replace />} />
                     <Route path="/patterns" element={<ProtectedRoute><PatternIntelligencePage /></ProtectedRoute>} />
                     <Route path="/swing-trading" element={<Navigate to="/opportunities" replace />} />

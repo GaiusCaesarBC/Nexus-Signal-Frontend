@@ -1389,7 +1389,7 @@ const Navbar = () => {
             { path: '/compare', label: 'Asset Showdown', icon: BarChart3 },
             { path: '/smart-money', label: 'Smart Money', icon: Waves },
             { path: '/predict', label: 'AI Predict', icon: Brain, section: 'AI Tools' },
-            { path: '/backtesting', label: 'Backtesting', icon: History },
+            { path: '/backtesting', label: 'Strategy Lab', icon: History },
             { path: '/accuracy-dashboard', label: 'Prediction Accuracy', icon: Trophy },
             { path: '/chat', label: 'AI Chat', icon: MessageSquare },
             { path: '/news', label: 'News', icon: Newspaper, section: 'Market' },
