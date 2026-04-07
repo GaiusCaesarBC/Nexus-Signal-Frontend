@@ -80,7 +80,7 @@ const PriceServiceTester = lazy(() => import('./components/dev/PriceServiceTeste
 const OnboardingFlow = lazy(() => import('./pages/OnboardingFlow'));
 const PredictionsShowcase = lazy(() => import('./pages/PredictionsShowcase'));
 const CryptoPage = lazy(() => import('./pages/CryptoPage'));
-const WhaleAlertsPage = lazy(() => import('./pages/WhaleAlertsPage'));
+const SmartMoneyPage = lazy(() => import('./pages/SmartMoneyPage'));
 const ShowdownPage = lazy(() => import('./pages/ShowdownPage'));
 const PredictionHistoryPage = lazy(() => import('./pages/PredictionHistoryPage'));
 const ChartPage = lazy(() => import('./pages/ChartPage'));
@@ -196,7 +196,8 @@ function AppContent() {
                     <Route path="/onboarding" element={<OnboardingFlow />} />
                     <Route path="/predictions-showcase" element={<PredictionsShowcase />} />
                     <Route path="/crypto/:symbol" element={<ProtectedRoute><CryptoPage /></ProtectedRoute>} />
-                    <Route path="/whale-alerts" element={<ProtectedRoute><WhaleAlertsPage /></ProtectedRoute>} />
+                    <Route path="/whale-alerts" element={<Navigate to="/smart-money" replace />} />
+                    <Route path="/smart-money" element={<ProtectedRoute><SmartMoneyPage /></ProtectedRoute>} />
                     <Route path="/alerts" element={<ProtectedRoute><AlertsPage /></ProtectedRoute>} />
                     <Route path="/profile/:username" element={<ProtectedRoute><PublicProfilePage /></ProtectedRoute>} />
                     <Route path="/compare" element={<ShowdownPage />} />
