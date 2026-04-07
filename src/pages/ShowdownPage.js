@@ -64,30 +64,92 @@ const COMMON_CRYPTO = new Set([
 const guessIsCrypto = (sym) => COMMON_CRYPTO.has((sym || '').toUpperCase());
 
 // ═══════════════════════════════════════════════════════════
-// SCORING — pick the winner
+// SCORING — pick the winner DIRECTIONALLY (best LONG vs best SHORT)
 // ═══════════════════════════════════════════════════════════
 function pickWinner(assets) {
-    if (!assets || assets.length < 2) return { winner: null, avoid: null };
+    if (!assets || assets.length < 2) return { winner: null, avoid: null, ranked: [] };
+
     const scored = assets.map(a => {
         const perf = a.changePercent || 0;
-        const ai = a.aiScore || 50;
-        const trendStrength = a.trendStrength || 0;
+        const aiScore = a.aiScore || 0; // 0 when no signal — don't fake a baseline
+        const aiBias = a.aiBias; // 'long' | 'short' | null
+        const trendStr = a.trendStrength || 0;
         const volSpike = a.volumeSpike || 1;
+
+        // Determine the asset's BEST direction for trading
+        let bestDirection;
+        if (aiBias === 'long' || aiBias === 'short') {
+            bestDirection = aiBias; // Trust the AI when present
+        } else if (perf > 1 && trendStr > 0) {
+            bestDirection = 'long';
+        } else if (perf < -1 && trendStr < 0) {
+            bestDirection = 'short';
+        } else {
+            bestDirection = perf >= 0 ? 'long' : 'short';
+        }
+
+        // Score the asset on its OWN best direction
+        const dirPerf = bestDirection === 'long' ? perf : -perf;
+        const dirTrend = bestDirection === 'long' ? trendStr : -trendStr;
+
+        // AI score only contributes if the AI agrees with the chosen direction
+        const aiContribution = aiBias === bestDirection ? aiScore : 0;
+
         const score =
-            perf * 1.5 +
-            ai * 1.0 +
-            trendStrength * 0.8 +
-            volSpike * 10;
-        return { ...a, _score: Math.round(score * 10) / 10 };
+            dirPerf * 2.0 +              // directional move (matters most)
+            aiContribution * 0.9 +       // AI conviction (only if aligned)
+            dirTrend * 0.8 +             // trend alignment
+            (volSpike - 1) * 20;         // volume spike bonus
+
+        return {
+            ...a,
+            _score: Math.round(score * 10) / 10,
+            _bestDirection: bestDirection,
+            _dirPerf: dirPerf
+        };
     });
+
     const ranked = [...scored].sort((a, b) => b._score - a._score);
     const winner = ranked[0];
-    const lowest = ranked[ranked.length - 1];
-    // Only flag AVOID when the lowest is genuinely weak
-    const avoid = (lowest && lowest._score < 20 && lowest.changePercent < 0)
-        ? lowest
-        : null;
+
+    // Avoid card: only show with 3+ assets where the worst is genuinely bad
+    // AND its bias is opposite the winner (so it's a "fade this" candidate)
+    let avoid = null;
+    if (assets.length >= 3) {
+        const worst = ranked[ranked.length - 1];
+        if (worst && worst._score < 5 && worst._bestDirection !== winner._bestDirection) {
+            avoid = worst;
+        }
+    }
+
     return { winner, avoid, ranked };
+}
+
+// Count how many table cells each asset wins (for the summary tally)
+function countTableWins(assets) {
+    if (!assets || assets.length < 2) return {};
+    const counts = {};
+    assets.forEach(a => { counts[a.symbol] = 0; });
+
+    const max = (key) => {
+        const valid = assets.filter(a => a[key] !== null && a[key] !== undefined && !isNaN(a[key]));
+        if (!valid.length) return null;
+        return valid.reduce((m, a) => (a[key] > m[key] ? a : m));
+    };
+    const min = (key) => {
+        const valid = assets.filter(a => a[key] !== null && a[key] !== undefined && !isNaN(a[key]) && a[key] > 0);
+        if (!valid.length) return null;
+        return valid.reduce((m, a) => (a[key] < m[key] ? a : m));
+    };
+
+    const incrementWinner = (winner) => { if (winner) counts[winner.symbol] = (counts[winner.symbol] || 0) + 1; };
+
+    incrementWinner(max('changePercent'));
+    incrementWinner(max('volume'));
+    incrementWinner(max('marketCap'));
+    incrementWinner(max('aiScore'));
+    incrementWinner(min('pe'));
+    return counts;
 }
 
 // Trend / momentum / volatility classification from existing data
@@ -158,29 +220,63 @@ function normalizeSeries(seriesMap) {
     });
 }
 
-// Generate one-line "why" for the verdict winner
-function buildWinnerWhy(winner, ranked) {
+// Generate one-line "why" for the verdict winner — bias-aware + honest
+function buildWinnerWhy(winner) {
     if (!winner) return '';
-    const parts = [];
-    if (winner.changePercent > 5) parts.push('strong outperformance');
-    else if (winner.changePercent > 2) parts.push('clear outperformance');
-    if (winner.aiScore >= 75) parts.push('high AI conviction');
-    if ((winner.trendStrength || 0) > 5) parts.push('momentum building');
-    if (winner.volumeSpike >= 1.5) parts.push('volume confirms');
-    if (parts.length === 0) parts.push('best risk/reward in this group');
-    return `Strongest setup — ${parts.slice(0, 3).join(', ')}.`;
+    const dir = winner._bestDirection;
+    const perf = winner.changePercent || 0;
+    const ai = winner.aiScore;
+    const aiBias = winner.aiBias;
+    const trendStr = winner.trendStrength || 0;
+
+    // Pick the dominant reason
+    if (aiBias === dir && ai >= 70) {
+        return `Highest AI conviction in the group (${ai}/100, ${dir.toUpperCase()} bias). Trade with the AI's call.`;
+    }
+    if (Math.abs(perf) >= 5) {
+        return dir === 'long'
+            ? `Strongest momentum in the group — up ${perf.toFixed(2)}% with ${trendStr > 3 ? 'a clear bullish trend' : 'building strength'}.`
+            : `Sharpest decline in the group — down ${Math.abs(perf).toFixed(2)}%. Best short candidate.`;
+    }
+    if (Math.abs(perf) >= 1) {
+        return dir === 'long'
+            ? `Slight edge — ${perf >= 0 ? '+' : ''}${perf.toFixed(2)}% with ${trendStr > 0 ? 'bullish trend' : 'mixed signals'}.`
+            : `Mildly underperforming peers — best short setup, but conviction is moderate.`;
+    }
+    if (ai && ai >= 65) {
+        return `Marginal price lead, but AI conviction (${ai}/100) makes this the strongest setup.`;
+    }
+    return `Slim margin — wait for clearer confirmation before committing size.`;
 }
 function buildAvoidWhy(avoid) {
     if (!avoid) return '';
-    if (avoid.changePercent < -5) return 'Sharp decline — wait for stabilization or consider short setups.';
+    if (avoid.changePercent < -5) return 'Sharp decline with weak structure — best fade candidate in the group.';
     if ((avoid.trendStrength || 0) < -2) return 'Trend rolling over with weak momentum.';
-    return 'Underperforming peers across multiple metrics.';
+    return 'Underperforming peers across multiple metrics — consider as a short setup.';
 }
-function buildSummary(winner, ranked) {
+function buildSummary(ranked, winsByCount) {
     if (!ranked || ranked.length < 2) return '';
     const top = ranked[0];
-    const last = ranked[ranked.length - 1];
-    return `${top.symbol} leads on momentum and AI score; ${last.symbol} is the weakest of the group.`;
+    const symbols = ranked.map(a => a.symbol);
+
+    // Find who wins the most table cells
+    const sortedByWins = symbols
+        .map(s => ({ s, w: winsByCount[s] || 0 }))
+        .sort((a, b) => b.w - a.w);
+    const cellLeader = sortedByWins[0];
+
+    const cellLeaderWins = cellLeader.w;
+    const totalCells = Object.values(winsByCount).reduce((a, b) => a + b, 0);
+
+    if (top.symbol === cellLeader.s && cellLeaderWins > 0) {
+        return `${top.symbol} is the strongest ${top._bestDirection.toUpperCase()} setup and wins ${cellLeaderWins} of ${totalCells} comparison metrics.`;
+    }
+
+    if (cellLeaderWins > 0 && cellLeader.s !== top.symbol) {
+        return `${top.symbol} edges out on directional setup (${top._bestDirection.toUpperCase()}), while ${cellLeader.s} wins more raw metrics (${cellLeaderWins}/${totalCells}).`;
+    }
+
+    return `${top.symbol} leads as the strongest ${top._bestDirection.toUpperCase()} setup in the group.`;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -886,6 +982,17 @@ const ShowdownPage = () => {
             // Opportunity (best-effort)
             const opp = await fetcher(`/opportunities/by-symbol/${sym}`).catch(() => null);
 
+            // Pull RSI from any of the possible nesting shapes
+            const oppData = opp?.opportunity;
+            const indicators = oppData?.indicators || {};
+            const rsiRaw = indicators.RSI ?? indicators.rsi ?? null;
+            let rsiValue = null;
+            if (rsiRaw !== null && rsiRaw !== undefined) {
+                rsiValue = typeof rsiRaw === 'object' ? rsiRaw.value : rsiRaw;
+                if (typeof rsiValue === 'string') rsiValue = parseFloat(rsiValue);
+                if (typeof rsiValue !== 'number' || isNaN(rsiValue)) rsiValue = null;
+            }
+
             // Chart historical
             const histPath = isCrypto
                 ? `/crypto/historical/${sym}`
@@ -912,14 +1019,14 @@ const ShowdownPage = () => {
                 week52Low: quote.low52 || quote.atl || null,
                 pe: quote.pe || null,
                 eps: quote.eps || null,
-                rsi: opp?.opportunity?.indicators?.RSI?.value || null,
-                aiScore: opp?.opportunity?.aiScore || null,
-                aiBias: opp?.opportunity?.bias || null,
-                aiConfidence: opp?.opportunity?.confidence || null,
-                aiSetupLabel: opp?.opportunity?.setupLabel || null,
-                aiWhy: opp?.opportunity?.whySurfaced || null,
-                signalId: opp?.opportunity?.id || opp?.opportunity?.signalId || null,
-                hasLiveSignal: !!opp?.opportunity,
+                rsi: rsiValue,
+                aiScore: oppData?.aiScore ?? null,
+                aiBias: oppData?.bias ?? null,
+                aiConfidence: oppData?.confidence ?? null,
+                aiSetupLabel: oppData?.setupLabel ?? null,
+                aiWhy: oppData?.whySurfaced ?? null,
+                signalId: oppData?.id || oppData?.signalId || null,
+                hasLiveSignal: !!oppData,
                 volumeSpike: 1,
                 series,
                 ...tm
@@ -995,6 +1102,7 @@ const ShowdownPage = () => {
 
     // ───── Computed ─────
     const verdict = useMemo(() => pickWinner(assets), [assets]);
+    const tableWins = useMemo(() => countTableWins(assets), [assets]);
 
     // Per-row "winner" detection for table
     const winnerMap = useMemo(() => {
@@ -1052,7 +1160,7 @@ const ShowdownPage = () => {
         });
     }, [assets, chartView]);
 
-    const summary = useMemo(() => buildSummary(verdict.winner, verdict.ranked), [verdict]);
+    const summary = useMemo(() => buildSummary(verdict.ranked, tableWins), [verdict, tableWins]);
 
     return (
         <Page theme={theme}>
@@ -1149,10 +1257,32 @@ const ShowdownPage = () => {
                 {verdict.winner && assets.length >= 2 && (
                     <VerdictWrap>
                         <VerdictGrid $hasAvoid={!!verdict.avoid}>
-                            <VerdictCard theme={theme} $variant="winner">
-                                <VerdictLabel $variant="winner"><Trophy size={11} /> WINNER</VerdictLabel>
+                            <VerdictCard theme={theme} $variant={verdict.winner._bestDirection === 'short' ? 'avoid' : 'winner'}>
+                                <VerdictLabel $variant="winner">
+                                    <Trophy size={11} /> STRONGEST SETUP — {(verdict.winner._bestDirection || 'long').toUpperCase()}
+                                </VerdictLabel>
                                 <VerdictHead>
-                                    <VerdictSym theme={theme}>{verdict.winner.symbol}</VerdictSym>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '.7rem', flexWrap: 'wrap' }}>
+                                        <VerdictSym theme={theme}>{verdict.winner.symbol}</VerdictSym>
+                                        <span style={{
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: '.25rem',
+                                            padding: '.3rem .7rem',
+                                            borderRadius: '7px',
+                                            fontSize: '.72rem',
+                                            fontWeight: 800,
+                                            background: verdict.winner._bestDirection === 'long'
+                                                ? 'rgba(16,185,129,.15)' : 'rgba(239,68,68,.15)',
+                                            color: verdict.winner._bestDirection === 'long' ? '#10b981' : '#ef4444',
+                                            border: `1px solid ${verdict.winner._bestDirection === 'long' ? 'rgba(16,185,129,.3)' : 'rgba(239,68,68,.3)'}`
+                                        }}>
+                                            {verdict.winner._bestDirection === 'long'
+                                                ? <ArrowUpRight size={12} />
+                                                : <ArrowDownRight size={12} />}
+                                            {verdict.winner._bestDirection === 'long' ? 'LONG' : 'SHORT'}
+                                        </span>
+                                    </div>
                                     <VerdictMetrics>
                                         <VerdictMetric>
                                             <VerdictMetricVal $c={verdict.winner.changePercent >= 0 ? '#10b981' : '#ef4444'}>
@@ -1160,19 +1290,30 @@ const ShowdownPage = () => {
                                             </VerdictMetricVal>
                                             <VerdictMetricLabel theme={theme}>Change</VerdictMetricLabel>
                                         </VerdictMetric>
-                                        {verdict.winner.aiScore !== null && (
+                                        {verdict.winner.aiScore !== null && verdict.winner.aiScore !== undefined && (
                                             <VerdictMetric>
-                                                <VerdictMetricVal $c={verdict.winner.aiScore >= 80 ? '#10b981' : '#f59e0b'}>
+                                                <VerdictMetricVal $c={verdict.winner.aiScore >= 80 ? '#10b981' : verdict.winner.aiScore >= 65 ? '#f59e0b' : '#94a3b8'}>
                                                     {verdict.winner.aiScore}
                                                 </VerdictMetricVal>
                                                 <VerdictMetricLabel theme={theme}>AI Score</VerdictMetricLabel>
                                             </VerdictMetric>
                                         )}
+                                        <VerdictMetric>
+                                            <VerdictMetricVal $c={theme?.brand?.primary || '#00adef'}>
+                                                {tableWins[verdict.winner.symbol] || 0}/{Object.values(tableWins).reduce((a, b) => a + b, 0) || 5}
+                                            </VerdictMetricVal>
+                                            <VerdictMetricLabel theme={theme}>Metrics Won</VerdictMetricLabel>
+                                        </VerdictMetric>
                                     </VerdictMetrics>
                                 </VerdictHead>
-                                <VerdictWhy theme={theme}>{buildWinnerWhy(verdict.winner, verdict.ranked)}</VerdictWhy>
-                                <VerdictCTA $variant="winner" onClick={() => goToTrade(verdict.winner)}>
-                                    {verdict.winner.hasLiveSignal ? 'View Trade Setup' : 'Run Analysis'} →
+                                <VerdictWhy theme={theme}>{buildWinnerWhy(verdict.winner)}</VerdictWhy>
+                                <VerdictCTA
+                                    $variant={verdict.winner._bestDirection === 'short' ? 'avoid' : 'winner'}
+                                    onClick={() => goToTrade(verdict.winner)}
+                                >
+                                    {verdict.winner.hasLiveSignal
+                                        ? `View ${(verdict.winner._bestDirection || 'long').toUpperCase()} Setup`
+                                        : 'Run Analysis'} →
                                 </VerdictCTA>
                             </VerdictCard>
 
@@ -1186,7 +1327,7 @@ const ShowdownPage = () => {
                                                 <VerdictMetricVal $c="#ef4444">{fmtPct(verdict.avoid.changePercent)}</VerdictMetricVal>
                                                 <VerdictMetricLabel theme={theme}>Change</VerdictMetricLabel>
                                             </VerdictMetric>
-                                            {verdict.avoid.aiScore !== null && (
+                                            {verdict.avoid.aiScore !== null && verdict.avoid.aiScore !== undefined && (
                                                 <VerdictMetric>
                                                     <VerdictMetricVal $c="#ef4444">{verdict.avoid.aiScore}</VerdictMetricVal>
                                                     <VerdictMetricLabel theme={theme}>AI Score</VerdictMetricLabel>
@@ -1204,15 +1345,20 @@ const ShowdownPage = () => {
                         {summary && (
                             <div style={{
                                 marginTop: '.85rem',
-                                padding: '.65rem 1rem',
+                                padding: '.7rem 1.1rem',
                                 background: 'rgba(167,139,250,.05)',
                                 border: '1px solid rgba(167,139,250,.18)',
                                 borderRadius: '10px',
                                 fontSize: '.78rem',
                                 color: theme?.text?.secondary || '#c8d0da',
-                                fontWeight: 500
+                                fontWeight: 500,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '.5rem',
+                                flexWrap: 'wrap'
                             }}>
-                                📊 {summary}
+                                <span>📊</span>
+                                <span style={{ flex: 1 }}>{summary}</span>
                             </div>
                         )}
                     </VerdictWrap>
@@ -1251,15 +1397,19 @@ const ShowdownPage = () => {
                                             )}
                                         </AiTop>
                                         <AiScoreLine theme={theme}>
-                                            {a.aiSetupLabel || 'No active setup'}
+                                            {a.aiSetupLabel || `${TREND_META[a.trend]?.label || 'Trend'} · ${MOMENTUM_META[a.momentum]?.label || 'Momentum'}`}
                                             {a.aiScore !== null && a.aiScore !== undefined && (
                                                 <AiScoreNum $v={a.aiScore}>· AI {a.aiScore}</AiScoreNum>
                                             )}
                                         </AiScoreLine>
                                         <AiWhy theme={theme}>
-                                            {a.aiWhy || (a.changePercent >= 0
-                                                ? 'No live setup — current trend is positive but conditions are mixed.'
-                                                : 'No live setup — current trend is negative, watch for stabilization.')}
+                                            {a.aiWhy
+                                                ? a.aiWhy
+                                                : a.changePercent >= 1
+                                                ? `Up ${fmtPct(a.changePercent)} on the period with ${TREND_META[a.trend]?.label?.toLowerCase() || 'mixed'} trend. No active AI setup — run analysis to scan.`
+                                                : a.changePercent <= -1
+                                                ? `Down ${fmtPct(a.changePercent)} on the period. No active AI setup — watch for stabilization or short opportunities.`
+                                                : `Flat over the period. No active AI setup — wait for clearer direction.`}
                                         </AiWhy>
                                         <AiActions onClick={(e) => e.stopPropagation()}>
                                             <AiTradeBtn theme={theme} onClick={() => goToTrade(a)}>
