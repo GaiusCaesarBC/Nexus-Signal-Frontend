@@ -46,7 +46,7 @@ const PredictPage = lazy(() => import('./pages/PredictionsPage'));
 const SignalsPage = lazy(() => import('./pages/SignalsPage'));
 const SignalDetailPage = lazy(() => import('./pages/SignalDetailPage'));
 const PostDetailPage = lazy(() => import('./pages/PostDetailPage'));
-const ChatPage = lazy(() => import('./pages/ChatPage'));
+const CoPilotPage = lazy(() => import('./pages/CoPilotPage'));
 const PricingPage = lazy(() => import('./pages/PricingPage'));
 const PriceComparisonPage = lazy(() => import('./pages/PriceComparisonPage'));
 const WatchlistPage = lazy(() => import('./pages/WatchlistPage'));
@@ -166,7 +166,7 @@ function AppContent() {
                     <Route path="/signals/stocks" element={<ProtectedRoute><SignalsPage /></ProtectedRoute>} />
                     <Route path="/signals/crypto" element={<ProtectedRoute><SignalsPage /></ProtectedRoute>} />
                     <Route path="/signal/:id" element={<ProtectedRoute><SignalDetailPage /></ProtectedRoute>} />
-                    <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+                    <Route path="/chat" element={<ProtectedRoute><CoPilotPage /></ProtectedRoute>} />
                     <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
                     <Route path="/account" element={<ProtectedRoute><AccountSettingsPage /></ProtectedRoute>} />
                     <Route path="/screener" element={<Navigate to="/opportunities" replace />} />
