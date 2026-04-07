@@ -18,6 +18,7 @@ import {
     TrendingDown, BarChart3, DollarSign, Eye, Bell
 } from 'lucide-react';
 import SEO from '../components/SEO';
+import TradingChart from '../components/TradingChart/TradingChart';
 
 const API_URL = process.env.REACT_APP_API_URL || process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
 
@@ -1052,6 +1053,25 @@ const CommandCenterPage = () => {
                             Browse Opportunity Engine <ChevronRight size={14} />
                         </SecondaryCTA>
                     </HeroEmpty>
+                )}
+
+                {/* ═══ LIVE CHART for the Best Setup ═══ */}
+                {best?.symbol && (
+                    <div style={{ marginBottom: '1.25rem' }}>
+                        <TradingChart
+                            symbol={best.symbol}
+                            isCrypto={!!best.isCrypto}
+                            defaultTimeframe="1D"
+                            signal={{
+                                entry: best.entry,
+                                sl: best.sl,
+                                tp1: best.tp1,
+                                tp2: best.tp2,
+                                tp3: best.tp3
+                            }}
+                            height={440}
+                        />
+                    </div>
                 )}
 
                 {/* ═══ WHAT YOU SHOULD DO ═══ */}

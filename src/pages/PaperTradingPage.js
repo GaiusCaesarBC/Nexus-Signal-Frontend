@@ -8,6 +8,7 @@ import { useToast } from '../context/ToastContext';
 import { useTheme } from '../context/ThemeContext';
 import RefillAccountButton from '../components/RefillAccountButton';
 import LeverageSelector from '../components/LeverageSelector';
+import TradingChart from '../components/TradingChart/TradingChart';
 import { 
     formatCurrency, 
     formatPriceChange, 
@@ -1998,6 +1999,23 @@ const PaperTradingPage = () => {
                         <span style={{ marginLeft: '10px', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: theme?.success || '#10b981', display: 'inline-block', animation: 'pulse 2s ease-in-out infinite' }} />
                     </PoweredBy>
                 </Header>
+
+                {/* Live chart for the symbol being traded — appears as soon as a symbol is entered */}
+                {symbol && symbol.length >= 1 && (
+                    <div style={{ marginBottom: '1.5rem' }}>
+                        <TradingChart
+                            symbol={symbol.toUpperCase()}
+                            isCrypto={type === 'crypto'}
+                            defaultTimeframe="1D"
+                            signal={{
+                                entry: currentPrice,
+                                tp1: takeProfit ? parseFloat(takeProfit) : undefined,
+                                sl: stopLoss ? parseFloat(stopLoss) : undefined
+                            }}
+                            height={440}
+                        />
+                    </div>
+                )}
 
                 <PortfolioOverview>
                     <StatCard theme={theme} $borderColor={`${theme?.brand?.primary || '#00adef'}80`} $shadowColor={`${theme?.brand?.primary || '#00adef'}4D`}>

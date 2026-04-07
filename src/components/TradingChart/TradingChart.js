@@ -300,6 +300,7 @@ const TradingChart = ({
     const rsiSeriesRef = useRef(null);
     const macdChartRef = useRef(null);
     const macdSeriesRef = useRef({});
+    const lastFitTfRef = useRef(null); // last timeframe we called fitContent for
 
     const [timeframe, setTimeframe] = useState(defaultTimeframe);
     const [activeIndicators, setActiveIndicators] = useState(new Set(['sma20', 'sma50']));
@@ -513,11 +514,16 @@ const TradingChart = ({
         try {
             candleSeriesRef.current.setData(candles);
             volumeSeriesRef.current?.setData(volumeSeries(candles));
-            chartRef.current?.timeScale().fitContent();
+            // Only fit content when timeframe changes (or first load) — never on auto-refresh,
+            // otherwise the user's pan/zoom gets destroyed every 30s.
+            if (lastFitTfRef.current !== timeframe) {
+                chartRef.current?.timeScale().fitContent();
+                lastFitTfRef.current = timeframe;
+            }
         } catch (e) {
             console.error('[TradingChart] setData failed:', e);
         }
-    }, [candles]);
+    }, [candles, timeframe]);
 
     // ───── Sync indicator overlays ─────
     useEffect(() => {
