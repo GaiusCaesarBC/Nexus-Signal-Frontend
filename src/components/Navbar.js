@@ -1384,7 +1384,7 @@ const Navbar = () => {
         analysis: [
             { path: '/opportunities', label: 'Opportunity Engine', icon: Sparkles },
             { path: '/patterns', label: 'Pattern Intelligence', icon: Brain },
-            { path: '/heatmap', label: 'Heatmap', icon: MapPin },
+            { path: '/pulse', label: 'Market Pulse', icon: Activity },
             { path: '/sentiment', label: 'Sentiment', icon: Activity },
             { path: '/compare', label: 'Stock Comparison', icon: BarChart3 },
             { path: '/whale-alerts', label: 'Whale Alerts', icon: Waves },
