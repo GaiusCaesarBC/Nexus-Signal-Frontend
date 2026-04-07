@@ -13,6 +13,7 @@ import {
     Bookmark, Bell, Copy, AlertTriangle, CheckCircle, Clock
 } from 'lucide-react';
 import SEO from '../components/SEO';
+import Sparkline from '../components/Sparkline';
 
 const API_URL = process.env.REACT_APP_API_URL || process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
 
@@ -284,6 +285,15 @@ const Why = styled.div`
     margin-bottom: .55rem;
     min-height: 2.6em;
 `;
+const SparkWrap = styled.div`
+    margin: .35rem 0 .55rem;
+    padding: .25rem 0;
+    border-radius: 6px;
+    background: rgba(255,255,255,.02);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+`;
 const HeroFooter = styled.div`
     display: flex;
     justify-content: space-between;
@@ -353,6 +363,17 @@ const ChipCount = styled.span`
     background: rgba(255,255,255,.06);
     color: ${p => p.theme?.text?.tertiary || '#64748b'};
     font-weight: 700;
+`;
+const ChipRel = styled.span`
+    font-size: .58rem;
+    padding: .1rem .35rem;
+    border-radius: 4px;
+    background: rgba(16,185,129,.1);
+    color: #10b981;
+    border: 1px solid rgba(16,185,129,.25);
+    font-weight: 800;
+    letter-spacing: .3px;
+    text-transform: uppercase;
 `;
 const PresetTabs = styled.div`
     display: flex;
@@ -643,6 +664,45 @@ const LoadingRow = styled.div`
     font-size: .85rem;
 `;
 
+// ─── Context Menu ─────────────────────────────────────────
+const CtxMenu = styled.div`
+    position: fixed;
+    top: ${p => p.$y}px;
+    left: ${p => p.$x}px;
+    z-index: 9999;
+    min-width: 180px;
+    background: ${p => p.theme?.bg?.elevated || '#0f1729'};
+    border: 1px solid ${p => p.theme?.border?.subtle || 'rgba(255,255,255,.12)'};
+    border-radius: 10px;
+    padding: .35rem;
+    box-shadow: 0 16px 40px rgba(0,0,0,.5);
+    ${css`animation: ${fadeIn} .12s ease-out;`}
+`;
+const CtxItem = styled.button`
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    width: 100%;
+    padding: .55rem .7rem;
+    background: transparent;
+    border: none;
+    color: ${p => p.theme?.text?.secondary || '#c8d0da'};
+    font-size: .78rem;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 7px;
+    text-align: left;
+    &:hover {
+        background: ${p => (p.theme?.brand?.primary || '#00adef') + '15'};
+        color: ${p => p.theme?.brand?.primary || '#00adef'};
+    }
+`;
+const CtxDivider = styled.div`
+    height: 1px;
+    margin: .3rem .25rem;
+    background: ${p => p.theme?.border?.subtle || 'rgba(255,255,255,.06)'};
+`;
+
 // ═══════════════════════════════════════════════════════════
 // HELPERS — group flat patterns by symbol
 // ═══════════════════════════════════════════════════════════
@@ -678,6 +738,8 @@ const PatternIntelligencePage = () => {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [expandedSymbols, setExpandedSymbols] = useState(new Set());
+    const [hoveredId, setHoveredId] = useState(null);
+    const [contextMenu, setContextMenu] = useState(null); // { x, y, pattern }
 
     const filters = useMemo(() => ({
         asset: searchParams.get('asset') || 'all',
@@ -750,6 +812,57 @@ const PatternIntelligencePage = () => {
         else navigate(p.isCrypto ? `/crypto/${p.symbol}` : `/stock/${p.symbol}`);
     };
 
+    const openContextMenu = (e, pattern) => {
+        e.preventDefault();
+        e.stopPropagation();
+        // Clamp position so menu stays on screen
+        const x = Math.min(e.clientX, window.innerWidth - 200);
+        const y = Math.min(e.clientY, window.innerHeight - 260);
+        setContextMenu({ x, y, pattern });
+    };
+    const closeContextMenu = () => setContextMenu(null);
+
+    useEffect(() => {
+        if (!contextMenu) return undefined;
+        const onClick = () => closeContextMenu();
+        const onEsc = (e) => { if (e.key === 'Escape') closeContextMenu(); };
+        document.addEventListener('click', onClick);
+        document.addEventListener('keydown', onEsc);
+        return () => {
+            document.removeEventListener('click', onClick);
+            document.removeEventListener('keydown', onEsc);
+        };
+    }, [contextMenu]);
+
+    const ctxAction = (action) => {
+        const p = contextMenu?.pattern;
+        if (!p) return;
+        closeContextMenu();
+        if (action === 'view') goToTrade(p);
+        else if (action === 'paper') {
+            navigate('/paper-trading', {
+                state: {
+                    signal: {
+                        symbol: p.symbol,
+                        long: p.bias === 'long',
+                        crypto: p.isCrypto,
+                        entry: p.currentPrice,
+                        sl: null,
+                        tp1: null, tp2: null, tp3: p.target,
+                        conf: p.confidence
+                    }
+                }
+            });
+        } else if (action === 'asset') {
+            navigate(p.isCrypto ? `/crypto/${p.symbol}` : `/stock/${p.symbol}`);
+        } else if (action === 'newtab') {
+            const url = p.isCrypto ? `/crypto/${p.symbol}` : `/stock/${p.symbol}`;
+            window.open(url, '_blank', 'noopener');
+        } else if (action === 'opportunity') {
+            navigate(`/opportunities?preset=high_conviction`);
+        }
+    };
+
     const grouped = useMemo(() => groupBySymbol(patterns), [patterns]);
 
     const toggleExpand = (symbol) => {
@@ -808,7 +921,15 @@ const PatternIntelligencePage = () => {
                             {featured.map(p => {
                                 const stageMeta = STAGE_META[p.stage] || STAGE_META.forming;
                                 return (
-                                    <HeroCard key={p.id} theme={theme} $bias={p.bias} onClick={() => goToTrade(p)}>
+                                    <HeroCard
+                                        key={p.id}
+                                        theme={theme}
+                                        $bias={p.bias}
+                                        onClick={() => goToTrade(p)}
+                                        onMouseEnter={() => setHoveredId(p.id)}
+                                        onMouseLeave={() => setHoveredId(null)}
+                                        onContextMenu={(e) => openContextMenu(e, p)}
+                                    >
                                         <HeroTop>
                                             <div>
                                                 <HeroSym theme={theme}>{p.symbol}</HeroSym>
@@ -829,6 +950,18 @@ const PatternIntelligencePage = () => {
                                         <StrengthLine theme={theme}>
                                             ⚡ {p.strength?.toUpperCase()} · {p.confidence}% confidence
                                         </StrengthLine>
+                                        {p.sparkline && p.sparkline.length > 1 && (
+                                            <SparkWrap>
+                                                <Sparkline
+                                                    data={p.sparkline}
+                                                    bias={p.bias}
+                                                    pattern={{ points: p.points, target: p.target }}
+                                                    showPattern={hoveredId === p.id}
+                                                    width={180}
+                                                    height={42}
+                                                />
+                                            </SparkWrap>
+                                        )}
                                         <Why theme={theme}>{p.whyMatters}</Why>
                                         <HeroFooter theme={theme}>
                                             <span>
@@ -874,9 +1007,11 @@ const PatternIntelligencePage = () => {
                             theme={theme}
                             $active={filters.preset === p.id || (filters.preset === 'all' && p.id === 'all')}
                             onClick={() => setPreset(p.id)}
+                            title={p.reliability ? `${p.reliability}% historical reliability` : ''}
                         >
                             {p.label}
                             <ChipCount theme={theme}>{p.count}</ChipCount>
+                            {p.reliability && <ChipRel>{p.reliability}%</ChipRel>}
                         </Chip>
                     ))}
                 </PresetTabs>
@@ -912,7 +1047,12 @@ const PatternIntelligencePage = () => {
                             const expanded = expandedSymbols.has(symbol);
                             const failed = top.stage === 'failed';
                             return (
-                                <SymbolCard key={symbol} theme={theme} $bias={top.bias}>
+                                <SymbolCard
+                                    key={symbol}
+                                    theme={theme}
+                                    $bias={top.bias}
+                                    onContextMenu={(e) => openContextMenu(e, top)}
+                                >
                                     <SymHead>
                                         <SymName theme={theme}>
                                             {symbol}
@@ -1005,6 +1145,33 @@ const PatternIntelligencePage = () => {
                             );
                         })}
                     </ConsoleGrid>
+                )}
+
+                {/* ═══ CONTEXT MENU ═══ */}
+                {contextMenu && (
+                    <CtxMenu
+                        theme={theme}
+                        $x={contextMenu.x}
+                        $y={contextMenu.y}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <CtxItem theme={theme} onClick={() => ctxAction('view')}>
+                            <Eye size={14} /> View Trade Setup
+                        </CtxItem>
+                        <CtxItem theme={theme} onClick={() => ctxAction('paper')}>
+                            <Copy size={14} /> Paper Trade
+                        </CtxItem>
+                        <CtxItem theme={theme} onClick={() => ctxAction('asset')}>
+                            <Activity size={14} /> Open Asset Page
+                        </CtxItem>
+                        <CtxItem theme={theme} onClick={() => ctxAction('newtab')}>
+                            <ChevronRight size={14} /> Open in New Tab
+                        </CtxItem>
+                        <CtxDivider theme={theme} />
+                        <CtxItem theme={theme} onClick={() => ctxAction('opportunity')}>
+                            <Sparkles size={14} /> See Similar in Opportunity Engine
+                        </CtxItem>
+                    </CtxMenu>
                 )}
 
                 {/* ═══ METHODOLOGY ═══ */}
