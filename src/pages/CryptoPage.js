@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import SEO from '../components/SEO';
 import TradeSetupCard from '../components/TradeSetupCard';
+import TradingChart from '../components/TradingChart/TradingChart';
 
 // Smart price formatter - always uses crypto formatting for crypto page
 const formatPrice = (price) => {
@@ -1445,112 +1446,16 @@ const CryptoPage = () => {
 
       <MainGrid>
         <LeftColumn>
-          {/* Price Chart */}
-          <ChartCard $delay="0.2s">
-            <ChartHeader>
-              <ChartTitle>
-                <Activity size={18} />
-                Price Chart
-              </ChartTitle>
-              <TimeframeButtons>
-                {timeframes.map(tf => (
-                  <TimeframeBtn
-                    key={tf}
-                    $active={selectedRange === tf}
-                    onClick={() => setSelectedRange(tf)}
-                    disabled={chartLoading}
-                  >
-                    {tf}
-                  </TimeframeBtn>
-                ))}
-              </TimeframeButtons>
-            </ChartHeader>
-            <ChartContainer>
-              {chartLoading && (
-                <ChartLoading>
-                  <Loader2 size={32} />
-                  <span>Loading {symbol.toUpperCase()} data for {selectedRange}...</span>
-                </ChartLoading>
-              )}
-
-              {chartError && !chartLoading && (
-                <ChartError>
-                  <div className="error-icon">⚠️</div>
-                  <p>{chartError}</p>
-                </ChartError>
-              )}
-
-              {!chartLoading && !chartError && chartData.length > 0 && (
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={chartData}>
-                    <defs>
-                      <linearGradient id="cryptoGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor={isPositive ? '#00ff88' : '#ff4757'} stopOpacity={0.3} />
-                        <stop offset="100%" stopColor={isPositive ? '#00ff88' : '#ff4757'} stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-                    <XAxis 
-                      dataKey="time" 
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fill: '#666', fontSize: 11 }}
-                      tickFormatter={(val) => formatChartDate(val, selectedRange)}
-                      interval="preserveStartEnd"
-                    />
-                    <YAxis
-                      domain={['auto', 'auto']}
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fill: '#666', fontSize: 11 }}
-                      tickFormatter={(val) => formatPrice(val).replace('$', '')}
-                      width={80}
-                    />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Area
-                      type="monotone"
-                      dataKey="close"
-                      stroke={isPositive ? '#00ff88' : '#ff4757'}
-                      strokeWidth={2}
-                      fill="url(#cryptoGradient)"
-                    />
-                    {/* Trade setup overlays */}
-                    {setupLevels?.entry && (
-                      <ReferenceLine y={setupLevels.entry} stroke="#fff" strokeDasharray="4 4" strokeWidth={1.5}>
-                        <Label value={`ENTRY ${formatPrice(setupLevels.entry)}`} position="right" fill="#fff" fontSize={10} fontWeight={700} />
-                      </ReferenceLine>
-                    )}
-                    {setupLevels?.sl && (
-                      <ReferenceLine y={setupLevels.sl} stroke="#ef4444" strokeDasharray="2 2" strokeWidth={1.5}>
-                        <Label value={`SL ${formatPrice(setupLevels.sl)}`} position="right" fill="#ef4444" fontSize={10} fontWeight={700} />
-                      </ReferenceLine>
-                    )}
-                    {setupLevels?.tp1 && (
-                      <ReferenceLine y={setupLevels.tp1} stroke="#10b981" strokeDasharray="2 2" strokeWidth={1} strokeOpacity={0.6}>
-                        <Label value={`TP1 ${formatPrice(setupLevels.tp1)}`} position="right" fill="#10b981" fontSize={9} fontWeight={600} />
-                      </ReferenceLine>
-                    )}
-                    {setupLevels?.tp2 && (
-                      <ReferenceLine y={setupLevels.tp2} stroke="#10b981" strokeDasharray="2 2" strokeWidth={1} strokeOpacity={0.8}>
-                        <Label value={`TP2 ${formatPrice(setupLevels.tp2)}`} position="right" fill="#10b981" fontSize={9} fontWeight={600} />
-                      </ReferenceLine>
-                    )}
-                    {setupLevels?.tp3 && (
-                      <ReferenceLine y={setupLevels.tp3} stroke="#10b981" strokeDasharray="2 2" strokeWidth={1.5}>
-                        <Label value={`TP3 ${formatPrice(setupLevels.tp3)}`} position="right" fill="#10b981" fontSize={10} fontWeight={700} />
-                      </ReferenceLine>
-                    )}
-                  </AreaChart>
-                </ResponsiveContainer>
-              )}
-
-              {!chartLoading && !chartError && chartData.length === 0 && (
-                <ChartLoading>
-                  <span>No chart data available for {symbol.toUpperCase()}</span>
-                </ChartLoading>
-              )}
-            </ChartContainer>
-          </ChartCard>
+          {/* ═══ PRO TRADING CHART (lightweight-charts) ═══ */}
+          <div style={{ marginBottom: 20 }}>
+            <TradingChart
+              symbol={symbol?.toUpperCase()}
+              isCrypto={true}
+              defaultTimeframe="1D"
+              signal={setupLevels}
+              height={500}
+            />
+          </div>
 
           {/* Technical Indicators */}
           {prediction?.indicators && (
