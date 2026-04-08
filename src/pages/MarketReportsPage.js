@@ -12,6 +12,18 @@ import {
     Loader, Star, Zap, Eye, Search
 } from 'lucide-react';
 import api from '../api/axios';
+import {
+    MarketSnapshotBar,
+    WhatToDoNow,
+    OpportunitiesNow,
+    MarketSummaryCard,
+    KeyThemesCards,
+    SectorHighlightStrip,
+    RiskFactorCards,
+    MarketOutlookCard,
+    TradeSetups,
+    QuickActions,
+} from './marketReports';
 
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`
@@ -529,8 +541,9 @@ const MarketReportsPage = () => {
         if (!report) return null;
 
         return (
-            <ReportCard>
-                <ReportHeader>
+            <>
+                {/* Provenance / refresh strip — kept compact, no longer the focal point */}
+                <ReportHeader style={{ maxWidth: '1400px', margin: '0 auto 1rem' }}>
                     <ReportTitle>
                         <Calendar size={24} />
                         Daily Market Report
@@ -544,53 +557,33 @@ const MarketReportsPage = () => {
                     </ReportMeta>
                 </ReportHeader>
 
-                <SummaryBox>
-                    <h3><FileText size={16} /> Market Summary</h3>
-                    <p>{report.summary}</p>
-                </SummaryBox>
+                {/* 1. Compact above-the-fold market snapshot */}
+                <MarketSnapshotBar report={report} />
 
-                {report.themes?.length > 0 && (
-                    <Section>
-                        <h3><TrendingUp size={18} /> Key Themes Today</h3>
-                        <BulletList>
-                            {report.themes.map((theme, i) => (
-                                <li key={i}>{theme}</li>
-                            ))}
-                        </BulletList>
-                    </Section>
-                )}
+                {/* 2. TOP PRIORITY: what should I do, right now? */}
+                <WhatToDoNow
+                    report={report}
+                    onBrowseOpportunities={() => navigate('/signals')}
+                />
 
-                {report.sectorHighlights && (
-                    <Section>
-                        <h3><PieChart size={18} /> Sector Highlights</h3>
-                        <p style={{ color: '#94a3b8' }}>{report.sectorHighlights}</p>
-                    </Section>
-                )}
+                {/* 3. Bridge intelligence -> execution */}
+                <OpportunitiesNow report={report} />
 
-                {report.riskFactors?.length > 0 && (
-                    <Section>
-                        <h3><AlertTriangle size={18} /> Risk Factors</h3>
-                        <BulletList $variant="bearish">
-                            {report.riskFactors.map((risk, i) => (
-                                <li key={i}>{risk}</li>
-                            ))}
-                        </BulletList>
-                    </Section>
-                )}
+                {/* 4. Visual cards (replacing old text blocks, ~50% shorter) */}
+                <MarketSummaryCard summary={report.summary} />
+                <KeyThemesCards themes={report.themes} />
+                <SectorHighlightStrip sectorHighlights={report.sectorHighlights} />
+                <RiskFactorCards risks={report.riskFactors} />
 
-                {report.outlook && (
-                    <Section>
-                        <h3><Target size={18} /> Market Outlook</h3>
-                        <OutlookBadge $sentiment={report.outlook.sentiment?.toLowerCase()}>
-                            {report.outlook.sentiment?.toLowerCase() === 'bullish' ? <TrendingUp size={18} /> :
-                             report.outlook.sentiment?.toLowerCase() === 'bearish' ? <TrendingDown size={18} /> :
-                             <BarChart3 size={18} />}
-                            {report.outlook.sentiment?.toUpperCase()}
-                        </OutlookBadge>
-                        <p style={{ marginTop: '1rem', color: '#94a3b8' }}>{report.outlook.reasoning}</p>
-                    </Section>
-                )}
-            </ReportCard>
+                {/* 5. Upgraded outlook: label + confidence + horizon */}
+                <MarketOutlookCard outlook={report.outlook} report={report} />
+
+                {/* 6. Concrete trade setups derived from the report */}
+                <TradeSetups report={report} />
+
+                {/* 7. Footer quick actions — always give the user a next step */}
+                <QuickActions />
+            </>
         );
     };
 
