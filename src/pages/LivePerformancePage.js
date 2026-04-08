@@ -235,22 +235,33 @@ const LivePerformancePage = () => {
                                     const isOpen = t.status === 'pending' || !t.result;
                                     const sym = t.symbol?.split(':')[0]?.replace(/USDT|USD/i, '') || t.symbol;
 
-                                    // Use correct price: livePrice for open, resultPrice for closed
+                                    // Debug: log first trade to verify data
+                                    if (i === 0) console.log('[LivePerf] First trade data:', {
+                                        symbol: t.symbol,
+                                        entryPrice: t.entryPrice,
+                                        currentPrice: t.currentPrice,
+                                        livePrice: t.livePrice,
+                                        changePct: t.changePct,
+                                        status: t.status,
+                                        result: t.result
+                                    });
+
+                                    // Use correct price: prioritize livePrice/currentPrice over entryPrice
+                                    // Check for actual numeric values (not null, undefined, or 0 when entry exists)
+                                    const hasLivePrice = typeof t.livePrice === 'number' && t.livePrice > 0;
+                                    const hasCurrentPrice = typeof t.currentPrice === 'number' && t.currentPrice > 0;
+                                    const hasResultPrice = typeof t.resultPrice === 'number' && t.resultPrice > 0;
+                                    const hasExitPrice = typeof t.exitPrice === 'number' && t.exitPrice > 0;
+
                                     const displayPrice = isOpen
-                                        ? (t.livePrice || t.currentPrice || t.entryPrice)
-                                        : (t.resultPrice || t.exitPrice || t.currentPrice || t.entryPrice);
+                                        ? (hasLivePrice ? t.livePrice : hasCurrentPrice ? t.currentPrice : t.entryPrice)
+                                        : (hasResultPrice ? t.resultPrice : hasExitPrice ? t.exitPrice : hasCurrentPrice ? t.currentPrice : t.entryPrice);
 
-                                    // Use backend's changePct, or calculate if missing
-                                    let pctChange = t.changePct ?? (t.entryPrice > 0
-                                        ? ((displayPrice - t.entryPrice) / t.entryPrice * 100)
-                                        : 0);
-
-                                    // Safety: ensure LOSS shows negative, WIN shows positive
-                                    if (isLoss && pctChange > 0) pctChange = -Math.abs(pctChange);
-                                    if (isWin && pctChange < 0) pctChange = Math.abs(pctChange);
+                                    // Use backend's changePct directly - it's already calculated correctly
+                                    const pctChange = t.changePct ?? 0;
 
                                     // Format to 2 decimals
-                                    const displayPct = typeof pctChange === 'number' ? pctChange.toFixed(2) : pctChange;
+                                    const displayPct = typeof pctChange === 'number' ? pctChange.toFixed(2) : '0.00';
 
                                     return (
                                         <Tr key={t._id || i} onClick={() => navigate(`/signal/${t._id}`)}>
@@ -258,7 +269,7 @@ const LivePerformancePage = () => {
                                             <Td><DirBadge $long={isLong}>{isLong ? '\u2191 LONG' : '\u2193 SHORT'}</DirBadge></Td>
                                             <Td>{fmtPrice(t.entryPrice)}</Td>
                                             <Td>{fmtPrice(displayPrice)}</Td>
-                                            <Td><PctText $pos={displayPct >= 0}>{displayPct >= 0 ? '+' : ''}{displayPct}%</PctText></Td>
+                                            <Td><PctText $pos={parseFloat(displayPct) >= 0}>{parseFloat(displayPct) >= 0 ? '+' : ''}{displayPct}%</PctText></Td>
                                             <Td>
                                                 {isOpen ? <Badge $bg="rgba(245,158,11,.1)" $c="#f59e0b" $bc="rgba(245,158,11,.2)">OPEN</Badge>
                                                     : isWin ? <Badge $bg="rgba(16,185,129,.1)" $c="#10b981" $bc="rgba(16,185,129,.2)">{t.resultText}</Badge>
