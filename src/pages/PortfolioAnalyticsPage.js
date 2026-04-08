@@ -18,6 +18,15 @@ import {
 } from 'recharts';
 import { useSubscription } from '../context/SubscriptionContext';
 import UpgradePrompt from '../components/UpgradePrompt';
+import {
+    PerformanceVerdict,
+    PerformanceBreakdown,
+    MistakesAndFixes,
+    RiskAnalysisV2,
+    SignalPerformance,
+    BehavioralInsights,
+    AICoach,
+} from './portfolioAnalytics';
 
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`
@@ -539,6 +548,18 @@ const PortfolioAnalyticsPage = () => {
             </Header>
 
             <Content>
+                {/* 1. HERO — Trading Performance Verdict (top of page) */}
+                <PerformanceVerdict analytics={analytics} />
+
+                {/* 2. AI Coach signature panel */}
+                <AICoach analytics={analytics} />
+
+                {/* 3. Performance breakdown (win rate, R:R, expectancy) */}
+                <PerformanceBreakdown analytics={analytics} />
+
+                {/* 4. Mistakes + Fixes (the value-add of the redesign) */}
+                <MistakesAndFixes analytics={analytics} />
+
                 {/* Overview Stats */}
                 <Grid>
                     <StatCard $borderColor="rgba(0, 173, 237, 0.3)">
@@ -651,49 +672,15 @@ const PortfolioAnalyticsPage = () => {
                         )}
                     </Card>
 
-                    {/* Risk & Diversification */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle><Shield size={20} /> Risk Analysis</CardTitle>
-                        </CardHeader>
+                    {/* Risk Analysis V2 — replaces the basic gauge with real risk profile */}
+                    <div>
+                        <RiskAnalysisV2 analytics={analytics} />
 
-                        <RiskGauge>
-                            <GaugeValue $color={
-                                risk?.diversificationScore >= 70 ? '#10b981' :
-                                risk?.diversificationScore >= 40 ? '#f59e0b' : '#ef4444'
-                            }>
-                                {risk?.diversificationScore || 0}
-                            </GaugeValue>
-                            <GaugeLabel>Diversification Score</GaugeLabel>
-                            <RiskIndicator>
-                                <RiskFill $value={risk?.diversificationScore || 0} />
-                            </RiskIndicator>
-                        </RiskGauge>
-
-                        <TradingStatsGrid style={{ marginTop: '1.5rem' }}>
-                            <TradingStat>
-                                <TradingValue>{risk?.assetTypeCount || 0}</TradingValue>
-                                <TradingLabel>Asset Types</TradingLabel>
-                            </TradingStat>
-                            <TradingStat>
-                                <TradingValue $color={
-                                    parseFloat(risk?.concentrationRisk) > 50 ? '#ef4444' : '#10b981'
-                                }>
-                                    {risk?.concentrationRisk || 0}%
-                                </TradingValue>
-                                <TradingLabel>Top Holding %</TradingLabel>
-                            </TradingStat>
-                            <TradingStat>
-                                <TradingValue $color="#8b5cf6">{overview?.totalHoldings || 0}</TradingValue>
-                                <TradingLabel>Positions</TradingLabel>
-                            </TradingStat>
-                        </TradingStatsGrid>
-
-                        {/* Top Performers */}
-                        <div style={{ marginTop: '1.5rem' }}>
-                            <CardTitle style={{ marginBottom: '1rem', fontSize: '1rem' }}>
-                                <Trophy size={18} /> Top Performers
-                            </CardTitle>
+                        {/* Keep top-performer summary alongside the risk card */}
+                        <Card style={{ marginTop: '1.5rem' }}>
+                            <CardHeader>
+                                <CardTitle><Trophy size={20} /> Top Performers</CardTitle>
+                            </CardHeader>
                             <PerformersList>
                                 {overview?.topGainer && (
                                     <PerformerItem $positive>
@@ -717,8 +704,8 @@ const PortfolioAnalyticsPage = () => {
                                     <EmptyState>Add holdings to see performers</EmptyState>
                                 )}
                             </PerformersList>
-                        </div>
-                    </Card>
+                        </Card>
+                    </div>
                 </WideGrid>
 
                 {/* Paper Trading Stats */}
@@ -780,33 +767,11 @@ const PortfolioAnalyticsPage = () => {
                     </Card>
                 )}
 
-                {/* Predictions Performance */}
-                <Grid>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle><Target size={20} /> AI Predictions</CardTitle>
-                        </CardHeader>
-                        <TradingStatsGrid>
-                            <TradingStat>
-                                <TradingValue>{predictions?.total || 0}</TradingValue>
-                                <TradingLabel>Total Predictions</TradingLabel>
-                            </TradingStat>
-                            <TradingStat>
-                                <TradingValue $color="#10b981">{predictions?.correct || 0}</TradingValue>
-                                <TradingLabel>Correct</TradingLabel>
-                            </TradingStat>
-                            <TradingStat>
-                                <TradingValue $color={
-                                    parseFloat(predictions?.accuracy) >= 60 ? '#10b981' :
-                                    parseFloat(predictions?.accuracy) >= 40 ? '#f59e0b' : '#ef4444'
-                                }>
-                                    {predictions?.accuracy || 0}%
-                                </TradingValue>
-                                <TradingLabel>Accuracy</TradingLabel>
-                            </TradingStat>
-                        </TradingStatsGrid>
-                    </Card>
-                </Grid>
+                {/* AI Signal Performance — replaces the basic AI Predictions card */}
+                <SignalPerformance analytics={analytics} />
+
+                {/* Behavioral insights */}
+                <BehavioralInsights analytics={analytics} />
             </Content>
         </PageContainer>
 
