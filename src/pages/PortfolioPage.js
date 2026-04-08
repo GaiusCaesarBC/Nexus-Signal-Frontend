@@ -832,7 +832,7 @@ const PortfolioPage = () => {
         fetchData();
     }, [fetchData]);
 
-    // Auto-refresh positions every 30s
+    // Auto-refresh full account snapshot every 30s
     useEffect(() => {
         const interval = setInterval(() => {
             fetchData(true);
@@ -840,8 +840,105 @@ const PortfolioPage = () => {
         return () => clearInterval(interval);
     }, [fetchData]);
 
-    // Derived data
+    // ─────────────────────────────────────────────────────────────────
+    // Live-price overlay for open positions.
+    //
+    // The /paper-trading/account snapshot only refreshes every 30s and the
+    // server bakes a (sometimes stale) currentPrice onto each position.
+    // Poll the dedicated price endpoint every ~6s for each open symbol so
+    // the displayed price + unrealized P/L stay live, then overlay the
+    // fresh prices via the `livePositions` memo below.
+    // ─────────────────────────────────────────────────────────────────
+    const [livePrices, setLivePrices] = useState({}); // { SYMBOL: { price, ts } }
+
     const positions = account?.positions || [];
+    const positionSymbolsKey = useMemo(
+        () => positions.map((p) => `${p.symbol || ''}:${p.type || ''}`).join('|'),
+        [positions]
+    );
+
+    useEffect(() => {
+        const symbols = positions
+            .filter((p) => p && p.symbol && p.type)
+            .map((p) => ({ symbol: p.symbol, type: p.type }));
+        if (symbols.length === 0) return;
+
+        let cancelled = false;
+        const tick = async () => {
+            try {
+                const results = await Promise.all(
+                    symbols.map(async ({ symbol, type }) => {
+                        try {
+                            const res = await api.get(`/paper-trading/price/${symbol.toUpperCase()}/${type}`);
+                            const data = res?.data || {};
+                            const price = Number(
+                                data.price ?? data.currentPrice ?? data.lastPrice ?? data.data?.price
+                            );
+                            return Number.isFinite(price) ? { symbol, price } : null;
+                        } catch {
+                            return null;
+                        }
+                    })
+                );
+                if (cancelled) return;
+                setLivePrices((prev) => {
+                    const next = { ...prev };
+                    const now = Date.now();
+                    for (const r of results) {
+                        if (r) next[r.symbol] = { price: r.price, ts: now };
+                    }
+                    return next;
+                });
+            } catch {
+                /* silent — overlay is best-effort */
+            }
+        };
+
+        tick(); // immediate
+        const iv = setInterval(tick, 6000);
+        return () => {
+            cancelled = true;
+            clearInterval(iv);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [positionSymbolsKey]);
+
+    // Live-overlaid positions: replace currentPrice and recompute unrealized
+    // P/L using fresh prices when available. Falls back to server values.
+    const livePositions = useMemo(() => {
+        if (!Array.isArray(positions) || positions.length === 0) return positions;
+
+        return positions.map((pos) => {
+            const live = livePrices[pos.symbol];
+            if (!live || !Number.isFinite(live.price)) return pos;
+
+            const entry = Number(pos.averagePrice);
+            const qty = Number(pos.quantity);
+            const leverage = Number(pos.leverage || 1);
+            const isShort = pos.positionType === 'short';
+            const current = live.price;
+            if (!Number.isFinite(entry) || !Number.isFinite(qty) || entry <= 0) {
+                return { ...pos, currentPrice: current };
+            }
+
+            // Notional P/L (qty already encodes contract size; leverage
+            // affects margin, not raw P/L on a perp).
+            const rawDelta = isShort ? (entry - current) : (current - entry);
+            const unrealizedPnL = rawDelta * qty;
+            // % return on collateral: base price move * leverage
+            const basePct = (rawDelta / entry) * 100;
+            const unrealizedPnLPercent = basePct * leverage;
+
+            return {
+                ...pos,
+                currentPrice: current,
+                unrealizedPnL,
+                unrealizedPnLPercent,
+            };
+        });
+    }, [positions, livePrices]);
+
+    // Derived data
     const totalPortfolioValue = account?.totalPortfolioValue || STARTING_BALANCE;
     const totalPnL = totalPortfolioValue - STARTING_BALANCE;
     const totalPnLPercent = ((totalPnL / STARTING_BALANCE) * 100);
@@ -1047,7 +1144,7 @@ const PortfolioPage = () => {
                                     </SectionTitle>
                                 </SectionHeader>
 
-                                {positions.map((pos, idx) => {
+                                {livePositions.map((pos, idx) => {
                                     const typeBadge = getTypeBadge(pos.type);
                                     const dirBadge = getDirectionBadge(pos.positionType);
                                     const tpsl = computeTPSLProgress(pos);
