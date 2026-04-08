@@ -6,12 +6,21 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import styled, { keyframes } from 'styled-components';
 import {
-    Calendar, Clock, AlertTriangle, TrendingUp, TrendingDown,
-    ChevronLeft, ChevronRight, Filter, RefreshCw, Loader,
+    Calendar, TrendingUp, ChevronLeft, ChevronRight, RefreshCw, Loader,
     Globe, DollarSign, Building2, Users, ShoppingCart, Factory,
-    Home, BarChart3, Zap, Bell, Info, Circle
+    Home, BarChart3, Zap,
 } from 'lucide-react';
 import api from '../api/axios';
+import {
+    TodaysMarketMovers,
+    MarketImpactBar,
+    AIMacroInsight,
+    TradeSetupsFromEvents,
+    UpcomingHighImpact,
+    EnhancedEventItem,
+    isTradable,
+    assetRelevance,
+} from './economicCalendar';
 
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`
@@ -22,11 +31,6 @@ const fadeIn = keyframes`
 const spin = keyframes`
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
-`;
-
-const pulse = keyframes`
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.6; }
 `;
 
 // ============ STYLED COMPONENTS ============
@@ -68,84 +72,6 @@ const Subtitle = styled.p`
 const Content = styled.div`
     max-width: 1400px;
     margin: 0 auto;
-`;
-
-const UpcomingSection = styled.div`
-    background: linear-gradient(135deg, rgba(255, 193, 7, 0.1) 0%, rgba(0, 173, 237, 0.1) 100%);
-    border: 1px solid rgba(255, 193, 7, 0.3);
-    border-radius: 16px;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
-    animation: ${fadeIn} 0.5s ease-out 0.1s both;
-`;
-
-const UpcomingHeader = styled.div`
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-
-    h2 {
-        color: #ffc107;
-        font-size: 1.2rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-`;
-
-const UpcomingEvents = styled.div`
-    display: flex;
-    gap: 1rem;
-    overflow-x: auto;
-    padding-bottom: 0.5rem;
-
-    &::-webkit-scrollbar {
-        height: 6px;
-    }
-
-    &::-webkit-scrollbar-track {
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 3px;
-    }
-
-    &::-webkit-scrollbar-thumb {
-        background: rgba(255, 193, 7, 0.5);
-        border-radius: 3px;
-    }
-`;
-
-const UpcomingCard = styled.div`
-    min-width: 200px;
-    background: rgba(30, 41, 59, 0.8);
-    border: 1px solid rgba(255, 193, 7, 0.2);
-    border-radius: 12px;
-    padding: 1rem;
-    flex-shrink: 0;
-
-    .event-name {
-        font-weight: 600;
-        color: #e0e6ed;
-        margin-bottom: 0.5rem;
-        font-size: 0.9rem;
-    }
-
-    .event-date {
-        color: #ffc107;
-        font-size: 0.85rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        margin-bottom: 0.5rem;
-    }
-
-    .event-time {
-        color: #94a3b8;
-        font-size: 0.8rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
 `;
 
 const ControlsRow = styled.div`
@@ -327,51 +253,6 @@ const DayEvents = styled.div`
     }
 `;
 
-const EventItem = styled.div`
-    background: ${props =>
-        props.$impact === 'high' ? 'rgba(255, 71, 87, 0.15)' :
-        props.$impact === 'medium' ? 'rgba(255, 193, 7, 0.15)' :
-        'rgba(100, 116, 139, 0.15)'
-    };
-    border-left: 3px solid ${props =>
-        props.$impact === 'high' ? '#ff4757' :
-        props.$impact === 'medium' ? '#ffc107' :
-        '#64748b'
-    };
-    border-radius: 0 8px 8px 0;
-    padding: 0.5rem 0.75rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-
-    &:hover {
-        transform: translateX(2px);
-        background: ${props =>
-            props.$impact === 'high' ? 'rgba(255, 71, 87, 0.25)' :
-            props.$impact === 'medium' ? 'rgba(255, 193, 7, 0.25)' :
-            'rgba(100, 116, 139, 0.25)'
-        };
-    }
-
-    .event-time {
-        font-size: 0.7rem;
-        color: #64748b;
-        margin-bottom: 0.25rem;
-    }
-
-    .event-name {
-        font-size: 0.8rem;
-        font-weight: 600;
-        color: #e0e6ed;
-        line-height: 1.3;
-    }
-
-    .event-country {
-        font-size: 0.7rem;
-        color: #94a3b8;
-        margin-top: 0.25rem;
-    }
-`;
-
 const ListView = styled.div`
     animation: ${fadeIn} 0.5s ease-out 0.3s both;
 `;
@@ -538,6 +419,8 @@ const EconomicCalendarPage = () => {
     const [currentWeekOffset, setCurrentWeekOffset] = useState(0);
     const [impactFilter, setImpactFilter] = useState('all');
     const [countryFilter, setCountryFilter] = useState('all');
+    const [assetFilter, setAssetFilter] = useState('all');           // all | stocks | crypto | forex
+    const [tradableOnly, setTradableOnly] = useState(false);
 
     useEffect(() => {
         if (!user) {
@@ -618,9 +501,19 @@ const EconomicCalendarPage = () => {
         return events.filter(e => {
             if (impactFilter !== 'all' && e.impact !== impactFilter) return false;
             if (countryFilter !== 'all' && e.country !== countryFilter) return false;
+            if (assetFilter !== 'all' && !assetRelevance(e).includes(assetFilter)) return false;
+            if (tradableOnly && !isTradable(e)) return false;
             return true;
         });
     };
+
+    // Flatten the week's events for the new top sections (hero, impact bar,
+    // trade setups, upcoming, AI insight). These ignore week-navigation
+    // because they're always "today / next 72h" focused.
+    const allWeekEvents = React.useMemo(() => {
+        if (!weekData?.eventsByDay) return [];
+        return Object.values(weekData.eventsByDay).flatMap((d) => d.events || []);
+    }, [weekData]);
 
     const renderWeekView = () => {
         if (!weekData?.eventsByDay) return null;
@@ -640,11 +533,7 @@ const EconomicCalendarPage = () => {
                             <DayEvents>
                                 {filteredEvents.length > 0 ? (
                                     filteredEvents.map((event, i) => (
-                                        <EventItem key={i} $impact={event.impact}>
-                                            {event.time && <div className="event-time">{event.time}</div>}
-                                            <div className="event-name">{event.name}</div>
-                                            <div className="event-country">{event.country}</div>
-                                        </EventItem>
+                                        <EnhancedEventItem key={i} event={event} />
                                     ))
                                 ) : (
                                     <NoEvents>No events</NoEvents>
@@ -709,31 +598,20 @@ const EconomicCalendarPage = () => {
             </Header>
 
             <Content>
-                {/* Upcoming High-Impact Events */}
-                {upcomingEvents.length > 0 && (
-                    <UpcomingSection>
-                        <UpcomingHeader>
-                            <h2><Bell size={20} /> Upcoming High-Impact Events</h2>
-                        </UpcomingHeader>
-                        <UpcomingEvents>
-                            {upcomingEvents.slice(0, 5).map((event, i) => (
-                                <UpcomingCard key={i}>
-                                    <div className="event-name">{event.name}</div>
-                                    <div className="event-date">
-                                        <Calendar size={14} />
-                                        {formatDate(event.date)}
-                                    </div>
-                                    {event.time && (
-                                        <div className="event-time">
-                                            <Clock size={14} />
-                                            {event.time} ET
-                                        </div>
-                                    )}
-                                </UpcomingCard>
-                            ))}
-                        </UpcomingEvents>
-                    </UpcomingSection>
-                )}
+                {/* 1. Above-the-fold market impact summary */}
+                <MarketImpactBar events={allWeekEvents} />
+
+                {/* 2. HERO — top 3-5 ranked market movers for today */}
+                <TodaysMarketMovers events={allWeekEvents} />
+
+                {/* 3. Punchy AI macro insight */}
+                <AIMacroInsight events={allWeekEvents} />
+
+                {/* 4. Concrete trade setups derived from today's events */}
+                <TradeSetupsFromEvents events={allWeekEvents} />
+
+                {/* 5. Upcoming high-impact timeline (next 72h) */}
+                <UpcomingHighImpact events={[...allWeekEvents, ...upcomingEvents]} />
 
                 {/* Legend */}
                 <Legend>
@@ -791,6 +669,19 @@ const EconomicCalendarPage = () => {
                             <option value="UK">United Kingdom</option>
                             <option value="JP">Japan</option>
                         </FilterSelect>
+                        <FilterSelect value={assetFilter} onChange={(e) => setAssetFilter(e.target.value)}>
+                            <option value="all">All Assets</option>
+                            <option value="stocks">Stocks</option>
+                            <option value="crypto">Crypto</option>
+                            <option value="forex">Forex</option>
+                        </FilterSelect>
+                        <ToggleButton
+                            $active={tradableOnly}
+                            onClick={() => setTradableOnly((v) => !v)}
+                            style={{ padding: '0.75rem 1rem', fontSize: '0.85rem' }}
+                        >
+                            <Zap size={14} /> Tradable only
+                        </ToggleButton>
                         <RefreshButton onClick={fetchData} $loading={loading}>
                             <RefreshCw size={16} />
                         </RefreshButton>
