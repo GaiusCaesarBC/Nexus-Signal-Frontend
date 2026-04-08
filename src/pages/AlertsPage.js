@@ -1,6 +1,6 @@
 // client/src/pages/AlertsPage.js - Alert Management Page with Price, Technical & Pattern Alerts
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import styled, { keyframes } from 'styled-components';
 import {
     Bell, Plus, Trash2, TrendingUp, TrendingDown,
@@ -12,7 +12,20 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import api from '../api/axios';
 import { useSubscription } from '../context/SubscriptionContext';
+import { useTheme } from '../context/ThemeContext';
 import UpgradePrompt from '../components/UpgradePrompt';
+import {
+    AlertCardV2,
+    SuggestedAlerts,
+    RichEmptyState,
+    ActivityFeed,
+    NotificationBell,
+    RealtimePulse,
+    enrichAlerts,
+    derivedStats,
+    detectNewlyTriggered,
+    buildSuggestions,
+} from './smartAlerts';
 
 // Animations
 const fadeIn = keyframes`
@@ -856,6 +869,7 @@ const AlertsPage = () => {
     const { api: authApi } = useAuth();
     const toast = useToast();
     const { canUseFeature } = useSubscription();
+    const { theme } = useTheme();
     const [showUpgradePrompt, setShowUpgradePrompt] = useState(!canUseFeature('hasPriceAlerts'));
     const searchTimeoutRef = useRef(null);
     const searchInputRef = useRef(null);
@@ -900,10 +914,95 @@ const AlertsPage = () => {
     // Use the appropriate API instance
     const apiInstance = authApi || api;
 
+    // ─────────────────────────────────────────────────────────────────
+    // Real-time alert engine (smartAlerts redesign)
+    // - Polls /alerts every 10s
+    // - Detects active->triggered transitions
+    // - Fires toast + adds to in-page notification bell
+    // - Pulses the "LIVE" badge on every poll
+    // ─────────────────────────────────────────────────────────────────
+    const [notifications, setNotifications] = useState([]);
+    const [bellRinging, setBellRinging] = useState(false);
+    const [livePulse, setLivePulse] = useState(0);
+    const [watchlistForSuggestions, setWatchlistForSuggestions] = useState([]);
+    const prevAlertsRef = useRef([]);
+
+    // Fetch watchlist once for AI suggestions
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                const res = await apiInstance.get('/watchlist');
+                const list = Array.isArray(res.data) ? res.data : (res.data?.watchlist || []);
+                if (!cancelled) setWatchlistForSuggestions(list);
+            } catch {
+                /* silent */
+            }
+        })();
+        return () => { cancelled = true; };
+    }, [apiInstance]);
+
     useEffect(() => {
         fetchAlerts();
         fetchStats();
     }, [filter]);
+
+    // Real-time polling — runs every 10s while the page is mounted
+    useEffect(() => {
+        const tick = async () => {
+            try {
+                const status = filter === 'all' ? '' : filter;
+                const res = await apiInstance.get(`/alerts?status=${status}`);
+                const next = res.data?.alerts || [];
+
+                // Detect active -> triggered transitions
+                const newlyTriggered = detectNewlyTriggered(prevAlertsRef.current, next);
+                if (newlyTriggered.length > 0) {
+                    const now = Date.now();
+                    setNotifications((prev) => [
+                        ...newlyTriggered.map((a) => ({
+                            id: `notif-${a._id}-${now}`,
+                            title: `${a.symbol || 'Alert'} triggered`,
+                            body: a.type === 'price_above' ? `Crossed ${a.targetPrice} (above)`
+                                : a.type === 'price_below' ? `Dropped to ${a.targetPrice} (below)`
+                                : 'Alert condition met',
+                            ts: now,
+                            timeLabel: 'just now',
+                        })),
+                        ...prev,
+                    ].slice(0, 30));
+                    setBellRinging(true);
+                    setTimeout(() => setBellRinging(false), 1000);
+                    newlyTriggered.forEach((a) => {
+                        toast.success(`${a.symbol} alert triggered`, `Condition met — view in alerts`);
+                    });
+                    fetchStats();
+                }
+
+                prevAlertsRef.current = next;
+                setAlerts(next);
+                setLivePulse((p) => p + 1);
+            } catch {
+                /* silent — page still works without polling */
+            }
+        };
+        const iv = setInterval(tick, 10000);
+        return () => clearInterval(iv);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [filter, apiInstance]);
+
+    // Track previous alert list whenever fetchAlerts updates it
+    useEffect(() => {
+        prevAlertsRef.current = alerts;
+    }, [alerts]);
+
+    // Enriched + derived data for the new UI
+    const enrichedAlerts = useMemo(() => enrichAlerts(alerts), [alerts]);
+    const richStats = useMemo(() => derivedStats(enrichedAlerts, stats), [enrichedAlerts, stats]);
+    const suggestions = useMemo(
+        () => buildSuggestions(watchlistForSuggestions, alerts, 4),
+        [watchlistForSuggestions, alerts]
+    );
 
     // Debounced search
     const performSearch = useCallback(async (query) => {
@@ -1156,7 +1255,8 @@ const AlertsPage = () => {
 
     // Filter alerts by category
     const getFilteredAlerts = () => {
-        let filtered = alerts;
+        // Use enriched list so cards get _category, _condition, _proximity, _statusV2
+        let filtered = enrichedAlerts;
 
         // Filter by category
         if (category === 'price') {
@@ -1194,9 +1294,40 @@ const AlertsPage = () => {
         <>
         <PageContainer>
             <Header>
-                <Title>Smart Alerts</Title>
-                <Subtitle>Price alerts, technical indicators, and pattern recognition</Subtitle>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', flexWrap: 'wrap' }}>
+                    <div>
+                        <Title>Smart Alerts</Title>
+                        <Subtitle>Price alerts, technical indicators, and pattern recognition</Subtitle>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                        {/* Live polling indicator + key prop forces re-pulse on each tick */}
+                        <RealtimePulse key={livePulse} theme={theme} />
+                        <NotificationBell
+                            theme={theme}
+                            notifications={notifications}
+                            onClear={() => setNotifications([])}
+                            ringing={bellRinging}
+                        />
+                    </div>
+                </div>
             </Header>
+
+            {/* AI Suggested Alerts */}
+            <SuggestedAlerts
+                suggestions={suggestions}
+                onCreate={(prefill) => {
+                    setShowCreateModal(true);
+                    if (prefill?.symbol) {
+                        setSelectedAsset({ symbol: prefill.symbol, type: 'stock' });
+                        setSearchQuery(prefill.symbol);
+                    }
+                    setFormData((prev) => ({
+                        ...prev,
+                        ...(prefill || {}),
+                    }));
+                    setModalTab(prefill?.type === 'percent_change' ? 'price' : 'price');
+                }}
+            />
 
             <StatsGrid>
                 <StatCard>
@@ -1205,15 +1336,15 @@ const AlertsPage = () => {
                 </StatCard>
                 <StatCard>
                     <StatLabel>Triggered Today</StatLabel>
-                    <StatValue color="#f59e0b">{stats.triggeredToday || stats.triggered || 0}</StatValue>
+                    <StatValue color="#f59e0b">{richStats.triggeredToday}</StatValue>
                 </StatCard>
                 <StatCard>
                     <StatLabel>This Week</StatLabel>
-                    <StatValue color="#00adef">{stats.triggeredThisWeek || 0}</StatValue>
+                    <StatValue color="#00adef">{richStats.triggeredWeek}</StatValue>
                 </StatCard>
                 <StatCard>
-                    <StatLabel>Max Alerts</StatLabel>
-                    <StatValue color="#64748b">{stats.maxAlerts || '∞'}</StatValue>
+                    <StatLabel>Near Trigger</StatLabel>
+                    <StatValue color="#a855f7">{richStats.nearTrigger}</StatValue>
                 </StatCard>
             </StatsGrid>
 
@@ -1293,74 +1424,33 @@ const AlertsPage = () => {
                     <p style={{ marginTop: '1rem' }}>Loading alerts...</p>
                 </div>
             ) : filteredAlerts.length === 0 ? (
-                <EmptyState>
-                    <EmptyIcon>
-                        <Bell size={64} color="#00adef" />
-                    </EmptyIcon>
-                    <h2 style={{ color: '#00adef', marginBottom: '0.5rem' }}>
-                        {category === 'all' ? 'No alerts yet' : `No ${category} alerts`}
-                    </h2>
-                    <p style={{ color: '#94a3b8', marginBottom: '2rem' }}>
-                        {category === 'all'
-                            ? 'Create price alerts, technical indicator alerts, or pattern recognition alerts'
-                            : category === 'price'
-                                ? 'Create alerts for when prices hit your targets'
-                                : category === 'technical'
-                                    ? 'Create alerts for RSI, MACD, Bollinger Bands, and more'
-                                    : 'Create alerts for chart patterns like Head & Shoulders, Double Tops, and Flags'
-                        }
-                    </p>
-                    <CreateButton onClick={() => {
-                        setShowCreateModal(true);
-                        if (category !== 'all') setModalTab(category);
-                    }}>
-                        <Plus size={20} />
-                        Create {category === 'all' ? 'Your First' : category.charAt(0).toUpperCase() + category.slice(1)} Alert
-                    </CreateButton>
-                </EmptyState>
+                <RichEmptyState
+                    theme={theme}
+                    onCreatePrice={() => { setShowCreateModal(true); setModalTab('price'); }}
+                    onCreateTechnical={() => { setShowCreateModal(true); setModalTab('technical'); }}
+                    onUseSuggestions={() => {
+                        // Scroll to suggestions panel at top of page
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                />
             ) : (
                 <AlertsGrid>
                     {filteredAlerts.map(alert => (
-                        <AlertCard key={alert._id} $status={alert.status}>
-                            <AlertHeader>
-                                <AlertType>
-                                    {getAlertIcon(alert.type)}
-                                    {getAlertTitle(alert)}
-                                </AlertType>
-                                <AlertActions>
-                                    <IconButton
-                                        $danger
-                                        onClick={() => deleteAlert(alert._id)}
-                                    >
-                                        <Trash2 size={18} />
-                                    </IconButton>
-                                </AlertActions>
-                            </AlertHeader>
-
-                            <AlertSymbol>
-                                {alert.symbol || 'Portfolio'}
-                            </AlertSymbol>
-
-                            <AlertCondition>
-                                <ConditionLabel>Target</ConditionLabel>
-                                <ConditionValue>
-                                    {alert.type === 'percent_change'
-                                        ? `${alert.percentChange}% in ${alert.timeframe}`
-                                        : formatPrice(alert.targetPrice)
-                                    }
-                                </ConditionValue>
-                            </AlertCondition>
-
-                            <AlertStatus $status={alert.status}>
-                                {alert.status === 'active' && <CheckCircle size={16} />}
-                                {alert.status === 'triggered' && <Bell size={16} />}
-                                {alert.status === 'expired' && <XCircle size={16} />}
-                                {alert.status.charAt(0).toUpperCase() + alert.status.slice(1)}
-                            </AlertStatus>
-                        </AlertCard>
+                        <AlertCardV2
+                            key={alert._id}
+                            alert={alert}
+                            onDelete={(id) => deleteAlert(id)}
+                            // freshlyTriggered: flash if this alert appears in recent notifications
+                            freshlyTriggered={notifications.some((n) => n.id.includes(alert._id))}
+                        />
                     ))}
                 </AlertsGrid>
             )}
+
+            {/* Recent Alert Activity feed */}
+            <div style={{ marginTop: '2rem' }}>
+                <ActivityFeed alerts={enrichedAlerts} />
+            </div>
 
             {showCreateModal && (
                 <Modal onClick={closeModal}>
