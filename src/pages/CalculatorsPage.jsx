@@ -12,6 +12,13 @@ import {
     BarChart3, Flame, Star, ArrowUpRight, ArrowDownRight
 } from 'lucide-react';
 import SEO from '../components/SEO';
+import {
+    SmartOutputPanel,
+    EmptyStatePanel,
+    CalculatorIntro,
+    RiskPresets,
+    autoFillFromURL,
+} from './calculators';
 
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`
@@ -881,6 +888,56 @@ const CalculatorsPage = () => {
         frequency: 'weekly',
         duration: '365'
     });
+
+    // ─────────────────────────────────────────────────────────────────
+    // Auto-fill from URL params (signal handoff)
+    // TODO: integrate with active signal context
+    // When the user clicks "Calculate Position Size" from a signal page,
+    // we expect ?entry=&stop=&risk=&account=&target= in the URL.
+    // ─────────────────────────────────────────────────────────────────
+    useEffect(() => {
+        const incoming = autoFillFromURL();
+        if (!incoming) return;
+
+        // Position size fields
+        if (incoming.entryPrice || incoming.stopLoss || incoming.riskPercentage || incoming.accountSize) {
+            setPositionSizeData((prev) => ({
+                ...prev,
+                ...(incoming.entryPrice     && { entryPrice: incoming.entryPrice }),
+                ...(incoming.stopLoss       && { stopLoss: incoming.stopLoss }),
+                ...(incoming.riskPercentage && { riskPercentage: incoming.riskPercentage }),
+                ...(incoming.accountSize    && { accountSize: incoming.accountSize }),
+            }));
+            setActiveCalculator('position-size');
+        }
+
+        // Risk/reward fields
+        if (incoming.entryPrice || incoming.stopLoss || incoming.targetPrice) {
+            setRiskRewardData((prev) => ({
+                ...prev,
+                ...(incoming.entryPrice  && { entryPrice: incoming.entryPrice }),
+                ...(incoming.stopLoss    && { stopLoss: incoming.stopLoss }),
+                ...(incoming.targetPrice && { targetPrice: incoming.targetPrice }),
+            }));
+            // If a target was provided, prefer the R:R calculator
+            if (incoming.targetPrice) setActiveCalculator('risk-reward');
+        }
+    }, []);
+
+    // Snapshot of the active calculator's inputs — used by SmartOutputPanel
+    // for interpretation and Trade Ready CTAs.
+    const activeInputs = useMemo(() => {
+        switch (activeCalculator) {
+            case 'position-size':     return positionSizeData;
+            case 'risk-reward':       return riskRewardData;
+            case 'compound-interest': return compoundData;
+            case 'retirement':        return retirementData;
+            case 'options':           return optionsData;
+            case 'staking':           return stakingData;
+            case 'dca':               return dcaData;
+            default:                  return {};
+        }
+    }, [activeCalculator, positionSizeData, riskRewardData, compoundData, retirementData, optionsData, stakingData, dcaData]);
 
     // Generate particles with theme colors
     const particles = useMemo(() => {
@@ -1903,7 +1960,19 @@ const CalculatorsPage = () => {
                             </PanelTitle>
                             <PanelSubtitle>{activeCalc?.description}</PanelSubtitle>
                         </PanelHeader>
-                        
+
+                        {/* "What this is used for" chip */}
+                        <CalculatorIntro calculatorId={activeCalculator} theme={theme} />
+
+                        {/* Quick presets only on position-size — sets risk % */}
+                        {activeCalculator === 'position-size' && (
+                            <RiskPresets
+                                value={positionSizeData.riskPercentage}
+                                onSelect={(v) => setPositionSizeData((prev) => ({ ...prev, riskPercentage: v }))}
+                                theme={theme}
+                            />
+                        )}
+
                         {renderInputs()}
                         
                         <CalculateButton 
@@ -1931,15 +2000,16 @@ const CalculatorsPage = () => {
                     {/* RESULTS PANEL */}
                     <ResultsPanel $hasResults={!!results}>
                         {results ? (
-                            renderResults()
+                            <SmartOutputPanel
+                                calculatorId={activeCalculator}
+                                inputs={activeInputs}
+                                results={results}
+                                theme={theme}
+                            >
+                                {renderResults()}
+                            </SmartOutputPanel>
                         ) : (
-                            <EmptyState>
-                                <EmptyStateIcon>
-                                    <Calculator size={64} />
-                                </EmptyStateIcon>
-                                <EmptyStateText>Results will appear here</EmptyStateText>
-                                <EmptyStateSubtext>Fill in the form and hit calculate</EmptyStateSubtext>
-                            </EmptyState>
+                            <EmptyStatePanel calculatorId={activeCalculator} theme={theme} />
                         )}
                     </ResultsPanel>
                 </ContentGrid>
