@@ -17,6 +17,20 @@ import {
 import {
     LineChart, Line, ResponsiveContainer, AreaChart, Area
 } from 'recharts';
+import {
+    MostActionable,
+    AssetSignalRow,
+    ActionLabel,
+    QuickTradeActions,
+    RichEmptyState,
+    buildSignalMap,
+    enrichWatchlist,
+    enhancedStats,
+    sortEnriched,
+    filterEnriched,
+    SORT_OPTIONS,
+    FILTER_OPTIONS,
+} from './watchlist';
 
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`
@@ -886,6 +900,31 @@ const WatchlistPage = () => {
     const [userAlerts, setUserAlerts] = useState([]); // Alerts from backend
     const [creatingAlert, setCreatingAlert] = useState(false);
 
+    // ─────────────────────────────────────────────────────────────────
+    // Signals integration
+    // TODO(server): integrate watchlist with signal engine — push signal
+    // status, momentum, and AI insight directly from the ML pipeline.
+    // For now we fetch /predictions/recent (same source as SignalsPage)
+    // and build a Map<symbol, signal> on the client.
+    // ─────────────────────────────────────────────────────────────────
+    const [signalMap, setSignalMap] = useState(new Map());
+
+    useEffect(() => {
+        let cancelled = false;
+        const fetchSignals = async () => {
+            try {
+                const res = await api.get('/predictions/recent?limit=200&includeLivePrices=true');
+                const list = Array.isArray(res.data) ? res.data : [];
+                if (!cancelled) setSignalMap(buildSignalMap(list));
+            } catch {
+                /* silent — watchlist still works without signals */
+            }
+        };
+        fetchSignals();
+        const iv = setInterval(fetchSignals, 30000);
+        return () => { cancelled = true; clearInterval(iv); };
+    }, [api]);
+
     // Technical alert types config
     const technicalAlertTypes = [
         { value: 'rsi_oversold', label: 'RSI Oversold', description: 'RSI drops below threshold', icon: '📉', params: ['rsiThreshold'] },
@@ -1127,62 +1166,35 @@ const WatchlistPage = () => {
     };
 
     // Filter and sort
-    const filteredWatchlist = useMemo(() => {
-        let filtered = [...watchlist];
+    // Enriched watchlist: every item gets _signal, _momentum, _volatility,
+    // _action, _insight, _priority. Used by the new hero, stat cards, and
+    // row-level UI.
+    const enrichedWatchlist = useMemo(
+        () => enrichWatchlist(watchlist, signalMap, isCrypto),
+        [watchlist, signalMap]
+    );
 
+    const filteredWatchlist = useMemo(() => {
+        // Search first (free-text)
+        let filtered = enrichedWatchlist;
         if (searchQuery) {
             const query = searchQuery.toLowerCase();
-            filtered = filtered.filter(s => 
+            filtered = filtered.filter((s) =>
                 (s.symbol || '').toLowerCase().includes(query) ||
                 (s.name || '').toLowerCase().includes(query)
             );
         }
-
-        if (filterBy === 'gainers') {
-            filtered = filtered.filter(s => (s.changePercent || 0) > 0);
-        } else if (filterBy === 'losers') {
-            filtered = filtered.filter(s => (s.changePercent || 0) < 0);
-        } else if (filterBy === 'alerts') {
-            filtered = filtered.filter(s => s.hasAlert);
-        } else if (filterBy === 'stocks') {
-            filtered = filtered.filter(s => !isCrypto(s.symbol || s.ticker));
-        } else if (filterBy === 'crypto') {
-            filtered = filtered.filter(s => isCrypto(s.symbol || s.ticker));
-        }
-
-        filtered.sort((a, b) => {
-            switch (sortBy) {
-                case 'symbol':
-                    return (a.symbol || '').localeCompare(b.symbol || '');
-                case 'price':
-                    return (b.currentPrice || b.price || 0) - (a.currentPrice || a.price || 0);
-                case 'change':
-                    return (b.changePercent || 0) - (a.changePercent || 0);
-                case 'name':
-                    return (a.name || '').localeCompare(b.name || '');
-                default:
-                    return 0;
-            }
-        });
-
+        // Then the smart filter + sort from derive.js
+        filtered = filterEnriched(filtered, filterBy, isCrypto);
+        filtered = sortEnriched(filtered, sortBy);
         return filtered;
-    }, [watchlist, searchQuery, sortBy, filterBy]);
+    }, [enrichedWatchlist, searchQuery, sortBy, filterBy]);
 
-    // Stats
-    const stats = useMemo(() => {
-        if (!Array.isArray(watchlist) || watchlist.length === 0) {
-            return { total: 0, stocks: 0, crypto: 0, gainers: 0, losers: 0, avgChange: 0, alerts: 0 };
-        }
-        
-        const stocks = watchlist.filter(s => !isCrypto(s.symbol || s.ticker)).length;
-        const crypto = watchlist.filter(s => isCrypto(s.symbol || s.ticker)).length;
-        const gainers = watchlist.filter(s => (s.changePercent || 0) > 0).length;
-        const losers = watchlist.filter(s => (s.changePercent || 0) < 0).length;
-        const avgChange = watchlist.reduce((sum, s) => sum + (s.changePercent || 0), 0) / watchlist.length;
-        const alerts = watchlist.filter(s => s.hasAlert).length;
-
-        return { total: watchlist.length, stocks, crypto, gainers, losers, avgChange, alerts };
-    }, [watchlist]);
+    // Stats — uses enriched data so we get activeSignals, movers, highVol
+    const stats = useMemo(
+        () => enhancedStats(enrichedWatchlist, isCrypto),
+        [enrichedWatchlist]
+    );
 
     if (loading) {
         return (
@@ -1198,6 +1210,22 @@ const WatchlistPage = () => {
     }
 
     if (watchlist.length === 0) {
+        // Quick-add helper for the rich empty state — no modal, just POST + refresh.
+        const quickAdd = async (sym) => {
+            try {
+                await api.post('/watchlist', { symbol: sym.toUpperCase() });
+                toast.success(`${sym.toUpperCase()} added!`);
+                await fetchWatchlist();
+            } catch (error) {
+                const msg = error?.response?.data?.error || '';
+                if (msg.includes('already exists')) {
+                    toast.warning(`${sym.toUpperCase()} is already in your watchlist`);
+                } else {
+                    toast.error(`Failed to add ${sym.toUpperCase()}`);
+                }
+            }
+        };
+
         return (
             <PageContainer theme={theme}>
                 <ContentWrapper>
@@ -1205,17 +1233,11 @@ const WatchlistPage = () => {
                         <Title theme={theme}>My Watchlist</Title>
                         <Subtitle theme={theme}>Track stocks & crypto in real-time</Subtitle>
                     </Header>
-                    <EmptyState>
-                        <EmptyIcon theme={theme}>
-                            <Eye size={48} color={theme.brand?.primary || '#00adef'} />
-                        </EmptyIcon>
-                        <EmptyTitle theme={theme}>Your Watchlist is Empty</EmptyTitle>
-                        <EmptyText theme={theme}>Add stocks or crypto to track their performance</EmptyText>
-                        <ActionButton theme={theme} $primary onClick={() => setShowAddModal(true)}>
-                            <Plus size={20} />
-                            Add Your First Stock
-                        </ActionButton>
-                    </EmptyState>
+                    <RichEmptyState
+                        theme={theme}
+                        onAdd={quickAdd}
+                        onOpenAddModal={() => setShowAddModal(true)}
+                    />
                 </ContentWrapper>
 
                 {showAddModal && (
@@ -1279,6 +1301,9 @@ const WatchlistPage = () => {
                     </HeaderTop>
                 </Header>
 
+                {/* Most Actionable hero — top of page priority engine */}
+                <MostActionable enriched={enrichedWatchlist} isCryptoFn={isCrypto} />
+
                 {/* Stats */}
                 <StatsHero>
                     <StatCard theme={theme} $delay="0s" $color={`linear-gradient(90deg, ${theme.brand?.primary || '#00adef'}, ${theme.brand?.secondary || '#0088cc'})`}>
@@ -1325,6 +1350,36 @@ const WatchlistPage = () => {
                         <StatValue theme={theme} $color={theme.error || '#ef4444'}>{stats.losers}</StatValue>
                         <StatSubtext theme={theme}>down today</StatSubtext>
                     </StatCard>
+
+                    {/* New: Active signals */}
+                    <StatCard theme={theme} $delay="0.25s" $color={`linear-gradient(90deg, ${theme.brand?.primary || '#00adef'}, ${theme.brand?.accent || '#06b6d4'})`}>
+                        <StatIcon theme={theme} $bg={`${theme.brand?.primary || '#00adef'}26`} $color={theme.brand?.primary || '#00adef'}>
+                            <Zap size={20} />
+                        </StatIcon>
+                        <StatLabel theme={theme}>Active Signals</StatLabel>
+                        <StatValue theme={theme} $color={theme.brand?.primary || '#00adef'}>{stats.activeSignals}</StatValue>
+                        <StatSubtext theme={theme}>tradeable</StatSubtext>
+                    </StatCard>
+
+                    {/* New: High movers today */}
+                    <StatCard theme={theme} $delay="0.3s" $color={`linear-gradient(90deg, ${theme.warning || '#f59e0b'}, ${theme.warning || '#fbbf24'})`}>
+                        <StatIcon theme={theme} $bg={`${theme.warning || '#f59e0b'}26`} $color={theme.warning || '#f59e0b'}>
+                            <Flame size={20} />
+                        </StatIcon>
+                        <StatLabel theme={theme}>Movers</StatLabel>
+                        <StatValue theme={theme} $color={theme.warning || '#f59e0b'}>{stats.movers}</StatValue>
+                        <StatSubtext theme={theme}>≥2% today</StatSubtext>
+                    </StatCard>
+
+                    {/* New: High volatility */}
+                    <StatCard theme={theme} $delay="0.35s" $color={`linear-gradient(90deg, ${theme.error || '#ef4444'}, ${theme.warning || '#f59e0b'})`}>
+                        <StatIcon theme={theme} $bg={`${theme.error || '#ef4444'}26`} $color={theme.error || '#ef4444'}>
+                            <Activity size={20} />
+                        </StatIcon>
+                        <StatLabel theme={theme}>High Vol</StatLabel>
+                        <StatValue theme={theme} $color={theme.error || '#ef4444'}>{stats.highVol}</StatValue>
+                        <StatSubtext theme={theme}>volatile</StatSubtext>
+                    </StatCard>
                 </StatsHero>
 
                 {/* Watchlist Table */}
@@ -1349,19 +1404,15 @@ const WatchlistPage = () => {
                         </SearchWrapper>
 
                         <Select theme={theme} value={sortBy} onChange={e => setSortBy(e.target.value)}>
-                            <option value="symbol">Sort by Symbol</option>
-                            <option value="name">Sort by Name</option>
-                            <option value="price">Sort by Price</option>
-                            <option value="change">Sort by Change</option>
+                            {SORT_OPTIONS.map((o) => (
+                                <option key={o.id} value={o.id}>Sort by {o.label}</option>
+                            ))}
                         </Select>
 
                         <Select theme={theme} value={filterBy} onChange={e => setFilterBy(e.target.value)}>
-                            <option value="all">All Assets</option>
-                            <option value="stocks">Stocks Only</option>
-                            <option value="crypto">Crypto Only</option>
-                            <option value="gainers">Gainers Only</option>
-                            <option value="losers">Losers Only</option>
-                            <option value="alerts">With Alerts</option>
+                            {FILTER_OPTIONS.map((o) => (
+                                <option key={o.id} value={o.id}>{o.label}</option>
+                            ))}
                         </Select>
                     </Toolbar>
 
@@ -1407,6 +1458,12 @@ const WatchlistPage = () => {
                                                             </TypeBadge>
                                                         </SymbolName>
                                                         <SymbolCompany theme={theme}>{displayName}</SymbolCompany>
+                                                        {/* New: signal badge + entry/stop/target preview + AI insight */}
+                                                        <AssetSignalRow
+                                                            signal={stock._signal}
+                                                            insight={stock._insight}
+                                                            theme={theme}
+                                                        />
                                                     </SymbolInfo>
                                                 </SymbolCell>
                                             </Td>
@@ -1422,6 +1479,10 @@ const WatchlistPage = () => {
                                                     <ChangePercent theme={theme} $positive={positive}>
                                                         {positive ? '+' : ''}{changePercent.toFixed(2)}%
                                                     </ChangePercent>
+                                                    {/* New: Trade / Watch / Ignore action chip */}
+                                                    <div style={{ marginTop: '0.4rem' }}>
+                                                        <ActionLabel action={stock._action} theme={theme} />
+                                                    </div>
                                                 </ChangeCell>
                                             </Td>
                                             <Td theme={theme}>
@@ -1466,11 +1527,13 @@ const WatchlistPage = () => {
                                                 </AlertCell>
                                             </Td>
                                             <Td theme={theme}>
-                                                <ActionCell>
-                                                    <SmallButton theme={theme} $danger onClick={e => handleRemoveStock(symbol, e)}>
-                                                        <Trash2 size={14} />
-                                                    </SmallButton>
-                                                </ActionCell>
+                                                {/* New: Quick Trade Actions — Trade / Analyze / Alert / Remove */}
+                                                <QuickTradeActions
+                                                    symbol={symbol}
+                                                    onSetAlert={(e) => handleSetAlert(stock, e)}
+                                                    onRemove={(e) => handleRemoveStock(symbol, e)}
+                                                    theme={theme}
+                                                />
                                             </Td>
                                         </Tr>
                                     );
