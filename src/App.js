@@ -51,6 +51,7 @@ const SignalDetailPage = lazy(() => import('./pages/SignalDetailPage'));
 const PostDetailPage = lazy(() => import('./pages/PostDetailPage'));
 const CoPilotPage = lazy(() => import('./pages/CoPilotPage'));
 const PricingPage = lazy(() => import('./pages/PricingPage'));
+const HowItWorksPage = lazy(() => import('./pages/HowItWorksPage'));
 const PriceComparisonPage = lazy(() => import('./pages/PriceComparisonPage'));
 const WatchlistPage = lazy(() => import('./pages/WatchlistPage'));
 const PortfolioPage = lazy(() => import('./pages/PortfolioPage'));
@@ -151,6 +152,7 @@ function AppContent() {
                     <Route path="/register" element={<RegisterPage />} />
                     <Route path="/pricing" element={<PricingPage />} />
                     <Route path="/pricing/compare" element={<PriceComparisonPage />} />
+                    <Route path="/how-it-works" element={<HowItWorksPage />} />
                     <Route path="/about" element={<AboutPage />} />
                     <Route path="/terms" element={<TermsOfServicePage />} />
                     <Route path="/privacy" element={<PrivacyPolicyPage />} />

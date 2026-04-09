@@ -1554,6 +1554,7 @@ const Navbar = () => {
                             <NavItem data-dropdown><DropdownTrigger onClick={() => handleDropdownToggle('analysis')} $open={dropdowns.analysis} $active={isPathActive(navStructure.analysis)}><BarChart3 size={16} />Analysis<ChevronDown size={14} /></DropdownTrigger>{dropdowns.analysis && <DropdownMenu>{renderDropdownItems(navStructure.analysis)}</DropdownMenu>}</NavItem>
                             <NavItem data-dropdown><DropdownTrigger onClick={() => handleDropdownToggle('community')} $open={dropdowns.community} $active={isPathActive(navStructure.community)}><Users size={16} />Community<ChevronDown size={14} /></DropdownTrigger>{dropdowns.community && <DropdownMenu>{renderDropdownItems(navStructure.community)}</DropdownMenu>}</NavItem>
                             <NavItem data-dropdown><DropdownTrigger onClick={() => handleDropdownToggle('pricing')} $open={dropdowns.pricing} $active={isPathActive(navStructure.pricing)}><DollarSign size={16} />Pricing<ChevronDown size={14} /></DropdownTrigger>{dropdowns.pricing && <DropdownMenu>{navStructure.pricing.map(item => { const Icon = item.icon; return <DropdownItem key={item.path} to={item.path} $active={location.pathname === item.path}><Icon size={16} />{item.label}</DropdownItem>; })}</DropdownMenu>}</NavItem>
+                            <NavLink to="/how-it-works" $active={location.pathname === '/how-it-works'}><BookOpen size={16} />How It Works</NavLink>
                         </NavLinks>
                         <UserSection>
                             <NavbarGamification />
@@ -1629,6 +1630,7 @@ const Navbar = () => {
                                 <MobileNavCategory><MobileCategoryTitle><Users size={16} />Community & Rewards</MobileCategoryTitle>{navStructure.community.map(item => { const Icon = item.icon; return <MobileNavLink key={item.path} to={item.path} $active={location.pathname === item.path} onClick={() => setMobileMenuOpen(false)}><Icon size={22} />{item.label}</MobileNavLink>; })}</MobileNavCategory>
                                 <Divider />
                                 <MobileNavCategory><MobileCategoryTitle><DollarSign size={16} />Pricing</MobileCategoryTitle>{navStructure.pricing.map(item => { const Icon = item.icon; return <MobileNavLink key={item.path} to={item.path} $active={location.pathname === item.path} onClick={() => setMobileMenuOpen(false)}><Icon size={22} />{item.label}</MobileNavLink>; })}</MobileNavCategory>
+                                <MobileNavLink to="/how-it-works" $active={location.pathname === '/how-it-works'} onClick={() => setMobileMenuOpen(false)}><BookOpen size={22} />How It Works</MobileNavLink>
                                 <MobileNavLink to="/profile" onClick={() => setMobileMenuOpen(false)}><User size={22} />Profile</MobileNavLink>
                                 <MobileNavLink to="/settings" onClick={() => setMobileMenuOpen(false)}><Settings size={22} />Settings</MobileNavLink>
                                 <MobileNavLink to="/account" onClick={() => setMobileMenuOpen(false)}><UserCog size={22} />Account</MobileNavLink>
@@ -1638,7 +1640,7 @@ const Navbar = () => {
                     </>
                 ) : (
                     <>
-                        <PublicNavLinks><PublicNavLink to="/pricing"><DollarSign size={16} />Pricing</PublicNavLink></PublicNavLinks>
+                        <PublicNavLinks><PublicNavLink to="/pricing"><DollarSign size={16} />Pricing</PublicNavLink><PublicNavLink to="/how-it-works"><BookOpen size={16} />How It Works</PublicNavLink></PublicNavLinks>
                         <AuthButtons><LoginButton to="/login"><LogIn size={16} />Log In</LoginButton><SignUpButton to="/register"><UserPlus size={16} />Sign Up Free</SignUpButton></AuthButtons>
                     </>
                 )}
