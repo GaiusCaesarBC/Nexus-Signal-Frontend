@@ -31,6 +31,9 @@ import { VaultProvider } from './context/VaultContext';
 // 💳 Subscription imports
 import { SubscriptionProvider } from './context/SubscriptionContext';
 
+// 🚀 Lightweight onboarding overlay (separate from /onboarding page)
+import { OnboardingProvider, OnboardingController } from './onboarding';
+
 // Lazy-loaded components (loaded on-demand)
 const AIChatWidget = lazy(() => import('./components/AIChatWidget'));
 const WhaleNotification = lazy(() => import('./components/WhaleNotification'));
@@ -239,6 +242,9 @@ function AppContent() {
             <LevelUpCelebration />
             <XPNotification />
 
+            {/* 🚀 LIGHTWEIGHT ONBOARDING OVERLAY (3-step + post-onboarding hints) */}
+            <OnboardingController />
+
             {/* 🐋 WHALE NOTIFICATIONS */}
             <Suspense fallback={null}>
                 <WhaleNotification />
@@ -269,7 +275,9 @@ function App() {
             <GamificationProvider>
                 <VaultProvider>
                     <SubscriptionProvider>
-                        <AppContent />
+                        <OnboardingProvider>
+                            <AppContent />
+                        </OnboardingProvider>
                     </SubscriptionProvider>
                 </VaultProvider>
             </GamificationProvider>
