@@ -216,12 +216,11 @@ const ContentGrid = styled.div`
     max-width: 1800px;
     margin: 0 auto;
     display: grid;
-    grid-template-columns: 1fr 400px;
+    /* Single column — Positions + Orders moved up into ChartCol so the
+       chart's empty space is filled. Sidebar (Stats + Leaderboard) now
+       sits full-width below the terminal grid. */
+    grid-template-columns: 1fr;
     gap: 2rem;
-
-    @media (max-width: 1400px) {
-        grid-template-columns: 1fr;
-    }
 `;
 
 // ═══════════════════════════════════════════════════════════
@@ -2309,6 +2308,117 @@ const PaperTradingPage = () => {
                                 <div style={{ fontSize: '.85rem' }}>Type a ticker (AAPL, BTC, NVDA…) in the order panel →</div>
                             </div>
                         )}
+
+                        {/* Positions / Orders / EmptyState lifted up here so they fill the
+                            vacant space under the chart instead of leaving the left column
+                            short while the sticky Order panel on the right extends downward. */}
+                        <div style={{ marginTop: '1.5rem' }}>
+                            {account?.positions?.length > 0 && (
+                                <PositionsList>
+                                    <PositionsHeader>
+                                        <PositionsTitle theme={theme}><PieChart size={20} />Your Positions ({account.positions.length})</PositionsTitle>
+                                        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                                            <RefillAccountButton variant="compact" currentCashBalance={account?.cashBalance || 0} onRefillSuccess={(data) => { setAccount(data.account); loadOrders(); }} />
+                                            <RefreshButton theme={theme} onClick={handleRefreshPrices} disabled={refreshingPrices}>{refreshingPrices ? <LoadingSpinner size={16} /> : <RefreshCw size={16} />}Refresh</RefreshButton>
+                                        </div>
+                                    </PositionsHeader>
+                                    {account.positions.map((position) => {
+                                        const positionKey = `${position.symbol}-${position.positionType}`;
+                                        const isExpanded = expandedPositions[positionKey];
+                                        const totalValue = position.currentPrice * position.quantity;
+                                        const costBasis = position.averagePrice * position.quantity;
+                                        const isLeveraged = position.leverage && position.leverage > 1;
+                                        const hasTPSL = position.takeProfit || position.stopLoss || position.trailingStopPercent;
+                                        return (
+                                            <PositionCard theme={theme} key={positionKey} $positive={position.profitLoss >= 0} $positionType={position.positionType} onClick={() => togglePositionExpand(positionKey)}>
+                                                <ExpandIcon theme={theme} $expanded={isExpanded}><ChevronDown size={16} /></ExpandIcon>
+                                                <PositionHeader>
+                                                    <PositionSymbol theme={theme}>
+                                                        {position.symbol}
+                                                        <PositionTypeBadge theme={theme} $short={position.positionType === 'short'}>{position.positionType === 'short' ? <TrendingDown size={12} /> : <TrendingUp size={12} />}{position.positionType}</PositionTypeBadge>
+                                                        {isLeveraged && <LeverageBadge theme={theme} $leverage={position.leverage}><Zap size={10} />{position.leverage}x</LeverageBadge>}
+                                                    </PositionSymbol>
+                                                    <PositionPL>
+                                                        <PLValue theme={theme} $positive={position.profitLoss >= 0}>{position.profitLoss >= 0 ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}{formatCurrency(Math.abs(position.profitLoss || 0))}</PLValue>
+                                                        <PLPercent theme={theme} $positive={position.profitLossPercent >= 0}>{formatPercent(position.profitLossPercent || 0)}</PLPercent>
+                                                    </PositionPL>
+                                                </PositionHeader>
+                                                {hasTPSL && (
+                                                    <TPSLBadgeContainer>
+                                                        {position.takeProfit && <TPSLBadge theme={theme} $type="tp"><Target size={10} />TP: {formatAssetPrice(position.takeProfit, position.type)}</TPSLBadge>}
+                                                        {position.stopLoss && <TPSLBadge theme={theme} $type="sl"><ShieldAlert size={10} />SL: {formatAssetPrice(position.stopLoss, position.type)}</TPSLBadge>}
+                                                        {position.trailingStopPercent && <TPSLBadge theme={theme} $type="trailing"><TrendUp size={10} />Trail: {position.trailingStopPercent}%{position.trailingStopPrice && ` (${formatAssetPrice(position.trailingStopPrice, position.type)})`}</TPSLBadge>}
+                                                    </TPSLBadgeContainer>
+                                                )}
+                                                {/* Live Price Bar */}
+                                                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'.5rem .75rem',margin:'.4rem 0',background:position.profitLoss >= 0 ? 'rgba(16,185,129,.06)' : 'rgba(239,68,68,.06)',border:`1px solid ${position.profitLoss >= 0 ? 'rgba(16,185,129,.15)' : 'rgba(239,68,68,.15)'}`,borderRadius:'8px'}}>
+                                                    <span style={{fontSize:'.72rem',color:'#94a3b8',fontWeight:600,letterSpacing:'.03em'}}>LIVE PRICE</span>
+                                                    <span style={{fontSize:'1.1rem',fontWeight:800,color:position.profitLoss >= 0 ? '#10b981' : '#ef4444'}}>{formatAssetPrice(position.currentPrice, position.type)}</span>
+                                                    <span style={{fontSize:'.8rem',fontWeight:700,color:position.profitLoss >= 0 ? '#10b981' : '#ef4444'}}>{position.profitLoss >= 0 ? '+' : ''}{formatCurrency(position.profitLoss || 0)} ({formatPercent(position.profitLossPercent || 0)})</span>
+                                                </div>
+                                                <PositionDetails theme={theme}>
+                                                    <PositionDetail><DetailLabel theme={theme}>Quantity</DetailLabel><DetailValue theme={theme}>{position.quantity.toLocaleString()}</DetailValue></PositionDetail>
+                                                    <PositionDetail><DetailLabel theme={theme}>Avg Price</DetailLabel><DetailValue theme={theme}>{formatAssetPrice(position.averagePrice, position.type)}</DetailValue></PositionDetail>
+                                                    <PositionDetail><DetailLabel theme={theme}>Current Price</DetailLabel><DetailValue theme={theme}>{formatAssetPrice(position.currentPrice, position.type)}</DetailValue></PositionDetail>
+                                                </PositionDetails>
+                                                <ExpandedDetails $expanded={isExpanded}>
+                                                    <ExpandedContent theme={theme}>
+                                                        <ExpandedGrid>
+                                                            {isLeveraged ? (
+                                                                <>
+                                                                    <ExpandedItem theme={theme}><ExpandedLabel theme={theme}>Margin (Your Capital)</ExpandedLabel><ExpandedValue theme={theme}>{formatCurrency(position.marginUsed || costBasis)}</ExpandedValue></ExpandedItem>
+                                                                    <ExpandedItem theme={theme}><ExpandedLabel theme={theme}>Market Exposure</ExpandedLabel><ExpandedValue theme={theme} $color={theme?.brand?.primary || '#00adef'}>{formatCurrency(position.leveragedValue)} ({position.leverage}x)</ExpandedValue></ExpandedItem>
+                                                                    <ExpandedItem theme={theme}><ExpandedLabel theme={theme}>Current Value</ExpandedLabel><ExpandedValue theme={theme} $color={position.currentValue >= costBasis ? (theme?.success || '#10b981') : (theme?.error || '#ef4444')}>{formatCurrency(position.currentValue || (costBasis + (position.profitLoss || 0)))}</ExpandedValue></ExpandedItem>
+                                                                    <ExpandedItem theme={theme}><ExpandedLabel theme={theme}>Leveraged P/L</ExpandedLabel><ExpandedValue theme={theme} $color={position.profitLoss >= 0 ? (theme?.success || '#10b981') : (theme?.error || '#ef4444')}>{position.profitLoss >= 0 ? '+' : ''}{formatCurrency(position.profitLoss || 0)} ({formatPercent(position.profitLossPercent || 0)})</ExpandedValue></ExpandedItem>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <ExpandedItem theme={theme}><ExpandedLabel theme={theme}>Total Value</ExpandedLabel><ExpandedValue theme={theme} $color={theme?.brand?.primary || '#00adef'}>{formatCurrency(totalValue)}</ExpandedValue></ExpandedItem>
+                                                                    <ExpandedItem theme={theme}><ExpandedLabel theme={theme}>Cost Basis</ExpandedLabel><ExpandedValue theme={theme}>{formatCurrency(costBasis)}</ExpandedValue></ExpandedItem>
+                                                                    <ExpandedItem theme={theme}><ExpandedLabel theme={theme}>{position.positionType === 'short' ? 'Short P/L' : 'Unrealized P/L'}</ExpandedLabel><ExpandedValue theme={theme} $color={position.profitLoss >= 0 ? (theme?.success || '#10b981') : (theme?.error || '#ef4444')}>{position.profitLoss >= 0 ? '+' : ''}{formatCurrency(position.profitLoss || 0)}</ExpandedValue></ExpandedItem>
+                                                                    <ExpandedItem theme={theme}><ExpandedLabel theme={theme}>Return %</ExpandedLabel><ExpandedValue theme={theme} $color={position.profitLossPercent >= 0 ? (theme?.success || '#10b981') : (theme?.error || '#ef4444')}>{formatPercent(position.profitLossPercent || 0)}</ExpandedValue></ExpandedItem>
+                                                                </>
+                                                            )}
+                                                        </ExpandedGrid>
+                                                        {isLeveraged && position.liquidationPrice && (
+                                                            <div style={{ padding: '0.75rem', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.85rem', color: '#fca5a5' }}>
+                                                                <strong>⚠️ Liquidation Price:</strong> {formatAssetPrice(position.liquidationPrice, position.type)} — Position liquidates if price {position.positionType === 'short' ? 'rises above' : 'falls below'} this level (90% loss on margin).
+                                                            </div>
+                                                        )}
+                                                        <PositionNotes theme={theme}><NotesLabel theme={theme}>{position.positionType === 'short' ? <TrendingDown size={14} /> : <TrendingUp size={14} />}Position Strategy</NotesLabel><NotesText theme={theme}>{position.positionType === 'short' ? <><strong>Short Position:</strong> You borrowed and sold at {formatAssetPrice(position.averagePrice, position.type)}. To close, you'll buy back at current price ({formatAssetPrice(position.currentPrice, position.type)}). {position.profitLoss >= 0 ? ` Price dropped = You profit ${formatCurrency(Math.abs(position.profitLoss))}! 🎉` : ` Price rose = You'd lose ${formatCurrency(Math.abs(position.profitLoss))} if you cover now.`}{isLeveraged && ` With ${position.leverage}x leverage, price moves are amplified ${position.leverage}x on your margin.`}</> : <><strong>Long Position:</strong> You bought at {formatAssetPrice(position.averagePrice, position.type)}. Current value is {formatAssetPrice(position.currentPrice, position.type)} per share.{position.profitLoss >= 0 ? ` Price rose = You're up ${formatCurrency(Math.abs(position.profitLoss))}! 🎉` : ` Price dropped = You're down ${formatCurrency(Math.abs(position.profitLoss))}.`}{isLeveraged && ` With ${position.leverage}x leverage, your ${formatCurrency(position.marginUsed || costBasis)} margin controls ${formatCurrency(position.leveragedValue)} in market exposure.`}</>}</NotesText></PositionNotes>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: theme?.text?.tertiary || '#64748b', fontSize: '0.8rem', marginBottom: '1rem' }}><Clock size={14} />Last updated: {position.lastUpdated ? new Date(position.lastUpdated).toLocaleString() : 'Just now'}</div>
+                                                    </ExpandedContent>
+                                                </ExpandedDetails>
+                                                <SellButton theme={theme} onClick={(e) => { e.stopPropagation(); if (position.positionType === 'short') { handleCoverShort(position); } else { handleQuickSell(position); }}} $cover={position.positionType === 'short'} disabled={submitting}>{position.positionType === 'short' ? <Plus size={18} /> : <Minus size={18} />}{position.positionType === 'short' ? (submitting ? 'Covering...' : 'Cover Short') : 'Sell Position'}</SellButton>
+                                            </PositionCard>
+                                        );
+                                    })}
+                                </PositionsList>
+                            )}
+
+                            {orders.length > 0 && (
+                                <OrdersHistory>
+                                    <PositionsTitle theme={theme} style={{ marginBottom: '1.5rem' }}><Clock size={20} />Recent Orders</PositionsTitle>
+                                    {orders.map((order) => (
+                                        <OrderCard theme={theme} key={order._id}>
+                                            <OrderHeader>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                    <OrderSide theme={theme} $side={order.side}>{order.side === 'buy' ? <Plus size={16} /> : order.side === 'cover' ? <RefreshCw size={16} /> : <Minus size={16} />}{order.side.toUpperCase()}{order.positionType === 'short' && order.side !== 'cover' && ' SHORT'}</OrderSide>
+                                                    {order.leverage > 1 && <LeverageBadge theme={theme} $leverage={order.leverage}>{order.leverage}x</LeverageBadge>}
+                                                    {order.triggerType && order.triggerType !== 'manual' && <TPSLBadge theme={theme} $type={order.triggerType === 'take_profit' ? 'tp' : order.triggerType === 'stop_loss' ? 'sl' : 'trailing'}>{order.triggerType === 'take_profit' ? '🎯 TP' : order.triggerType === 'stop_loss' ? '🛑 SL' : order.triggerType === 'trailing_stop' ? '📉 Trail' : order.triggerType === 'liquidation' ? '💀 Liq' : 'Auto'}</TPSLBadge>}
+                                                </div>
+                                                <OrderTime theme={theme}>{order.executedAt || order.createdAt ? new Date(order.executedAt || order.createdAt).toLocaleString() : 'Just now'}</OrderTime>
+                                            </OrderHeader>
+                                            <OrderDetails><OrderInfo theme={theme}><OrderSymbol theme={theme}>${order.symbol}</OrderSymbol><OrderQty theme={theme}>× {order.quantity} @ {formatAssetPrice(order.price, order.type)}</OrderQty></OrderInfo><OrderAmount><Amount theme={theme}>{formatCurrency(order.totalAmount)}</Amount>{order.profitLoss !== 0 && <OrderPL theme={theme} $positive={order.profitLoss > 0}>{order.profitLoss > 0 ? '+' : ''}{formatCurrency(order.profitLoss)}</OrderPL>}</OrderAmount></OrderDetails>
+                                        </OrderCard>
+                                    ))}
+                                </OrdersHistory>
+                            )}
+
+                            {(!account?.positions || account.positions.length === 0) && orders.length === 0 && (
+                                <EmptyState theme={theme}><EmptyIcon theme={theme}><Trophy size={60} color={theme?.brand?.primary || '#00adef'} /></EmptyIcon><EmptyText theme={theme}>You haven't made any trades yet.<br />Start trading long or short to build your portfolio!</EmptyText></EmptyState>
+                            )}
+                        </div>
                     </ChartCol>
 
                     <OrderCol>
@@ -2498,116 +2608,9 @@ const PaperTradingPage = () => {
                     </OrderCol>
                 </TerminalGrid>
 
-                {/* Positions / Orders / Sidebar grid (unchanged 1fr 400px layout) */}
+                {/* Stats sidebar — full width below the terminal grid now that
+                    Positions/Orders have been lifted up under the chart. */}
                 <ContentGrid>
-                    <div>
-                        {account?.positions?.length > 0 && (
-                            <PositionsList>
-                                <PositionsHeader>
-                                    <PositionsTitle theme={theme}><PieChart size={20} />Your Positions ({account.positions.length})</PositionsTitle>
-                                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                                        <RefillAccountButton variant="compact" currentCashBalance={account?.cashBalance || 0} onRefillSuccess={(data) => { setAccount(data.account); loadOrders(); }} />
-                                        <RefreshButton theme={theme} onClick={handleRefreshPrices} disabled={refreshingPrices}>{refreshingPrices ? <LoadingSpinner size={16} /> : <RefreshCw size={16} />}Refresh</RefreshButton>
-                                    </div>
-                                </PositionsHeader>
-                                {account.positions.map((position) => {
-                                    const positionKey = `${position.symbol}-${position.positionType}`;
-                                    const isExpanded = expandedPositions[positionKey];
-                                    const totalValue = position.currentPrice * position.quantity;
-                                    const costBasis = position.averagePrice * position.quantity;
-                                    const isLeveraged = position.leverage && position.leverage > 1;
-                                    const hasTPSL = position.takeProfit || position.stopLoss || position.trailingStopPercent;
-                                    return (
-                                        <PositionCard theme={theme} key={positionKey} $positive={position.profitLoss >= 0} $positionType={position.positionType} onClick={() => togglePositionExpand(positionKey)}>
-                                            <ExpandIcon theme={theme} $expanded={isExpanded}><ChevronDown size={16} /></ExpandIcon>
-                                            <PositionHeader>
-                                                <PositionSymbol theme={theme}>
-                                                    {position.symbol}
-                                                    <PositionTypeBadge theme={theme} $short={position.positionType === 'short'}>{position.positionType === 'short' ? <TrendingDown size={12} /> : <TrendingUp size={12} />}{position.positionType}</PositionTypeBadge>
-                                                    {isLeveraged && <LeverageBadge theme={theme} $leverage={position.leverage}><Zap size={10} />{position.leverage}x</LeverageBadge>}
-                                                </PositionSymbol>
-                                                <PositionPL>
-                                                    <PLValue theme={theme} $positive={position.profitLoss >= 0}>{position.profitLoss >= 0 ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}{formatCurrency(Math.abs(position.profitLoss || 0))}</PLValue>
-                                                    <PLPercent theme={theme} $positive={position.profitLossPercent >= 0}>{formatPercent(position.profitLossPercent || 0)}</PLPercent>
-                                                </PositionPL>
-                                            </PositionHeader>
-                                            {hasTPSL && (
-                                                <TPSLBadgeContainer>
-                                                    {position.takeProfit && <TPSLBadge theme={theme} $type="tp"><Target size={10} />TP: {formatAssetPrice(position.takeProfit, position.type)}</TPSLBadge>}
-                                                    {position.stopLoss && <TPSLBadge theme={theme} $type="sl"><ShieldAlert size={10} />SL: {formatAssetPrice(position.stopLoss, position.type)}</TPSLBadge>}
-                                                    {position.trailingStopPercent && <TPSLBadge theme={theme} $type="trailing"><TrendUp size={10} />Trail: {position.trailingStopPercent}%{position.trailingStopPrice && ` (${formatAssetPrice(position.trailingStopPrice, position.type)})`}</TPSLBadge>}
-                                                </TPSLBadgeContainer>
-                                            )}
-                                            {/* Live Price Bar */}
-                                            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'.5rem .75rem',margin:'.4rem 0',background:position.profitLoss >= 0 ? 'rgba(16,185,129,.06)' : 'rgba(239,68,68,.06)',border:`1px solid ${position.profitLoss >= 0 ? 'rgba(16,185,129,.15)' : 'rgba(239,68,68,.15)'}`,borderRadius:'8px'}}>
-                                                <span style={{fontSize:'.72rem',color:'#94a3b8',fontWeight:600,letterSpacing:'.03em'}}>LIVE PRICE</span>
-                                                <span style={{fontSize:'1.1rem',fontWeight:800,color:position.profitLoss >= 0 ? '#10b981' : '#ef4444'}}>{formatAssetPrice(position.currentPrice, position.type)}</span>
-                                                <span style={{fontSize:'.8rem',fontWeight:700,color:position.profitLoss >= 0 ? '#10b981' : '#ef4444'}}>{position.profitLoss >= 0 ? '+' : ''}{formatCurrency(position.profitLoss || 0)} ({formatPercent(position.profitLossPercent || 0)})</span>
-                                            </div>
-                                            <PositionDetails theme={theme}>
-                                                <PositionDetail><DetailLabel theme={theme}>Quantity</DetailLabel><DetailValue theme={theme}>{position.quantity.toLocaleString()}</DetailValue></PositionDetail>
-                                                <PositionDetail><DetailLabel theme={theme}>Avg Price</DetailLabel><DetailValue theme={theme}>{formatAssetPrice(position.averagePrice, position.type)}</DetailValue></PositionDetail>
-                                                <PositionDetail><DetailLabel theme={theme}>Current Price</DetailLabel><DetailValue theme={theme}>{formatAssetPrice(position.currentPrice, position.type)}</DetailValue></PositionDetail>
-                                            </PositionDetails>
-                                            <ExpandedDetails $expanded={isExpanded}>
-                                                <ExpandedContent theme={theme}>
-                                                    <ExpandedGrid>
-                                                        {isLeveraged ? (
-                                                            <>
-                                                                <ExpandedItem theme={theme}><ExpandedLabel theme={theme}>Margin (Your Capital)</ExpandedLabel><ExpandedValue theme={theme}>{formatCurrency(position.marginUsed || costBasis)}</ExpandedValue></ExpandedItem>
-                                                                <ExpandedItem theme={theme}><ExpandedLabel theme={theme}>Market Exposure</ExpandedLabel><ExpandedValue theme={theme} $color={theme?.brand?.primary || '#00adef'}>{formatCurrency(position.leveragedValue)} ({position.leverage}x)</ExpandedValue></ExpandedItem>
-                                                                <ExpandedItem theme={theme}><ExpandedLabel theme={theme}>Current Value</ExpandedLabel><ExpandedValue theme={theme} $color={position.currentValue >= costBasis ? (theme?.success || '#10b981') : (theme?.error || '#ef4444')}>{formatCurrency(position.currentValue || (costBasis + (position.profitLoss || 0)))}</ExpandedValue></ExpandedItem>
-                                                                <ExpandedItem theme={theme}><ExpandedLabel theme={theme}>Leveraged P/L</ExpandedLabel><ExpandedValue theme={theme} $color={position.profitLoss >= 0 ? (theme?.success || '#10b981') : (theme?.error || '#ef4444')}>{position.profitLoss >= 0 ? '+' : ''}{formatCurrency(position.profitLoss || 0)} ({formatPercent(position.profitLossPercent || 0)})</ExpandedValue></ExpandedItem>
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <ExpandedItem theme={theme}><ExpandedLabel theme={theme}>Total Value</ExpandedLabel><ExpandedValue theme={theme} $color={theme?.brand?.primary || '#00adef'}>{formatCurrency(totalValue)}</ExpandedValue></ExpandedItem>
-                                                                <ExpandedItem theme={theme}><ExpandedLabel theme={theme}>Cost Basis</ExpandedLabel><ExpandedValue theme={theme}>{formatCurrency(costBasis)}</ExpandedValue></ExpandedItem>
-                                                                <ExpandedItem theme={theme}><ExpandedLabel theme={theme}>{position.positionType === 'short' ? 'Short P/L' : 'Unrealized P/L'}</ExpandedLabel><ExpandedValue theme={theme} $color={position.profitLoss >= 0 ? (theme?.success || '#10b981') : (theme?.error || '#ef4444')}>{position.profitLoss >= 0 ? '+' : ''}{formatCurrency(position.profitLoss || 0)}</ExpandedValue></ExpandedItem>
-                                                                <ExpandedItem theme={theme}><ExpandedLabel theme={theme}>Return %</ExpandedLabel><ExpandedValue theme={theme} $color={position.profitLossPercent >= 0 ? (theme?.success || '#10b981') : (theme?.error || '#ef4444')}>{formatPercent(position.profitLossPercent || 0)}</ExpandedValue></ExpandedItem>
-                                                            </>
-                                                        )}
-                                                    </ExpandedGrid>
-                                                    {isLeveraged && position.liquidationPrice && (
-                                                        <div style={{ padding: '0.75rem', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.85rem', color: '#fca5a5' }}>
-                                                            <strong>⚠️ Liquidation Price:</strong> {formatAssetPrice(position.liquidationPrice, position.type)} — Position liquidates if price {position.positionType === 'short' ? 'rises above' : 'falls below'} this level (90% loss on margin).
-                                                        </div>
-                                                    )}
-                                                    <PositionNotes theme={theme}><NotesLabel theme={theme}>{position.positionType === 'short' ? <TrendingDown size={14} /> : <TrendingUp size={14} />}Position Strategy</NotesLabel><NotesText theme={theme}>{position.positionType === 'short' ? <><strong>Short Position:</strong> You borrowed and sold at {formatAssetPrice(position.averagePrice, position.type)}. To close, you'll buy back at current price ({formatAssetPrice(position.currentPrice, position.type)}). {position.profitLoss >= 0 ? ` Price dropped = You profit ${formatCurrency(Math.abs(position.profitLoss))}! 🎉` : ` Price rose = You'd lose ${formatCurrency(Math.abs(position.profitLoss))} if you cover now.`}{isLeveraged && ` With ${position.leverage}x leverage, price moves are amplified ${position.leverage}x on your margin.`}</> : <><strong>Long Position:</strong> You bought at {formatAssetPrice(position.averagePrice, position.type)}. Current value is {formatAssetPrice(position.currentPrice, position.type)} per share.{position.profitLoss >= 0 ? ` Price rose = You're up ${formatCurrency(Math.abs(position.profitLoss))}! 🎉` : ` Price dropped = You're down ${formatCurrency(Math.abs(position.profitLoss))}.`}{isLeveraged && ` With ${position.leverage}x leverage, your ${formatCurrency(position.marginUsed || costBasis)} margin controls ${formatCurrency(position.leveragedValue)} in market exposure.`}</>}</NotesText></PositionNotes>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: theme?.text?.tertiary || '#64748b', fontSize: '0.8rem', marginBottom: '1rem' }}><Clock size={14} />Last updated: {position.lastUpdated ? new Date(position.lastUpdated).toLocaleString() : 'Just now'}</div>
-                                                </ExpandedContent>
-                                            </ExpandedDetails>
-                                            <SellButton theme={theme} onClick={(e) => { e.stopPropagation(); if (position.positionType === 'short') { handleCoverShort(position); } else { handleQuickSell(position); }}} $cover={position.positionType === 'short'} disabled={submitting}>{position.positionType === 'short' ? <Plus size={18} /> : <Minus size={18} />}{position.positionType === 'short' ? (submitting ? 'Covering...' : 'Cover Short') : 'Sell Position'}</SellButton>
-                                        </PositionCard>
-                                    );
-                                })}
-                            </PositionsList>
-                        )}
-
-                        {orders.length > 0 && (
-                            <OrdersHistory>
-                                <PositionsTitle theme={theme} style={{ marginBottom: '1.5rem' }}><Clock size={20} />Recent Orders</PositionsTitle>
-                                {orders.map((order) => (
-                                    <OrderCard theme={theme} key={order._id}>
-                                        <OrderHeader>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                <OrderSide theme={theme} $side={order.side}>{order.side === 'buy' ? <Plus size={16} /> : order.side === 'cover' ? <RefreshCw size={16} /> : <Minus size={16} />}{order.side.toUpperCase()}{order.positionType === 'short' && order.side !== 'cover' && ' SHORT'}</OrderSide>
-                                                {order.leverage > 1 && <LeverageBadge theme={theme} $leverage={order.leverage}>{order.leverage}x</LeverageBadge>}
-                                                {order.triggerType && order.triggerType !== 'manual' && <TPSLBadge theme={theme} $type={order.triggerType === 'take_profit' ? 'tp' : order.triggerType === 'stop_loss' ? 'sl' : 'trailing'}>{order.triggerType === 'take_profit' ? '🎯 TP' : order.triggerType === 'stop_loss' ? '🛑 SL' : order.triggerType === 'trailing_stop' ? '📉 Trail' : order.triggerType === 'liquidation' ? '💀 Liq' : 'Auto'}</TPSLBadge>}
-                                            </div>
-                                            <OrderTime theme={theme}>{order.executedAt || order.createdAt ? new Date(order.executedAt || order.createdAt).toLocaleString() : 'Just now'}</OrderTime>
-                                        </OrderHeader>
-                                        <OrderDetails><OrderInfo theme={theme}><OrderSymbol theme={theme}>${order.symbol}</OrderSymbol><OrderQty theme={theme}>× {order.quantity} @ {formatAssetPrice(order.price, order.type)}</OrderQty></OrderInfo><OrderAmount><Amount theme={theme}>{formatCurrency(order.totalAmount)}</Amount>{order.profitLoss !== 0 && <OrderPL theme={theme} $positive={order.profitLoss > 0}>{order.profitLoss > 0 ? '+' : ''}{formatCurrency(order.profitLoss)}</OrderPL>}</OrderAmount></OrderDetails>
-                                    </OrderCard>
-                                ))}
-                            </OrdersHistory>
-                        )}
-
-                        {(!account?.positions || account.positions.length === 0) && orders.length === 0 && (
-                            <EmptyState theme={theme}><EmptyIcon theme={theme}><Trophy size={60} color={theme?.brand?.primary || '#00adef'} /></EmptyIcon><EmptyText theme={theme}>You haven't made any trades yet.<br />Start trading long or short to build your portfolio!</EmptyText></EmptyState>
-                        )}
-                    </div>
-
                     <Sidebar>
                         <StatsPanel theme={theme}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
