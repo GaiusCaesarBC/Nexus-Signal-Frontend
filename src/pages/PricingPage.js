@@ -434,6 +434,70 @@ const TrustBadge = styled.div`
     }
 `;
 
+// ─── NEW CODE START — Performance Trust Strip (above pricing cards) ───
+const PerformanceStrip = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+    margin: 0 auto 2.5rem;
+    padding: 1rem 1.5rem;
+    max-width: 980px;
+    background:
+        radial-gradient(120% 120% at 0% 0%, rgba(16, 185, 129, 0.10) 0%, transparent 55%),
+        radial-gradient(120% 120% at 100% 100%, rgba(0, 173, 237, 0.10) 0%, transparent 55%),
+        rgba(15, 23, 42, 0.65);
+    border: 1px solid rgba(16, 185, 129, 0.30);
+    border-radius: 14px;
+    box-shadow: 0 0 30px rgba(16, 185, 129, 0.10);
+    animation: ${fadeInUp} 0.9s ease-out 0.4s backwards;
+    position: relative;
+    z-index: 2;
+
+    &::before {
+        content: '';
+        position: absolute;
+        inset: 0 0 auto 0;
+        height: 2px;
+        border-top-left-radius: 14px;
+        border-top-right-radius: 14px;
+        background: linear-gradient(90deg, #10b981, #00adef, #f97316);
+    }
+
+    @media (max-width: 768px) {
+        gap: 0.75rem;
+        padding: 0.85rem 1rem;
+    }
+`;
+
+const PerformancePill = styled.div`
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.55rem 1rem;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    color: #f8fafc;
+    font-size: 0.88rem;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+
+    .num {
+        color: #10b981;
+        font-size: 1rem;
+        font-weight: 900;
+    }
+    .label {
+        color: #94a3b8;
+        font-weight: 600;
+    }
+
+    svg { color: #10b981; flex: 0 0 auto; }
+`;
+// ─── NEW CODE END ───
+
 const PricingGrid = styled.div`
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -460,16 +524,31 @@ const PricingGrid = styled.div`
     }
 `;
 
+// ─── NEW CODE START — Premium pulse for visual hierarchy ───
+const premiumPulse = keyframes`
+    0%, 100% { box-shadow: 0 0 0 rgba(249, 115, 22, 0.0), 0 0 0 rgba(249, 115, 22, 0.0); }
+    50%      { box-shadow: 0 0 36px rgba(249, 115, 22, 0.35), 0 0 80px rgba(249, 115, 22, 0.18); }
+`;
+// ─── NEW CODE END ───
+
 const CardWrapper = styled.div`
     position: relative;
     animation: ${fadeInUp} 0.8s ease-out ${props => props.$delay}s backwards;
     transform-style: preserve-3d;
     transition: transform 0.3s ease;
     height: 100%;
-    ${p => p.$premium && 'transform: scale(1.04); z-index: 2;'}
+    /* ─── NEW CODE START — slightly larger premium scale + ambient glow ─── */
+    ${p => p.$premium && css`
+        transform: scale(1.05);
+        z-index: 2;
+        border-radius: 22px;
+        animation: ${fadeInUp} 0.8s ease-out ${p.$delay}s backwards,
+                   ${premiumPulse} 3.6s ease-in-out infinite;
+    `}
+    /* ─── NEW CODE END ─── */
 
     &:hover {
-        transform: translateY(-10px) ${p => p.$premium ? 'scale(1.06)' : ''};
+        transform: translateY(-10px) ${p => p.$premium ? 'scale(1.07)' : ''};
     }
 `;
 
@@ -689,6 +768,38 @@ const PlanDescription = styled.p`
     color: #94a3b8;
     font-weight: 500;
 `;
+
+// ─── NEW CODE START — Premium tagline ("Real trades. Real results.") ───
+const PlanTagline = styled.p`
+    margin: 0.35rem 0 0 0;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: #f97316;
+    text-transform: uppercase;
+`;
+
+// Subtle urgency line that sits directly under the Premium CTAs.
+// Intentionally not a countdown or aggressive — soft, warm, scarcity-flavored.
+const UrgencyLine = styled.p`
+    margin: 0.75rem 0 0 0;
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #fbbf24;
+    letter-spacing: 0.02em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+
+    svg {
+        width: 12px;
+        height: 12px;
+        flex: 0 0 auto;
+    }
+`;
+// ─── NEW CODE END ───
 
 const PriceContainer = styled.div`
     margin: 1rem 0;
@@ -1333,8 +1444,11 @@ const PricingPage = () => {
         },
         {
             id: 'premium',
+            // ─── NEW CODE START — Premium copy + outcome-first features ───
             name: 'Premium',
-            description: 'Full System Access — Signals + Predictions + Intelligence',
+            description: 'Unlock All AI Trade Setups',
+            tagline: 'Real trades. Real results. Fully tracked.',
+            // ─── NEW CODE END ───
             icon: TrendingUp,
             tag: { text: 'Most Popular', type: 'popular', icon: Zap },
             featured: true,
@@ -1343,6 +1457,14 @@ const PricingPage = () => {
             shadow: 'rgba(249, 115, 22, 0.4)',
             borderGradient: 'linear-gradient(135deg, #f97316, #ea580c, #f97316)',
             features: [
+                // ─── NEW CODE START — Outcome-focused feature category leads ───
+                { category: '🎯 What You Actually Get', color: '#f97316', items: [
+                    { text: '300+ tracked trades — every one public', highlight: true, special: true },
+                    { text: 'Live trade alerts the moment a setup forms', highlight: true },
+                    { text: 'Full entry, take-profit, and stop-loss breakdown', highlight: true },
+                    { text: 'Full performance tracking — wins AND losses', highlight: true },
+                ]},
+                // ─── NEW CODE END ───
                 { category: '📊 Unlimited AI Predictions', color: '#f97316', items: [
                     { text: 'Unlimited AI price forecasts', highlight: true },
                     { text: 'Prediction accuracy analytics', highlight: true },
@@ -1351,7 +1473,6 @@ const PricingPage = () => {
                 ]},
                 { category: '⚡ Unlimited Trade Signals', color: '#f97316', items: [
                     { text: 'Unlimited real-time trade signals', highlight: true },
-                    { text: 'Full entry / SL / TP breakdown', highlight: true },
                     { text: 'Pattern scanner & recognition', highlight: true },
                     'Live signal tracking & outcomes',
                     'Discovery page + sector analysis',
@@ -1365,7 +1486,9 @@ const PricingPage = () => {
                 ]}
             ],
             comparison: 'Unlimited predictions + signals + whale intel',
-            cta: 'Go Premium'
+            // ─── NEW CODE START — CTA flipped from "Go Premium" to trial ───
+            cta: 'Start Free Trial'
+            // ─── NEW CODE END ───
         },
         {
             id: 'elite',
@@ -1476,6 +1599,25 @@ const PricingPage = () => {
                 </TrustBadge>
             </TrustBadges>
 
+            {/* ─── NEW CODE START — Performance Trust Strip ─── */}
+            <PerformanceStrip>
+                <PerformancePill>
+                    <TrendingUp size={14} />
+                    <span className="num">300+</span>
+                    <span className="label">Trades Tracked</span>
+                </PerformancePill>
+                <PerformancePill>
+                    <Award size={14} />
+                    <span className="num">~60%</span>
+                    <span className="label">Win Rate</span>
+                </PerformancePill>
+                <PerformancePill>
+                    <CheckCircle size={14} />
+                    <span className="label">No Cherry-Picking — Every Trade Public</span>
+                </PerformancePill>
+            </PerformanceStrip>
+            {/* ─── NEW CODE END ─── */}
+
             {/* Pricing Cards */}
             <PricingGrid>
                 {plans.map((plan, index) => (
@@ -1510,6 +1652,8 @@ const PricingPage = () => {
                                 
                                 <PlanName $gradient={plan.gradient}>{plan.name}</PlanName>
                                 <PlanDescription>{plan.description}</PlanDescription>
+                                {/* NEW: optional tagline (Premium uses it) */}
+                                {plan.tagline && <PlanTagline>{plan.tagline}</PlanTagline>}
                             </PlanHeader>
 
                             <PriceContainer>
@@ -1639,6 +1783,15 @@ const PricingPage = () => {
                                     ✅ Trial Active — Expires {new Date(trial.endsAt).toLocaleDateString()}
                                 </TrialActiveBadge>
                             )}
+
+                            {/* ─── NEW CODE START — Subtle urgency line under Premium ─── */}
+                            {plan.id === 'premium' && (
+                                <UrgencyLine>
+                                    <Sparkles />
+                                    Early users locked in at this price
+                                </UrgencyLine>
+                            )}
+                            {/* ─── NEW CODE END ─── */}
                         </Card>
                     </CardWrapper>
                 ))}
