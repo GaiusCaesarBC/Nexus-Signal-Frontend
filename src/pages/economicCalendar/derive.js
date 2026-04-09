@@ -81,9 +81,26 @@ const KEY_BOOST = {
 
 export const importanceScore = (event) => {
     if (!event) return 0;
+    // ─────────────────────────────────────────────────────────────────
+    // NEW CODE START — Server importance scale adapter
+    //
+    // Server emits importanceScore on a 1-10 scale; client UI consumes
+    // 0-100. We auto-detect the scale: anything <= 10 is treated as the
+    // server's 1-10 scale and multiplied by 10. Values > 10 are assumed
+    // to already be on the client 0-100 scale and pass through (defensive
+    // — keeps the heuristic fallback path working unchanged).
+    //
+    // Per spec: missing → default to 50 (handled below by the heuristic
+    // fallback, which always returns a non-zero value when given a real
+    // event).
+    // ─────────────────────────────────────────────────────────────────
     if (typeof event.importanceScore === 'number' && Number.isFinite(event.importanceScore)) {
-        return Math.max(0, Math.min(100, Math.round(event.importanceScore)));
+        const raw = event.importanceScore;
+        const scaled = raw > 0 && raw <= 10 ? raw * 10 : raw;
+        return Math.max(0, Math.min(100, Math.round(scaled)));
     }
+    // NEW CODE END
+    // ─────────────────────────────────────────────────────────────────
     const base = IMPACT_BASE[event.impact] ?? 25;
     const key = matchKey(event.name);
     const boost = key ? (KEY_BOOST[key] || 0) : 0;

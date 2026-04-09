@@ -45,6 +45,122 @@ const fmt2 = (n) => {
     return v.toFixed(2);
 };
 
+// ─────────────────────────────────────────────────────────────────
+// NEW CODE START — Server intelligence adapter
+//
+// The server returns an `analytics.intelligence` block with these fields:
+//   { healthScore, riskLevel, diversificationScore, strengths, weaknesses,
+//     recommendations, verdict }
+//
+// The existing client derive layer reads from different paths
+// (analytics.performanceScore, analytics.mistakes, analytics.fixes,
+// analytics.behavioralInsights). adaptIntelligence() takes the raw
+// analytics object and returns a SHALLOW COPY with the intelligence
+// block flattened into the existing paths — but only if they aren't
+// already set. The original analytics object is never mutated.
+//
+// Backward compatible:
+//   - If `analytics.intelligence` is missing → returns `analytics` unchanged
+//   - If a server already-flattened field exists (e.g. `performanceScore`) →
+//     it wins; the intelligence block is ignored for that field
+//   - Empty arrays from intelligence don't override existing arrays
+//
+// Verdict mapping (server -> client tone bucket):
+//   STRONG  -> { tone: 'bull', verdict: 'Strong & disciplined' }
+//   BALANCED-> { tone: 'warn', verdict: 'Building edge' }
+//   WEAK    -> { tone: 'bear', verdict: 'Needs work' }
+// ─────────────────────────────────────────────────────────────────
+
+const SERVER_VERDICT_MAP = {
+    STRONG:   { tone: 'bull', verdict: 'Strong & disciplined' },
+    BALANCED: { tone: 'warn', verdict: 'Building edge' },
+    WEAK:     { tone: 'bear', verdict: 'Needs work' },
+};
+
+const SERVER_RISK_BUCKET_MAP = {
+    LOW:    { key: 'low',      label: 'Low risk',      tone: 'bull' },
+    MEDIUM: { key: 'moderate', label: 'Moderate risk', tone: 'warn' },
+    HIGH:   { key: 'high',     label: 'High risk',     tone: 'bear' },
+};
+
+export const adaptIntelligence = (analytics) => {
+    if (!analytics || typeof analytics !== 'object') return analytics;
+    const intel = analytics.intelligence;
+    if (!intel || typeof intel !== 'object') return analytics;
+
+    // Shallow copy so we never mutate the caller's object
+    const out = { ...analytics };
+
+    // healthScore -> performanceScore (only if not already set)
+    if (!out.performanceScore && typeof intel.healthScore === 'number') {
+        const verdictKey = (intel.verdict || '').toString().toUpperCase();
+        const verdictBlock = SERVER_VERDICT_MAP[verdictKey] || SERVER_VERDICT_MAP.BALANCED;
+        out.performanceScore = {
+            score: Math.max(0, Math.min(100, Math.round(intel.healthScore))),
+            verdict: verdictBlock.verdict,
+            tone: verdictBlock.tone,
+            summary: '',
+        };
+    }
+
+    // weaknesses -> mistakes (only if mistakes not already set)
+    if (!Array.isArray(out.mistakes) && Array.isArray(intel.weaknesses) && intel.weaknesses.length > 0) {
+        out.mistakes = intel.weaknesses.map((w, i) => {
+            // Server emits weaknesses as plain strings; lift them into the
+            // client mistake shape { id, severity, title, detail }
+            if (typeof w === 'string') {
+                return {
+                    id: `srv-weak-${i}`,
+                    severity: 'med',
+                    title: w,
+                    detail: '',
+                };
+            }
+            // If server ever upgrades to objects, pass them through
+            return { id: w.id || `srv-weak-${i}`, severity: w.severity || 'med', title: w.title || '', detail: w.detail || '' };
+        });
+        // Mark as authoritative so detectMistakes() uses the server array
+        // even when it's empty (server actively says "no mistakes").
+        out._mistakesAuthoritative = true;
+    }
+
+    // recommendations -> fixes (only if not already set)
+    if (!Array.isArray(out.fixes) && Array.isArray(intel.recommendations) && intel.recommendations.length > 0) {
+        out.fixes = intel.recommendations.map((r) =>
+            typeof r === 'string' ? { title: r, tone: 'bull' } : { title: r.title || '', tone: r.tone || 'bull' }
+        );
+    }
+
+    // strengths -> behavioralInsights (only if not already set)
+    // Strengths are positive observations, which is exactly what
+    // behavioralInsights renders.
+    if (!Array.isArray(out.behavioralInsights) && Array.isArray(intel.strengths) && intel.strengths.length > 0) {
+        out.behavioralInsights = intel.strengths.map((s) =>
+            typeof s === 'string' ? { tone: 'bull', text: s } : { tone: s.tone || 'bull', text: s.text || '' }
+        );
+    }
+
+    // riskLevel + diversificationScore -> stamp into analytics.risk
+    // so the existing riskProfile() reads them via its existing paths.
+    // (We only add fields, never overwrite anything that's already there.)
+    if (intel.riskLevel || typeof intel.diversificationScore === 'number') {
+        out.risk = { ...(out.risk || {}) };
+        if (typeof intel.diversificationScore === 'number' && out.risk.diversificationScore == null) {
+            out.risk.diversificationScore = intel.diversificationScore;
+        }
+        // Stash the server bucket on a private field so riskProfile() can
+        // pick it up without changing its public signature.
+        const bucketKey = (intel.riskLevel || '').toString().toUpperCase();
+        if (SERVER_RISK_BUCKET_MAP[bucketKey] && !out.risk._serverBucket) {
+            out.risk._serverBucket = SERVER_RISK_BUCKET_MAP[bucketKey];
+        }
+    }
+
+    return out;
+};
+// NEW CODE END
+// ─────────────────────────────────────────────────────────────────
+
 // ============================================================
 // Core derived metrics
 // ============================================================
@@ -56,6 +172,7 @@ const fmt2 = (n) => {
  * also exposes flags so the UI can mark "estimate" where applicable.
  */
 export const performanceMetrics = (analytics) => {
+    analytics = adaptIntelligence(analytics);
     const pt = analytics?.paperTrading;
     if (!pt) return null;
 
@@ -133,6 +250,7 @@ const RISK_BUCKETS = [
  * risk bucket.
  */
 export const riskProfile = (analytics) => {
+    analytics = adaptIntelligence(analytics);
     const conc = num(analytics?.risk?.concentrationRisk) ?? 0;
     const holdings = num(analytics?.overview?.totalHoldings) ?? 0;
     const types = num(analytics?.risk?.assetTypeCount) ?? 0;
@@ -145,12 +263,15 @@ export const riskProfile = (analytics) => {
         riskPerTrade = (Math.abs(num(pt.biggestLoss)) / num(pt.portfolioValue)) * 100;
     }
 
-    // Bucket
-    let bucket = RISK_BUCKETS[0]; // low
-    if (conc >= 70 || holdings <= 1)        bucket = RISK_BUCKETS[2];
-    else if (conc >= 40 || holdings <= 3)   bucket = RISK_BUCKETS[1];
-    else if (divScore < 40)                 bucket = RISK_BUCKETS[1];
-    else                                    bucket = RISK_BUCKETS[0];
+    // Bucket — prefer server-provided bucket if the adapter stamped one
+    let bucket;
+    const serverBucket = analytics?.risk?._serverBucket;
+    if (serverBucket && serverBucket.key) {
+        bucket = serverBucket;
+    } else if (conc >= 70 || holdings <= 1)        bucket = RISK_BUCKETS[2];
+    else if (conc >= 40 || holdings <= 3)          bucket = RISK_BUCKETS[1];
+    else if (divScore < 40)                        bucket = RISK_BUCKETS[1];
+    else                                           bucket = RISK_BUCKETS[0];
 
     return {
         bucket,
@@ -168,6 +289,7 @@ export const riskProfile = (analytics) => {
 
 export const detectMistakes = (analytics) => {
     if (!analytics) return [];
+    analytics = adaptIntelligence(analytics);
     // Prefer server-provided mistakes
     if (Array.isArray(analytics.mistakes) && analytics.mistakes.length >= 0 && analytics.mistakes.length <= 50) {
         // Use server array even if empty (server actively says "no mistakes")
@@ -301,6 +423,7 @@ const FIX_MAP = {
 };
 
 export const buildFixes = (mistakes, analytics) => {
+    analytics = adaptIntelligence(analytics);
     // Prefer server-provided fixes
     if (analytics && Array.isArray(analytics.fixes) && analytics.fixes.length > 0) {
         return analytics.fixes;
@@ -327,6 +450,7 @@ export const buildFixes = (mistakes, analytics) => {
  */
 export const performanceScore = (analytics) => {
     if (!analytics) return { score: 50, verdict: 'No data', tone: 'warn', summary: 'Add trades or holdings to get a verdict.' };
+    analytics = adaptIntelligence(analytics);
 
     // Prefer server-provided verdict
     if (analytics.performanceScore && typeof analytics.performanceScore === 'object') {
@@ -420,6 +544,7 @@ export const performanceScore = (analytics) => {
 
 export const behavioralInsights = (analytics) => {
     if (!analytics) return [];
+    analytics = adaptIntelligence(analytics);
     // Prefer server-provided insights
     if (Array.isArray(analytics.behavioralInsights) && analytics.behavioralInsights.length > 0) {
         return analytics.behavioralInsights.slice(0, 4);
@@ -481,6 +606,7 @@ export const behavioralInsights = (analytics) => {
 
 export const aiCoachMessage = (analytics) => {
     if (!analytics) return 'Add trades or holdings to unlock your personalized coaching.';
+    analytics = adaptIntelligence(analytics);
     if (typeof analytics.aiCoachMessage === 'string' && analytics.aiCoachMessage.trim()) {
         return analytics.aiCoachMessage;
     }
@@ -524,6 +650,7 @@ export const aiCoachMessage = (analytics) => {
 // ============================================================
 
 export const signalPerformance = (analytics) => {
+    analytics = adaptIntelligence(analytics);
     // Prefer server-provided signal performance block
     if (analytics?.signalPerformance && typeof analytics.signalPerformance === 'object') {
         return analytics.signalPerformance;

@@ -277,11 +277,110 @@ const SECTOR_LEADER_HINTS = {
     XLC: ['META', 'GOOGL'],
 };
 
-export const tradeIdeas = (sectors, analytics) => {
-    // Prefer server-provided trade ideas
-    if (analytics?.tradeIdeas && Array.isArray(analytics.tradeIdeas) && analytics.tradeIdeas.length > 0) {
-        return analytics.tradeIdeas.slice(0, 8);
+// ─────────────────────────────────────────────────────────────────
+// NEW CODE START — Server tradeIdeas string adapter
+//
+// Parses one string idea (e.g. "Long Technology — strength score 84/100,
+// accelerating" or "Risk-on rotation — favor growth and cyclicals over
+// defensives") into the client object shape.
+//
+// Direction detection is keyword-based (long / short / watch / fade /
+// rotation), and we look up the well-known sector name from the head of
+// the string for the ticker. Confidence defaults to 65 (mid-range)
+// because the server doesn't ship per-idea confidence on the string path.
+// ─────────────────────────────────────────────────────────────────
+
+const SECTOR_NAME_TO_TICKER = {
+    'Technology':              'XLK',
+    'Financials':              'XLF',
+    'Energy':                  'XLE',
+    'Healthcare':              'XLV',
+    'Consumer Discretionary':  'XLY',
+    'Consumer Staples':        'XLP',
+    'Industrials':             'XLI',
+    'Utilities':               'XLU',
+    'Materials':               'XLB',
+    'Real Estate':             'XLRE',
+    'Communication Services':  'XLC',
+};
+
+const detectDirection = (text) => {
+    const t = (text || '').toLowerCase();
+    if (/\bshort\b|\bfade\b|\bsell\b|\breduce\b/.test(t)) return 'SHORT';
+    if (/\bwatch\b|\bmonitor\b/.test(t)) return 'WATCH';
+    if (/\blong\b|\bbuy\b|\baccumulate\b|\bfavor\b/.test(t)) return 'LONG';
+    if (/risk-on|risk on/.test(t)) return 'LONG';
+    if (/risk-off|risk off/.test(t)) return 'SHORT';
+    return 'WATCH';
+};
+
+const extractSectorName = (text) => {
+    if (typeof text !== 'string') return null;
+    // Match the longest sector name present in the string
+    let best = null;
+    for (const name of Object.keys(SECTOR_NAME_TO_TICKER)) {
+        if (text.includes(name)) {
+            if (!best || name.length > best.length) best = name;
+        }
     }
+    return best;
+};
+
+export const adaptSectorIdeas = (rawIdeas) => {
+    if (!Array.isArray(rawIdeas)) return [];
+    return rawIdeas
+        .filter((s) => typeof s === 'string' && s.trim())
+        .map((line, i) => {
+            const direction = detectDirection(line);
+            const sectorName = extractSectorName(line);
+            const ticker = sectorName ? SECTOR_NAME_TO_TICKER[sectorName] : null;
+            return {
+                id: `srv-idea-${i}`,
+                direction,
+                ticker,
+                name: sectorName ? `${sectorName} ETF` : line,
+                reason: line,
+                confidence: 65, // mid-range default; server string path has no per-idea confidence
+                kind: 'rotation',
+            };
+        });
+};
+// NEW CODE END
+// ─────────────────────────────────────────────────────────────────
+
+export const tradeIdeas = (sectors, analytics) => {
+    // ─────────────────────────────────────────────────────────────────
+    // NEW CODE START — Server tradeIdeas adapter
+    //
+    // Server emits sectorIntelligence.tradeIdeas as a STRING ARRAY
+    // (e.g. "Long Technology — strength score 84/100, accelerating").
+    // The client UI expects structured objects:
+    //   { id, direction, ticker, name, reason, confidence, kind }
+    //
+    // adaptSectorIdeas() parses each string for direction keywords
+    // (long/short/watch), extracts a sector/ticker name from the head,
+    // and packs everything into the client shape. Falls back to the
+    // local heuristic if the server array is missing or empty.
+    //
+    // Also still supports the legacy `analytics.tradeIdeas` path (an
+    // already-structured object array) as a defensive passthrough.
+    // ─────────────────────────────────────────────────────────────────
+    const serverIdeas =
+        analytics?.sectorIntelligence?.tradeIdeas ??
+        analytics?.tradeIdeas;
+
+    if (Array.isArray(serverIdeas) && serverIdeas.length > 0) {
+        // Already structured? Pass through.
+        if (typeof serverIdeas[0] === 'object' && serverIdeas[0] !== null) {
+            return serverIdeas.slice(0, 8);
+        }
+        // String array → adapt
+        if (typeof serverIdeas[0] === 'string') {
+            return adaptSectorIdeas(serverIdeas).slice(0, 8);
+        }
+    }
+    // NEW CODE END
+    // ─────────────────────────────────────────────────────────────────
     const ranked = rankSectors(sectors);
     const top = ranked.slice(0, 3);
     const bottom = ranked.slice(-2).reverse();

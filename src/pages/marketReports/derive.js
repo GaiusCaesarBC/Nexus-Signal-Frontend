@@ -28,6 +28,66 @@ const matchAny = (text, words) => {
     return words.some((w) => t.includes(w));
 };
 
+// ─────────────────────────────────────────────────────────────────
+// NEW CODE START — Server adapters (vocabulary normalization)
+//
+// The server emits standard finance vocabulary (BULLISH/BEARISH/NEUTRAL,
+// SHORT/MEDIUM/LONG, tradeSetups: { asset, direction, reasoning }) but the
+// existing client UI was built around different labels. These small pure
+// helpers translate server values into the client shape so downstream
+// components don't have to change. All return null/undefined when given
+// nothing useful — callers fall back to the heuristic.
+// ─────────────────────────────────────────────────────────────────
+
+const normalizeBias = (raw) => {
+    if (typeof raw !== 'string') return null;
+    const v = raw.trim().toUpperCase();
+    if (v === 'BULLISH') return 'LONG';
+    if (v === 'BEARISH') return 'SHORT';
+    if (v === 'NEUTRAL') return 'MIXED';
+    // Pass through values that already match the client vocabulary
+    if (v === 'LONG' || v === 'SHORT' || v === 'MIXED') return v;
+    return null;
+};
+
+const normalizeTimeframe = (raw) => {
+    if (typeof raw !== 'string') return null;
+    const v = raw.trim().toUpperCase();
+    if (v === 'SHORT') return 'Intraday';
+    if (v === 'MEDIUM') return 'Swing';
+    if (v === 'LONG') return 'Multi-day';
+    // Pass through values already in client vocabulary
+    if (raw === 'Intraday' || raw === 'Swing' || raw === 'Multi-day') return raw;
+    return null;
+};
+
+const adaptTradeSetups = (rawSetups) => {
+    if (!Array.isArray(rawSetups) || rawSetups.length === 0) return null;
+    return rawSetups
+        .map((s) => {
+            if (!s || typeof s !== 'object') return null;
+            // Server shape: { asset, direction, reasoning }
+            // Client shape: { trigger, action, tag }
+            const asset = s.asset || s.ticker || s.trigger;
+            const direction = s.direction || s.action;
+            const reasoning = s.reasoning || s.action || s.tag || '';
+            if (!asset && !s.trigger) return null;
+            return {
+                trigger: asset || s.trigger,
+                action: reasoning || direction || '',
+                tag: direction
+                    ? String(direction).toUpperCase() === 'LONG' ? 'Long'
+                    : String(direction).toUpperCase() === 'SHORT' ? 'Short'
+                    : (s.tag || 'Bias')
+                    : (s.tag || 'Bias'),
+            };
+        })
+        .filter(Boolean)
+        .slice(0, 4);
+};
+// NEW CODE END
+// ─────────────────────────────────────────────────────────────────
+
 const BULL_WORDS = ['rally', 'rallies', 'strength', 'breakout', 'bullish', 'upside', 'momentum', 'risk-on', 'risk on', 'inflows', 'all-time high', 'ath', 'gains', 'leading', 'outperform', 'expansion', 'soft landing'];
 const BEAR_WORDS = ['selloff', 'sell-off', 'weakness', 'breakdown', 'bearish', 'downside', 'risk-off', 'risk off', 'outflows', 'recession', 'fear', 'losses', 'lagging', 'underperform', 'contraction', 'hawkish'];
 const VOL_WORDS = ['volatile', 'volatility', 'whipsaw', 'choppy', 'erratic', 'vix', 'uncertainty', 'spike'];
@@ -40,8 +100,9 @@ const RISK_WORDS = ['geopolitic', 'war', 'tariff', 'sanction', 'inflation', 'cpi
  */
 export const deriveTradeBias = (report) => {
     if (!report) return 'MIXED';
-    // Prefer server-provided bias
-    if (typeof report.tradeBias === 'string') return report.tradeBias.toUpperCase();
+    // Prefer server-provided bias (normalized through the adapter)
+    const adapted = normalizeBias(report.tradeBias);
+    if (adapted) return adapted;
     const sentiment = lc(report.outlook?.sentiment);
     if (sentiment === 'bullish') return 'LONG';
     if (sentiment === 'bearish') return 'SHORT';
@@ -95,7 +156,9 @@ export const deriveConfidence = (report) => {
  * Daily reports tilt swing by default; volatility shortens the horizon.
  */
 export const deriveTimeHorizon = (report) => {
-    if (typeof report?.timeHorizon === 'string') return report.timeHorizon;
+    // Prefer server-provided horizon (normalized through the adapter)
+    const adapted = normalizeTimeframe(report?.timeHorizon);
+    if (adapted) return adapted;
     const corpus = [report?.summary, ...(report?.themes || [])].join(' ');
     if (matchAny(corpus, ['intraday', 'scalp', 'fade', 'opening drive'])) return 'Intraday';
     if (matchAny(corpus, VOL_WORDS)) return 'Intraday';
@@ -181,10 +244,9 @@ export const deriveActionableInsights = (report) => {
  */
 export const deriveTradeSetups = (report) => {
     if (!report) return [];
-    // Prefer server-provided setups
-    if (Array.isArray(report.tradeSetups) && report.tradeSetups.length > 0) {
-        return report.tradeSetups.slice(0, 4);
-    }
+    // Prefer server-provided setups (adapted from { asset, direction, reasoning })
+    const adapted = adaptTradeSetups(report.tradeSetups);
+    if (adapted && adapted.length > 0) return adapted;
     const setups = [];
     const bias = deriveTradeBias(report);
     const corpus = [report.summary, report.sectorHighlights, ...(report.themes || [])].join(' ');

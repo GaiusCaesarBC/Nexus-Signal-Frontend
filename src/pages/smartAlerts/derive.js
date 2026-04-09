@@ -106,14 +106,48 @@ export const conditionString = (alert) => {
  */
 export const proximityOf = (alert) => {
     if (!alert) return null;
-    // Prefer server-provided proximity object
-    if (alert.proximity && typeof alert.proximity === 'object' && typeof alert.proximity.pct === 'number') {
-        return {
-            pct: alert.proximity.pct,
-            near: !!alert.proximity.near,
-            direction: alert.proximity.direction || 'flat',
-        };
+    // ─────────────────────────────────────────────────────────────────
+    // NEW CODE START — Server proximity adapter
+    //
+    // Server emits: alert.proximity = { proximity, distanceToTrigger, nearTrigger }
+    // where `proximity` is a CLOSENESS score (100 = at trigger, 0 = far).
+    //
+    // Client UI consumes: { pct, near, direction } where `pct` is DISTANCE %
+    // (small = close to trigger). The server math is
+    //   proximity = clamp(100 - distancePct * 10, 0, 100)
+    // so we invert it to recover distancePct.
+    //
+    // direction is derived from the alert type (price_above / price_below)
+    // since the server doesn't track tick-to-tick movement.
+    // ─────────────────────────────────────────────────────────────────
+    if (alert.proximity && typeof alert.proximity === 'object') {
+        const p = alert.proximity;
+        // Pass through if already in client shape (defensive — heuristic
+        // path may have populated it earlier)
+        if (typeof p.pct === 'number') {
+            return {
+                pct: p.pct,
+                near: !!p.near,
+                direction: p.direction || 'flat',
+            };
+        }
+        // Translate from server shape
+        if (typeof p.proximity === 'number') {
+            const distancePct = parseFloat(((100 - p.proximity) / 10).toFixed(2));
+            // The server doesn't track tick-to-tick movement, so we can't
+            // honestly say the price is moving 'toward' or 'away' right now.
+            // Default to 'flat' so we don't fabricate motion. Callers that
+            // care about real direction (e.g. live polling loops on the
+            // client) can still compute it via the heuristic path.
+            return {
+                pct: Math.max(0, distancePct),
+                near: !!p.nearTrigger,
+                direction: 'flat',
+            };
+        }
     }
+    // NEW CODE END
+    // ─────────────────────────────────────────────────────────────────
     const cur = num(alert.currentPrice ?? alert.livePrice);
     if (cur == null) return null;
 
