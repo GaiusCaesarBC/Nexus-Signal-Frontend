@@ -25,8 +25,7 @@ import GuidanceTooltips from './GuidanceTooltips';
 import ReengagementBanner from './ReengagementBanner';
 
 // Routes where we never want to interrupt the user with onboarding —
-// public marketing pages, auth flows, the existing legacy onboarding
-// page, etc.
+// public marketing pages and auth flows.
 const PUBLIC_ROUTE_PREFIXES = [
     '/',                    // landing (exact-matched below)
     '/login',
@@ -38,7 +37,6 @@ const PUBLIC_ROUTE_PREFIXES = [
     '/disclaimer',
     '/cookie-policy',
     '/whitepaper',
-    '/onboarding',          // legacy full-screen onboarding page
     '/oauth-callback',
 ];
 

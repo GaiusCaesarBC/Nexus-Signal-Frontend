@@ -31,7 +31,7 @@ import { VaultProvider } from './context/VaultContext';
 // 💳 Subscription imports
 import { SubscriptionProvider } from './context/SubscriptionContext';
 
-// 🚀 Lightweight onboarding overlay (separate from /onboarding page)
+// 🚀 Lightweight onboarding overlay
 import { OnboardingProvider, OnboardingController } from './onboarding';
 
 // Lazy-loaded components (loaded on-demand)
@@ -80,7 +80,6 @@ const AchievementsBrowserPage = lazy(() => import('./pages/AchievementsBrowserPa
 const VaultPage = lazy(() => import('./pages/VaultPage'));
 const EquippedItemsPage = lazy(() => import('./pages/EquippedItemsPage'));
 const PriceServiceTester = lazy(() => import('./components/dev/PriceServiceTester'));
-const OnboardingFlow = lazy(() => import('./pages/OnboardingFlow'));
 const PredictionsShowcase = lazy(() => import('./pages/PredictionsShowcase'));
 const CryptoPage = lazy(() => import('./pages/CryptoPage'));
 const SmartMoneyPage = lazy(() => import('./pages/SmartMoneyPage'));
@@ -196,7 +195,6 @@ function AppContent() {
                     <Route path="/vault" element={<ProtectedRoute><VaultPage /></ProtectedRoute>} />
                     <Route path="/equipped" element={<ProtectedRoute><EquippedItemsPage /></ProtectedRoute>} />
                     <Route path="/dev/price-test" element={<PriceServiceTester />} />
-                    <Route path="/onboarding" element={<OnboardingFlow />} />
                     <Route path="/predictions-showcase" element={<PredictionsShowcase />} />
                     <Route path="/crypto/:symbol" element={<ProtectedRoute><CryptoPage /></ProtectedRoute>} />
                     <Route path="/whale-alerts" element={<Navigate to="/smart-money" replace />} />

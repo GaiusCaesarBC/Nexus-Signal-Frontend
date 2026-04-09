@@ -6,10 +6,8 @@
 // outside the provider — so anywhere in the app can call
 // `recordActivation('followedSignal')` without risk of crashing.
 //
-// This is intentionally NOT tied to the existing /onboarding route page
-// (src/pages/OnboardingFlow.jsx) — that page is a separate, full-screen
-// onboarding experience the user can navigate to. This module is the
-// lightweight overlay that runs on first login regardless of route.
+// This is the lightweight overlay that runs on first login regardless
+// of route — there is no separate onboarding page anymore.
 
 import React, {
     createContext, useContext, useState, useEffect, useCallback, useMemo,
