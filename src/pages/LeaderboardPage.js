@@ -21,6 +21,15 @@ import SEO from '../components/SEO';
 import AvatarWithBorder, { BORDER_STYLES } from '../components/vault/AvatarWithBorder';
 import { BadgeList } from '../components/BadgeDisplay';
 import CopyTradingModal from '../components/CopyTradingModal';
+import {
+    YourRankPanel,
+    BadgeRow,
+    RankDelta,
+    SeasonBanner,
+    LiveActivityFeed,
+    PremiumTeaser,
+    enrichLeaderboard,
+} from './leaderboard';
 
 
 // ============ BORDER COLORS MAP (for Avatar Frames) ============
@@ -1271,6 +1280,14 @@ const LeaderboardPage = () => {
     const [error, setError] = useState(null);
     const [copyModalOpen, setCopyModalOpen] = useState(false);
     const [selectedTraderForCopy, setSelectedTraderForCopy] = useState(null);
+
+    // Real-time rank delta tracking. We persist the previous-tick rank for
+    // each user across fetches so we can compute ↑/↓ chips and animate row
+    // movement. Updated inside fetchLeaderboard's effect chain via the
+    // enrichedLeaderboard memo below. The leaderboard/derive.js module
+    // prefers a server-provided trader.rankDelta when present, so the day
+    // the social engine ships deltas this ref-based fallback becomes inert.
+    const prevRanksMapRef = useRef(new Map());
     
     const refreshIntervalRef = useRef(null);
     const searchTimeoutRef = useRef(null);
@@ -1374,6 +1391,29 @@ const LeaderboardPage = () => {
             equippedBadges: trader.equippedBadges || trader.vault?.equippedBadges || [],
         }));
     }, []);
+
+    // Enriched leaderboard: adds _rankDelta + _badges (Hot Streak / High
+    // Accuracy / Falling / Top Performer) on top of the raw trader data.
+    const enrichedLeaderboard = useMemo(
+        () => enrichLeaderboard(leaderboard, prevRanksMapRef.current),
+        [leaderboard]
+    );
+
+    // After every leaderboard update, snapshot the current ranks so the next
+    // tick can compute deltas against this baseline.
+    useEffect(() => {
+        const next = new Map();
+        leaderboard.forEach((t) => {
+            if (t.userId != null) next.set(t.userId, t.rank);
+        });
+        prevRanksMapRef.current = next;
+    }, [leaderboard]);
+
+    // Enriched "you" entry for the YourRankPanel
+    const enrichedYou = useMemo(() => {
+        if (!userRank) return null;
+        return enrichedLeaderboard.find((t) => t.userId === userRank.userId) || userRank;
+    }, [enrichedLeaderboard, userRank]);
 
     const fetchLeaderboard = useCallback(async (showToast = false) => {
     if (!isMountedRef.current) return;
@@ -1596,8 +1636,11 @@ const LeaderboardPage = () => {
         return `${hours}h ago`;
     };
 
-    // Filter leaderboard based on search
-    const filteredLeaderboard = leaderboard.filter(trader => {
+    // Filter leaderboard based on search.
+    // We filter the *enriched* list directly so every row downstream gets
+    // _rankDelta and _badges. This keeps the search behavior identical
+    // while wiring the new redesign features end-to-end.
+    const filteredLeaderboard = enrichedLeaderboard.filter(trader => {
         if (debouncedSearch) {
             return trader.displayName?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
                    trader.username?.toLowerCase().includes(debouncedSearch.toLowerCase());
@@ -1865,8 +1908,21 @@ const LeaderboardPage = () => {
     </PodiumSection>
 )}
 
-            {/* Your Rank Card */}
-            {userRank && userRank.rank > 3 && (
+            {/* Weekly Season countdown banner (always visible) */}
+            <SeasonBanner />
+
+            {/* Enhanced Your Rank panel — replaces the basic YourRankCard
+                with delta + win rate + XP + progress bar to top 10 */}
+            {enrichedYou && (
+                <YourRankPanel
+                    you={enrichedYou}
+                    leaderboard={enrichedLeaderboard}
+                    onImprove={() => navigate('/predictions')}
+                />
+            )}
+
+            {/* Old Your Rank Card — hidden now that YourRankPanel covers it */}
+            {false && userRank && userRank.rank > 3 && (
                 <YourRankCard>
                     <YourRankLeft>
                         <YourRankBadge>#{userRank.rank}</YourRankBadge>
@@ -2017,6 +2073,11 @@ const LeaderboardPage = () => {
                                                 {getRankIcon(trader.rank)}
                                             </RankIcon>
                                         )}
+                                        {trader._rankDelta != null && trader._rankDelta !== 0 && (
+                                            <div style={{ marginTop: 4 }}>
+                                                <RankDelta delta={trader._rankDelta} theme={theme} />
+                                            </div>
+                                        )}
                                     </RankBadge>
 
                                     <AvatarWithBorder
@@ -2048,15 +2109,21 @@ const LeaderboardPage = () => {
     {/* NEW: Show equipped badges */}
     {trader.equippedBadges && trader.equippedBadges.length > 0 && (
         <BadgesRow>
-            <BadgeList 
-                badges={trader.equippedBadges} 
-                size={20} 
+            <BadgeList
+                badges={trader.equippedBadges}
+                size={20}
                 maxDisplay={3}
                 gap={4}
                 showTooltip={true}
                 showParticles={false}
             />
         </BadgesRow>
+    )}
+    {/* Dynamic badges (Hot Streak / High Accuracy / Falling / Top Performer) */}
+    {trader._badges && trader._badges.length > 0 && (
+        <div style={{ marginTop: 4 }}>
+            <BadgeRow badges={trader._badges} theme={theme} />
+        </div>
     )}
 </UserInfo>
 
@@ -2132,6 +2199,14 @@ const LeaderboardPage = () => {
                             );
                         })}
                     </LeaderboardList>
+
+                    {/* Premium teaser — soft monetization hook below the visible
+                        ranks. Always shown; the blurred preview rows + upgrade
+                        CTA reinforce that there's more behind the paywall. */}
+                    <PremiumTeaser
+                        hiddenCount={Math.max(0, leaderboard.length - 20)}
+                        onUpgrade={() => navigate('/pricing')}
+                    />
                 </LeaderboardContainer>
             ) : !error && (
                 <EmptyState>
@@ -2147,6 +2222,11 @@ const LeaderboardPage = () => {
                     </EmptyText>
                 </EmptyState>
             )}
+
+            {/* Live activity feed (rank gains, streaks, big returns) */}
+            <div style={{ marginTop: '1.5rem' }}>
+                <LiveActivityFeed enrichedLeaderboard={enrichedLeaderboard} you={enrichedYou} />
+            </div>
 
             {/* Copy Trading Modal */}
             {selectedTraderForCopy && (

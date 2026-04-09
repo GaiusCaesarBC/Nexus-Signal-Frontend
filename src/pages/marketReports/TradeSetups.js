@@ -3,7 +3,8 @@
 // "How To Trade This" — concrete IF/THEN setups derived from the report.
 // Each card has a trigger (sector/event/condition) and an action.
 //
-// Setups are derived client-side via deriveTradeSetups(). TODO(server).
+// Setups flow through deriveTradeSetups(), which prefers a server-provided
+// report.tradeSetups[] when present and falls back to a heuristic.
 
 import React from 'react';
 import styled from 'styled-components';

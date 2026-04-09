@@ -2,12 +2,21 @@
 //
 // Client-side heuristics for the redesigned AI Market Reports (Daily) page.
 //
-// TODO(server): These fields should eventually be returned directly from the
-// AI prompt / report payload (actionableInsights, tradeBias, strategy,
-// confidence, timeHorizon, tradeSetups, snapshot). Until then, we derive them
-// from the existing report fields (summary, themes, sectorHighlights,
-// riskFactors, outlook). Keep this module pure + framework-free so it's easy
-// to delete once the server catches up.
+// SERVER-FIRST BRIDGE: every public function checks for a server-provided
+// field on the report payload and uses it directly when present, otherwise
+// falls back to the local heuristic. The day the AI prompt starts returning
+// `report.tradeBias`, `report.confidence`, etc. these heuristics become
+// invisible — no client changes required.
+//
+// Server fields the bridge looks for (all optional):
+//   report.tradeBias            'LONG' | 'SHORT' | 'MIXED'
+//   report.confidence           0-100
+//   report.timeHorizon          'Intraday' | 'Swing' | 'Multi-day'
+//   report.strategy             string
+//   report.actionableInsights[] string[]
+//   report.tradeSetups[]        [{ trigger, action, tag }]
+//   report.snapshot             { bias, breadth, vol, sentiment }
+//   report.aiInsight            string
 
 // ---------- small text utilities ----------
 
@@ -31,6 +40,8 @@ const RISK_WORDS = ['geopolitic', 'war', 'tariff', 'sanction', 'inflation', 'cpi
  */
 export const deriveTradeBias = (report) => {
     if (!report) return 'MIXED';
+    // Prefer server-provided bias
+    if (typeof report.tradeBias === 'string') return report.tradeBias.toUpperCase();
     const sentiment = lc(report.outlook?.sentiment);
     if (sentiment === 'bullish') return 'LONG';
     if (sentiment === 'bearish') return 'SHORT';
@@ -52,6 +63,10 @@ export const deriveTradeBias = (report) => {
  */
 export const deriveConfidence = (report) => {
     if (!report) return 50;
+    // Prefer server-provided confidence
+    if (typeof report.confidence === 'number' && Number.isFinite(report.confidence)) {
+        return Math.max(0, Math.min(100, Math.round(report.confidence)));
+    }
     const bias = deriveTradeBias(report);
     let score = bias === 'MIXED' ? 55 : 70;
 
@@ -80,6 +95,7 @@ export const deriveConfidence = (report) => {
  * Daily reports tilt swing by default; volatility shortens the horizon.
  */
 export const deriveTimeHorizon = (report) => {
+    if (typeof report?.timeHorizon === 'string') return report.timeHorizon;
     const corpus = [report?.summary, ...(report?.themes || [])].join(' ');
     if (matchAny(corpus, ['intraday', 'scalp', 'fade', 'opening drive'])) return 'Intraday';
     if (matchAny(corpus, VOL_WORDS)) return 'Intraday';
@@ -93,6 +109,7 @@ export const deriveTimeHorizon = (report) => {
  * One-word strategy label appropriate to bias + tone.
  */
 export const deriveStrategy = (report) => {
+    if (typeof report?.strategy === 'string' && report.strategy.trim()) return report.strategy;
     const bias = deriveTradeBias(report);
     const corpus = [report?.summary, ...(report?.themes || [])].join(' ');
 
@@ -113,6 +130,10 @@ export const deriveStrategy = (report) => {
  */
 export const deriveActionableInsights = (report) => {
     if (!report) return [];
+    // Prefer server-provided insights
+    if (Array.isArray(report.actionableInsights) && report.actionableInsights.length > 0) {
+        return report.actionableInsights.slice(0, 4);
+    }
     const out = [];
     const bias = deriveTradeBias(report);
     const corpus = [report.summary, report.sectorHighlights, ...(report.themes || [])].join(' ');
@@ -160,6 +181,10 @@ export const deriveActionableInsights = (report) => {
  */
 export const deriveTradeSetups = (report) => {
     if (!report) return [];
+    // Prefer server-provided setups
+    if (Array.isArray(report.tradeSetups) && report.tradeSetups.length > 0) {
+        return report.tradeSetups.slice(0, 4);
+    }
     const setups = [];
     const bias = deriveTradeBias(report);
     const corpus = [report.summary, report.sectorHighlights, ...(report.themes || [])].join(' ');
@@ -224,6 +249,16 @@ export const deriveTradeSetups = (report) => {
  *  - sentiment:'Fear' | 'Neutral' | 'Greed' | 'Extreme Greed' | 'Extreme Fear'
  */
 export const deriveSnapshot = (report) => {
+    // Prefer server-provided snapshot (e.g. from /market-pulse)
+    if (report?.snapshot && typeof report.snapshot === 'object') {
+        const s = report.snapshot;
+        return {
+            bias: s.bias || 'Neutral',
+            breadth: typeof s.breadth === 'number' ? s.breadth : 50,
+            vol: s.vol || 'Normal',
+            sentiment: s.sentiment || 'Neutral',
+        };
+    }
     const bias = deriveTradeBias(report);
     const corpus = [report?.summary, report?.sectorHighlights, ...(report?.themes || [])].join(' ');
 

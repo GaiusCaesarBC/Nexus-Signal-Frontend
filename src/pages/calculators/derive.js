@@ -6,8 +6,13 @@
 // strategy insight is derived client-side from the calculator inputs and
 // results — keeping calculators framework-free.
 //
-// TODO: integrate with active signal context for auto-fill (entry, stop,
-//       suggested risk %).
+// SIGNAL HANDOFF: signals → calculators is wired via URL query params,
+// see autoFillFromURL() below. The Signals page builds links of the form
+//   /calculators?entry=185&stop=180&risk=1&account=10000&target=200
+// which seed the position-size and risk/reward calculators.
+// Calculators → Signals goes the same way via TradeReadyButtons.buildQuery.
+// If a React-context-based handoff is added later, autoFillFromURL is the
+// single integration point — replace its body and every consumer is fixed.
 
 // ============================================================
 // Numeric helpers

@@ -890,10 +890,11 @@ const CalculatorsPage = () => {
     });
 
     // ─────────────────────────────────────────────────────────────────
-    // Auto-fill from URL params (signal handoff)
-    // TODO: integrate with active signal context
-    // When the user clicks "Calculate Position Size" from a signal page,
-    // we expect ?entry=&stop=&risk=&account=&target= in the URL.
+    // Signal handoff via URL query params (Signals → Calculators).
+    // Expected params: ?entry=&stop=&risk=&account=&target=
+    // The handoff is one-way at the moment because there is no app-wide
+    // SignalContext yet. autoFillFromURL() in calculators/derive.js is the
+    // single integration point if a context-based handoff is added later.
     // ─────────────────────────────────────────────────────────────────
     useEffect(() => {
         const incoming = autoFillFromURL();

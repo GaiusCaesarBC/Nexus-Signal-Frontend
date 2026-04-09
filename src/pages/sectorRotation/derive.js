@@ -2,10 +2,21 @@
 //
 // Pure heuristics for the redesigned Sector Rotation page.
 //
-// TODO(server): move sector intelligence + trade suggestions into the ML
-// service. Until then, we derive strength scores, momentum, labels, risk-on/
-// off bias, trade ideas, and the rotation insight client-side from the
-// existing /sector-rotation/overview + /sector-rotation/flow payloads.
+// SERVER-FIRST BRIDGE: every public function checks for a server-provided
+// field on the sector / analytics payload first and uses it directly when
+// present, otherwise falls back to the local heuristic. The day the ML
+// service starts returning these fields the heuristics become invisible.
+//
+// Server fields the bridge looks for (all optional):
+//   sector.score                0-100
+//   sector.momentum             { dir, delta }
+//   sector.label                string
+//   sector.tone                 'bull'|'warn'|'bear'
+//   analytics.bias              'RISK-ON'|'RISK-OFF'|'NEUTRAL'
+//   analytics.tradeIdeas        [{ id, direction, ticker, name, reason, confidence, kind }]
+//   analytics.rotationInsight   string
+//   analytics.aiInsight         string
+//   analytics.cycleImplications { phase, favor[], avoid[], action }
 
 // ---------- normalization ----------
 
@@ -47,6 +58,10 @@ const toScore = (val, lo = -6, hi = 6) => {
 
 export const strengthScore = (sector) => {
     if (!sector) return 50;
+    // Prefer server-provided score
+    if (typeof sector.score === 'number' && Number.isFinite(sector.score)) {
+        return Math.max(0, Math.min(100, Math.round(sector.score)));
+    }
     // weights: week 50%, RS 30%, month 20%
     const wk = toScore(sector.week);
     const rsScore = toScore(sector.rsWeek, -4, 4); // RS bucket is tighter
@@ -61,6 +76,13 @@ export const strengthScore = (sector) => {
 
 export const momentumOf = (sector) => {
     if (!sector) return { dir: 'flat', delta: 0 };
+    // Prefer server-provided momentum
+    if (sector.momentum && typeof sector.momentum === 'object') {
+        return {
+            dir: sector.momentum.dir || 'flat',
+            delta: typeof sector.momentum.delta === 'number' ? sector.momentum.delta : 0,
+        };
+    }
     // Day return annualized vs weekly average daily — if day > weekly avg
     // daily, we say accelerating.
     const dayRate = sector.day;
@@ -76,6 +98,7 @@ export const momentumOf = (sector) => {
 // Short label appropriate to the sector's posture.
 
 export const labelOf = (sector) => {
+    if (typeof sector?.label === 'string' && sector.label.trim()) return sector.label;
     const score = strengthScore(sector);
     const mom = momentumOf(sector);
 
@@ -91,6 +114,7 @@ export const labelOf = (sector) => {
 
 // Tone: 'bull' | 'warn' | 'bear'
 export const toneOf = (sector) => {
+    if (sector?.tone === 'bull' || sector?.tone === 'warn' || sector?.tone === 'bear') return sector.tone;
     const score = strengthScore(sector);
     if (score >= 65) return 'bull';
     if (score >= 40) return 'warn';
@@ -200,6 +224,16 @@ const CYCLE_PLAYBOOK = {
 };
 
 export const cycleImplications = (rotationPhase) => {
+    // Prefer server-provided implications
+    if (rotationPhase?.implications && typeof rotationPhase.implications === 'object') {
+        const i = rotationPhase.implications;
+        return {
+            phase: rotationPhase.phase,
+            favor: Array.isArray(i.favor) ? i.favor : [],
+            avoid: Array.isArray(i.avoid) ? i.avoid : [],
+            action: i.action || rotationPhase.description || '',
+        };
+    }
     const phaseRaw = (rotationPhase?.phase || '').toString().toLowerCase().trim();
     const key = Object.keys(CYCLE_PLAYBOOK).find((k) => phaseRaw.includes(k))
               || (phaseRaw.includes('early') ? 'early cycle'
@@ -243,7 +277,11 @@ const SECTOR_LEADER_HINTS = {
     XLC: ['META', 'GOOGL'],
 };
 
-export const tradeIdeas = (sectors) => {
+export const tradeIdeas = (sectors, analytics) => {
+    // Prefer server-provided trade ideas
+    if (analytics?.tradeIdeas && Array.isArray(analytics.tradeIdeas) && analytics.tradeIdeas.length > 0) {
+        return analytics.tradeIdeas.slice(0, 8);
+    }
     const ranked = rankSectors(sectors);
     const top = ranked.slice(0, 3);
     const bottom = ranked.slice(-2).reverse();
@@ -293,6 +331,13 @@ export const tradeIdeas = (sectors) => {
 // One-line plain-English explanation of what's happening across sectors.
 
 export const rotationInsight = (sectors, flowData) => {
+    // Prefer server-provided insight
+    if (typeof flowData?.rotationInsight === 'string' && flowData.rotationInsight.trim()) {
+        return flowData.rotationInsight;
+    }
+    if (typeof flowData?.interpretation === 'string' && flowData.interpretation.trim()) {
+        return flowData.interpretation;
+    }
     const ranked = rankSectors(sectors);
     if (ranked.length === 0) return '';
 
@@ -313,7 +358,14 @@ export const rotationInsight = (sectors, flowData) => {
 
 // ---------- AI insight panel (punchy, action-focused) ----------
 
-export const aiInsight = (sectors, rotationPhase) => {
+export const aiInsight = (sectors, rotationPhase, analytics) => {
+    // Prefer server-provided insight
+    if (typeof analytics?.aiInsight === 'string' && analytics.aiInsight.trim()) {
+        return analytics.aiInsight;
+    }
+    if (typeof rotationPhase?.aiInsight === 'string' && rotationPhase.aiInsight.trim()) {
+        return rotationPhase.aiInsight;
+    }
     const ranked = rankSectors(sectors);
     if (ranked.length === 0) return 'Awaiting sector data.';
 

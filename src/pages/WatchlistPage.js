@@ -902,10 +902,11 @@ const WatchlistPage = () => {
 
     // ─────────────────────────────────────────────────────────────────
     // Signals integration
-    // TODO(server): integrate watchlist with signal engine — push signal
-    // status, momentum, and AI insight directly from the ML pipeline.
-    // For now we fetch /predictions/recent (same source as SignalsPage)
-    // and build a Map<symbol, signal> on the client.
+    // We fetch /predictions/recent (same source as SignalsPage) and build
+    // a Map<symbol, signal> on the client. The watchlist/derive.js module
+    // also prefers server-attached fields (item.signal, item.momentum,
+    // item.aiInsight, ...) so the day the watchlist API itself starts
+    // serving signal data this poll becomes redundant — UI unchanged.
     // ─────────────────────────────────────────────────────────────────
     const [signalMap, setSignalMap] = useState(new Map());
 

@@ -3,7 +3,9 @@
 // TOP-PRIORITY action panel. Tells the user what to DO right now.
 // Visually loud: gradient border + glow + bias badge + 2-4 actionable bullets.
 //
-// All inputs are derived client-side via ./derive — see TODO(server) there.
+// All inputs flow through ./derive, which prefers server-provided fields
+// (report.tradeBias, report.actionableInsights, report.strategy, etc.)
+// and falls back to client heuristics when those fields aren't present.
 
 import React from 'react';
 import styled from 'styled-components';

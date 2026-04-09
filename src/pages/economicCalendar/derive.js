@@ -2,11 +2,21 @@
 //
 // Pure heuristics for the redesigned Economic Calendar page.
 //
-// TODO(server): move macro interpretation + trade setups into the ML service.
-// Until then, we derive importance scores, directional sentiment, plain-
-// English "why it matters", "how to trade it" lines, trade ideas, market
-// impact summary, and AI insight client-side from the existing
-// /economic-calendar/events payload.
+// SERVER-FIRST BRIDGE: every public function checks for a server-provided
+// field on the event payload first and uses it directly when present,
+// otherwise falls back to the local heuristic. The day the ML service
+// starts attaching these fields the heuristics become invisible.
+//
+// Server fields the bridge looks for (all optional):
+//   event.importanceScore   0-100
+//   event.expectedBias      'bullish'|'bearish'|'neutral'
+//   event.whyItMatters      string (one sentence)
+//   event.howToTradeIt      string (one sentence)
+//   event.tradeSetups       [{ asset, direction, trigger, confidence }]
+//   event.assetRelevance    string[] (e.g. ['stocks','forex'])
+//   event.tradable          boolean
+//   payload.aiMacroInsight  string (top-level for the page)
+//   payload.marketImpactSummary  { high, med, risk, vol, summary, count }
 
 // ============================================================
 // Constants
@@ -71,6 +81,9 @@ const KEY_BOOST = {
 
 export const importanceScore = (event) => {
     if (!event) return 0;
+    if (typeof event.importanceScore === 'number' && Number.isFinite(event.importanceScore)) {
+        return Math.max(0, Math.min(100, Math.round(event.importanceScore)));
+    }
     const base = IMPACT_BASE[event.impact] ?? 25;
     const key = matchKey(event.name);
     const boost = key ? (KEY_BOOST[key] || 0) : 0;
@@ -102,6 +115,9 @@ const LOWER_IS_BETTER = ['jobless', 'unemployment', 'cpi', 'ppi', 'pce'];
  */
 export const expectedBias = (event) => {
     if (!event) return 'neutral';
+    if (event.expectedBias === 'bullish' || event.expectedBias === 'bearish' || event.expectedBias === 'neutral') {
+        return event.expectedBias;
+    }
     const f = num(event.forecast);
     const p = num(event.previous);
     if (f == null || p == null || f === p) return 'neutral';
@@ -119,6 +135,7 @@ export const expectedBias = (event) => {
 // ============================================================
 
 export const whyItMatters = (event) => {
+    if (typeof event?.whyItMatters === 'string' && event.whyItMatters.trim()) return event.whyItMatters;
     const key = matchKey(event?.name);
     switch (key) {
         case 'cpi':
@@ -159,6 +176,7 @@ export const whyItMatters = (event) => {
 // ============================================================
 
 export const howToTradeIt = (event) => {
+    if (typeof event?.howToTradeIt === 'string' && event.howToTradeIt.trim()) return event.howToTradeIt;
     const key = matchKey(event?.name);
     const bias = expectedBias(event);
     const biasTag = bias === 'bullish' ? 'long bias'
@@ -248,6 +266,16 @@ const TRADE_TEMPLATES = {
 };
 
 export const tradeSetupsFor = (event) => {
+    if (Array.isArray(event?.tradeSetups) && event.tradeSetups.length > 0) {
+        return event.tradeSetups.map((s, i) => ({
+            id: s.id || `${event.name}-srv-${i}`,
+            eventName: event.name,
+            asset: s.asset,
+            direction: s.direction,
+            trigger: s.trigger,
+            confidence: s.confidence,
+        }));
+    }
     const key = matchKey(event?.name);
     if (!key || !TRADE_TEMPLATES[key]) return [];
     const score = importanceScore(event);
@@ -296,7 +324,11 @@ export const todaysMarketMovers = (events, limit = 5) => {
 // Market impact summary (for the top bar)
 // ============================================================
 
-export const marketImpactSummary = (events) => {
+export const marketImpactSummary = (events, payload) => {
+    // Prefer server-provided summary
+    if (payload?.marketImpactSummary && typeof payload.marketImpactSummary === 'object') {
+        return payload.marketImpactSummary;
+    }
     const today = eventsForToday(events);
     const high = today.filter((e) => e.impact === 'high').length;
     const med = today.filter((e) => e.impact === 'medium').length;
@@ -325,7 +357,11 @@ export const marketImpactSummary = (events) => {
 // AI macro insight (punchy, action-focused)
 // ============================================================
 
-export const aiMacroInsight = (events) => {
+export const aiMacroInsight = (events, payload) => {
+    // Prefer server-provided insight
+    if (typeof payload?.aiMacroInsight === 'string' && payload.aiMacroInsight.trim()) {
+        return payload.aiMacroInsight;
+    }
     const today = eventsForToday(events);
     if (today.length === 0) {
         return 'No major macro releases today — focus on flow + earnings, avoid overtrading.';
@@ -395,12 +431,16 @@ const ASSET_AFFINITY_BY_KEY = {
 };
 
 export const assetRelevance = (event) => {
+    if (Array.isArray(event?.assetRelevance) && event.assetRelevance.length > 0) {
+        return event.assetRelevance;
+    }
     const key = matchKey(event?.name);
     if (key && ASSET_AFFINITY_BY_KEY[key]) return ASSET_AFFINITY_BY_KEY[key];
     return COUNTRY_META[event?.country]?.assetClasses || ['stocks'];
 };
 
 export const isTradable = (event) => {
+    if (typeof event?.tradable === 'boolean') return event.tradable;
     // "Tradable" = high or medium impact AND we have a known event template.
     return event && event.impact !== 'low' && matchKey(event.name) != null;
 };

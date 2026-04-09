@@ -4,8 +4,9 @@
 // sentiment in a single horizontally-scrollable bar so the user can read the
 // state of the market in <2 seconds.
 //
-// Data is currently DERIVED CLIENT-SIDE from the report payload — see
-// derive.deriveSnapshot. TODO(server): replace with /market-pulse endpoint.
+// Data is sourced via derive.deriveSnapshot, which prefers a server-provided
+// `report.snapshot` block when present (e.g. from /market-pulse) and falls
+// back to a client-side heuristic computed from the report payload.
 
 import React from 'react';
 import styled from 'styled-components';

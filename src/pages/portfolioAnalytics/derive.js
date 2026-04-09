@@ -2,10 +2,21 @@
 //
 // Pure heuristics for the redesigned Portfolio Analytics page.
 //
-// TODO(server): move performance analytics to backend engine. We currently
-// derive verdict, score, expectancy, mistakes, fixes, behavioral insights,
-// and the AI coach line client-side from the existing /portfolio/analytics
-// payload.
+// SERVER-FIRST BRIDGE: every public function checks for a server-provided
+// field on the analytics payload first and uses it directly when present,
+// otherwise falls back to the local heuristic. The day the backend
+// performance engine starts returning these fields the heuristics become
+// invisible — no client changes required.
+//
+// Server fields the bridge looks for (all optional):
+//   analytics.paperTrading.avgWin / avgLoss / rr / expectancy / profitFactor
+//   analytics.performanceScore   { score, verdict, tone, summary }
+//   analytics.riskProfile        { bucket, riskPerTrade, ... }
+//   analytics.mistakes[]         [{ id, severity, title, detail }]
+//   analytics.fixes[]            [{ title, tone }]
+//   analytics.aiCoachMessage     string
+//   analytics.behavioralInsights [{ tone, text }]
+//   analytics.signalPerformance  { total, correct, wrong, accuracy, avgReturn, tone, label }
 
 // ============================================================
 // Numeric helpers
@@ -156,8 +167,15 @@ export const riskProfile = (analytics) => {
 // ============================================================
 
 export const detectMistakes = (analytics) => {
+    if (!analytics) return [];
+    // Prefer server-provided mistakes
+    if (Array.isArray(analytics.mistakes) && analytics.mistakes.length >= 0 && analytics.mistakes.length <= 50) {
+        // Use server array even if empty (server actively says "no mistakes")
+        if (analytics._mistakesAuthoritative || analytics.mistakes.length > 0) {
+            return analytics.mistakes;
+        }
+    }
     const mistakes = [];
-    if (!analytics) return mistakes;
 
     const overview = analytics.overview || {};
     const risk = analytics.risk || {};
@@ -282,7 +300,11 @@ const FIX_MAP = {
     'net-negative':          { title: 'Pause live sizing — paper trade until expectancy turns positive', tone: 'bull' },
 };
 
-export const buildFixes = (mistakes) => {
+export const buildFixes = (mistakes, analytics) => {
+    // Prefer server-provided fixes
+    if (analytics && Array.isArray(analytics.fixes) && analytics.fixes.length > 0) {
+        return analytics.fixes;
+    }
     if (!Array.isArray(mistakes) || mistakes.length === 0) return [];
     return mistakes
         .map((m) => FIX_MAP[m.id])
@@ -305,6 +327,16 @@ export const buildFixes = (mistakes) => {
  */
 export const performanceScore = (analytics) => {
     if (!analytics) return { score: 50, verdict: 'No data', tone: 'warn', summary: 'Add trades or holdings to get a verdict.' };
+
+    // Prefer server-provided verdict
+    if (analytics.performanceScore && typeof analytics.performanceScore === 'object') {
+        return {
+            score: analytics.performanceScore.score ?? 50,
+            verdict: analytics.performanceScore.verdict || 'Unknown',
+            tone: analytics.performanceScore.tone || 'warn',
+            summary: analytics.performanceScore.summary || '',
+        };
+    }
 
     let score = 50;
 
@@ -388,6 +420,10 @@ export const performanceScore = (analytics) => {
 
 export const behavioralInsights = (analytics) => {
     if (!analytics) return [];
+    // Prefer server-provided insights
+    if (Array.isArray(analytics.behavioralInsights) && analytics.behavioralInsights.length > 0) {
+        return analytics.behavioralInsights.slice(0, 4);
+    }
     const out = [];
     const pt = analytics.paperTrading || {};
     const allocation = analytics.allocation || {};
@@ -445,6 +481,9 @@ export const behavioralInsights = (analytics) => {
 
 export const aiCoachMessage = (analytics) => {
     if (!analytics) return 'Add trades or holdings to unlock your personalized coaching.';
+    if (typeof analytics.aiCoachMessage === 'string' && analytics.aiCoachMessage.trim()) {
+        return analytics.aiCoachMessage;
+    }
 
     const pt = analytics.paperTrading || {};
     const total = num(pt.totalTrades) ?? 0;
@@ -485,6 +524,10 @@ export const aiCoachMessage = (analytics) => {
 // ============================================================
 
 export const signalPerformance = (analytics) => {
+    // Prefer server-provided signal performance block
+    if (analytics?.signalPerformance && typeof analytics.signalPerformance === 'object') {
+        return analytics.signalPerformance;
+    }
     const pred = analytics?.predictions;
     if (!pred) return null;
 

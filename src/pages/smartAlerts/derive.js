@@ -2,9 +2,18 @@
 //
 // Pure heuristics for the redesigned Smart Alerts page.
 //
-// TODO(server): push proximity + Near Trigger flag + AI suggestions
-// directly from the alert engine. Until then, we derive everything
-// client-side from the existing /alerts payload.
+// SERVER-FIRST BRIDGE: every public function checks for a server-provided
+// field on the alert payload first and uses it directly when present,
+// otherwise falls back to the local heuristic. The day the alert engine
+// starts attaching these fields the heuristics become invisible.
+//
+// Server fields the bridge looks for (all optional):
+//   alert.proximity      { pct, near, direction }
+//   alert.statusV2       'active'|'near_trigger'|'triggered'|'expired'|'paused'
+//   alert.category       'price'|'technical'|'pattern'|'other'
+//   alert.label          string
+//   alert.condition      string
+//   payload.suggestions  [{ id, symbol, kind, title, rationale, prefill }]
 
 // ============================================================
 // Numeric helpers
@@ -35,6 +44,7 @@ const fmtUSD = (v) => {
  * Used for icons + filter buckets.
  */
 export const alertCategory = (alert) => {
+    if (alert?.category) return alert.category;
     const t = alert?.type || '';
     if (t === 'price_above' || t === 'price_below' || t === 'percent_change') return 'price';
     if (t.startsWith('rsi') || t.startsWith('macd') || t.startsWith('bb') ||
@@ -48,6 +58,7 @@ export const alertCategory = (alert) => {
  * Short readable label for an alert type.
  */
 export const alertLabel = (alert) => {
+    if (typeof alert?.label === 'string' && alert.label.trim()) return alert.label;
     const t = alert?.type || '';
     const labels = {
         price_above:      'Above',
@@ -66,6 +77,7 @@ export const alertLabel = (alert) => {
  */
 export const conditionString = (alert) => {
     if (!alert) return '';
+    if (typeof alert.condition === 'string' && alert.condition.trim()) return alert.condition;
     const t = alert.type;
     if (t === 'price_above')   return `Above ${fmtUSD(alert.targetPrice)}`;
     if (t === 'price_below')   return `Below ${fmtUSD(alert.targetPrice)}`;
@@ -94,6 +106,14 @@ export const conditionString = (alert) => {
  */
 export const proximityOf = (alert) => {
     if (!alert) return null;
+    // Prefer server-provided proximity object
+    if (alert.proximity && typeof alert.proximity === 'object' && typeof alert.proximity.pct === 'number') {
+        return {
+            pct: alert.proximity.pct,
+            near: !!alert.proximity.near,
+            direction: alert.proximity.direction || 'flat',
+        };
+    }
     const cur = num(alert.currentPrice ?? alert.livePrice);
     if (cur == null) return null;
 
@@ -129,6 +149,7 @@ export const proximityOf = (alert) => {
 
 export const statusV2 = (alert) => {
     if (!alert) return 'unknown';
+    if (typeof alert.statusV2 === 'string' && alert.statusV2) return alert.statusV2;
     if (alert.status === 'triggered') return 'triggered';
     if (alert.status === 'expired')   return 'expired';
     if (alert.status === 'paused')    return 'paused';
@@ -280,7 +301,11 @@ export const buildActivityFeed = (alerts, limit = 10) => {
  * Caller can pass a watchlist of { symbol, currentPrice, changePercent }
  * to power the suggestions.
  */
-export const buildSuggestions = (watchlist, alerts, limit = 4) => {
+export const buildSuggestions = (watchlist, alerts, limit = 4, serverSuggestions = null) => {
+    // Prefer server-provided suggestions
+    if (Array.isArray(serverSuggestions) && serverSuggestions.length > 0) {
+        return serverSuggestions.slice(0, limit);
+    }
     if (!Array.isArray(watchlist)) return [];
     const existingSymbols = new Set(
         (alerts || [])

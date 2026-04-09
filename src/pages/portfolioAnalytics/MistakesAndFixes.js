@@ -109,7 +109,7 @@ const SeverityIcon = ({ severity }) => {
 const MistakesAndFixes = ({ analytics }) => {
     const { theme } = useTheme();
     const mistakes = detectMistakes(analytics);
-    const fixes = buildFixes(mistakes);
+    const fixes = buildFixes(mistakes, analytics);
 
     return (
         <SectionCard theme={theme}>

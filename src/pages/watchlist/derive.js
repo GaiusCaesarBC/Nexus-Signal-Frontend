@@ -2,12 +2,21 @@
 //
 // Pure heuristics for the redesigned Watchlist page.
 //
-// TODO(server): integrate watchlist with signal engine — push momentum,
-// volatility, and AI insight directly from the ML pipeline.
-// Until then, we derive priority, action labels, momentum, volatility,
-// and per-asset insight client-side from:
-//   - the watchlist payload (price + change + changePercent)
-//   - the live /predictions/recent feed (same source as SignalsPage)
+// SERVER-FIRST BRIDGE: every public function checks for a server-provided
+// field on the watchlist item first and uses it directly when present,
+// otherwise falls back to the local heuristic. The day the watchlist API
+// integrates with the signal/ML engine these heuristics become invisible.
+//
+// Server fields the bridge looks for (all optional):
+//   item.signal         { direction, confidence, entry, stop, target }
+//   item.momentum       'up' | 'down' | 'flat'
+//   item.volatility     'Low' | 'Normal' | 'High'
+//   item.actionLabel    { label, tone }
+//   item.aiInsight      string (one sentence)
+//   item.priority       0-100
+//
+// Live signals are also pulled from the existing /predictions/recent feed
+// and merged via buildSignalMap (same source as SignalsPage).
 
 // ============================================================
 // Numeric helpers
@@ -63,6 +72,9 @@ export const buildSignalMap = (rawPredictions) => {
  * vs daily comparison if available.
  */
 export const momentumOf = (item) => {
+    if (item?.momentum === 'up' || item?.momentum === 'down' || item?.momentum === 'flat') {
+        return item.momentum;
+    }
     const cp = num(item?.changePercent);
     if (cp == null) return 'flat';
     if (cp >= 1.5) return 'up';
@@ -79,6 +91,9 @@ export const momentumOf = (item) => {
  * tolerance since 5% moves are routine.
  */
 export const volatilityOf = (item, isCryptoFn) => {
+    if (item?.volatility === 'Low' || item?.volatility === 'Normal' || item?.volatility === 'High') {
+        return item.volatility;
+    }
     const pct = abs(item?.changePercent);
     const crypto = typeof isCryptoFn === 'function' ? isCryptoFn(item?.symbol || item?.ticker) : false;
 
@@ -101,6 +116,9 @@ export const volatilityOf = (item, isCryptoFn) => {
  *   { label: 'Ignore', tone: 'mute' }   // nothing meaningful happening
  */
 export const actionLabel = (item, signal) => {
+    if (item?.actionLabel && typeof item.actionLabel === 'object' && item.actionLabel.label) {
+        return item.actionLabel;
+    }
     const moved = abs(item?.changePercent) >= 1.5;
     const strongMove = abs(item?.changePercent) >= 3;
     const hasGoodSignal = signal && signal.confidence >= 65;
@@ -118,6 +136,7 @@ export const actionLabel = (item, signal) => {
 // ============================================================
 
 export const assetInsight = (item, signal, isCryptoFn) => {
+    if (typeof item?.aiInsight === 'string' && item.aiInsight.trim()) return item.aiInsight;
     const sym = item?.symbol || item?.ticker || '';
     const cp = num(item?.changePercent);
     const vol = volatilityOf(item, isCryptoFn);
@@ -164,6 +183,9 @@ export const assetInsight = (item, signal, isCryptoFn) => {
  * Higher = more actionable right now.
  */
 export const priorityScore = (item, signal, isCryptoFn) => {
+    if (typeof item?.priority === 'number' && Number.isFinite(item.priority)) {
+        return Math.max(0, Math.min(100, Math.round(item.priority)));
+    }
     let score = 0;
     score += Math.min(40, abs(item?.changePercent) * 6); // % move (capped)
     if (signal) {
