@@ -5,12 +5,13 @@
 // Replaces the legacy DashboardPage.
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import styled, { keyframes, css } from 'styled-components';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { useTheme } from '../context/ThemeContext';
 import {
     Sparkles, Brain, Activity, Target, Trophy, ChevronRight, Zap,
@@ -679,7 +680,9 @@ const SpinningLoader = styled(Loader2)`
 const CommandCenterPage = () => {
     const navigate = useNavigate();
     const { theme } = useTheme();
-    const { api, user } = useAuth();
+    const { api, user, refreshUser } = useAuth();
+    const toast = useToast();
+    const [searchParams, setSearchParams] = useSearchParams();
     const isMounted = useRef(true);
 
     const [snapshot, setSnapshot] = useState({
@@ -792,6 +795,80 @@ const CommandCenterPage = () => {
         const iv = setInterval(fetchIntelligence, 90000);
         return () => clearInterval(iv);
     }, [fetchIntelligence]);
+
+    // ─────────────────────────────────────────────────────────────────
+    // Post-checkout subscription sync.
+    //
+    // After a Stripe checkout, the user is redirected here with
+    // ?success=true&session_id=X. The webhook that updates the DB runs
+    // asynchronously and might land AFTER the redirect, so the local
+    // `user` object can be stale (still shows 'free').
+    //
+    // We detect the query param, clear it immediately (so a page refresh
+    // doesn't re-trigger), then poll /auth/me up to 6 times over ~18s
+    // until the subscription field flips from 'free' to something else.
+    // Once confirmed (or after max retries), we stop polling.
+    // ─────────────────────────────────────────────────────────────────
+    useEffect(() => {
+        const isCheckoutReturn = searchParams.get('success') === 'true';
+        if (!isCheckoutReturn) return;
+
+        // Clear the query params immediately so a manual refresh doesn't
+        // re-enter this flow.
+        setSearchParams({}, { replace: true });
+        toast.info('Confirming your subscription...', 'Almost there');
+
+        let cancelled = false;
+        let attempts = 0;
+        const MAX_ATTEMPTS = 6;
+        const INTERVAL_MS = 3000; // 3 seconds between polls
+
+        const poll = async () => {
+            if (cancelled) return;
+            attempts++;
+
+            try {
+                const success = await refreshUser();
+                if (!success) {
+                    // refreshUser failed (network / auth issue) — stop polling
+                    return;
+                }
+
+                // After refreshUser, the `user` object in context is updated.
+                // We can't read it synchronously here (it'll be stale in this
+                // closure), so we do a fresh fetch to check the status field.
+                const res = await api.get('/auth/me');
+                const status = res?.data?.subscription?.status;
+
+                if (status && status !== 'free') {
+                    // Subscription landed — we're done
+                    console.log(`[Checkout Sync] ✅ Subscription confirmed: ${status} (attempt ${attempts})`);
+                    const planName = status.charAt(0).toUpperCase() + status.slice(1);
+                    toast.success(`You're on ${planName}! Your features are now unlocked.`, 'Subscription Active');
+                    return;
+                }
+            } catch (err) {
+                console.log(`[Checkout Sync] Poll attempt ${attempts} failed:`, err?.message);
+            }
+
+            // Not confirmed yet — retry if under the cap
+            if (attempts < MAX_ATTEMPTS && !cancelled) {
+                setTimeout(poll, INTERVAL_MS);
+            } else if (!cancelled) {
+                console.log(`[Checkout Sync] ⚠️ Max retries reached. User may need to refresh manually.`);
+                toast.warning('Subscription is processing. If features aren\'t unlocked in a minute, try refreshing the page.', 'Still syncing');
+            }
+        };
+
+        // Start polling after a short delay to give the webhook a head start
+        const startDelay = setTimeout(poll, 1500);
+
+        return () => {
+            cancelled = true;
+            clearTimeout(startDelay);
+        };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Run once on mount — the searchParams check gates re-entry
 
     // ───── What You Should Do — derive 3 actions ─────
     const recommendedActions = useMemo(() => {
