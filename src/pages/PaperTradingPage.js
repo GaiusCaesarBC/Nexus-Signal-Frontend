@@ -1644,11 +1644,21 @@ const PaperTradingPage = () => {
         }
     }, [location.state]);
 
-    const togglePositionExpand = (positionKey) => {
+    const togglePositionExpand = (positionKey, position) => {
         setExpandedPositions(prev => ({
             ...prev,
             [positionKey]: !prev[positionKey]
         }));
+        // Also propagate this position's symbol into the chart state so
+        // the candlestick chart above reloads with this asset. Previously
+        // clicking a position card would only toggle the accordion; the
+        // chart would stay on whatever the user last typed in the search
+        // bar (or go blank). Clicking a position is an implicit "focus
+        // this asset" action, so we honor that here.
+        if (position && position.symbol) {
+            setSymbol(String(position.symbol).toUpperCase());
+            setType(position.type === 'crypto' ? 'crypto' : 'stock');
+        }
     };
 
     // ─── USE NEXUS SIGNAL SETUP — pulls top opportunity and autofills the form ───
@@ -2330,7 +2340,7 @@ const PaperTradingPage = () => {
                                         const isLeveraged = position.leverage && position.leverage > 1;
                                         const hasTPSL = position.takeProfit || position.stopLoss || position.trailingStopPercent;
                                         return (
-                                            <PositionCard theme={theme} key={positionKey} $positive={position.profitLoss >= 0} $positionType={position.positionType} onClick={() => togglePositionExpand(positionKey)}>
+                                            <PositionCard theme={theme} key={positionKey} $positive={position.profitLoss >= 0} $positionType={position.positionType} onClick={() => togglePositionExpand(positionKey, position)}>
                                                 <ExpandIcon theme={theme} $expanded={isExpanded}><ChevronDown size={16} /></ExpandIcon>
                                                 <PositionHeader>
                                                     <PositionSymbol theme={theme}>
