@@ -1092,8 +1092,8 @@ const CoPilotPage = () => {
     return (
         <Page theme={theme}>
             <SEO
-                title="Co-Pilot — Nexus Signal AI"
-                description="Your AI trading co-pilot — real-time insights, trade ideas, and market intelligence powered by live platform data."
+                title="AI Co-Pilot — Trade Ideas On Demand | Nexus Signal AI"
+                description="Ask anything about a stock, signal, or setup. Real-time AI answers powered by live market data, your portfolio, and Nexus signal history."
             />
             <Container>
                 {/* ═══ HEADER ═══ */}

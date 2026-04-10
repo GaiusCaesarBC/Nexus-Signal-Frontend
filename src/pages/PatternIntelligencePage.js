@@ -877,8 +877,8 @@ const PatternIntelligencePage = () => {
     return (
         <Page theme={theme}>
             <SEO
-                title="Pattern Intelligence — Nexus Signal AI"
-                description="AI-ranked chart patterns across stocks and crypto. Every pattern has a stage. Every stage has a trade plan."
+                title="Pattern Intelligence — Live Chart Patterns | Nexus Signal AI"
+                description="AI-detected chart patterns across stocks and crypto in real time. Every pattern has a stage, every stage has a trade plan with entry, stop, and target."
             />
             <Container>
 

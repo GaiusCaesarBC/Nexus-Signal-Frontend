@@ -4,6 +4,7 @@ import styled, { keyframes } from 'styled-components';
 import { UserPlus, User, Mail, Lock, ArrowRight, Zap, Shield, Eye, EyeOff, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import SEO from '../components/SEO';
 
 // ============ INSANE ANIMATIONS ============
 const fadeIn = keyframes`
@@ -623,6 +624,10 @@ const RegisterPage = () => {
 
     return (
         <RegisterPageContainer>
+            <SEO
+                title="Sign Up Free — Start Your 7-Day Trial | Nexus Signal AI"
+                description="Create your free Nexus Signal AI account. Get live AI trade signals, $100k paper trading account, smart alerts, and a 7-day Premium trial."
+            />
             {/* Animated Background Elements */}
             <ParticleContainer>
                 {particles.map(particle => (

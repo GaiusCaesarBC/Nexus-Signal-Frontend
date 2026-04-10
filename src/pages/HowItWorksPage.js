@@ -818,9 +818,9 @@ const HowItWorksPage = () => {
     return (
         <Page>
             <SEO
-                title="How It Works | Nexus Signal AI"
-                description="A transparent breakdown of how Nexus Signal AI discovers, scores, generates, and tracks every trade. Real signals, real results, fully public."
-                keywords="how it works, AI trading signals, trade transparency, win rate, signal accuracy, live tracking"
+                title="How It Works — Every Trade Explained | Nexus Signal AI"
+                description="The full breakdown: how Nexus discovers assets, scores setups, builds trades, and tracks results. 300+ trades public. No deletions, no edits."
+                keywords="how it works, AI trading signals, trade transparency, signal accuracy, live tracking, XGBoost trading"
                 url="https://nexussignal.ai/how-it-works"
             />
 

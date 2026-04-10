@@ -1365,9 +1365,9 @@ const CryptoPage = () => {
   return (
     <PageContainer>
       <SEO
-        title={`${symbol?.toUpperCase()} Crypto Price & Analysis | Nexus Signal AI`}
-        description={`Get real-time ${symbol?.toUpperCase()} cryptocurrency price, AI predictions, market analysis, and trading insights. View charts and make informed crypto investment decisions.`}
-        keywords={`${symbol} crypto, ${symbol} price, ${symbol} cryptocurrency, crypto analysis, crypto prediction, crypto chart, AI trading`}
+        title={`${symbol?.toUpperCase()} Price, AI Signals & Analysis | Nexus Signal AI`}
+        description={`Live ${symbol?.toUpperCase()} price, AI-generated trade signals, charts, and on-chain context. Every signal tracked publicly — wins and losses both counted.`}
+        keywords={`${symbol} crypto, ${symbol} price, ${symbol} prediction, AI crypto signals, crypto chart, crypto analysis`}
         url={`https://nexussignal.ai/crypto/${symbol}`}
       />
       <BackButton onClick={() => navigate('/dashboard')}>

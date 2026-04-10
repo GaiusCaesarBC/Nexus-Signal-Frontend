@@ -760,8 +760,8 @@ const FinancialVerdictPage = () => {
     return (
         <Page theme={theme}>
             <SEO
-                title="Financial Verdict — Nexus Signal AI"
-                description="Every company scored, valued, and interpreted — know in 10 seconds whether it's worth investing in."
+                title="Financial Verdict — BUY / HOLD / AVOID In 10 Seconds | Nexus Signal AI"
+                description="Every company scored on profitability, growth, efficiency, and stability. Sector-adjusted valuation. A clear BUY / HOLD / AVOID call backed by the math."
             />
             <Container>
 

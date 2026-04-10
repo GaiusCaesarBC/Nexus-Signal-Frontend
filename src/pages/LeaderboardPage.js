@@ -1707,9 +1707,9 @@ const LeaderboardPage = () => {
     return (
         <PageContainer>
             <SEO
-                title="Trading Leaderboard | Top Traders | Nexus Signal AI"
-                description="Compete with top traders worldwide on the Nexus Signal AI leaderboard. Track rankings, follow successful traders, and climb the global trading ranks."
-                keywords="trading leaderboard, top traders, trading competition, trader rankings, paper trading leaderboard, trading community"
+                title="Global Trading Leaderboard — Top Traders | Nexus Signal AI"
+                description="Live rankings of the top traders on Nexus. Follow the best, copy their trades, and climb the global leaderboard. Resets weekly."
+                keywords="trading leaderboard, top traders, trading rankings, paper trading leaderboard, copy trading, trading community"
                 url="https://nexussignal.ai/leaderboard"
             />
             <BackgroundOrbs>

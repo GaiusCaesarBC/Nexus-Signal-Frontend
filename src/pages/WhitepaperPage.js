@@ -76,7 +76,7 @@ const WhitepaperPage = () => {
 
     return (
         <Page>
-            <SEO title="Whitepaper — Nexus Signal AI" description="The first AI signal platform that generates, tracks, and validates trading signals for stocks and crypto." />
+            <SEO title="Whitepaper | Nexus Signal AI — Full System Breakdown" description="The complete technical whitepaper: how Nexus discovers assets, scores setups, generates trades, and validates results publicly for stocks and crypto." />
             <Wrap>
                 <Header>
                     <DocBadge><FileText size={14}/> Official Whitepaper</DocBadge>

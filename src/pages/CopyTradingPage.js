@@ -611,7 +611,7 @@ const CopyTradingPage = () => {
     if (!isAuthenticated) {
         return (
             <PageContainer theme={theme}>
-                <SEO title="Copy Trading" description="Copy top traders automatically" />
+                <SEO title="Copy Trading — Mirror Top Traders | Nexus Signal AI" description="Auto-mirror trades from the highest-ranked traders on Nexus. Custom risk caps, instant notifications, and full performance tracking." />
                 <MainContent>
                     <EmptyState theme={theme}>
                         <Copy size={64} />
@@ -629,7 +629,7 @@ const CopyTradingPage = () => {
     if (loading) {
         return (
             <PageContainer theme={theme}>
-                <SEO title="Copy Trading" description="Copy top traders automatically" />
+                <SEO title="Copy Trading — Mirror Top Traders | Nexus Signal AI" description="Auto-mirror trades from the highest-ranked traders on Nexus. Custom risk caps, instant notifications, and full performance tracking." />
                 <LoadingContainer>
                     <Copy size={48} color="#3b82f6" />
                     <p style={{ color: '#94a3b8' }}>Loading copy trading data...</p>
@@ -640,7 +640,7 @@ const CopyTradingPage = () => {
 
     return (
         <PageContainer theme={theme}>
-            <SEO title="Copy Trading" description="Copy top traders automatically" />
+            <SEO title="Copy Trading — Mirror Top Traders | Nexus Signal AI" description="Auto-mirror trades from the highest-ranked traders on Nexus. Custom risk caps, instant notifications, and full performance tracking." />
 
             <Header>
                 <HeaderLeft theme={theme}>

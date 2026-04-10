@@ -135,7 +135,7 @@ const LivePerformancePage = () => {
 
     return (
         <Page>
-            <SEO title="Live Performance — Nexus Signal" description="Every trade tracked publicly. Wins and losses. Full transparency." />
+            <SEO title="Live Performance Tracker — Public Stats | Nexus Signal AI" description="Every trade Nexus has ever published — win, loss, or expired. Updated every 5 minutes. No edits, no deletions, no cherry-picking." />
             <HeaderArea>
                 <Title><Activity size={24} color="#00adef"/> Live Performance Tracker</Title>
                 <Subtitle>Every trade tracked publicly. No edits. No deletions.</Subtitle>

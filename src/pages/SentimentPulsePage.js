@@ -904,8 +904,8 @@ const SentimentPulsePage = () => {
     return (
         <Page theme={theme}>
             <SEO
-                title="Sentiment Pulse — Nexus Signal AI"
-                description="Live market sentiment — what traders are thinking right now, and where opportunity is forming."
+                title="Sentiment Pulse — Live Crowd Mood | Nexus Signal AI"
+                description="Live market sentiment from social, news, and order flow. See what traders are feeling right now — and where the contrarian opportunity is forming."
             />
             <Container>
 

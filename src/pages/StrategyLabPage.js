@@ -1181,8 +1181,8 @@ const StrategyLabPage = () => {
     return (
         <Page theme={theme}>
             <SEO
-                title="Strategy Lab — Nexus Signal AI"
-                description="Test, evaluate, and improve trading strategies — the Lab tells you if it's worth trading and how to make it better."
+                title="Strategy Lab — Backtest, Score, Improve | Nexus Signal AI"
+                description="Test trading strategies against historical data, score them on win rate and R/R, and get AI-suggested improvements. Find out if it's worth trading."
             />
             <Container>
                 {/* ═══ HEADER ═══ */}

@@ -117,7 +117,7 @@ const PostDetailPage = () => {
 
     return (
         <Page>
-            <SEO title={`Post by ${username} — Nexus Signal`} />
+            <SEO title={`Post by ${username} | Nexus Signal AI`} description={`Read ${username}'s post and join the discussion on Nexus Signal AI — the trader community where every trade is publicly tracked.`} />
             <Container>
                 <BackBtn onClick={() => navigate('/feed')}><ArrowLeft size={16}/> Back to Feed</BackBtn>
 

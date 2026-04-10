@@ -38,7 +38,7 @@ const CardCTA = styled.div`
 const SocialsPage = () => {
     return (
         <Page>
-            <SEO title="Socials — Nexus Signal" description="Join the Nexus Signal community on Telegram, X, and Discord." />
+            <SEO title="Community & Socials — Telegram, X, Discord | Nexus Signal AI" description="Live signal alerts, market chat, and community trades on Telegram, X, and Discord. Free to join." />
             <Title><MessageSquare size={24} color="#00adef"/> Community & Socials</Title>
             <Subtitle>Join the conversation. Get signals, updates, and connect with traders.</Subtitle>
 

@@ -809,7 +809,7 @@ const SignalDetailPage = () => {
 
     return (
         <Page>
-            <SEO title={`${s.symbol} ${s.long?'LONG':'SHORT'} Signal — Nexus Signal`} description={`AI trading signal for ${s.symbol}: ${s.long?'LONG':'SHORT'} with ${s.conf}% confidence. Full analysis and trade levels.`} />
+            <SEO title={`${s.symbol} ${s.long?'LONG':'SHORT'} — ${s.conf}% Confidence | Nexus Signal AI`} description={`AI ${s.long?'long':'short'} signal on ${s.symbol} at ${s.conf}% confidence. Full entry, stop loss, and 3 take-profit targets — tracked live.`} />
             <Container>
                 <BackBtn onClick={() => navigate('/signals')}><ArrowLeft size={14}/> Back to Signals</BackBtn>
 

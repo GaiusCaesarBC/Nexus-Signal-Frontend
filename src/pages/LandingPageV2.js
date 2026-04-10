@@ -129,7 +129,7 @@ const LandingPageV2 = () => {
 
     return (
         <Page>
-            <SEO title="Nexus Signal AI — Every Trade Tracked. Verified." description="AI-powered trade signals for stocks and crypto. Every prediction tracked publicly — wins and losses. No cherry-picking." />
+            <SEO title="Nexus Signal AI — Every Trade Tracked, Every Result Public" description="AI trade signals for stocks and crypto with locked entry, stop loss, and targets. 300+ trades tracked. No deletions, no cherry-picking." />
 
             {/* ═══ HERO ═══ */}
             <Hero>

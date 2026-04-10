@@ -925,8 +925,8 @@ const CommandCenterPage = () => {
     return (
         <Page theme={theme}>
             <SEO
-                title="Command Center — Nexus Signal AI"
-                description="Your real-time trading command center — best setups, live opportunities, market state, and personal performance in one view."
+                title="Command Center — Your Trading Cockpit | Nexus Signal AI"
+                description="Best setups right now, live market state, your open positions, and personal performance — your full trading day on one screen."
             />
             <Container>
 

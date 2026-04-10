@@ -836,8 +836,8 @@ const OpportunityEnginePage = () => {
     return (
         <Page theme={theme}>
             <SEO
-                title="Opportunity Engine — Nexus Signal AI"
-                description="AI-ranked trade opportunities across stocks and crypto. Every name surfaced has a reason."
+                title="Opportunity Engine — AI-Ranked Trade Ideas | Nexus Signal AI"
+                description="Live trade opportunities across stocks and crypto, ranked by setup quality. Every name comes with a reason — not just a ticker dump."
             />
             <Container>
 

@@ -763,8 +763,8 @@ const NewsIntelligencePage = () => {
     return (
         <Page theme={theme}>
             <SEO
-                title="News Intelligence — Nexus Signal AI"
-                description="Market news ranked by trade impact — every headline interpreted, every opportunity surfaced."
+                title="News Intelligence — Headlines That Move Stocks | Nexus Signal AI"
+                description="Market news ranked by trade impact, not chronological dump. Every headline interpreted, scored, and tied to actionable trade ideas."
             />
             <Container>
 

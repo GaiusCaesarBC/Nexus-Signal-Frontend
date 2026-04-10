@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import TwoFactorModal from '../components/TwoFactorModal';
+import SEO from '../components/SEO';
 
 // ============ INSANE ANIMATIONS ============
 const fadeIn = keyframes`
@@ -553,6 +554,10 @@ const LoginPage = () => {
 
     return (
         <LoginPageContainer>
+            <SEO
+                title="Log In | Nexus Signal AI"
+                description="Sign in to Nexus Signal AI — live AI trade signals, paper trading, smart alerts, and your full performance dashboard."
+            />
             {/* Animated Background Elements */}
             <ParticleContainer>
                 {particles.map(particle => (

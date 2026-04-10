@@ -914,8 +914,8 @@ const SmartMoneyPage = () => {
     return (
         <Page theme={theme}>
             <SEO
-                title="Smart Money — Nexus Signal AI"
-                description="What insiders, whales, congress, and institutions are doing right now — and how to trade it."
+                title="Smart Money — Whale, Insider & Congress Trades | Nexus Signal AI"
+                description="Live insider buys, whale wallets, congressional trades, and dark-pool flow — surfaced and ranked so you can trade alongside the smart money."
             />
             <Container>
 

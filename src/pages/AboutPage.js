@@ -488,9 +488,9 @@ const AboutPage = () => {
     return (
         <AboutContainer>
             <SEO
-                title="About Us | Nexus Signal AI"
-                description="Learn about Nexus Signal AI's mission to democratize AI-powered trading insights. Our team builds cutting-edge machine learning tools for smarter investment decisions."
-                keywords="about Nexus Signal, AI trading company, stock prediction technology, machine learning finance, trading platform team"
+                title="About Nexus Signal AI — Built On Transparent Tracking"
+                description="We publish every trade — win or lose. Learn the team, the mission, and why radical transparency is the core product, not a marketing line."
+                keywords="about Nexus Signal, AI trading transparency, stock prediction platform, machine learning finance, trading platform team"
             />
             {/* Animated Background Particles */}
             <ParticleContainer>

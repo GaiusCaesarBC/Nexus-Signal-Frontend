@@ -545,9 +545,9 @@ const LandingPage = () => {
     return (
         <Page>
             <SEO
-                title="Nexus Signal — AI-Powered Trading Signals"
-                description="Find better trades with AI. Get price predictions, pattern detection, and sentiment analysis — all in one platform. Start your free 7-day trial."
-                keywords="AI trading signals, stock predictions, AI stock analysis, trading platform, paper trading"
+                title="Nexus Signal AI — AI Trade Signals, Every Result Public"
+                description="300+ trades tracked live. AI signals with locked entry, stop loss, and targets for stocks and crypto. Every win and loss public. 7-day free trial."
+                keywords="AI trading signals, stock predictions, crypto signals, transparent trading, signal tracking, paper trading, trade alerts"
             />
 
             <BgEffects>

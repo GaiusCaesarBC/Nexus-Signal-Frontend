@@ -2,6 +2,7 @@
 
 import React from 'react';
 import styled, { keyframes } from 'styled-components';
+import SEO from '../components/SEO';
 import { 
     FileText, User, Lock, ExternalLink, MessageSquare, 
     Shield, CreditCard, AlertTriangle, CheckCircle,
@@ -448,6 +449,10 @@ const ContactItem = styled.a`
 const TermsOfServicePage = () => {
     return (
         <PageContainer>
+            <SEO
+                title="Terms of Service | Nexus Signal AI"
+                description="The terms covering use of Nexus Signal AI: subscriptions, billing, signal accuracy disclaimers, account responsibilities, and platform rules."
+            />
             <Header>
                 <TitleContainer>
                     <IconWrapper>

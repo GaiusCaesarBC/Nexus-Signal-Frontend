@@ -835,7 +835,7 @@ const SignalsPage = () => {
 
     return (
         <Page>
-            <SEO title={`${assetTab==='stocks'?'Stock':assetTab==='crypto'?'Crypto':'Live'} AI Signals — Nexus Signal`} description="Real-time AI-generated trade setups. Every trade tracked. No cherry-picking." />
+            <SEO title={`Live ${assetTab==='stocks'?'Stock':assetTab==='crypto'?'Crypto':''} AI Signals — Nexus Signal AI`.trim()} description="Live AI trade signals with locked entry, stop loss, and targets. Every result tracked publicly — wins and losses both counted." />
             <Container>
 
                 {/* ═══ SECTION 1: ACTION HEADER ═══ */}

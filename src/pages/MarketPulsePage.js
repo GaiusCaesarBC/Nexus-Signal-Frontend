@@ -1017,8 +1017,8 @@ const MarketPulsePage = () => {
     return (
         <Page theme={theme}>
             <SEO
-                title="Market Pulse — Nexus Signal AI"
-                description="Real-time visualization of where momentum, volume, and volatility are concentrated."
+                title="Market Pulse — Where Money Is Moving Right Now | Nexus Signal AI"
+                description="Live heatmap of momentum, volume, and volatility across sectors and assets. See where the action is concentrated this minute, this hour, this day."
             />
             <Container>
 

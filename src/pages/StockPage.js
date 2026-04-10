@@ -1387,9 +1387,9 @@ const StockPage = () => {
   return (
     <PageContainer>
       <SEO
-        title={`${symbol?.toUpperCase()} Stock Price & Analysis | Nexus Signal AI`}
-        description={`Get real-time ${symbol?.toUpperCase()} stock price, AI predictions, technical analysis, and trading insights. View charts, news, and make informed investment decisions.`}
-        keywords={`${symbol} stock, ${symbol} price, ${symbol} analysis, ${symbol} prediction, stock chart, stock analysis, AI trading`}
+        title={`${symbol?.toUpperCase()} Stock Price, AI Signals & Analysis | Nexus Signal AI`}
+        description={`Live ${symbol?.toUpperCase()} price, AI-generated trade signals, charts, news, and technical analysis. Every signal tracked publicly — wins and losses both counted.`}
+        keywords={`${symbol} stock, ${symbol} price, ${symbol} prediction, AI stock signals, stock chart, stock analysis`}
         url={`https://nexussignal.ai/stock/${symbol}`}
       />
       <BackButton onClick={() => navigate('/dashboard')}>

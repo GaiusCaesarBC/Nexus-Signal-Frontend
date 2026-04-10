@@ -896,8 +896,8 @@ const EarningsEdgePage = () => {
     return (
         <Page theme={theme}>
             <SEO
-                title="Earnings Edge — Nexus Signal AI"
-                description="Earnings ranked by trade impact — find the setups forming before, during, and after the print."
+                title="Earnings Edge — Trade The Print | Nexus Signal AI"
+                description="Earnings ranked by trade impact, not headline noise. Find the setups forming before, during, and after every print across stocks and ETFs."
             />
             <Container>
 

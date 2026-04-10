@@ -2,11 +2,12 @@
 
 import React from 'react';
 import styled, { keyframes } from 'styled-components';
-import { 
+import {
     Shield, Cookie, Mail, UserCheck, Lock, Eye, Database,
     FileText, CheckCircle, AlertTriangle, Globe, Server,
     Users, Settings, Bell, Clock, User, Activity
 } from 'lucide-react';
+import SEO from '../components/SEO';
 
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`
@@ -490,6 +491,10 @@ const ContactItem = styled.a`
 const PrivacyPolicyPage = () => {
     return (
         <PageContainer>
+            <SEO
+                title="Privacy Policy | Nexus Signal AI"
+                description="How Nexus Signal AI collects, uses, and protects your data. What we store, what we share, and what controls you have."
+            />
             <Header>
                 <TitleContainer>
                     <IconWrapper>

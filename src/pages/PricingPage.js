@@ -1523,9 +1523,9 @@ const PricingPage = () => {
     return (
         <PricingContainer>
             <SEO
-                title="Pricing Plans | Nexus Signal AI"
-                description="Choose the perfect plan for your trading needs. From free starter to elite professional plans. Get AI-powered stock predictions, unlimited watchlists, and advanced analytics."
-                keywords="Nexus Signal pricing, AI trading subscription, stock prediction plans, trading platform pricing, investment tools cost"
+                title="Pricing — Start Free, Upgrade Anytime | Nexus Signal AI"
+                description="Plans from free to elite. 7-day free trial on Premium. Every tier gets real AI trade signals with tracked results. Cancel anytime."
+                keywords="Nexus Signal pricing, AI trading subscription, stock prediction plans, free trial, trading platform pricing"
             />
             {/* Cosmic Background */}
             <CosmicBackground>

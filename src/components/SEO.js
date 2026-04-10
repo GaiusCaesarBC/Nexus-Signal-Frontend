@@ -4,10 +4,10 @@ import { Helmet } from 'react-helmet-async';
 
 const SEO = ({
     title = 'Nexus Signal AI — Every Trade. Tracked. Verified.',
-    description = '320+ trades tracked publicly. 52% win rate. No edits. No deletions. AI-powered signals with entry, stop loss, and targets for stocks and crypto.',
+    description = '300+ trades tracked publicly. AI-generated entries, stops, and targets for stocks and crypto. No deleted losers. No edited wins.',
     keywords = 'AI trading signals, stock signals, crypto signals, transparent trading, signal tracking, AI predictions, paper trading, live signals',
     image = '/og-image.png',
-    url = window.location.href,
+    url = typeof window !== 'undefined' ? window.location.href : 'https://nexussignal.ai',
     type = 'website'
 }) => {
     const siteUrl = 'https://nexussignal.ai';

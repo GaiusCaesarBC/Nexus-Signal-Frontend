@@ -1165,8 +1165,8 @@ const ShowdownPage = () => {
     return (
         <Page theme={theme}>
             <SEO
-                title="Asset Showdown — Nexus Signal AI"
-                description="Compare 2-5 assets head to head. Nexus picks the winner, explains why, and connects it to a trade setup."
+                title="Asset Showdown — Compare 2-5 Assets Head To Head | Nexus Signal AI"
+                description="Side-by-side comparison of any 2-5 stocks or coins. Nexus picks the winner, explains why, and links straight to a tradeable setup."
             />
             <Container>
 

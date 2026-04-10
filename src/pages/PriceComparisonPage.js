@@ -589,9 +589,9 @@ const PriceComparisonPage = () => {
     return (
         <PageContainer>
             <SEO
-                title="Feature Comparison | Nexus Signal AI"
-                description="Compare all Nexus Signal AI plans side by side. See exactly what features are included in each subscription tier."
-                keywords="Nexus Signal comparison, feature comparison, plan comparison, AI trading features"
+                title="Compare Plans — Free vs Premium vs Elite | Nexus Signal AI"
+                description="See exactly what's in every tier side-by-side. Signal limits, AI predictions, whale intel, backtesting — the full feature matrix."
+                keywords="Nexus Signal comparison, feature comparison, plan comparison, AI trading features, Premium vs Elite"
             />
             <BackgroundGlow />
 

@@ -2,11 +2,12 @@
 
 import React from 'react';
 import styled, { keyframes } from 'styled-components';
-import { 
+import {
     ShieldAlert, Info, AlertTriangle, TrendingDown, DollarSign,
     FileText, Clock, Mail, Globe, BarChart3, AlertCircle,
     CheckCircle, ExternalLink
 } from 'lucide-react';
+import SEO from '../components/SEO';
 
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`
@@ -501,6 +502,10 @@ const ContactItem = styled.a`
 const DisclaimerPage = () => {
     return (
         <PageContainer>
+            <SEO
+                title="Disclaimers — Risk & Limitations | Nexus Signal AI"
+                description="Important disclaimers about trade signals, AI predictions, and risk. Nexus Signal AI is not financial advice — read the limitations before trading."
+            />
             <Header>
                 <TitleContainer>
                     <IconWrapper>

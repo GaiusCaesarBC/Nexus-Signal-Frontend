@@ -2,11 +2,12 @@
 
 import React from 'react';
 import styled, { keyframes } from 'styled-components';
-import { 
+import {
     Cookie, Shield, Eye, Settings, Lock, FileText,
     CheckCircle, AlertTriangle, Info, Clock, Mail,
     Globe, ToggleLeft, Database, Target, Zap
 } from 'lucide-react';
+import SEO from '../components/SEO';
 
 // ============ ANIMATIONS ============
 const fadeIn = keyframes`
@@ -513,6 +514,10 @@ const ContactItem = styled.a`
 const CookiePolicyPage = () => {
     return (
         <PageContainer>
+            <SEO
+                title="Cookie Policy | Nexus Signal AI"
+                description="What cookies Nexus Signal AI uses, why we use them, and how to manage your preferences."
+            />
             <Header>
                 <TitleContainer>
                     <IconWrapper>

@@ -802,9 +802,9 @@ const PredictionsShowcase = () => {
     return (
         <PageContainer>
             <SEO
-                title="AI Stock Predictions | Live Trading Signals | Nexus Signal AI"
-                description="See our AI-powered stock predictions in action. Track prediction accuracy, verified performance, and get real-time trading signals from our machine learning models."
-                keywords="AI stock predictions, trading signals, stock forecast, machine learning predictions, trading accuracy, stock predictions, AI trading"
+                title="Live AI Predictions — See The System Working | Nexus Signal AI"
+                description="Watch the AI in action. Real-time predictions, accuracy stats, and verified outcomes — open to anyone, no signup required."
+                keywords="AI stock predictions, live trading signals, stock forecast, prediction accuracy, machine learning trading, public track record"
                 url="https://nexussignal.ai/predictions-showcase"
             />
             {/* Background Effects */}
