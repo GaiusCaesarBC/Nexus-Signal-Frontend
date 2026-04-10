@@ -1764,6 +1764,35 @@ const PaperTradingPage = () => {
         return chips;
     }, [symbol, currentPrice, positionType, leverage, riskMetrics]);
 
+    // ─────────────────────────────────────────────────────────────────
+    // Chart signal levels — derived from the active position when the
+    // current symbol matches an open position. Uses the REAL entry price
+    // (averagePrice) and the position's TP/SL, not the order-form fields.
+    // Falls back to the order-form values when there's no matching
+    // position (user is planning a new trade, not viewing an existing one).
+    // ─────────────────────────────────────────────────────────────────
+    const chartSignalLevels = useMemo(() => {
+        const upperSym = (symbol || '').toUpperCase();
+        const activePos = (account?.positions || []).find(
+            (p) => (p.symbol || '').toUpperCase() === upperSym && !p.isLiquidated
+        );
+
+        if (activePos) {
+            return {
+                entry: parseFloat(activePos.averagePrice) || undefined,
+                tp1: activePos.takeProfit ? parseFloat(activePos.takeProfit) : undefined,
+                sl: activePos.stopLoss ? parseFloat(activePos.stopLoss) : undefined
+            };
+        }
+
+        // No matching position — fall back to order-form fields
+        return {
+            entry: currentPrice || undefined,
+            tp1: takeProfit ? parseFloat(takeProfit) : undefined,
+            sl: stopLoss ? parseFloat(stopLoss) : undefined
+        };
+    }, [symbol, account?.positions, currentPrice, takeProfit, stopLoss]);
+
     const loadAccount = async () => {
         setLoading(true);
         try {
@@ -2295,11 +2324,7 @@ const PaperTradingPage = () => {
                                 symbol={symbol.toUpperCase()}
                                 isCrypto={type === 'crypto'}
                                 defaultTimeframe="1D"
-                                signal={{
-                                    entry: currentPrice,
-                                    tp1: takeProfit ? parseFloat(takeProfit) : undefined,
-                                    sl: stopLoss ? parseFloat(stopLoss) : undefined
-                                }}
+                                signal={chartSignalLevels}
                                 height={520}
                             />
                         ) : (
