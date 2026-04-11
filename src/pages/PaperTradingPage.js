@@ -2325,7 +2325,7 @@ const PaperTradingPage = () => {
                                 isCrypto={type === 'crypto'}
                                 defaultTimeframe="1D"
                                 signal={chartSignalLevels}
-                                height={520}
+                                height={680}
                             />
                         ) : (
                             <div style={{
