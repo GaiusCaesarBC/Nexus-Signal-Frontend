@@ -51,7 +51,7 @@ const slideUp = keyframes`
 // ─── Styled Components ──────────────────────────────────────
 const Wrap = styled.div`
     position: fixed;
-    bottom: 20px;
+    bottom: 95px;
     left: 20px;
     z-index: 9980;
     display: flex;
