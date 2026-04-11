@@ -575,10 +575,18 @@ const SocialFeed = () => {
         try {
             if (pageNum === 1) setLoading(true);
             let endpoint = '/feed';
+            let extraParams = '';
+
             if (filterType === 'trending' || filterType === 'all' || filterType === 'reactions' || filterType === 'ideas' || filterType === 'insights' || filterType === 'results') {
                 endpoint = '/feed/discover';
+                // "All Activity" should show ALL public posts without a time
+                // cutoff. Other discover-type filters (trending, reactions,
+                // ideas, etc.) keep the default 24h window.
+                const timeframe = filterType === 'all' ? 'all' : '24h';
+                extraParams = `&timeframe=${timeframe}&filter=${filterType}`;
             }
-            const response = await api.get(`${endpoint}?limit=20&skip=${(pageNum - 1) * 20}`);
+
+            const response = await api.get(`${endpoint}?limit=20&skip=${(pageNum - 1) * 20}${extraParams}`);
             const newPosts = response.data.posts || [];
             if (append) { setPosts(prev => [...prev, ...newPosts]); } else { setPosts(newPosts); }
             setHasMore(newPosts.length === 20);
