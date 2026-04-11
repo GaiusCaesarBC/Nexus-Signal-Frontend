@@ -15,8 +15,10 @@ import {
     Settings, Bell, CheckCircle, AlertCircle, TrendingUp as TrendingUpIcon,
     DollarSign as DollarIcon, Clock, ArrowUpRight, ArrowDownRight, Trophy, Twitter,
     Briefcase, BarChart3, Activity, Sparkles, Globe, Calculator, TrendingDown, MessageCircle, Award, Waves,
-    Search, Bitcoin, LineChart, UserPlus, Calendar, Building2, FileText, ArrowRightLeft, UserCog, History, Layers, Radio, Share2, Bot
+    Search, Bitcoin, LineChart, UserPlus, Calendar, Building2, FileText, ArrowRightLeft, UserCog, History, Layers, Radio, Share2, Bot,
+    Music
 } from 'lucide-react';
+import { useSpotifyPlayer } from './SpotifyPlayer';
 import nexusSignalLogo from '../assets/nexus-signal-logo.png';
 
 // ============ ANIMATIONS ============
@@ -1186,6 +1188,7 @@ const Navbar = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const { vault, gamificationData } = useGamification();
+    const { toggle: toggleSpotify } = useSpotifyPlayer();
     const searchRef = useRef(null);
     const mobileSearchRef = useRef(null);
     const searchInputRef = useRef(null);
@@ -1552,7 +1555,7 @@ const Navbar = () => {
                             <NavLink to="/dashboard" $active={location.pathname === '/dashboard'}><Home size={16} />Command Center</NavLink>
                             <NavItem data-dropdown><DropdownTrigger onClick={() => handleDropdownToggle('trading')} $open={dropdowns.trading} $active={isPathActive(navStructure.trading)}><Briefcase size={16} />Trading<ChevronDown size={14} /></DropdownTrigger>{dropdowns.trading && <DropdownMenu>{navStructure.trading.map(item => { const Icon = item.icon; return <DropdownItem key={item.path} to={item.path} $active={location.pathname === item.path}><Icon size={16} />{item.label}</DropdownItem>; })}</DropdownMenu>}</NavItem>
                             <NavItem data-dropdown><DropdownTrigger onClick={() => handleDropdownToggle('analysis')} $open={dropdowns.analysis} $active={isPathActive(navStructure.analysis)}><BarChart3 size={16} />Analysis<ChevronDown size={14} /></DropdownTrigger>{dropdowns.analysis && <DropdownMenu>{renderDropdownItems(navStructure.analysis)}</DropdownMenu>}</NavItem>
-                            <NavItem data-dropdown><DropdownTrigger onClick={() => handleDropdownToggle('community')} $open={dropdowns.community} $active={isPathActive(navStructure.community)}><Users size={16} />Community<ChevronDown size={14} /></DropdownTrigger>{dropdowns.community && <DropdownMenu>{renderDropdownItems(navStructure.community)}</DropdownMenu>}</NavItem>
+                            <NavItem data-dropdown><DropdownTrigger onClick={() => handleDropdownToggle('community')} $open={dropdowns.community} $active={isPathActive(navStructure.community)}><Users size={16} />Community<ChevronDown size={14} /></DropdownTrigger>{dropdowns.community && <DropdownMenu>{renderDropdownItems(navStructure.community)}<DropdownItem as="button" onClick={() => { toggleSpotify(); setDropdowns({ trading: false, analysis: false, community: false, pricing: false }); }} style={{ width: '100%', textAlign: 'left', cursor: 'pointer', border: 'none', background: 'transparent' }}><Music size={16} />Trading Vibes</DropdownItem></DropdownMenu>}</NavItem>
                             <NavItem data-dropdown><DropdownTrigger onClick={() => handleDropdownToggle('pricing')} $open={dropdowns.pricing} $active={isPathActive(navStructure.pricing)}><DollarSign size={16} />Pricing<ChevronDown size={14} /></DropdownTrigger>{dropdowns.pricing && <DropdownMenu>{navStructure.pricing.map(item => { const Icon = item.icon; return <DropdownItem key={item.path} to={item.path} $active={location.pathname === item.path}><Icon size={16} />{item.label}</DropdownItem>; })}</DropdownMenu>}</NavItem>
                             <NavLink to="/how-it-works" $active={location.pathname === '/how-it-works'}><BookOpen size={16} />How It Works</NavLink>
                         </NavLinks>
@@ -1627,7 +1630,7 @@ const Navbar = () => {
                                 <MobileNavLink to="/dashboard" $active={location.pathname === '/dashboard'} onClick={() => setMobileMenuOpen(false)}><Home size={22} />Command Center</MobileNavLink>
                                 <MobileNavCategory><MobileCategoryTitle><Briefcase size={16} />Trading</MobileCategoryTitle>{navStructure.trading.map(item => { const Icon = item.icon; return <MobileNavLink key={item.path} to={item.path} $active={location.pathname === item.path} onClick={() => setMobileMenuOpen(false)}><Icon size={22} />{item.label}</MobileNavLink>; })}</MobileNavCategory>
                                 <MobileNavCategory><MobileCategoryTitle><BarChart3 size={16} />Analysis & Tools</MobileCategoryTitle>{navStructure.analysis.map(item => { const Icon = item.icon; return <MobileNavLink key={item.path} to={item.path} $active={location.pathname === item.path} onClick={() => setMobileMenuOpen(false)}><Icon size={22} />{item.label}</MobileNavLink>; })}</MobileNavCategory>
-                                <MobileNavCategory><MobileCategoryTitle><Users size={16} />Community & Rewards</MobileCategoryTitle>{navStructure.community.map(item => { const Icon = item.icon; return <MobileNavLink key={item.path} to={item.path} $active={location.pathname === item.path} onClick={() => setMobileMenuOpen(false)}><Icon size={22} />{item.label}</MobileNavLink>; })}</MobileNavCategory>
+                                <MobileNavCategory><MobileCategoryTitle><Users size={16} />Community & Rewards</MobileCategoryTitle>{navStructure.community.map(item => { const Icon = item.icon; return <MobileNavLink key={item.path} to={item.path} $active={location.pathname === item.path} onClick={() => setMobileMenuOpen(false)}><Icon size={22} />{item.label}</MobileNavLink>; })}<MobileNavLink as="button" style={{ border: 'none', width: '100%' }} onClick={() => { toggleSpotify(); setMobileMenuOpen(false); }}><Music size={22} />Trading Vibes</MobileNavLink></MobileNavCategory>
                                 <Divider />
                                 <MobileNavCategory><MobileCategoryTitle><DollarSign size={16} />Pricing</MobileCategoryTitle>{navStructure.pricing.map(item => { const Icon = item.icon; return <MobileNavLink key={item.path} to={item.path} $active={location.pathname === item.path} onClick={() => setMobileMenuOpen(false)}><Icon size={22} />{item.label}</MobileNavLink>; })}</MobileNavCategory>
                                 <MobileNavLink to="/how-it-works" $active={location.pathname === '/how-it-works'} onClick={() => setMobileMenuOpen(false)}><BookOpen size={22} />How It Works</MobileNavLink>

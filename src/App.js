@@ -34,6 +34,9 @@ import { SubscriptionProvider } from './context/SubscriptionContext';
 // 🚀 Lightweight onboarding overlay
 import { OnboardingProvider, OnboardingController } from './onboarding';
 
+// 🎵 Spotify floating player
+import SpotifyPlayer, { SpotifyPlayerProvider } from './components/SpotifyPlayer';
+
 // Lazy-loaded components (loaded on-demand)
 const AIChatWidget = lazy(() => import('./components/AIChatWidget'));
 const WhaleNotification = lazy(() => import('./components/WhaleNotification'));
@@ -255,6 +258,9 @@ function AppContent() {
                 <SignalNotification />
             </Suspense>
             
+            {/* 🎵 SPOTIFY FLOATING PLAYER */}
+            <SpotifyPlayer />
+
             {/* 📊 VERCEL ANALYTICS */}
             <Analytics />
             <SpeedInsights />
@@ -276,7 +282,9 @@ function App() {
                 <VaultProvider>
                     <SubscriptionProvider>
                         <OnboardingProvider>
-                            <AppContent />
+                            <SpotifyPlayerProvider>
+                                <AppContent />
+                            </SpotifyPlayerProvider>
                         </OnboardingProvider>
                     </SubscriptionProvider>
                 </VaultProvider>
