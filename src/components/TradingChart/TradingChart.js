@@ -523,6 +523,28 @@ const TradingChart = ({
     useEffect(() => {
         if (!candleSeriesRef.current || candles.length === 0) return;
         try {
+            // Auto-detect price precision from the candle data so micro-
+            // price tokens like SHIB ($0.000006) and PEPE ($0.000004)
+            // render proper candlestick bodies instead of flat lines.
+            // We look at a sample close price and count how many decimal
+            // places are needed to represent meaningful price movement.
+            const samplePrice = candles[candles.length - 1]?.close || candles[0]?.close || 0;
+            let precision, minMove;
+            if (samplePrice > 0 && samplePrice < 0.0001) {
+                precision = 10; minMove = 0.0000000001;
+            } else if (samplePrice < 0.01) {
+                precision = 8; minMove = 0.00000001;
+            } else if (samplePrice < 1) {
+                precision = 6; minMove = 0.000001;
+            } else if (samplePrice < 100) {
+                precision = 4; minMove = 0.0001;
+            } else {
+                precision = 2; minMove = 0.01;
+            }
+            candleSeriesRef.current.applyOptions({
+                priceFormat: { type: 'price', precision, minMove }
+            });
+
             candleSeriesRef.current.setData(candles);
             volumeSeriesRef.current?.setData(volumeSeries(candles));
             // Only fit content when timeframe changes (or first load) — never on auto-refresh,
