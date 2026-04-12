@@ -2171,7 +2171,9 @@ const PaperTradingPage = () => {
             console.log(`[PaperTrading] 🔄 Refresh tick #${n}`);
             try {
                 const res = await directApi.post('/paper-trading/refresh-prices');
-                console.log(`[PaperTrading] ✅ Tick #${n}: success=${res.data?.success}, positions=${res.data?.account?.positions?.length}`);
+                const pos = res.data?.account?.positions || [];
+                console.log(`[PaperTrading] ✅ Tick #${n}: success=${res.data?.success}, positions=${pos.length}`);
+                pos.forEach(p => console.log(`  📊 ${p.symbol}: avg=$${p.averagePrice} cur=$${p.currentPrice} pnl=${p.profitLoss}`));
                 if (alive && res.data?.success && res.data.account) {
                     setAccount(res.data.account);
                 }
