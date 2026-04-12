@@ -2150,7 +2150,20 @@ const PaperTradingPage = () => {
             }
         };
         init();
-        const priceRefreshInterval = setInterval(() => { handleRefreshPrices(true); }, 15000); // 15s silent refresh
+        // Silent price refresh every 15s. Uses a direct API call instead
+        // of handleRefreshPrices to avoid stale-closure issues — the
+        // setInterval captures the function reference from mount time,
+        // and handleRefreshPrices closes over state that goes stale.
+        const priceRefreshInterval = setInterval(async () => {
+            try {
+                const res = await api.post('/paper-trading/refresh-prices');
+                if (res.data?.success && res.data.account) {
+                    setAccount(res.data.account);
+                }
+            } catch {
+                /* silent — background refresh failure is not actionable */
+            }
+        }, 15000);
         return () => { clearInterval(priceRefreshInterval); };
     }, []);
 
