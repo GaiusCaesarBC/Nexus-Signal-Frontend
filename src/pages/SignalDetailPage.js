@@ -922,11 +922,16 @@ const SignalDetailPage = () => {
                             <MapMarker style={{left:'100%'}} $c="#10b981">TP3</MapMarker>
                             <MapPrice style={{left:'100%'}} $c="#10b981">{fmtPrice(s.target)}</MapPrice>
 
-                            {/* Live price dot (only for active) */}
-                            {isActive && s.currentPrice !== s.entry && (
+                            {/* Live price dot — always show for active signals.
+                                Previously hidden when currentPrice === entry, which
+                                happens when the live price checker hasn't updated
+                                yet (currentPrice falls back to entry). That left the
+                                progress bar visually empty. Now the dot renders at
+                                the entry position in that case. */}
+                            {isActive && (
                                 <>
                                     <MapLiveLabel style={{left:`${livePct}%`}} $pos={posMove}>
-                                        {fmtPrice(s.currentPrice)}
+                                        {fmtPrice(s.currentPrice)} {s.currentPrice === s.entry ? '(at entry)' : ''}
                                     </MapLiveLabel>
                                     <MapLiveDot style={{left:`${livePct}%`}} $pos={posMove} />
                                 </>
