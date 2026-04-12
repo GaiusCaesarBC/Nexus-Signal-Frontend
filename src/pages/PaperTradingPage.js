@@ -1592,6 +1592,11 @@ const PaperTradingPage = () => {
     const toast = useToast();
     const { theme } = useTheme();
 
+    // Ref for api so setInterval always gets the current instance
+    // (api can be null at mount before auth resolves)
+    const apiRef = useRef(null);
+    useEffect(() => { apiRef.current = api; }, [api]);
+
     // State
     const [account, setAccount] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -2155,8 +2160,10 @@ const PaperTradingPage = () => {
         // setInterval captures the function reference from mount time,
         // and handleRefreshPrices closes over state that goes stale.
         const priceRefreshInterval = setInterval(async () => {
+            const currentApi = apiRef.current;
+            if (!currentApi) return; // auth not ready yet
             try {
-                const res = await api.post('/paper-trading/refresh-prices');
+                const res = await currentApi.post('/paper-trading/refresh-prices');
                 if (res.data?.success && res.data.account) {
                     setAccount(res.data.account);
                 }
