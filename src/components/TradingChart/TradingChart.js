@@ -357,11 +357,15 @@ const TradingChart = ({
 
     useEffect(() => { fetchCandles(true); }, [fetchCandles]);
 
-    // Auto-refresh for live timeframes
+    // Auto-refresh for live timeframes — faster for 1m so the chart
+    // feels live, slower for higher timeframes to reduce API load.
     useEffect(() => {
         const isIntraday = ['1m', '5m', '15m', '1h', '4h'].includes(timeframe);
         if (!isIntraday) return undefined;
-        const iv = setInterval(() => fetchCandles(false), 30000);
+        const intervalMs = timeframe === '1m' ? 10000    // 10s for 1-minute
+                         : timeframe === '5m' ? 15000    // 15s for 5-minute
+                         : 30000;                        // 30s for 15m/1h/4h
+        const iv = setInterval(() => fetchCandles(false), intervalMs);
         return () => clearInterval(iv);
     }, [timeframe, fetchCandles]);
 
