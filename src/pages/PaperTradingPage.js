@@ -2159,26 +2159,35 @@ const PaperTradingPage = () => {
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     // ─── Silent price refresh on a 15s interval ──────────────
-    // Uses the module-level `directApi` import (not useAuth's api) so
-    // there is zero closure/ref/context dependency. The axios instance
-    // is a singleton created at import time — it's always the same
-    // object with the auth interceptor already attached.
+    // Uses the module-level `directApi` import so there are zero
+    // closure dependencies. Verbose logging to diagnose the refresh
+    // issue — remove once confirmed working.
+    const refreshCountRef = useRef(0);
     useEffect(() => {
         let alive = true;
         const tick = async () => {
+            refreshCountRef.current++;
+            const n = refreshCountRef.current;
+            console.log(`[PaperTrading] 🔄 Refresh tick #${n}`);
             try {
                 const res = await directApi.post('/paper-trading/refresh-prices');
+                console.log(`[PaperTrading] ✅ Tick #${n}: success=${res.data?.success}, positions=${res.data?.account?.positions?.length}`);
                 if (alive && res.data?.success && res.data.account) {
                     setAccount(res.data.account);
                 }
             } catch (err) {
-                console.log('[PaperTrading] Silent refresh error:', err?.response?.status, err?.message);
+                console.log(`[PaperTrading] ❌ Tick #${n}:`, err?.response?.status, err?.message);
             }
         };
-        // First tick after 5s (give init time to finish), then every 15s
-        const firstTimeout = setTimeout(tick, 5000);
+        const t1 = setTimeout(tick, 3000);
         const iv = setInterval(tick, 15000);
-        return () => { alive = false; clearTimeout(firstTimeout); clearInterval(iv); };
+        console.log('[PaperTrading] ⏰ Refresh interval STARTED');
+        return () => {
+            alive = false;
+            clearTimeout(t1);
+            clearInterval(iv);
+            console.log('[PaperTrading] 🛑 Refresh interval STOPPED');
+        };
     }, []);
 
     useEffect(() => {
