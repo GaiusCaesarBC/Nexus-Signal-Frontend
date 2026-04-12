@@ -2170,10 +2170,7 @@ const PaperTradingPage = () => {
                     setAccount(res.data.account);
                 }
             } catch (err) {
-                // Log in dev only — don't spam production
-                if (process.env.NODE_ENV === 'development') {
-                    console.log('[PaperTrading] Silent refresh error:', err?.message);
-                }
+                console.log('[PaperTrading] Silent refresh error:', err?.response?.status, err?.message);
             }
         }, 15000);
         return () => clearInterval(iv);
