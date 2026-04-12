@@ -2339,7 +2339,7 @@ const PaperTradingPage = () => {
                         <StatIcon theme={theme} $background={`${account?.totalProfitLoss >= 0 ? (theme?.success || '#10b981') : (theme?.error || '#ef4444')}33`}><TrendingUp size={32} color={account?.totalProfitLoss >= 0 ? (theme?.success || '#10b981') : (theme?.error || '#ef4444')} /></StatIcon>
                         <StatLabel theme={theme}>Total Return</StatLabel>
                         <StatValue theme={theme} $color={account?.totalProfitLoss >= 0 ? (theme?.success || '#10b981') : (theme?.error || '#ef4444')}>{formatPercent(account?.totalProfitLossPercent || 0)}</StatValue>
-                        <StatChange theme={theme} $positive={account?.totalProfitLoss >= 0}>Realized + unrealized on ${formatCurrency(startingBalance)}</StatChange>
+                        <StatChange theme={theme} $positive={account?.totalProfitLoss >= 0}>Realized + unrealized on {formatCurrency(startingBalance)}</StatChange>
                     </StatCard>
                 </PortfolioOverview>
                     );
