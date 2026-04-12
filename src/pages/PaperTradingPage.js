@@ -2279,32 +2279,71 @@ const PaperTradingPage = () => {
                     </PoweredBy>
                 </Header>
 
+                {/* Compute realized vs unrealized P/L client-side so users
+                    can see exactly how much came from closed trades vs how much
+                    is still floating in open positions. */}
+                {(() => {
+                    // Realized: sum of profitLoss from orders that have a non-zero P/L
+                    // (sell, cover, auto-close — entries have P/L of 0)
+                    const realizedPL = (orders || []).reduce((sum, o) => sum + (Number(o.profitLoss) || 0), 0);
+                    // Unrealized: sum of profitLoss from open positions
+                    const unrealizedPL = (account?.positions || [])
+                        .filter(p => !p.isLiquidated)
+                        .reduce((sum, p) => sum + (Number(p.profitLoss) || 0), 0);
+                    const startingBalance = 100000 + ((account?.refillCount || 0) * 25000);
+
+                    return (
                 <PortfolioOverview>
+                    {/* 1. Portfolio Value (net worth) */}
                     <StatCard theme={theme} $borderColor={`${theme?.brand?.primary || '#00adef'}80`} $shadowColor={`${theme?.brand?.primary || '#00adef'}4D`}>
                         <StatIcon theme={theme} $background={`${theme?.brand?.primary || '#00adef'}33`}><DollarSign size={32} color={theme?.brand?.primary || '#00adef'} /></StatIcon>
                         <StatLabel theme={theme}>Portfolio Value</StatLabel>
                         <StatValue theme={theme} $color={theme?.brand?.primary || '#00adef'}>{formatCurrency(account?.portfolioValue || 0)}</StatValue>
-                        <StatChange theme={theme} $positive={account?.totalProfitLoss >= 0}>{account?.totalProfitLoss >= 0 ? <ArrowUpRight size={18} /> : <ArrowDownRight size={18} />}{formatCurrency(Math.abs(account?.totalProfitLoss || 0))}</StatChange>
+                        <StatChange theme={theme} $positive={account?.totalProfitLoss >= 0}>{account?.totalProfitLoss >= 0 ? <ArrowUpRight size={18} /> : <ArrowDownRight size={18} />}{formatCurrency(Math.abs(account?.totalProfitLoss || 0))} net</StatChange>
                     </StatCard>
-                    <StatCard theme={theme} $borderColor={`${theme?.success || '#10b981'}80`} $shadowColor={`${theme?.success || '#10b981'}4D`} $gradient={`linear-gradient(90deg, ${theme?.success || '#10b981'}, ${theme?.success || '#059669'})`}>
-                        <StatIcon theme={theme} $background={`${theme?.success || '#10b981'}33`}><Activity size={32} color={theme?.success || '#10b981'} /></StatIcon>
-                        <StatLabel theme={theme}>Total Return</StatLabel>
-                        <StatValue theme={theme} $color={account?.totalProfitLoss >= 0 ? (theme?.success || '#10b981') : (theme?.error || '#ef4444')}>{formatPercent(account?.totalProfitLossPercent || 0)}</StatValue>
-                        <StatChange theme={theme} $positive={account?.totalProfitLoss >= 0}>{account?.winningTrades || 0}W / {account?.losingTrades || 0}L</StatChange>
+
+                    {/* 2. Realized P/L — closed trades only */}
+                    <StatCard theme={theme} $borderColor={`${realizedPL >= 0 ? (theme?.success || '#10b981') : (theme?.error || '#ef4444')}80`} $shadowColor={`${realizedPL >= 0 ? (theme?.success || '#10b981') : (theme?.error || '#ef4444')}4D`} $gradient={`linear-gradient(90deg, ${realizedPL >= 0 ? (theme?.success || '#10b981') : (theme?.error || '#ef4444')}, ${realizedPL >= 0 ? '#059669' : '#dc2626'})`}>
+                        <StatIcon theme={theme} $background={`${realizedPL >= 0 ? (theme?.success || '#10b981') : (theme?.error || '#ef4444')}33`}><CheckCircle size={32} color={realizedPL >= 0 ? (theme?.success || '#10b981') : (theme?.error || '#ef4444')} /></StatIcon>
+                        <StatLabel theme={theme}>Realized P/L</StatLabel>
+                        <StatValue theme={theme} $color={realizedPL >= 0 ? (theme?.success || '#10b981') : (theme?.error || '#ef4444')}>{realizedPL >= 0 ? '+' : ''}{formatCurrency(realizedPL)}</StatValue>
+                        <StatChange theme={theme} $positive={realizedPL >= 0}>From {account?.totalTrades || 0} closed trade{(account?.totalTrades || 0) !== 1 ? 's' : ''}</StatChange>
                     </StatCard>
+
+                    {/* 3. Unrealized P/L — open positions */}
+                    <StatCard theme={theme} $borderColor={`${unrealizedPL >= 0 ? (theme?.success || '#10b981') : (theme?.error || '#ef4444')}80`} $shadowColor={`${unrealizedPL >= 0 ? (theme?.success || '#10b981') : (theme?.error || '#ef4444')}4D`} $gradient={`linear-gradient(90deg, ${unrealizedPL >= 0 ? (theme?.success || '#10b981') : (theme?.error || '#ef4444')}, ${unrealizedPL >= 0 ? '#059669' : '#dc2626'})`}>
+                        <StatIcon theme={theme} $background={`${unrealizedPL >= 0 ? (theme?.success || '#10b981') : (theme?.error || '#ef4444')}33`}><Activity size={32} color={unrealizedPL >= 0 ? (theme?.success || '#10b981') : (theme?.error || '#ef4444')} /></StatIcon>
+                        <StatLabel theme={theme}>Unrealized P/L</StatLabel>
+                        <StatValue theme={theme} $color={unrealizedPL >= 0 ? (theme?.success || '#10b981') : (theme?.error || '#ef4444')}>{unrealizedPL >= 0 ? '+' : ''}{formatCurrency(unrealizedPL)}</StatValue>
+                        <StatChange theme={theme} $positive={unrealizedPL >= 0}>{(account?.positions || []).filter(p => !p.isLiquidated).length} open position{(account?.positions || []).filter(p => !p.isLiquidated).length !== 1 ? 's' : ''}</StatChange>
+                    </StatCard>
+
+                    {/* 4. Cash Balance */}
                     <StatCard theme={theme} $borderColor={`${theme?.brand?.accent || '#8b5cf6'}80`} $shadowColor={`${theme?.brand?.accent || '#8b5cf6'}4D`} $gradient={`linear-gradient(90deg, ${theme?.brand?.accent || '#8b5cf6'}, ${theme?.brand?.accent || '#7c3aed'})`}>
                         <StatIcon theme={theme} $background={`${theme?.brand?.accent || '#8b5cf6'}33`}><BarChart3 size={32} color={theme?.brand?.accent || '#8b5cf6'} /></StatIcon>
                         <StatLabel theme={theme}>Cash Balance</StatLabel>
                         <StatValue theme={theme} $color={theme?.brand?.accent || '#8b5cf6'}>{formatCurrency(account?.cashBalance || 0)}</StatValue>
                         <StatChange theme={theme} $positive={true}>Available to trade</StatChange>
                     </StatCard>
+
+                    {/* 5. Win Rate */}
                     <StatCard theme={theme} $borderColor={`${theme?.warning || '#f59e0b'}80`} $shadowColor={`${theme?.warning || '#f59e0b'}4D`} $gradient={`linear-gradient(90deg, ${theme?.warning || '#f59e0b'}, ${theme?.warning || '#d97706'})`}>
                         <StatIcon theme={theme} $background={`${theme?.warning || '#f59e0b'}33`}><Target size={32} color={theme?.warning || '#f59e0b'} /></StatIcon>
                         <StatLabel theme={theme}>Win Rate</StatLabel>
                         <StatValue theme={theme} $color={theme?.warning || '#f59e0b'}>{account?.winRate?.toFixed(1) || 0}%</StatValue>
-                        <StatChange theme={theme} $positive={true}>{account?.totalTrades || 0} total trades</StatChange>
+                        <StatChange theme={theme} $positive={true}>{account?.winningTrades || 0}W / {account?.losingTrades || 0}L</StatChange>
+                    </StatCard>
+
+                    {/* 6. Total Return (net % on starting balance) */}
+                    <StatCard theme={theme} $borderColor={`${account?.totalProfitLoss >= 0 ? (theme?.success || '#10b981') : (theme?.error || '#ef4444')}80`} $shadowColor={`${account?.totalProfitLoss >= 0 ? (theme?.success || '#10b981') : (theme?.error || '#ef4444')}4D`}>
+                        <StatIcon theme={theme} $background={`${account?.totalProfitLoss >= 0 ? (theme?.success || '#10b981') : (theme?.error || '#ef4444')}33`}><TrendingUp size={32} color={account?.totalProfitLoss >= 0 ? (theme?.success || '#10b981') : (theme?.error || '#ef4444')} /></StatIcon>
+                        <StatLabel theme={theme}>Total Return</StatLabel>
+                        <StatValue theme={theme} $color={account?.totalProfitLoss >= 0 ? (theme?.success || '#10b981') : (theme?.error || '#ef4444')}>{formatPercent(account?.totalProfitLossPercent || 0)}</StatValue>
+                        <StatChange theme={theme} $positive={account?.totalProfitLoss >= 0}>Realized + unrealized on ${formatCurrency(startingBalance)}</StatChange>
                     </StatCard>
                 </PortfolioOverview>
+                    );
+                })()}
 
                 {/* WHY THIS TRADE — quick context strip above the terminal */}
                 {insightChips && insightChips.length > 0 && (
