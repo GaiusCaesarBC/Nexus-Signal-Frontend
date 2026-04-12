@@ -5,6 +5,7 @@ import { useLocation } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import directApi from '../api/axios'; // module-level singleton for interval use
 import { useTheme } from '../context/ThemeContext';
 import RefillAccountButton from '../components/RefillAccountButton';
 import LeverageSelector from '../components/LeverageSelector';
@@ -2158,23 +2159,27 @@ const PaperTradingPage = () => {
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     // ─── Silent price refresh on a 15s interval ──────────────
-    // Separated from the init effect so the interval lifecycle is clean.
-    // `api` is the module-level axios singleton from useAuth — it's
-    // stable across renders so it's safe in the dependency array.
+    // Uses the module-level `directApi` import (not useAuth's api) so
+    // there is zero closure/ref/context dependency. The axios instance
+    // is a singleton created at import time — it's always the same
+    // object with the auth interceptor already attached.
     useEffect(() => {
-        if (!api) return;
-        const iv = setInterval(async () => {
+        let alive = true;
+        const tick = async () => {
             try {
-                const res = await api.post('/paper-trading/refresh-prices');
-                if (res.data?.success && res.data.account) {
+                const res = await directApi.post('/paper-trading/refresh-prices');
+                if (alive && res.data?.success && res.data.account) {
                     setAccount(res.data.account);
                 }
             } catch (err) {
                 console.log('[PaperTrading] Silent refresh error:', err?.response?.status, err?.message);
             }
-        }, 15000);
-        return () => clearInterval(iv);
-    }, [api]);
+        };
+        // First tick after 5s (give init time to finish), then every 15s
+        const firstTimeout = setTimeout(tick, 5000);
+        const iv = setInterval(tick, 15000);
+        return () => { alive = false; clearTimeout(firstTimeout); clearInterval(iv); };
+    }, []);
 
     useEffect(() => {
         if (symbol && symbol.length > 0) { fetchPrice(); } else { setCurrentPrice(null); }
