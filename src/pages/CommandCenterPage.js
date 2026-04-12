@@ -16,7 +16,7 @@ import { useTheme } from '../context/ThemeContext';
 import {
     Sparkles, Brain, Activity, Target, Trophy, ChevronRight, Zap,
     ArrowUpRight, ArrowDownRight, Loader2, RefreshCw, TrendingUp,
-    TrendingDown, BarChart3, DollarSign, Eye, Bell
+    TrendingDown, BarChart3, DollarSign, Eye, Bell, Layers, Bitcoin
 } from 'lucide-react';
 import SEO from '../components/SEO';
 import TradingChart from '../components/TradingChart/TradingChart';
@@ -685,6 +685,9 @@ const CommandCenterPage = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const isMounted = useRef(true);
 
+    // Market filter: 'all' | 'stocks' | 'crypto'
+    const [marketFilter, setMarketFilter] = useState('all');
+
     const [snapshot, setSnapshot] = useState({
         loading: true,
         bestSetup: null,
@@ -966,7 +969,18 @@ const CommandCenterPage = () => {
         });
     };
 
-    const best = snapshot.bestSetup;
+    // Filter live feed + best setup by market filter (all / stocks / crypto)
+    const filteredFeed = useMemo(() => {
+        const feed = snapshot.liveFeed || [];
+        if (marketFilter === 'all') return feed;
+        return feed.filter(o =>
+            marketFilter === 'crypto' ? o.isCrypto : !o.isCrypto
+        );
+    }, [snapshot.liveFeed, marketFilter]);
+
+    const best = marketFilter === 'all'
+        ? snapshot.bestSetup
+        : (filteredFeed[0] || null);
     const isLong = best?.bias === 'long';
 
     // Performance computed values
@@ -1066,6 +1080,57 @@ const CommandCenterPage = () => {
                         </StripValue>
                     </StripTile>
                 </MarketStrip>
+
+                {/* ═══ MARKET FILTER TOGGLE ═══ */}
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '.4rem',
+                    margin: '0 0 1.25rem',
+                    padding: '.35rem',
+                    background: theme?.bg?.card || 'rgba(30, 41, 59, 0.7)',
+                    borderRadius: '12px',
+                    border: `1px solid ${theme?.border?.card || 'rgba(100, 116, 139, 0.2)'}`,
+                    width: 'fit-content',
+                    marginLeft: 'auto',
+                    marginRight: 'auto'
+                }}>
+                    {[
+                        { id: 'all',    label: 'All',    icon: <Layers size={13} /> },
+                        { id: 'stocks', label: 'Stocks', icon: <BarChart3 size={13} /> },
+                        { id: 'crypto', label: 'Crypto', icon: <Bitcoin size={13} /> },
+                    ].map(opt => (
+                        <button
+                            key={opt.id}
+                            onClick={() => setMarketFilter(opt.id)}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '.4rem',
+                                padding: '.55rem 1.1rem',
+                                borderRadius: '9px',
+                                border: 'none',
+                                cursor: 'pointer',
+                                fontSize: '.82rem',
+                                fontWeight: 700,
+                                letterSpacing: '.02em',
+                                transition: 'all .15s ease',
+                                background: marketFilter === opt.id
+                                    ? (theme?.brand?.gradient || 'linear-gradient(135deg, #00adef, #06b6d4)')
+                                    : 'transparent',
+                                color: marketFilter === opt.id
+                                    ? '#fff'
+                                    : (theme?.text?.secondary || '#94a3b8'),
+                                boxShadow: marketFilter === opt.id
+                                    ? '0 2px 12px rgba(0, 173, 237, 0.25)'
+                                    : 'none'
+                            }}
+                        >
+                            {opt.icon} {opt.label}
+                        </button>
+                    ))}
+                </div>
 
                 {/* ═══ BEST SETUP HERO ═══ */}
                 {snapshot.loading ? (
@@ -1177,12 +1242,12 @@ const CommandCenterPage = () => {
                 <TwoCol>
                     <PanelCard theme={theme}>
                         <PanelTitle $accent="#00adef"><Activity size={11} /> 🔥 LIVE OPPORTUNITY FEED</PanelTitle>
-                        {snapshot.liveFeed.length === 0 ? (
+                        {filteredFeed.length === 0 ? (
                             <div style={{ fontSize: '.78rem', color: theme?.text?.tertiary || '#64748b', textAlign: 'center', padding: '1.5rem 0' }}>
-                                No active opportunities to show.
+                                No {marketFilter !== 'all' ? marketFilter : ''} opportunities to show.
                             </div>
                         ) : (
-                            snapshot.liveFeed.slice(0, 8).map(o => {
+                            filteredFeed.slice(0, 8).map(o => {
                                 const long = o.bias === 'long';
                                 return (
                                     <FeedRow
