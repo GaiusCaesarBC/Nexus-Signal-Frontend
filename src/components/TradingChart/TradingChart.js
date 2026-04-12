@@ -12,7 +12,7 @@ import styled, { keyframes, css } from 'styled-components';
 import { createChart } from 'lightweight-charts';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
-import { Loader2, RefreshCw } from 'lucide-react';
+import { Loader2, RefreshCw, AlertTriangle } from 'lucide-react';
 import {
     sma, ema, bollinger, rsi, macd, vwap, ichimoku,
     stochastic, atr, parabolicSAR, volumeSeries
@@ -282,15 +282,44 @@ function dedupeAndSort(candles) {
 // ═══════════════════════════════════════════════════════════
 // COMPONENT
 // ═══════════════════════════════════════════════════════════
+// ─── NEW CODE START — Chart/live price mismatch detection ────────
+// When the chart data provider resolves a ticker to a different asset
+// than the live spot-price API (common with ambiguous low-cap crypto
+// tickers), the chart shows a completely wrong price history. This
+// helper detects that case so the chart can show a graceful fallback
+// instead of misleading data.
+//
+// Long-term fix: use canonical market identifiers (CoinGecko ID,
+// contract address, etc.) for crypto chart requests instead of raw
+// ticker symbols. That's a bigger rewrite — this is the safe guard
+// in the meantime.
+const MISMATCH_THRESHOLD = 0.30; // 30% relative deviation = mismatch
+
+function isChartPriceMismatched(chartLastClose, livePrice) {
+    if (chartLastClose == null || livePrice == null) return false;
+    if (!Number.isFinite(chartLastClose) || !Number.isFinite(livePrice)) return false;
+    if (chartLastClose <= 0 || livePrice <= 0) return false;
+    const relDiff = Math.abs(chartLastClose - livePrice) / livePrice;
+    return relDiff > MISMATCH_THRESHOLD;
+}
+// ─── NEW CODE END ────────────────────────────────────────────────
+
 const TradingChart = ({
     symbol,
     isCrypto = false,
     defaultTimeframe = '1D',
     signal = null,
-    height = 480
+    height = 480,
+    // NEW: optional live spot price from the caller. When provided, the
+    // chart compares its candle data against this price to detect symbol
+    // mapping mismatches (e.g. chart shows $2.95 for a $0.05 token).
+    livePrice = null
 }) => {
     const { api } = useAuth();
     const { theme } = useTheme();
+
+    // NEW: mismatch flag — true when chart data doesn't match the live price
+    const [priceMismatch, setPriceMismatch] = useState(false);
 
     const chartHostRef = useRef(null);
     const rsiHostRef = useRef(null);
@@ -324,6 +353,7 @@ const TradingChart = ({
         if (showSpinner) setLoading(true);
         else setRefreshing(true);
         setError(null);
+        setPriceMismatch(false); // reset on every fetch
 
         try {
             const sym = String(symbol).toUpperCase();
@@ -551,6 +581,23 @@ const TradingChart = ({
 
             candleSeriesRef.current.setData(candles);
             volumeSeriesRef.current?.setData(volumeSeries(candles));
+
+            // ─── NEW CODE START — Mismatch detection ─────────
+            // Compare the latest chart close to the trusted live price.
+            // If they diverge by more than MISMATCH_THRESHOLD, the chart
+            // data provider resolved this ticker to a different asset.
+            if (livePrice != null && Number.isFinite(livePrice) && livePrice > 0) {
+                const chartClose = samplePrice;
+                const mismatch = isChartPriceMismatched(chartClose, livePrice);
+                if (mismatch && process.env.NODE_ENV === 'development') {
+                    console.warn(`[TradingChart] ⚠️ Price mismatch: ${symbol} chart=$${chartClose}, live=$${livePrice}, diff=${((Math.abs(chartClose - livePrice) / livePrice) * 100).toFixed(1)}%`);
+                }
+                setPriceMismatch(mismatch);
+            } else {
+                setPriceMismatch(false);
+            }
+            // ─── NEW CODE END ────────────────────────────────
+
             // Only fit content when timeframe changes (or first load) — never on auto-refresh,
             // otherwise the user's pan/zoom gets destroyed every 30s.
             if (lastFitTfRef.current !== timeframe) {
@@ -560,7 +607,7 @@ const TradingChart = ({
         } catch (e) {
             console.error('[TradingChart] setData failed:', e);
         }
-    }, [candles, timeframe]);
+    }, [candles, timeframe, livePrice, symbol]);
 
     // ───── Sync indicator overlays ─────
     useEffect(() => {
@@ -913,7 +960,47 @@ const TradingChart = ({
             {/* Main chart */}
             <PaneWrap>
                 <ChartHost theme={theme} ref={chartHostRef} $h={height}>
-                    {(loading || error) && (
+                    {/* ─── NEW CODE START — Price mismatch fallback ─── */}
+                    {priceMismatch && !loading && (
+                        <LoadingOverlay theme={theme} style={{ background: 'rgba(10, 14, 30, 0.95)', zIndex: 5 }}>
+                            <div style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                gap: '0.75rem',
+                                padding: '2rem',
+                                textAlign: 'center',
+                                maxWidth: '380px'
+                            }}>
+                                <AlertTriangle size={36} style={{ color: '#f59e0b', opacity: 0.8 }} />
+                                <div style={{
+                                    fontSize: '1rem',
+                                    fontWeight: 800,
+                                    color: theme?.text?.primary || '#f8fafc',
+                                    lineHeight: 1.3
+                                }}>
+                                    Chart data unavailable for this symbol right now
+                                </div>
+                                <div style={{
+                                    fontSize: '0.85rem',
+                                    color: theme?.text?.secondary || '#94a3b8',
+                                    lineHeight: 1.5
+                                }}>
+                                    Live price is still accurate and your position values are unaffected.
+                                </div>
+                                <div style={{
+                                    fontSize: '0.72rem',
+                                    color: theme?.text?.tertiary || '#64748b',
+                                    lineHeight: 1.4,
+                                    fontStyle: 'italic'
+                                }}>
+                                    Some providers map low-cap crypto tickers inconsistently.
+                                </div>
+                            </div>
+                        </LoadingOverlay>
+                    )}
+                    {/* ─── NEW CODE END ─── */}
+                    {(loading || error) && !priceMismatch && (
                         <LoadingOverlay theme={theme}>
                             {loading && !error && <SpinningLoader size={22} />}
                             {loading && !error && <div>Loading {symbol} {timeframe}...</div>}

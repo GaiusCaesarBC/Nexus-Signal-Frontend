@@ -2385,6 +2385,7 @@ const PaperTradingPage = () => {
                                 defaultTimeframe="1D"
                                 signal={chartSignalLevels}
                                 height={680}
+                                livePrice={currentPrice}
                             />
                         ) : (
                             <div style={{
