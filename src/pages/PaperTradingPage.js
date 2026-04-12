@@ -1593,11 +1593,6 @@ const PaperTradingPage = () => {
     const toast = useToast();
     const { theme } = useTheme();
 
-    // Ref for api so setInterval always gets the current instance
-    // (api can be null at mount before auth resolves)
-    const apiRef = useRef(null);
-    useEffect(() => { apiRef.current = api; }, [api]);
-
     // State
     const [account, setAccount] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -2160,36 +2155,20 @@ const PaperTradingPage = () => {
 
     // ─── Silent price refresh on a 15s interval ──────────────
     // Uses the module-level `directApi` import so there are zero
-    // closure dependencies. Verbose logging to diagnose the refresh
-    // issue — remove once confirmed working.
-    const refreshCountRef = useRef(0);
+    // Silent price refresh — 15s interval using module-level axios import.
     useEffect(() => {
         let alive = true;
         const tick = async () => {
-            refreshCountRef.current++;
-            const n = refreshCountRef.current;
-            console.log(`[PaperTrading] 🔄 Refresh tick #${n}`);
             try {
                 const res = await directApi.post('/paper-trading/refresh-prices');
-                const pos = res.data?.account?.positions || [];
-                console.log(`[PaperTrading] ✅ Tick #${n}: success=${res.data?.success}, positions=${pos.length}`);
-                pos.forEach(p => console.log(`  📊 ${p.symbol}: avg=$${p.averagePrice} cur=$${p.currentPrice} pnl=${p.profitLoss}`));
                 if (alive && res.data?.success && res.data.account) {
                     setAccount(res.data.account);
                 }
-            } catch (err) {
-                console.log(`[PaperTrading] ❌ Tick #${n}:`, err?.response?.status, err?.message);
-            }
+            } catch { /* silent */ }
         };
         const t1 = setTimeout(tick, 3000);
         const iv = setInterval(tick, 15000);
-        console.log('[PaperTrading] ⏰ Refresh interval STARTED');
-        return () => {
-            alive = false;
-            clearTimeout(t1);
-            clearInterval(iv);
-            console.log('[PaperTrading] 🛑 Refresh interval STOPPED');
-        };
+        return () => { alive = false; clearTimeout(t1); clearInterval(iv); };
     }, []);
 
     useEffect(() => {
