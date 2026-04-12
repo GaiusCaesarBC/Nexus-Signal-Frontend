@@ -2155,24 +2155,29 @@ const PaperTradingPage = () => {
             }
         };
         init();
-        // Silent price refresh every 15s. Uses a direct API call instead
-        // of handleRefreshPrices to avoid stale-closure issues — the
-        // setInterval captures the function reference from mount time,
-        // and handleRefreshPrices closes over state that goes stale.
-        const priceRefreshInterval = setInterval(async () => {
-            const currentApi = apiRef.current;
-            if (!currentApi) return; // auth not ready yet
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // ─── Silent price refresh on a 15s interval ──────────────
+    // Separated from the init effect so the interval lifecycle is clean.
+    // `api` is the module-level axios singleton from useAuth — it's
+    // stable across renders so it's safe in the dependency array.
+    useEffect(() => {
+        if (!api) return;
+        const iv = setInterval(async () => {
             try {
-                const res = await currentApi.post('/paper-trading/refresh-prices');
+                const res = await api.post('/paper-trading/refresh-prices');
                 if (res.data?.success && res.data.account) {
                     setAccount(res.data.account);
                 }
-            } catch {
-                /* silent — background refresh failure is not actionable */
+            } catch (err) {
+                // Log in dev only — don't spam production
+                if (process.env.NODE_ENV === 'development') {
+                    console.log('[PaperTrading] Silent refresh error:', err?.message);
+                }
             }
         }, 15000);
-        return () => { clearInterval(priceRefreshInterval); };
-    }, []);
+        return () => clearInterval(iv);
+    }, [api]);
 
     useEffect(() => {
         if (symbol && symbol.length > 0) { fetchPrice(); } else { setCurrentPrice(null); }
