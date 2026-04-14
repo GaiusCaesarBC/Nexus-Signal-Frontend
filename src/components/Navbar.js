@@ -1329,7 +1329,7 @@ const Navbar = () => {
 
     const handleSearchSelect = (item) => {
         if (item.type === 'crypto') {
-            navigate(`/crypto/${item.coinGeckoId || item.symbol}`);
+            navigate(`/crypto/${item.symbol || item.coinGeckoId}`);
         } else {
             navigate(`/stock/${item.symbol}`);
         }
@@ -1356,7 +1356,7 @@ const Navbar = () => {
                     const response = await api.get(`/search/validate/${encodeURIComponent(searchQuery.trim())}`);
                     const validation = response.data;
                     if (validation.valid) {
-                        if (validation.type === 'crypto') navigate(`/crypto/${validation.coinGeckoId || validation.symbol}`);
+                        if (validation.type === 'crypto') navigate(`/crypto/${validation.symbol || validation.coinGeckoId}`);
                         else navigate(`/stock/${validation.symbol}`);
                     } else navigate(`/stock/${searchQuery.toUpperCase()}`);
                 } catch (error) {
