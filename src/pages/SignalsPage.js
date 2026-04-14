@@ -407,6 +407,21 @@ const RiskBadge = styled.span`
     border:1px solid ${p=>p.$r==='Low'?'rgba(16,185,129,.12)':p.$r==='Medium'?'rgba(245,158,11,.12)':'rgba(239,68,68,.12)'};
 `;
 
+// Trade style badge — colors chosen to harmonize with the existing palette
+// (cyan/purple/amber/slate) without introducing a new semantic.
+const TRADE_STYLE_COLORS = {
+    'Intraday':   { bg: 'rgba(0,173,237,.08)',   fg: '#00adef', bc: 'rgba(0,173,237,.18)' },
+    'Day Trade':  { bg: 'rgba(139,92,246,.08)',  fg: '#a78bfa', bc: 'rgba(139,92,246,.18)' },
+    'Swing':      { bg: 'rgba(245,158,11,.08)',  fg: '#f59e0b', bc: 'rgba(245,158,11,.18)' },
+    'Long-Term':  { bg: 'rgba(100,116,139,.1)',  fg: '#94a3b8', bc: 'rgba(100,116,139,.2)' },
+};
+const TradeStyleBadge = styled.span`
+    padding:.12rem .4rem;border-radius:3px;font-size:.52rem;font-weight:700;text-transform:uppercase;letter-spacing:.3px;
+    background:${p=>TRADE_STYLE_COLORS[p.$style]?.bg || 'rgba(100,116,139,.08)'};
+    color:${p=>TRADE_STYLE_COLORS[p.$style]?.fg || '#94a3b8'};
+    border:1px solid ${p=>TRADE_STYLE_COLORS[p.$style]?.bc || 'rgba(100,116,139,.15)'};
+`;
+
 // ─── Sidebar ─────────────────────────────────────────────
 const SidebarCard = styled.div`
     background:rgba(12,16,32,.92);border:1px solid rgba(255,255,255,.06);
@@ -657,16 +672,35 @@ function buildSignal(raw, index, totalCount) {
     const msLeft = expires - now;
     const urgency = msLeft <= 0 ? 'expired' : msLeft < 3600000 ? 'urgent' : msLeft < 86400000 ? 'soon' : 'normal';
 
+    // Trade style — derived from forecast horizon (days) + target distance + volatility.
+    // Backend doesn't yet emit this field; we classify on the client so users can
+    // filter immediately. If the backend later supplies `raw.tradeStyle`, prefer it.
+    const targetDistPct = entry > 0 ? Math.abs((target - entry) / entry * 100) : 0;
+    let tradeStyle;
+    if (raw.tradeStyle && TRADE_STYLE_KEYS.includes(raw.tradeStyle)) {
+        tradeStyle = raw.tradeStyle;
+    } else if (days <= 1 && volatility === 'high' && targetDistPct <= 3) {
+        tradeStyle = 'Intraday';
+    } else if (days <= 1) {
+        tradeStyle = 'Day Trade';
+    } else if (days <= 14) {
+        tradeStyle = 'Swing';
+    } else {
+        tradeStyle = 'Long-Term';
+    }
+
     return {
         id: raw._id || `sig-${index}`,
         symbol: sym, fullSymbol: raw.symbol, crypto, long, conf, status,
         entry, target, currentPrice, sl, tp1, tp2, tp3, rr, riskLevel,
         movePct, tradeScore, tradeNum, reasoning, prox, urgency,
-        isWin, resultText, days,
+        isWin, resultText, days, tradeStyle,
         signalStrength, strengthColor, strengthPct, sentimentTag, regime, factors,
         createdAt: raw.createdAt, expiresAt: raw.expiresAt, resultAt: raw.resultAt,
     };
 }
+
+const TRADE_STYLE_KEYS = ['Intraday', 'Day Trade', 'Swing', 'Long-Term'];
 
 // ═══════════════════════════════════════════════════════════
 // COMPONENT
@@ -684,6 +718,7 @@ const SignalsPage = () => {
 
     const [signals, setSignals] = useState([]);
     const [filter, setFilter] = useState('all');
+    const [tradeStyle, setTradeStyle] = useState('all');
     const [refreshing, setRefreshing] = useState(false);
     const [lastUpdated, setLastUpdated] = useState(null);
     const [secSinceUpdate, setSecSinceUpdate] = useState(0);
@@ -735,9 +770,13 @@ const SignalsPage = () => {
     const qualified = signals.filter(s => s.conf >= 55 || s.status === 'closed');
 
     // Asset filter
-    const assetFiltered = assetTab === 'stocks' ? qualified.filter(s => !s.crypto)
+    const preStyle = assetTab === 'stocks' ? qualified.filter(s => !s.crypto)
         : assetTab === 'crypto' ? qualified.filter(s => s.crypto)
         : qualified;
+
+    // Trade-style filter — applied before everything downstream so the featured
+    // card, groupings, and counts all respect the selected style.
+    const assetFiltered = tradeStyle === 'all' ? preStyle : preStyle.filter(s => s.tradeStyle === tradeStyle);
 
     // Sort by score
     const sorted = [...assetFiltered].sort((a, b) => {
@@ -789,6 +828,16 @@ const SignalsPage = () => {
         short: feedSignals.filter(s => !s.long).length,
         closed: recentClosed.length,
         archive: archivedClosed.length,
+    };
+
+    // Trade-style counts — computed from the asset-filtered pool so the numbers
+    // reflect what the user would see if they picked that style.
+    const styleCounts = {
+        all: preStyle.length,
+        'Intraday':  preStyle.filter(s => s.tradeStyle === 'Intraday').length,
+        'Day Trade': preStyle.filter(s => s.tradeStyle === 'Day Trade').length,
+        'Swing':     preStyle.filter(s => s.tradeStyle === 'Swing').length,
+        'Long-Term': preStyle.filter(s => s.tradeStyle === 'Long-Term').length,
     };
 
     // Activity feed for sidebar
@@ -910,6 +959,26 @@ const SignalsPage = () => {
                     </FilterGroup>
                 </ControlsRow>
 
+                {/* ═══ TRADE STYLE FILTER ═══ */}
+                <ControlsRow style={{marginTop:'-.25rem'}}>
+                    <div style={{fontSize:'.65rem',color:'#475569',fontWeight:700,textTransform:'uppercase',letterSpacing:'.06em',marginRight:'.25rem'}}>
+                        Trade Style
+                    </div>
+                    <FilterGroup>
+                        {[
+                            { key: 'all',       label: 'All' },
+                            { key: 'Intraday',  label: 'Intraday' },
+                            { key: 'Day Trade', label: 'Day Trade' },
+                            { key: 'Swing',     label: 'Swing Trade' },
+                            { key: 'Long-Term', label: 'Long-Term Investment' },
+                        ].map(f => (
+                            <FilterBtn key={f.key} $active={tradeStyle===f.key} onClick={() => setTradeStyle(f.key)}>
+                                {f.label}{styleCounts[f.key] > 0 && <span style={{opacity:.5,marginLeft:3}}>({styleCounts[f.key]})</span>}
+                            </FilterBtn>
+                        ))}
+                    </FilterGroup>
+                </ControlsRow>
+
                 <Grid>
                     <MainCol>
                         {/* ═══ SECTION 4: FEATURED SIGNAL ═══ */}
@@ -931,6 +1000,11 @@ const SignalsPage = () => {
                                                     <FeaturedMetaItem>
                                                         <RiskBadge $r={featured.riskLevel}>{featured.riskLevel} Risk</RiskBadge>
                                                     </FeaturedMetaItem>
+                                                    {featured.tradeStyle && (
+                                                        <FeaturedMetaItem>
+                                                            <TradeStyleBadge $style={featured.tradeStyle}>{featured.tradeStyle}</TradeStyleBadge>
+                                                        </FeaturedMetaItem>
+                                                    )}
                                                     <FeaturedMetaItem>R:R 1:{featured.rr}</FeaturedMetaItem>
                                                     <FeaturedMetaItem>{featured.crypto ? 'Crypto' : 'Stock'}</FeaturedMetaItem>
                                                     <FeaturedMetaItem><Clock size={11}/> Opened {timeAgo(featured.createdAt)}</FeaturedMetaItem>
@@ -1189,6 +1263,7 @@ const SignalCard = ({ s, i, navigate, setCopyModal, isPremium }) => {
                             {s.long ? 'LONG' : 'SHORT'}
                         </CardDir>
                         <RiskBadge $r={s.riskLevel}>{s.riskLevel}</RiskBadge>
+                        {s.tradeStyle && <TradeStyleBadge $style={s.tradeStyle}>{s.tradeStyle === 'Long-Term' ? 'Long-Term' : s.tradeStyle === 'Swing' ? 'Swing' : s.tradeStyle}</TradeStyleBadge>}
                     </CardSymbolGroup>
                     <CardRightGroup>
                         <CardConfidence $val={s.strengthPct} style={{color: s.strengthColor}}>{s.strengthPct}%</CardConfidence>
