@@ -175,26 +175,7 @@ const LandingPageV2 = () => {
 
             <Divider/>
 
-            {/* ═══ REAL PERFORMANCE ═══ */}
-            <Section>
-                <SectionTitle>Real Trades. Real Results. Fully Transparent.</SectionTitle>
-                <SectionSub>Every trade is automatically tracked and verified on-platform. No manual edits. No cherry-picking.</SectionSub>
-
-                <PerfGrid>
-                    <PerfCard $d="0s"><PerfVal $c="#00adef">{stats?.total || '250+'}</PerfVal><PerfLabel>Total Trades Tracked</PerfLabel></PerfCard>
-                    <PerfCard $d=".05s"><PerfVal $c="#10b981">{stats?.wins || '100+'}</PerfVal><PerfLabel>Winning Trades</PerfLabel></PerfCard>
-                    <PerfCard $d=".1s"><PerfVal $c={stats?.winRate >= 50 ? '#10b981' : '#f59e0b'}>{stats?.winRate || '55'}%</PerfVal><PerfLabel>Verified Win Rate</PerfLabel></PerfCard>
-                    <PerfCard $d=".15s"><PerfVal $c="#e2e8f0">{stats?.active || '20'}</PerfVal><PerfLabel>Active Signals Now</PerfLabel></PerfCard>
-                </PerfGrid>
-
-                <div style={{textAlign:'center',marginTop:'1.5rem'}}>
-                    <PrimaryBtn onClick={goPerf} style={{margin:'0 auto'}}><Activity size={16}/> Explore Full Track Record <ArrowRight size={14}/></PrimaryBtn>
-                </div>
-            </Section>
-
-            <Divider/>
-
-            {/* ═══ HOW IT WORKS ═══ */}
+            {/* ═══ HOW IT WORKS (top-of-page summary) ═══ */}
             <Section>
                 <SectionTitle>From Signal to Trade in Under 60 Seconds</SectionTitle>
                 <SectionSub>No complexity. No learning curve. Just data-driven trade setups.</SectionSub>
@@ -216,6 +197,29 @@ const LandingPageV2 = () => {
                         <StepDesc>Paper trade or follow the signal. Performance is tracked publicly — wins and losses. No hiding.</StepDesc>
                     </Step>
                 </Steps>
+
+                <div style={{textAlign:'center',marginTop:'1.5rem'}}>
+                    <SecondaryBtn onClick={() => navigate('/how-it-works')} style={{margin:'0 auto'}}>See detailed walkthrough <ArrowRight size={14}/></SecondaryBtn>
+                </div>
+            </Section>
+
+            <Divider/>
+
+            {/* ═══ REAL PERFORMANCE ═══ */}
+            <Section>
+                <SectionTitle>Real Trades. Real Results. Fully Transparent.</SectionTitle>
+                <SectionSub>Every trade is automatically tracked and verified on-platform. No manual edits. No cherry-picking.</SectionSub>
+
+                <PerfGrid>
+                    <PerfCard $d="0s"><PerfVal $c="#00adef">{stats?.total || '250+'}</PerfVal><PerfLabel>Total Trades Tracked</PerfLabel></PerfCard>
+                    <PerfCard $d=".05s"><PerfVal $c="#10b981">{stats?.wins || '100+'}</PerfVal><PerfLabel>Winning Trades</PerfLabel></PerfCard>
+                    <PerfCard $d=".1s"><PerfVal $c={stats?.winRate >= 50 ? '#10b981' : '#f59e0b'}>{stats?.winRate || '55'}%</PerfVal><PerfLabel>Verified Win Rate</PerfLabel></PerfCard>
+                    <PerfCard $d=".15s"><PerfVal $c="#e2e8f0">{stats?.active || '20'}</PerfVal><PerfLabel>Active Signals Now</PerfLabel></PerfCard>
+                </PerfGrid>
+
+                <div style={{textAlign:'center',marginTop:'1.5rem'}}>
+                    <PrimaryBtn onClick={goPerf} style={{margin:'0 auto'}}><Activity size={16}/> Explore Full Track Record <ArrowRight size={14}/></PrimaryBtn>
+                </div>
             </Section>
 
             <Divider/>
