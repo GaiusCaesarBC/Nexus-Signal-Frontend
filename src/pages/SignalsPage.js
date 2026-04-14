@@ -672,21 +672,26 @@ function buildSignal(raw, index, totalCount) {
     const msLeft = expires - now;
     const urgency = msLeft <= 0 ? 'expired' : msLeft < 3600000 ? 'urgent' : msLeft < 86400000 ? 'soon' : 'normal';
 
-    // Trade style — derived from forecast horizon (days) + target distance + volatility.
-    // Backend doesn't yet emit this field; we classify on the client so users can
-    // filter immediately. If the backend later supplies `raw.tradeStyle`, prefer it.
+    // Trade style — derived from price-move geometry. Backend gives every signal
+    // the same expiry window so `days` alone doesn't differentiate; SL and target
+    // distance (as % of entry) reflect the actual setup type and DO vary per signal.
+    //   Intraday  : tight SL (≤1.5%) + close target (≤3%)   → scalp
+    //   Day Trade : moderate SL (≤3%) + target ≤6%           → 1-session move
+    //   Swing     : typical multi-day setups, 3–15% target
+    //   Long-Term : wide target (>15%) OR very low volatility with wide SL
     const targetDistPct = entry > 0 ? Math.abs((target - entry) / entry * 100) : 0;
+    const slDistPct = slPct;
     let tradeStyle;
     if (raw.tradeStyle && TRADE_STYLE_KEYS.includes(raw.tradeStyle)) {
         tradeStyle = raw.tradeStyle;
-    } else if (days <= 1 && volatility === 'high' && targetDistPct <= 3) {
-        tradeStyle = 'Intraday';
-    } else if (days <= 1) {
-        tradeStyle = 'Day Trade';
-    } else if (days <= 14) {
-        tradeStyle = 'Swing';
-    } else {
+    } else if (targetDistPct > 15 || (volatility === 'low' && slDistPct > 4)) {
         tradeStyle = 'Long-Term';
+    } else if (slDistPct <= 1.5 && targetDistPct <= 3) {
+        tradeStyle = 'Intraday';
+    } else if (slDistPct <= 3 && targetDistPct <= 6) {
+        tradeStyle = 'Day Trade';
+    } else {
+        tradeStyle = 'Swing';
     }
 
     return {
