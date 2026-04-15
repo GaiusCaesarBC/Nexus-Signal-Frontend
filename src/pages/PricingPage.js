@@ -1279,6 +1279,24 @@ const PricingPage = () => {
         elite: { monthly: 125, yearly: 1200 }
     };
 
+    // Get the appropriate CTA button text based on user's current plan
+    const getCtaText = (planId) => {
+        if (currentPlan && currentPlan !== 'free' && currentPlan !== planId) {
+            // User is upgrading/downgrading to a different paid plan
+            const planNames = { starter: 'Starter', pro: 'Pro', premium: 'Premium', elite: 'Elite' };
+            return `Upgrade to ${planNames[planId] || planId}`;
+        }
+        // Default CTA text
+        const planCtas = {
+            free: user ? 'Go to Dashboard' : 'Start Free',
+            starter: 'Unlock Starter',
+            pro: 'Unlock Pro',
+            premium: 'Unlock Premium',
+            elite: 'Go Elite'
+        };
+        return planCtas[planId] || 'Subscribe';
+    };
+
     // Launch promo: 25% off for 30 days (expires May 1, 2026)
     const LAUNCH_PROMO_END = new Date('2026-05-01T00:00:00Z');
     const isLaunchPromo = new Date() < LAUNCH_PROMO_END;
@@ -1343,11 +1361,49 @@ const PricingPage = () => {
 
         try {
             const priceId = PRICE_IDS[plan];
-            const response = await api.post('/stripe/create-checkout-session', { priceId });
-            window.location.href = response.data.url;
+            
+            // Check if user has an active subscription (upgrade path)
+            if (currentPlan && currentPlan !== 'free' && currentPlan !== plan) {
+                // This is an upgrade/downgrade - use upgrade endpoint
+                console.log(`[Pricing] Upgrading from ${currentPlan} to ${plan}`);
+                const response = await api.post('/stripe/upgrade-subscription', { newPriceId: priceId });
+                
+                if (response.data.success) {
+                    toast.success(
+                        response.data.proration.message, 
+                        'Plan Updated'
+                    );
+                    await refreshUser();
+                    // Scroll to show the updated plan
+                    setTimeout(() => {
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }, 500);
+                } else {
+                    toast.error(response.data.error || 'Failed to update plan', 'Error');
+                }
+            } else {
+                // This is a new purchase - use checkout
+                console.log(`[Pricing] Creating new subscription for ${plan}`);
+                const response = await api.post('/stripe/create-checkout-session', { priceId });
+                window.location.href = response.data.url;
+            }
         } catch (error) {
-            console.error('Checkout error:', error);
-            toast.error('Failed to start checkout. Please try again.', 'Error');
+            console.error('Subscription error:', error);
+            
+            // Check if error indicates no active subscription (should create new checkout)
+            if (error.response?.data?.requiresNewCheckout) {
+                try {
+                    const priceId = PRICE_IDS[plan];
+                    const response = await api.post('/stripe/create-checkout-session', { priceId });
+                    window.location.href = response.data.url;
+                } catch (checkoutError) {
+                    console.error('Checkout error:', checkoutError);
+                    toast.error('Failed to start checkout. Please try again.', 'Error');
+                }
+            } else {
+                toast.error(error.response?.data?.error || 'Failed to update subscription. Please try again.', 'Error');
+            }
+        } finally {
             setLoading(null);
         }
     };
@@ -1744,6 +1800,24 @@ const PricingPage = () => {
                                 </ComparisonBadge>
                             )}
 
+                            // Get the appropriate CTA button text based on user's current plan
+    const getCtaText = (planId) => {
+        if (currentPlan && currentPlan !== 'free' && currentPlan !== planId) {
+            // User is upgrading/downgrading to a different paid plan
+            const planNames = { starter: 'Starter', pro: 'Pro', premium: 'Premium', elite: 'Elite' };
+            return `Upgrade to ${planNames[planId] || planId}`;
+        }
+        // Default CTA text
+        const planCtas = {
+            free: user ? 'Go to Dashboard' : 'Start Free',
+            starter: 'Unlock Starter',
+            pro: 'Unlock Pro',
+            premium: 'Unlock Premium',
+            elite: 'Go Elite'
+        };
+        return planCtas[planId] || 'Subscribe';
+    };
+
                             {isCurrentPlan(plan.id) ? (
                                 <ActivePlanButton>
                                     <CheckCircle size={18} />
@@ -1767,7 +1841,7 @@ const PricingPage = () => {
                                             }}
                                         />
                                     )}
-                                    {loading === plan.id ? 'Processing...' : plan.cta}
+                                    {loading === plan.id ? 'Processing...' : getCtaText(plan.id)}
                                     <ArrowRight size={16} />
                                 </CTAButton>
                             )}
