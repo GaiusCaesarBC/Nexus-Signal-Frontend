@@ -672,40 +672,57 @@ function buildSignal(raw, index, totalCount) {
     const msLeft = expires - now;
     const urgency = msLeft <= 0 ? 'expired' : msLeft < 3600000 ? 'urgent' : msLeft < 86400000 ? 'soon' : 'normal';
 
-    // Trade style — derived from price-move geometry. Backend gives every signal
-    // the same expiry window so `days` alone doesn't differentiate; SL and target
-    // distance (as % of entry) reflect the actual setup type and DO vary per signal.
-    //   Intraday  : tight SL (≤1.5%) + close target (≤3%)   → scalp
-    //   Day Trade : moderate SL (≤3%) + target ≤6%           → 1-session move
-    //   Swing     : typical multi-day setups, 3–15% target
-    //   Long-Term : wide target (>15%) OR very low volatility with wide SL
+    // Trade style — per-signal move-size score (target distance + RR). Final
+    // bucketing happens feed-relative (quartiles) after normalization, so the
+    // four styles always have non-empty populations regardless of whatever
+    // SL/target defaults the backend uses.
     const targetDistPct = entry > 0 ? Math.abs((target - entry) / entry * 100) : 0;
-    const slDistPct = slPct;
-    let tradeStyle;
-    if (raw.tradeStyle && TRADE_STYLE_KEYS.includes(raw.tradeStyle)) {
-        tradeStyle = raw.tradeStyle;
-    } else if (targetDistPct > 15 || (volatility === 'low' && slDistPct > 4)) {
-        tradeStyle = 'Long-Term';
-    } else if (slDistPct <= 1.5 && targetDistPct <= 3) {
-        tradeStyle = 'Intraday';
-    } else if (slDistPct <= 3 && targetDistPct <= 6) {
-        tradeStyle = 'Day Trade';
-    } else {
-        tradeStyle = 'Swing';
-    }
+    const styleScore = targetDistPct + (parseFloat(rr) || 2);
+    const tradeStyle = raw.tradeStyle && TRADE_STYLE_KEYS.includes(raw.tradeStyle)
+        ? raw.tradeStyle
+        : null; // assigned later by assignTradeStyles()
 
     return {
         id: raw._id || `sig-${index}`,
         symbol: sym, fullSymbol: raw.symbol, crypto, long, conf, status,
         entry, target, currentPrice, sl, tp1, tp2, tp3, rr, riskLevel,
         movePct, tradeScore, tradeNum, reasoning, prox, urgency,
-        isWin, resultText, days, tradeStyle,
+        isWin, resultText, days, tradeStyle, styleScore,
         signalStrength, strengthColor, strengthPct, sentimentTag, regime, factors,
         createdAt: raw.createdAt, expiresAt: raw.expiresAt, resultAt: raw.resultAt,
     };
 }
 
 const TRADE_STYLE_KEYS = ['Intraday', 'Day Trade', 'Swing', 'Long-Term'];
+
+// Feed-relative bucketing: rank signals by styleScore (target distance + RR)
+// and split into quartiles. Smallest moves → Intraday; largest → Long-Term.
+// This adapts to whatever distribution the backend produces, so users always
+// see all four buckets populated (assuming there are ≥4 signals).
+// Signals with a backend-supplied tradeStyle keep theirs.
+function assignTradeStyles(signals) {
+    const ranked = signals
+        .filter(s => !s.tradeStyle)
+        .slice()
+        .sort((a, b) => (a.styleScore || 0) - (b.styleScore || 0));
+    const n = ranked.length;
+    if (n === 0) return signals;
+
+    const cut1 = Math.floor(n * 0.25);
+    const cut2 = Math.floor(n * 0.50);
+    const cut3 = Math.floor(n * 0.75);
+
+    const styleById = new Map();
+    ranked.forEach((s, i) => {
+        const style = i < cut1 ? 'Intraday'
+                    : i < cut2 ? 'Day Trade'
+                    : i < cut3 ? 'Swing'
+                    : 'Long-Term';
+        styleById.set(s.id, style);
+    });
+
+    return signals.map(s => s.tradeStyle ? s : { ...s, tradeStyle: styleById.get(s.id) || 'Swing' });
+}
 
 // ═══════════════════════════════════════════════════════════
 // COMPONENT
@@ -775,9 +792,13 @@ const SignalsPage = () => {
     const qualified = signals.filter(s => s.conf >= 55 || s.status === 'closed');
 
     // Asset filter
-    const preStyle = assetTab === 'stocks' ? qualified.filter(s => !s.crypto)
+    const assetPool = assetTab === 'stocks' ? qualified.filter(s => !s.crypto)
         : assetTab === 'crypto' ? qualified.filter(s => s.crypto)
         : qualified;
+
+    // Bucket trade styles by quartile of the asset-filtered pool so the four
+    // styles always have entries regardless of backend SL/target defaults.
+    const preStyle = assignTradeStyles(assetPool);
 
     // Trade-style filter — applied before everything downstream so the featured
     // card, groupings, and counts all respect the selected style.
