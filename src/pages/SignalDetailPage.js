@@ -1,6 +1,6 @@
 // client/src/pages/SignalDetailPage.js — Trade Decision Page (Redesigned)
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
 import { useSubscription } from '../context/SubscriptionContext';
 import { useAuth } from '../context/AuthContext';
@@ -98,6 +98,21 @@ const StatusTag = styled.span`
     ${p=>p.$s==='active'&&'background:rgba(0,173,237,.08);color:#0ea5e9;border:1px solid rgba(0,173,237,.15);'}
     ${p=>p.$s==='new'&&'background:rgba(16,185,129,.1);color:#10b981;border:1px solid rgba(16,185,129,.2);'}
     ${p=>p.$s==='closed'&&'background:rgba(100,116,139,.08);color:#94a3b8;border:1px solid rgba(100,116,139,.15);'}
+`;
+
+// ─── Direction Mismatch Warning ───────────────────────────
+const MismatchBanner = styled.div`
+    background:linear-gradient(135deg,rgba(245,158,11,.15),rgba(239,68,68,.1));
+    border:1px solid rgba(245,158,11,.3);
+    border-radius:12px;
+    padding:1rem;
+    margin-bottom:1rem;
+    display:flex;
+    align-items:center;
+    gap:.75rem;
+    color:#fbbf24;
+    font-size:.9rem;
+    animation:${fadeIn} .3s ease-out;
 `;
 
 // ─── Section 2: Quick Trade Overview ─────────────────────
@@ -415,9 +430,18 @@ const Loading = styled.div`text-align:center;padding:4rem;color:#475569;font-siz
 const SignalDetailPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
     const { api } = useAuth();
     const { hasPlanAccess } = useSubscription();
     const isPremium = hasPlanAccess('starter');
+
+    // Get pattern context from navigation state (if coming from PatternIntelligence)
+    const patternContext = location.state?.patternBias ? {
+        bias: location.state.patternBias,
+        label: location.state.patternLabel,
+        score: location.state.patternScore,
+        stage: location.state.patternStage
+    } : null;
 
     const [signal, setSignal] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -425,6 +449,7 @@ const SignalDetailPage = () => {
     const [copyModal, setCopyModal] = useState(false);
     const [tickerInfo, setTickerInfo] = useState(null);
     const [tickerLoading, setTickerLoading] = useState(false);
+    const [directionMismatch, setDirectionMismatch] = useState(false);
 
     // Fetch global stats for social proof
     useEffect(() => {
@@ -473,6 +498,17 @@ const SignalDetailPage = () => {
     useEffect(() => { fetchSignal(); }, [fetchSignal]);
     // Refresh price every 30s
     useEffect(() => { const iv = setInterval(() => fetchSignal(), 30000); return () => clearInterval(iv); }, [fetchSignal]);
+
+    // Check for direction mismatch if coming from Pattern Intelligence
+    useEffect(() => {
+        if (!signal || !patternContext) return;
+        const signalLong = signal.direction === 'UP';
+        const patternLong = patternContext.bias === 'long';
+        if (signalLong !== patternLong) {
+            setDirectionMismatch(true);
+            console.warn(`⚠️ Direction mismatch: Pattern says ${patternContext.bias}, but signal is ${signal.direction}`);
+        }
+    }, [signal, patternContext]);
 
     // Fetch ticker info (volume / market cap / etc) once we know the symbol
     useEffect(() => {
@@ -842,6 +878,16 @@ const SignalDetailPage = () => {
                         {isActive && <MetaItem><Timer size={13}/> {timeLeft(s.expiresAt)}</MetaItem>}
                     </MetaRow>
                 </DecisionHeader>
+
+                {/* ═══ DIRECTION MISMATCH WARNING ═══ */}
+                {directionMismatch && patternContext && (
+                    <MismatchBanner>
+                        <AlertTriangle size={18} />
+                        <div>
+                            <strong>⚠️ Pattern Direction Mismatch:</strong> The pattern detector found a {patternContext.bias === 'long' ? 'BULLISH' : 'BEARISH'} {patternContext.label}, but this signal is for a {signal.long ? 'LONG' : 'SHORT'} position. Review the chart pattern before trading.
+                        </div>
+                    </MismatchBanner>
+                )}
 
                 {/* ═══ SECTION 2: QUICK TRADE OVERVIEW ═══ */}
                 <OverviewCard>

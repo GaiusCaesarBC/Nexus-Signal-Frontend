@@ -808,8 +808,31 @@ const PatternIntelligencePage = () => {
     }, [fetchData]);
 
     const goToTrade = (p) => {
-        if (p.signalId) navigate(`/signal/${p.signalId}`);
-        else navigate(p.isCrypto ? `/crypto/${p.symbol}` : `/stock/${p.symbol}`);
+        // If there's a signal, navigate to it with pattern context
+        // The signal page will verify direction alignment and show the pattern view
+        if (p.signalId) {
+            navigate(`/signal/${p.signalId}`, {
+                state: {
+                    patternBias: p.bias,
+                    patternLabel: p.patternLabel,
+                    patternScore: p.patternScore,
+                    patternStage: p.stage
+                }
+            });
+        } else {
+            // No signal found, go to the asset page with pattern info
+            navigate(p.isCrypto ? `/crypto/${p.symbol}` : `/stock/${p.symbol}`, {
+                state: {
+                    pattern: {
+                        bias: p.bias,
+                        label: p.patternLabel,
+                        score: p.patternScore,
+                        confidence: p.confidence,
+                        stage: p.stage
+                    }
+                }
+            });
+        }
     };
 
     const openContextMenu = (e, pattern) => {
