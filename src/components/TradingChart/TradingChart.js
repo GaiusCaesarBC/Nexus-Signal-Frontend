@@ -347,7 +347,23 @@ const TradingChart = ({
     const [error, setError] = useState(null);
     const [refreshing, setRefreshing] = useState(false);
 
-    // ───── Fetch candles ─────
+    // ───── Fetch candles with integrity checks and provider fallback ─────
+    const KNOWN_SYMBOL_PROVIDER_MAP = {
+        // Example: 'AIOT': 'binance',
+        // Add more known symbol-provider overrides as needed
+    };
+
+    // Helper: check if candles are sparse (e.g., missing >30% of expected bars for intraday)
+    function isSparseIntradayCandles(candles, tf) {
+        if (!candles || candles.length < 2) return true;
+        const tfMap = { '1m': 60, '5m': 300, '15m': 900, '1h': 3600, '4h': 14400 };
+        const sec = tfMap[tf];
+        if (!sec) return false;
+        const times = candles.map(c => c.time).sort((a, b) => a - b);
+        const expected = Math.floor((times[times.length - 1] - times[0]) / sec) + 1;
+        return candles.length < expected * 0.7; // <70% of expected bars
+    }
+
     const fetchCandles = useCallback(async (showSpinner = true) => {
         if (!symbol) return;
         if (showSpinner) setLoading(true);
@@ -355,35 +371,59 @@ const TradingChart = ({
         setError(null);
         setPriceMismatch(false); // reset on every fetch
 
-        try {
-            const sym = String(symbol).toUpperCase();
-            const path = `/chart/${encodeURIComponent(sym)}/${encodeURIComponent(timeframe)}?_t=${Date.now()}`;
-            const res = api
-                ? await api.get(path)
-                : await (await fetch(`${API_URL}${path}`)).json().then(d => ({ data: d }));
+        let triedFallback = false;
+        let providerOverride = KNOWN_SYMBOL_PROVIDER_MAP[String(symbol).toUpperCase()] || null;
+        let lastError = null;
 
-            const raw = res?.data?.data || res?.data || [];
-            if (!Array.isArray(raw) || raw.length === 0) {
-                setCandles([]);
-                setError('No chart data available for this symbol or timeframe.');
+        for (let attempt = 0; attempt < 2; ++attempt) {
+            try {
+                const sym = String(symbol).toUpperCase();
+                let path = `/chart/${encodeURIComponent(sym)}/${encodeURIComponent(timeframe)}?_t=${Date.now()}`;
+                if (providerOverride) path += `&provider=${providerOverride}`;
+                const res = api
+                    ? await api.get(path)
+                    : await (await fetch(`${API_URL}${path}`)).json().then(d => ({ data: d }));
+
+                const raw = res?.data?.data || res?.data || [];
+                if (!Array.isArray(raw) || raw.length === 0) {
+                    setCandles([]);
+                    setError('No chart data available for this symbol or timeframe.');
+                    return;
+                }
+                const cleaned = dedupeAndSort(raw.map(normalizeCandle).filter(Boolean));
+                if (cleaned.length === 0) {
+                    setError('No valid candle data returned.');
+                    setCandles([]);
+                    return;
+                }
+                // Sparse intraday fallback: if crypto, intraday, and sparse, try fallback provider if not already tried
+                const isIntraday = ['1m', '5m', '15m', '1h', '4h'].includes(timeframe);
+                if (
+                    isCrypto && isIntraday && isSparseIntradayCandles(cleaned, timeframe) &&
+                    !triedFallback && !providerOverride
+                ) {
+                    // Try fallback provider (e.g., switch from default to binance or cryptocompare)
+                    providerOverride = providerOverride === 'binance' ? 'cryptocompare' : 'binance';
+                    triedFallback = true;
+                    continue;
+                }
+                setCandles(cleaned);
                 return;
-            }
-            const cleaned = dedupeAndSort(raw.map(normalizeCandle).filter(Boolean));
-            if (cleaned.length === 0) {
-                setError('No valid candle data returned.');
+            } catch (e) {
+                lastError = e;
+                console.error('[TradingChart] fetch failed:', e);
                 setCandles([]);
-                return;
+                setError('Failed to load chart data');
+            } finally {
+                setLoading(false);
+                setRefreshing(false);
             }
-            setCandles(cleaned);
-        } catch (e) {
-            console.error('[TradingChart] fetch failed:', e);
-            setError('Failed to load chart data');
-            setCandles([]);
-        } finally {
-            setLoading(false);
-            setRefreshing(false);
+            break;
         }
-    }, [api, symbol, timeframe]);
+        if (lastError) {
+            setError('Failed to load chart data');
+        }
+    }, [api, symbol, timeframe, isCrypto]);
 
     useEffect(() => { fetchCandles(true); }, [fetchCandles]);
 
@@ -962,7 +1002,7 @@ const TradingChart = ({
                 <ChartHost theme={theme} ref={chartHostRef} $h={height}>
                     {/* ─── NEW CODE START — Price mismatch fallback ─── */}
                     {priceMismatch && !loading && (
-                        <LoadingOverlay theme={theme} style={{ background: 'rgba(10, 14, 30, 0.95)', zIndex: 5 }}>
+                        <LoadingOverlay theme={theme} style={{ background: 'rgba(10, 14, 30, 0.97)', zIndex: 5 }}>
                             <div style={{
                                 display: 'flex',
                                 flexDirection: 'column',
@@ -970,31 +1010,33 @@ const TradingChart = ({
                                 gap: '0.75rem',
                                 padding: '2rem',
                                 textAlign: 'center',
-                                maxWidth: '380px'
+                                maxWidth: '420px'
                             }}>
-                                <AlertTriangle size={36} style={{ color: '#f59e0b', opacity: 0.8 }} />
+                                <AlertTriangle size={36} style={{ color: '#f59e0b', opacity: 0.85 }} />
                                 <div style={{
-                                    fontSize: '1rem',
-                                    fontWeight: 800,
+                                    fontSize: '1.08rem',
+                                    fontWeight: 900,
                                     color: theme?.text?.primary || '#f8fafc',
                                     lineHeight: 1.3
                                 }}>
-                                    Chart data unavailable for this symbol right now
+                                    Chart data is unreliable for this symbol right now
                                 </div>
                                 <div style={{
-                                    fontSize: '0.85rem',
+                                    fontSize: '0.92rem',
                                     color: theme?.text?.secondary || '#94a3b8',
                                     lineHeight: 1.5
                                 }}>
-                                    Live price is still accurate and your position values are unaffected.
+                                    The live price and your position values are still accurate.<br />
+                                    The chart is hidden to prevent misleading data.
                                 </div>
                                 <div style={{
-                                    fontSize: '0.72rem',
+                                    fontSize: '0.75rem',
                                     color: theme?.text?.tertiary || '#64748b',
                                     lineHeight: 1.4,
                                     fontStyle: 'italic'
                                 }}>
-                                    Some providers map low-cap crypto tickers inconsistently.
+                                    Some providers map crypto tickers inconsistently, especially for low-cap or new assets.<br />
+                                    If this persists, try a different timeframe or check back later.
                                 </div>
                             </div>
                         </LoadingOverlay>
