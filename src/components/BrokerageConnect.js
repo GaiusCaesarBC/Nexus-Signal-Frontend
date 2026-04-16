@@ -453,8 +453,7 @@ const BROKERS = {
         name: 'Schwab',
         color: '#00a0df',
         type: 'plaid',
-        description: 'Coming Soon — pending approval',
-        disabled: true
+        description: 'Connect securely via Plaid'
     }
 };
 
