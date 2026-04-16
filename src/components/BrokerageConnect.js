@@ -503,6 +503,21 @@ const BrokerageConnect = () => {
         }
     }, []);
 
+    // Auto-sync all connections on mount and every 5 minutes
+    const autoSyncRef = useRef(false);
+    const syncIntervalRef = useRef(null);
+
+    const autoSync = useCallback(async () => {
+        try {
+            const res = await api.post('/brokerage/sync-all');
+            if (res.data.success && !res.data.throttled) {
+                await fetchConnections();
+            }
+        } catch (err) {
+            console.error('[AutoSync] Error:', err.message);
+        }
+    }, [fetchConnections]);
+
     useEffect(() => {
         // Only fetch once on initial mount - prevents re-fetching during Plaid linking
         if (user && !hasInitialFetched.current && !isPlaidLinkingRef.current) {
@@ -511,6 +526,29 @@ const BrokerageConnect = () => {
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    // Auto-sync on mount (after initial fetch) and every 5 minutes
+    useEffect(() => {
+        if (!user) return;
+
+        // Trigger initial auto-sync shortly after mount
+        const initialTimer = setTimeout(() => {
+            if (!autoSyncRef.current) {
+                autoSyncRef.current = true;
+                autoSync();
+            }
+        }, 2000); // 2s delay to let UI load first
+
+        // Set up 5-minute interval
+        syncIntervalRef.current = setInterval(() => {
+            autoSync();
+        }, 5 * 60 * 1000);
+
+        return () => {
+            clearTimeout(initialTimer);
+            if (syncIntervalRef.current) clearInterval(syncIntervalRef.current);
+        };
+    }, [user, autoSync]);
 
     // Create Plaid link token
     const createPlaidToken = async () => {
