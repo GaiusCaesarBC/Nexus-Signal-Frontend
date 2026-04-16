@@ -1028,6 +1028,25 @@ const LevelBadge = styled.span`
     color: ${({ theme }) => theme.brand?.accent || '#a78bfa'};
 `;
 
+const SourceBadge = styled.span`
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    padding: 0.12rem 0.45rem;
+    border-radius: 6px;
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    background: ${({ $source }) => $source === 'verified'
+        ? 'rgba(16, 185, 129, 0.15)'
+        : 'rgba(139, 92, 246, 0.15)'};
+    border: 1px solid ${({ $source }) => $source === 'verified'
+        ? 'rgba(16, 185, 129, 0.4)'
+        : 'rgba(139, 92, 246, 0.4)'};
+    color: ${({ $source }) => $source === 'verified' ? '#10b981' : '#a78bfa'};
+`;
+
 const UserMeta = styled.div`
     display: flex;
     align-items: center;
@@ -1388,6 +1407,7 @@ const LeaderboardPage = () => {
             // FIXED: Handle both flat and nested user object structures
             equippedBorder: trader.equippedBorder || trader.user?.equippedBorder || trader.vault?.equippedBorder || 'border-bronze',
             equippedBadges: trader.equippedBadges || trader.vault?.equippedBadges || [],
+            portfolioSource: trader.portfolioSource || null,
         }));
     }, []);
 
@@ -1827,6 +1847,11 @@ const LeaderboardPage = () => {
                     />
                 </PodiumAvatarWrapper>
                 <PodiumName $place={2}>{top3[1].displayName}</PodiumName>
+                {activeTab === 'real' && top3[1].portfolioSource && (
+                    <SourceBadge $source={top3[1].portfolioSource} style={{ marginBottom: 4 }}>
+                        {top3[1].portfolioSource === 'verified' ? '✓ Verified' : '✎ Self-Reported'}
+                    </SourceBadge>
+                )}
                 <PodiumStats $place={2}>{getMainStatValue(top3[1]).value}</PodiumStats>
                 {top3[1].equippedBadges && top3[1].equippedBadges.length > 0 && (
                     <div style={{ marginBottom: '0.5rem' }}>
@@ -1859,6 +1884,11 @@ const LeaderboardPage = () => {
                     />
                 </PodiumAvatarWrapper>
                 <PodiumName $place={1}>{top3[0].displayName}</PodiumName>
+                {activeTab === 'real' && top3[0].portfolioSource && (
+                    <SourceBadge $source={top3[0].portfolioSource} style={{ marginBottom: 4 }}>
+                        {top3[0].portfolioSource === 'verified' ? '✓ Verified' : '✎ Self-Reported'}
+                    </SourceBadge>
+                )}
                 <PodiumStats $place={1}>{getMainStatValue(top3[0]).value}</PodiumStats>
                 {top3[0].equippedBadges && top3[0].equippedBadges.length > 0 && (
                     <div style={{ marginBottom: '0.5rem' }}>
@@ -1888,6 +1918,11 @@ const LeaderboardPage = () => {
                     />
                 </PodiumAvatarWrapper>
                 <PodiumName $place={3}>{top3[2].displayName}</PodiumName>
+                {activeTab === 'real' && top3[2].portfolioSource && (
+                    <SourceBadge $source={top3[2].portfolioSource} style={{ marginBottom: 4 }}>
+                        {top3[2].portfolioSource === 'verified' ? '✓ Verified' : '✎ Self-Reported'}
+                    </SourceBadge>
+                )}
                 <PodiumStats $place={3}>{getMainStatValue(top3[2]).value}</PodiumStats>
                 {top3[2].equippedBadges && top3[2].equippedBadges.length > 0 && (
                     <div style={{ marginBottom: '0.5rem' }}>
@@ -2095,6 +2130,11 @@ const LeaderboardPage = () => {
         {isYou && <LevelBadge>You</LevelBadge>}
         <LevelBadge>Lv {trader.level}</LevelBadge>
         {trader.badges?.includes('verified') && <Check size={16} color={theme?.success || '#10b981'} />}
+        {activeTab === 'real' && trader.portfolioSource && (
+            <SourceBadge $source={trader.portfolioSource}>
+                {trader.portfolioSource === 'verified' ? '✓ Verified' : '✎ Self-Reported'}
+            </SourceBadge>
+        )}
     </DisplayName>
     <UserMeta>
         <span>@{trader.username}</span>

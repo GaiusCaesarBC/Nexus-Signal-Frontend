@@ -9,6 +9,7 @@ import { useWallet } from '../context/WalletContext';
 import WalletConnectButton from '../components/WalletConnectButton';
 import WalletAnalytics from '../components/WalletAnalytics';
 import BrokerageConnect from '../components/BrokerageConnect';
+import ManualHoldings from '../components/ManualHoldings';
 import api from '../api/axios';
 import {
     TrendingUp, TrendingDown, BarChart3,
@@ -1516,6 +1517,9 @@ const PortfolioPage = () => {
                                 <BrokerageConnect />
                             </div>
                         </WalletGrid>
+                        <div style={{ marginTop: '1.5rem' }}>
+                            <ManualHoldings />
+                        </div>
                         {linkedWallet && (
                             <div style={{ marginTop: '1rem' }}>
                                 <WalletAnalytics />

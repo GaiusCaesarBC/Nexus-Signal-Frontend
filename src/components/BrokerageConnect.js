@@ -19,7 +19,8 @@ import {
     TrendingUp,
     DollarSign,
     Wallet,
-    X
+    X,
+    PenLine
 } from 'lucide-react';
 
 const fadeIn = keyframes`
@@ -455,6 +456,12 @@ const BROKERS = {
         color: '#00a0df',
         type: 'plaid',
         description: 'Connect securely via Plaid'
+    },
+    manual: {
+        name: 'Manual Portfolio',
+        color: '#8b5cf6',
+        type: 'manual',
+        description: 'Track any broker or exchange manually'
     }
 };
 
@@ -608,16 +615,41 @@ const BrokerageConnect = () => {
         }
     };
 
+    // Connect Manual Portfolio
+    const connectManual = async () => {
+        try {
+            setConnecting(true);
+            setError(null);
+            const response = await api.post('/brokerage/manual/connect');
+            if (response.data.success) {
+                await fetchConnections();
+                setShowAddModal(false);
+                setSelectedBroker(null);
+            }
+        } catch (err) {
+            setError(err.response?.data?.error || 'Failed to create manual portfolio');
+        } finally {
+            setConnecting(false);
+        }
+    };
+
     // Sync connection
     const syncConnection = async (connection) => {
         try {
             setSyncing(prev => ({ ...prev, [connection.id]: true }));
 
-            const endpoint = connection.type === 'kraken'
-                ? `/brokerage/kraken/sync/${connection.id}`
-                : `/brokerage/plaid/sync/${connection.id}`;
+            let endpoint;
+            if (connection.type === 'manual') {
+                endpoint = `/brokerage/manual/sync`;
+                await api.post(endpoint);
+            } else if (connection.type === 'kraken') {
+                endpoint = `/brokerage/kraken/sync/${connection.id}`;
+                await api.get(endpoint);
+            } else {
+                endpoint = `/brokerage/plaid/sync/${connection.id}`;
+                await api.get(endpoint);
+            }
 
-            await api.get(endpoint);
             await fetchConnections();
         } catch (err) {
             console.error('Error syncing:', err);
@@ -692,11 +724,17 @@ const BrokerageConnect = () => {
                             </BrokerDetails>
                         </ConnectionInfo>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <StatusBadge $status={conn.status}>
-                                {conn.status === 'active' && <><Check size={12} /> Connected</>}
-                                {conn.status === 'error' && <><AlertCircle size={12} /> Error</>}
-                                {conn.status === 'pending' && 'Pending'}
-                            </StatusBadge>
+                            {conn.type === 'manual' ? (
+                                <StatusBadge $status={conn.status} style={{ background: 'rgba(139, 92, 246, 0.2)', color: '#a78bfa' }}>
+                                    <PenLine size={12} /> Self-Reported
+                                </StatusBadge>
+                            ) : (
+                                <StatusBadge $status={conn.status}>
+                                    {conn.status === 'active' && <><Check size={12} /> Verified</>}
+                                    {conn.status === 'error' && <><AlertCircle size={12} /> Error</>}
+                                    {conn.status === 'pending' && 'Pending'}
+                                </StatusBadge>
+                            )}
                             {expandedConnection === conn.id ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                         </div>
                     </ConnectionHeader>
@@ -807,9 +845,12 @@ const BrokerageConnect = () => {
                                             style={broker.disabled ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
                                         >
                                             <BrokerLogo $color={broker.color} style={{ width: 48, height: 48, fontSize: '1.2rem' }}>
-                                                {broker.name.charAt(0)}
+                                                {key === 'manual' ? <PenLine size={22} /> : broker.name.charAt(0)}
                                             </BrokerLogo>
                                             <BrokerOptionName>{broker.name}</BrokerOptionName>
+                                            {key === 'manual' && (
+                                                <BrokerOptionNote>Track any broker</BrokerOptionNote>
+                                            )}
                                             {broker.disabled && (
                                                 <BrokerOptionNote style={{ color: '#f59e0b' }}>Coming Soon</BrokerOptionNote>
                                             )}
@@ -873,6 +914,38 @@ const BrokerageConnect = () => {
                                     </ActionButton>
                                 </ButtonRow>
                             </>
+                        ) : selectedBroker === 'manual' ? (
+                            <>
+                                <InfoText style={{ margin: '0 0 1rem 0' }}>
+                                    Track holdings from any broker or exchange — Webull, Coinbase, Interactive Brokers, or any other platform. 
+                                    Prices update automatically. Holdings are managed by you.
+                                </InfoText>
+                                <InfoText style={{ margin: '0 0 1rem 0', fontSize: '0.8rem', color: '#f59e0b' }}>
+                                    <PenLine size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} />
+                                    Manual portfolios are labeled "Self-Reported" on the leaderboard to distinguish from broker-verified accounts.
+                                </InfoText>
+
+                                <ButtonRow>
+                                    <ActionButton
+                                        $variant="secondary"
+                                        onClick={() => setSelectedBroker(null)}
+                                    >
+                                        Back
+                                    </ActionButton>
+                                    <ActionButton
+                                        $variant="success"
+                                        onClick={connectManual}
+                                        disabled={connecting}
+                                        $loading={connecting}
+                                    >
+                                        {connecting ? (
+                                            <><RefreshCw size={16} /> Creating...</>
+                                        ) : (
+                                            <><PenLine size={16} /> Create Manual Portfolio</>
+                                        )}
+                                    </ActionButton>
+                                </ButtonRow>
+                            </>
                         ) : (
                             <>
                                 <InfoText style={{ margin: '0 0 1rem 0' }}>
@@ -916,7 +989,7 @@ const BrokerageConnect = () => {
             {!loading && connections.length === 0 && (
                 <InfoText>
                     Connect your brokerage accounts to track all your investments in one place.
-                    Supports Kraken, Robinhood, Webull, and Charles Schwab.
+                    Supports Kraken, Robinhood, Schwab, Fidelity, E*TRADE, or track any broker manually.
                 </InfoText>
             )}
         </Container>
