@@ -9,7 +9,7 @@ import {
     BarChart3, PieChart, TrendingUp, TrendingDown, Target, Shield,
     DollarSign, Percent, ArrowLeft, Trophy, Activity, Zap,
     CheckCircle, XCircle, Flame, Award, AlertTriangle, Layers,
-    Wallet, FileText
+    Wallet, FileText, LinkIcon
 } from 'lucide-react';
 import {
     PieChart as RechartsPie, Pie, Cell, ResponsiveContainer,
@@ -548,6 +548,44 @@ const PortfolioAnalyticsPage = () => {
             </Header>
 
             <Content>
+                {/* Real Portfolio empty state — show when no brokerage data */}
+                {mode === 'real' && (!overview?.totalHoldings || overview.totalHoldings === 0) && (
+                    <Card style={{ textAlign: 'center', padding: '3rem 2rem' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                            <Wallet size={48} style={{ color: '#f59e0b', opacity: 0.7 }} />
+                            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#f8fafc' }}>
+                                No Real Portfolio Data Yet
+                            </div>
+                            <div style={{ fontSize: '0.95rem', color: '#94a3b8', maxWidth: '450px', lineHeight: 1.6 }}>
+                                Connect a brokerage account (Kraken, Charles Schwab, etc.) to see your real portfolio analytics here.
+                            </div>
+                            <button
+                                onClick={() => navigate('/settings')}
+                                style={{
+                                    marginTop: '0.5rem',
+                                    padding: '0.75rem 1.5rem',
+                                    background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                                    border: 'none',
+                                    borderRadius: '10px',
+                                    color: '#fff',
+                                    fontWeight: 700,
+                                    fontSize: '0.9rem',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem'
+                                }}
+                            >
+                                <LinkIcon size={16} />
+                                Connect Brokerage
+                            </button>
+                            <div style={{ fontSize: '0.75rem', color: '#64748b', fontStyle: 'italic' }}>
+                                Your paper trading data is available in the Paper Trading tab.
+                            </div>
+                        </div>
+                    </Card>
+                )}
+
                 {/* 1. HERO — Trading Performance Verdict (top of page) */}
                 <PerformanceVerdict analytics={analytics} />
 
