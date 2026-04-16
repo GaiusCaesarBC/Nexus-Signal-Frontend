@@ -746,8 +746,8 @@ const PortfolioAnalyticsPage = () => {
                     </div>
                 </WideGrid>
 
-                {/* Paper Trading Stats */}
-                {paperTrading && (
+                {/* Paper Trading Stats — only show on Paper tab */}
+                {mode === 'paper' && paperTrading && (
                     <Card>
                         <CardHeader>
                             <CardTitle><Activity size={20} /> Paper Trading Performance</CardTitle>
