@@ -435,7 +435,8 @@ const BROKERS = {
         name: 'Webull',
         color: '#f45126',
         type: 'plaid',
-        description: 'Connect securely via Plaid'
+        description: 'Not supported by Plaid — coming soon',
+        disabled: true
     },
     fidelity: {
         name: 'Fidelity',
