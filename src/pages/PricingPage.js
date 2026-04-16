@@ -1800,23 +1800,25 @@ const PricingPage = () => {
                                 </ComparisonBadge>
                             )}
 
-                            // Get the appropriate CTA button text based on user's current plan
-    const getCtaText = (planId) => {
-        if (currentPlan && currentPlan !== 'free' && currentPlan !== planId) {
-            // User is upgrading/downgrading to a different paid plan
-            const planNames = { starter: 'Starter', pro: 'Pro', premium: 'Premium', elite: 'Elite' };
-            return `Upgrade to ${planNames[planId] || planId}`;
-        }
-        // Default CTA text
-        const planCtas = {
-            free: user ? 'Go to Dashboard' : 'Start Free',
-            starter: 'Unlock Starter',
-            pro: 'Unlock Pro',
-            premium: 'Unlock Premium',
-            elite: 'Go Elite'
-        };
-        return planCtas[planId] || 'Subscribe';
+// Get the appropriate CTA button text based on user's current plan
+const getCtaText = (planId) => {
+    if (currentPlan && currentPlan !== 'free' && currentPlan !== planId) {
+        // User is upgrading/downgrading to a different paid plan
+        const planNames = { starter: 'Starter', pro: 'Pro', premium: 'Premium', elite: 'Elite' };
+        return `Upgrade to ${planNames[planId] || planId}`;
+    }
+    // Default CTA text
+    const planCtas = {
+        free: user ? 'Go to Dashboard' : 'Start Free',
+        starter: 'Unlock Starter',
+        pro: 'Unlock Pro',
+        premium: 'Unlock Premium',
+        elite: 'Go Elite'
     };
+    return planCtas[planId] || 'Subscribe';
+};
+
+// ...existing code...
 
                             {isCurrentPlan(plan.id) ? (
                                 <ActivePlanButton>
