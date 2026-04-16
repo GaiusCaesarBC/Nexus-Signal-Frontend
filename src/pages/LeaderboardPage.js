@@ -27,7 +27,6 @@ import {
     RankDelta,
     SeasonBanner,
     LiveActivityFeed,
-    PremiumTeaser,
     enrichLeaderboard,
 } from './leaderboard';
 
@@ -2200,13 +2199,6 @@ const LeaderboardPage = () => {
                         })}
                     </LeaderboardList>
 
-                    {/* Premium teaser — soft monetization hook below the visible
-                        ranks. Always shown; the blurred preview rows + upgrade
-                        CTA reinforce that there's more behind the paywall. */}
-                    <PremiumTeaser
-                        hiddenCount={Math.max(0, leaderboard.length - 20)}
-                        onUpgrade={() => navigate('/pricing')}
-                    />
                 </LeaderboardContainer>
             ) : !error && (
                 <EmptyState>
