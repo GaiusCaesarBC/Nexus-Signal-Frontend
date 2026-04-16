@@ -1800,10 +1800,6 @@ const PricingPage = () => {
                                 </ComparisonBadge>
                             )}
 
-// ...existing code...
-
-// ...existing code...
-
                             {isCurrentPlan(plan.id) ? (
                                 <ActivePlanButton>
                                     <CheckCircle size={18} />
